@@ -136,10 +136,16 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   to remain pinned.
 - **Evidence:** `docs/adr/finance-platform.md` and
   `test-data/finance-bakeoff/`.
-- **Remaining gate:** complete HADES owner-path canonical verification. The
-  stable matched pair, read-only MCP boundary, synthetic canonical
-  reads/failure response, and selected-state archive restore are now proven;
-  only HADES owner-path verification and production authorization remain. No
+- **Owner UI evidence:** test administrator authenticated through the real Open WebUI DOM,
+  selected the staged `hermes-finance-staging` model, and submitted
+  “What is my checking account balance?”. Open WebUI rendered the chat and
+  preserved the prompt after reload. The staged run correctly surfaced an
+  Actual adapter failure because the disposable gateway restart lacked its
+  synthetic password environment; it did not fabricate a balance.
+- **Remaining gate:** complete a successful HADES owner-path canonical run.
+  The stable matched pair, read-only MCP boundary, synthetic canonical
+  reads/failure response, selected-state archive restore, and owner-facing
+  failure behavior are proven. Production authorization remains open; no
   real finance data, provider, or write path is present.
 
 ## Memory + household composition

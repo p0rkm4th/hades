@@ -168,6 +168,11 @@ try:
         r"bank|account balance|before payday)\b",
         re.IGNORECASE,
     )
+    _HADES_FINANCE_INTENT = re.compile(
+        r"\b(?:finance|finances|spending|spent|subscription|subscriptions|"
+        r"bank|account balance|before payday|transactions?|afford)\b",
+        re.IGNORECASE,
+    )
 
     # The OpenAI-compatible API server constructs AIAgent directly rather
     # than going through HermesCLI's turn resolver.  Route at the agent turn
@@ -176,35 +181,40 @@ try:
     from run_agent import AIAgent as _AIAgent
 
     # The API gateway can construct agents after MCP discovery but before the
-    # dynamic server alias is visible to its platform allowlist. Reconcile the
-    # canonical Grocy toolset at the agent boundary so owner-facing API turns
-    # receive the same schemas as an explicit `hermes -t mcp-grocy` run.
+    # dynamic server alias is visible to its platform allowlist. Reconcile
+    # HADES-owned MCP toolsets at the agent boundary so owner-facing API turns
+    # receive the same schemas as an explicit toolset run.
     _hades_original_agent_init = _AIAgent.__init__
 
     def _hades_agent_init(self, *args, **kwargs):
         _hades_original_agent_init(self, *args, **kwargs)
         tools = getattr(self, "tools", None)
-        if not isinstance(tools, list) or any(
-            t.get("function", {}).get("name", "").startswith("mcp_grocy_")
-            for t in tools
-        ):
+        if not isinstance(tools, list):
             return
         from model_tools import get_tool_definitions as _get_tool_definitions
-        extra = _get_tool_definitions(
-            enabled_toolsets=["mcp-grocy"], quiet_mode=True
-        )
         existing = {
             t.get("function", {}).get("name") for t in tools
         }
+        extra = []
+        if not any(name.startswith("mcp_grocy_") for name in existing):
+            extra.extend(_get_tool_definitions(
+                enabled_toolsets=["mcp-grocy"], quiet_mode=True
+            ))
+        if not any(name.startswith("mcp_actual_finance_readonly_") for name in existing):
+            extra.extend(_get_tool_definitions(
+                enabled_toolsets=["mcp-actual-finance-readonly"], quiet_mode=True
+            ))
+        added_count = 0
         for tool in extra:
             name = tool.get("function", {}).get("name")
             if name and name not in existing:
                 tools.append(tool)
                 existing.add(name)
+                added_count += 1
         self.valid_tool_names = existing
         _hades_logger.warning(
-            "API tool reconciliation added %d Grocy tools",
-            sum(1 for t in extra if t.get("function", {}).get("name", "").startswith("mcp_grocy_")),
+            "API tool reconciliation added %d HADES MCP tools",
+            added_count,
         )
 
     _AIAgent.__init__ = _hades_agent_init
@@ -249,6 +259,7 @@ try:
             _hades_intent_text,
             re.IGNORECASE,
         )
+        finance_intent = _HADES_FINANCE_INTENT.search(_hades_intent_text)
         agent_zero_intent = re.search(
             r"\b(?:agent zero|agent0|bounded operator|delegate|delegation)\b",
             _hades_intent_text,
@@ -271,6 +282,23 @@ try:
                     )
             except Exception as exc:
                 _hades_logger.warning("API Grocy intent narrowing failed: %s", exc)
+        if finance_intent and isinstance(original_tools, list):
+            try:
+                from model_tools import get_tool_definitions as _get_tool_definitions
+                finance_tools = _get_tool_definitions(
+                    enabled_toolsets=["mcp-actual-finance-readonly"], quiet_mode=True
+                )
+                if finance_tools:
+                    self.tools = finance_tools
+                    self.valid_tool_names = {
+                        t["function"]["name"] for t in finance_tools
+                    }
+                    _hades_logger.warning(
+                        "API finance intent narrowed tool catalog to %d tools",
+                        len(finance_tools),
+                    )
+            except Exception as exc:
+                _hades_logger.warning("API finance intent narrowing failed: %s", exc)
         if agent_zero_intent and isinstance(original_tools, list):
             try:
                 from model_tools import get_tool_definitions as _get_tool_definitions

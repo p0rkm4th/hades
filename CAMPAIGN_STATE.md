@@ -12,11 +12,11 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`2bc6f58794b8acdf06414b32466dc304cea8ab71` — synthetic finance bakeoff
- checkpoint committed and pushed. Actual Budget is provisional SELECT WITH
- CONDITIONS; its official API client authenticated against staging but could
- not load the downloaded budget because the client migration set is behind the
- staged server budget (`out-of-sync-migrations`).
+`947c391` — finance adapter acceptance evidence committed and pushed. The
+working tree additionally contains the finance intent/tool-reconciliation
+overlay and owner-path failure evidence; commit it only after final smoke and
+public-history checks. Actual Budget remains provisional SELECT WITH
+CONDITIONS and synthetic-only.
 
 ## COMPLETED MILESTONES
 
@@ -169,9 +169,10 @@ with Firefly III as fallback and Finlynq/Ledgr on watchlist. Evidence and the
 remaining synthetic HADES adapter conditions are in
 `docs/adr/finance-platform.md`.
 
-The next finance action is to exercise the constrained Actual read adapter
-through an isolated HADES owner conversation, then complete selected-state
-restore acceptance before any production enablement.
+The next finance action is to rerun the constrained Actual read adapter through
+an isolated HADES owner conversation with the synthetic environment restored,
+then complete owner-path persistence acceptance before any production
+enablement.
 
 The stable 26.9.0 Actual pair now passes synthetic import/repeat, sync, fresh
 runtime reload, and transfer-payee linking. A constrained read-only MCP adapter
