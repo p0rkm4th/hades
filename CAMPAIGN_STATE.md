@@ -12,8 +12,10 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`9024ffc` — clean upstream MCP contract, runtime-backed persistence map, and
-public CI compose tripwire committed and pushed. Founding capabilities and
+`f3aaf00` — recovery order/evidence runbook and public path-audit correction
+committed and pushed after the clean upstream MCP contract and runtime-backed
+persistence map.
+Founding capabilities and
 current upstream/A2A decisions are reconciled; Actual remains selected for
 synthetic HADES integration and production finance is gated.
 
