@@ -1,23 +1,22 @@
 # ADR: Synthetic finance-platform bakeoff
 
-**Status:** SELECT WITH CONDITIONS  
+**Status:** SELECTED FOR SYNTHETIC HADES INTEGRATION; PRODUCTION GATED
 **Date:** 2026-09-12  
 **Decision scope:** disposable synthetic staging only; no owner finance data,
 provider links, or financial writes
 
 ## Decision
 
-Select **Actual Budget** as the provisional canonical finance platform for
-HADES, subject to a read-only integration proof and a complete synthetic import
-acceptance. Keep **Firefly III** as the fallback. Keep **Finlynq** and **Ledgr**
-on the watchlist until their material acceptance and security gaps are resolved.
-This is not authorization for production finance deployment.
+Select **Actual Budget** as HADES's canonical finance platform for synthetic
+integration. The constrained read-only adapter and owner-path proof are now
+complete. Keep **Firefly III** as the fallback and **Finlynq**/**Ledgr** on the
+watchlist. This is not authorization for production finance deployment.
 
 ## Candidates and tested releases
 
 | Candidate | Tested release/path | Runtime result | Decision result |
 |---|---|---|---|
-| Actual Budget | official `actualbudget/actual-server:sha-d5d0b66-alpine`, UI reported v26.9.0 | Healthy, password bootstrap/login worked, native data archive restored into a second disposable instance; normal UI imports Actual budget files, not generic CSV | SELECT WITH CONDITIONS |
+| Actual Budget | official `actualbudget/actual-server:26.9.0`, digest pinned; matched `@actual-app/api` 26.9.0 | Healthy, synthetic import/repeat/reload and transfer-payee linking passed; native archive and selected-state restore passed; HADES read-only MCP owner path returned the canonical balance and survived reload | SELECTED |
 | Firefly III | `fireflyiii/core:latest`, UI reported v6.6.6; `fireflyiii/data-importer:latest` reported v2.3.4 | Core healthy; separate importer healthy; registration and manual onboarding worked; API unauthenticated access correctly redirected | FALLBACK |
 | Finlynq | `ghcr.io/finlynq/finlynq:latest`, source tag v3.4.1 | Fresh PostgreSQL migrations, registration, manual accounts, staged import, approval, persistence, and backup restore worked | WATCHLIST |
 | Ledgr | `ghcr.io/kentaniguchi-r/ledgr:latest`, source tag v0.3.1 | Fresh PostgreSQL migrations and health worked; empty-state UI offers bank linking but no manual account route, blocking synthetic CSV import without provider credentials; MCP requires auth | WATCHLIST |
@@ -98,24 +97,20 @@ These measurements are directional, not a selection criterion by themselves.
 ## HADES integration/security result
 
 No finance tool is enabled in production HADES. The synthetic owner-UI tests
-prove candidate behavior, not HADES integration. The selected integration must
+prove the isolated HADES integration against canonical Actual state. The
+selected integration must
 support only account/balance/transaction/category/recurring/budget reads plus
 freshness metadata. It must not expose transaction edits, account edits,
 provider linking, reconciliation writes, or money movement.
 
-## Conditions before promotion
+## Conditions before production promotion
 
-1. Pin the matched supported Actual 26.9.0 server/client revision in the
-   deployment. The stable synthetic import/repeat and transfer-payee proofs
-   are complete; the remaining fixture work is mapping provider transfer pairs
-   without reusing one global external ID.
-2. Implement or configure a small read-only Hermes adapter over the official
-   Actual API, with failure and stale-state responses.
-3. Prove the read path through the HADES owner UI against synthetic canonical
-   Actual state, then reload and restart.
-4. Record the selected Actual backup credential/key dependencies separately;
-   row-level restore verification for the synthetic selected state passes.
-5. Re-evaluate Firefly if Actual's import/API path cannot meet these contracts.
+1. Keep the matched supported Actual 26.9.0 server/client revision pinned.
+2. Keep the small adapter read-only and outside production until owner approval.
+3. Obtain explicit authorization for real historical imports and any provider
+   connection; none is authorized by this bakeoff.
+4. Record backup credential/key dependencies in the private deployment record.
+5. Re-evaluate Firefly if Actual's import/API path cannot meet future contracts.
 
 ## Production gates
 

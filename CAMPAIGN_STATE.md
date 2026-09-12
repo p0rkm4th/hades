@@ -12,11 +12,9 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`947c391` — finance adapter acceptance evidence committed and pushed. The
-working tree additionally contains the finance intent/tool-reconciliation
-overlay and owner-path failure evidence; commit it only after final smoke and
-public-history checks. Actual Budget remains provisional SELECT WITH
-CONDITIONS and synthetic-only.
+`c3dc14b` — synthetic finance owner acceptance committed and pushed. Actual
+Budget is selected for the synthetic HADES integration; production remains
+explicitly gated on owner authorization for real finance data/providers.
 
 ## COMPLETED MILESTONES
 
@@ -164,22 +162,19 @@ matrix is unavailable. The next non-gated engineering action is a disposable
 staging deployment with synthetic domain services, followed by owner-path
 contract verification and rollback rehearsal.
 
-The synthetic finance bakeoff is SELECT WITH CONDITIONS for Actual Budget,
-with Firefly III as fallback and Finlynq/Ledgr on watchlist. Evidence and the
-remaining synthetic HADES adapter conditions are in
+The synthetic finance bakeoff selected Actual Budget, with Firefly III as
+fallback and Finlynq/Ledgr on watchlist. Evidence and production gates are in
 `docs/adr/finance-platform.md`.
 
-The next finance action is to rerun the constrained Actual read adapter through
-an isolated HADES owner conversation with the synthetic environment restored,
-then complete owner-path persistence acceptance before any production
-enablement.
+The synthetic finance objective is complete. The next finance action is an
+owner-authorized production decision; until then, do not connect real finance
+data or providers.
 
 The stable 26.9.0 Actual pair now passes synthetic import/repeat, sync, fresh
 runtime reload, and transfer-payee linking. A constrained read-only MCP adapter
 exists under `integrations/actual-finance-readonly/` and has been exercised
-directly against that canonical synthetic budget. HADES owner-conversation
-verification and selected-state restore evidence remain open; the adapter is
-not enabled in production.
+through the HADES owner path against that canonical synthetic budget. The
+adapter is not enabled in production.
 
 Shared LDAP identity is staged in `docs/shared-identity.md` but intentionally
 deferred until the multi-user roadmap milestone is complete.
