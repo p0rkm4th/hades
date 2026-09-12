@@ -19,14 +19,16 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Memory
 
-- **Current status:** PASS + PERSISTENCE
+- **Current status:** PARTIAL
 - **Authoritative system:** Hindsight for durable context; domain systems for
   current truth
-- **Verified slice:** durable memory retain/recall and correction were verified
-  through HADES, with live domain state kept authoritative and persistence
-  checked after reload/restart.
-- **Evidence required:** retain through the owner UI, recall in a new session,
-  correction, canonical backend verification, and reload persistence
+- **Verified slice:** durable memory retain/recall was verified through HADES,
+  and the correction branch was confirmed in the canonical Hindsight results.
+  Live domain state remains authoritative and persistence was checked after
+  reload/restart.
+- **Remaining evidence:** a fresh-session generic recall must consistently
+  prefer the latest corrected fact over older retained paraphrases before this
+  can be marked PASS + PERSISTENCE.
 
 ## Operator
 
