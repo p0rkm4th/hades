@@ -32,12 +32,20 @@ requirements.
 Deployment-specific versions, image digests, endpoints, and model choices are
 intentionally maintained in private operations state.
 
-## BLOCKERS
+## LOCAL COMPONENTS NOT YET PROVISIONED
 
-- Household and operator integrations require separately authorized endpoints,
-  credentials, and bounded permissions.
-- Read-only homelab and finance integrations require explicit owner approval
-  and freshness/provenance evidence.
+- Agent Zero is an approved local component and remains unproven only because
+  the bounded deployment and owner-path acceptance work is unfinished.
+- Grocy is an approved local component and remains unproven only because the
+  persistent synthetic deployment and owner-path acceptance work is unfinished.
+
+## REAL OWNER GATES
+
+- Real Finance/Plaid account authorization is owner-gated.
+- Existing Proxmox, NetBox, Uptime Kuma, or Home Assistant credentials are
+  owner-gated if those systems are to be connected.
+- Destructive infrastructure authority and new privileged host access remain
+  prohibited without explicit authorization.
 
 ## PENDING OWNER GATES
 
@@ -59,8 +67,20 @@ intentionally maintained in private operations state.
 Deployment-specific defects are intentionally excluded from the public
 checkpoint; they belong in the private operations record.
 
+## HERMES OVERLAY STATUS
+
+- The deployment compatibility overlay is source-represented at
+  `hermes/sitecustomize.py` and remains intentionally narrow.
+- It handles local model routing, Hindsight retain/recall normalization,
+  explicit-memory tool narrowing, streaming handoff, and related weak-model
+  compatibility behavior.
+- It is not a HADES runtime, planner, router framework, or new core.
+
+## CAPABILITY LEDGER
+
+See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
+
 ## NEXT ACTION
 
-For a deployment, copy the examples, fill private configuration values, and
-run the owner workflow acceptance loop against the real interface and each
-authoritative backend.
+Add lightweight overlay smoke coverage, then provision a bounded local Agent
+Zero deployment and prove one success plus one safe failure through HADES.
