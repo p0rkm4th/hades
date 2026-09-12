@@ -95,10 +95,32 @@ database backup remains pending owner password rotation; it is not a runtime
 dependency and is not in Git. Delete that final backup after the owner confirms
 the temporary password has been replaced.
 
+## Synthetic rehearsal evidence
+
+On 2026-09-12, a disposable Grocy instance using the deployed pinned image
+was initialized with an empty synthetic configuration. The service was
+quiesced before its configuration directory was copied to a separate
+disposable restore target. The restored SQLite database passed `PRAGMA
+quick_check`, and a fresh Grocy container started successfully from the
+restored target. The fixture and disposable containers were removed after the
+check.
+
+This proves the basic quiesced-copy and application-start path for Grocy; it
+does not prove a production backup, encrypted retention, or recovery of owner
+state. Those remain private operational gates.
+
+An equivalent empty Open WebUI rehearsal completed the quiesced copy and
+SQLite integrity stages, but its restored container did not reach health within
+the bounded window because a fresh embedding model download was still in
+progress. The disposable instance was stopped and removed. Open WebUI restore
+acceptance therefore remains open until the staging environment has its
+required model artifacts preloaded.
+
 ## Missing automation
 
 No final backup job or installer is defined here yet. The next implementation
 step is a private, component-specific backup/restore drill with explicit
 retention and encryption settings, followed by an isolated restore test. The
-mount inventory and recovery order are now runtime-backed; native
-database/export procedures and restore evidence remain outstanding.
+mount inventory, recovery order, and a synthetic Grocy restore path are now
+documented; native production database/export procedures and restore evidence
+remain outstanding for Open WebUI, Hindsight, Hermes, Agent Zero, and SearXNG.
