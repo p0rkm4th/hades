@@ -46,7 +46,10 @@ intentionally maintained in private operations state.
   canonical shopping-list API; an earlier mutation survived a Grocy restart
   and was recovered by a fresh HADES query. Browser-DOM and broader household
   acceptance remain open. Repeated-add duplication was found, fixed in the
-  active MCP deployment, and regression-tested as quantity folding.
+  active MCP deployment, and regression-tested as quantity folding. The
+  bounded stock-intake preview plus explicitly confirmed apply path now also
+  passes against canonical Grocy stock; the local model still needs explicit
+  workflow wording for apply turns.
 
 ## REAL OWNER GATES
 
