@@ -47,7 +47,8 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   after the deployment fix: it increased the existing row's quantity instead
   of creating a duplicate. A synthetic purchase also passed the bounded
   preview → explicitly confirmed apply path; Grocy's stock API verified
-  quantity 3. Natural-language apply still benefits from naming the confirmed
+  quantity 3. A follow-up consumption turn then reduced canonical stock from
+  3 to 2. Natural-language apply still benefits from naming the confirmed
   workflow explicitly for the local model.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in

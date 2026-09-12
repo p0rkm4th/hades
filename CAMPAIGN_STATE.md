@@ -49,7 +49,8 @@ intentionally maintained in private operations state.
   active MCP deployment, and regression-tested as quantity folding. The
   bounded stock-intake preview plus explicitly confirmed apply path now also
   passes against canonical Grocy stock; the local model still needs explicit
-  workflow wording for apply turns.
+  workflow wording for apply turns. A canonical consume turn was added to the
+  private allowlist and verified by reducing synthetic stock from 3 to 2.
 
 ## REAL OWNER GATES
 
