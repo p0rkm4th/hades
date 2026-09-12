@@ -1,0 +1,6 @@
+external_id,date,account,payee,amount,category,transfer_account,memo
+tx-refund-001,2026-01-13,Synthetic Card,Byte Cafe,25.00,Refund,,Credit-card refund
+tx-pay-002,2026-01-15,Checking,Acme Payroll,3000.00,Income,,Synthetic paycheck
+tx-save-002,2026-01-16,Checking,Transfer to Rainy Day,-300.00,Transfer,Rainy Day Savings,Second internal transfer
+tx-save-002,2026-01-16,Rainy Day Savings,Transfer from Checking,300.00,Transfer,Checking,Second internal transfer
+tx-rent-002,2026-02-06,Checking,Synthetic Apartments,-1200.00,Housing,,Recurring rent

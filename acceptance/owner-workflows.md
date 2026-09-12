@@ -121,14 +121,19 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Finance
 
-- **Current status:** PREPARATION COMPLETE / OWNER GATE
-- **Authoritative system:** owner-authorized finance provider, initially via
-  read-only Plaid Transactions Sync
-- **Preparation:** cursor/pagination, freshness, coverage, pending-versus-
-  posted, removal/reconciliation, and safe failure requirements are documented
-  in `docs/finance-readonly.md`.
-- **Remaining gate:** provider, accounts, environment, retention policy, and
-  private webhook authorization; no real finance data is present.
+- **Current status:** SELECT WITH CONDITIONS (synthetic bakeoff); real finance
+  remains BLOCKED BY OWNER AUTHORIZATION
+- **Provisional authoritative system:** Actual Budget; Firefly III is the
+  fallback. Finlynq and Ledgr remain watchlisted.
+- **Synthetic evidence:** four disposable candidates started; Finlynq owner UI
+  accepted Batch A, skipped all 12 rows on identical re-import, and exposed a
+  likely false-positive on the nearby same-merchant Batch B row. Actual native
+  archive and Finlynq PostgreSQL restore probes passed.
+- **Evidence:** `docs/adr/finance-platform.md` and
+  `test-data/finance-bakeoff/`.
+- **Remaining gate:** Actual-compatible import, constrained HADES read adapter,
+  HADES owner-path canonical verification, and selected-state row-level restore
+  acceptance. No real finance data, provider, or write path is present.
 
 ## Memory + household composition
 

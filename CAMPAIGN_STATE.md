@@ -12,7 +12,8 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`20fa25c` — overlay inventory and public CI tripwire.
+Pending finance bakeoff checkpoint; repository HEAD will be recorded after the
+synthetic fixture and ADR checkpoint is committed.
 
 ## COMPLETED MILESTONES
 
@@ -152,6 +153,11 @@ Hermes production remains pinned while an isolated external-contract staging
 matrix is unavailable. The next non-gated engineering action is a disposable
 staging deployment with synthetic domain services, followed by owner-path
 contract verification and rollback rehearsal.
+
+The synthetic finance bakeoff is SELECT WITH CONDITIONS for Actual Budget,
+with Firefly III as fallback and Finlynq/Ledgr on watchlist. Evidence and the
+remaining synthetic HADES adapter conditions are in
+`docs/adr/finance-platform.md`.
 
 Shared LDAP identity is staged in `docs/shared-identity.md` but intentionally
 deferred until the multi-user roadmap milestone is complete.

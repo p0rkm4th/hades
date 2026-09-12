@@ -1,0 +1,18 @@
+{
+  "fixture": "HADES synthetic finance bakeoff",
+  "currency": "USD",
+  "baseline_batch_a_rows": 12,
+  "batch_b_rows": 7,
+  "batch_c_rows": 5,
+  "expected_unique_external_ids_after_all_batches": 17,
+  "expected_transfer_pairs": 3,
+  "must_not_be_owner_data": true,
+  "important_checks": [
+    "reimporting batch A does not duplicate its 12 rows",
+    "the two Copper Diner rows remain distinct",
+    "the corrected grocery category/payee survives overlapping reimport",
+    "checking-to-savings and checking-to-card transfers are not spending",
+    "the card refund reduces net card spending",
+    "subscription rows remain separately identifiable"
+  ]
+}
