@@ -1,0 +1,201 @@
+/* HADES visual layer: selected from Odysseus' dark/cyberpunk language.
+ * Behavior-free and intentionally scoped to the Open WebUI shell. */
+:root {
+  --hades-bg: #0a0f16;
+  --hades-panel: #101923;
+  --hades-panel-glass: rgb(16 25 35 / 86%);
+  --hades-cyan: #64e8f2;
+  --hades-blue: #4aa9ff;
+  --hades-purple: #9b6cff;
+  --hades-border: rgb(100 232 242 / 25%);
+  --hades-glow: 0 0 22px rgb(100 232 242 / 12%);
+}
+
+html.hades-theme-odysseus-neon, html.hades-theme-odysseus-midnight, html.hades-theme-odysseus-retrowave,
+html.hades-theme-odysseus-neon body, html.hades-theme-odysseus-midnight body, html.hades-theme-odysseus-retrowave body {
+  background-color: var(--hades-bg) !important;
+}
+/* Keep Open WebUI's native fixed dialogs fixed and above the decorative layer. */
+body > div:first-child { position: relative; z-index: 1; }
+
+/* Sidebar and top chrome: Odysseus-style frosted instrumentation panels. */
+html.hades-theme-odysseus-neon aside, html.hades-theme-odysseus-neon header,
+html.hades-theme-odysseus-midnight aside, html.hades-theme-odysseus-midnight header,
+html.hades-theme-odysseus-retrowave aside, html.hades-theme-odysseus-retrowave header {
+  background: var(--hades-panel-glass) !important;
+  border-color: var(--hades-border) !important;
+  backdrop-filter: blur(18px) saturate(125%);
+}
+html.hades-theme-odysseus-neon aside, html.hades-theme-odysseus-midnight aside, html.hades-theme-odysseus-retrowave aside { box-shadow: 8px 0 32px rgb(0 0 0 / 20%); }
+
+button, [role="button"] { transition: color .16s ease, border-color .16s ease, box-shadow .16s ease, background-color .16s ease; }
+html.hades-theme-odysseus-neon button:hover, html.hades-theme-odysseus-neon [role="button"]:hover,
+html.hades-theme-odysseus-midnight button:hover, html.hades-theme-odysseus-midnight [role="button"]:hover,
+html.hades-theme-odysseus-retrowave button:hover, html.hades-theme-odysseus-retrowave [role="button"]:hover { box-shadow: 0 0 14px rgb(100 232 242 / 12%); }
+
+/* Composer: animated accent edge only while engaged. */
+html.hades-theme-odysseus-neon textarea:focus, html.hades-theme-odysseus-neon [contenteditable="true"]:focus,
+html.hades-theme-odysseus-midnight textarea:focus, html.hades-theme-odysseus-midnight [contenteditable="true"]:focus,
+html.hades-theme-odysseus-retrowave textarea:focus, html.hades-theme-odysseus-retrowave [contenteditable="true"]:focus {
+  outline: none !important;
+  border-color: var(--hades-cyan) !important;
+  box-shadow: 0 0 0 1px rgb(100 232 242 / 28%), 0 0 24px rgb(100 232 242 / 11%) !important;
+}
+
+html.hades-theme-odysseus-neon main a, html.hades-theme-odysseus-neon article a,
+html.hades-theme-odysseus-midnight main a, html.hades-theme-odysseus-midnight article a,
+html.hades-theme-odysseus-retrowave main a, html.hades-theme-odysseus-retrowave article a { color: var(--hades-cyan) !important; }
+html.hades-theme-odysseus-neon pre, html.hades-theme-odysseus-neon code,
+html.hades-theme-odysseus-midnight pre, html.hades-theme-odysseus-midnight code,
+html.hades-theme-odysseus-retrowave pre, html.hades-theme-odysseus-retrowave code {
+  border: 1px solid rgb(100 232 242 / 16%);
+  box-shadow: inset 0 0 24px rgb(0 0 0 / 18%);
+}
+
+html.hades-theme-odysseus-midnight { --hades-bg: #05070c; --hades-panel: #0a111c; --hades-cyan: #8fe9ff; --hades-blue: #6b8cff; }
+html.hades-theme-odysseus-retrowave { --hades-bg: #130d20; --hades-panel: #1c1230; --hades-cyan: #ff6bd6; --hades-blue: #7b8cff; --hades-purple: #ff9cde; }
+
+/* Open WebUI's default themes are token-driven. Replace the native gray and
+ * accent scales per preset so every existing component (menus, cards,
+ * selectors, buttons, dialogs) follows the chosen palette automatically. */
+html.hades-theme-odysseus-neon {
+  --color-gray-50: #dffcff !important; --color-gray-100: #bdeef2 !important;
+  --color-gray-200: #8fcbd2 !important; --color-gray-300: #6daab4 !important;
+  --color-gray-400: #52818b !important; --color-gray-500: #3b606a !important;
+  --color-gray-600: #2d4a55 !important; --color-gray-700: #203640 !important;
+  --color-gray-800: #172a34 !important; --color-gray-900: #0f1d27 !important;
+  --color-gray-950: #080f17 !important; --color-white: #effeff !important;
+  --color-black: #050a10 !important; --color-blue-500: #64e8f2 !important;
+  --color-blue-600: #40c7d5 !important; --color-blue-700: #289aa9 !important;
+}
+html.hades-theme-odysseus-midnight {
+  --color-gray-50: #d9f5ff !important; --color-gray-100: #b0d9e8 !important;
+  --color-gray-200: #82b3c8 !important; --color-gray-300: #5d879e !important;
+  --color-gray-400: #46677e !important; --color-gray-500: #304b62 !important;
+  --color-gray-600: #24394d !important; --color-gray-700: #192b3c !important;
+  --color-gray-800: #101f30 !important; --color-gray-900: #091522 !important;
+  --color-gray-950: #03070d !important; --color-white: #f1fbff !important;
+  --color-black: #010308 !important; --color-blue-500: #8fe9ff !important;
+  --color-blue-600: #6b8cff !important; --color-blue-700: #526bd0 !important;
+}
+html.hades-theme-odysseus-retrowave {
+  --color-gray-50: #ffe8fa !important; --color-gray-100: #f7c5e9 !important;
+  --color-gray-200: #d995c8 !important; --color-gray-300: #b56ca8 !important;
+  --color-gray-400: #865080 !important; --color-gray-500: #613c67 !important;
+  --color-gray-600: #482d52 !important; --color-gray-700: #35203e !important;
+  --color-gray-800: #271632 !important; --color-gray-900: #1b1025 !important;
+  --color-gray-950: #0d0714 !important; --color-white: #fff3fc !important;
+  --color-black: #08030d !important; --color-blue-500: #ff6bd6 !important;
+  --color-blue-600: #c95abf !important; --color-blue-700: #9b4ca0 !important;
+}
+
+/* Open WebUI v0.11.x uses utility classes for many controls. These broad,
+ * surface-only rules intentionally follow its native hierarchy and provide
+ * the visible palette handoff without replacing component markup. */
+html.hades-theme-odysseus-neon main, html.hades-theme-odysseus-midnight main, html.hades-theme-odysseus-retrowave main,
+html.hades-theme-odysseus-neon [data-testid="chat-input"], html.hades-theme-odysseus-midnight [data-testid="chat-input"], html.hades-theme-odysseus-retrowave [data-testid="chat-input"] {
+  background-color: transparent !important;
+}
+html.hades-theme-odysseus-neon input, html.hades-theme-odysseus-neon textarea,
+html.hades-theme-odysseus-midnight input, html.hades-theme-odysseus-midnight textarea,
+html.hades-theme-odysseus-retrowave input, html.hades-theme-odysseus-retrowave textarea,
+html.hades-theme-odysseus-neon [contenteditable="true"], html.hades-theme-odysseus-midnight [contenteditable="true"], html.hades-theme-odysseus-retrowave [contenteditable="true"] {
+  background-color: var(--hades-panel) !important;
+  color: #e8fbff !important;
+  border-color: var(--hades-border) !important;
+}
+
+/* Keep the effect legible and respectful of accessibility settings. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* The remaining Odysseus presets use the same native Open WebUI skeleton. */
+html[class*="hades-theme-"] {
+  --hades-composer-surface: transparent;
+  --color-gray-50: color-mix(in srgb, var(--hades-cyan) 22%, white) !important;
+  --color-gray-100: color-mix(in srgb, var(--hades-cyan) 18%, white) !important;
+  --color-gray-200: color-mix(in srgb, var(--hades-cyan) 28%, var(--hades-bg)) !important;
+  --color-gray-300: color-mix(in srgb, var(--hades-cyan) 38%, var(--hades-bg)) !important;
+  --color-gray-400: color-mix(in srgb, var(--hades-cyan) 48%, var(--hades-bg)) !important;
+  --color-gray-500: color-mix(in srgb, var(--hades-cyan) 34%, var(--hades-panel)) !important;
+  --color-gray-600: color-mix(in srgb, var(--hades-cyan) 24%, var(--hades-panel)) !important;
+  --color-gray-700: color-mix(in srgb, var(--hades-cyan) 18%, var(--hades-panel)) !important;
+  --color-gray-800: var(--hades-panel) !important; --color-gray-900: var(--hades-bg) !important;
+  --color-gray-950: var(--hades-bg) !important; --color-blue-500: var(--hades-cyan) !important;
+  --color-blue-600: var(--hades-blue) !important; --color-blue-700: var(--hades-blue) !important;
+  background: var(--hades-bg) !important;
+}
+html[class*="hades-theme-"] body { background: var(--hades-bg) !important; color: var(--hades-cyan) !important; }
+html[class*="hades-theme-"] aside, html[class*="hades-theme-"] header {
+  background: color-mix(in srgb, var(--hades-panel) 88%, transparent) !important;
+  border-color: color-mix(in srgb, var(--hades-cyan) 30%, transparent) !important;
+  backdrop-filter: blur(16px) saturate(125%);
+}
+html[class*="hades-theme-"] main { background: transparent !important; }
+html[class*="hades-theme-"] input, html[class*="hades-theme-"] textarea,
+html[class*="hades-theme-"] [contenteditable="true"] {
+  background: var(--hades-panel) !important; color: var(--hades-cyan) !important;
+  border-color: color-mix(in srgb, var(--hades-cyan) 32%, transparent) !important;
+}
+html.hades-theme-odysseus-cyberpunk { --hades-bg:#0a0a0f; --hades-panel:#12101a; --hades-cyan:#0ff0fc; --hades-blue:#9b30ff; }
+html.hades-theme-odysseus-forest { --hades-bg:#1b2a1b; --hades-panel:#142414; --hades-cyan:#a8d5a2; --hades-blue:#3d6b3d; }
+html.hades-theme-odysseus-ocean { --hades-bg:#0b1a2c; --hades-panel:#091422; --hades-cyan:#64d2ff; --hades-blue:#4facfe; }
+html.hades-theme-odysseus-ume { --hades-bg:#2b1b2e; --hades-panel:#1e1420; --hades-cyan:#f5c2e7; --hades-blue:#6c4675; }
+html.hades-theme-odysseus-copper { --hades-bg:#1c1410; --hades-panel:#140f0a; --hades-cyan:#e8c39e; --hades-blue:#7a5533; }
+html.hades-theme-odysseus-terminal { --hades-bg:#000; --hades-panel:#0a0a0a; --hades-cyan:#00ff41; --hades-blue:#00a82b; }
+html.hades-theme-odysseus-organs { --hades-bg:#0a0406; --hades-panel:#15080a; --hades-cyan:#efe1c8; --hades-blue:#c83240; }
+html.hades-theme-odysseus-lavender { --hades-bg:#241d2e; --hades-panel:#30253b; --hades-cyan:#e1c9ff; --hades-blue:#9b6dcc; }
+html.hades-theme-odysseus-gpt { --hades-bg:#212121; --hades-panel:#171717; --hades-cyan:#ececec; --hades-blue:#949494; }
+html.hades-theme-odysseus-claude { --hades-bg:#262624; --hades-panel:#30302e; --hades-cyan:#f5f4f0; --hades-blue:#c6613f; }
+html.hades-theme-odysseus-cute { --hades-bg:#321c27; --hades-panel:#402330; --hades-cyan:#ffb6d0; --hades-blue:#ff6b9d; }
+/* Exact Odysseus registry colors (static/js/theme.js), carried into HADES. */
+html.hades-theme-odysseus-neon, html.hades-theme-odysseus-cyberpunk { --hades-bg:#0a0a0f; --hades-panel:#12101a; --hades-cyan:#0ff0fc; --hades-blue:#9b30ff; --hades-red:#e040fb; }
+html.hades-theme-odysseus-midnight { --hades-bg:#0d1117; --hades-panel:#161b22; --hades-cyan:#c9d1d9; --hades-blue:#30363d; --hades-red:#f85149; }
+html.hades-theme-odysseus-retrowave { --hades-bg:#1a1a2e; --hades-panel:#16213e; --hades-cyan:#e94560; --hades-blue:#533483; --hades-red:#e94560; }
+html.hades-theme-odysseus-forest { --hades-bg:#1b2a1b; --hades-panel:#142414; --hades-cyan:#a8d5a2; --hades-blue:#3d6b3d; --hades-red:#7cb871; }
+html.hades-theme-odysseus-ocean { --hades-bg:#0b1a2c; --hades-panel:#091422; --hades-cyan:#64d2ff; --hades-blue:#1e5074; --hades-red:#4facfe; }
+html.hades-theme-odysseus-ume { --hades-bg:#2b1b2e; --hades-panel:#1e1420; --hades-cyan:#f5c2e7; --hades-blue:#6c4675; --hades-red:#f5a0c0; }
+html.hades-theme-odysseus-copper { --hades-bg:#1c1410; --hades-panel:#140f0a; --hades-cyan:#e8c39e; --hades-blue:#7a5533; --hades-red:#d4764e; }
+html.hades-theme-odysseus-terminal { --hades-bg:#000; --hades-panel:#0a0a0a; --hades-cyan:#00ff41; --hades-blue:#003b00; --hades-red:#00ff41; }
+html.hades-theme-odysseus-organs { --hades-bg:#0a0406; --hades-panel:#15080a; --hades-cyan:#efe1c8; --hades-blue:#3a1519; --hades-red:#c83240; }
+html.hades-theme-odysseus-lavender { --hades-bg:#f3eef8; --hades-panel:#faf7ff; --hades-cyan:#3d3551; --hades-blue:#cec3de; --hades-red:#9b6dcc; }
+html.hades-theme-odysseus-gpt { --hades-bg:#212121; --hades-panel:#171717; --hades-cyan:#ececec; --hades-blue:#424242; --hades-red:#949494; }
+html.hades-theme-odysseus-claude { --hades-bg:#262624; --hades-panel:#30302e; --hades-cyan:#f5f4f0; --hades-blue:#4a4a47; --hades-red:#c6613f; }
+html.hades-theme-odysseus-cute { --hades-bg:#fff0f5; --hades-panel:#fff8fa; --hades-cyan:#d4608a; --hades-blue:#f0c0d0; --hades-red:#ff6b9d; }
+html[class*="hades-theme-"] { --red:var(--hades-red) !important; --color-red-500:var(--hades-red) !important; --color-red-600:var(--hades-red) !important; }
+
+/* Effects are canvas-only, matching the original Odysseus implementations. */
+html[class*="hades-effect-"] main { background: transparent !important; }
+html[class*="hades-effect-"] main > div { background: transparent !important; }
+/* The prompt editor and its enclosing bubble are one surface. */
+html[class*="hades-effect-"] .hades-composer-surface { background: transparent !important; }
+html[class*="hades-theme-"] .hades-composer-surface,
+html[class*="hades-theme-"] .hades-composer-surface > *,
+html[class*="hades-theme-"] .hades-composer-surface .px-2,
+html[class*="hades-theme-"] .hades-composer-surface .input-prose,
+html[class*="hades-theme-"] .hades-composer-surface .scrollbar-hidden,
+html[class*="hades-theme-"] .hades-composer-surface [contenteditable="true"] {
+  background: var(--hades-composer-surface) !important;
+}
+html[class*="hades-theme-"] .hades-composer-surface [contenteditable="true"] {
+  color: var(--hades-cyan) !important;
+}
+
+/* Capability handoff: model selection remains native; this is only a small
+ * status surface beside the composer so the owner knows when tools disappear. */
+#hades-model-capability-notice {
+  display: flex; align-items: flex-start; gap: .5rem; max-width: 48rem;
+  margin: 0 auto .5rem; padding: .5rem .75rem; border-radius: .75rem;
+  color: var(--color-gray-600, #64748b); background: color-mix(in srgb, var(--color-gray-100, #f1f5f9) 76%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-gray-400, #94a3b8) 35%, transparent);
+  font-size: .75rem; line-height: 1.35;
+}
+#hades-model-capability-notice strong { color: var(--color-gray-700, #334155); font-weight: 600; }
+html.dark #hades-model-capability-notice, html[class*="hades-theme-"] #hades-model-capability-notice {
+  color: color-mix(in srgb, var(--hades-cyan) 72%, white);
+  background: color-mix(in srgb, var(--hades-panel) 78%, transparent);
+  border-color: color-mix(in srgb, var(--hades-cyan) 28%, transparent);
+}
+html.dark #hades-model-capability-notice strong, html[class*="hades-theme-"] #hades-model-capability-notice strong { color: var(--hades-cyan); }
+@media (max-width: 640px) { #hades-model-capability-notice { margin-left: .75rem; margin-right: .75rem; } }

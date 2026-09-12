@@ -1,0 +1,13 @@
+# Copy to the Hermes profile's config.yaml after the private HADES repository
+# and profile location are established. This file contains no credentials.
+# Hermes documents local Ollama as a custom OpenAI-compatible endpoint.
+model:
+  default: qwen3:14b
+  provider: custom
+  base_url: http://ollama-host:11434/v1
+  # Tune this to the selected model and deployment capacity.
+  context_length: 65536
+agent:
+  # Qwen supports tools but benefits from explicit call-vs-description guidance.
+  tool_use_enforcement:
+    - qwen

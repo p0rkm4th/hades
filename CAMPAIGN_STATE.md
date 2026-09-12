@@ -1,0 +1,66 @@
+# HADES Campaign State
+
+This public-safe checkpoint records project direction, not deployment state.
+Private runtime details, credentials, accounts, hostnames, addresses, chat
+history, and owner data belong in the deployment environment and are never
+recorded here.
+
+## CURRENT OBJECTIVE
+
+Build an owner-usable HADES composition from mature upstream systems while
+preserving source-of-truth boundaries and least privilege.
+
+## COMPLETED MILESTONES
+
+- Established an independent HADES repository and composition doctrine.
+- Evaluated Hermes, Open WebUI, Hindsight, Grocy, Agent Zero, and read-only
+  homelab/finance integration surfaces.
+- Added Open WebUI theme/effect extension assets without creating a frontend
+  fork or a HADES-native agent core.
+- Documented adaptive model capability behavior: tool-capable models may use
+  HADES integrations; completion-only models must be clearly identified and
+  must not receive tool payloads.
+
+## OWNER-VERIFIED WORKFLOWS
+
+Private deployment acceptance is maintained outside this public repository.
+The public acceptance file contains only workflow definitions and evidence
+requirements.
+
+## CURRENT DEPLOYED COMPONENTS / VERSIONS
+
+Deployment-specific versions, image digests, endpoints, and model choices are
+intentionally maintained in private operations state.
+
+## BLOCKERS
+
+- Household and operator integrations require separately authorized endpoints,
+  credentials, and bounded permissions.
+- Read-only homelab and finance integrations require explicit owner approval
+  and freshness/provenance evidence.
+
+## PENDING OWNER GATES
+
+- Authorize and provision each external integration independently.
+- Capture owner-UI plus canonical-system verification in private acceptance
+  records before enabling writes.
+
+## ARCHITECTURAL DISCOVERIES
+
+- Existing mature systems remain preferred over new HADES subsystems.
+- Hindsight supplies context, not canonical household, finance, or homelab
+  state.
+- Agent Zero is a bounded subordinate operator, not a second HADES brain.
+- Ambiguous data-bearing artifacts must be preserved until their ownership is
+  known.
+
+## OPEN DEFECTS
+
+Deployment-specific defects are intentionally excluded from the public
+checkpoint; they belong in the private operations record.
+
+## NEXT ACTION
+
+For a deployment, copy the examples, fill private configuration values, and
+run the owner workflow acceptance loop against the real interface and each
+authoritative backend.

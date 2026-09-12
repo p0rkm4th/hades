@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+secrets/
+data/
+volumes/
+*.sqlite
+*.sqlite3
+*.db
+logs/
+.DS_Store
+.codex/
+.playwright/
+*.log
+*.pem
+*.key
+*.p12
