@@ -12,8 +12,11 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-Pending finance bakeoff checkpoint; repository HEAD will be recorded after the
-synthetic fixture and ADR checkpoint is committed.
+`2bc6f58794b8acdf06414b32466dc304cea8ab71` — synthetic finance bakeoff
+ checkpoint committed and pushed. Actual Budget is provisional SELECT WITH
+ CONDITIONS; its official API client authenticated against staging but could
+ not load the downloaded budget because the client migration set is behind the
+ staged server budget (`out-of-sync-migrations`).
 
 ## COMPLETED MILESTONES
 
@@ -117,6 +120,11 @@ intentionally maintained in private operations state.
 - Single-turn memory-plus-Grocy composition is now narrowed to the relevant
   read tools and verified through the owner UI; unrelated household tools stay
   out of that mixed request.
+- The Actual Budget API compatibility gate is open: the published
+  `@actual-app/api` client can authenticate and enumerate synthetic budgets, but
+  loading one fails with `out-of-sync-migrations` against the tested server
+  image. Do not promote Actual or connect real finance data until matching
+  client/server revisions or a safer supported read path are proven.
 
 ## HERMES OVERLAY STATUS
 
@@ -158,6 +166,10 @@ The synthetic finance bakeoff is SELECT WITH CONDITIONS for Actual Budget,
 with Firefly III as fallback and Finlynq/Ledgr on watchlist. Evidence and the
 remaining synthetic HADES adapter conditions are in
 `docs/adr/finance-platform.md`.
+
+The next finance action is to resolve the Actual client/server migration
+compatibility in disposable staging, then rerun synthetic import, read, reload,
+restart, and restore acceptance before any HADES adapter is added.
 
 Shared LDAP identity is staged in `docs/shared-identity.md` but intentionally
 deferred until the multi-user roadmap milestone is complete.

@@ -31,10 +31,12 @@ and corrections. It is not owner data.
 
 ## Runtime findings
 
-- Finlynq accepted Batch A as a visible 12-row manual-review import. Repeating
-  Batch A skipped all 12 rows. Batch B correctly identified four overlaps but
-  also skipped the intentional nearby Copper Diner transaction, yielding a
-  likely false-positive deduplication. Its interface exposes a two-gate
+- Finlynq accepted Batch A as a visible 12-row manual-review import. On a
+  repeated import, the UI reported nine duplicate Checking rows skipped while
+  the three rows belonging to other accounts were routed to those accounts.
+  Batch B reported five duplicates out of seven rows: four fixture overlaps
+  plus the intentional nearby Copper Diner transaction, yielding a likely
+  false-positive deduplication. Its interface exposes a two-gate
   staging/reconciliation workflow.
 - Finlynq's first-party MCP is broad and includes writes; its documented
   bearer API key is unscoped. A future HADES adapter would need a technically
@@ -48,7 +50,11 @@ and corrections. It is not owner data.
 - Actual is the smallest and most local-first candidate, but its official
   programmatic access is the `@actual-app/api` Node client rather than an HTTP
   REST API. The HADES read-only surface therefore needs a small adapter and
-  must not expose the full client as a generic mutation tool.
+  must not expose the full client as a generic mutation tool. A staging probe
+  using the published 26.9.0 client authenticated and enumerated budgets, but
+  loading a downloaded synthetic budget failed with `out-of-sync-migrations`:
+  the staged server budget contains migration IDs absent from the client
+  bundle. This is an open client/server compatibility gate.
 
 ## Backup / restore
 
@@ -81,8 +87,9 @@ provider linking, reconciliation writes, or money movement.
 
 ## Conditions before promotion
 
-1. Import the same fixture through an Actual-compatible path, including repeat
-   import and transfer semantics.
+1. Resolve the Actual client/server migration mismatch, then import the same
+   fixture through an Actual-compatible path, including repeat import and
+   transfer semantics.
 2. Implement or configure a small read-only Hermes adapter over the official
    Actual API, with failure and stale-state responses.
 3. Prove the read path through the HADES owner UI against synthetic canonical
