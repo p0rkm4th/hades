@@ -13,6 +13,8 @@ supported integration is unavailable.
 
 - `webui/`: Open WebUI extension assets with Odysseus-inspired themes,
   animated effects, and model capability messaging.
+- `searxng/`: public-safe SearXNG seed configuration for the local web-search
+  provider.
 - `hermes/`: non-secret configuration examples for a Hermes gateway.
 - `docs/`: integration, security, and source-of-truth decisions.
 - `acceptance/`: workflow evidence requirements and status conventions.
