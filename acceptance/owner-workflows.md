@@ -132,16 +132,15 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Memory + household composition
 
-- **Current status:** PARTIAL
+- **Current status:** PASS
 - **Authoritative systems:** Hindsight for the remembered label; Grocy for live
   recipe and stock state
 - **Verified slice:** a synthetic recipe-fixture fact was retained through
   HADES, recalled in a later turn, and combined with live Grocy fulfillment;
   HADES reported the recipe as makeable with no missing products.
-- **Remaining evidence:** browser-DOM/new-session acceptance and a correction
-  turn that proves the remembered label can change without overriding live
-  Grocy state. The correction branch is now API-verified; browser-DOM evidence
-  remains open. A fresh mobile chat now verifies the single-turn composition
-  path: Hindsight recalled the synthetic recipe label, Grocy checked live
-  stock and recipe fulfillment in the same turn, and HADES rendered the
-  recipe as makeable. The result survived reload after the canonical checks.
+- **Evidence:** a fresh mobile chat verifies the single-turn composition path:
+  Hindsight recalled the synthetic recipe label, Grocy checked live stock and
+  recipe fulfillment in the same turn, and HADES rendered the recipe as
+  makeable. A separate fresh mobile correction query returned the corrected
+  label rather than the stale paraphrase, without changing live Grocy state;
+  the result survived reload after the canonical checks.

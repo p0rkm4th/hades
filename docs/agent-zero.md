@@ -22,8 +22,9 @@ bridge for the documented external API. It exposes one bounded text task,
 enforces a 2,000-character limit and timeout, and returns upstream failures
 without claiming success. The local API/MCP path has been exercised. A fresh
 synthetic mobile HADES session also rendered a bounded Agent Zero result in
-the assistant DOM after the private tool completed; persistent delegated
-context remains unaccepted.
+the assistant DOM after the private tool completed. This closes the founding
+bounded-delegation milestone; persistent delegated context and wider operator
+tasks remain future work.
 
 This integration is intentionally not registered as an Open WebUI-native tool
 or exposed as a separate A2A assistant. Open WebUI remains the owner-facing

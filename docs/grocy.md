@@ -22,8 +22,9 @@ canonical API. A fresh synthetic mobile browser session also verified a
 read-only stock question through the normal HADES chat surface and matched it
 against Grocy's canonical stock. A separate synthetic mobile browser mutation
 also produced exactly one canonical unfinished shopping-list row, and the
-chat result remained visible after reload. Broader pantry coverage remains
-open.
+chat result remained visible after reload. This closes the founding Grocy
+milestone; additional pantry edge cases and local-model wording remain future
+hardening.
 
 The same synthetic mobile session also asked whether the two-unit test recipe
 was makeable. HADES rendered the available result, while Grocy's canonical

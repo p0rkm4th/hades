@@ -32,14 +32,15 @@ requirements.
 Deployment-specific versions, image digests, endpoints, and model choices are
 intentionally maintained in private operations state.
 
-## LOCAL COMPONENTS PROVISIONED BUT NOT OWNER-ACCEPTED
+## CLOSED FOUNDING INTEGRATIONS / FUTURE HARDENING
 
 - Agent Zero is deployed privately with a dedicated volume and pinned image;
   its standalone UI/model smoke path passes. A one-tool private MCP adapter is
   now connected, correctly surfaces upstream failure, and has returned a clean
   bounded success through the HADES owner API. A fresh synthetic mobile HADES
   chat rendered the bounded Agent Zero result in the assistant DOM after tool
-  completion. Persistent delegated context remains open.
+  completion. This closes the founding bounded-delegation milestone;
+  persistent delegated context and broader operator tasks remain future work.
 - Grocy is deployed privately with a dedicated persistent volume and pinned
   image; its HTTP path passes. The HADES API owner path now successfully calls
   the canonical stock and shopping-list tools against synthetic data. Add,
@@ -49,7 +50,8 @@ intentionally maintained in private operations state.
   session rendered a read-only stock answer through normal HADES chat and it
   matched Grocy's canonical stock. A fresh synthetic mobile mutation added milk
   through HADES; Grocy showed one unfinished row at quantity two, and the chat
-  result survived reload. Broader household acceptance remains open.
+  result survived reload. This closes the founding Grocy milestone; additional
+  pantry edge cases and local-model wording remain future hardening.
   A context-loss defect was found when “remove it” was treated as a generic
   task-list request; the deployed overlay now carries recent conversation
   context into Grocy intent detection. The same follow-up removed the item,
@@ -77,7 +79,10 @@ intentionally maintained in private operations state.
   the single-turn browser path: Hindsight recalled the remembered label and
   Grocy checked live stock and fulfillment in the same turn. A correction turn
   changed the remembered label while the canonical Grocy recipe remained
-  unchanged and makeable; the composition result survived reload.
+  unchanged and makeable; a fresh mobile correction query also returned the
+  corrected label rather than the stale paraphrase. The composition result
+  survived reload. This closes the founding memory-plus-household composition
+  milestone.
 
 ## REAL OWNER GATES
 
