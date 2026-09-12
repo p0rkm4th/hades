@@ -9,6 +9,11 @@ model:
   context_length: 65536
   # Bound a single local-model response so stalled tool turns recover promptly.
   max_tokens: 1024
+providers:
+  custom:
+    # Prevent a stalled local-model request from holding the owner UI forever.
+    request_timeout_seconds: 60
+    stale_timeout_seconds: 60
 agent:
   # Qwen supports tools but benefits from explicit call-vs-description guidance.
   tool_use_enforcement:
