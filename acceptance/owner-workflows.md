@@ -52,8 +52,9 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   milk?”) now routed through the adaptive Qwen path, invoked
   `mcp_grocy_stock_overview_tool`, and returned two synthetic milk units;
   Grocy’s canonical stock endpoint independently matched that quantity.
-  Browser-DOM acceptance remains pending because browser automation is not
-  installed on the dogfood host.
+  Browser automation now reaches the authenticated shell on localhost and
+  Tailscale; authenticated workflow evidence remains pending until an owner
+  session is supplied.
   The earlier empty-state turn had Grocy `/api/stock` independently confirm
   zero rows. A synthetic product
   was added through HADES, removed through a follow-up, and re-added through a

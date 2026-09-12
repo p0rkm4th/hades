@@ -120,3 +120,8 @@ environment, retention, and webhook authorization remain owner-gated.
 
 Shared LDAP identity is staged in `docs/shared-identity.md` but intentionally
 deferred until the multi-user roadmap milestone is complete.
+
+Browser automation is now provisioned in an isolated temporary environment
+and reaches the HADES login shell at both local and Tailscale URLs in desktop
+and mobile viewports. Authenticated owner-workflow evidence still requires an
+owner-controlled session; no credentials were stored by the dogfood run.
