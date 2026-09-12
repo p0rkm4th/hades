@@ -63,8 +63,9 @@ intentionally maintained in private operations state.
 - A synthetic recipe-fixture fact was retained and recalled through HADES, then
   combined in one owner turn with live Grocy fulfillment. Hindsight supplied
   the remembered label; Grocy supplied current recipe/stock truth. This is
-  partial acceptance until browser-DOM, new-session, and correction evidence
-  are captured.
+  partial acceptance until browser-DOM/new-session evidence is captured. A
+  correction turn changed the remembered label while the canonical Grocy
+  recipe remained unchanged and makeable.
 
 ## REAL OWNER GATES
 

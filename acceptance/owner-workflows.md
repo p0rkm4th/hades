@@ -94,4 +94,5 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   HADES reported the recipe as makeable with no missing products.
 - **Remaining evidence:** browser-DOM/new-session acceptance and a correction
   turn that proves the remembered label can change without overriding live
-  Grocy state.
+  Grocy state. The correction branch is now API-verified; browser-DOM evidence
+  remains open.
