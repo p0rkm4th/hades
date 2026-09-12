@@ -183,7 +183,9 @@
   }
   function updateToolNotice() {
     const name = selectedModelName();
-    const noTools = /dolphin\s+mistral/i.test(name);
+    const dolphin = /dolphin\s+mistral/i.test(name);
+    const qwenSmall = /qwen3:8b/i.test(name);
+    const noTools = dolphin || qwenSmall;
     const composer = document.querySelector('[contenteditable="true"]')?.closest('.hades-composer-surface') ||
       document.querySelector('[contenteditable="true"]')?.parentElement?.parentElement?.parentElement;
     if (!composer) return;
@@ -197,7 +199,9 @@
     }
     if (!name || !noTools) { notice.hidden = true; notice.textContent = ''; return; }
     notice.hidden = false;
-    notice.innerHTML = '<span aria-hidden="true">ⓘ</span><span><strong>Dolphin Mistral</strong> is a fast local model without tool access. Switch to <strong>Hermes Agent</strong> when you need HADES memory, web search, or actions.</span>';
+    const modelLabel = dolphin ? 'Dolphin Mistral' : 'Qwen3 8B';
+    const capability = dolphin ? 'does not support tools' : 'has limited tool reliability';
+    notice.innerHTML = '<span aria-hidden="true">ⓘ</span><span><strong>' + modelLabel + '</strong> is a fast local model that ' + capability + '. Switch to <strong>Hermes Agent</strong> when you need HADES memory, web search, or actions.</span>';
   }
   function install() {
     const select = document.querySelector('select[aria-label="Theme"]');
