@@ -205,6 +205,8 @@ try:
             sum(1 for t in extra if t.get("function", {}).get("name", "").startswith("mcp_grocy_")),
         )
 
+    _AIAgent.__init__ = _hades_agent_init
+
     _hades_original_run_conversation = _AIAgent.run_conversation
 
     def _hades_run_conversation(self, user_message, *args, **kwargs):
