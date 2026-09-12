@@ -10,6 +10,10 @@ recorded here.
 Build an owner-usable HADES composition from mature upstream systems while
 preserving source-of-truth boundaries and least privilege.
 
+## CURRENT HEAD
+
+`20fa25c` — overlay inventory and public CI tripwire.
+
 ## COMPLETED MILESTONES
 
 - Established an independent HADES repository and composition doctrine.
@@ -143,6 +147,11 @@ Uptime Kuma access and verify it through the HADES owner path. Credential-
 independent preparation is documented in `docs/homelab-readonly.md`. Finance
 preparation is complete in `docs/finance-readonly.md`; provider, account,
 environment, retention, and webhook authorization remain owner-gated.
+
+Hermes production remains pinned while an isolated external-contract staging
+matrix is unavailable. The next non-gated engineering action is a disposable
+staging deployment with synthetic domain services, followed by owner-path
+contract verification and rollback rehearsal.
 
 Shared LDAP identity is staged in `docs/shared-identity.md` but intentionally
 deferred until the multi-user roadmap milestone is complete.
