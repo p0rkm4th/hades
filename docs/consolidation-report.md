@@ -20,12 +20,14 @@ runtime remains pinned and was not upgraded during this campaign.
 The current stable tagged upstream is Hermes Agent v0.21.2 (v2026.9.11),
 confirmed from the upstream release listing. A clean isolated checkout passed
 390 focused A2A, Hindsight, API-server, and gateway tests, and a normal
-Open-WebUI conversation passed against a clean upstream gateway. A synthetic
-MCP probe was discoverable in the CLI inventory but did not execute in the
-API-server owner turn; the model invented a result, so that tool path remains
-unaccepted. This is strong upstream evidence, not permission to replace the
-known-good production runtime; a full synthetic owner-contract matrix and
-rollback rehearsal remain before migration.
+Open-WebUI conversation passed against a clean upstream gateway. The clean
+checkout initially lacked the declared optional MCP extra; after installing
+the exact upstream MCP dependencies, a deterministic synthetic provider drove
+tool search, MCP invocation, and post-tool continuation, with the MCP process
+and Hermes agreeing on the canonical readiness marker. This is strong
+isolated-contract evidence, not permission to replace the known-good
+production runtime; a full synthetic owner-contract matrix and rollback
+rehearsal remain before migration.
 
 The 492-line HADES overlay is retained for now. Its behaviors are narrowly
 classified in `docs/hermes-overlay-inventory.md`: model/domain policy,

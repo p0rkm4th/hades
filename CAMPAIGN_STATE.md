@@ -148,13 +148,14 @@ See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 
 ## NEXT ACTION
 
-Hermes production remains pinned. Clean upstream v0.21.2 normal conversation
-and the focused upstream test set are verified, but the isolated API-server
-MCP probe was not executed and the model fabricated a marker; no tool-path
-upgrade evidence exists. The next non-gated action is to build the remaining
-synthetic owner-contract matrix with explicit tool invocation/canonical
-verification, then classify the overlay and rehearse rollback before any
-production migration.
+Hermes production remains pinned. Clean upstream v0.21.2 normal conversation,
+focused upstream tests, and an isolated API-server MCP contract are verified.
+The MCP contract required the declared optional MCP extra; with it installed,
+a deterministic provider drove tool search → tool call, and a canonical marker
+from the synthetic MCP process survived post-tool continuation. The next
+non-gated action is to build the remaining synthetic owner-contract matrix,
+then classify the overlay and rehearse rollback before any production
+migration.
 
 Obtain explicit owner authorization for exact homelab endpoints and
 least-privilege credentials in parallel, then provision only read-only

@@ -22,10 +22,13 @@ the production Hermes service and profile were not modified.
 - Clean upstream API-server owner-contract smoke also passed for a normal
   Open WebUI conversation: the isolated model returned the exact requested
   marker through the temporary Open WebUI connection. A synthetic MCP probe
-  was registered and visible in the upstream CLI inventory, but the API-server
-  turn did not execute it; the model emitted an invented marker and the log
-  showed no MCP invocation. This is recorded as a failed tool-path proof, not
-  as success.
+  first exposed a missing optional dependency: the clean checkout had not
+  installed the declared `mcp` extra. After installing the exact upstream
+  `mcp==2.0.0`, `httpx2==2.7.0`, and `starlette==1.3.1` staging extra, the
+  server registered five tools. A deterministic synthetic provider then drove
+  `tool_search` → `tool_call`; the MCP process wrote `CLEAN-MCP-READY`, and
+  Hermes returned that same marker after post-tool continuation. No owner or
+  production data was used.
 
 These are upstream contract tests, not owner acceptance. No staging process
 was pointed at production Grocy, Hindsight, Agent Zero, or owner credentials.
@@ -35,7 +38,7 @@ was pointed at production Grocy, Hindsight, Agent Zero, or owner credentials.
 | HADES behavior | Initial disposition | Reason |
 |---|---|---|
 | Hindsight provider loading and async retain support | Re-test against upstream | The candidate has native Hindsight provider tests and a declared client dependency. |
-| API-server streaming/tool lifecycle | Partial; retain overlay | Normal Open WebUI streaming passed in clean staging, but the synthetic MCP owner turn did not invoke the registered probe and was correctly rejected as evidence. |
+| API-server streaming/tool lifecycle | PASS in isolated contract staging | Normal Open WebUI streaming passed; with the declared MCP extra installed, the synthetic provider exercised tool search, MCP invocation, and post-tool continuation with a canonical marker. |
 | Native Agent Zero A2A | Retain MCP bridge for now | Hermes `0.21.2` contains native A2A support and its focused suite passes, but the deployed Agent Zero A2A server is disabled. Enabling it would require a new authenticated exposure and owner-visible lifecycle contract. |
 | HADES model-intent routing | Retain for now | This is deployment policy for local models and domain tools, not generic Hermes functionality. |
 | HADES Grocy tool reconciliation | Retain for now | It compensates for the deployment's dynamic MCP discovery boundary and must be tested against the candidate before removal. |
@@ -44,8 +47,8 @@ was pointed at production Grocy, Hindsight, Agent Zero, or owner credentials.
 
 ## Decision
 
-Do not upgrade production yet. The clean normal-chat contract is proven, but
-the tool path still needs an isolated owner-contract matrix with synthetic or
-non-authoritative service endpoints. If that passes, prepare a rollback-safe
-migration and delete only compatibility behavior proven obsolete. If it fails,
-record the exact contract and keep production pinned.
+Do not upgrade production yet. The clean Hermes conversation and MCP contract
+now pass in isolated staging, but the full Hindsight, Grocy, SearXNG, Agent
+Zero, Open WebUI upgrade, and rollback matrix remains incomplete. Prepare a
+rollback-safe migration only after those contracts pass, then delete only
+compatibility behavior proven obsolete. Production remains pinned meanwhile.
