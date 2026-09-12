@@ -93,6 +93,10 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   after the overlay fix, the same follow-up invoked Grocy, removed the item,
   returned a visible assistant acknowledgement, and Grocy’s canonical list
   was empty after reload.
+  The same mobile session then asked whether the synthetic two-unit recipe was
+  makeable; HADES rendered the available result, and Grocy’s canonical recipe
+  and ingredient records independently showed a two-unit requirement against
+  two units in stock. Reload preserved the recipe result.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI

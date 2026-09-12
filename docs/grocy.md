@@ -25,6 +25,11 @@ also produced exactly one canonical unfinished shopping-list row, and the
 chat result remained visible after reload. Broader pantry coverage remains
 open.
 
+The same synthetic mobile session also asked whether the two-unit test recipe
+was makeable. HADES rendered the available result, while Grocy's canonical
+recipe, ingredient, and stock records showed the matching two-unit requirement;
+the result remained visible after reload.
+
 The compatibility overlay also preserves Grocy intent across conversational
 follow-ups: a natural “remove it” correction now routes to Grocy when the
 preceding turns establish the grocery domain. This was regression-tested in a

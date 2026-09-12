@@ -54,6 +54,9 @@ intentionally maintained in private operations state.
   task-list request; the deployed overlay now carries recent conversation
   context into Grocy intent detection. The same follow-up removed the item,
   survived reload, and left the canonical shopping list empty.
+  A mobile recipe-availability turn also rendered the makeable result; Grocy's
+  canonical recipe and stock records matched the two-unit requirement, and the
+  result survived reload.
   Repeated-add duplication was found, fixed in the
   active MCP deployment, and regression-tested as quantity folding. The
   bounded stock-intake preview plus explicitly confirmed apply path now also
