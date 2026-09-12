@@ -27,13 +27,15 @@ bounded-delegation milestone; persistent delegated context and wider operator
 tasks remain future work.
 
 This integration is intentionally not registered as an Open WebUI-native tool
-or exposed as a separate A2A assistant. The deployed Agent Zero instance
-reports its A2A server as disabled, and enabling it would introduce a new
-authenticated exposure and lifecycle contract. Hermes therefore retains the
-small bounded MCP bridge for the founding milestone. Open WebUI remains the
-owner-facing chat surface; Hermes owns the private MCP boundary and decides
-when a bounded Agent Zero delegation is appropriate. Native A2A remains a
-future evaluation path for persistent, project-scoped delegation.
+or exposed as a separate A2A assistant. In an isolated disposable Agent Zero
+instance, the native A2A server enabled successfully and returned a bounded
+JSON-RPC response. However, its current tokenized endpoint does not expose the
+agent-card path or wire shape expected by Hermes v0.21.2's native A2A client;
+the interoperability probe failed while the direct Agent Zero A2A request
+passed. Hermes therefore retains the smaller bounded MCP bridge for the
+founding milestone. Re-evaluate native A2A when both sides provide a matching
+card/transport contract and an authenticated lifecycle can be exposed without
+broadening Agent Zero authority.
 
 Upstream references:
 

@@ -31,7 +31,7 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Operator
 
-- **Current status:** PARTIAL
+- **Current status:** PASS + PERSISTENCE
 - **Authoritative system:** Agent Zero for one bounded delegated task
 - **Verified slice:** HADES owner API delegated a no-tool readiness task through
   the private MCP adapter and received the exact upstream response; a busy
@@ -45,10 +45,13 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   from the submitted prompt, and the Agent Zero container remained healthy.
 - **Evidence required:** bounded delegation, returned evidence, safe failure
   handling, and no unnecessary host access
+- **Founding milestone:** closed. Persistent delegated context, native A2A
+  interoperability, and wider operator tasks remain future hardening, not
+  prerequisites for the bounded delegation contract.
 
 ## Household
 
-- **Current status:** PARTIAL
+- **Current status:** PASS + PERSISTENCE
 - **Authoritative system:** Grocy
 - **Verified slice:** HADES API owner path narrowed a grocery/stock turn to
   the canonical Grocy MCP tools and returned the live empty-stock result;
@@ -107,6 +110,8 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
+- **Founding milestone:** closed. Remaining wording sensitivity and additional
+  pantry edge cases are future hardening.
 
 ## Homelab
 
@@ -121,9 +126,9 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Finance
 
-- **Current status:** SELECT WITH CONDITIONS (synthetic bakeoff); real finance
+- **Current status:** SELECTED (synthetic integration); real finance
   remains BLOCKED BY OWNER AUTHORIZATION
-- **Provisional authoritative system:** Actual Budget; Firefly III is the
+- **Authoritative system:** Actual Budget; Firefly III is the
   fallback. Finlynq and Ledgr remain watchlisted.
 - **Synthetic evidence:** four disposable candidates started; Finlynq owner UI
   accepted Batch A, reported nine duplicate Checking rows skipped on identical

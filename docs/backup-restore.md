@@ -35,11 +35,12 @@ location with access controls appropriate to the data they contain.
 
 ## Current recovery artifact policy
 
-The temporary test administrator recovery database backup remains private and is retained
-until the reset account has been independently used and the owner confirms it
-is no longer needed. The temporary plaintext recovery credential is not a
-runtime dependency and must be deleted after the owner has rotated or replaced
-it. Neither artifact belongs in Git.
+The temporary test administrator plaintext credential file and duplicate recovery/database
+copies were retired after authenticated admin use, synthetic non-admin
+dogfood, database health, and restart checks passed. One protected private
+database backup remains pending owner password rotation; it is not a runtime
+dependency and is not in Git. Delete that final backup after the owner confirms
+the temporary password has been replaced.
 
 ## Missing automation
 

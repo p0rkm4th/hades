@@ -12,7 +12,7 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`c3dc14b` — synthetic finance owner acceptance committed and pushed. Actual
+`cafb7f1` — synthetic finance owner acceptance committed and pushed. Actual
 Budget is selected for the synthetic HADES integration; production remains
 explicitly gated on owner authorization for real finance data/providers.
 
@@ -118,13 +118,11 @@ intentionally maintained in private operations state.
 - Single-turn memory-plus-Grocy composition is now narrowed to the relevant
   read tools and verified through the owner UI; unrelated household tools stay
   out of that mixed request.
-- The Actual Budget API compatibility gate is open: the published
-  `@actual-app/api` client can authenticate and enumerate synthetic budgets, but
-  loading one fails with `out-of-sync-migrations` against the tested server
-  image. Do not promote Actual or connect real finance data until matching
-  client/server revisions or a safer supported read path are proven. A same-day
-  nightly client did load/sync/reload the budget in disposable staging; it is
-  evidence for the fix direction, not a production pin.
+- The Actual API client/server compatibility gate is resolved for the selected
+  pinned 26.9.0 pair. The earlier `out-of-sync-migrations` result remains
+  historical evidence for why matching pins are required; the stable pair
+  passed import, repeat reconciliation, reload, transfer linking, and the
+  constrained owner read path. Real finance remains owner-gated.
 
 ## HERMES OVERLAY STATUS
 

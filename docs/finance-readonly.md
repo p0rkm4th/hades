@@ -2,9 +2,9 @@
 
 This document is the production boundary. HADES has no real finance
 credentials, linked provider accounts, or finance runtime integration. Actual
-Budget is the provisional canonical platform, with the small read-only MCP
-adapter in `integrations/actual-finance-readonly/` reserved for isolated
-synthetic staging until owner authorization is explicit.
+Budget is the selected canonical platform for synthetic HADES integration, with
+the small read-only MCP adapter in `integrations/actual-finance-readonly/`
+reserved for isolated staging until owner authorization is explicit.
 
 ## Boundary and authority
 

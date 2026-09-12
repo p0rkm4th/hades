@@ -13,6 +13,8 @@ the production Hermes service and profile were not modified.
 
 - Upstream CLI reports Hermes Agent `0.21.2` on Python 3.11.
 - Upstream gateway help and key modules compile successfully.
+- Focused clean-upstream contract run: **390 passed**, 18 deselected, covering
+  A2A, Hindsight, API-server, and gateway behavior.
 - Native A2A schema, plugin, gating, and reason-roundtrip tests: **117 passed**.
 - Hindsight provider, API-server toolset, and normalization tests: **97
   passed** after installing the declared `hindsight-client==0.6.1` staging
