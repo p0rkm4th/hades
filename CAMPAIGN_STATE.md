@@ -50,6 +50,10 @@ intentionally maintained in private operations state.
   matched Grocy's canonical stock. A fresh synthetic mobile mutation added milk
   through HADES; Grocy showed one unfinished row at quantity two, and the chat
   result survived reload. Broader household acceptance remains open.
+  A context-loss defect was found when “remove it” was treated as a generic
+  task-list request; the deployed overlay now carries recent conversation
+  context into Grocy intent detection. The same follow-up removed the item,
+  survived reload, and left the canonical shopping list empty.
   Repeated-add duplication was found, fixed in the
   active MCP deployment, and regression-tested as quantity folding. The
   bounded stock-intake preview plus explicitly confirmed apply path now also

@@ -88,6 +88,11 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   the synthetic milk item through normal HADES chat; Grocy’s canonical
   shopping-list endpoint showed exactly one unfinished row with quantity 2,
   and reopening the chat after reload preserved the assistant result.
+  The follow-up “Actually remove it from the list.” initially exposed lost
+  domain context and was incorrectly treated as a generic task-list request;
+  after the overlay fix, the same follow-up invoked Grocy, removed the item,
+  returned a visible assistant acknowledgement, and Grocy’s canonical list
+  was empty after reload.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI

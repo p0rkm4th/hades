@@ -25,6 +25,11 @@ also produced exactly one canonical unfinished shopping-list row, and the
 chat result remained visible after reload. Broader pantry coverage remains
 open.
 
+The compatibility overlay also preserves Grocy intent across conversational
+follow-ups: a natural “remove it” correction now routes to Grocy when the
+preceding turns establish the grocery domain. This was regression-tested in a
+synthetic mobile chat and verified against the canonical shopping-list API.
+
 Grocy is intentionally not shown as an Open WebUI-native integration. Its MCP
 tools are private to Hermes, which keeps Grocy as the canonical household
 system while allowing the owner to use ordinary HADES chat requests.

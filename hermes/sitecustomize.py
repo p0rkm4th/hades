@@ -213,6 +213,22 @@ try:
 
     def _hades_run_conversation(self, user_message, *args, **kwargs):
         original_model = getattr(self, "model", "")
+        # Open WebUI sends follow-ups as separate turns.  Domain intent must
+        # include the active conversation, otherwise a natural correction such
+        # as "remove it" loses the Grocy route and can be misread as an
+        # unrelated task-list request by a small local model.
+        _hades_history = kwargs.get("conversation_history")
+        if not isinstance(_hades_history, list):
+            _hades_history = next(
+                (value for value in args if isinstance(value, list)), []
+            )
+        _hades_context_parts = [str(user_message or "")]
+        for _hades_message in _hades_history[-8:]:
+            if isinstance(_hades_message, dict):
+                _hades_content = _hades_message.get("content", "")
+                if isinstance(_hades_content, str):
+                    _hades_context_parts.append(_hades_content)
+        _hades_intent_text = "\n".join(_hades_context_parts)[-12000:]
         memory_intent = re.search(
             r"\b(?:remember|recall|forget|what did i tell|do you remember|memory)\b",
             str(user_message or ""),
@@ -225,12 +241,12 @@ try:
         grocy_intent = re.search(
             r"\b(?:grocery|groceries|shopping list|recipe|food|pantry|inventory|"
             r"what(?:'s| is) in stock|do we have)\b",
-            str(user_message or ""),
+            _hades_intent_text,
             re.IGNORECASE,
         )
         agent_zero_intent = re.search(
             r"\b(?:agent zero|agent0|bounded operator|delegate|delegation)\b",
-            str(user_message or ""),
+            _hades_intent_text,
             re.IGNORECASE,
         )
         if grocy_intent and isinstance(original_tools, list):
