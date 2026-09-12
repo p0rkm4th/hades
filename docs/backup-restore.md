@@ -15,6 +15,26 @@ location with access controls appropriate to the data they contain.
 | SearXNG | Configuration and optional cache | SearXNG for search configuration/cache only | Preserve configuration; cache is reconstructable and need not be treated as authoritative | Recreate cache if absent; verify JSON search and provider wiring. |
 | Hermes | Profile configuration, sessions, skills, and service credentials | Hermes for orchestration/session state | Back up private profile data and secrets separately from public HADES source | Restore secrets with correct permissions, then start Hermes and verify the Open WebUI API contract. |
 
+## Live deployment mount inventory
+
+This inventory was captured from the running production containers on
+2026-09-12. Host source paths are intentionally omitted from this public
+document; the private operator record should retain the exact host locations.
+
+| Container | Persistent object | Container destination | Writable |
+|---|---|---|---|
+| `hades-open-webui` | `hades-open-webui-v0111-data` application-data bind | `/app/backend/data` | yes |
+| `hades-open-webui` | HADES theme assets (bind-mounted individually) | `/app/backend/open_webui/static/hades-theme.css`, `hades-theme.js` | no |
+| `hades-hindsight` | `hades-hindsight-data` | `/home/hindsight/.pg0` | yes |
+| `hades-grocy` | `hades-grocy-data` | `/config` | yes |
+| `hades-agent-zero` | `hades-agent-zero-data` | `/a0/usr` | yes |
+| `hades-searxng` | `hades-searxng-data` plus cache volume | `/etc/searxng`, `/var/cache/searxng` | yes |
+| `hades-searxng` | tracked `searxng/settings.yml` bind | `/tmp/hades-settings.yml` | no |
+
+The runtime also has a private Hermes profile outside the containers. Its
+configuration, sessions, skills, and service credentials must be backed up
+separately from the container volumes and never copied into public CI.
+
 ## Operational requirements
 
 1. Identify the exact bind mounts and named volumes from the live deployment;
@@ -46,4 +66,6 @@ the temporary password has been replaced.
 
 No final backup job or installer is defined here yet. The next implementation
 step is a private, component-specific backup/restore drill with explicit
-retention and encryption settings, followed by an isolated restore test.
+retention and encryption settings, followed by an isolated restore test. The
+mount inventory is now runtime-backed; native database/export procedures and
+restore evidence remain outstanding.

@@ -29,3 +29,11 @@ jobs:
 
       - name: Validate shell scripts
         run: bash -n scripts/*.sh webui/entrypoint.sh
+
+      - name: Validate deployment compose files
+        run: |
+          export HADES_IDENTITY_SECRETS_DIR="$RUNNER_TEMP/hades-identity-secrets"
+          mkdir -p "$HADES_IDENTITY_SECRETS_DIR"
+          for compose_file in deploy/*.compose.yaml; do
+            docker compose -f "$compose_file" config --quiet
+          done
