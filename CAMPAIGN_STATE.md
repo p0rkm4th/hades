@@ -57,6 +57,8 @@ intentionally maintained in private operations state.
   Recipe add-missing also had a content-type defect; the private client now
   sends the required JSON body. Its shortage workflow was verified to merge
   into the existing shopping row without duplication.
+  A controlled Grocy plus Hermes restart preserved the recipe, stock, and
+  shopping-list fixture, and a fresh owner query recovered the canonical row.
 
 ## REAL OWNER GATES
 

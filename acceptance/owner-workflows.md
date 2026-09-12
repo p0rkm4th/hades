@@ -55,7 +55,9 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   restored to the two-unit fixture. With a one-unit shortage, recipe
   add-missing merged the required quantity into the existing shopping row
   without duplication; the fixture was restored to two stock units and one
-  shopping-list unit.
+  shopping-list unit. A controlled Grocy and Hermes restart preserved the
+  recipe, stock, and shopping row; a fresh HADES query recovered the item and
+  quantity.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
