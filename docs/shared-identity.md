@@ -10,6 +10,13 @@ The supported migration path is a private LDAP directory. The staged
 file-backed secrets, but does not alter the existing applications or expose an
 LDAP port to the LAN.
 
+## Roadmap status
+
+Implementation is deliberately deferred until HADES multi-user support is
+complete. Keep this directory staged and inactive; do not create accounts,
+attach application containers, or change login providers as part of the
+single-owner deployment.
+
 ## Migration order
 
 1. Run `scripts/prepare-shared-identity.sh` locally. It creates a private

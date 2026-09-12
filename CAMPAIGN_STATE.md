@@ -117,3 +117,6 @@ Uptime Kuma access and verify it through the HADES owner path. Credential-
 independent preparation is documented in `docs/homelab-readonly.md`. Finance
 preparation is complete in `docs/finance-readonly.md`; provider, account,
 environment, retention, and webhook authorization remain owner-gated.
+
+Shared LDAP identity is staged in `docs/shared-identity.md` but intentionally
+deferred until the multi-user roadmap milestone is complete.
