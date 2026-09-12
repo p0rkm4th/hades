@@ -193,7 +193,9 @@ try:
         extra = _get_tool_definitions(
             enabled_toolsets=["mcp-grocy"], quiet_mode=True
         )
-        existing = {t.get("function", {}).get("name") for t in tools}
+        existing = {
+            t.get("function", {}).get("name") for t in tools
+        }
         for tool in extra:
             name = tool.get("function", {}).get("name")
             if name and name not in existing:
