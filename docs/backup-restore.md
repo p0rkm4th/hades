@@ -109,18 +109,22 @@ This proves the basic quiesced-copy and application-start path for Grocy; it
 does not prove a production backup, encrypted retention, or recovery of owner
 state. Those remain private operational gates.
 
-An equivalent empty Open WebUI rehearsal completed the quiesced copy and
-SQLite integrity stages, but its restored container did not reach health within
-the bounded window because a fresh embedding model download was still in
-progress. The disposable instance was stopped and removed. Open WebUI restore
-acceptance therefore remains open until the staging environment has its
-required model artifacts preloaded.
+On the same date, an equivalent empty Open WebUI rehearsal completed the
+quiesced copy and SQLite integrity stages. A restored container reached the
+Open WebUI health endpoint after allowing its embedding artifact download to
+finish. The disposable instance and fixtures were stopped and removed.
+
+This proves the isolated Open WebUI application-start path, but not recovery of
+owner conversations, authentication, or matching static assets. Those remain
+private operational gates. The Hindsight image includes a bundled PostgreSQL
+server; its native backup tool is available inside the image, but no live
+Hindsight backup was created during this public-safe rehearsal.
 
 ## Missing automation
 
 No final backup job or installer is defined here yet. The next implementation
 step is a private, component-specific backup/restore drill with explicit
 retention and encryption settings, followed by an isolated restore test. The
-mount inventory, recovery order, and a synthetic Grocy restore path are now
-documented; native production database/export procedures and restore evidence
-remain outstanding for Open WebUI, Hindsight, Hermes, Agent Zero, and SearXNG.
+mount inventory, recovery order, and synthetic Grocy/Open WebUI restore paths
+are now documented; native production database/export procedures and restore
+evidence remain outstanding for Hindsight, Hermes, Agent Zero, and SearXNG.
