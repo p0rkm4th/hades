@@ -19,6 +19,9 @@ the production Hermes service and profile were not modified.
 - Hindsight provider, API-server toolset, and normalization tests: **97
   passed** after installing the declared `hindsight-client==0.6.1` staging
   dependency.
+- ACP adapter and protocol contract tests: **154 passed**, 2 warnings, after
+  installing the declared `agent-client-protocol==0.9.0` staging extra. The
+  dependency was not added to production.
 - Clean upstream API-server owner-contract smoke also passed for a normal
   Open WebUI conversation: the isolated model returned the exact requested
   marker through the temporary Open WebUI connection. A synthetic MCP probe
@@ -47,8 +50,9 @@ was pointed at production Grocy, Hindsight, Agent Zero, or owner credentials.
 
 ## Decision
 
-Do not upgrade production yet. The clean Hermes conversation and MCP contract
-now pass in isolated staging, but the full Hindsight, Grocy, SearXNG, Agent
-Zero, Open WebUI upgrade, and rollback matrix remains incomplete. Prepare a
-rollback-safe migration only after those contracts pass, then delete only
-compatibility behavior proven obsolete. Production remains pinned meanwhile.
+Do not upgrade production yet. The clean Hermes conversation, MCP contract,
+and ACP contract now pass in isolated staging, but the full Hindsight, Grocy,
+SearXNG, Agent Zero, Open WebUI upgrade, and rollback matrix remains
+incomplete. Prepare a rollback-safe migration only after those contracts pass,
+then delete only compatibility behavior proven obsolete. Production remains
+pinned meanwhile.
