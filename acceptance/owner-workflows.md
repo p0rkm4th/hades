@@ -35,6 +35,10 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Verified slice:** HADES owner API delegated a no-tool readiness task through
   the private MCP adapter and received the exact upstream response; a busy
   Agent Zero state was surfaced as an error and did not become a false success.
+  A fresh authenticated delegation after the container recovered narrowed the
+  API turn to the Agent Zero toolset, completed successfully, and returned the
+  expected bounded response; the earlier 404 was isolated to the in-progress
+  Agent Zero restart rather than accepted as success.
 - **Evidence required:** bounded delegation, returned evidence, safe failure
   handling, and no unnecessary host access
 
