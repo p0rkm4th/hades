@@ -245,19 +245,26 @@
         const value = event.target.selectedOptions[0]?.dataset.hadesTheme || '';
         if (value) {
           localThemeChanged = true;
-          event.stopImmediatePropagation();
           localStorage.setItem(themeKey, value);
           saveRemotePreference(remoteThemeKey, value);
-          document.documentElement.classList.remove('light');
-          document.documentElement.classList.add('dark');
-          applyTheme(value);
-          if (!localStorage.getItem(effectKey) || localStorage.getItem(effectKey) === 'none') {
-            const defaultEffect = defaultEffects[value] || 'none';
-            localStorage.setItem(effectKey, defaultEffect);
-            applyEffect(defaultEffect);
-            const effectSelect = document.querySelector('select[aria-label="Background effect"]');
-            if (effectSelect) effectSelect.value = defaultEffect;
-          }
+          const applySelectedTheme = () => {
+            document.documentElement.classList.remove('light');
+            document.documentElement.classList.add('dark');
+            applyTheme(value);
+            if (!localStorage.getItem(effectKey) || localStorage.getItem(effectKey) === 'none') {
+              const defaultEffect = defaultEffects[value] || 'none';
+              localStorage.setItem(effectKey, defaultEffect);
+              applyEffect(defaultEffect);
+              const effectSelect = document.querySelector('select[aria-label="Background effect"]');
+              if (effectSelect) effectSelect.value = defaultEffect;
+            }
+          };
+          // Let Open WebUI finish its native select update, then restore the
+          // HADES class if its built-in light/dark handler ran afterward.
+          requestAnimationFrame(() => {
+            applySelectedTheme();
+            requestAnimationFrame(applySelectedTheme);
+          });
         } else { localStorage.removeItem(themeKey); applyTheme(''); }
       }, true);
     }
