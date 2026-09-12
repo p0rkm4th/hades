@@ -160,7 +160,7 @@ try:
     # second HADES router; Hermes still owns the turn lifecycle and tools.
     _hades_original_resolve_turn = _hermes_cli.HermesCLI._resolve_turn_agent_config
     _HADES_TOOL_INTENT = re.compile(
-        r"\b(?:remember(?:ed|ing)?|recall|forget|what did i tell|do you remember|memory|"
+        r"\b(?:remember(?:ed|ing)?|recall|forget|did i tell|do you remember|memory|"
         r"weather|forecast|temperature|search|look up|latest|news|web|"
         r"grocery|groceries|shopping list|recipe|food|pantry|inventory|"
         r"what(?:'s| is) running|what(?:'s| is) down|homelab|server|proxmox|"
@@ -230,7 +230,7 @@ try:
                     _hades_context_parts.append(_hades_content)
         _hades_intent_text = "\n".join(_hades_context_parts)[-12000:]
         memory_intent = re.search(
-            r"\b(?:remember(?:ed|ing)?|recall|forget|what did i tell|do you remember|memory)\b",
+            r"\b(?:remember(?:ed|ing)?|recall|forget|did i tell|do you remember|memory)\b",
             str(user_message or ""),
             re.IGNORECASE,
         )
