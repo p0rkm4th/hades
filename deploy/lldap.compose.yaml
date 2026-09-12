@@ -1,0 +1,49 @@
+name: hades-identity
+
+# Shared identity is intentionally staged separately from the existing
+# applications. Do not start this file until identity.env has been created
+# outside Git with strong values for the *_FILE secrets.
+services:
+  lldap:
+    image: lldap/lldap:stable@sha256:90b849059c42ed8f92b95624ae71e38ca137a994736c68fb25dd167f2bbc9808
+    container_name: hades-lldap
+    restart: unless-stopped
+    environment:
+      UID: "1000"
+      GID: "1000"
+      TZ: America/Chicago
+      LLDAP_LDAP_BASE_DN: dc=hades,dc=local
+      LLDAP_LDAP_USER_DN: admin
+      LLDAP_LDAP_USER_EMAIL: admin@hades.local
+      LLDAP_JWT_SECRET_FILE: /run/secrets/lldap_jwt_secret
+      LLDAP_KEY_SEED_FILE: /run/secrets/lldap_key_seed
+      LLDAP_LDAP_USER_PASS_FILE: /run/secrets/lldap_admin_password
+    ports:
+      # Administration UI is local-only until an authenticated access path is
+      # deliberately exposed through the owner network.
+      - "127.0.0.1:17170:17170"
+    networks:
+      - hades-identity
+    volumes:
+      - hades-lldap-data:/data
+    secrets:
+      - lldap_jwt_secret
+      - lldap_key_seed
+      - lldap_admin_password
+
+networks:
+  hades-identity:
+    name: hades-identity-net
+    driver: bridge
+
+volumes:
+  hades-lldap-data:
+    name: hades-lldap-data
+
+secrets:
+  lldap_jwt_secret:
+    file: ${HADES_IDENTITY_SECRETS_DIR:?set HADES_IDENTITY_SECRETS_DIR}/jwt_secret
+  lldap_key_seed:
+    file: ${HADES_IDENTITY_SECRETS_DIR:?set HADES_IDENTITY_SECRETS_DIR}/key_seed
+  lldap_admin_password:
+    file: ${HADES_IDENTITY_SECRETS_DIR:?set HADES_IDENTITY_SECRETS_DIR}/admin_password
