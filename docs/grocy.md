@@ -33,6 +33,10 @@ the result remained visible after reload.
 An informal read-only shopping-list question also rendered an empty-list
 answer, matching Grocy's canonical empty collection.
 
+The browser dogfood also covered an informal/profane stock question about
+eggs. HADES correctly reported no eggs, matching Grocy's live stock response;
+the result persisted after reload.
+
 The compatibility overlay also preserves Grocy intent across conversational
 follow-ups: a natural “remove it” correction now routes to Grocy when the
 preceding turns establish the grocery domain. This was regression-tested in a
