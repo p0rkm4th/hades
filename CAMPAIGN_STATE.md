@@ -121,6 +121,15 @@ intentionally maintained in private operations state.
   explicit-memory tool narrowing, streaming handoff, and related weak-model
   compatibility behavior.
 - It is not a HADES runtime, planner, router framework, or new core.
+- Every retained behavior now has a stated upstream gap, evidence requirement,
+  and removal condition in `docs/hermes-overlay-inventory.md`.
+
+## PUBLIC CI STATUS
+
+- A minimal secret-free GitHub Actions tripwire compiles the public adapters,
+  runs the memory and public-history checks, and validates shell syntax.
+- It does not replace private owner-UI, canonical-domain, or runtime
+  acceptance.
 
 ## CAPABILITY LEDGER
 

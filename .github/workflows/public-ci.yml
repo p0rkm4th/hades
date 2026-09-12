@@ -1,0 +1,31 @@
+name: Public CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  public-safety-and-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile public Python adapters
+        run: python -m py_compile hermes/sitecustomize.py integrations/agent-zero-mcp/server.py
+
+      - name: Run secret-free regression checks
+        run: |
+          bash scripts/test-hades-memory-intent.sh
+          bash scripts/public-history-audit.sh
+
+      - name: Validate shell scripts
+        run: bash -n scripts/*.sh webui/entrypoint.sh
