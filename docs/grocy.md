@@ -15,9 +15,16 @@ The current local test image is pinned to:
 lscr.io/linuxserver/grocy@sha256:8449aff56e6b1f34d37affd969cec35ed56fa7daa175c75f923a015b82561d27
 ```
 
-Integration remains unproven until add/remove/purchase/consume and recipe
-shortage workflows are performed through HADES and verified against Grocy's
-canonical API after reload.
+The private test deployment has now verified add/remove/correction, purchase,
+consume, recipe fulfillment, recipe add-missing, duplicate prevention, and
+Grocy/Hermes restart persistence through the HADES owner API against Grocy's
+canonical API. Browser-DOM acceptance and broader pantry coverage remain open.
+
+The deployment applies narrow compatibility fixes for the selected maintained
+Grocy MCP package: duplicate shopping adds fold into an existing row, recipe
+fulfillment uses Grocy's stable missing-product count, recipe add-missing sends
+the required JSON body, and stock-consume is explicitly allowlisted. These are
+deployment-local overrides and contain no owner data.
 
 Upstream references:
 

@@ -45,24 +45,21 @@ Source: <https://github.com/grocy/grocy>
 
 ### MCP candidate
 
-The current leading candidate is [`rusty4444/grocy-mcp`](https://github.com/rusty4444/grocy-mcp),
-an MIT-licensed MCP server with explicit read and write tools for products,
-stock, shopping lists, consumption, inventory, and chores. Its repository is
-active and documents a read-only live test against Grocy 4.6.0. It remains
-uninstalled until a Grocy endpoint and narrowly scoped API key are authorized;
-the public demo must not be used for writes. Grocy's own OpenAPI description
-confirms API-key authentication through the `GROCY-API-KEY` header.
+The selected maintained Grocy MCP package is deployed privately against an
+isolated synthetic Grocy instance with a narrowly scoped API key. It exposes
+explicit read/write tools for products, stock, shopping lists, consumption,
+inventory, and recipes; HADES allowlists only the required owner workflows.
+Grocy's own OpenAPI description confirms API-key authentication through the
+`GROCY-API-KEY` header. Deployment-local compatibility overrides are documented
+in `docs/grocy.md` and are not owner-data or architecture dependencies.
 
 ## Agent Zero
 
-Agent Zero remains deferred until the Hermes/Open WebUI owner path is proven.
-The official project documents a Dockerized Linux desktop, MCP/A2A support, and
-an isolated persistent volume. The smallest compliant HADES deployment would
-be a separate loopback-only Agent Zero container with a dedicated project and
-no host-home mount, Docker socket, or shared unrestricted credentials. Hermes
-would delegate one bounded objective through a supported integration and relay
-evidence back to the owner. No Agent Zero process or credentials have been
-created.
+Agent Zero is now deployed as a separate loopback-only container with a
+dedicated persistent volume and no host-home mount, Docker socket, or shared
+unrestricted credentials. Hermes delegates through a one-tool bounded MCP
+adapter and relays evidence back to the owner; safe busy/upstream failure
+handling has also been exercised. A2A is not used for the Hermes bridge.
 
 Source: <https://github.com/agent0ai/agent-zero>
 
