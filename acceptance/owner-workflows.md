@@ -61,3 +61,14 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
+
+## Homelab
+
+- **Current status:** PREPARATION COMPLETE
+- **Authoritative systems:** Proxmox VE, NetBox, and Uptime Kuma, each for its
+  own domain
+- **Preparation:** read-only credential templates, minimum permission scope,
+  source/freshness requirements, failure behavior, and owner acceptance
+  prompts are documented in `docs/homelab-readonly.md`.
+- **Remaining gate:** exact endpoints and owner-approved credentials are not
+  present; no real homelab service has been contacted.

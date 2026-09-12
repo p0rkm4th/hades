@@ -104,6 +104,7 @@ See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 
 ## NEXT ACTION
 
-Wire the bounded Agent Zero deployment through a supported integration path and
-prove one success plus one safe failure through the HADES owner UI; then run
-synthetic Grocy workflows through HADES and verify canonical state after reload.
+Obtain explicit owner authorization for exact homelab endpoints and
+least-privilege credentials, then provision only read-only Proxmox, NetBox, or
+Uptime Kuma access and verify it through the HADES owner path. Credential-
+independent preparation is documented in `docs/homelab-readonly.md`.

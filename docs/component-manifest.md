@@ -11,7 +11,7 @@ runtime secrets and persistent volumes remain outside Git.
 | Agent Zero | bounded subordinate computer operator | isolated deployment with explicit objective/result boundary | select supported release; no shared unrestricted credentials |
 | Grocy | canonical pantry, groceries, consumption, inventory, recipes | maintained integration, then supported API or tiny adapter | select upstream release; Grocy remains source of truth |
 | Plaid / Finance MCP | financial account and transaction truth | read-only supported integration | owner authorization required; no finance write authority |
-| Proxmox / NetBox / Uptime Kuma | homelab and availability truth | future read-only integrations | deferred until founding slice is proven |
+| Proxmox / NetBox / Uptime Kuma | homelab and availability truth | read-only preparation documented in `docs/homelab-readonly.md`; runtime deferred | owner-approved endpoints and credentials required; no writes |
 | Home Assistant | physical smart-home state/control | future selected-entity integration | deferred; least privilege required |
 | n8n | deterministic workflows | future configuration | deferred until product-manager authorization |
 
