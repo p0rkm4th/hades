@@ -27,11 +27,16 @@ bounded-delegation milestone; persistent delegated context and wider operator
 tasks remain future work.
 
 This integration is intentionally not registered as an Open WebUI-native tool
-or exposed as a separate A2A assistant. Open WebUI remains the owner-facing
-chat surface; Hermes owns the private MCP boundary and decides when a bounded
-Agent Zero delegation is appropriate.
+or exposed as a separate A2A assistant. The deployed Agent Zero instance
+reports its A2A server as disabled, and enabling it would introduce a new
+authenticated exposure and lifecycle contract. Hermes therefore retains the
+small bounded MCP bridge for the founding milestone. Open WebUI remains the
+owner-facing chat surface; Hermes owns the private MCP boundary and decides
+when a bounded Agent Zero delegation is appropriate. Native A2A remains a
+future evaluation path for persistent, project-scoped delegation.
 
 Upstream references:
 
 - [Agent Zero installation guide](https://github.com/agent0ai/agent-zero/blob/main/docs/setup/installation.md)
 - [Agent Zero repository](https://github.com/agent0ai/agent-zero)
+- [Agent Zero A2A setup](https://github.com/agent0ai/agent-zero/blob/main/docs/guides/a2a-setup.md)
