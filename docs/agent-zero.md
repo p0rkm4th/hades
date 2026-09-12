@@ -17,9 +17,11 @@ agent0ai/agent-zero@sha256:680ab243d358b5fd41847f640c2eac1c59b83b154b22fc38004b8
 ```
 
 Model credentials and Agent Zero onboarding settings stay outside this
-repository. Hermes integration is not considered accepted until a harmless
-delegated task is exercised through the HADES owner UI and its result is
-verified independently.
+repository. `integrations/agent-zero-mcp/server.py` is the deliberately small
+bridge for the documented external API. It exposes one bounded text task,
+enforces a 2,000-character limit and timeout, and returns upstream failures
+without claiming success. The local API/MCP path has been exercised; full
+browser-DOM owner acceptance and failure regression remain open.
 
 Upstream references:
 
