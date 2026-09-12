@@ -20,6 +20,10 @@ consume, recipe fulfillment, recipe add-missing, duplicate prevention, and
 Grocy/Hermes restart persistence through the HADES owner API against Grocy's
 canonical API. Browser-DOM acceptance and broader pantry coverage remain open.
 
+Grocy is intentionally not shown as an Open WebUI-native integration. Its MCP
+tools are private to Hermes, which keeps Grocy as the canonical household
+system while allowing the owner to use ordinary HADES chat requests.
+
 The deployment applies narrow compatibility fixes for the selected maintained
 Grocy MCP package: duplicate shopping adds fold into an existing row, recipe
 fulfillment uses Grocy's stable missing-product count, recipe add-missing sends

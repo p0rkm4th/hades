@@ -23,6 +23,11 @@ enforces a 2,000-character limit and timeout, and returns upstream failures
 without claiming success. The local API/MCP path has been exercised; full
 browser-DOM owner acceptance and failure regression remain open.
 
+This integration is intentionally not registered as an Open WebUI-native tool
+or exposed as a separate A2A assistant. Open WebUI remains the owner-facing
+chat surface; Hermes owns the private MCP boundary and decides when a bounded
+Agent Zero delegation is appropriate.
+
 Upstream references:
 
 - [Agent Zero installation guide](https://github.com/agent0ai/agent-zero/blob/main/docs/setup/installation.md)
