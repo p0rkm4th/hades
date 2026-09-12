@@ -9,6 +9,8 @@ model:
   context_length: 65536
   # Bound a single local-model response so stalled tool turns recover promptly.
   max_tokens: 1024
+  # Keep local Ollama prompts responsive while retaining useful conversation context.
+  ollama_num_ctx: 16384
 providers:
   custom:
     # Prevent a stalled local-model request from holding the owner UI forever.
