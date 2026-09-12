@@ -12,11 +12,13 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`e32557a` — account-scoped theme preferences now override stale browser-wide
+`ffe6fdd` — account-scoped theme preferences now override stale browser-wide
 localStorage on refresh; the owner admin preference was reset from the stuck
 lavender preset to the neutral HADES default in the private runtime. Recovery
 order/evidence runbook and public path-audit correction remain committed and
-public-safe.
+public-safe. Native Open WebUI theme changes are now allowed to complete before
+the HADES class is reapplied, so selecting another preset is not pinned by the
+extension handler.
 Founding capabilities and
 current upstream/A2A decisions are reconciled; Actual remains selected for
 synthetic HADES integration and production finance is gated.
