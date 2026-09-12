@@ -54,6 +54,9 @@ intentionally maintained in private operations state.
   Recipe fulfillment had a version-field bug; the private adapter now uses
   Grocy's stable missing-product count. Both available and one-unit-short
   branches were verified, and the synthetic fixture was restored.
+  Recipe add-missing also had a content-type defect; the private client now
+  sends the required JSON body. Its shortage workflow was verified to merge
+  into the existing shopping row without duplication.
 
 ## REAL OWNER GATES
 

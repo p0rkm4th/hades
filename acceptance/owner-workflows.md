@@ -52,7 +52,10 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   workflow explicitly for the local model. A synthetic two-unit recipe passed
   both fulfillment branches: available stock reported ready, and after one
   consumption the same recipe reported one missing ingredient; stock was then
-  restored to the two-unit fixture.
+  restored to the two-unit fixture. With a one-unit shortage, recipe
+  add-missing merged the required quantity into the existing shopping row
+  without duplication; the fixture was restored to two stock units and one
+  shopping-list unit.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
