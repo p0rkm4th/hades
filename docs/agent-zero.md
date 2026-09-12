@@ -20,8 +20,10 @@ Model credentials and Agent Zero onboarding settings stay outside this
 repository. `integrations/agent-zero-mcp/server.py` is the deliberately small
 bridge for the documented external API. It exposes one bounded text task,
 enforces a 2,000-character limit and timeout, and returns upstream failures
-without claiming success. The local API/MCP path has been exercised; full
-browser-DOM owner acceptance and failure regression remain open.
+without claiming success. The local API/MCP path has been exercised. A fresh
+synthetic mobile HADES session also rendered a bounded Agent Zero result in
+the assistant DOM after the private tool completed; persistent delegated
+context remains unaccepted.
 
 This integration is intentionally not registered as an Open WebUI-native tool
 or exposed as a separate A2A assistant. Open WebUI remains the owner-facing

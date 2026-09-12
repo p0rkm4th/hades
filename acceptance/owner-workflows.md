@@ -38,7 +38,10 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   A fresh authenticated delegation after the container recovered narrowed the
   API turn to the Agent Zero toolset, completed successfully, and returned the
   expected bounded response; the earlier 404 was isolated to the in-progress
-  Agent Zero restart rather than accepted as success.
+  Agent Zero restart rather than accepted as success. A fresh authenticated
+  mobile HADES chat also rendered the bounded `A0-DOM-READY` result after the
+  Agent Zero tool completed; the DOM contained the assistant result separately
+  from the submitted prompt, and the Agent Zero container remained healthy.
 - **Evidence required:** bounded delegation, returned evidence, safe failure
   handling, and no unnecessary host access
 
