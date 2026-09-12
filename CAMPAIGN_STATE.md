@@ -47,8 +47,10 @@ intentionally maintained in private operations state.
   canonical shopping-list API; an earlier mutation survived a Grocy restart
   and was recovered by a fresh HADES query. A fresh synthetic mobile browser
   session rendered a read-only stock answer through normal HADES chat and it
-  matched Grocy's canonical stock. Browser-DOM mutation/reload and broader
-  household acceptance remain open. Repeated-add duplication was found, fixed in the
+  matched Grocy's canonical stock. A fresh synthetic mobile mutation added milk
+  through HADES; Grocy showed one unfinished row at quantity two, and the chat
+  result survived reload. Broader household acceptance remains open.
+  Repeated-add duplication was found, fixed in the
   active MCP deployment, and regression-tested as quantity folding. The
   bounded stock-intake preview plus explicitly confirmed apply path now also
   passes against canonical Grocy stock; the local model still needs explicit

@@ -20,8 +20,10 @@ consume, recipe fulfillment, recipe add-missing, duplicate prevention, and
 Grocy/Hermes restart persistence through the HADES owner API against Grocy's
 canonical API. A fresh synthetic mobile browser session also verified a
 read-only stock question through the normal HADES chat surface and matched it
-against Grocy's canonical stock. Browser-DOM mutation/reload evidence and
-broader pantry coverage remain open.
+against Grocy's canonical stock. A separate synthetic mobile browser mutation
+also produced exactly one canonical unfinished shopping-list row, and the
+chat result remained visible after reload. Broader pantry coverage remains
+open.
 
 Grocy is intentionally not shown as an Open WebUI-native integration. Its MCP
 tools are private to Hermes, which keeps Grocy as the canonical household

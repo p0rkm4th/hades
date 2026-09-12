@@ -84,7 +84,10 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   the informal/profane “shit do we have eggs” correctly reported no eggs from
   live stock, and a stale remembered recipe label produced an MCP error that
   the model recovered from by using Grocy’s canonical recipe name. No false
-  success was emitted.
+  success was emitted. A fresh synthetic mobile browser session then added
+  the synthetic milk item through normal HADES chat; Grocy’s canonical
+  shopping-list endpoint showed exactly one unfinished row with quantity 2,
+  and reopening the chat after reload preserved the assistant result.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
