@@ -12,9 +12,11 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`f3aaf00` — recovery order/evidence runbook and public path-audit correction
-committed and pushed after the clean upstream MCP contract and runtime-backed
-persistence map.
+`2d9f263` — account-scoped theme preferences now override stale browser-wide
+localStorage on refresh; the owner admin preference was reset from the stuck
+lavender preset to the neutral HADES default in the private runtime. Recovery
+order/evidence runbook and public path-audit correction remain committed and
+public-safe.
 Founding capabilities and
 current upstream/A2A decisions are reconciled; Actual remains selected for
 synthetic HADES integration and production finance is gated.
