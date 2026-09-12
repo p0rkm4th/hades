@@ -43,7 +43,9 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   was added through HADES, removed through a follow-up, and re-added through a
   correction turn; Grocy's shopping-list API verified the empty state and then
   exactly one canonical row. The earlier add survived a Grocy restart and a
-  fresh HADES query recovered the item.
+  fresh HADES query recovered the item. A repeated add was regression-tested
+  after the deployment fix: it increased the existing row's quantity instead
+  of creating a duplicate.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI

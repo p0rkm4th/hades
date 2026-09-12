@@ -45,7 +45,8 @@ intentionally maintained in private operations state.
   remove, and correction/re-add turns have been verified against Grocy's
   canonical shopping-list API; an earlier mutation survived a Grocy restart
   and was recovered by a fresh HADES query. Browser-DOM and broader household
-  acceptance remain open.
+  acceptance remain open. Repeated-add duplication was found, fixed in the
+  active MCP deployment, and regression-tested as quantity folding.
 
 ## REAL OWNER GATES
 
@@ -73,8 +74,8 @@ intentionally maintained in private operations state.
 ## OPEN DEFECTS
 
 - Grocy owner turns require intent-scoped tool narrowing for the local Qwen
-  model; the narrow read path passes, while broader household workflows remain
-  unverified.
+  model; the narrow shopping workflow passes, while broader household
+  workflows remain unverified.
 
 ## HERMES OVERLAY STATUS
 
