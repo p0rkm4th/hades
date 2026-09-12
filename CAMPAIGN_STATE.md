@@ -123,5 +123,8 @@ deferred until the multi-user roadmap milestone is complete.
 
 Browser automation is now provisioned in an isolated temporary environment
 and reaches the HADES login shell at both local and Tailscale URLs in desktop
-and mobile viewports. Authenticated owner-workflow evidence still requires an
-owner-controlled session; no credentials were stored by the dogfood run.
+and mobile viewports. An authenticated synthetic dogfood session verified the
+native mobile Settings flow: Language precedes Theme, all HADES theme/effect
+selectors render, an Odysseus theme plus Rain creates the expected canvas and
+classes, and both selections persist after reload. No owner credentials were
+stored by the dogfood run; domain workflow browser evidence remains pending.
