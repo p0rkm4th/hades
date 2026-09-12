@@ -8,8 +8,10 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Conversation
 
-- **Current status:** TEMPLATE
+- **Current status:** PASS + PERSISTENCE
 - **Authoritative system:** Hermes plus the selected local model through Open WebUI
+- **Verified slice:** authenticated owner conversation, follow-up, reload, and
+  continuation were verified in the deployed owner path.
 - **Evidence required:** authenticated owner UI response, follow-up context,
   reload persistence, and clean tool-capability handling
 - **Known limitations:** model availability, context size, and tool support are
@@ -17,9 +19,12 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Memory
 
-- **Current status:** TEMPLATE
+- **Current status:** PASS + PERSISTENCE
 - **Authoritative system:** Hindsight for durable context; domain systems for
   current truth
+- **Verified slice:** durable memory retain/recall and correction were verified
+  through HADES, with live domain state kept authoritative and persistence
+  checked after reload/restart.
 - **Evidence required:** retain through the owner UI, recall in a new session,
   correction, canonical backend verification, and reload persistence
 
