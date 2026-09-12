@@ -39,9 +39,8 @@ the result persisted after reload.
 
 In a fresh synthetic chat, Hindsight first recalled the test recipe label and
 a following explicit Grocy turn checked current stock and reported the recipe
-as makeable. This staged composition rendered correctly in the owner UI;
-single-turn memory-plus-Grocy composition remains a known local-model
-thinking/tool-loop limitation.
+as makeable. The single-turn composition path now also performs both tool
+turns and renders correctly in the owner UI; the result survives reload.
 
 The compatibility overlay also preserves Grocy intent across conversational
 follow-ups: a natural “remove it” correction now routes to Grocy when the

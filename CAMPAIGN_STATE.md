@@ -74,11 +74,10 @@ intentionally maintained in private operations state.
 
 - A synthetic recipe-fixture fact was retained and recalled through HADES, then
   combined with live Grocy fulfillment. A fresh synthetic mobile chat verifies
-  the staged browser path: Hindsight recalled the remembered label, then a
-  following Grocy turn checked live stock and rendered the makeable result. A
-  correction turn changed the remembered label while the canonical Grocy
-  recipe remained unchanged and makeable. The initial single-turn composition
-  still needs the Qwen reasoning-only/tool-loop repair.
+  the single-turn browser path: Hindsight recalled the remembered label and
+  Grocy checked live stock and fulfillment in the same turn. A correction turn
+  changed the remembered label while the canonical Grocy recipe remained
+  unchanged and makeable; the composition result survived reload.
 
 ## REAL OWNER GATES
 
@@ -105,9 +104,9 @@ intentionally maintained in private operations state.
 
 ## OPEN DEFECTS
 
-- The local Qwen model can enter reasoning-only mode on a single-turn
-  memory-plus-Grocy composition; the staged browser path succeeds, while a
-  direct repair for that multi-tool reasoning case remains open.
+- Single-turn memory-plus-Grocy composition is now narrowed to the relevant
+  read tools and verified through the owner UI; unrelated household tools stay
+  out of that mixed request.
 
 ## HERMES OVERLAY STATUS
 

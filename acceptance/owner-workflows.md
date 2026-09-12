@@ -140,8 +140,7 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Remaining evidence:** browser-DOM/new-session acceptance and a correction
   turn that proves the remembered label can change without overriding live
   Grocy state. The correction branch is now API-verified; browser-DOM evidence
-  remains open. A fresh mobile chat now provides browser evidence for the
-  staged composition path: Hindsight recalled the synthetic recipe label, a
-  following Grocy-directed turn checked live stock, and HADES rendered the
-  recipe as makeable. The initial combined prompt still needs a thinking/tool
-  loop repair when Qwen enters reasoning-only mode.
+  remains open. A fresh mobile chat now verifies the single-turn composition
+  path: Hindsight recalled the synthetic recipe label, Grocy checked live
+  stock and recipe fulfillment in the same turn, and HADES rendered the
+  recipe as makeable. The result survived reload after the canonical checks.

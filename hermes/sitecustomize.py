@@ -160,7 +160,7 @@ try:
     # second HADES router; Hermes still owns the turn lifecycle and tools.
     _hades_original_resolve_turn = _hermes_cli.HermesCLI._resolve_turn_agent_config
     _HADES_TOOL_INTENT = re.compile(
-        r"\b(?:remember|recall|forget|what did i tell|do you remember|memory|"
+        r"\b(?:remember(?:ed|ing)?|recall|forget|what did i tell|do you remember|memory|"
         r"weather|forecast|temperature|search|look up|latest|news|web|"
         r"grocery|groceries|shopping list|recipe|food|pantry|inventory|"
         r"what(?:'s| is) running|what(?:'s| is) down|homelab|server|proxmox|"
@@ -230,7 +230,7 @@ try:
                     _hades_context_parts.append(_hades_content)
         _hades_intent_text = "\n".join(_hades_context_parts)[-12000:]
         memory_intent = re.search(
-            r"\b(?:remember|recall|forget|what did i tell|do you remember|memory)\b",
+            r"\b(?:remember(?:ed|ing)?|recall|forget|what did i tell|do you remember|memory)\b",
             str(user_message or ""),
             re.IGNORECASE,
         )
@@ -326,10 +326,21 @@ try:
         if memory_intent and isinstance(original_tools, list):
             allowed_memory = {"hindsight_recall", "hindsight_retain"}
             if grocy_intent:
+                # Mixed memory/domain requests are especially difficult for
+                # small local models when the whole household catalog is
+                # visible. Keep only the read tools needed by this turn;
+                # mutations remain available on explicit household turns.
+                if re.search(r"\b(?:recipe|make|missing|ingredient)\b", _hades_intent_text, re.IGNORECASE):
+                    allowed_grocy = {
+                        "mcp_grocy_stock_overview_tool",
+                        "mcp_grocy_recipe_fulfillment_tool",
+                    }
+                else:
+                    allowed_grocy = {"mcp_grocy_stock_overview_tool"}
                 allowed_memory.update(
                     tool.get("function", {}).get("name")
                     for tool in original_tools
-                    if tool.get("function", {}).get("name", "").startswith("mcp_grocy_")
+                    if tool.get("function", {}).get("name") in allowed_grocy
                 )
             self.tools = [
                 tool for tool in original_tools
