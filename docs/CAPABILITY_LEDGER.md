@@ -21,7 +21,7 @@ Last reviewed: 2026-09-12
 | Household / Grocy | PARTIAL | Grocy + Hermes | HADES owner-API add, remove, correction/re-add, bounded stock-intake preview plus explicitly confirmed apply, canonical consume, recipe fulfillment available/shortage branches, recipe add-missing merge, and combined Grocy/Hermes restart persistence were verified against Grocy's API. | Broader pantry and browser-DOM workflows remain open; local-model apply wording remains sensitive. |
 | Memory + household composition | UNPROVEN | Hindsight + Grocy | No cross-domain owner workflow has been run yet. | Must combine memory context with live Grocy state. |
 | Homelab read-only integration | PARTIAL | Proxmox / NetBox / Uptime Kuma | Credential-independent preparation, least-privilege templates, source-of-truth boundaries, acceptance prompts, and failure rules are documented. | Runtime reads remain owner-gated; no real homelab endpoint has been contacted. |
-| Finance read-only integration | BLOCKED BY OWNER GATE | Approved provider not provisioned | No real account authorization is present. | Owner must authorize the selected provider; no finance writes are permitted. |
+| Finance read-only integration | PARTIAL / OWNER GATE | Plaid Transactions Sync design | Credential-independent read-only architecture, secret-safe placeholders, freshness/coverage rules, pending-versus-posted handling, and acceptance prompts are documented. | Provider, accounts, environment, retention, and webhook authorization remain owner-gated; no real data is present. |
 | Home Assistant | UNPROVEN | Not provisioned | No runtime integration is provisioned. | Selected-entity access and credentials require owner authorization. |
 
 Private detailed evidence: the deployment acceptance record maintained outside

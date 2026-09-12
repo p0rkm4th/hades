@@ -72,3 +72,14 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   prompts are documented in `docs/homelab-readonly.md`.
 - **Remaining gate:** exact endpoints and owner-approved credentials are not
   present; no real homelab service has been contacted.
+
+## Finance
+
+- **Current status:** PREPARATION COMPLETE / OWNER GATE
+- **Authoritative system:** owner-authorized finance provider, initially via
+  read-only Plaid Transactions Sync
+- **Preparation:** cursor/pagination, freshness, coverage, pending-versus-
+  posted, removal/reconciliation, and safe failure requirements are documented
+  in `docs/finance-readonly.md`.
+- **Remaining gate:** provider, accounts, environment, retention policy, and
+  private webhook authorization; no real finance data is present.

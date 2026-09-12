@@ -10,7 +10,7 @@ runtime secrets and persistent volumes remain outside Git.
 | Hindsight | durable semantic/personal memory | Hermes external memory provider over supported client API | pinned image digest `sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`; embedded pg0 volume; upgrade by digest |
 | Agent Zero | bounded subordinate computer operator | isolated deployment with explicit objective/result boundary | select supported release; no shared unrestricted credentials |
 | Grocy | canonical pantry, groceries, consumption, inventory, recipes | maintained integration, then supported API or tiny adapter | select upstream release; Grocy remains source of truth |
-| Plaid / Finance MCP | financial account and transaction truth | read-only supported integration | owner authorization required; no finance write authority |
+| Plaid / Finance MCP | financial account and transaction truth | read-only preparation documented in `docs/finance-readonly.md`; runtime deferred | provider/account authorization required; no finance write authority |
 | Proxmox / NetBox / Uptime Kuma | homelab and availability truth | read-only preparation documented in `docs/homelab-readonly.md`; runtime deferred | owner-approved endpoints and credentials required; no writes |
 | Home Assistant | physical smart-home state/control | future selected-entity integration | deferred; least privilege required |
 | n8n | deterministic workflows | future configuration | deferred until product-manager authorization |

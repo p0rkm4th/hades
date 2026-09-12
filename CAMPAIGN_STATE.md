@@ -107,4 +107,6 @@ See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 Obtain explicit owner authorization for exact homelab endpoints and
 least-privilege credentials, then provision only read-only Proxmox, NetBox, or
 Uptime Kuma access and verify it through the HADES owner path. Credential-
-independent preparation is documented in `docs/homelab-readonly.md`.
+independent preparation is documented in `docs/homelab-readonly.md`. Finance
+preparation is complete in `docs/finance-readonly.md`; provider, account,
+environment, retention, and webhook authorization remain owner-gated.
