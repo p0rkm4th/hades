@@ -28,7 +28,3 @@ engines:
     engine: mojeek
     shortcut: mj
     disabled: false
-  - name: qwant
-    engine: qwant
-    shortcut: qw
-    disabled: false
