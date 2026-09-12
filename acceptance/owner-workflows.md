@@ -44,7 +44,14 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Authoritative system:** Grocy
 - **Verified slice:** HADES API owner path narrowed a grocery/stock turn to
   the canonical Grocy MCP tools and returned the live empty-stock result;
-  Grocy `/api/stock` independently confirmed zero rows. A synthetic product
+  Fresh natural-language API turns (“what food do i have?” and “do we have
+  milk?”) now routed through the adaptive Qwen path, invoked
+  `mcp_grocy_stock_overview_tool`, and returned two synthetic milk units;
+  Grocy’s canonical stock endpoint independently matched that quantity.
+  Browser-DOM acceptance remains pending because browser automation is not
+  installed on the dogfood host.
+  The earlier empty-state turn had Grocy `/api/stock` independently confirm
+  zero rows. A synthetic product
   was added through HADES, removed through a follow-up, and re-added through a
   correction turn; Grocy's shopping-list API verified the empty state and then
   exactly one canonical row. The earlier add survived a Grocy restart and a
