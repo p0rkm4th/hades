@@ -96,7 +96,10 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   The same mobile session then asked whether the synthetic two-unit recipe was
   makeable; HADES rendered the available result, and Grocy’s canonical recipe
   and ingredient records independently showed a two-unit requirement against
-  two units in stock. Reload preserved the recipe result.
+  two units in stock. Reload preserved the recipe result. A read-only
+  shorthand follow-up, “whats on my shopping list?”, rendered an empty-list
+  answer, and Grocy’s canonical shopping-list endpoint independently returned
+  an empty collection.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
