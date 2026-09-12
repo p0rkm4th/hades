@@ -7,6 +7,8 @@ model:
   base_url: http://ollama-host:11434/v1
   # Tune this to the selected model and deployment capacity.
   context_length: 65536
+  # Bound a single local-model response so stalled tool turns recover promptly.
+  max_tokens: 1024
 agent:
   # Qwen supports tools but benefits from explicit call-vs-description guidance.
   tool_use_enforcement:
