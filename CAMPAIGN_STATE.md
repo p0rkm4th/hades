@@ -73,11 +73,12 @@ intentionally maintained in private operations state.
   shopping-list fixture, and a fresh owner query recovered the canonical row.
 
 - A synthetic recipe-fixture fact was retained and recalled through HADES, then
-  combined in one owner turn with live Grocy fulfillment. Hindsight supplied
-  the remembered label; Grocy supplied current recipe/stock truth. This is
-  partial acceptance until browser-DOM/new-session evidence is captured. A
+  combined with live Grocy fulfillment. A fresh synthetic mobile chat verifies
+  the staged browser path: Hindsight recalled the remembered label, then a
+  following Grocy turn checked live stock and rendered the makeable result. A
   correction turn changed the remembered label while the canonical Grocy
-  recipe remained unchanged and makeable.
+  recipe remained unchanged and makeable. The initial single-turn composition
+  still needs the Qwen reasoning-only/tool-loop repair.
 
 ## REAL OWNER GATES
 
@@ -104,9 +105,9 @@ intentionally maintained in private operations state.
 
 ## OPEN DEFECTS
 
-- Grocy owner turns require intent-scoped tool narrowing for the local Qwen
-  model; the narrow shopping workflow passes, while broader household
-  workflows remain unverified.
+- The local Qwen model can enter reasoning-only mode on a single-turn
+  memory-plus-Grocy composition; the staged browser path succeeds, while a
+  direct repair for that multi-tool reasoning case remains open.
 
 ## HERMES OVERLAY STATUS
 
