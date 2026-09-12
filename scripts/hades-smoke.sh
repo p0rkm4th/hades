@@ -8,6 +8,7 @@ HERMES_URL="${HADES_HERMES_URL:-http://127.0.0.1:8642}"
 HINDSIGHT_URL="${HADES_HINDSIGHT_URL:-http://127.0.0.1:8888}"
 SEARXNG_URL="${HADES_SEARXNG_URL:-http://127.0.0.1:8080}"
 OLLAMA_URL="${HADES_OLLAMA_URL:-http://127.0.0.1:11434}"
+AGENT_ZERO_URL="${HADES_AGENT_ZERO_URL:-http://127.0.0.1:7002}"
 
 pass=0
 fail=0
@@ -52,7 +53,12 @@ else
   fail=$((fail + 1))
 fi
 
-printf 'SKIPPED Agent Zero: not deployed\n'
+if curl -fsS --max-time 10 "$AGENT_ZERO_URL/" >/dev/null 2>&1; then
+  printf 'PASS Agent Zero HTTP\n'
+  pass=$((pass + 1))
+else
+  printf 'SKIPPED Agent Zero: not deployed\n'
+fi
 printf 'SKIPPED Grocy: not deployed\n'
 printf 'SUMMARY pass=%d fail=%d\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

@@ -1,0 +1,23 @@
+name: hades-agent-zero
+
+services:
+  agent-zero:
+    image: agent0ai/agent-zero@sha256:680ab243d358b5fd41847f640c2eac1c59b83b154b22fc38004b8a0631b3d028
+    container_name: hades-agent-zero
+    restart: unless-stopped
+    # Keep the operator private until an explicit owner-facing exposure is added.
+    ports:
+      - "127.0.0.1:7002:80"
+    networks:
+      - agent-zero-private
+    volumes:
+      - hades-agent-zero-data:/a0/usr
+
+networks:
+  agent-zero-private:
+    name: hades-agent-zero-net
+    driver: bridge
+
+volumes:
+  hades-agent-zero-data:
+    name: hades-agent-zero-data
