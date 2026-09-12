@@ -36,8 +36,9 @@ intentionally maintained in private operations state.
 
 - Agent Zero is deployed privately with a dedicated volume and pinned image;
   its standalone UI/model smoke path passes. A one-tool private MCP adapter is
-  now connected and correctly surfaces upstream failure; clean delegated
-  success and browser-DOM owner acceptance remain open.
+  now connected, correctly surfaces upstream failure, and has returned a clean
+  bounded success through the HADES owner API. Browser-DOM owner acceptance
+  and persistent delegated context remain open.
 - Grocy is deployed privately with a dedicated persistent volume and pinned
   image; its HTTP path passes. The HADES API owner path now successfully calls
   the canonical stock and shopping-list tools against synthetic data. A

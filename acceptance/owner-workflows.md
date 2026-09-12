@@ -25,8 +25,11 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Operator
 
-- **Current status:** TEMPLATE
+- **Current status:** PARTIAL
 - **Authoritative system:** Agent Zero for one bounded delegated task
+- **Verified slice:** HADES owner API delegated a no-tool readiness task through
+  the private MCP adapter and received the exact upstream response; a busy
+  Agent Zero state was surfaced as an error and did not become a false success.
 - **Evidence required:** bounded delegation, returned evidence, safe failure
   handling, and no unnecessary host access
 
