@@ -51,6 +51,9 @@ intentionally maintained in private operations state.
   passes against canonical Grocy stock; the local model still needs explicit
   workflow wording for apply turns. A canonical consume turn was added to the
   private allowlist and verified by reducing synthetic stock from 3 to 2.
+  Recipe fulfillment had a version-field bug; the private adapter now uses
+  Grocy's stable missing-product count. Both available and one-unit-short
+  branches were verified, and the synthetic fixture was restored.
 
 ## REAL OWNER GATES
 
