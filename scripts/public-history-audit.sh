@@ -16,7 +16,8 @@ check_history() {
   local label="$2"
   local matches
   matches="$(for commit in $(git rev-list "$branch"); do
-    git grep -I -n -E "$pattern" "$commit" -- 2>/dev/null || true
+    # Do not match the literal detector pattern in this verifier itself.
+    git grep -I -n -E "$pattern" "$commit" -- . ':(exclude)scripts/public-history-audit.sh' 2>/dev/null || true
   done)"
   if [ -n "$matches" ]; then
     printf 'FAIL %s\n' "$label"
