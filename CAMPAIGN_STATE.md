@@ -12,9 +12,10 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`3f69bf4` — consolidation checkpoint committed and pushed. Founding
-capabilities and current upstream/A2A decisions are reconciled; Actual remains
-selected for synthetic HADES integration and production finance is gated.
+`6ccc04d` — clean upstream MCP contract, runtime-backed persistence map, and
+public CI compose tripwire committed and pushed. Founding capabilities and
+current upstream/A2A decisions are reconciled; Actual remains selected for
+synthetic HADES integration and production finance is gated.
 
 ## COMPLETED MILESTONES
 
