@@ -4,6 +4,8 @@
   const effectKey = 'hades-background-effect';
   const remoteThemeKey = 'hades_theme';
   const remoteEffectKey = 'hades_background_effect';
+  let localThemeChanged = false;
+  let localEffectChanged = false;
   const themes = [
     ['odysseus-neon', '⚡ Odysseus Neon'], ['odysseus-midnight', '🌌 Odysseus Midnight'],
     ['odysseus-cyberpunk', '🟪 Odysseus Cyberpunk'], ['odysseus-retrowave', '🟣 Odysseus Retrowave'],
@@ -46,11 +48,11 @@
       const response = await fetch('/api/v1/users/user/settings?raw=true');
       if (!response.ok) return;
       const settings = await response.json();
-      if (settings && isTheme(settings[remoteThemeKey])) {
+      if (!localThemeChanged && settings && isTheme(settings[remoteThemeKey])) {
         localStorage.setItem(themeKey, settings[remoteThemeKey]);
         applyTheme(settings[remoteThemeKey]);
       }
-      if (settings && isEffect(settings[remoteEffectKey])) {
+      if (!localEffectChanged && settings && isEffect(settings[remoteEffectKey])) {
         localStorage.setItem(effectKey, settings[remoteEffectKey]);
         applyEffect(settings[remoteEffectKey]);
       }
@@ -221,6 +223,7 @@
       select.addEventListener('change', event => {
         const value = event.target.selectedOptions[0]?.dataset.hadesTheme || '';
         if (value) {
+          localThemeChanged = true;
           event.stopImmediatePropagation();
           localStorage.setItem(themeKey, value);
           saveRemotePreference(remoteThemeKey, value);
@@ -248,6 +251,7 @@
       effectSelect.replaceChildren(...effects.map(([value, label]) => new Option(label, value)));
       effectSelect.value = localStorage.getItem(effectKey) || 'none';
       effectSelect.addEventListener('change', event => {
+        localEffectChanged = true;
         localStorage.setItem(effectKey, event.target.value);
         saveRemotePreference(remoteEffectKey, event.target.value);
         applyEffect(event.target.value);
