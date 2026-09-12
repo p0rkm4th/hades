@@ -12,7 +12,7 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`c7ddb34` — account-scoped theme preferences now override stale browser-wide
+`a5070c1` — account-scoped theme preferences now override stale browser-wide
 localStorage on refresh; the owner admin preference was reset from the stuck
 lavender preset to the neutral HADES default in the private runtime. Recovery
 order/evidence runbook and public path-audit correction remain committed and
