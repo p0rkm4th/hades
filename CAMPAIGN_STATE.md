@@ -12,9 +12,9 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`cafb7f1` — synthetic finance owner acceptance committed and pushed. Actual
-Budget is selected for the synthetic HADES integration; production remains
-explicitly gated on owner authorization for real finance data/providers.
+`3f69bf4` — consolidation checkpoint committed and pushed. Founding
+capabilities and current upstream/A2A decisions are reconciled; Actual remains
+selected for synthetic HADES integration and production finance is gated.
 
 ## COMPLETED MILESTONES
 
