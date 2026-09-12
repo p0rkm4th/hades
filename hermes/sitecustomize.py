@@ -238,6 +238,11 @@ try:
         original_internal_stream_callback = getattr(self, "_stream_callback", None)
         original_tools = getattr(self, "tools", None)
         original_valid_tool_names = getattr(self, "valid_tool_names", None)
+        completion_only_model = bool(re.search(
+            r"\b(?:dolphin(?:-llama3|3)?|heretic|uncensored|abliterated)\b",
+            original_model,
+            re.IGNORECASE,
+        ))
         grocy_intent = re.search(
             r"\b(?:grocery|groceries|shopping list|recipe|food|pantry|inventory|"
             r"what(?:'s| is) in stock|do we have)\b",
@@ -349,6 +354,13 @@ try:
             self.valid_tool_names = {
                 tool["function"]["name"] for tool in self.tools
             }
+        # Completion-only creative models are deliberately isolated from the
+        # HADES tool catalog, even when the upstream model advertises native
+        # function calling. They remain useful for morally grey writing and
+        # roleplay without access to memory, Grocy, web, Agent Zero, or hosts.
+        if completion_only_model:
+            self.tools = []
+            self.valid_tool_names = set()
         _hades_memory_local.result = None
         runtime_provider = str(getattr(self, "provider", "") or "").lower()
         runtime_base = str(getattr(self, "base_url", "") or "").lower()
@@ -411,6 +423,9 @@ try:
                 self.stream_delta_callback = original_stream_callback
                 self._stream_callback = original_internal_stream_callback
             if memory_intent:
+                self.tools = original_tools
+                self.valid_tool_names = original_valid_tool_names
+            elif completion_only_model:
                 self.tools = original_tools
                 self.valid_tool_names = original_valid_tool_names
             if routed:

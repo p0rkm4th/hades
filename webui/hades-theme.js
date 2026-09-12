@@ -175,6 +175,21 @@
     if (languageRow && languageRow !== themeRow && themeRow.previousElementSibling !== languageRow)
       themeRow.parentElement.insertBefore(languageRow, themeRow);
   }
+  function arrangeSettingDescriptions(select) {
+    const themeRow = select.closest('.flex.items-center.justify-between') || select.parentElement?.parentElement?.parentElement;
+    const parent = themeRow?.parentElement;
+    if (!themeRow || !parent) return;
+    const children = [...parent.children];
+    const languageRow = children.find(row => row.querySelector('select[aria-label="Language"]'));
+    const languageHelp = children.find(row => /^Choose the language used for interface text\.?$/i.test(row.textContent.trim()));
+    const translationHelp = children.find(row => /^Couldn't find your language\?/i.test(row.textContent.trim()));
+    const colorHelp = children.find(row => /^Choose the color theme used by the interface\.?$/i.test(row.textContent.trim()));
+    let anchor = languageRow;
+    for (const node of [languageHelp, translationHelp]) {
+      if (node && anchor) { anchor.after(node); anchor = node; }
+    }
+    if (colorHelp) themeRow.after(colorHelp);
+  }
   function markComposer() {
     document.querySelectorAll('[contenteditable="true"]').forEach(editable => {
       const surface = editable.closest('.shadow-lg.rounded-3xl') || editable.parentElement?.parentElement?.parentElement;
@@ -188,8 +203,9 @@
   function updateToolNotice() {
     const name = selectedModelName();
     const dolphin = /dolphin\s+mistral/i.test(name);
+    const uncensored = /dolphin(?:[-\s](?:llama3|3))?|heretic|uncensored|abliterated/i.test(name);
     const qwenSmall = /qwen3:8b/i.test(name);
-    const noTools = dolphin || qwenSmall;
+    const noTools = dolphin || uncensored;
     const composer = document.querySelector('[contenteditable="true"]')?.closest('.hades-composer-surface') ||
       document.querySelector('[contenteditable="true"]')?.parentElement?.parentElement?.parentElement;
     if (!composer) return;
@@ -201,10 +217,10 @@
       notice.setAttribute('aria-live', 'polite');
       composer.parentElement?.insertBefore(notice, composer);
     }
-    if (!name || !noTools) { notice.hidden = true; notice.textContent = ''; return; }
+    if (!name || (!noTools && !qwenSmall)) { notice.hidden = true; notice.textContent = ''; return; }
     notice.hidden = false;
-    const modelLabel = dolphin ? 'Dolphin Mistral' : 'Qwen3 8B';
-    const capability = dolphin ? 'does not support tools' : 'has limited tool reliability';
+    const modelLabel = noTools ? name : 'Qwen3 8B';
+    const capability = noTools ? 'is completion-only and cannot use HADES tools' : 'has limited tool reliability';
     notice.innerHTML = '<span aria-hidden="true">ⓘ</span><span><strong>' + modelLabel + '</strong> is a fast local model that ' + capability + '. Switch to <strong>Hermes Agent</strong> when you need HADES memory, web search, or actions.</span>';
   }
   function install() {
@@ -260,6 +276,7 @@
       });
       row.parentElement.insertBefore(effectRow, row.nextSibling);
     }
+    arrangeSettingDescriptions(select);
     updateToolNotice();
   }
   const savedThemeAtStartup = localStorage.getItem(themeKey);
