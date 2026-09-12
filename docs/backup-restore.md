@@ -137,3 +137,11 @@ are now documented; native production database/export procedures and restore
 evidence remain outstanding for Hindsight, Hermes, Agent Zero, and SearXNG.
 Hindsight tool availability and listener readiness are verified, but its native
 export remains credential-gated.
+
+Readiness-only checks on 2026-09-12 also confirmed that SearXNG's config and
+cache mounts, Agent Zero's dedicated persistent volume, and Hermes' enabled
+systemd service with a private profile are present. Their normal runtime
+health/smoke paths pass. No SearXNG cache, Agent Zero workspace, or Hermes
+profile was copied: SearXNG configuration may contain secrets, Agent Zero can
+contain delegated work, and Hermes contains sessions and service credentials.
+Their native backup/restore rehearsals remain private operational work.
