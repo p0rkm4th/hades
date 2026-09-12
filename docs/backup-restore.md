@@ -145,3 +145,32 @@ health/smoke paths pass. No SearXNG cache, Agent Zero workspace, or Hermes
 profile was copied: SearXNG configuration may contain secrets, Agent Zero can
 contain delegated work, and Hermes contains sessions and service credentials.
 Their native backup/restore rehearsals remain private operational work.
+
+The Agent Zero private environment file was found mode `0644` during the
+readiness check and corrected to mode `0600` in the live persistent volume.
+Future restore checks must preserve that restriction before the service is
+started.
+
+## Private operator procedure outline
+
+The following is intentionally a procedure outline, not an executable public
+backup job. Substitute a private encrypted destination and retain the image
+digest alongside each artifact.
+
+```text
+quiesce the component
+create a native/consistent export into the private destination
+write a checksum and component digest beside the export
+restore into an isolated namespace
+start the restored component with isolated endpoints
+run health, canonical-state, reload, and restart checks
+retain the prior known-good artifact until acceptance passes
+```
+
+For Hindsight, use the bundled PostgreSQL `pg_dump` custom format and
+`pg_restore`; provide the database password through a protected operator
+credential mechanism rather than a command line or repository file. For
+SQLite-backed Open WebUI and Grocy, use SQLite's online backup facility while
+the writer is quiesced. For Hermes and Agent Zero, snapshot their private
+profiles/volumes only after stopping their writers. SearXNG configuration can
+be exported separately from its reconstructable cache.
