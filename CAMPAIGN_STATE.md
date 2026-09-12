@@ -32,12 +32,14 @@ requirements.
 Deployment-specific versions, image digests, endpoints, and model choices are
 intentionally maintained in private operations state.
 
-## LOCAL COMPONENTS NOT YET PROVISIONED
+## LOCAL COMPONENTS PROVISIONED BUT NOT OWNER-ACCEPTED
 
-- Agent Zero is an approved local component and remains unproven only because
-  the bounded deployment and owner-path acceptance work is unfinished.
-- Grocy is an approved local component and remains unproven only because the
-  persistent synthetic deployment and owner-path acceptance work is unfinished.
+- Agent Zero is deployed privately with a dedicated volume and pinned image;
+  its standalone UI/model smoke path passes, but HADES delegation is not yet
+  owner-accepted.
+- Grocy is deployed privately with a dedicated persistent volume and pinned
+  image; its HTTP path passes, but synthetic household workflows through HADES
+  are not yet owner-accepted.
 
 ## REAL OWNER GATES
 
@@ -82,5 +84,6 @@ See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 
 ## NEXT ACTION
 
-Add lightweight overlay smoke coverage, then provision a bounded local Agent
-Zero deployment and prove one success plus one safe failure through HADES.
+Wire the bounded Agent Zero deployment through a supported integration path and
+prove one success plus one safe failure through the HADES owner UI; then run
+synthetic Grocy workflows through HADES and verify canonical state after reload.

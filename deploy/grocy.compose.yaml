@@ -1,0 +1,27 @@
+name: hades-grocy
+
+services:
+  grocy:
+    image: lscr.io/linuxserver/grocy@sha256:8449aff56e6b1f34d37affd969cec35ed56fa7daa175c75f923a015b82561d27
+    container_name: hades-grocy
+    restart: unless-stopped
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: America/Chicago
+    # Household state stays private until the owner-facing integration is ready.
+    ports:
+      - "127.0.0.1:7003:80"
+    networks:
+      - grocy-private
+    volumes:
+      - hades-grocy-data:/config
+
+networks:
+  grocy-private:
+    name: hades-grocy-net
+    driver: bridge
+
+volumes:
+  hades-grocy-data:
+    name: hades-grocy-data

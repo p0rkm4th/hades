@@ -15,8 +15,10 @@ Last reviewed: 2026-09-12
 | HADES themes/effects | PASS + PERSISTENCE | Open WebUI extension assets | Supported themes and effects were verified in mobile DOM and after reload. | Effects remain HADES-owned styling layered onto upstream UI. |
 | Restart/recovery | PASS | HADES runtime composition | Core health endpoints recovered after controlled service restarts without losing accepted state. | External integrations are not included in this result. |
 | Hermes compatibility overlay | PARTIAL | `hermes/sitecustomize.py` | Deployment overlay is now represented in source for review and documented as a compatibility layer. | Smoke coverage and upstream replacement review remain in progress. |
-| Agent Zero delegation | UNPROVEN | Not provisioned | No owner-path delegation evidence yet. | Local deployment is the next milestone. |
-| Household / Grocy | UNPROVEN | Not provisioned | No synthetic household workflow has been run yet. | Grocy must remain the canonical household system. |
+| Agent Zero runtime | PASS | Agent Zero v2.12, pinned container image | Private loopback deployment is healthy; real Agent Zero UI produced `A0-READY` with local qwen3:8b. | Hermes-to-Agent-Zero delegation and failure handling remain unproven. |
+| Agent Zero delegation | UNPROVEN | Agent Zero + Hermes | No HADES owner-path delegation evidence yet. | Keep the operator bounded and private while integration is developed. |
+| Household / Grocy runtime | PASS | Grocy v4.7.1, pinned LinuxServer image | Private loopback deployment is healthy with persistent synthetic database storage. | HADES household workflows and canonical-state verification remain unproven. |
+| Household / Grocy | UNPROVEN | Grocy + Hermes | No synthetic household workflow has been run through HADES yet. | Grocy must remain the canonical household system. |
 | Memory + household composition | UNPROVEN | Hindsight + Grocy | No cross-domain owner workflow has been run yet. | Must combine memory context with live Grocy state. |
 | Homelab read-only integration | UNPROVEN | Proxmox / NetBox / Uptime Kuma | No runtime integration is provisioned. | Existing credentials and endpoints, if used, remain owner-gated. |
 | Finance read-only integration | BLOCKED BY OWNER GATE | Approved provider not provisioned | No real account authorization is present. | Owner must authorize the selected provider; no finance writes are permitted. |
