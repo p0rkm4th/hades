@@ -55,6 +55,13 @@ and corrections. It is not owner data.
   loading a downloaded synthetic budget failed with `out-of-sync-migrations`:
   the staged server budget contains migration IDs absent from the client
   bundle. This is an open client/server compatibility gate.
+- A same-day `@actual-app/api` nightly build (`26.10.0-nightly.20260912`)
+  included the missing migration. Against the same disposable server it
+  downloaded and loaded the synthetic budget, created a Synthetic Checking
+  account, synced it, and a fresh client runtime re-downloaded the budget and
+  recovered the account. This proves the supported API shape is viable, but
+  production must pin a matching, supported server/client pair rather than
+  adopt a moving nightly channel.
 
 ## Backup / restore
 
@@ -87,7 +94,8 @@ provider linking, reconciliation writes, or money movement.
 
 ## Conditions before promotion
 
-1. Resolve the Actual client/server migration mismatch, then import the same
+1. Pin a matching supported Actual server/client revision and resolve the
+   current migration mismatch, then import the same
    fixture through an Actual-compatible path, including repeat import and
    transfer semantics.
 2. Implement or configure a small read-only Hermes adapter over the official

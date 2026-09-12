@@ -124,7 +124,9 @@ intentionally maintained in private operations state.
   `@actual-app/api` client can authenticate and enumerate synthetic budgets, but
   loading one fails with `out-of-sync-migrations` against the tested server
   image. Do not promote Actual or connect real finance data until matching
-  client/server revisions or a safer supported read path are proven.
+  client/server revisions or a safer supported read path are proven. A same-day
+  nightly client did load/sync/reload the budget in disposable staging; it is
+  evidence for the fix direction, not a production pin.
 
 ## HERMES OVERLAY STATUS
 

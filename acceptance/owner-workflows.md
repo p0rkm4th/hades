@@ -131,7 +131,8 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   false-positive on the nearby same-merchant Batch B row. Actual native archive
   and Finlynq PostgreSQL restore probes passed. The published Actual API client
   authenticated but hit an out-of-sync migration error loading the staged
-  budget.
+  budget. A same-day nightly client loaded, synced, and reloaded the synthetic
+  budget successfully; production still requires a matching supported pin.
 - **Evidence:** `docs/adr/finance-platform.md` and
   `test-data/finance-bakeoff/`.
 - **Remaining gate:** resolve Actual client/server migration compatibility,
