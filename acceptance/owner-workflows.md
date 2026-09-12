@@ -36,7 +36,9 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Authoritative system:** Grocy
 - **Verified slice:** HADES API owner path narrowed a grocery/stock turn to
   the canonical Grocy MCP tools and returned the live empty-stock result;
-  Grocy `/api/stock` independently confirmed zero rows.
+  Grocy `/api/stock` independently confirmed zero rows. A synthetic product
+  was added through HADES, verified in Grocy's shopping-list API, Grocy was
+  restarted, and a fresh HADES query recovered the item.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
