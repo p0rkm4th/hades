@@ -44,8 +44,10 @@ intentionally maintained in private operations state.
   the canonical stock and shopping-list tools against synthetic data. Add,
   remove, and correction/re-add turns have been verified against Grocy's
   canonical shopping-list API; an earlier mutation survived a Grocy restart
-  and was recovered by a fresh HADES query. Browser-DOM and broader household
-  acceptance remain open. Repeated-add duplication was found, fixed in the
+  and was recovered by a fresh HADES query. A fresh synthetic mobile browser
+  session rendered a read-only stock answer through normal HADES chat and it
+  matched Grocy's canonical stock. Browser-DOM mutation/reload and broader
+  household acceptance remain open. Repeated-add duplication was found, fixed in the
   active MCP deployment, and regression-tested as quantity folding. The
   bounded stock-intake preview plus explicitly confirmed apply path now also
   passes against canonical Grocy stock; the local model still needs explicit

@@ -53,8 +53,10 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   `mcp_grocy_stock_overview_tool`, and returned two synthetic milk units;
   Grocy’s canonical stock endpoint independently matched that quantity.
   Browser automation now reaches the authenticated shell on localhost and
-  Tailscale; authenticated workflow evidence remains pending until an owner
-  session is supplied.
+  Tailscale. A fresh synthetic mobile session also rendered the live Grocy
+  stock answer (“HADES Synthetic Milk — 2 units”) through the normal chat
+  surface; the corresponding canonical stock check matched. Mutation, reload,
+  and broader household browser evidence remain open.
   The earlier empty-state turn had Grocy `/api/stock` independently confirm
   zero rows. A synthetic product
   was added through HADES, removed through a follow-up, and re-added through a

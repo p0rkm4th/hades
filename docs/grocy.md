@@ -18,7 +18,10 @@ lscr.io/linuxserver/grocy@sha256:8449aff56e6b1f34d37affd969cec35ed56fa7daa175c75
 The private test deployment has now verified add/remove/correction, purchase,
 consume, recipe fulfillment, recipe add-missing, duplicate prevention, and
 Grocy/Hermes restart persistence through the HADES owner API against Grocy's
-canonical API. Browser-DOM acceptance and broader pantry coverage remain open.
+canonical API. A fresh synthetic mobile browser session also verified a
+read-only stock question through the normal HADES chat surface and matched it
+against Grocy's canonical stock. Browser-DOM mutation/reload evidence and
+broader pantry coverage remain open.
 
 Grocy is intentionally not shown as an Open WebUI-native integration. Its MCP
 tools are private to Hermes, which keeps Grocy as the canonical household
