@@ -120,6 +120,13 @@ private operational gates. The Hindsight image includes a bundled PostgreSQL
 server; its native backup tool is available inside the image, but no live
 Hindsight backup was created during this public-safe rehearsal.
 
+The live Hindsight PostgreSQL listener passed `pg_isready` on 2026-09-12, and
+the pinned image exposes matching PostgreSQL 18.1 `pg_dump`, `pg_restore`, and
+`pg_isready` binaries. A schema-only export check was not completed because
+the embedded server requires its private password; no credential was recovered
+or recorded as part of this campaign. A private operator must supply that
+credential to perform the native export and isolated restore rehearsal.
+
 ## Missing automation
 
 No final backup job or installer is defined here yet. The next implementation
@@ -128,3 +135,5 @@ retention and encryption settings, followed by an isolated restore test. The
 mount inventory, recovery order, and synthetic Grocy/Open WebUI restore paths
 are now documented; native production database/export procedures and restore
 evidence remain outstanding for Hindsight, Hermes, Agent Zero, and SearXNG.
+Hindsight tool availability and listener readiness are verified, but its native
+export remains credential-gated.
