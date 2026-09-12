@@ -1,0 +1,34 @@
+use_default_settings: true
+
+server:
+  # Replace this only in a private deployment copy. The persisted runtime
+  # config owns the real secret and is never committed.
+  secret_key: "__SEARXNG_SECRET__"
+
+search:
+  formats:
+    - html
+    - json
+
+# Avoid engines that commonly return CAPTCHA/rate-limit failures from a
+# self-hosted instance. The default catalog remains available for operators
+# to re-enable individually when an engine is healthy.
+engines:
+  - name: brave
+    disabled: true
+  - name: duckduckgo
+    disabled: true
+  - name: startpage
+    disabled: true
+  - name: bing
+    engine: bing
+    shortcut: bi
+    disabled: false
+  - name: mojeek
+    engine: mojeek
+    shortcut: mj
+    disabled: false
+  - name: qwant
+    engine: qwant
+    shortcut: qw
+    disabled: false
