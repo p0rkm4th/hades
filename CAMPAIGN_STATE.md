@@ -60,6 +60,12 @@ intentionally maintained in private operations state.
   A controlled Grocy plus Hermes restart preserved the recipe, stock, and
   shopping-list fixture, and a fresh owner query recovered the canonical row.
 
+- A synthetic recipe-fixture fact was retained and recalled through HADES, then
+  combined in one owner turn with live Grocy fulfillment. Hindsight supplied
+  the remembered label; Grocy supplied current recipe/stock truth. This is
+  partial acceptance until browser-DOM, new-session, and correction evidence
+  are captured.
+
 ## REAL OWNER GATES
 
 - Real Finance/Plaid account authorization is owner-gated.

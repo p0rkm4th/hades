@@ -83,3 +83,15 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   in `docs/finance-readonly.md`.
 - **Remaining gate:** provider, accounts, environment, retention policy, and
   private webhook authorization; no real finance data is present.
+
+## Memory + household composition
+
+- **Current status:** PARTIAL
+- **Authoritative systems:** Hindsight for the remembered label; Grocy for live
+  recipe and stock state
+- **Verified slice:** a synthetic recipe-fixture fact was retained through
+  HADES, recalled in a later turn, and combined with live Grocy fulfillment;
+  HADES reported the recipe as makeable with no missing products.
+- **Remaining evidence:** browser-DOM/new-session acceptance and a correction
+  turn that proves the remembered label can change without overriding live
+  Grocy state.
