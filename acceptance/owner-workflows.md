@@ -69,7 +69,12 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   without duplication; the fixture was restored to two stock units and one
   shopping-list unit. A controlled Grocy and Hermes restart preserved the
   recipe, stock, and shopping row; a fresh HADES query recovered the item and
-  quantity.
+  quantity. Additional read-only variations passed through the same narrowed
+  route: shorthand “whats on my shopping list?” returned the canonical row,
+  the informal/profane “shit do we have eggs” correctly reported no eggs from
+  live stock, and a stale remembered recipe label produced an MCP error that
+  the model recovered from by using Grocy’s canonical recipe name. No false
+  success was emitted.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
