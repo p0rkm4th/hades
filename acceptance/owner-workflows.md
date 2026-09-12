@@ -139,14 +139,18 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Owner UI evidence:** test administrator authenticated through the real Open WebUI DOM,
   selected the staged `hermes-finance-staging` model, and submitted
   “What is my checking account balance?”. Open WebUI rendered the chat and
-  preserved the prompt after reload. The staged run correctly surfaced an
-  Actual adapter failure because the disposable gateway restart lacked its
-  synthetic password environment; it did not fabricate a balance.
-- **Remaining gate:** complete a successful HADES owner-path canonical run.
-  The stable matched pair, read-only MCP boundary, synthetic canonical
-  reads/failure response, selected-state archive restore, and owner-facing
-  failure behavior are proven. Production authorization remains open; no
-  real finance data, provider, or write path is present.
+  rendered the canonical synthetic balance `$3,395.36`; the staged Hermes log
+  records the narrowed Actual read tool completing. A separate restart/reload
+  DOM probe reopened the conversation and found both the prompt and balance.
+  A prior staged run correctly surfaced an Actual adapter failure when its
+  disposable gateway lacked the synthetic password environment; it did not
+  fabricate a balance. The canonical read-only helper independently returned
+  the same Checking balance from the Actual budget.
+- **Status:** PASS + PERSISTENCE for the synthetic owner read path. The stable
+  matched pair, read-only MCP boundary, synthetic canonical reads/failure
+  response, selected-state archive restore, owner-facing failure behavior, and
+  successful owner-path canonical read are proven. Production authorization
+  remains open; no real finance data, provider, or write path is present.
 
 ## Memory + household composition
 
