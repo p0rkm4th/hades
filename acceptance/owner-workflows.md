@@ -129,16 +129,18 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   accepted Batch A, reported nine duplicate Checking rows skipped on identical
   re-import while routing three other-account rows, and exposed a likely
   false-positive on the nearby same-merchant Batch B row. Actual native archive
-  and Finlynq PostgreSQL restore probes passed. The published Actual API client
-  authenticated but hit an out-of-sync migration error loading the staged
-  budget. A same-day nightly client loaded, synced, and reloaded the synthetic
-  budget successfully; production still requires a matching supported pin.
+  and Finlynq PostgreSQL restore probes passed. The published Actual 26.9.0
+  client initially hit an out-of-sync migration error against the mismatched
+  image; the matched stable 26.9.0 pair then loaded, imported, synced, and
+  reloaded synthetic state successfully. Production still requires that pair
+  to remain pinned.
 - **Evidence:** `docs/adr/finance-platform.md` and
   `test-data/finance-bakeoff/`.
-- **Remaining gate:** resolve Actual client/server migration compatibility,
-  then prove Actual-compatible import, constrained HADES read adapter,
-  HADES owner-path canonical verification, and selected-state row-level restore
-  acceptance. No real finance data, provider, or write path is present.
+- **Remaining gate:** complete HADES owner-path canonical verification. The
+  stable matched pair, read-only MCP boundary, synthetic canonical
+  reads/failure response, and selected-state archive restore are now proven;
+  only HADES owner-path verification and production authorization remain. No
+  real finance data, provider, or write path is present.
 
 ## Memory + household composition
 

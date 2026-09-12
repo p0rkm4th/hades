@@ -75,10 +75,12 @@ and corrections. It is not owner data.
 ## Backup / restore
 
 Disposable native artifacts were created for all four candidates. Actual's
-data archive was started as a second server and returned HTTP 200. Finlynq's
-PostgreSQL dump restored into a clean disposable PostgreSQL instance with 69
-public tables. Firefly and Ledgr logical dumps were successfully created; a
-full row-level restore acceptance remains part of the conditions below.
+data archive was started as a second server and returned HTTP 200. The selected
+Actual synthetic budget also exported to a 26,771-byte archive and restored
+into a clean offline client with identical per-account transaction counts.
+Finlynq's PostgreSQL dump restored into a clean disposable PostgreSQL instance
+with 69 public tables. Firefly and Ledgr logical dumps were successfully
+created; their full row-level restore acceptance remains open.
 
 ## Operational footprint
 
@@ -103,16 +105,16 @@ provider linking, reconciliation writes, or money movement.
 
 ## Conditions before promotion
 
-1. Pin a matching supported Actual server/client revision and resolve the
-   current migration mismatch. The stable synthetic import/repeat and
-   transfer-payee proofs are complete; the remaining fixture work is mapping
-   provider transfer pairs without reusing one global external ID.
+1. Pin the matched supported Actual 26.9.0 server/client revision in the
+   deployment. The stable synthetic import/repeat and transfer-payee proofs
+   are complete; the remaining fixture work is mapping provider transfer pairs
+   without reusing one global external ID.
 2. Implement or configure a small read-only Hermes adapter over the official
    Actual API, with failure and stale-state responses.
 3. Prove the read path through the HADES owner UI against synthetic canonical
    Actual state, then reload and restart.
-4. Complete row-level restore verification for the selected state and record
-   backup credential/key dependencies separately.
+4. Record the selected Actual backup credential/key dependencies separately;
+   row-level restore verification for the synthetic selected state passes.
 5. Re-evaluate Firefly if Actual's import/API path cannot meet these contracts.
 
 ## Production gates
