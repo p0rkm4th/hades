@@ -22,7 +22,7 @@ Last reviewed: 2026-09-12
 | Memory + household composition | PASS | Hindsight + Grocy | A remembered recipe fact was retained, corrected, recalled in a fresh mobile DOM conversation, and combined with live Grocy fulfillment without changing canonical Grocy state; reload evidence was preserved. | Broader domain combinations remain future work; Grocy remains authoritative for live state. |
 | Homelab read-only integration | PARTIAL | Proxmox / NetBox / Uptime Kuma | Credential-independent preparation, least-privilege templates, source-of-truth boundaries, acceptance prompts, and failure rules are documented. | Runtime reads remain owner-gated; no real homelab endpoint has been contacted. |
 | Finance read-only integration | PARTIAL / OWNER GATE | Plaid Transactions Sync design | Credential-independent read-only architecture, secret-safe placeholders, freshness/coverage rules, pending-versus-posted handling, and acceptance prompts are documented. | Provider, accounts, environment, retention, and webhook authorization remain owner-gated; no real data is present. |
-| Home Assistant | UNPROVEN | Not provisioned | No runtime integration is provisioned. | Selected-entity access and credentials require owner authorization. |
+| Home Assistant | PREPARATION COMPLETE / OWNER GATE | Official Home Assistant REST/MCP paths | Credential-free read-only design, selected-entity allowlist, security-sensitive exclusions, staleness rules, and owner acceptance contract are documented. | No runtime integration is provisioned; URL, token, selected entities, and exposure path require owner authorization. |
 
 Private detailed evidence: the deployment acceptance record maintained outside
 this repository. This ledger deliberately contains no owner data or secrets.
