@@ -48,11 +48,13 @@
       const response = await fetch('/api/v1/users/user/settings?raw=true');
       if (!response.ok) return;
       const settings = await response.json();
-      if (!localThemeChanged && settings && isTheme(settings[remoteThemeKey])) {
+      const hasLocalTheme = isTheme(localStorage.getItem(themeKey));
+      const hasLocalEffect = isEffect(localStorage.getItem(effectKey));
+      if (!localThemeChanged && !hasLocalTheme && settings && isTheme(settings[remoteThemeKey])) {
         localStorage.setItem(themeKey, settings[remoteThemeKey]);
         applyTheme(settings[remoteThemeKey]);
       }
-      if (!localEffectChanged && settings && isEffect(settings[remoteEffectKey])) {
+      if (!localEffectChanged && !hasLocalEffect && settings && isEffect(settings[remoteEffectKey])) {
         localStorage.setItem(effectKey, settings[remoteEffectKey]);
         applyEffect(settings[remoteEffectKey]);
       }
