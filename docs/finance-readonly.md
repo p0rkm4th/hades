@@ -1,29 +1,31 @@
 # Finance read-only integration plan
 
-This document is preparation only. HADES has no Plaid credentials, linked
-Items, account data, or finance runtime integration.
+This document is the production boundary. HADES has no real finance
+credentials, linked provider accounts, or finance runtime integration. Actual
+Budget is the provisional canonical platform, with the small read-only MCP
+adapter in `integrations/actual-finance-readonly/` reserved for isolated
+synthetic staging until owner authorization is explicit.
 
 ## Boundary and authority
 
-Plaid (or the owner-approved finance provider) is the authority for account and
-transaction data. Hindsight may remember preferences such as category names,
-but must never supply balances, transactions, or affordability figures.
+Actual Budget is the authority for imported account and transaction data.
+Hindsight may remember preferences such as category names, but must never
+supply balances, transactions, or affordability figures. Provider-linked
+accounts remain an owner decision and are not connected by this campaign.
 
-The first implementation must be read-only and use Plaid Transactions Sync.
-It should maintain the provider cursor privately, paginate until complete, and
-reconcile `added`, `modified`, and `removed` transactions by provider ID.
-Pending and posted transactions must remain distinguishable; a pending item
-must not be counted as settled spending without saying so.
+The first implementation is read-only and uses the official Actual Node client
+behind the MCP boundary. It must use a matching pinned server/client revision,
+cache only the selected budget locally, and expose only account, balance,
+transaction, and status reads. It must never expose Actual's mutation, import,
+sync, provider-link, reconciliation-write, or money-movement methods.
 
 ## Secret-safe placeholders
 
 ```dotenv
-HADES_FINANCE_PROVIDER=plaid
-HADES_PLAID_ENV=<sandbox-or-production-owner-choice>
-HADES_PLAID_CLIENT_ID=<private>
-HADES_PLAID_SECRET=<private>
-HADES_PLAID_ACCESS_TOKEN=<private-owner-authorized-item-token>
-HADES_PLAID_WEBHOOK_URL=<private-https-endpoint>
+ACTUAL_SERVER_URL=<private-local-or-container-url>
+ACTUAL_API_MODULE=<private-pinned-client-path>
+ACTUAL_PASSWORD_FILE=<private-secret-file>
+ACTUAL_BUDGET_GROUP_ID=<private-selected-budget-id>
 ```
 
 No access token, account identifier, transaction, or real financial value may
@@ -39,14 +41,15 @@ Every finance answer must identify, in owner-friendly language:
 - date range and pagination completeness;
 - errors, stale Items, or missing accounts.
 
-Use `SYNC_UPDATES_AVAILABLE` to trigger incremental sync after the initial
-cursor is established. A provider refresh is not the same as a successful
-transaction sync. If data is stale or incomplete, HADES must say so and avoid
-confident affordability or “how much did I spend” claims.
+The adapter reports the server version and Actual local sync metadata. If the
+server is unavailable, the budget cannot be loaded, or freshness is unknown,
+HADES must say so and avoid confident affordability or “how much did I spend”
+claims. Local memory must never fill a missing live finance answer.
 
 ## Owner acceptance prompts
 
-After the owner authorizes a provider and confirms the read-only scope:
+After the owner authorizes the selected finance environment and confirms the
+read-only scope:
 
 - “How much did I spend on coffee?”
 - “What subscriptions do I have?”
@@ -54,18 +57,16 @@ After the owner authorizes a provider and confirms the read-only scope:
 - “Why was spending higher this month?”
 - “Can I afford $400 this weekend?”
 
-Acceptance must compare the HADES response with the provider’s canonical
-records, exercise pending-versus-posted behavior, verify a cursor/reload
-continuation, and test an unavailable/stale-provider response. No money
-movement, account changes, or financial writes are permitted.
+Acceptance must compare the HADES response with Actual's canonical records,
+verify reload/restart continuation, and test an unavailable/stale-server
+response. No money movement, account changes, or financial writes are
+permitted.
 
 ## Genuine owner gate
 
-The remaining action is explicit owner authorization of the provider,
-environment, accounts, retention policy, and a private HTTPS webhook path.
+The remaining action is explicit owner authorization of the finance
+environment, selected budget, accounts, retention policy, and secret storage.
 Until those choices and credentials exist, finance remains blocked by an owner
 gate and must not be simulated with real-looking data.
 
-References: [Plaid Transactions API](https://plaid.com/docs/api/products/transactions/),
-[Plaid Transactions Sync guidance](https://plaid.com/docs/transactions/sync-migration/),
-and [Plaid transaction states](https://plaid.com/docs/transactions/transactions-data/).
+Reference: [Actual Budget API](https://actualbudget.org/docs/api/).

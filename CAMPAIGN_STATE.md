@@ -169,9 +169,16 @@ with Firefly III as fallback and Finlynq/Ledgr on watchlist. Evidence and the
 remaining synthetic HADES adapter conditions are in
 `docs/adr/finance-platform.md`.
 
-The next finance action is to resolve the Actual client/server migration
-compatibility in disposable staging, then rerun synthetic import, read, reload,
-restart, and restore acceptance before any HADES adapter is added.
+The next finance action is to exercise the constrained Actual read adapter
+through an isolated HADES owner conversation, then complete selected-state
+restore acceptance before any production enablement.
+
+The stable 26.9.0 Actual pair now passes synthetic import/repeat, sync, fresh
+runtime reload, and transfer-payee linking. A constrained read-only MCP adapter
+exists under `integrations/actual-finance-readonly/` and has been exercised
+directly against that canonical synthetic budget. HADES owner-conversation
+verification and selected-state restore evidence remain open; the adapter is
+not enabled in production.
 
 Shared LDAP identity is staged in `docs/shared-identity.md` but intentionally
 deferred until the multi-user roadmap milestone is complete.

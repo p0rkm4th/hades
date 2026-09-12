@@ -62,6 +62,15 @@ and corrections. It is not owner data.
   recovered the account. This proves the supported API shape is viable, but
   production must pin a matching, supported server/client pair rather than
   adopt a moving nightly channel.
+- The stable `26.9.0` image and client then passed the matching-pair probe in a
+  fresh disposable server. Batch A imported 12 rows with zero errors across
+  Checking, Rainy Day Savings, and Synthetic Card; repeating the import added
+  zero rows and returned three reconciliation updates. Sync and a fresh
+  runtime download recovered all 12 rows. Actual's import identity is global
+  enough that the fixture's intentionally shared external IDs for transfer
+  pairs collapse counterpart rows; the correct supported transfer path is to
+  use Actual's transfer payee with `addTransactions`, which created and linked
+  the synthetic Checking-to-Savings counterpart in a separate proof budget.
 
 ## Backup / restore
 
@@ -95,9 +104,9 @@ provider linking, reconciliation writes, or money movement.
 ## Conditions before promotion
 
 1. Pin a matching supported Actual server/client revision and resolve the
-   current migration mismatch, then import the same
-   fixture through an Actual-compatible path, including repeat import and
-   transfer semantics.
+   current migration mismatch. The stable synthetic import/repeat and
+   transfer-payee proofs are complete; the remaining fixture work is mapping
+   provider transfer pairs without reusing one global external ID.
 2. Implement or configure a small read-only Hermes adapter over the official
    Actual API, with failure and stale-state responses.
 3. Prove the read path through the HADES owner UI against synthetic canonical
