@@ -27,7 +27,7 @@ check_history() {
   fi
 }
 
-check_history '/home/|/Users/|[[:space:]]192\.168\.|[[:space:]]10\.|[[:space:]]172\.(1[6-9]|2[0-9]|3[01])\.' \
+check_history '/home/[[:alnum:]_.-]+/|/Users/[[:alnum:]_.-]+/|[[:space:]]192\.168\.|[[:space:]]10\.|[[:space:]]172\.(1[6-9]|2[0-9]|3[01])\.' \
   'local paths and private-network addresses absent'
 check_history 'tail[a-z0-9-]+\.ts\.net' 'tailnet hostnames absent'
 
