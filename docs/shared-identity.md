@@ -12,8 +12,10 @@ LDAP port to the LAN.
 
 ## Migration order
 
-1. Create a private secrets directory with separate random values for the JWT
-   secret, key seed, and LLDAP admin password. Never commit these files.
+1. Run `scripts/prepare-shared-identity.sh` locally. It creates a private
+   secrets directory with separate random values for the JWT secret and key
+   seed, then prompts for the LLDAP admin password without echoing it. Never
+   commit these files.
 2. Start LLDAP and create the owner account `owner` through its administrator
    interface. The owner chooses the password; it is never placed in Git or
    sent through HADES chat.
