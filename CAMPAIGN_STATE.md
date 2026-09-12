@@ -12,7 +12,7 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`6ccc04d` — clean upstream MCP contract, runtime-backed persistence map, and
+`9024ffc` — clean upstream MCP contract, runtime-backed persistence map, and
 public CI compose tripwire committed and pushed. Founding capabilities and
 current upstream/A2A decisions are reconciled; Actual remains selected for
 synthetic HADES integration and production finance is gated.
@@ -154,9 +154,10 @@ focused upstream tests, and an isolated API-server MCP contract are verified.
 The MCP contract required the declared optional MCP extra; with it installed,
 a deterministic provider drove tool search → tool call, and a canonical marker
 from the synthetic MCP process survived post-tool continuation. The next
-non-gated action is to build the remaining synthetic owner-contract matrix,
-then classify the overlay and rehearse rollback before any production
-migration.
+non-gated action is to complete the component-specific recovery runbook and
+synthetic restore-evidence template, then rehearse rollback before any
+production migration. The private drill must remain isolated from owner data
+and must not become a public-repository backup job.
 
 Obtain explicit owner authorization for exact homelab endpoints and
 least-privilege credentials in parallel, then provision only read-only

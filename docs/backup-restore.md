@@ -53,6 +53,39 @@ separately from the container volumes and never copied into public CI.
 7. Retain at least one known-good pre-migration backup until the replacement
    runtime has passed its owner acceptance matrix.
 
+## Recovery order and evidence
+
+Restore dependencies in this order so a recovered owner session does not
+silently point at incomplete canonical state:
+
+1. Open WebUI data and matching HADES static assets.
+2. Hindsight's PostgreSQL data, followed by a health check and a known
+   synthetic recall.
+3. Grocy's complete `/config` state, followed by canonical stock and
+   shopping-list checks.
+4. Hermes' private profile and credentials, followed by the Open WebUI API
+   contract and a bounded tool call.
+5. Agent Zero's private volume, followed by a harmless delegated task and a
+   controlled failure check.
+6. SearXNG configuration and cache, followed by a JSON search check.
+
+The first four steps are required before owner-facing chat is considered
+recovered. Agent Zero and SearXNG may be restored independently, but HADES
+must report those integrations as unavailable until their checks pass.
+
+The private drill should record, outside Git:
+
+```text
+component, source backup identifier, creation time, image/version/digest,
+restore target, health result, canonical verification result,
+reload/restart result, operator, limitations
+```
+
+For the isolated synthetic rehearsal, use marker-only conversation, memory,
+Grocy, and delegation fixtures. The rehearsal is successful only when the
+markers are produced by the restored authoritative services, survive a fresh
+session, and are absent from the public repository and CI artifacts.
+
 ## Current recovery artifact policy
 
 The temporary test administrator plaintext credential file and duplicate recovery/database
@@ -67,5 +100,5 @@ the temporary password has been replaced.
 No final backup job or installer is defined here yet. The next implementation
 step is a private, component-specific backup/restore drill with explicit
 retention and encryption settings, followed by an isolated restore test. The
-mount inventory is now runtime-backed; native database/export procedures and
-restore evidence remain outstanding.
+mount inventory and recovery order are now runtime-backed; native
+database/export procedures and restore evidence remain outstanding.
