@@ -48,13 +48,16 @@
       const response = await fetch('/api/v1/users/user/settings?raw=true');
       if (!response.ok) return;
       const settings = await response.json();
-      const hasLocalTheme = isTheme(localStorage.getItem(themeKey));
-      const hasLocalEffect = isEffect(localStorage.getItem(effectKey));
-      if (!localThemeChanged && !hasLocalTheme && settings && isTheme(settings[remoteThemeKey])) {
+      // localStorage is shared by every account using this browser profile,
+      // while these settings are account-scoped in Open WebUI. A stale local
+      // value must therefore never override an authenticated account value.
+      // The synchronous startup restore remains useful while this request is
+      // in flight and when the deployment is logged out/offline.
+      if (!localThemeChanged && settings && isTheme(settings[remoteThemeKey])) {
         localStorage.setItem(themeKey, settings[remoteThemeKey]);
         applyTheme(settings[remoteThemeKey]);
       }
-      if (!localEffectChanged && !hasLocalEffect && settings && isEffect(settings[remoteEffectKey])) {
+      if (!localEffectChanged && settings && isEffect(settings[remoteEffectKey])) {
         localStorage.setItem(effectKey, settings[remoteEffectKey]);
         applyEffect(settings[remoteEffectKey]);
       }
