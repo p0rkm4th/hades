@@ -8,7 +8,7 @@ Last reviewed: 2026-09-12
 
 | Capability | Status | Component / revision | Sanitized evidence | Limitation |
 |---|---|---|---|---|
-| Owner conversation | PASS + PERSISTENCE | Open WebUI 0.11.1, Hermes 0.14.0 | Authenticated mobile owner chat returned a response and retained it after reload. | Model latency and capabilities depend on the local model. |
+| Owner conversation | PASS + PERSISTENCE | Open WebUI 0.11.5, Hermes 0.14.0 | Authenticated mobile owner chat returned a response and retained it after reload. | Model latency and capabilities depend on the local model. |
 | Durable memory | PASS + PERSISTENCE | Hindsight with Hermes memory provider | Owner UI retain/recall and correction returned the current canonical Hindsight fact in a fresh mobile conversation; reload/restart evidence was preserved. | Hindsight is contextual memory, not live domain truth. |
 | Web search | PASS | SearXNG with Hermes provider | SearXNG health and basic query path pass; provider is configured from the repository seed. | Detailed owner search rendering remains deployment-specific. |
 | Adaptive model capability notice | PASS | Open WebUI extension and Hermes deployment overlay | Tool-capable and completion-only local models are presented with distinct capability messaging and routing behavior. | Completion-only models cannot use HADES tools. |

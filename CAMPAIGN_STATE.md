@@ -148,17 +148,21 @@ See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 
 ## NEXT ACTION
 
-Obtain explicit owner authorization for exact homelab endpoints and
-least-privilege credentials, then provision only read-only Proxmox, NetBox, or
-Uptime Kuma access and verify it through the HADES owner path. Credential-
-independent preparation is documented in `docs/homelab-readonly.md`. Finance
-preparation is complete in `docs/finance-readonly.md`; provider, account,
-environment, retention, and webhook authorization remain owner-gated.
+Hermes production remains pinned. Clean upstream v0.21.2 normal conversation
+and the focused upstream test set are verified, but the isolated API-server
+MCP probe was not executed and the model fabricated a marker; no tool-path
+upgrade evidence exists. The next non-gated action is to build the remaining
+synthetic owner-contract matrix with explicit tool invocation/canonical
+verification, then classify the overlay and rehearse rollback before any
+production migration.
 
-Hermes production remains pinned while an isolated external-contract staging
-matrix is unavailable. The next non-gated engineering action is a disposable
-staging deployment with synthetic domain services, followed by owner-path
-contract verification and rollback rehearsal.
+Obtain explicit owner authorization for exact homelab endpoints and
+least-privilege credentials in parallel, then provision only read-only
+Proxmox, NetBox, or Uptime Kuma access and verify it through the HADES owner
+path. Credential-independent preparation is documented in
+`docs/homelab-readonly.md`. Finance preparation is complete in
+`docs/finance-readonly.md`; provider, account, environment, retention, and
+webhook authorization remain owner-gated.
 
 The synthetic finance bakeoff selected Actual Budget, with Firefly III as
 fallback and Finlynq/Ledgr on watchlist. Evidence and production gates are in
