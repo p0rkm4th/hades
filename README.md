@@ -30,3 +30,7 @@ paths, private network addresses, or legacy application state. Copy the
 examples into a private deployment configuration and substitute local values.
 
 Upstream Open WebUI branding and license requirements remain in force.
+
+Before publishing changes, run `scripts/public-history-audit.sh HEAD` to check
+the complete reachable history for local paths, private-network addresses,
+tailnet hostnames, and credential-like artifacts.
