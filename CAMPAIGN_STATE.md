@@ -38,8 +38,9 @@ intentionally maintained in private operations state.
   its standalone UI/model smoke path passes, but HADES delegation is not yet
   owner-accepted.
 - Grocy is deployed privately with a dedicated persistent volume and pinned
-  image; its HTTP path passes, but synthetic household workflows through HADES
-  are not yet owner-accepted.
+  image; its HTTP path passes. The HADES API owner path now successfully calls
+  the canonical stock tool against the synthetic empty database, but mutation,
+  browser-DOM, and reload acceptance remain open.
 
 ## REAL OWNER GATES
 
@@ -66,8 +67,9 @@ intentionally maintained in private operations state.
 
 ## OPEN DEFECTS
 
-Deployment-specific defects are intentionally excluded from the public
-checkpoint; they belong in the private operations record.
+- Grocy owner turns require intent-scoped tool narrowing for the local Qwen
+  model; the narrow read path passes, while broader household workflows remain
+  unverified.
 
 ## HERMES OVERLAY STATUS
 

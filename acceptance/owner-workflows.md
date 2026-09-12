@@ -32,8 +32,11 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Household
 
-- **Current status:** TEMPLATE
+- **Current status:** PARTIAL
 - **Authoritative system:** Grocy
+- **Verified slice:** HADES API owner path narrowed a grocery/stock turn to
+  the canonical Grocy MCP tools and returned the live empty-stock result;
+  Grocy `/api/stock` independently confirmed zero rows.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
