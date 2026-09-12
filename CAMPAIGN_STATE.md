@@ -41,10 +41,11 @@ intentionally maintained in private operations state.
   and persistent delegated context remain open.
 - Grocy is deployed privately with a dedicated persistent volume and pinned
   image; its HTTP path passes. The HADES API owner path now successfully calls
-  the canonical stock and shopping-list tools against synthetic data. A
-  synthetic shopping-list mutation survived a Grocy restart and was recovered
-  by a fresh HADES query; browser-DOM and broader household acceptance remain
-  open.
+  the canonical stock and shopping-list tools against synthetic data. Add,
+  remove, and correction/re-add turns have been verified against Grocy's
+  canonical shopping-list API; an earlier mutation survived a Grocy restart
+  and was recovered by a fresh HADES query. Browser-DOM and broader household
+  acceptance remain open.
 
 ## REAL OWNER GATES
 
