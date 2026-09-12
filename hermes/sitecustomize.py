@@ -175,6 +175,36 @@ try:
     # point, so this cannot erase the selected provider or model.
     from run_agent import AIAgent as _AIAgent
 
+    # The API gateway can construct agents after MCP discovery but before the
+    # dynamic server alias is visible to its platform allowlist. Reconcile the
+    # canonical Grocy toolset at the agent boundary so owner-facing API turns
+    # receive the same schemas as an explicit `hermes -t mcp-grocy` run.
+    _hades_original_agent_init = _AIAgent.__init__
+
+    def _hades_agent_init(self, *args, **kwargs):
+        _hades_original_agent_init(self, *args, **kwargs)
+        tools = getattr(self, "tools", None)
+        if not isinstance(tools, list) or any(
+            t.get("function", {}).get("name", "").startswith("mcp_grocy_")
+            for t in tools
+        ):
+            return
+        from model_tools import get_tool_definitions as _get_tool_definitions
+        extra = _get_tool_definitions(
+            enabled_toolsets=["mcp-grocy"], quiet_mode=True
+        )
+        existing = {t.get("function", {}).get("name") for t in tools}
+        for tool in extra:
+            name = tool.get("function", {}).get("name")
+            if name and name not in existing:
+                tools.append(tool)
+                existing.add(name)
+        self.valid_tool_names = existing
+        _hades_logger.warning(
+            "API tool reconciliation added %d Grocy tools",
+            sum(1 for t in extra if t.get("function", {}).get("name", "").startswith("mcp_grocy_")),
+        )
+
     _hades_original_run_conversation = _AIAgent.run_conversation
 
     def _hades_run_conversation(self, user_message, *args, **kwargs):
@@ -188,6 +218,73 @@ try:
         original_internal_stream_callback = getattr(self, "_stream_callback", None)
         original_tools = getattr(self, "tools", None)
         original_valid_tool_names = getattr(self, "valid_tool_names", None)
+        grocy_intent = re.search(
+            r"\b(?:grocery|groceries|shopping list|recipe|food|pantry|inventory|"
+            r"what(?:'s| is) in stock|do we have)\b",
+            str(user_message or ""),
+            re.IGNORECASE,
+        )
+        agent_zero_intent = re.search(
+            r"\b(?:agent zero|agent0|bounded operator|delegate|delegation)\b",
+            str(user_message or ""),
+            re.IGNORECASE,
+        )
+        if grocy_intent and isinstance(original_tools, list):
+            try:
+                from model_tools import get_tool_definitions as _get_tool_definitions
+                grocy_tools = _get_tool_definitions(
+                    enabled_toolsets=["mcp-grocy"], quiet_mode=True
+                )
+                if grocy_tools:
+                    self.tools = grocy_tools
+                    self.valid_tool_names = {
+                        t["function"]["name"] for t in grocy_tools
+                    }
+                    _hades_logger.warning(
+                        "API Grocy intent narrowed tool catalog to %d tools",
+                        len(grocy_tools),
+                    )
+            except Exception as exc:
+                _hades_logger.warning("API Grocy intent narrowing failed: %s", exc)
+        if agent_zero_intent and isinstance(original_tools, list):
+            try:
+                from model_tools import get_tool_definitions as _get_tool_definitions
+                operator_tools = _get_tool_definitions(
+                    enabled_toolsets=["hades-agent-zero"], quiet_mode=True
+                )
+                if operator_tools:
+                    self.tools = operator_tools
+                    self.valid_tool_names = {
+                        t["function"]["name"] for t in operator_tools
+                    }
+                    _hades_logger.warning(
+                        "API Agent Zero intent narrowed tool catalog to %d tools",
+                        len(operator_tools),
+                    )
+            except Exception as exc:
+                _hades_logger.warning("API Agent Zero intent narrowing failed: %s", exc)
+        if isinstance(original_tools, list) and not any(
+            t.get("function", {}).get("name", "").startswith("mcp_grocy_")
+            for t in original_tools
+        ):
+            try:
+                from model_tools import get_tool_definitions as _get_tool_definitions
+                extra_grocy = _get_tool_definitions(
+                    enabled_toolsets=["mcp-grocy"], quiet_mode=True
+                )
+                names = {t.get("function", {}).get("name") for t in original_tools}
+                for tool in extra_grocy:
+                    name = tool.get("function", {}).get("name")
+                    if name and name not in names:
+                        original_tools.append(tool)
+                        names.add(name)
+                self.valid_tool_names = names
+                _hades_logger.warning(
+                    "API turn reconciliation added %d Grocy tools",
+                    sum(1 for t in extra_grocy if t.get("function", {}).get("name", "").startswith("mcp_grocy_")),
+                )
+            except Exception as exc:
+                _hades_logger.warning("API turn Grocy reconciliation failed: %s", exc)
         # Open WebUI uses the streaming API.  If a weak local model emits a
         # misleading post-tool continuation, let the authoritative Hindsight
         # result replace it before the API adapter sends any text delta.
@@ -196,7 +293,9 @@ try:
         # SSE writer forwards callback deltas but does not read the returned
         # final_response, so emit the authoritative result through the saved
         # callback once the tool loop is complete.
-        suppress_stream = bool(memory_intent and original_stream_callback)
+        suppress_stream = bool(
+            memory_intent and not grocy_intent and original_stream_callback
+        )
         if suppress_stream:
             self.stream_delta_callback = None
             self._stream_callback = None
@@ -205,10 +304,16 @@ try:
         # enforce the same boundary in the agent's executable tool set for
         # both streaming and non-streaming callers.
         if memory_intent and isinstance(original_tools, list):
+            allowed_memory = {"hindsight_recall", "hindsight_retain"}
+            if grocy_intent:
+                allowed_memory.update(
+                    tool.get("function", {}).get("name")
+                    for tool in original_tools
+                    if tool.get("function", {}).get("name", "").startswith("mcp_grocy_")
+                )
             self.tools = [
                 tool for tool in original_tools
-                if tool.get("function", {}).get("name")
-                in {"hindsight_recall", "hindsight_retain"}
+                if tool.get("function", {}).get("name") in allowed_memory
             ]
             self.valid_tool_names = {
                 tool["function"]["name"] for tool in self.tools
@@ -226,7 +331,7 @@ try:
             self.model = "qwen3:8b"
         try:
             result = _hades_original_run_conversation(self, user_message, *args, **kwargs)
-            if memory_intent and isinstance(result, dict):
+            if memory_intent and not grocy_intent and isinstance(result, dict):
                 _hades_logger.warning(
                     "memory turn returned roles=%s final_len=%d",
                     [m.get("role") for m in result.get("messages", []) if isinstance(m, dict)],
