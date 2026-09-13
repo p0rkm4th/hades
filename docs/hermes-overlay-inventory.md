@@ -14,6 +14,11 @@ overlay must be re-evaluated whenever the pinned Hermes version changes.
 | Isolate completion-only creative models from HADES tools | Uncensored/creative models are intentionally tool-less | Owner model-picker labels and no-tool workflow | A reviewed safety policy explicitly replaces this deployment boundary |
 | Preserve authoritative Hindsight output in streamed turns | Some local models emit a misleading continuation after a successful memory call | Memory regression and mobile DOM recall/correction evidence | Upstream streaming preserves the authoritative tool result |
 
+The subject-scope resolver also re-runs the strict session-key validator before
+assigning owner or household scope. Invalid, empty, or untrusted keys therefore
+remain denied rather than inheriting ordinary household capability. This is a
+fail-closed security invariant, not candidate-specific cosmetic behavior.
+
 ## Review rule
 
 No behavior is removed solely because an upstream test suite passes. Its

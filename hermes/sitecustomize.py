@@ -36,8 +36,13 @@ def _hades_session_scope(session_key):
         # Open WebUI uses one server-expanded template for all authenticated
         # users. Resolve the owner exception from a private service setting,
         # never from model text or a client-provided role/group claim.
+        subject = _hades_subject_from_session_key(session_key)
+        if not subject:
+            # A prefix alone is not authentication. Invalid or empty subjects
+            # must remain denied rather than inheriting household capability.
+            return ""
         owner_subject = os.environ.get("HADES_OWNER_SUBJECT_ID", "").strip()
-        if session_key.removeprefix("hades-user-") == owner_subject:
+        if subject == owner_subject:
             return "owner"
         return "household"
     # Do not honor a client-selectable owner prefix. Production Open WebUI

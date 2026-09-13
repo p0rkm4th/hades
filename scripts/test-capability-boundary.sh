@@ -23,6 +23,8 @@ if 'not household_session' not in source:
     raise SystemExit('household Agent Zero scope guard is missing')
 if 'hades-user-' not in source or 'HADES_OWNER_SUBJECT_ID' not in source:
     raise SystemExit('server-selected subject scope is incomplete')
+if 'subject = _hades_subject_from_session_key(session_key)' not in source:
+    raise SystemExit('scope resolver does not reuse subject validation')
 if 'client-selectable owner prefix' not in source or 'return ""' not in source:
     raise SystemExit('untrusted owner scope does not fail closed')
 if 'privileged_markers = ("agent_zero", "agent-zero", "finance")' not in source:
