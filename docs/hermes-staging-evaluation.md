@@ -307,6 +307,15 @@ candidate's canonical `scripts/run_tests.sh` then passed a focused three-file
 contract run: **134 passed, 0 failed**. This is valid focused evidence only;
 the full suite still requires a fresh candidate environment and a clean run.
 
+The focused rerun also passed `test_compression_stall_fallback_78981.py`
+completely. `test_local_quickstart.py` still has two deterministic failures:
+its fresh-machine and already-satisfied cases receive the endpoint's intended
+hardware-fit `409` because the tests do not stub the hardware planning budget;
+the same file's explicit no-recommendation and single-flight `409` cases pass.
+This is candidate test/fixture debt, not a production HADES failure, but it
+must be corrected or explicitly dispositioned before claiming full upstream
+qualification.
+
 ### Minimal upstream remediation
 
 The failing row-addressed-backfill module should own an autouse fixture that

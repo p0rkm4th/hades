@@ -246,7 +246,10 @@ canonical wrapper with a fresh candidate environment.
 The disposable candidate environment was subsequently restored with
 `ensurepip` and test dependencies; the canonical wrapper passed a focused
 three-file contract run with 134/134 tests. This does not qualify the full
-suite.
+suite. The focused follow-up also passed the compression-stall file; the two
+remaining local-quickstart failures are deterministic HTTP 409 responses from
+the endpoint's hardware-fit preflight because those tests do not stub the
+planning budget. This is candidate test/fixture debt, not a production failure.
 
 ## HOUSEHOLD ALPHA STATUS
 
