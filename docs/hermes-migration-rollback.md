@@ -92,5 +92,24 @@ authenticated the preserved Luna account with the same account ID and admin
 role, rendered existing chat history in the clone, completed a candidate chat
 through the WebUI, and verified the resulting marker in the clone database.
 The clone, temporary credential, candidate gateway, and candidate container
-were removed afterward. This proves WebUI identity/chat continuity, but does
-not prove production Hindsight history mapping or a real Agent Zero runtime.
+were removed afterward. This proves WebUI identity/chat continuity. A
+separate read-only production Hindsight check confirmed the existing
+`hades-owner` bank and zero pending operations, while the candidate overlay
+resolved the actual private owner subject to owner scope without querying that
+bank from the candidate.
+
+The pinned Agent Zero image was also booted with a fresh disposable volume and
+loopback-only port. Its real API was healthy but rejected the synthetic bridge
+credential with HTTP 401; the image-managed API token was not available as a
+safe staging secret. The candidate container and volume were removed, and no
+production Agent Zero credential or state was used. The bounded MCP bridge is
+therefore the validated candidate substitute; native A2A/real-runtime
+validation remains a separate follow-up, not a reason to weaken the bounded
+bridge or connect production credentials during staging.
+
+## Promotion decision
+
+The isolated Hermes 0.21.2 matrix is promotion-ready for a controlled,
+rollback-backed production change window. This is a decision, not an executed
+deployment: production remains on Hermes 0.14.0 until the operator starts the
+separately scheduled change window and runs the owner regression checklist.

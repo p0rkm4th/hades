@@ -193,11 +193,14 @@ and 14B are below the candidate's enforced 64K context floor, so they are not
 candidate production profiles. The isolated Hindsight, Grocy, SearXNG,
 bounded Agent Zero bridge, synthetic Actual Budget, disposable Open WebUI,
 and rollback checks are recorded. The owner-preserving rehearsal against a
-disposable copy of existing WebUI state also passed: the original Luna
-account ID/role and existing chat history rendered through candidate Hermes,
-and a candidate chat persisted in the clone. Remaining gates are production
-Hindsight-history mapping evidence and the final disposition of real Agent
-Zero runtime validation; production remains on Hermes 0.14.0.
+disposable copy of existing WebUI state passed: the original Luna account
+ID/role and existing chat history rendered through candidate Hermes, and a
+candidate chat persisted in the clone. Production Hindsight read-only checks
+confirmed the existing owner bank and zero pending operations; the candidate
+overlay maps the actual owner subject to owner scope and malformed subjects to
+denied scope. The isolated matrix is promotion-ready for a controlled,
+rollback-backed change window. No production upgrade has been executed;
+production remains on Hermes 0.14.0.
 
 ## HOUSEHOLD ALPHA STATUS
 

@@ -131,15 +131,22 @@ three tool attempts before emitting the successful call, so the contract
 passes but weak-model operator prompting remains a performance/quality
 limitation. The real Agent Zero endpoint and credentials were not used.
 
-**Decision remains: do not promote Hermes 0.21.2 yet.** The isolated
-candidate matrix is materially green. Synthetic Actual Budget and a fresh
-disposable Open WebUI owner-facing path have now passed, so they are no longer
-promotion gaps. The remaining gates are production Hindsight-history mapping
-evidence and a final decision on whether the real Agent Zero runtime needs
-separate validation. The owner-state rehearsal proved account/chat continuity
-and candidate UI operation, but deliberately did not connect candidate code
-to production Hindsight. Production remains on Hermes 0.14.0 until those gates
-are satisfied.
+The isolated candidate matrix is materially green. Synthetic Actual Budget
+and a fresh disposable Open WebUI owner-facing path have passed. The
+owner-state rehearsal proved account/chat continuity and candidate UI
+operation without connecting candidate code to production Hindsight. A
+read-only production Hindsight check confirmed the existing `hades-owner`
+bank is present with zero pending operations, and the candidate overlay maps
+the actual private owner subject to owner scope while malformed subjects remain
+denied. This establishes the history-preserving mapping invariant without
+exposing owner memories to the candidate.
+
+The full isolated candidate contract is promotion-ready for a controlled
+change window. A real Agent Zero runtime is not required for the candidate:
+the bounded bridge passed with a loopback fixture, while the separately
+booted real image rejected an unavailable synthetic credential with HTTP 401.
+Native A2A/real-runtime credential provisioning remains a separate follow-up.
+Production remains on Hermes 0.14.0; no production upgrade has been executed.
 
 The candidate runtime also passed the subject-scope regression: the trusted
 owner subject maps to owner scope, a household subject maps to household
@@ -182,3 +189,15 @@ This proves the owner-facing identity/chat continuity path against a
 disposable WebUI-state copy. It does not prove production Hindsight history
 mapping or a real Agent Zero runtime, so it is not authorization to promote
 the candidate by itself.
+
+## Disposable real Agent Zero check
+
+The pinned Agent Zero image was started separately with a fresh named volume
+and loopback-only port. It booted its real UI/API stack successfully, but its
+protected `/api/api_message` endpoint rejected the synthetic bridge key with
+HTTP 401. The image generates/manages its MCP API token inside its own
+settings; no safe staging credential was available without creating an
+additional authenticated setup flow. The candidate container and volume were
+removed. Production Agent Zero and its credentials were not used. The
+existing bounded MCP bridge remains the approved candidate contract, while
+native A2A and real-runtime credential provisioning remain separate work.
