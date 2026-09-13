@@ -158,20 +158,24 @@ run with the Hermes 0.21.2 candidate interpreter and the repository overlay.
 
 A separate loopback Hermes 0.21.2 launch was run without the repository
 overlay. Ordinary completion succeeded, and upstream Hermes registered the
-configured native MCP servers and their tools. A bounded owner-style Grocy
-turn did not complete: the Gemma candidate repeatedly entered tool-search and
-auxiliary title-generation work and was interrupted after the timeout window.
-This is evidence that base chat and MCP registration are upstream capabilities,
-but it is not evidence of a reliable owner workflow without the overlay.
+configured native MCP servers and their tools. With default auxiliary and
+tool-search settings, a bounded owner-style Grocy turn repeatedly entered
+tool-search/title-generation work and exceeded the probe window. The same
+upstream-only candidate was then rerun with supported configuration disabling
+title generation and tool search; native Grocy completed in one tool turn and
+returned the expected marker. Base chat, MCP registration, and the configured
+Grocy path are therefore upstream capabilities.
 
 The overlay therefore remains intentionally narrow rather than being copied
 blindly or removed wholesale. Its subject validation/capability filtering,
 HADES-specific model and web routing, Hindsight reconciliation/streaming
-handling, and owner-facing reliability behavior still require the overlay
-until equivalent upstream-only owner tests pass. The upstream-only probe also
-reported Hermes' linked SQLite runtime warning and a stale systemd timeout
-warning; these are candidate change-window hardening items, not production
-changes.
+handling, and owner-facing reliability behavior still require the overlay.
+Grocy reconciliation can be disabled for the modern candidate when the
+supported native-MCP configuration is used, but it remains required by the
+production 0.14.0 path until that service is migrated and its full owner
+contract is retested. The upstream-only probe also reported Hermes' linked
+SQLite runtime warning and a stale systemd timeout warning; these are candidate
+change-window hardening items, not production changes.
 
 The upstream-only memory comparison is a security boundary: with a trusted
 synthetic session key and the configured `bank_id_template`, Hermes 0.21.2
@@ -180,6 +184,12 @@ The request completed, but the bank selection was not isolated. The HADES
 subject-to-bank mapping overlay must therefore be retained until upstream
 provides an equivalent server-side mapping and it passes the two-user
 isolation contract.
+
+The candidate launch also requires a clean process working directory. Starting
+from the Hermes source checkout injects its large `AGENTS.md` into API prompts;
+starting from an empty workspace with `terminal.cwd` configured avoids that
+source-tree prompt contamination. The owner-facing change-window unit must
+use the clean-workspace pattern.
 
 The candidate also exposed a deployment-context requirement. Starting the
 gateway from the Hermes source checkout caused the checkout's `AGENTS.md` to
