@@ -234,6 +234,10 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   facts, including an adversarial cross-user request. A prior static-bank
   failure was corrected by placing `bank_id_template` in the provider's
   authoritative JSON configuration.
+- Shared Grocy: PASS + PERSISTENCE in disposable end-to-end staging; Alpha
+  added synthetic Milk through Hermes/MCP, Beta saw the same canonical shared
+  list, and the item remained after Grocy/Hermes restart. Production Grocy
+  was not touched.
 - Grocy/finance isolation: NOT STARTED for two-user acceptance.
 - Agent Zero household policy: owner-only in the current unmarked production
   session; the overlay now fail-closes Agent Zero for server-marked household

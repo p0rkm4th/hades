@@ -238,6 +238,25 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   still uses the static owner bank until migration, header configuration, and
   owner-data preservation are separately approved and verified.
 
+## Shared Grocy through subject-aware Hermes
+
+- **Current status:** PASS + PERSISTENCE (disposable end-to-end staging)
+- **Owner input:** Alpha asked to add Milk; Beta asked for the shared grocery
+  list; Alpha asked again after restart
+- **DOM result:** not exercised in this checkpoint; the authenticated API
+  path was used while the browser harness is unavailable
+- **Authoritative system:** disposable Grocy `shopping_list` state
+- **Backend verification:** Alpha's Hermes/MCP turn added Milk. Grocy's
+  canonical API contained exactly one Milk row. Beta's independent subject
+  read saw the same shared list and Milk entry.
+- **Reload/persistence result:** Grocy and Hermes were restarted; Alpha's
+  fresh subject-keyed read still saw Milk, and the canonical API still showed
+  one Milk row.
+- **Last verified SHA:** `e90649e`
+- **Limitations:** this uses a disposable demo-mode Grocy backend and a
+  synthetic adapter key. Production Grocy was not mutated; full household
+  authorization and Open WebUI DOM acceptance remain pending.
+
 ## Privileged capability boundary
 
 - **Current status:** PARTIAL (production finance exclusion; household scope
