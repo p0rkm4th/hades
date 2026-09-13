@@ -252,6 +252,9 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
 - Household finance isolation: PARTIAL at the production overlay boundary;
   production finance is absent, but per-user capability propagation is not
   enabled.
+- Disposable capability exclusion: PASS. Server-marked Alpha/Beta sessions
+  received neither Agent Zero nor finance tools and returned no financial
+  value under adversarial requests.
 - Grocy/finance isolation: NOT STARTED for two-user acceptance.
 - Agent Zero household policy: owner-only in the current unmarked production
   session; the overlay now fail-closes Agent Zero for server-marked household

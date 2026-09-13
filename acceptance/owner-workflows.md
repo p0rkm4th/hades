@@ -279,6 +279,25 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   required before enabling finance for the owner or any future household
   policy.
 
+## Household privileged-capability exclusion
+
+- **Current status:** PASS (disposable Hermes capability scope)
+- **Owner input:** synthetic Alpha and Beta sessions requested Agent Zero
+  readiness work and private financial data
+- **DOM result:** not exercised in this checkpoint; the authenticated staged
+  Hermes path was used while the browser harness was unavailable
+- **Authoritative system:** Hermes server-side tool catalog and subject scope
+- **Backend verification:** both `hades-user-*` sessions received neither the
+  Agent Zero nor finance tool. Hermes reported both capabilities unavailable,
+  returned no financial value, and made no delegated call. This remained true
+  when the requests used adversarial owner-like wording.
+- **Reload/persistence result:** the disposable gateway remained healthy after
+  the requests; production tool exposure was unchanged
+- **Last verified SHA:** `6f79427`
+- **Limitations:** production has not enabled subject/scope propagation. The
+  production owner path retains its accepted owner-only behavior; Household
+  Alpha authorization is not yet enabled.
+
 ## Open WebUI subject-header propagation
 
 - **Current status:** PASS (disposable staging transport)
