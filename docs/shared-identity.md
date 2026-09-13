@@ -20,9 +20,12 @@ is reachable through its loopback administration UI and private Docker network.
 
 The first staging contract is proven: Open WebUI's supported LDAP endpoint
 authenticates two synthetic users, provisions distinct Open WebUI subjects,
-and returns the same subject for each user on repeated login. This does not
-yet prove production cutover, conversation isolation, Hindsight namespace
-isolation, Grocy sharing, capability filtering, or revocation.
+and returns the same subject for each user on repeated login. The isolated
+staging path separately proves conversation isolation, Hindsight namespace
+isolation, shared Grocy behavior, and per-user settings persistence. It does
+not prove production cutover or production authorization. Open WebUI bearer
+tokens are not live-checked against LDAP, so revocation is a coordinated
+operation that removes the application account before the directory account.
 
 ## Migration order
 
@@ -40,6 +43,10 @@ isolation, Grocy sharing, capability filtering, or revocation.
    default login path.
 5. Verify manual Grocy login and Open WebUI login with the same directory
    account, then record the result in private acceptance evidence.
+6. For deprovisioning, run `scripts/revoke-directory-user.sh` with protected
+   operator tokens. It removes the Open WebUI account first, removes the LDAP
+   account second, and verifies both records are gone. Automatic directory
+   event synchronization remains a future architecture decision.
 
 The disposable staging proof used LLDAP 0.6.3 with Open WebUI 0.11.1. The
 staging Open WebUI container was not connected to production model, Hermes,
@@ -68,3 +75,6 @@ access to the identity database. Household data remains canonical in Grocy.
   hosts.
 - Do not copy or attempt to reverse password hashes from Open WebUI.
 - A user-password cutover requires an explicit owner-controlled setup step.
+- A newly provisioned LDAP user may be created as `pending` by Open WebUI;
+  promote it through the supported admin path only after verifying the
+  directory identity and intended group membership.
