@@ -361,6 +361,11 @@ its own chat.
   implemented. Household Alpha must not be declared until the operational
   boundary is documented for production and survives restart/recovery.
 
+The ordered bridge was re-run against the clean group-enabled fixture: Beta's
+pre-revocation session returned HTTP 200, the same token returned HTTP 401
+afterward, and a fresh LDAP login returned HTTP 400. No production account was
+involved.
+
 ## Household model visibility and WebUI-to-Hermes memory
 
 - **Current status:** PASS + PERSISTENCE (disposable end-to-end staging)
