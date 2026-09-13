@@ -25,7 +25,9 @@ require_binding hades-hindsight 9999 '127.0.0.1:9999'
 
 hermes_host=$(docker exec hades-open-webui getent hosts host.docker.internal \
   2>/dev/null | awk 'NR == 1 { print $1 }' || true)
-if [[ -n "$hermes_host" ]] && ss -ltnH 2>/dev/null \
+hermes_listener_count=$(ss -ltnH 2>/dev/null \
+  | awk '$4 ~ /:8642$/ { count++ } END { print count + 0 }')
+if [[ -n "$hermes_host" && "$hermes_listener_count" == 1 ]] && ss -ltnH 2>/dev/null \
   | awk '{print $4}' | grep -Fxq "${hermes_host}:8642"; then
   printf 'PASS Hermes bound only to the WebUI private host mapping\n'
 else
