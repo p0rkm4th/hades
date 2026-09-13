@@ -219,6 +219,10 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   cutover is intentionally not started.
 - Stable subjects: PARTIAL; synthetic Alpha/Beta subjects are distinct and
   stable across repeated LDAP login in disposable Open WebUI staging.
+- Subject propagation: PASS in disposable staging; Open WebUI expanded the
+  server-side `{{USER_ID}}` connection header into a stable Hermes session key
+  and the disposable downstream endpoint received it. Production is not
+  configured with this header.
 - Conversation isolation: PASS + PERSISTENCE in isolated staging; Alpha and
   Beta cannot list or directly open one another's chats, including after
   LLDAP and WebUI restart.
@@ -231,7 +235,7 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   sessions, but the Open WebUI scope header is not yet configured.
 - Recovery: existing owner recovery path preserved; identity backup mapping
   still requires a private operational rehearsal.
-- Next highest-value action: create the staging acceptance harness for
-  authenticated two-user capability authorization, then exercise subject-aware
-  Hindsight and shared Grocy behavior through a disposable Hermes path without
-  touching production.
+- Next highest-value action: run a disposable Hermes gateway with the staged
+  Hindsight template and subject header, then verify Alpha/Beta memory
+  separation and shared Grocy capability behavior through the complete
+  authenticated path without touching production.

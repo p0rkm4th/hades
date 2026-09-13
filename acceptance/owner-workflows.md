@@ -239,3 +239,23 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   authorization is not enabled. A per-user capability source is still
   required before enabling finance for the owner or any future household
   policy.
+
+## Open WebUI subject-header propagation
+
+- **Current status:** PASS (disposable staging transport)
+- **Owner input:** synthetic Alpha login and a harmless header-probe prompt
+- **DOM result:** not exercised in this checkpoint; the request used the same
+  authenticated WebUI chat API that the frontend calls
+- **Authoritative system:** Open WebUI connection-header expansion and the
+  downstream Hermes gateway contract
+- **Backend verification:** a disposable OpenAI-compatible echo service
+  received `X-Hermes-Session-Key` containing the stable Alpha application
+  subject after Open WebUI expanded `{{USER_ID}}`. The companion group header
+  was present but empty, establishing that group propagation must be staged
+  separately rather than inferred.
+- **Reload/persistence result:** the disposable connection was removed and
+  staging was restarted; its OpenAI configuration returned to empty and the
+  echo listener was gone.
+- **Last verified SHA:** `104bac6`
+- **Limitations:** this proves transport/header expansion, not production
+  identity cutover or a full Hermes model turn. Production remains unchanged.
