@@ -4,6 +4,20 @@ This public-safe log records sanitized failure classes only. Owner prompts,
 account identifiers, URLs, private runtime details, and personal data remain
 outside the repository.
 
+## 2026-09-13 — Recovery helper initially targeted Grocy placeholder path
+
+- Actor: recovery automation
+- Surface: Grocy SQLite backup
+- Expected: snapshot the authoritative Grocy database
+- Observed: the first rehearsal targeted an empty image-level placeholder and
+  produced a small structurally valid but semantically unusable artifact
+- Failure layer: deployment mount-path assumption
+- Repair/evidence: identified `/config/data/grocy.db` as the authoritative
+  file, corrected the helper and documentation, quarantined the invalid
+  rehearsal, and produced a non-empty integrity-checked artifact with
+  checksums. The live Grocy database was not modified.
+- Status: REPAIRED
+
 ## 2026-09-13 — Hermes API listener was bound to all interfaces
 
 - Actor: production Hermes service

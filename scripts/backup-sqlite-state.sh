@@ -54,7 +54,7 @@ backup_container_quiesced() {
 
 backup_container_python hades-open-webui /app/backend/data/webui.db open-webui.db
 backup_container_quiesced hades-lldap-production /data/users.db lldap-users.db
-backup_container_php hades-grocy /config/grocy.db grocy.db
+backup_container_php hades-grocy /config/data/grocy.db grocy.db
 
 hermes_source=${HADES_HERMES_STATE_DB:-}
 [[ -s "$hermes_source" ]] || { printf 'FAIL Hermes state database missing: %s\n' "$hermes_source" >&2; exit 1; }

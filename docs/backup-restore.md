@@ -10,7 +10,7 @@ location with access controls appropriate to the data they contain.
 |---|---|---|---|---|
 | Open WebUI | `/app/backend/data/webui.db` plus Chroma data and HADES-owned static assets; SQLite WAL sidecars were present during inspection | Open WebUI for conversations and account/config state | Quiesce WebUI or use a consistent database backup; preserve the deployed asset files separately | Restore the database and matching assets before starting the service; verify authentication and chat reload. Never copy only a live `.db` while its `-wal`/`-shm` sidecars are active. |
 | Hindsight | PostgreSQL cluster under `/home/hindsight/.pg0/instances/hindsight/data` | Hindsight for semantic memory | Use PostgreSQL native consistent backup/export, not a raw live directory copy | Restore before Hermes; verify bank health and a known memory recall without treating it as live domain truth. |
-| Grocy | `/config/grocy.db` and application configuration | Grocy for household/grocery state | Back up the complete persistent config using a consistent snapshot or native database method | Restore before enabling HADES mutations; verify stock and shopping-list state canonically. |
+| Grocy | `/config/data/grocy.db` and application configuration | Grocy for household/grocery state | Back up the complete persistent config using a consistent snapshot or native database method | Restore before enabling HADES mutations; verify stock and shopping-list state canonically. |
 | Agent Zero | `/a0/usr` projects, settings, and delegated context; its `.env` is sensitive | Agent Zero for operator workspace state | Snapshot/export the dedicated persistent volume while excluding public artifacts and protecting secrets | Restore with the same bounded permissions; verify a harmless delegated task and failure behavior. |
 | SearXNG | Configuration and optional cache | SearXNG for search configuration/cache only | Preserve configuration; cache is reconstructable and need not be treated as authoritative | Recreate cache if absent; verify JSON search and provider wiring. |
 | Hermes | Profile configuration, sessions, skills, and service credentials | Hermes for orchestration/session state | Back up private profile data and secrets separately from public HADES source | Restore secrets with correct permissions, then start Hermes and verify the Open WebUI API contract. |
@@ -137,12 +137,19 @@ recovery or automatic Open WebUI subject remapping.
 
 ## Missing automation
 
-No final backup job or installer is defined here yet. The next implementation
-step is a private, component-specific backup/restore drill with explicit
-retention and encryption settings, followed by an isolated restore test. The
-mount inventory, recovery order, and synthetic Grocy/Open WebUI restore paths
-are now documented; native production database/export procedures and restore
-evidence remain outstanding for Hindsight, Hermes, Agent Zero, and SearXNG.
+[`scripts/backup-sqlite-state.sh`](../scripts/backup-sqlite-state.sh) now
+provides a private, component-specific SQLite backup helper for Open WebUI,
+LLDAP, Grocy, and Hermes. It uses online SQLite backup for WebUI, a native
+SQLite snapshot for Grocy, a brief quiesced copy for the LLDAP image (which
+does not ship SQLite tooling), and SQLite backup for Hermes state. It enforces
+private destination permissions, validates each artifact, and writes
+checksums. It does not encrypt or retain backups, and it deliberately does
+not claim coverage for Hindsight PostgreSQL, Agent Zero, or SearXNG.
+
+Native production database/export procedures and isolated restore evidence
+remain outstanding for Hindsight, Hermes profile assets, Agent Zero, and
+SearXNG. Retention, encryption, and a complete all-component job remain
+operator work.
 Hindsight tool availability and listener readiness are verified, but its native
 export remains credential-gated.
 

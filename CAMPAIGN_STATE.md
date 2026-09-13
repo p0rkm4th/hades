@@ -388,6 +388,11 @@ onboarding is the only owner-input gate; it does not pause independent work.
   Hermes bound to all host interfaces; it now binds only to the Docker host
   mapping used by WebUI. Container-to-Hermes connectivity remains healthy,
   direct loopback access is absent, and the runtime audit guards the mapping.
+- SQLite recovery helper: PASS. A repeatable private helper now creates and
+  validates four consistent SQLite artifacts (Open WebUI, LLDAP, Grocy, and
+  Hermes) with checksums. The first rehearsal exposed and corrected Grocy's
+  image path (`/config/data/grocy.db`); the corrected artifact is non-empty and
+  valid. Native Hindsight export and encrypted retention remain separate gates.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change
