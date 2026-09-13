@@ -25,6 +25,7 @@ jobs:
       - name: Run secret-free regression checks
         run: |
           bash scripts/test-hades-memory-intent.sh
+          bash scripts/test-capability-boundary.sh
           bash scripts/public-history-audit.sh
 
       - name: Validate shell scripts
