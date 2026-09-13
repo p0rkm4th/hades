@@ -200,7 +200,9 @@ confirmed the existing owner bank and zero pending operations; the candidate
 overlay maps the actual owner subject to owner scope and malformed subjects to
 denied scope. The isolated matrix is promotion-ready for a controlled,
 rollback-backed change window. No production upgrade has been executed;
-production remains on Hermes 0.14.0.
+production remains on Hermes 0.14.0. A fresh private preflight backup set has
+now been created and checksum-validated; it supersedes the older incomplete
+backup artifacts for any future change window.
 
 ## HOUSEHOLD ALPHA STATUS
 

@@ -113,3 +113,14 @@ The isolated Hermes 0.21.2 matrix is promotion-ready for a controlled,
 rollback-backed production change window. This is a decision, not an executed
 deployment: production remains on Hermes 0.14.0 until the operator starts the
 separately scheduled change window and runs the owner regression checklist.
+
+## Preflight backup correction
+
+The older migration backup directory contained two zero-byte artifacts and is
+not sufficient by itself. Before any change window, a fresh private preflight
+set was created from the live containers: Open WebUI and Grocy SQLite copies
+passed `quick_check`, the Hindsight PostgreSQL custom-format dump was created
+through its container namespace and passed `pg_restore --list`, the Hermes
+profile and service unit were non-empty, and a SHA-256 manifest verified all
+artifacts. The zero-byte legacy artifacts remain historical evidence only and
+must not be used for rollback.
