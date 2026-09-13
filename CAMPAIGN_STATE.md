@@ -169,8 +169,10 @@ Keep production Hermes 0.14.0 and local Open WebUI authentication unchanged.
 The next safe production step requires an owner-approved migration window,
 private backups and rollback targets, exact account mapping, and confirmation
 of an independently recoverable admin path. Mobile browser-DOM evidence now
-covers rendered login, private-chat sidebar isolation, and household model
-visibility; full rendered tool workflows remain outstanding.
+covers rendered login, private-chat sidebar isolation, household model
+visibility, memory retain/recall, shared Grocy read/mutation and cross-user
+read, finance exclusion, and revocation; browser-specific settings isolation
+and additional Grocy purchase/consume variations remain optional hardening.
 
 Continue independent read-only homelab preparation and Hermes modernization
 staging only when useful; neither is a prerequisite for Household Alpha.
@@ -239,7 +241,8 @@ staging only when useful; neither is a prerequisite for Household Alpha.
   removed afterward.
 - Household Alpha readiness report: staging contract is substantially green,
   but production declaration is intentionally pending the owner-preserving
-  identity migration gate and rendered revocation/mutation DOM acceptance.
+  identity migration gate. Rendered revocation and Grocy mutation/cross-user
+  read acceptance now pass in disposable staging.
 - Shared Grocy is PASS + PERSISTENCE in disposable end-to-end staging;
   finance exclusion is PASS for server-marked disposable household sessions.
 - Agent Zero household policy: owner-only in the current unmarked production
