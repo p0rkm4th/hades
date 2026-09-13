@@ -251,6 +251,10 @@ suite. The focused follow-up also passed the compression-stall file; the two
 remaining local-quickstart failures are deterministic HTTP 409 responses from
 the endpoint's hardware-fit preflight because those tests do not stub the
 planning budget. This is candidate test/fixture debt, not a production failure.
+The canonical wrapper also passed the four updater/venv-repair files serially
+(118 passed, one host-gated skip), with pytest still importable afterward.
+This narrows the environment damage to the broader full-suite interaction;
+full qualification remains pending.
 
 ## HOUSEHOLD ALPHA STATUS
 

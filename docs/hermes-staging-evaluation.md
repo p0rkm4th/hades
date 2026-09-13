@@ -328,3 +328,8 @@ fixture must call the upstream `clear_runtime_main()` cleanup path; changing
 the assertion or disabling the test would conceal the leak. Acceptance is a
 clean full-suite run with the candidate interpreter and no cross-test provider
 state, followed by the focused HADES candidate check.
+
+The canonical wrapper also ran the four updater/venv-repair files serially:
+118 tests passed, one host-gated test skipped, and the candidate interpreter
+still imported pytest afterward. This narrows the observed environment damage
+to the broader full-suite interaction; it does not qualify the full suite.
