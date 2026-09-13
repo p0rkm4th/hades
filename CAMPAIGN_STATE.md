@@ -368,6 +368,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
   encrypted off-host retention, isolated restore, and native Hindsight export
   remain unproven.
 - Synthetic identity recovery: PASS in the accepted production checkpoint.
+- Open WebUI account hygiene: PASS for the authorized cleanup. Clearly
+  synthetic Luna/test/dogfood records were removed after a verified private
+  database backup; Scotty, Alex, and the dedicated Luna operations admin were
+  preserved. WebUI integrity and the 10-check composition smoke remain green.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change
