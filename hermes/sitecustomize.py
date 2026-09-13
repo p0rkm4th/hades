@@ -91,6 +91,11 @@ try:
         r"pasta|rice|chicken|beef|fruit|vegetables?)\b",
         re.IGNORECASE,
     )
+    _HADES_GROCY_ITEM_FRAGMENT = re.compile(
+        r"^\s*(?:milk|eggs?|cereal|bread|cheese|pasta|rice|chicken|"
+        r"beef|fruit|vegetables?)\s*[?!.,]*\s*$",
+        re.IGNORECASE,
+    )
     _HADES_EXPLICIT_MEMORY_INTENT = re.compile(
         r"\b(?:remember|memorize|forget|memory|recall|do you remember|"
         r"actually my|correction)\b",
@@ -114,6 +119,7 @@ try:
             (
                 _HADES_SHARED_MEMORY_INTENT.search(user_text)
                 or _HADES_GROCY_ACTION_INTENT.search(user_text)
+                or _HADES_GROCY_ITEM_FRAGMENT.search(user_text)
             )
             and not _HADES_EXPLICIT_MEMORY_INTENT.search(user_text)
         ):
@@ -155,6 +161,7 @@ try:
             (
                 _HADES_SHARED_MEMORY_INTENT.search(query)
                 or _HADES_GROCY_ACTION_INTENT.search(query)
+                or _HADES_GROCY_ITEM_FRAGMENT.search(query)
             )
             and not _HADES_EXPLICIT_MEMORY_INTENT.search(query)
         ):
@@ -273,7 +280,9 @@ try:
         r"(?:add|out\s+of|outta)\s+(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
         r"pasta|rice|chicken|beef|fruit|vegetables?)|"
         r"remove\s+(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
-        r"pasta|rice|chicken|beef|fruit|vegetables?))\b",
+        r"pasta|rice|chicken|beef|fruit|vegetables?))\b|"
+        r"^\s*(?:milk|eggs?|cereal|bread|cheese|pasta|rice|chicken|"
+        r"beef|fruit|vegetables?)\s*[?!.,]*\s*$",
         re.IGNORECASE,
     )
     # The OpenAI-compatible API server constructs AIAgent directly rather
@@ -419,6 +428,8 @@ try:
             _hades_intent_text,
             re.IGNORECASE,
         ) or _HADES_GROCY_ACTION_INTENT.search(_hades_intent_text)
+        if not grocy_intent and _HADES_GROCY_ITEM_FRAGMENT.search(str(user_message or "")):
+            grocy_intent = True
         web_intent = re.search(
             r"\b(?:weather|forecast|temperature|search|look up|latest|news|web)\b",
             _hades_intent_text,

@@ -85,6 +85,20 @@ outside the repository.
   mutation was made when canonical state showed remaining stock.
 - Status: REPAIRED for the covered shorthand vocabulary
 
+## 2026-09-13 — Bare food fragment bypassed live stock lookup
+
+- Actor: synthetic household account
+- Surface: natural-language stock read
+- Input shape: `milk?`
+- Expected: treat a bare pantry item as a live Grocy stock lookup
+- Observed: the model used prior context instead of querying the canonical
+  household system
+- Failure layer: fragment-intent routing and memory prefetch boundary
+- Repair/evidence: added a bounded common-food fragment recognizer and applied
+  it consistently to model routing, Grocy narrowing, and memory suppression.
+  The same synthetic input then returned the live canonical stock quantity.
+- Status: REPAIRED for the covered fragment vocabulary
+
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 
 - Actor: owner account

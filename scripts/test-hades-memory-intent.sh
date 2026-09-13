@@ -20,6 +20,7 @@ required = (
     'stale personal semantic-memory claims',
     '_hades_shared_memory_intent.search(query)',
     '_hades_grocy_action_intent',
+    '_hades_grocy_item_fragment',
     'grocry',
     'grocerys',
     'outta',
