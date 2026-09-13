@@ -377,6 +377,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
   the authenticated LLDAP admin API; the directory admin, Scotty, and the
   WebUI bind service identity were preserved. LLDAP restart, recovery-artifact
   validation, and the composition smoke remain green.
+- Stale provider repair: PASS. Open WebUI's retired Hermes staging provider
+  entry was removed after a verified current database backup; the active
+  provider was preserved, WebUI restarted cleanly, and no new stale-endpoint
+  errors appeared in the post-restart log window.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

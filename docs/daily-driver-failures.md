@@ -4,6 +4,19 @@ This public-safe log records sanitized failure classes only. Owner prompts,
 account identifiers, URLs, private runtime details, and personal data remain
 outside the repository.
 
+## 2026-09-13 — Stale candidate model endpoint retried in production
+
+- Actor: production Open WebUI runtime
+- Surface: persisted model-provider configuration
+- Expected: only the active Hermes provider is contacted
+- Observed: a retired staging provider on port 18645 generated repeated
+  connection errors after restart
+- Failure layer: stale Open WebUI provider configuration
+- Repair/evidence: preserved the active provider, removed only the retired
+  connection after a verified database backup, restarted WebUI, and confirmed
+  no new 18645 errors. HADES smoke and runtime-boundary checks pass.
+- Status: REPAIRED
+
 ## 2026-09-13 — Shared household turns polluted private memory
 
 - Actor: synthetic household account
