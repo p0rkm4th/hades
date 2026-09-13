@@ -260,12 +260,16 @@ promotion rehearsal.
 
 ## Full-suite qualification note
 
-A full candidate-suite run on 2026-09-13 reached 844 passed and 23 skipped
-before stopping at one failure in
+A full candidate-suite run on 2026-09-13, invoked through the candidate
+interpreter with `python -m pytest`, reached 846 passed, 20 skipped, and 53
+deselected before stopping at one failure in
 `TestGetTextAuxiliaryClient.test_returns_none_when_nothing_available`. The
 test passes alone and the complete `test_auxiliary_client.py` file passes
 (204/204), so the failure is order-dependent: an earlier test leaves the
 candidate's process-global main-provider state set to a test OpenRouter
 provider. This is upstream test isolation debt, not a production HADES
-failure, but the full suite should be clean or run in isolated workers before
-calling the candidate fully promotion-qualified.
+failure. The initial launcher-based run also reported four Anthropic-provider
+failures because that launcher targeted an older staging virtualenv; those
+were eliminated by using the candidate interpreter directly. The full suite
+should still be clean or run in isolated workers before calling the candidate
+fully promotion-qualified.
