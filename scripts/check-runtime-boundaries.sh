@@ -22,6 +22,13 @@ require_binding hades-agent-zero 80 '127.0.0.1:7002'
 require_binding hades-searxng 8080 '127.0.0.1:8080'
 require_binding hades-hindsight 8888 '127.0.0.1:8888'
 
+if [[ -z "$(docker port hades-lldap-production 3890/tcp 2>/dev/null || true)" ]]; then
+  printf 'PASS LLDAP LDAP listener is not host-published\n'
+else
+  printf 'FAIL LLDAP LDAP listener is host-published\n'
+  exit 1
+fi
+
 if docker ps --format '{{.Ports}}' | grep -Eq '(^|[^0-9])7001([^0-9]|$)'; then
   printf 'FAIL obsolete 7001 exposure detected\n'
   exit 1
