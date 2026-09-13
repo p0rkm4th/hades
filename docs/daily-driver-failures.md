@@ -4,6 +4,20 @@ This public-safe log records sanitized failure classes only. Owner prompts,
 account identifiers, URLs, private runtime details, and personal data remain
 outside the repository.
 
+## 2026-09-13 — Hermes API listener was bound to all interfaces
+
+- Actor: production Hermes service
+- Surface: API listener exposure
+- Expected: Hermes is reachable by the containerized WebUI but not directly
+  exposed on the LAN
+- Observed: the profile environment bound port 8642 to `0.0.0.0`
+- Failure layer: Hermes profile bind configuration
+- Repair/evidence: changed the authoritative profile setting to the Docker
+  host mapping used by WebUI, preserved the existing API key, restarted the
+  service, confirmed WebUI-to-Hermes HTTP 200, and confirmed no loopback or
+  all-interface listener remains. Runtime smoke and boundary checks pass.
+- Status: REPAIRED
+
 ## 2026-09-13 — Unmanaged self-signup remained enabled
 
 - Actor: production Open WebUI configuration

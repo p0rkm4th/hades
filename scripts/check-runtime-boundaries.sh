@@ -23,6 +23,16 @@ require_binding hades-searxng 8080 '127.0.0.1:8080'
 require_binding hades-hindsight 8888 '127.0.0.1:8888'
 require_binding hades-hindsight 9999 '127.0.0.1:9999'
 
+hermes_host=$(docker exec hades-open-webui getent hosts host.docker.internal \
+  2>/dev/null | awk 'NR == 1 { print $1 }' || true)
+if [[ -n "$hermes_host" ]] && ss -ltnH 2>/dev/null \
+  | awk '{print $4}' | grep -Fxq "${hermes_host}:8642"; then
+  printf 'PASS Hermes bound only to the WebUI private host mapping\n'
+else
+  printf 'FAIL Hermes private host binding is missing or widened\n'
+  exit 1
+fi
+
 if [[ -z "$(docker port hades-lldap-production 3890/tcp 2>/dev/null || true)" ]]; then
   printf 'PASS LLDAP LDAP listener is not host-published\n'
 else

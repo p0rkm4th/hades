@@ -16,6 +16,10 @@ while the Hermes 0.21.2 promotion branch is parked on owner authentication.
 | Agent Zero | bounded subordinate operator | healthy, owner-scoped | delegated task evidence |
 | LLDAP | staged/production identity foundation | private and persistent | directory identity and groups |
 
+Hermes' production API listener is bound to the Docker host mapping used by
+the containerized WebUI, rather than all host interfaces; the WebUI remains
+LAN-reachable while Hermes itself is not directly LAN-exposed.
+
 ## Non-negotiable boundaries
 
 - Hindsight supplies context; it does not replace live Grocy, finance,

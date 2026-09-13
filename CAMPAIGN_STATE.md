@@ -384,6 +384,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
 - Account-provisioning boundary: PASS. Unmanaged Open WebUI self-signup was
   disabled after a verified backup; login and controlled directory/admin
   provisioning remain enabled, and the setting persisted across restart.
+- Hermes exposure boundary: PASS. The authoritative production profile had
+  Hermes bound to all host interfaces; it now binds only to the Docker host
+  mapping used by WebUI. Container-to-Hermes connectivity remains healthy,
+  direct loopback access is absent, and the runtime audit guards the mapping.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change
