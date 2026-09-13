@@ -365,11 +365,12 @@ gateway stopped afterward; production was not changed.
 
 ## Synthetic account revocation
 
-- **Current status:** PARTIAL
+- **Current status:** PASS (operational bridge; automatic sync remains open)
 - **Owner input:** synthetic Beta account only; production identities and data
   were not changed
-- **DOM result:** not exercised in this checkpoint; supported auth and admin
-  APIs were used while the browser harness was unavailable
+- **DOM result:** PASS for the rendered LDAP login form after revocation;
+  Beta remained on `/auth` and displayed `LDAP authentication failed.` after
+  the ordered bridge removed the application account and directory identity.
 - **Authoritative systems:** LLDAP for new authentication; Open WebUI for
   application sessions and user records
 - **Backend verification:** deleting Beta in LLDAP caused a new LDAP login to
@@ -386,16 +387,18 @@ gateway stopped afterward; production was not changed.
 
 The ordered bridge was re-run against the clean group-enabled fixture: Beta's
 pre-revocation session returned HTTP 200, the same token returned HTTP 401
-afterward, and a fresh LDAP login returned HTTP 400. No production account was
-involved.
+afterward, and the rendered fresh LDAP login remained on `/auth` with the
+failure banner. No production account was involved.
 
 ## Household model visibility and WebUI-to-Hermes memory
 
 - **Current status:** PASS + PERSISTENCE (disposable end-to-end staging)
 - **Owner input:** Alpha and Beta authenticated through LDAP and used the
   normal Open WebUI chat API
-- **DOM result:** not exercised in this checkpoint; the same authenticated API
-  path used by the frontend was exercised
+- **DOM result:** PASS for the rendered mobile model/memory path; the
+  household model was visible, Alpha's marker was retained and recalled in a
+  fresh chat, and the corrected shared provider headers selected Alpha's
+  subject-specific bank.
 - **Authoritative systems:** Open WebUI model access records; Hermes and
   subject-scoped Hindsight banks
 - **Backend verification:** the direct Hermes model catalog returned `hades`,
