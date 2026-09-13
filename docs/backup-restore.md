@@ -159,6 +159,14 @@ non-empty, mode `0600`, and passed `PRAGMA integrity_check` without stopping
 the service. This is a current consistent database artifact; matching static
 assets and an isolated restore are still required for full recovery proof.
 
+The current LLDAP `users.db` was copied into the same private checkpoint on
+2026-09-13 after confirming that no WAL sidecar was present; it passed
+`PRAGMA integrity_check` and is mode `0600`. The current Hermes state database
+was copied with SQLite's online backup API and likewise passed integrity
+checks. These are fresh database-state snapshots, not a claim that the full
+Hermes profile, identity secrets, or encrypted off-host retention has been
+rehearsed.
+
 The existing private preflight copies for Open WebUI, LLDAP, and Hermes also
 passed offline SQLite integrity checks on 2026-09-13, and the copied Hermes
 session JSON artifacts parsed successfully with private permissions. These
