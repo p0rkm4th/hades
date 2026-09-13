@@ -146,6 +146,13 @@ evidence remain outstanding for Hindsight, Hermes, Agent Zero, and SearXNG.
 Hindsight tool availability and listener readiness are verified, but its native
 export remains credential-gated.
 
+On 2026-09-13, the live production Grocy database was copied through the
+container's SQLite/PDO path into a private recovery checkpoint. The copy is
+non-empty, mode `0600`, and passed SQLite `PRAGMA integrity_check`; it is not
+stored in Git. This replaces the previously unusable zero-byte Grocy artifact
+in the older migration-preflight set. Native Hindsight export remains
+credential-gated.
+
 Readiness-only checks on 2026-09-12 also confirmed that SearXNG's config and
 cache mounts, Agent Zero's dedicated persistent volume, and Hermes' enabled
 systemd service with a private profile are present. Their normal runtime
