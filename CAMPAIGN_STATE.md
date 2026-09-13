@@ -229,12 +229,17 @@ staging only when useful; neither is a prerequisite for Household Alpha.
   disposable staging. A supported household-group model access grant exposed
   Hermes to both ordinary users; each retained and recalled only its own fact
   through WebUI → Hermes → Hindsight. The disposable provider was removed
-  afterward. A later mobile DOM run re-confirmed the rendered model selector
-  and prompt submission, but the disposable gateway did not complete within
-  the bounded wait; no DOM memory/Grocy claim is made from that run.
+  afterward. A later corrected mobile DOM run re-confirmed the rendered model
+  selector, memory retain, fresh-chat recall, and subject-specific Hindsight
+  bank selection. The same run rendered the shared Grocy list and its
+  canonical rows matched; a finance probe rendered an explicit no-access
+  response with no private value. A faster Dolphin profile was unsuitable
+  for recall/tool acceptance, so the disposable run used the known
+  tool-capable Qwen profile. All temporary providers and gateways were
+  removed afterward.
 - Household Alpha readiness report: staging contract is substantially green,
   but production declaration is intentionally pending the owner-preserving
-  identity migration gate and browser DOM multi-user acceptance.
+  identity migration gate and rendered revocation/mutation DOM acceptance.
 - Shared Grocy is PASS + PERSISTENCE in disposable end-to-end staging;
   finance exclusion is PASS for server-marked disposable household sessions.
 - Agent Zero household policy: owner-only in the current unmarked production
@@ -246,8 +251,8 @@ staging only when useful; neither is a prerequisite for Household Alpha.
   SQLite integrity validation and booted successfully in a separate pinned
   restore container. Production owner recovery and automatic application
   subject remapping remain unproven.
-- Next highest-value action: keep staging clean and, if further browser
-  acceptance is pursued, provide a bounded disposable model runtime that
-  completes through the rendered chat; otherwise prepare the owner-preserving
-  production identity migration rehearsal with private backups and rollback
-  targets. Do not touch production without that owner gate.
+- Next highest-value action: keep staging clean and complete rendered
+  revocation plus Grocy mutation/cross-user acceptance if useful; otherwise
+  prepare the owner-preserving production identity migration rehearsal with
+  private backups and rollback targets. Do not touch production without that
+  owner gate.
