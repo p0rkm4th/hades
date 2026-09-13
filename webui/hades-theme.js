@@ -268,6 +268,8 @@
         select.append(option);
       }
       select.addEventListener('change', event => {
+        if (event.__hadesThemeHandled) return;
+        event.__hadesThemeHandled = true;
         const value = event.target.selectedOptions[0]?.dataset.hadesTheme || '';
         if (value) {
           localThemeChanged = true;
@@ -302,7 +304,10 @@
         }
       }, true);
     }
-    restoreTheme(select);
+    // Once the user has made a native-theme selection, do not let a DOM
+    // mutation caused by Open WebUI's own settings update restore the stale
+    // HADES preset before the account-level clear finishes saving.
+    if (!localThemeChanged) restoreTheme(select);
     const row = select.closest('.flex.items-center.justify-between') || select.parentElement?.parentElement?.parentElement;
     if (row && !row.parentElement.querySelector('select[aria-label="Background effect"]')) {
       const effectRow = row.cloneNode(true);
@@ -336,6 +341,20 @@
       requestAnimationFrame(() => requestAnimationFrame(updateToolNotice));
   }, true);
   install();
+  // The settings view can replace the native select after the extension has
+  // installed its direct listener. Delegation keeps built-in theme changes
+  // reliable across those rerenders and account switches.
+  document.addEventListener('change', event => {
+    const select = event.target.closest?.('select[aria-label="Theme"]');
+    if (!select || event.__hadesThemeHandled) return;
+    const value = select.selectedOptions[0]?.dataset.hadesTheme || '';
+    if (value) return;
+    event.__hadesThemeHandled = true;
+    localThemeChanged = true;
+    removeLocalPreference(themeKey);
+    saveRemotePreference(remoteThemeKey, '');
+    applyTheme('');
+  }, true);
   loadRemotePreferences();
   // Open WebUI can render the login shell before authentication completes.
   // Retry after the authenticated app has mounted so account preferences
