@@ -4,6 +4,23 @@ This public-safe log records sanitized failure classes only. Owner prompts,
 account identifiers, URLs, private runtime details, and personal data remain
 outside the repository.
 
+## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
+
+- Actor: owner account
+- Surface: Open WebUI theme settings and reload
+- Expected: choosing a native Open WebUI theme clears any HADES preset for
+  that account and remains selected after refresh
+- Observed: an account-level Odysseus preset returned after refresh because
+  the native-theme branch removed only browser state and never cleared the
+  stored HADES preference
+- Failure layer: HADES theme preference persistence
+- Repair/evidence: the native-theme branch now clears both browser and
+  account-scoped HADES preference; a valid account response with no HADES
+  preset also removes stale browser state. The deployed asset cache version
+  was advanced so existing browsers fetch the repair.
+- Status: REPAIRED — owner should select the desired native theme once after
+  a hard refresh; no owner preference was changed automatically
+
 ## 2026-09-13 — Directory revocation does not revoke WebUI bearer sessions
 
 - Actor: synthetic household account
