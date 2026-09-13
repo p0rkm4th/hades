@@ -86,7 +86,7 @@ try:
         re.IGNORECASE,
     )
     _HADES_GROCY_ACTION_INTENT = re.compile(
-        r"\b(?:add|remove|buy|bought|purchase|consume|used|out of)\s+"
+        r"\b(?:add|remove|buy|bought|purchase|consume|used|out of|outta)\s+"
         r"(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
         r"pasta|rice|chicken|beef|fruit|vegetables?)\b",
         re.IGNORECASE,
@@ -270,7 +270,7 @@ try:
         r"what(?:'s| is) running|what(?:'s| is) down|homelab|server|proxmox|"
         r"netbox|uptime|docker|finance|finances|spending|spent|subscription|"
         r"bank|account balance|before payday|"
-        r"add\s+(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
+        r"(?:add|out\s+of|outta)\s+(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
         r"pasta|rice|chicken|beef|fruit|vegetables?)|"
         r"remove\s+(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
         r"pasta|rice|chicken|beef|fruit|vegetables?))\b",

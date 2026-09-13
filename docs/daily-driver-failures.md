@@ -70,6 +70,21 @@ outside the repository.
   Grocy showed one existing shopping-list row with its quantity updated to 2.
 - Status: REPAIRED for the covered shorthand vocabulary
 
+## 2026-09-13 — “Outta” stock shorthand bypassed Grocy
+
+- Actor: synthetic household account
+- Surface: natural-language stock question
+- Input shape: `were outta milk`
+- Expected: consult live Grocy before suggesting a household action
+- Observed: the lexical boundary missed `outta` and the model answered from
+  prior context
+- Failure layer: shorthand action-intent routing
+- Repair/evidence: added bounded `outta`/`out of` food-action recognition and
+  applied it to model routing, Grocy tool narrowing, and memory suppression.
+  The same synthetic input then returned the live Grocy stock quantity; no
+  mutation was made when canonical state showed remaining stock.
+- Status: REPAIRED for the covered shorthand vocabulary
+
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 
 - Actor: owner account
