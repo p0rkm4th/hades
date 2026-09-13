@@ -205,6 +205,12 @@ After an Open WebUI restart and fresh LDAP login, all three roles and stable
 application subjects remained unchanged and each household user still saw only
 its own chat.
 
+Browser evidence is also PASS for this boundary at a mobile viewport: Alpha's
+rendered sidebar contained `DOM-Alpha-Private` and not `DOM-Beta-Private`, while
+Beta's rendered sidebar contained `DOM-Beta-Private` and not
+`DOM-Alpha-Private`. Both logins used the normal rendered LDAP form and
+resilient accessible selectors.
+
 ## Hindsight subject namespace boundary
 
 - **Current status:** PASS + PERSISTENCE (isolated backend staging scope)

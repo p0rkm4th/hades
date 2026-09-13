@@ -36,8 +36,9 @@ Grocy instance, or Hermes production profile has been migrated.
   headers only after a private migration rehearsal.
 - Production Grocy identity mapping and the coordinated revocation procedure
   require private operational verification.
-- Browser DOM acceptance for the multi-user workflows remains outstanding in
-  this checkpoint.
+- Browser DOM acceptance is partial: mobile rendered login and private-chat
+  sidebar isolation pass; rendered memory, Grocy, capability, and revocation
+  workflows still need browser verification.
 - Automatic directory event synchronization is not implemented; operators
   must use the ordered revocation bridge until that architecture is approved.
 
