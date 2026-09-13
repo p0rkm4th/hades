@@ -97,9 +97,10 @@ Remaining promotion gaps:
 - Local Gemma fact extraction took roughly
   50–85 seconds, so immediate recall can miss a newly accepted fact. The
   candidate acceptance test now accounts for this asynchronous behavior.
-- A separate synthetic SearXNG endpoint and a bounded Agent Zero staging
-  bridge have not been provisioned; production endpoints remain deliberately
-  excluded from candidate testing.
+- A real disposable Agent Zero runtime has not been attached; production
+  endpoints and credentials remain deliberately excluded from candidate
+  testing. The synthetic SearXNG endpoint and bounded bridge fixture were
+  validated separately below.
 
 The candidate also showed auxiliary title-generation timeouts and inherited a
 large staging context file. These affect candidate ergonomics/performance but
@@ -135,6 +136,12 @@ candidate matrix is materially green, but promotion still needs
 production-shaped Open WebUI owner-UI acceptance, synthetic Actual Budget
 coverage, and a decision on whether the real Agent Zero runtime can be
 validated without importing production credentials or state.
+
+The matched synthetic Actual Budget 26.9.0 fixture was then started on an
+isolated port. Hermes 0.21.2 discovered all three migrated read-only finance
+tools; a candidate `finance_status` call returned the synthetic budget,
+server version, and `read_only: true`. Direct bridge calls also returned
+synthetic accounts and transactions. The fixture was stopped afterward.
 The overlay remains required for trusted per-user memory selection; native
 MCP registration may make dynamic tool reconciliation removable only after
 those owner-contract checks pass.
