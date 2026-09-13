@@ -20,6 +20,9 @@ required = (
     'stale personal semantic-memory claims',
     '_hades_shared_memory_intent.search(query)',
     '_hades_grocy_action_intent',
+    'grocry',
+    'grocerys',
+    'outta',
 )
 missing = [value for value in required if value not in source.lower()]
 if missing:
