@@ -392,7 +392,9 @@ onboarding is the only owner-input gate; it does not pause independent work.
   validates four consistent SQLite artifacts (Open WebUI, LLDAP, Grocy, and
   Hermes) with checksums. The first rehearsal exposed and corrected Grocy's
   image path (`/config/data/grocy.db`); the corrected artifact is non-empty and
-  valid. Native Hindsight export and encrypted retention remain separate gates.
+  valid. After a quiesced LLDAP snapshot, the helper now waits for the
+  container's healthy state before reporting success. Native Hindsight export
+  and encrypted retention remain separate gates.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

@@ -41,14 +41,31 @@ backup_container_php() {
   chmod 600 "$output/$name"
 }
 
+wait_for_container_ready() {
+  local container=$1 state health
+  for _ in $(seq 1 30); do
+    state=$(docker inspect --format '{{.State.Status}}' "$container" 2>/dev/null || true)
+    health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$container" 2>/dev/null || true)
+    if [[ "$state" == running && ( "$health" == healthy || -z "$health" ) ]]; then
+      return 0
+    fi
+    sleep 2
+  done
+  printf 'FAIL container did not become ready: %s\n' "$container" >&2
+  return 1
+}
+
 backup_container_quiesced() {
   local container=$1 source=$2 name=$3
   docker stop "$container" >/dev/null
   if ! docker cp "$container:$source" "$output/$name"; then
-    docker start "$container" >/dev/null
+    if docker start "$container" >/dev/null; then
+      wait_for_container_ready "$container" || true
+    fi
     return 1
   fi
   docker start "$container" >/dev/null
+  wait_for_container_ready "$container"
   chmod 600 "$output/$name"
 }
 

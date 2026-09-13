@@ -141,10 +141,12 @@ recovery or automatic Open WebUI subject remapping.
 provides a private, component-specific SQLite backup helper for Open WebUI,
 LLDAP, Grocy, and Hermes. It uses online SQLite backup for WebUI, a native
 SQLite snapshot for Grocy, a brief quiesced copy for the LLDAP image (which
-does not ship SQLite tooling), and SQLite backup for Hermes state. It enforces
-private destination permissions, validates each artifact, and writes
-checksums. It does not encrypt or retain backups, and it deliberately does
-not claim coverage for Hindsight PostgreSQL, Agent Zero, or SearXNG.
+does not ship SQLite tooling), and SQLite backup for Hermes state. The
+quiesced LLDAP path waits for the container's health check after restart before
+the run can succeed. It enforces private destination permissions, validates
+each artifact, and writes checksums. It does not encrypt or retain backups,
+and it deliberately does not claim coverage for Hindsight PostgreSQL, Agent
+Zero, or SearXNG.
 
 Native production database/export procedures and isolated restore evidence
 remain outstanding for Hindsight, Hermes profile assets, Agent Zero, and
