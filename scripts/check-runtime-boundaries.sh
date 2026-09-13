@@ -21,6 +21,7 @@ require_binding hades-grocy 80 '127.0.0.1:7003'
 require_binding hades-agent-zero 80 '127.0.0.1:7002'
 require_binding hades-searxng 8080 '127.0.0.1:8080'
 require_binding hades-hindsight 8888 '127.0.0.1:8888'
+require_binding hades-hindsight 9999 '127.0.0.1:9999'
 
 if [[ -z "$(docker port hades-lldap-production 3890/tcp 2>/dev/null || true)" ]]; then
   printf 'PASS LLDAP LDAP listener is not host-published\n'
