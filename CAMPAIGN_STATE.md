@@ -381,6 +381,9 @@ onboarding is the only owner-input gate; it does not pause independent work.
   entry was removed after a verified current database backup; the active
   provider was preserved, WebUI restarted cleanly, and no new stale-endpoint
   errors appeared in the post-restart log window.
+- Account-provisioning boundary: PASS. Unmanaged Open WebUI self-signup was
+  disabled after a verified backup; login and controlled directory/admin
+  provisioning remain enabled, and the setting persisted across restart.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

@@ -37,3 +37,10 @@ else
   printf 'FAIL retired 18645 provider configuration detected\n'
   exit 1
 fi
+
+if docker exec hades-open-webui python3 -c 'import sqlite3,sys; c=sqlite3.connect("/app/backend/data/webui.db"); row=c.execute("select value from config where key=?",("ui.enable_signup",)).fetchone(); sys.exit(0 if row and row[0] == "false" else 1)' ; then
+  printf 'PASS unmanaged self-signup disabled\n'
+else
+  printf 'FAIL unmanaged self-signup is enabled\n'
+  exit 1
+fi

@@ -4,6 +4,21 @@ This public-safe log records sanitized failure classes only. Owner prompts,
 account identifiers, URLs, private runtime details, and personal data remain
 outside the repository.
 
+## 2026-09-13 — Unmanaged self-signup remained enabled
+
+- Actor: production Open WebUI configuration
+- Surface: account provisioning boundary
+- Expected: new identities enter through controlled directory/admin
+  provisioning
+- Observed: the local self-signup option was enabled alongside production
+  directory authentication
+- Failure layer: Open WebUI persisted configuration
+- Repair/evidence: disabled self-signup after a verified database backup;
+  login, existing accounts, directory authentication, and admin provisioning
+  remain available. The setting persisted across restart and runtime checks
+  pass.
+- Status: REPAIRED
+
 ## 2026-09-13 — Stale candidate model endpoint retried in production
 
 - Actor: production Open WebUI runtime
