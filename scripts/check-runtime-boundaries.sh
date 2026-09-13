@@ -27,3 +27,13 @@ if docker ps --format '{{.Ports}}' | grep -Eq '(^|[^0-9])7001([^0-9]|$)'; then
   exit 1
 fi
 printf 'PASS no obsolete 7001 exposure\n'
+
+# A retired candidate provider once remained persisted in Open WebUI after
+# its runtime was gone. Reject that known stale endpoint without prescribing
+# which Hermes revision is currently active.
+if docker exec hades-open-webui python3 -c 'import json,sqlite3,sys; c=sqlite3.connect("/app/backend/data/webui.db"); rows=c.execute("select value from config where key in (?,?)",("openai.api_base_urls","openai.api_configs")).fetchall(); sys.exit(1 if any("18645" in str(v) for (v,) in rows) else 0)' ; then
+  printf 'PASS no retired 18645 provider configuration\n'
+else
+  printf 'FAIL retired 18645 provider configuration detected\n'
+  exit 1
+fi
