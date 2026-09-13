@@ -300,22 +300,17 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Directory group propagation
 
-- **Current status:** PARTIAL (upstream support identified; staging launch
-  configuration incomplete)
+- **Current status:** PASS (disposable staging transport and provisioning)
 - **Authoritative system:** LLDAP group membership, synchronized into
   Open WebUI's local group records
-- **Backend verification:** the pinned Open WebUI source supports LDAP group
-  management and server-side `{{USER_GROUPS}}` / `{{USER_GROUP_IDS}}`
-  connection-header expansion. The staged directory contains the synthetic
-  household group, but this disposable WebUI was launched without the
-  `ENABLE_LDAP_GROUP_MANAGEMENT` setting, so end-to-end group propagation was
-  not claimed.
+- **Backend verification:** with supported LDAP group management enabled,
+  synthetic Alpha and Beta synchronized into Open WebUI's `hades-household`
+  and `hades-users` groups. A harmless downstream echo request received the
+  stable subject header plus `X-Hades-Groups: hades-household,hades-users`.
 - **Cleanup:** a temporary header-probe provider was removed and staging was
   restarted; the staged OpenAI provider configuration is empty again.
-- **Limitations:** group-based capability selection remains unenabled until a
-  disposable WebUI is relaunched with group management, both synthetic users
-  are provisioned into the intended groups, and the expanded headers are
-  verified downstream.
+- **Limitations:** production group propagation and capability selection remain
+  unenabled; the echo provider was disposable and was removed after the test.
 
 ## Open WebUI subject-header propagation
 

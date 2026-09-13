@@ -255,11 +255,12 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
 - Disposable capability exclusion: PASS. Server-marked Alpha/Beta sessions
   received neither Agent Zero nor finance tools and returned no financial
   value under adversarial requests.
-- Directory group propagation: PARTIAL. The deployed Open WebUI source
-  supports LDAP group management and server-side group header expansion, but
-  the disposable staging launch omitted `ENABLE_LDAP_GROUP_MANAGEMENT`; no
-  end-to-end group capability claim is made.
-- Grocy/finance isolation: NOT STARTED for two-user acceptance.
+- Directory group propagation: PASS in disposable staging. With supported LDAP
+  group management enabled, synthetic Alpha and Beta synchronized into the
+  intended household groups, and a downstream echo received both the stable
+  subject and expanded group headers. Production remains unchanged.
+- Shared Grocy is PASS + PERSISTENCE in disposable end-to-end staging;
+  finance exclusion is PASS for server-marked disposable household sessions.
 - Agent Zero household policy: owner-only in the current unmarked production
   session; the overlay now fail-closes Agent Zero for server-marked household
   sessions, but the Open WebUI scope header is not yet configured.
