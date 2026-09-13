@@ -141,6 +141,12 @@ and candidate UI operation, but deliberately did not connect candidate code
 to production Hindsight. Production remains on Hermes 0.14.0 until those gates
 are satisfied.
 
+The candidate runtime also passed the subject-scope regression: the trusted
+owner subject maps to owner scope, a household subject maps to household
+scope, and empty, malformed, or untrusted keys map to denied scope. This
+prevents a malformed identity from inheriting household tools. The check was
+run with the Hermes 0.21.2 candidate interpreter and the repository overlay.
+
 The matched synthetic Actual Budget 26.9.0 fixture was then started on an
 isolated port. Hermes 0.21.2 discovered all three migrated read-only finance
 tools; a candidate `finance_status` call returned the synthetic budget,
