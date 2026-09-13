@@ -112,8 +112,17 @@ response. The HADES overlay's direct web-intent narrowing is retained because
 the same model previously attempted to route deferred `web_search` through
 `tool_call`, which Hermes correctly rejected.
 
-**Decision remains: do not promote Hermes 0.21.2 yet.** Finish synthetic
-SearXNG/operator and restart checks.
+After the web change, the candidate was restarted and passed its health and
+authenticated model-list checks; the overlay syntax and capability-boundary
+regression also passed. The candidate was then shut down cleanly. A bounded
+Agent Zero success was not claimed: production Agent Zero and its credentials
+were not used, while the disposable native A2A probe remains incompatible
+with Hermes' expected agent-card transport. The existing narrow MCP bridge
+therefore remains the only approved operator path, pending a separate
+disposable bridge/credential fixture.
+
+**Decision remains: do not promote Hermes 0.21.2 yet.** Finish the bounded
+operator decision and production-shaped rollback checks.
 The overlay remains required for trusted per-user memory selection; native
 MCP registration may make dynamic tool reconciliation removable only after
 those owner-contract checks pass.
