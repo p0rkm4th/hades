@@ -248,3 +248,12 @@ additional authenticated setup flow. The candidate container and volume were
 removed. Production Agent Zero and its credentials were not used. The
 existing bounded MCP bridge remains the approved candidate contract, while
 native A2A and real-runtime credential provisioning remain separate work.
+
+## Focused candidate regression run
+
+On 2026-09-13, the installed Hermes 0.21.2 candidate suite ran 166 focused
+tests covering memory-provider behavior and unavailable-memory warnings,
+conversation scope, MCP discovery and transport, gateway authentication, and
+identity-token resolution. All 166 passed. This is additional candidate
+evidence only; production remains on Hermes 0.14.0 pending the owner-authenticated
+promotion rehearsal.
