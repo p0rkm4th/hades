@@ -370,3 +370,9 @@ boundary around the read connection (the implementation returned the expected
 context), but it remains an unresolved candidate qualification failure until
 the test/connection tracing contract is independently reconciled. Production
 was not changed.
+
+An expanded HADES-relevant core run then passed **525/525** across nine files:
+the memory provider and unavailable-memory paths, declared conversation scope,
+MCP discovery/transport, gateway identity/authentication, Hindsight provider,
+and Hermes state. It excluded only the tracing-observation assertion described
+above; this is strong focused evidence, not full-suite qualification.

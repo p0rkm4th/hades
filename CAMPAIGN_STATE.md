@@ -281,6 +281,12 @@ on the connection it traced. This may be a read-connection observation
 boundary, but it remains unresolved candidate qualification evidence until
 the tracing contract is reconciled. Production is unchanged.
 
+An expanded HADES-relevant core run passed 525/525 across nine files, including
+memory, Hindsight, conversation scope, MCP, gateway identity/authentication,
+and Hermes state. It excluded only the known read-connection tracing
+observation assertion; this is focused evidence and not full-suite
+qualification.
+
 ## HOUSEHOLD ALPHA STATUS
 
 The detailed bullets below retain historical evidence from staging and
