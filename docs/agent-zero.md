@@ -26,6 +26,10 @@ the assistant DOM after the private tool completed. This closes the founding
 bounded-delegation milestone; persistent delegated context and wider operator
 tasks remain future work.
 
+The bridge uses MCP 2.0's low-level stdio server API, which is compatible with
+the MCP dependency shipped by Hermes 0.21.2. The former MCP 1.x `FastMCP`
+import is intentionally not used.
+
 This integration is intentionally not registered as an Open WebUI-native tool
 or exposed as a separate A2A assistant. In an isolated disposable Agent Zero
 instance, the native A2A server enabled successfully and returned a bounded

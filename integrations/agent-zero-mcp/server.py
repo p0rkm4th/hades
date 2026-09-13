@@ -8,10 +8,14 @@ documented external API.
 from __future__ import annotations
 
 import os
+import json
 from typing import Any
 
 import httpx
-from mcp.server.fastmcp import FastMCP
+import anyio
+from mcp.server.lowlevel import Server
+from mcp.server.stdio import stdio_server
+from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 
 
 BASE_URL = os.environ.get("AGENT_ZERO_URL", "http://127.0.0.1:7002").rstrip("/")
@@ -19,11 +23,10 @@ API_KEY = os.environ.get("AGENT_ZERO_API_KEY", "")
 MAX_TASK_CHARS = int(os.environ.get("AGENT_ZERO_MAX_TASK_CHARS", "2000"))
 TIMEOUT_SECONDS = float(os.environ.get("AGENT_ZERO_TIMEOUT_SECONDS", "90"))
 
-mcp = FastMCP("hades-agent-zero")
+TOOL_NAME = "agent_zero_delegate"
 
 
-@mcp.tool()
-async def agent_zero_delegate(task: str, context_id: str = "") -> dict[str, Any]:
+async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
     """Run one harmless, bounded task through the private Agent Zero operator."""
     if not API_KEY:
         return {"ok": False, "error": "Agent Zero delegation is not configured."}
@@ -69,5 +72,38 @@ async def agent_zero_delegate(task: str, context_id: str = "") -> dict[str, Any]
     }
 
 
+async def list_tools(_ctx, _params):
+    return ListToolsResult(tools=[Tool(
+        name=TOOL_NAME,
+        description="Run one harmless, bounded task through the private Agent Zero operator.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "task": {"type": "string"},
+                "context_id": {"type": "string"},
+            },
+            "required": ["task"],
+        },
+    )])
+
+
+async def call_tool(_ctx, params):
+    if params.name != TOOL_NAME:
+        raise ValueError(f"unknown tool: {params.name}")
+    result = await _delegate(
+        params.arguments.get("task", ""),
+        params.arguments.get("context_id", ""),
+    )
+    return CallToolResult(content=[TextContent(
+        type="text", text=json.dumps(result, sort_keys=True)
+    )])
+
+
+async def main():
+    server = Server("hades-agent-zero", on_list_tools=list_tools, on_call_tool=call_tool)
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(read_stream, write_stream, server.create_initialization_options())
+
+
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    anyio.run(main)

@@ -121,6 +121,15 @@ with Hermes' expected agent-card transport. The existing narrow MCP bridge
 therefore remains the only approved operator path, pending a separate
 disposable bridge/credential fixture.
 
+That fixture was subsequently supplied locally: the checked-in MCP bridge
+ran against a loopback-only synthetic Agent Zero HTTP server. Hermes 0.21.2
+discovered `mcp__agent_zero__agent_zero_delegate`, the operator returned a
+structured success, and direct bridge checks confirmed empty-task and
+2,000-character-limit failures are rejected before delegation. Gemma needed
+three tool attempts before emitting the successful call, so the contract
+passes but weak-model operator prompting remains a performance/quality
+limitation. The real Agent Zero endpoint and credentials were not used.
+
 **Decision remains: do not promote Hermes 0.21.2 yet.** Finish the bounded
 operator decision and production-shaped rollback checks.
 The overlay remains required for trusted per-user memory selection; native
