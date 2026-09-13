@@ -48,6 +48,13 @@ operation that removes the application account before the directory account.
    account second, and verifies both records are gone. Automatic directory
    event synchronization remains a future architecture decision.
 
+For capability-scoped group propagation, enable Open WebUI's supported LDAP
+group-management and group-creation settings, configure the directory's
+group-membership attribute, and verify the resulting local group membership
+before using `{{USER_GROUPS}}` or `{{USER_GROUP_IDS}}` in a downstream
+connection header. An empty expanded header is not evidence that a user has no
+capabilities; it may indicate that group management was not enabled.
+
 The disposable staging proof used LLDAP 0.6.3 with Open WebUI 0.11.1. The
 staging Open WebUI container was not connected to production model, Hermes,
 Hindsight, Grocy, or Agent Zero services. Its synthetic users are not owner
