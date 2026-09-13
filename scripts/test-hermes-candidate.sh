@@ -17,6 +17,16 @@ if [[ ! -x "$PYTHON" ]]; then
   exit 1
 fi
 
+# A candidate test run must fail closed if an earlier test mutated the shared
+# environment. In particular, some upstream update tests can remove packages
+# from the virtualenv; allowing the shell loop below to proceed would turn
+# that into a confusing collection failure instead of an actionable preflight
+# error.
+if ! "$PYTHON" -c 'import pytest' >/dev/null 2>&1; then
+  printf 'FAIL candidate environment missing pytest (use a fresh/disposable venv)\n' >&2
+  exit 1
+fi
+
 tests=(
   tests/agent/test_memory_provider.py
   tests/agent/test_memory_provider_unavailable_warning.py
