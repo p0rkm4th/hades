@@ -21,6 +21,21 @@ outside the repository.
   recovered from that user's bank afterward.
 - Status: REPAIRED — synthetic fixture memories remain cleanup-only test data
 
+## 2026-09-13 — Concurrent shared Grocy mutations are slow to acknowledge
+
+- Actor: synthetic household accounts
+- Surface: two simultaneous HADES grocery mutations for the same existing
+  synthetic product
+- Expected: both requests converge safely on shared canonical Grocy state and
+  return a usable completion result
+- Observed: canonical Grocy contained exactly one unfinished shopping-list row
+  after the concurrent requests, but the client-side model responses exceeded
+  the bounded observation window
+- Failure layer: owner-facing request latency/observability; canonical
+  duplicate prevention held
+- Status: PARTIAL — no duplicate canonical state was created; response-time
+  behavior needs a separate latency-focused investigation
+
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 
 - Actor: owner account
