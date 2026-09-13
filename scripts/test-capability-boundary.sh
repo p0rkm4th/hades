@@ -21,7 +21,9 @@ if 'finance_intent' in source:
     raise SystemExit('finance intent variable still implies prompt-based authorization')
 if 'not household_session' not in source:
     raise SystemExit('household Agent Zero scope guard is missing')
-if 'hades-user-' not in source or 'hades-owner-' not in source:
-    raise SystemExit('server-selected session scopes are incomplete')
+if 'hades-user-' not in source or 'HADES_OWNER_SUBJECT_ID' not in source:
+    raise SystemExit('server-selected subject scope is incomplete')
+if 'client-selectable owner prefix' not in source or 'return ""' not in source:
+    raise SystemExit('untrusted owner scope does not fail closed')
 print('PASS privileged capability boundary regression')
 PY

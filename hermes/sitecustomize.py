@@ -227,6 +227,27 @@ try:
             kwargs["user_id"] = subject
             _hades_logger.info("API subject propagated to agent user_id")
         _hades_original_agent_init(self, *args, **kwargs)
+        # The profile's private Hindsight JSON is the authoritative runtime
+        # config and contains the owner's legacy bank as its static fallback.
+        # Override only the provider instance after trusted gateway identity
+        # is known: preserve that existing bank for the owner, isolate every
+        # household subject, and never fall back to the owner bank when the
+        # request has no validated subject.
+        memory_scope = getattr(self, "_hades_session_scope", "")
+        if self._memory_manager and self._memory_manager.providers:
+            if memory_scope == "owner":
+                memory_bank = "hades-owner"
+            elif memory_scope == "household" and subject:
+                memory_bank = f"hades-user-{subject}"
+            else:
+                memory_bank = "hades-denied"
+            for memory_provider in self._memory_manager.providers:
+                if hasattr(memory_provider, "_bank_id"):
+                    memory_provider._bank_id = memory_bank
+            _hades_logger.info(
+                "Hindsight bank selected from trusted scope: scope=%s subject_present=%s",
+                memory_scope or "denied", bool(subject),
+            )
         tools = getattr(self, "tools", None)
         if not isinstance(tools, list):
             return
