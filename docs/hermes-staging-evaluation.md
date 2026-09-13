@@ -300,6 +300,13 @@ staging environment. It fails closed when the candidate interpreter cannot
 import `pytest`, which prevents a mutated candidate environment from being
 mistaken for a test regression. A full candidate suite must use that same
 canonical runner.
+
+The expanded HADES-relevant core contract is reproducible with
+[`scripts/test-hermes-core.sh`](../scripts/test-hermes-core.sh). It runs the
+same nine files used for the 525-test core evidence, through the candidate's
+canonical runner, with retries disabled. It explicitly excludes only the
+known FTS5 connection-tracing assertion described below; the exclusion is
+visible in the command and is not a substitute for full-suite qualification.
 The HADES promotion subset also disables the runner's automatic file retry;
 flakiness therefore remains a failed acceptance signal rather than being
 reported as green after a lucky retry.
