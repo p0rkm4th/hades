@@ -22,7 +22,7 @@ Grocy instance, or Hermes production profile has been migrated.
 | LDAP group propagation | PASS | Directory memberships synchronize and expand into downstream headers |
 | Model visibility | PASS | Supported Open WebUI model access record grants household-group read access |
 | Finance and Agent Zero exclusion | PASS | Household-scoped sessions receive neither privileged tool; mobile DOM finance probe returned no private value |
-| User-specific settings | PASS + PERSISTENCE | Distinct themes/effects survive reload and WebUI restart |
+| User-specific settings | PASS + PERSISTENCE | Distinct themes/effects survive reload and WebUI restart; rendered Alpha settings and API agree |
 | Account revocation | PASS operationally | Ordered Open WebUI-first, directory-second bridge invalidates existing sessions |
 | Identity recovery | PASS synthetic rehearsal | Quiesced LLDAP database restored into a separate pinned container |
 
@@ -39,10 +39,10 @@ Grocy instance, or Hermes production profile has been migrated.
 - Browser DOM acceptance is substantially covered: mobile rendered login,
   private-chat sidebar isolation, household model visibility, memory
   retain/recall, shared Grocy read and mutation/cross-user read, finance
-  exclusion, and revocation all pass in disposable staging. Browser-specific
-  settings isolation and the remaining Grocy purchase/consume variations are
-  not yet separately exercised. Temporary providers and gateways are cleaned
-  up after each run.
+  exclusion, revocation, and Alpha's settings persistence all pass in
+  disposable staging. The remaining browser hardening is limited to
+  additional Grocy purchase/consume variations. Temporary providers and
+  gateways are cleaned up after each run.
 - Automatic directory event synchronization is not implemented; operators
   must use the ordered revocation bridge until that architecture is approved.
 

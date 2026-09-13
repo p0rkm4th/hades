@@ -420,8 +420,9 @@ failure banner. No production account was involved.
 - **Current status:** PASS + PERSISTENCE (isolated staging scope)
 - **Owner input:** synthetic Alpha and Beta accounts selected distinct
   synthetic theme values and the Rain background effect
-- **DOM result:** not exercised in this checkpoint; the supported user
-  settings API was used while the browser harness was unavailable
+- **DOM result:** PASS in the rendered disposable staging settings surface;
+  Alpha selected Odysseus Midnight and Rain, and the DOM exposed both
+  selectors plus the matching HADES theme/effect classes.
 - **Authoritative system:** Open WebUI per-user settings store
 - **Backend verification:** Alpha read back only its `alpha-theme` setting and
   Beta read back only its `beta-theme` setting. A newly provisioned LDAP user
@@ -431,7 +432,11 @@ failure banner. No production account was involved.
   logging both users in again, each retained its own theme and Rain effect.
 - **Last verified SHA:** `705487b`
 - **Limitations:** this proves application preference isolation in staging,
-  not production multi-user cutover or browser DOM rendering.
+  not production multi-user cutover.
+
+After a page reload and reopening Settings, Alpha's two selections were
+restored. The authenticated settings API independently returned the same
+values, providing the canonical persistence check.
 
 ## Identity recovery rehearsal
 
