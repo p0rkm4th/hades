@@ -232,6 +232,10 @@ restored and Hermes 0.14.0 was explicitly restarted; production WebUI and
 Hermes are healthy again. No application database or owner identity changed.
 The production decision is DEFERRED, not accepted. A retry requires a verified
 current owner authentication/session path before burn-in.
+The promotion-critical candidate subset passes 166/166 with the candidate
+interpreter. A full-suite run still exposes one upstream process-global
+auxiliary-provider leak; the repository includes a correct-interpreter check
+and isolated-worker qualification path.
 
 ## HOUSEHOLD ALPHA STATUS
 
@@ -302,8 +306,12 @@ onboarding is the only owner-input gate; it does not pause independent work.
 - Recovery: current owner/admin fallback and the fresh private Hermes
   preflight backup set are preserved; older incomplete artifacts are not
   rollback inputs.
+- Current private recovery checkpoint: fresh Open WebUI, Grocy, LLDAP, and
+  Hermes SQLite snapshots pass integrity checks; matching profile assets,
+  encrypted off-host retention, isolated restore, and native Hindsight export
+  remain unproven.
 - Synthetic identity recovery: PASS in the accepted production checkpoint.
-- Next highest-value action: execute the separately controlled Hermes 0.21.2
-  production change window only after the owner authentication path is
-  verified. Until then, production remains on Hermes 0.14.0 and the preserved
-  rollback set remains authoritative.
+- Next highest-value action: keep production on Hermes 0.14.0 while the owner
+  authentication path and candidate full-suite isolation gate are resolved;
+  then execute the separately controlled Hermes 0.21.2 production change
+  window. The preserved rollback set remains authoritative.
