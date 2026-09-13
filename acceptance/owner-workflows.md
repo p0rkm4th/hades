@@ -433,7 +433,10 @@ failure banner. No production account was involved.
   account restored its own values; the authenticated settings API remained
   the canonical per-user persistence check. A native-theme selection is also
   covered by the current regression fix: it clears the stale HADES preset
-  instead of allowing Neon to return during an Open WebUI rerender.
+  instead of allowing Neon to return during an Open WebUI rerender. In the
+  rendered staging control, selecting built-in Dark produced an empty
+  `hades_theme` in the authenticated settings API; the Alpha fixture was then
+  restored to Midnight/Rain.
 - **Last verified SHA:** `510ff39`
 - **Limitations:** this proves application preference isolation in staging,
   not production multi-user cutover.
