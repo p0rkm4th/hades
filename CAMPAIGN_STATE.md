@@ -166,11 +166,11 @@ See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 
 ## NEXT ACTION
 
-The staging Household Alpha contract is substantially green: synthetic owner,
-Alpha, and Beta identities; conversation and memory isolation; shared Grocy;
-LDAP group propagation; model access; capability exclusion; per-user settings;
-coordinated revocation; and synthetic identity recovery are all evidenced in
-the acceptance records and summarized in `docs/household-alpha-readiness.md`.
+Household Alpha is complete/ready in the current production checkpoint:
+identity mapping, conversation and memory isolation, shared Grocy,
+capability exclusion, per-user settings, revocation, restart, and recovery
+evidence are recorded in the private migration state. Real household
+onboarding remains an owner-input gate only.
 
 Keep production Hermes on its known-good baseline and local Open WebUI
 authentication fallback enabled. A private production migration checkpoint now
@@ -182,17 +182,26 @@ read, finance exclusion, revocation, and cross-account settings isolation;
   additional Grocy purchase/consume variations remain optional hardening. The
   production migration is still in acceptance, not declared Household Alpha.
 
-Continue independent read-only homelab preparation and Hermes modernization
-staging only when useful; neither is a prerequisite for Household Alpha.
+Continue independent roadmap work. The current highest-value item is Hermes
+0.21.2 production-readiness; production remains on the known-good 0.14.0
+baseline until the owner-preserving candidate rehearsal passes.
 
 The latest Hermes 0.21.2 isolated probe passed normal chat and native stdio
 MCP discovery/call/post-tool continuation with local `gemma4:12b`. Qwen 3 8B
 and 14B are below the candidate's enforced 64K context floor, so they are not
-candidate production profiles. Continue the remaining isolated Hindsight,
-Grocy, SearXNG, Agent Zero, Open WebUI, and rollback matrix before considering
-an upgrade; production remains on Hermes 0.14.0.
+candidate production profiles. The isolated Hindsight, Grocy, SearXNG,
+bounded Agent Zero bridge, synthetic Actual Budget, disposable Open WebUI,
+and rollback checks are recorded. Remaining gates are the owner-preserving
+migration rehearsal against a disposable copy of existing WebUI state and the
+final disposition of real Agent Zero runtime validation; production remains on
+Hermes 0.14.0.
 
 ## HOUSEHOLD ALPHA STATUS
+
+The detailed bullets below retain historical evidence from staging and
+migration work. The current private production checkpoint supersedes any
+older `PARTIAL` labels: Household Alpha is COMPLETE / READY. Real household
+onboarding is the only owner-input gate; it does not pause independent work.
 
 - Owner daily-driver path: PASS; production smoke remains green.
 - Identity provider: PARTIAL; a separate pinned production LLDAP is healthy,

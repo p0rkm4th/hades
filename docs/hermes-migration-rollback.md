@@ -66,9 +66,13 @@ acceptance evidence are complete.
 
 The candidate now passes isolated normal conversation, native MCP, ACP,
 Hindsight exact-bank retain/recall, synthetic Grocy read/mutation, disposable
-SearXNG search, bounded Agent Zero bridge success/failure, authenticated
-restart health, and profile backup/extraction evidence. The remaining
-production-shaped gaps are Open WebUI owner-UI migration acceptance, synthetic
-Actual Budget integration, and a real Agent Zero runtime rather than the
-disposable bridge stub. Therefore no production migration is authorized by
-this document.
+SearXNG search, bounded Agent Zero bridge success/failure, synthetic
+read-only Actual Budget integration, a fresh disposable Open WebUI
+owner-facing path, authenticated restart health, and profile
+backup/extraction evidence. The remaining production-shaped gap is an
+owner-preserving migration rehearsal against a disposable copy of the
+existing WebUI state, proving that conversations, settings, and Hindsight
+history remain attached to the existing owner identity. Real Agent Zero was
+deliberately not connected; its bounded bridge contract is proven with a
+loopback fixture, while native A2A remains a separate compatibility decision.
+Therefore no production migration is authorized by this document.
