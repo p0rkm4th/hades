@@ -337,6 +337,14 @@ the assertion or disabling the test would conceal the leak. Acceptance is a
 clean full-suite run with the candidate interpreter and no cross-test provider
 state, followed by the focused HADES candidate check.
 
+The FTS5 trace assertion was separately reproduced and diagnosed: the test
+opens a pooled read connection, traces it, but leaves it outside the pool, so
+the subsequent search checks out a different connection. A disposable
+candidate-only test adjustment that returns the probed connection to the pool
+passes the assertion (1/1) without changing search behavior. This is an
+upstream test fix to propose or apply in the candidate source; it is not a
+HADES production patch and does not by itself qualify the full suite.
+
 The canonical wrapper also ran the four updater/venv-repair files serially:
 118 tests passed, one host-gated test skipped, and the candidate interpreter
 still imported pytest afterward. This narrows the observed environment damage
