@@ -105,6 +105,13 @@ The candidate also showed auxiliary title-generation timeouts and inherited a
 large staging context file. These affect candidate ergonomics/performance but
 did not alter production. No production service or data was changed.
 
+The candidate then passed a real web-search turn after enabling the upstream
+`web` toolset and the disposable SearXNG JSON endpoint: Hermes executed
+`web_search`, SearXNG returned results, and Gemma produced a result from that
+response. The HADES overlay's direct web-intent narrowing is retained because
+the same model previously attempted to route deferred `web_search` through
+`tool_call`, which Hermes correctly rejected.
+
 **Decision remains: do not promote Hermes 0.21.2 yet.** Finish synthetic
 SearXNG/operator and restart checks.
 The overlay remains required for trusted per-user memory selection; native

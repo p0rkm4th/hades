@@ -350,6 +350,11 @@ try:
             _hades_intent_text,
             re.IGNORECASE,
         )
+        web_intent = re.search(
+            r"\b(?:weather|forecast|temperature|search|look up|latest|news|web)\b",
+            _hades_intent_text,
+            re.IGNORECASE,
+        )
         agent_zero_intent = re.search(
             r"\b(?:agent zero|agent0|bounded operator|delegate|delegation)\b",
             _hades_intent_text,
@@ -372,6 +377,29 @@ try:
                     )
             except Exception as exc:
                 _hades_logger.warning("API Grocy intent narrowing failed: %s", exc)
+        # The API tool-search catalog can defer web_search even when a
+        # keyless SearXNG provider is configured. Small local models may then
+        # incorrectly route the deferred tool through tool_call. For an
+        # unambiguous web turn, expose the supported web tools directly so
+        # the model can emit a normal function call. Mixed household turns
+        # retain the Grocy/memory routing above.
+        if web_intent and not grocy_intent and not memory_intent and isinstance(original_tools, list):
+            try:
+                from model_tools import get_tool_definitions as _get_tool_definitions
+                web_tools = _get_tool_definitions(
+                    enabled_toolsets=["web"], quiet_mode=True
+                )
+                if web_tools:
+                    self.tools = web_tools
+                    self.valid_tool_names = {
+                        t["function"]["name"] for t in web_tools
+                    }
+                    _hades_logger.warning(
+                        "API web intent narrowed tool catalog to %d tools",
+                        len(web_tools),
+                    )
+            except Exception as exc:
+                _hades_logger.warning("API web intent narrowing failed: %s", exc)
         # Do not expose finance tools based on intent.  Natural-language
         # intent is not authorization; finance remains unavailable until a
         # server-side owner capability is wired into this boundary.
