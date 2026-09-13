@@ -278,3 +278,13 @@ HADES provides [`scripts/test-hermes-candidate.sh`](../scripts/test-hermes-candi
 for the promotion-critical subset. It requires a candidate directory and uses
 that directory's `.venv/bin/python -m pytest`, preventing a stale cloned
 `pytest` launcher from selecting a different staging environment.
+
+### Minimal upstream remediation
+
+The failing row-addressed-backfill module should own an autouse fixture that
+clears the auxiliary runtime state before and after each test, or the shared
+helper should be moved into a fixture module whose scope covers that test. The
+fixture must call the upstream `clear_runtime_main()` cleanup path; changing
+the assertion or disabling the test would conceal the leak. Acceptance is a
+clean full-suite run with the candidate interpreter and no cross-test provider
+state, followed by the focused HADES candidate check.
