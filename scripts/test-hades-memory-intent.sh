@@ -17,6 +17,8 @@ required = (
     '_hades_explicit_memory_intent',
     'skipping automatic hindsight retain for shared-state turn',
     '_hindsight.hindsightmemoryprovider.sync_turn = _hades_sync_turn',
+    'stale personal semantic-memory claims',
+    '_hades_shared_memory_intent.search(query)',
 )
 missing = [value for value in required if value not in source.lower()]
 if missing:

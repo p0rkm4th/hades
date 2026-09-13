@@ -33,8 +33,12 @@ outside the repository.
   the bounded observation window
 - Failure layer: owner-facing request latency/observability; canonical
   duplicate prevention held
-- Status: PARTIAL — no duplicate canonical state was created; response-time
-  behavior needs a separate latency-focused investigation
+- Repair/evidence: a controlled Grocy outage now suppresses personal-memory
+  prefetch for ordinary live household-state questions. A synthetic outage
+  retest returned only a clear Grocy connection failure, with no stale
+  inventory or personal-memory claim; Grocy was restored and healthy.
+- Status: REPAIRED for stale-fallback behavior; concurrent response latency
+  remains a separate performance investigation
 
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 

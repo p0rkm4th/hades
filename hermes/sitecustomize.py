@@ -137,6 +137,16 @@ try:
         """
         if self._memory_mode == "tools" or not self._auto_recall or not query.strip():
             return ""
+        # Grocy is authoritative for live household state. Do not inject
+        # stale personal semantic-memory claims into a live Grocy question,
+        # especially when Grocy is unavailable and the model must report a
+        # dependency failure. Explicit memory requests may still compose with
+        # a Grocy read.
+        if (
+            _HADES_SHARED_MEMORY_INTENT.search(query)
+            and not _HADES_EXPLICIT_MEMORY_INTENT.search(query)
+        ):
+            return ""
         if self._recall_max_input_chars and len(query) > self._recall_max_input_chars:
             query = query[:self._recall_max_input_chars]
         recall_kwargs = {
