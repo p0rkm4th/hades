@@ -196,8 +196,13 @@ Household Alpha identity work is now active in isolated staging. LLDAP 0.6.3
 is healthy with synthetic Alpha/Beta users and baseline household groups;
 Open WebUI 0.11.1 LDAP login created distinct stable application subjects on
 repeated login. Production remains local-authenticated and unchanged. The
-next action is to prove real owner-UI conversation isolation and then wire
-server-side subject propagation into Hindsight/Grocy capability boundaries.
+next action is to build the disposable Hermes acceptance path that exercises
+subject propagation, shared Grocy, and fail-closed capability selection.
+
+The API overlay's implicit finance-tool exposure was removed in `78d99d3`.
+Hermes was restarted after that change and the production smoke suite passed
+9/9. Finance remains unavailable until a server-side owner capability is
+implemented; prompt wording cannot grant it.
 
 Browser automation is now provisioned in an isolated temporary environment
 and reaches the HADES login shell at both local and Tailscale URLs in desktop

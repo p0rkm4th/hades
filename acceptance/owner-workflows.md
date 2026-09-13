@@ -191,7 +191,7 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Reload/persistence result:** repeated logins preserved both subjects and
   chats. LLDAP and disposable Open WebUI restarts completed; both users then
   authenticated again and retained one private chat each.
-- **Last verified SHA:** pending the coherent identity checkpoint commit
+- **Last verified SHA:** `78d99d3`
 - **Limitations:** production remains local-authenticated. Hindsight
   per-subject namespaces, shared Grocy authorization, finance exclusion,
   Agent Zero policy, per-user settings, revocation, and real owner-UI DOM
@@ -217,3 +217,19 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   static Hermes memory configuration. Owner-bank migration/mapping must be
   explicitly designed before enabling a per-user template; no production
   memory configuration was changed.
+
+## Privileged capability boundary
+
+- **Current status:** PASS (production source/runtime boundary)
+- **Owner input:** none; this was a safety regression check
+- **DOM result:** not exercised in this checkpoint
+- **Authoritative system:** Hermes server-side tool catalog and capability
+  configuration
+- **Backend verification:** the API overlay no longer reconciles or narrows
+  into `mcp-actual-finance-readonly`; finance cannot be enabled by a
+  natural-language prompt. The production profile contains no finance toolset.
+- **Reload/persistence result:** Hermes was restarted through its managed
+  service after commit `78d99d3`; health recovered and the full smoke suite
+  passed 9/9.
+- **Limitations:** a per-user capability source is still required before
+  enabling finance for the owner or any future household policy.
