@@ -4,6 +4,7 @@ set -u
 # Deliberately boring, secret-free HADES composition smoke check.
 # Override endpoint variables for a different private deployment.
 WEBUI_URL="${HADES_WEBUI_URL:-http://127.0.0.1:3000}"
+LLDAP_URL="${HADES_LLDAP_URL:-http://127.0.0.1:17171}"
 HERMES_URL="${HADES_HERMES_URL:-http://127.0.0.1:8642}"
 HINDSIGHT_URL="${HADES_HINDSIGHT_URL:-http://127.0.0.1:8888}"
 SEARXNG_URL="${HADES_SEARXNG_URL:-http://127.0.0.1:8080}"
@@ -25,6 +26,7 @@ check_http() {
 }
 
 check_http "Open WebUI health" "$WEBUI_URL/health"
+check_http "LLDAP health" "$LLDAP_URL/health"
 check_http "Hermes health" "$HERMES_URL/health"
 check_http "Hindsight health" "$HINDSIGHT_URL/health"
 
