@@ -13,7 +13,7 @@ runtime secrets and persistent volumes remain outside Git.
 | Actual Budget / Finance MCP | canonical imported finance account and transaction truth | `integrations/actual-finance-readonly/` small stdio MCP adapter over the official client; synthetic staging only | Actual 26.9.0 server/client must be pinned together; owner authorization and no finance write authority |
 | Proxmox / NetBox / Uptime Kuma | homelab and availability truth | read-only preparation documented in `docs/homelab-readonly.md`; runtime deferred | owner-approved endpoints and credentials required; no writes |
 | Home Assistant | physical smart-home state/control | future selected-entity integration | deferred; least privilege required |
-| n8n | deterministic workflows | future configuration | deferred until product-manager authorization |
+| n8n | deterministic workflows | future configuration | preparation contract in [`automation-boundary.md`](automation-boundary.md); deferred until product-manager authorization of one concrete workflow |
 
 ## Boundary rule
 

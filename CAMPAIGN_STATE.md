@@ -117,6 +117,16 @@ intentionally maintained in private operations state.
 - Authorize and provision each external integration independently.
 - Capture owner-UI plus canonical-system verification in private acceptance
   records before enabling writes.
+- Approve one concrete deterministic automation workflow, its actor/capability
+  mapping, canonical system, confirmation rule, and failure/rollback behavior;
+  the preparation contract is in `docs/automation-boundary.md`.
+
+## INDEPENDENT PROGRESS
+
+- Deterministic automation preparation is complete without provisioning a
+  runner or granting new authority. The proposed boundary requires trusted
+  subject/capability resolution, explicit preview/apply semantics,
+  idempotency, canonical verification, and fail-closed unknown outcomes.
 
 ## ARCHITECTURAL DISCOVERIES
 

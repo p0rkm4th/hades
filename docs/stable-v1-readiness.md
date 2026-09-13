@@ -65,6 +65,10 @@ These are deliberate gates, not missing implementation tasks:
 No real finance, homelab mutation, Home Assistant security control, or final
 installer is part of this readiness record.
 
+Deterministic automation is prepared but not provisioned; its execution
+boundary and authorization gate are recorded in
+[`automation-boundary.md`](automation-boundary.md).
+
 ## Current next action
 
 Continue synthetic/runtime dogfood only when it can reveal a new systemic
