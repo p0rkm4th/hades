@@ -181,6 +181,16 @@ subject-to-bank mapping overlay must therefore be retained until upstream
 provides an equivalent server-side mapping and it passes the two-user
 isolation contract.
 
+The candidate also exposed a deployment-context requirement. Starting the
+gateway from the Hermes source checkout caused the checkout's `AGENTS.md` to
+be injected into API prompts, including a truncation warning and contaminated
+model output. Starting the same candidate from an empty working directory,
+with `terminal.cwd` set to that workspace and the source supplied only through
+the runtime path, removed the contamination; the overlay-backed memory turn
+then completed normally. A production unit must therefore use a clean
+working directory and must not use the Hermes source checkout as its prompt
+context.
+
 The matched synthetic Actual Budget 26.9.0 fixture was then started on an
 isolated port. Hermes 0.21.2 discovered all three migrated read-only finance
 tools; a candidate `finance_status` call returned the synthetic budget,
