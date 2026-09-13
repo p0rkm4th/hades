@@ -142,6 +142,13 @@ isolated port. Hermes 0.21.2 discovered all three migrated read-only finance
 tools; a candidate `finance_status` call returned the synthetic budget,
 server version, and `read_only: true`. Direct bridge calls also returned
 synthetic accounts and transactions. The fixture was stopped afterward.
+
+Finally, a fresh disposable Open WebUI instance with its own volume was
+pointed at the candidate. Synthetic signup/login succeeded, the WebUI model
+catalog exposed `gemma4:12b`, and the WebUI chat-completions path returned the
+exact marker `UI-CANDIDATE-READY`. The disposable WebUI and candidate were
+removed afterward; the existing staging WebUI and production WebUI were not
+retargeted.
 The overlay remains required for trusted per-user memory selection; native
 MCP registration may make dynamic tool reconciliation removable only after
 those owner-contract checks pass.
