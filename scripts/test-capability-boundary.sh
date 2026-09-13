@@ -25,5 +25,7 @@ if 'hades-user-' not in source or 'HADES_OWNER_SUBJECT_ID' not in source:
     raise SystemExit('server-selected subject scope is incomplete')
 if 'client-selectable owner prefix' not in source or 'return ""' not in source:
     raise SystemExit('untrusted owner scope does not fail closed')
+if 'privileged_markers = ("agent_zero", "agent-zero", "finance")' not in source:
+    raise SystemExit('household privileged tool filtering is missing')
 print('PASS privileged capability boundary regression')
 PY

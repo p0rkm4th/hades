@@ -267,6 +267,22 @@ try:
         tools = getattr(self, "tools", None)
         if not isinstance(tools, list):
             return
+        if self._hades_session_scope == "household":
+            # Capability exclusion must happen before model invocation. The
+            # base profile may advertise privileged toolsets globally, so do
+            # not rely on a later prompt/intent guard to hide them.
+            privileged_markers = ("agent_zero", "agent-zero", "finance")
+            self.tools = [
+                tool for tool in tools
+                if not any(
+                    marker in str(tool.get("function", {}).get("name", "")).lower()
+                    for marker in privileged_markers
+                )
+            ]
+            self.valid_tool_names = {
+                tool.get("function", {}).get("name") for tool in self.tools
+            }
+            tools = self.tools
         from model_tools import get_tool_definitions as _get_tool_definitions
         existing = {
             t.get("function", {}).get("name") for t in tools
