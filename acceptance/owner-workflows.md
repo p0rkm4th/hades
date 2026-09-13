@@ -211,6 +211,15 @@ Beta's rendered sidebar contained `DOM-Beta-Private` and not
 `DOM-Alpha-Private`. Both logins used the normal rendered LDAP form and
 resilient accessible selectors.
 
+The same disposable mobile DOM also rendered the household-visible `HADES
+Hermes` model selector for Alpha after the supported group access grant. A
+real prompt was entered through the contenteditable chat control and remained
+in the rendered conversation. The disposable Hermes gateway continued
+deliberating without returning an assistant result during the bounded browser
+wait, so this run is recorded as a staging model-runtime limitation rather
+than memory/Grocy DOM acceptance. The provider was removed and the temporary
+gateway stopped afterward; production was not changed.
+
 ## Hindsight subject namespace boundary
 
 - **Current status:** PASS + PERSISTENCE (isolated backend staging scope)

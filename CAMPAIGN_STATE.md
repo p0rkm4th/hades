@@ -168,9 +168,9 @@ the acceptance records and summarized in `docs/household-alpha-readiness.md`.
 Keep production Hermes 0.14.0 and local Open WebUI authentication unchanged.
 The next safe production step requires an owner-approved migration window,
 private backups and rollback targets, exact account mapping, and confirmation
-of an independently recoverable admin path. Browser-DOM multi-user evidence
-also remains outstanding because no browser automation runtime is currently
-available in this environment.
+of an independently recoverable admin path. Mobile browser-DOM evidence now
+covers rendered login, private-chat sidebar isolation, and household model
+visibility; full rendered tool workflows remain outstanding.
 
 Continue independent read-only homelab preparation and Hermes modernization
 staging only when useful; neither is a prerequisite for Household Alpha.
@@ -229,7 +229,9 @@ staging only when useful; neither is a prerequisite for Household Alpha.
   disposable staging. A supported household-group model access grant exposed
   Hermes to both ordinary users; each retained and recalled only its own fact
   through WebUI → Hermes → Hindsight. The disposable provider was removed
-  afterward.
+  afterward. A later mobile DOM run re-confirmed the rendered model selector
+  and prompt submission, but the disposable gateway did not complete within
+  the bounded wait; no DOM memory/Grocy claim is made from that run.
 - Household Alpha readiness report: staging contract is substantially green,
   but production declaration is intentionally pending the owner-preserving
   identity migration gate and browser DOM multi-user acceptance.
@@ -244,6 +246,8 @@ staging only when useful; neither is a prerequisite for Household Alpha.
   SQLite integrity validation and booted successfully in a separate pinned
   restore container. Production owner recovery and automatic application
   subject remapping remain unproven.
-- Next highest-value action: choose and rehearse a supported directory-to-
-  application revocation boundary, then run per-user settings isolation and
-  restart verification without touching production.
+- Next highest-value action: keep staging clean and, if further browser
+  acceptance is pursued, provide a bounded disposable model runtime that
+  completes through the rendered chat; otherwise prepare the owner-preserving
+  production identity migration rehearsal with private backups and rollback
+  targets. Do not touch production without that owner gate.
