@@ -261,6 +261,18 @@ The affected memory-provider files subsequently passed together under two
 canonical workers (112 passed, 0 failed), with pytest still importable. This
 is focused evidence for the cleanup fixture, not full-suite qualification.
 
+The next fresh disposable full-suite attempt installed the candidate's
+declared `anthropic==0.87.0` extra and used eight canonical isolated file
+workers with retries disabled. It completed with 46,173 passed and 73 failed
+tests across 13 files. The prior Anthropic/httpx mismatch and auxiliary-
+provider ordering leak were not reproduced; remaining failures are
+concentrated in optional provider/host-sensitive contracts (Daytona, FAL,
+video/image generation, Modal, browser profile, web provider, update-shim),
+plus one Hermes state test and the existing update-head gate. This is not
+promotion qualification. A hermetic core-suite definition or
+upstream/environment disposition remains required; production stays on
+Hermes 0.14.0.
+
 ## HOUSEHOLD ALPHA STATUS
 
 The detailed bullets below retain historical evidence from staging and

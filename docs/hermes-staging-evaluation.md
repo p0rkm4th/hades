@@ -340,3 +340,19 @@ addressed-backfill cleanup fixture under two canonical workers: **112 passed,
 0 failed**, and pytest remained importable afterward. This is focused evidence
 that the fixture removes the reproduced cross-file leak; a fresh full-suite
 run is still required before the candidate can be called fully qualified.
+
+### Fresh optional-dependency full-suite attempt
+
+On 2026-09-13, a fresh copy of the candidate was provisioned with the declared
+`anthropic==0.87.0` extra and run through the canonical wrapper with eight
+isolated file workers and retries disabled. The run completed with **46,173
+passed and 73 failed tests across 13 files**. The earlier Anthropic/httpx
+version mismatch did not recur, and the auxiliary-provider order leak did not
+recur in this worker run. The failures are concentrated in optional-provider,
+host/platform, and environment-sensitive contracts (including Daytona, FAL,
+video/image generation, Modal, browser-profile, update-shim, and web-provider
+tests), plus one Hermes state test and the existing update-head gate. This is
+not a promotion qualification result: the candidate still needs a deliberately
+defined hermetic core-suite qualification or upstream/test-environment
+disposition for these failures. Production remains on Hermes 0.14.0 and was
+not changed.
