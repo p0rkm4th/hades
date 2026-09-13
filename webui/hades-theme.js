@@ -56,6 +56,12 @@
       if (!localThemeChanged && settings && isTheme(settings[remoteThemeKey])) {
         localStorage.setItem(themeKey, settings[remoteThemeKey]);
         applyTheme(settings[remoteThemeKey]);
+      } else if (!localThemeChanged && settings && !isTheme(settings[remoteThemeKey])) {
+        // A native Open WebUI theme is represented by the absence of a HADES
+        // preset. Clear an old account/browser preset instead of resurrecting
+        // it on the next reload.
+        localStorage.removeItem(themeKey);
+        applyTheme('');
       }
       if (!localEffectChanged && settings && isEffect(settings[remoteEffectKey])) {
         localStorage.setItem(effectKey, settings[remoteEffectKey]);
@@ -265,7 +271,15 @@
             applySelectedTheme();
             requestAnimationFrame(applySelectedTheme);
           });
-        } else { localStorage.removeItem(themeKey); applyTheme(''); }
+        } else {
+          localThemeChanged = true;
+          localStorage.removeItem(themeKey);
+          // Empty is the supported settings value for "no HADES preset";
+          // without this write, an older preset (for example Neon) returns
+          // after a reload even though the native selector changed.
+          saveRemotePreference(remoteThemeKey, '');
+          applyTheme('');
+        }
       }, true);
     }
     restoreTheme(select);
