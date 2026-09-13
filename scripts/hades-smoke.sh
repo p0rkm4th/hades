@@ -49,7 +49,7 @@ else
 fi
 
 model_ok=1
-if ! curl -fsS --max-time 10 "$OLLAMA_URL/api/tags" \
+if ! curl -fsS --max-time 10 "$OLLAMA_URL/api/tags" 2>/dev/null \
     | python -c 'import json,sys; d=json.load(sys.stdin); raise SystemExit(0 if isinstance(d.get("models"), list) else 1)' >/dev/null 2>&1; then
   # On Linux, Ollama may be bound to the Docker bridge rather than loopback.
   # Discover that gateway from Docker instead of publishing a private address
