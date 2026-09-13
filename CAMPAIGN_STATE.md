@@ -267,6 +267,9 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   Hermes to both ordinary users; each retained and recalled only its own fact
   through WebUI → Hermes → Hindsight. The disposable provider was removed
   afterward.
+- Household Alpha readiness report: staging contract is substantially green,
+  but production declaration is intentionally pending the owner-preserving
+  identity migration gate and browser DOM multi-user acceptance.
 - Shared Grocy is PASS + PERSISTENCE in disposable end-to-end staging;
   finance exclusion is PASS for server-marked disposable household sessions.
 - Agent Zero household policy: owner-only in the current unmarked production
