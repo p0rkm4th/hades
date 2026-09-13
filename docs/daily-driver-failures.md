@@ -4,6 +4,23 @@ This public-safe log records sanitized failure classes only. Owner prompts,
 account identifiers, URLs, private runtime details, and personal data remain
 outside the repository.
 
+## 2026-09-13 — Shared household turns polluted private memory
+
+- Actor: synthetic household account
+- Surface: Hermes automatic Hindsight retention around Grocy workflows
+- Expected: Grocy remains canonical shared state; ordinary grocery/pantry
+  conversations do not become private semantic memories
+- Observed: automatic turn retention stored shared grocery/tool-result text in
+  the authenticated user's private bank, which could also pollute unrelated
+  personal-memory recall
+- Failure layer: Hermes Hindsight provider `sync_turn` overlay boundary
+- Repair/evidence: the deployed overlay now skips automatic retention for
+  shared-state turns while preserving explicit memory requests. A real
+  production synthetic grocery-list request completed with no new private
+  Hindsight document; an explicit synthetic memory marker was retained and
+  recovered from that user's bank afterward.
+- Status: REPAIRED — synthetic fixture memories remain cleanup-only test data
+
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 
 - Actor: owner account

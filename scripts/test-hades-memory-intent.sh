@@ -12,6 +12,11 @@ required = (
     'did i tell',
     'do you remember',
     'hindsight_recall',
+    '_hades_original_sync_turn',
+    '_hades_shared_memory_intent',
+    '_hades_explicit_memory_intent',
+    'skipping automatic hindsight retain for shared-state turn',
+    '_hindsight.hindsightmemoryprovider.sync_turn = _hades_sync_turn',
 )
 missing = [value for value in required if value not in source.lower()]
 if missing:

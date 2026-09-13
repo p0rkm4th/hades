@@ -78,6 +78,43 @@ try:
     _hades_original_aretain = _HindsightClient.aretain
     _hades_original_aretain_batch = _HindsightClient.aretain_batch
 
+    _hades_original_sync_turn = _hindsight.HindsightMemoryProvider.sync_turn
+    _HADES_SHARED_MEMORY_INTENT = re.compile(
+        r"\b(?:grocery|groceries|shopping list|pantry|inventory|stock|"
+        r"recipe|food|ingredient|bought|purchase|purchased|consume|"
+        r"consumed|used up|out of|add it|remove it)\b",
+        re.IGNORECASE,
+    )
+    _HADES_EXPLICIT_MEMORY_INTENT = re.compile(
+        r"\b(?:remember|memorize|forget|memory|recall|do you remember|"
+        r"actually my|correction)\b",
+        re.IGNORECASE,
+    )
+
+    def _hades_sync_turn(self, user_content, assistant_content, *, session_id=""):
+        """Keep shared household turns out of private semantic memory.
+
+        Grocy is the canonical household store. Hermes' generic automatic
+        retain path otherwise persists the entire completed turn, including
+        live shopping-list/tool results, into the authenticated user's private
+        Hindsight bank. Explicit memory requests remain eligible for retain;
+        ordinary shared-state turns do not become personal memory by accident.
+        """
+        combined = "\n".join(
+            value for value in (str(user_content or ""), str(assistant_content or ""))
+        )
+        if (
+            _HADES_SHARED_MEMORY_INTENT.search(combined)
+            and not _HADES_EXPLICIT_MEMORY_INTENT.search(str(user_content or ""))
+        ):
+            _hades_logger.info("Skipping automatic Hindsight retain for shared-state turn")
+            return None
+        return _hades_original_sync_turn(
+            self, user_content, assistant_content, session_id=session_id
+        )
+
+    _hindsight.HindsightMemoryProvider.sync_turn = _hades_sync_turn
+
     async def _hades_aretain(self, *args, **kwargs):
         kwargs["retain_async"] = True
         return await _hades_original_aretain(self, *args, **kwargs)

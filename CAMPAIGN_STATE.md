@@ -188,6 +188,15 @@ Continue independent roadmap work. The current highest-value item is Hermes
 0.21.2 production-readiness; production remains on the known-good 0.14.0
 baseline until the owner-preserving candidate rehearsal passes.
 
+Synthetic production dogfood found that Hermes' automatic Hindsight `sync_turn`
+path retained ordinary Grocy/shared-state turns in a user's private semantic
+memory, polluting later personal recall. The deployed overlay now skips that
+automatic retain path for shared-state turns while preserving explicit memory
+requests. A real synthetic grocery-list request produced no new private
+Hindsight document, and an explicit synthetic memory marker was retained and
+recalled. Static regression coverage and Python compilation pass; owner data
+was not inspected or changed.
+
 The latest Hermes 0.21.2 isolated probe passed normal chat and native stdio
 MCP discovery/call/post-tool continuation with local `gemma4:12b`. Qwen 3 8B
 and 14B are below the candidate's enforced 64K context floor, so they are not
