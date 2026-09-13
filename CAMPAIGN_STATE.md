@@ -178,6 +178,13 @@ read, finance exclusion, revocation, and cross-account settings isolation;
 Continue independent read-only homelab preparation and Hermes modernization
 staging only when useful; neither is a prerequisite for Household Alpha.
 
+The latest Hermes 0.21.2 isolated probe passed normal chat and native stdio
+MCP discovery/call/post-tool continuation with local `gemma4:12b`. Qwen 3 8B
+and 14B are below the candidate's enforced 64K context floor, so they are not
+candidate production profiles. Continue the remaining isolated Hindsight,
+Grocy, SearXNG, Agent Zero, Open WebUI, and rollback matrix before considering
+an upgrade; production remains on Hermes 0.14.0.
+
 ## HOUSEHOLD ALPHA STATUS
 
 - Owner daily-driver path: PASS; production smoke remains green.

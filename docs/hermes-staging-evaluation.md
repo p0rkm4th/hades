@@ -56,3 +56,20 @@ SearXNG, Agent Zero, Open WebUI upgrade, and rollback matrix remains
 incomplete. Prepare a rollback-safe migration only after those contracts pass,
 then delete only compatibility behavior proven obsolete. Production remains
 pinned meanwhile.
+
+## Follow-up local-model owner-contract probe
+
+On 2026-09-13, the isolated candidate gateway was restarted twice using the
+locally available `gemma4:12b` model. Hermes 0.21.2 reported healthy, a normal
+OpenAI-compatible chat returned the exact marker `CLEAN-GEMMA-OWNER-READY`,
+and a native stdio MCP server was discovered and called through the API path;
+the post-tool response returned `CLEAN-MCP-GEMMA-READY`. This is a bounded
+candidate smoke result, not production acceptance.
+
+The same profile exposed a real configuration constraint: local Qwen 3 8B and
+14B advertise 40K context (and the earlier probe reported 32K for 8B), while
+Hermes 0.21.2 enforces a 64K minimum. The candidate therefore cannot use
+those profiles without a model/runtime change. `gemma4:12b` advertises 262K
+context and is a viable staging candidate. The full isolated Hindsight,
+Grocy, SearXNG, Agent Zero, Open WebUI, and rollback matrix remains incomplete;
+production stays on Hermes 0.14.0.
