@@ -273,6 +273,14 @@ promotion qualification. A hermetic core-suite definition or
 upstream/environment disposition remains required; production stays on
 Hermes 0.14.0.
 
+The declared `hindsight-client==0.6.1` extra was then installed only in that
+disposable checkout; the Hindsight provider file passed 86/86. The remaining
+isolated core failure is `tests/test_hermes_state.py`'s FTS5 trace assertion:
+context is returned correctly, but the test observes no context-window query
+on the connection it traced. This may be a read-connection observation
+boundary, but it remains unresolved candidate qualification evidence until
+the tracing contract is reconciled. Production is unchanged.
+
 ## HOUSEHOLD ALPHA STATUS
 
 The detailed bullets below retain historical evidence from staging and

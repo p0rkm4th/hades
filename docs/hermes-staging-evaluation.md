@@ -356,3 +356,17 @@ not a promotion qualification result: the candidate still needs a deliberately
 defined hermetic core-suite qualification or upstream/test-environment
 disposition for these failures. Production remains on Hermes 0.14.0 and was
 not changed.
+
+### Core follow-up
+
+With the declared `hindsight-client==0.6.1` extra installed in the same
+disposable candidate, `tests/plugins/memory/test_hindsight_provider.py`
+passed **86/86**. The remaining isolated core check,
+`tests/test_hermes_state.py`, passed 273 tests but failed
+`TestFTS5Search.test_search_projection_skips_context_enrichment_queries`:
+the returned context was present, but the test's trace callback observed zero
+context-window statements instead of one. This appears to be an observation
+boundary around the read connection (the implementation returned the expected
+context), but it remains an unresolved candidate qualification failure until
+the test/connection tracing contract is independently reconciled. Production
+was not changed.
