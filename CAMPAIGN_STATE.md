@@ -257,6 +257,9 @@ candidate checkout by supplying a synthetic planning budget; its complete
 file passed 7/7 through the canonical wrapper and pytest remained intact.
 That focused blocker is removed, while full-suite qualification and upstream
 disposition remain pending.
+The affected memory-provider files subsequently passed together under two
+canonical workers (112 passed, 0 failed), with pytest still importable. This
+is focused evidence for the cleanup fixture, not full-suite qualification.
 
 ## HOUSEHOLD ALPHA STATUS
 

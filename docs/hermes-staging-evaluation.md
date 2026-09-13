@@ -334,3 +334,9 @@ The canonical wrapper also ran the four updater/venv-repair files serially:
 118 tests passed, one host-gated test skipped, and the candidate interpreter
 still imported pytest afterward. This narrows the observed environment damage
 to the broader full-suite interaction; it does not qualify the full suite.
+
+The affected memory-provider files were then run together with the row-
+addressed-backfill cleanup fixture under two canonical workers: **112 passed,
+0 failed**, and pytest remained importable afterward. This is focused evidence
+that the fixture removes the reproduced cross-file leak; a fresh full-suite
+run is still required before the candidate can be called fully qualified.
