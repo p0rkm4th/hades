@@ -44,3 +44,15 @@ else
   printf 'FAIL unmanaged self-signup is enabled\n'
   exit 1
 fi
+
+if docker exec hades-open-webui python3 -c 'import json,sqlite3,sys; c=sqlite3.connect("/app/backend/data/webui.db");
+def value(key):
+ row=c.execute("select value from config where key=?",(key,)).fetchone(); return row[0] if row else None
+permissions=json.loads(value("user.permissions") or "{}")
+sharing=permissions.get("sharing",{})
+sys.exit(0 if value("auth.enable_api_keys") == "false" and sharing.get("public_chats") is False and sharing.get("open_chats") is False else 1)' ; then
+  printf 'PASS API-key issuance and public chat sharing disabled\n'
+else
+  printf 'FAIL privileged API keys or public chat sharing enabled\n'
+  exit 1
+fi
