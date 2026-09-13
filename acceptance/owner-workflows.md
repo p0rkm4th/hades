@@ -212,7 +212,7 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   disposable Hindsight service.
 - **Reload/persistence result:** PASS; both isolated banks and their facts
   survived service restart
-- **Last verified SHA:** pending the coherent memory checkpoint commit
+- **Last verified SHA:** `e3053a3`
 - **Limitations:** production still uses the existing `hades-owner` bank and
   static Hermes memory configuration. Owner-bank migration/mapping must be
   explicitly designed before enabling a per-user template; no production
