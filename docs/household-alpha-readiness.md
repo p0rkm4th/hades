@@ -6,10 +6,10 @@ operations evidence.
 
 ## Current assessment
 
-HADES is ready for a controlled production identity-migration rehearsal, but
-Household Alpha is not declared. Production remains on the known-good local
-Open WebUI authentication path. No owner account, conversation, memory bank,
-Grocy instance, or Hermes production profile has been migrated.
+Production identity migration is in progress and the existing owner path
+remains healthy, but Household Alpha is not declared. Production Hermes remains
+on the known-good baseline; finance and privileged household capabilities are
+still excluded.
 
 ## Verified in isolated staging
 
@@ -28,14 +28,11 @@ Grocy instance, or Hermes production profile has been migrated.
 
 ## Remaining gates
 
-- Production LLDAP cutover must preserve Scotty's existing local login and an
-  independently recoverable administrative path.
-- The production owner subject must be mapped to the existing Hindsight bank
-  without moving or mixing owner data.
-- Production Open WebUI must be configured with the subject and capability
-  headers only after a private migration rehearsal.
-- Production Grocy identity mapping and the coordinated revocation procedure
-  require private operational verification.
+- Complete the final owner-facing regression and readiness audit.
+- Confirm the documented ordered revocation procedure and settings isolation
+  after the controlled restart.
+- Retire the temporary administrator recovery credential only after the
+  independent recovery path is documented and verified.
 - Browser DOM acceptance is substantially covered: mobile rendered login,
   private-chat sidebar isolation, household model visibility, memory
   retain/recall, shared Grocy read and mutation/cross-user read, finance
@@ -48,7 +45,6 @@ Grocy instance, or Hermes production profile has been migrated.
 
 ## Owner gate
 
-The next production action requires an explicit owner-approved migration
-window, backup identifiers, rollback target, and exact account mapping. Until
-that gate is supplied, production stays on the accepted local-authenticated
-path and synthetic staging remains the active acceptance environment.
+The remaining gate is operational acceptance, not a new owner authorization:
+the production synthetic matrix and final owner regression must remain green
+before onboarding a real household user.
