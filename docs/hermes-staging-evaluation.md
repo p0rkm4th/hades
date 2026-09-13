@@ -301,6 +301,12 @@ mutated candidate environment from being mistaken for a test regression. A
 full candidate suite must use the candidate's own `scripts/run_tests.sh` so
 its hermetic environment setup is preserved.
 
+After the invalidated aggregate run, the disposable candidate environment was
+restored with `ensurepip` and the declared pytest test dependencies. The
+candidate's canonical `scripts/run_tests.sh` then passed a focused three-file
+contract run: **134 passed, 0 failed**. This is valid focused evidence only;
+the full suite still requires a fresh candidate environment and a clean run.
+
 ### Minimal upstream remediation
 
 The failing row-addressed-backfill module should own an autouse fixture that

@@ -243,6 +243,10 @@ pytest` errors; that aggregate is not qualification evidence. Candidate triage
 also includes a timing-sensitive compression fallback failure, local-quickstart
 HTTP 409 failures, and four reported flakes. A valid full run requires the
 canonical wrapper with a fresh candidate environment.
+The disposable candidate environment was subsequently restored with
+`ensurepip` and test dependencies; the canonical wrapper passed a focused
+three-file contract run with 134/134 tests. This does not qualify the full
+suite.
 
 ## HOUSEHOLD ALPHA STATUS
 
