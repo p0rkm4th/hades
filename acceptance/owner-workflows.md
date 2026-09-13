@@ -225,8 +225,11 @@ gateway stopped afterward; production was not changed.
 - **Current status:** PASS + PERSISTENCE (isolated backend staging scope)
 - **Owner input:** synthetic Alpha/Beta memory fixtures only; no production
   Hindsight bank was written
-- **DOM result:** not applicable to this backend contract probe; the
-  owner-facing WebUI integration remains pending
+- **DOM result:** PASS for a disposable mobile WebUI memory turn; Alpha's
+  rendered prompt received the authoritative `Memory accepted for background
+  storage.` response, and a fresh rendered chat recalled the marker. The
+  server log recorded the subject-specific bank selected from Alpha's
+  propagated identity, not the unsuffixed staging bank.
 - **Authoritative system:** Hindsight banks selected by the authenticated
   server-side subject
 - **Backend verification:** synthetic Alpha and Beta facts were retained into
@@ -245,8 +248,10 @@ gateway stopped afterward; production was not changed.
 
 - **Current status:** PASS + PERSISTENCE (disposable end-to-end staging)
 - **Owner input:** authenticated synthetic Alpha and Beta API sessions
-- **DOM result:** not exercised in this checkpoint; the requests used the
-  authenticated OpenAI-compatible path that Open WebUI calls
+- **DOM result:** PASS for Alpha's mobile rendered chat; retain and fresh-chat
+  recall both completed through the normal WebUI model path. The first
+  attempt exposed missing provider-header propagation, which was corrected in
+  the disposable Open WebUI configuration before this evidence was collected.
 - **Authoritative system:** Hindsight per-subject banks selected by Hermes
   from the server-propagated session key
 - **Backend verification:** Alpha retained and recalled only synthetic
@@ -266,8 +271,9 @@ gateway stopped afterward; production was not changed.
 - **Current status:** PASS + PERSISTENCE (disposable end-to-end staging)
 - **Owner input:** Alpha asked to add Milk; Beta asked for the shared grocery
   list; Alpha asked again after restart
-- **DOM result:** not exercised in this checkpoint; the authenticated API
-  path was used while the browser harness is unavailable
+- **DOM result:** PASS for Alpha's mobile rendered read-only query; the chat
+  displayed the shared staging list through HADES. The canonical Grocy API
+  independently returned the same six unfinished rows and quantities.
 - **Authoritative system:** disposable Grocy `shopping_list` state
 - **Backend verification:** Alpha's Hermes/MCP turn added Milk. Grocy's
   canonical API contained exactly one Milk row. Beta's independent subject

@@ -17,8 +17,8 @@ Grocy instance, or Hermes production profile has been migrated.
 |---|---|---|
 | Synthetic owner plus two household users | PASS + PERSISTENCE | LLDAP login, stable Open WebUI subjects, roles retained after restart |
 | Conversation isolation | PASS + PERSISTENCE | Lists and guessed direct chat access reject the other user |
-| Personal-memory isolation | PASS + PERSISTENCE | WebUI → Hermes → per-subject Hindsight recall returns only the caller's fact |
-| Shared household state | PASS + PERSISTENCE | Grocy remains canonical and shared across synthetic subjects |
+| Personal-memory isolation | PASS + PERSISTENCE | Mobile WebUI → Hermes → per-subject Hindsight retain/recall rendered successfully for Alpha; prior cross-user backend checks remain green |
+| Shared household state | PASS + PERSISTENCE | Mobile WebUI rendered the shared Grocy list and the canonical API matched all returned rows |
 | LDAP group propagation | PASS | Directory memberships synchronize and expand into downstream headers |
 | Model visibility | PASS | Supported Open WebUI model access record grants household-group read access |
 | Finance and Agent Zero exclusion | PASS | Household-scoped sessions receive neither privileged tool |
@@ -37,11 +37,10 @@ Grocy instance, or Hermes production profile has been migrated.
 - Production Grocy identity mapping and the coordinated revocation procedure
   require private operational verification.
 - Browser DOM acceptance is partial: mobile rendered login, private-chat
-  sidebar isolation, and household model visibility pass. A real prompt was
-  submitted through the rendered mobile chat, but the disposable Hermes
-  gateway did not complete within the bounded wait, so rendered memory,
-  Grocy, capability, and revocation workflows still need browser verification.
-  The temporary provider and gateway were cleaned up.
+  sidebar isolation, household model visibility, memory retain/recall, and
+  shared Grocy read pass. Rendered capability and revocation workflows still
+  need browser verification. The temporary provider and gateway are cleaned
+  up after each run.
 - Automatic directory event synchronization is not implemented; operators
   must use the ordered revocation bridge until that architecture is approved.
 
