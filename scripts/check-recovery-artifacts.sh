@@ -32,17 +32,25 @@ check_sqlite() {
   printf 'PASS %s SQLite integrity\n' "$label"
 }
 
-check_sqlite 'Open WebUI' "$ROOT/open-webui-data/webui.db"
-check_sqlite 'LLDAP' "$ROOT/lldap-data/users.db"
-check_sqlite 'Hermes' "$ROOT/hermes-profile/state.db"
-
-if [[ -e "$ROOT/grocy-config/grocy.db" ]]; then
-  check_sqlite 'Grocy' "$ROOT/grocy-config/grocy.db"
-elif [[ -e "$ROOT/grocy.db" ]]; then
+if [[ -e "$ROOT/open-webui.db" && -e "$ROOT/lldap-users.db" && \
+      -e "$ROOT/grocy.db" && -e "$ROOT/hermes-state.db" ]]; then
+  check_sqlite 'Open WebUI' "$ROOT/open-webui.db"
+  check_sqlite 'LLDAP' "$ROOT/lldap-users.db"
   check_sqlite 'Grocy' "$ROOT/grocy.db"
+  check_sqlite 'Hermes' "$ROOT/hermes-state.db"
 else
-  printf 'FAIL Grocy: missing\n'
-  exit 1
+  check_sqlite 'Open WebUI' "$ROOT/open-webui-data/webui.db"
+  check_sqlite 'LLDAP' "$ROOT/lldap-data/users.db"
+  check_sqlite 'Hermes' "$ROOT/hermes-profile/state.db"
+
+  if [[ -e "$ROOT/grocy-config/grocy.db" ]]; then
+    check_sqlite 'Grocy' "$ROOT/grocy-config/grocy.db"
+  elif [[ -e "$ROOT/grocy.db" ]]; then
+    check_sqlite 'Grocy' "$ROOT/grocy.db"
+  else
+    printf 'FAIL Grocy: missing\n'
+    exit 1
+  fi
 fi
 
 json_count=0
