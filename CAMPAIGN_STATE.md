@@ -241,20 +241,22 @@ completed 3,986 files with 27,353 passed and 222 platform skips, but bypassed
 the candidate's canonical `scripts/run_tests.sh` hermetic wrapper. Its shared
 virtualenv was mutated by update/venv tests, producing later `No module named
 pytest` errors; that aggregate is not qualification evidence. Candidate triage
-also includes a timing-sensitive compression fallback failure, local-quickstart
-HTTP 409 failures, and four reported flakes. A valid full run requires the
-canonical wrapper with a fresh candidate environment.
+also includes a timing-sensitive compression fallback failure and four
+reported flakes. A valid full run requires the canonical wrapper with a fresh
+candidate environment.
 The disposable candidate environment was subsequently restored with
 `ensurepip` and test dependencies; the canonical wrapper passed a focused
 three-file contract run with 134/134 tests. This does not qualify the full
-suite. The focused follow-up also passed the compression-stall file; the two
-remaining local-quickstart failures are deterministic HTTP 409 responses from
-the endpoint's hardware-fit preflight because those tests do not stub the
-planning budget. This is candidate test/fixture debt, not a production failure.
-The canonical wrapper also passed the four updater/venv-repair files serially
+suite. The focused follow-up also passed the compression-stall file. The
+canonical wrapper also passed the four updater/venv-repair files serially
 (118 passed, one host-gated skip), with pytest still importable afterward.
 This narrows the environment damage to the broader full-suite interaction;
 full qualification remains pending.
+The two local-quickstart fixture failures were then repaired in the disposable
+candidate checkout by supplying a synthetic planning budget; its complete
+file passed 7/7 through the canonical wrapper and pytest remained intact.
+That focused blocker is removed, while full-suite qualification and upstream
+disposition remain pending.
 
 ## HOUSEHOLD ALPHA STATUS
 

@@ -311,13 +311,14 @@ contract run: **134 passed, 0 failed**. This is valid focused evidence only;
 the full suite still requires a fresh candidate environment and a clean run.
 
 The focused rerun also passed `test_compression_stall_fallback_78981.py`
-completely. `test_local_quickstart.py` still has two deterministic failures:
-its fresh-machine and already-satisfied cases receive the endpoint's intended
-hardware-fit `409` because the tests do not stub the hardware planning budget;
-the same file's explicit no-recommendation and single-flight `409` cases pass.
-This is candidate test/fixture debt, not a production HADES failure, but it
-must be corrected or explicitly dispositioned before claiming full upstream
-qualification.
+completely. The two deterministic `test_local_quickstart.py` failures were
+test-fixture debt: fresh-machine and already-satisfied cases reached the
+endpoint's legitimate hardware-fit `409` because the client fixture used the
+host's real planning budget. A synthetic planning-budget fixture was added in
+the disposable candidate checkout, after which the complete quickstart file
+passed **7/7** through the canonical runner and pytest remained importable.
+This removes that focused fixture blocker, but does not qualify the full suite
+or imply that the disposable upstream change has been merged upstream.
 
 ### Minimal upstream remediation
 
