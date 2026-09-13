@@ -159,58 +159,21 @@ See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 
 ## NEXT ACTION
 
-Hermes production remains pinned. Clean upstream v0.21.2 normal conversation,
-focused upstream tests, and an isolated API-server MCP contract are verified.
-The MCP contract required the declared optional MCP extra; with it installed,
-a deterministic provider drove tool search → tool call, and a canonical marker
-from the synthetic MCP process survived post-tool continuation. The declared
-ACP extra is also installed in staging and its 154 protocol/adapter tests pass.
-The next non-gated action is to classify the remaining overlay behavior and
-rehearse rollback before any production migration. The private drill must
-remain isolated from owner data
-and must not become a public-repository backup job.
+The staging Household Alpha contract is substantially green: synthetic owner,
+Alpha, and Beta identities; conversation and memory isolation; shared Grocy;
+LDAP group propagation; model access; capability exclusion; per-user settings;
+coordinated revocation; and synthetic identity recovery are all evidenced in
+the acceptance records and summarized in `docs/household-alpha-readiness.md`.
 
-Obtain explicit owner authorization for exact homelab endpoints and
-least-privilege credentials in parallel, then provision only read-only
-Proxmox, NetBox, or Uptime Kuma access and verify it through the HADES owner
-path. Credential-independent preparation is documented in
-`docs/homelab-readonly.md`. Finance preparation is complete in
-`docs/finance-readonly.md`; provider, account, environment, retention, and
-webhook authorization remain owner-gated.
+Keep production Hermes 0.14.0 and local Open WebUI authentication unchanged.
+The next safe production step requires an owner-approved migration window,
+private backups and rollback targets, exact account mapping, and confirmation
+of an independently recoverable admin path. Browser-DOM multi-user evidence
+also remains outstanding because no browser automation runtime is currently
+available in this environment.
 
-The synthetic finance bakeoff selected Actual Budget, with Firefly III as
-fallback and Finlynq/Ledgr on watchlist. Evidence and production gates are in
-`docs/adr/finance-platform.md`.
-
-The synthetic finance objective is complete. The next finance action is an
-owner-authorized production decision; until then, do not connect real finance
-data or providers.
-
-The stable 26.9.0 Actual pair now passes synthetic import/repeat, sync, fresh
-runtime reload, and transfer-payee linking. A constrained read-only MCP adapter
-exists under `integrations/actual-finance-readonly/` and has been exercised
-through the HADES owner path against that canonical synthetic budget. The
-adapter is not enabled in production.
-
-Household Alpha identity work is now active in isolated staging. LLDAP 0.6.3
-is healthy with synthetic Alpha/Beta users and baseline household groups;
-Open WebUI 0.11.1 LDAP login created distinct stable application subjects on
-repeated login. Production remains local-authenticated and unchanged. The
-next action is to build the disposable Hermes acceptance path that exercises
-subject propagation, shared Grocy, and fail-closed capability selection.
-
-The API overlay's implicit finance-tool exposure was removed in `78d99d3`.
-Hermes was restarted after that change and the production smoke suite passed
-9/9. Finance remains unavailable until a server-side owner capability is
-implemented; prompt wording cannot grant it.
-
-Browser automation is now provisioned in an isolated temporary environment
-and reaches the HADES login shell at both local and Tailscale URLs in desktop
-and mobile viewports. An authenticated synthetic dogfood session verified the
-native mobile Settings flow: Language precedes Theme, all HADES theme/effect
-selectors render, an Odysseus theme plus Rain creates the expected canvas and
-classes, and both selections persist after reload. No owner credentials were
-stored by the dogfood run; domain workflow browser evidence remains pending.
+Continue independent read-only homelab preparation and Hermes modernization
+staging only when useful; neither is a prerequisite for Household Alpha.
 
 ## HOUSEHOLD ALPHA STATUS
 
