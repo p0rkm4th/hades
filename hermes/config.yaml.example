@@ -11,6 +11,13 @@ model:
   max_tokens: 1024
   # Keep local Ollama prompts responsive while retaining useful conversation context.
   ollama_num_ctx: 16384
+memory:
+  # For multi-user Open WebUI, pair this with the server-generated
+  # X-Hermes-Session-Key: hades-user-{{USER_ID}} connection header. Keep a
+  # static bank_id until that header is configured and verified.
+  provider: hindsight
+  bank_id: hades-owner
+  bank_id_template: hades-user-{user}
 providers:
   custom:
     # Prevent a stalled local-model request from holding the owner UI forever.

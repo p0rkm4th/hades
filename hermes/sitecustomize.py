@@ -6,10 +6,30 @@ retrieval instead of returning the owner-facing answer. Keep the supported
 provider intact, but expose only the direct memory tools to the HADES profile.
 """
 
+import re
+
+
+def _hades_subject_from_session_key(session_key):
+    """Extract the server-generated subject from an Open WebUI key.
+
+    Open WebUI can expand ``{{USER_ID}}`` in a connection header. Hermes'
+    API gateway already accepts that header as a stable session key, so this
+    small translation lets the supported Hindsight provider resolve its
+    ``{user}`` bank template without trusting model text or a mutable display
+    name. Unrecognized keys intentionally produce no subject.
+    """
+    prefix = "hades-user-"
+    if not isinstance(session_key, str) or not session_key.startswith(prefix):
+        return ""
+    subject = session_key[len(prefix):].strip()
+    if not subject or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", subject):
+        return ""
+    return subject
+
+
 try:
     import json
     import logging
-    import re
     import threading
     from plugins.memory import hindsight as _hindsight
     from hindsight_client.hindsight_client import Hindsight as _HindsightClient
@@ -187,6 +207,11 @@ try:
     _hades_original_agent_init = _AIAgent.__init__
 
     def _hades_agent_init(self, *args, **kwargs):
+        session_key = kwargs.get("gateway_session_key")
+        subject = _hades_subject_from_session_key(session_key)
+        if subject and not kwargs.get("user_id"):
+            kwargs["user_id"] = subject
+            _hades_logger.info("API subject propagated to agent user_id")
         _hades_original_agent_init(self, *args, **kwargs)
         tools = getattr(self, "tools", None)
         if not isinstance(tools, list):

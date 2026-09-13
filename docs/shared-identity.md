@@ -46,6 +46,17 @@ staging Open WebUI container was not connected to production model, Hermes,
 Hindsight, Grocy, or Agent Zero services. Its synthetic users are not owner
 accounts and must not be promoted into production.
 
+## Subject propagation design
+
+Open WebUI supports per-connection custom headers with server-side
+`{{USER_ID}}` expansion. The HADES overlay accepts the resulting
+`hades-user-<stable-subject>` session key and passes only the validated suffix
+as Hermes' provider `user_id`. The supported Hindsight provider can then use
+`bank_id_template: hades-user-{user}` to select a separate bank per subject.
+This path is server-side: neither model text nor a user-supplied display name
+selects a memory bank. It remains unenabled in production until the header,
+template, and synthetic Hindsight cross-user tests pass together.
+
 Hermes continues to use its service/API credential; it does not need direct
 access to the identity database. Household data remains canonical in Grocy.
 
