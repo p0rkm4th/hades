@@ -76,3 +76,15 @@ history remain attached to the existing owner identity. Real Agent Zero was
 deliberately not connected; its bounded bridge contract is proven with a
 loopback fixture, while native A2A remains a separate compatibility decision.
 Therefore no production migration is authorized by this document.
+
+## Owner-state rehearsal note
+
+On 2026-09-13 a disposable copy of the production Open WebUI data was made
+via the container's data path; SQLite integrity was `ok`, with 43 users and
+142 chats in the copy. A Hermes 0.21.2 detached launch was then attempted
+against the isolated candidate profile. It initialized its MCP children and
+wrote a startup record claiming 8643, but no reachable 8643 listener was
+observed from the host, so the rehearsal was stopped before any WebUI traffic
+or data migration. Production WebUI and Hermes remained healthy throughout.
+The next rehearsal must use a supervised/foreground launch with an explicit
+listener assertion before starting the cloned WebUI.
