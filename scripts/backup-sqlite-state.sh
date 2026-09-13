@@ -57,6 +57,10 @@ backup_container_quiesced hades-lldap-production /data/users.db lldap-users.db
 backup_container_php hades-grocy /config/data/grocy.db grocy.db
 
 hermes_source=${HADES_HERMES_STATE_DB:-}
+[[ -n "$hermes_source" ]] || {
+  printf 'FAIL HADES_HERMES_STATE_DB is required\n' >&2
+  exit 2
+}
 [[ -s "$hermes_source" ]] || { printf 'FAIL Hermes state database missing: %s\n' "$hermes_source" >&2; exit 1; }
 sqlite3 "$hermes_source" ".backup '$output/hermes-state.db'"
 
