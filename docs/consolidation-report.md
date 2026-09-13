@@ -1,8 +1,11 @@
 # HADES consolidation checkpoint
 
-Date: 2026-09-12. This report describes the current verified state and does
-not authorize real finance, homelab, smart-home, destructive, or multi-user
-changes.
+Date: 2026-09-12. This is a historical consolidation report, retained for
+provenance. The current verified state is maintained in
+[`CAMPAIGN_STATE.md`](../CAMPAIGN_STATE.md) and the capability ledger; do not
+use this report's next-action or authorization language as the current
+checkpoint. It does not authorize real finance, homelab, smart-home,
+destructive, or multi-user changes.
 
 ## Current capabilities and founding closures
 
@@ -67,7 +70,7 @@ non-admin dogfood, restart, and database-health checks. One protected private
 database backup remains until the owner confirms the temporary password has
 been replaced. No recovery material is tracked in Git.
 
-## Next highest-value action
+## Historical next action
 
 Run a clean Hermes v0.21.2 synthetic owner-contract matrix against isolated
 Hindsight, Grocy, SearXNG, Agent Zero, and Open WebUI endpoints; classify each
