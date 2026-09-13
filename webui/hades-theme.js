@@ -6,6 +6,11 @@
   const remoteEffectKey = 'hades_background_effect';
   let localThemeChanged = false;
   let localEffectChanged = false;
+  let preferenceScope = '';
+  const preferenceStorageKey = key => preferenceScope ? `${key}:${preferenceScope}` : key;
+  const getLocalPreference = key => localStorage.getItem(preferenceStorageKey(key));
+  const setLocalPreference = (key, value) => localStorage.setItem(preferenceStorageKey(key), value);
+  const removeLocalPreference = key => localStorage.removeItem(preferenceStorageKey(key));
   const themes = [
     ['odysseus-neon', '⚡ Odysseus Neon'], ['odysseus-midnight', '🌌 Odysseus Midnight'],
     ['odysseus-cyberpunk', '🟪 Odysseus Cyberpunk'], ['odysseus-retrowave', '🟣 Odysseus Retrowave'],
@@ -45,6 +50,16 @@
 
   async function loadRemotePreferences() {
     try {
+      const userResponse = await fetch('/api/v1/users/user');
+      if (!userResponse.ok) return;
+      const user = await userResponse.json();
+      const nextScope = String(user.id || '');
+      if (!nextScope) return;
+      if (preferenceScope !== nextScope) {
+        preferenceScope = nextScope;
+        localThemeChanged = false;
+        localEffectChanged = false;
+      }
       const response = await fetch('/api/v1/users/user/settings?raw=true');
       if (!response.ok) return;
       const settings = await response.json();
@@ -54,17 +69,17 @@
       // The synchronous startup restore remains useful while this request is
       // in flight and when the deployment is logged out/offline.
       if (!localThemeChanged && settings && isTheme(settings[remoteThemeKey])) {
-        localStorage.setItem(themeKey, settings[remoteThemeKey]);
+        setLocalPreference(themeKey, settings[remoteThemeKey]);
         applyTheme(settings[remoteThemeKey]);
       } else if (!localThemeChanged && settings && !isTheme(settings[remoteThemeKey])) {
         // A native Open WebUI theme is represented by the absence of a HADES
         // preset. Clear an old account/browser preset instead of resurrecting
         // it on the next reload.
-        localStorage.removeItem(themeKey);
+        removeLocalPreference(themeKey);
         applyTheme('');
       }
       if (!localEffectChanged && settings && isEffect(settings[remoteEffectKey])) {
-        localStorage.setItem(effectKey, settings[remoteEffectKey]);
+        setLocalPreference(effectKey, settings[remoteEffectKey]);
         applyEffect(settings[remoteEffectKey]);
       }
       requestAnimationFrame(install);
@@ -166,7 +181,7 @@
     if (activeEffect !== selected) { activeEffect = selected; requestAnimationFrame(() => startEffect(selected)); }
   }
   function restoreTheme(select) {
-    const saved = localStorage.getItem(themeKey);
+    const saved = getLocalPreference(themeKey);
     if (!themes.some(([v]) => v === saved)) return;
     const option = [...select.options].find(o => o.dataset.hadesTheme === saved);
     if (option && select.value !== saved) select.value = saved;
@@ -234,7 +249,7 @@
   }
   function install() {
     const select = document.querySelector('select[aria-label="Theme"]');
-    applyEffect(localStorage.getItem(effectKey) || 'none');
+    applyEffect(getLocalPreference(effectKey) || 'none');
     markComposer();
     updateToolNotice();
     if (!select) return;
@@ -251,15 +266,15 @@
         const value = event.target.selectedOptions[0]?.dataset.hadesTheme || '';
         if (value) {
           localThemeChanged = true;
-          localStorage.setItem(themeKey, value);
+          setLocalPreference(themeKey, value);
           saveRemotePreference(remoteThemeKey, value);
           const applySelectedTheme = () => {
             document.documentElement.classList.remove('light');
             document.documentElement.classList.add('dark');
             applyTheme(value);
-            if (!localStorage.getItem(effectKey) || localStorage.getItem(effectKey) === 'none') {
+            if (!getLocalPreference(effectKey) || getLocalPreference(effectKey) === 'none') {
               const defaultEffect = defaultEffects[value] || 'none';
-              localStorage.setItem(effectKey, defaultEffect);
+              setLocalPreference(effectKey, defaultEffect);
               applyEffect(defaultEffect);
               const effectSelect = document.querySelector('select[aria-label="Background effect"]');
               if (effectSelect) effectSelect.value = defaultEffect;
@@ -273,7 +288,7 @@
           });
         } else {
           localThemeChanged = true;
-          localStorage.removeItem(themeKey);
+          removeLocalPreference(themeKey);
           // Empty is the supported settings value for "no HADES preset";
           // without this write, an older preset (for example Neon) returns
           // after a reload even though the native selector changed.
@@ -291,10 +306,10 @@
       effectSelect.setAttribute('aria-label', 'Background effect');
       effectSelect.title = 'Select a background effect';
       effectSelect.replaceChildren(...effects.map(([value, label]) => new Option(label, value)));
-      effectSelect.value = localStorage.getItem(effectKey) || 'none';
+      effectSelect.value = getLocalPreference(effectKey) || 'none';
       effectSelect.addEventListener('change', event => {
         localEffectChanged = true;
-        localStorage.setItem(effectKey, event.target.value);
+        setLocalPreference(effectKey, event.target.value);
         saveRemotePreference(remoteEffectKey, event.target.value);
         applyEffect(event.target.value);
       });
@@ -303,13 +318,13 @@
     arrangeSettingDescriptions(select);
     updateToolNotice();
   }
-  const savedThemeAtStartup = localStorage.getItem(themeKey);
+  const savedThemeAtStartup = getLocalPreference(themeKey);
   if (themes.some(([v]) => v === savedThemeAtStartup)) {
     document.documentElement.classList.remove('light');
     document.documentElement.classList.add('dark');
     applyTheme(savedThemeAtStartup);
   }
-  applyEffect(localStorage.getItem(effectKey) || 'none');
+  applyEffect(getLocalPreference(effectKey) || 'none');
   new MutationObserver(() => requestAnimationFrame(install)).observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener('click', event => {
     if (event.target.closest('#model-selector-model-button, [role="option"][data-value]'))

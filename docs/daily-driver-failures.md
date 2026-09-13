@@ -16,8 +16,10 @@ outside the repository.
 - Failure layer: HADES theme preference persistence
 - Repair/evidence: the native-theme branch now clears both browser and
   account-scoped HADES preference; a valid account response with no HADES
-  preset also removes stale browser state. The deployed asset cache version
-  was advanced so existing browsers fetch the repair.
+  preset also removes stale browser state. Preference fallback storage is now
+  namespaced by the authenticated Open WebUI subject, preventing one account
+  from inheriting another account's local preset. The deployed asset cache
+  version was advanced so existing browsers fetch the repair.
 - Status: REPAIRED — owner should select the desired native theme once after
   a hard refresh; no owner preference was changed automatically
 
