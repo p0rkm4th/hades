@@ -232,8 +232,9 @@ restored and Hermes 0.14.0 was explicitly restarted; production WebUI and
 Hermes are healthy again. No application database or owner identity changed.
 The production decision is DEFERRED, not accepted. A retry requires a verified
 current owner authentication/session path before burn-in.
-The promotion-critical candidate subset passes 166/166 with the candidate
-interpreter. A full-suite run still exposes one upstream process-global
+The promotion-critical candidate subset passes 166/166 through HADES'
+hardened canonical-runner wrapper with the candidate interpreter. A full-suite
+run still exposes one upstream process-global
 auxiliary-provider leak; the repository includes a correct-interpreter check
 and isolated-worker qualification path. A direct per-file-runner experiment
 completed 3,986 files with 27,353 passed and 222 platform skips, but bypassed
