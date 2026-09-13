@@ -43,20 +43,15 @@ if ! curl -fsS --max-time 10 "$OLLAMA_URL/api/tags" \
   # On Linux, Ollama may be bound to the Docker bridge rather than loopback.
   # Discover that gateway from Docker instead of publishing a private address
   # in this public script.
-  # Restrict discovery to networks attached to the production WebUI. Looking
-  # across every Docker network could find an unrelated Ollama and produce a
-  # false green result.
-  webui_networks=$(docker inspect hades-open-webui \
-    --format '{{range $name, $value := .NetworkSettings.Networks}}{{println $name}}{{end}}' \
-    2>/dev/null || true)
-  while read -r network_name; do
-    [ "$model_ok" -eq 0 ] && break
-    bridge_gateway="$(docker network inspect "$network_name" --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' 2>/dev/null || true)"
-    if [ -n "$bridge_gateway" ] && curl -fsS --max-time 10 "http://${bridge_gateway}:11434/api/tags" 2>/dev/null \
-        | python -c 'import json,sys; d=json.load(sys.stdin); raise SystemExit(0 if isinstance(d.get("models"), list) else 1)' >/dev/null 2>&1; then
-      model_ok=0
-    fi
-  done <<< "$webui_networks"
+  # Resolve the exact host address visible from the production WebUI
+  # container. Looking across every Docker network could find an unrelated
+  # Ollama and produce a false green result.
+  model_gateway=$(docker exec hades-open-webui getent hosts host.docker.internal \
+    2>/dev/null | awk 'NR == 1 { print $1 }' || true)
+  if [ -n "$model_gateway" ] && curl -fsS --max-time 10 "http://${model_gateway}:11434/api/tags" 2>/dev/null \
+      | python -c 'import json,sys; d=json.load(sys.stdin); raise SystemExit(0 if isinstance(d.get("models"), list) else 1)' >/dev/null 2>&1; then
+    model_ok=0
+  fi
 else
   model_ok=0
 fi
