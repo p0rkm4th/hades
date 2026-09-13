@@ -29,6 +29,7 @@ backup_container_python() {
   docker exec "$container" python3 -c 'import sqlite3,sys; src=sqlite3.connect(sys.argv[1]); dst=sqlite3.connect(sys.argv[2]); src.backup(dst); dst.close(); src.close()' "$source" "$tmp"
   docker cp "$container:$tmp" "$output/$name"
   docker exec "$container" python3 -c 'import os,sys; os.unlink(sys.argv[1])' "$tmp"
+  chmod 600 "$output/$name"
 }
 
 backup_container_php() {
@@ -37,10 +38,22 @@ backup_container_php() {
   docker exec "$container" php -r '$src=new PDO("sqlite:".$argv[1]); $src->exec("VACUUM INTO " . $src->quote($argv[2]));' "$source" "$tmp"
   docker cp "$container:$tmp" "$output/$name"
   docker exec "$container" php -r 'unlink($argv[1]);' "$tmp"
+  chmod 600 "$output/$name"
+}
+
+backup_container_quiesced() {
+  local container=$1 source=$2 name=$3
+  docker stop "$container" >/dev/null
+  if ! docker cp "$container:$source" "$output/$name"; then
+    docker start "$container" >/dev/null
+    return 1
+  fi
+  docker start "$container" >/dev/null
+  chmod 600 "$output/$name"
 }
 
 backup_container_python hades-open-webui /app/backend/data/webui.db open-webui.db
-backup_container_python hades-lldap-production /data/users.db lldap-users.db
+backup_container_quiesced hades-lldap-production /data/users.db lldap-users.db
 backup_container_php hades-grocy /config/grocy.db grocy.db
 
 hermes_source=${HADES_HERMES_STATE_DB:-}
@@ -49,7 +62,10 @@ sqlite3 "$hermes_source" ".backup '$output/hermes-state.db'"
 
 for path in "$output"/*.db; do
   [[ -s "$path" ]] || { printf 'FAIL empty backup: %s\n' "$path" >&2; exit 1; }
-  chmod 600 "$path"
+  sqlite3 "$path" 'pragma integrity_check;' | grep -qx ok || {
+    printf 'FAIL SQLite integrity: %s\n' "$path" >&2
+    exit 1
+  }
 done
 (cd "$output" && sha256sum ./*.db > SHA256SUMS)
 chmod 600 "$output/SHA256SUMS"
