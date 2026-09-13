@@ -172,9 +172,9 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   label rather than the stale paraphrase, without changing live Grocy state;
   the result survived reload after the canonical checks.
 
-## Multi-user identity foundation
+## Multi-user identity foundation and conversation isolation
 
-- **Current status:** PARTIAL
+- **Current status:** PASS + PERSISTENCE (isolated staging scope)
 - **Owner input:** synthetic staging authentication only; production owner
   login was not changed
 - **DOM result:** not yet exercised in this checkpoint; the disposable
@@ -185,11 +185,14 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Backend verification:** LLDAP is healthy, both synthetic users bind
   successfully, and Open WebUI created two distinct subject IDs. Repeated
   LDAP login returned the same subject ID for Alpha and for Beta.
-- **Reload/persistence result:** repeated fresh logins preserved each user's
-  subject in the disposable Open WebUI database; service-restart evidence is
-  still outstanding
+- **Conversation verification:** each synthetic user created a private chat;
+  each user's list contained its own chat and not the other's, and guessed
+  direct access to the other chat returned HTTP 401.
+- **Reload/persistence result:** repeated logins preserved both subjects and
+  chats. LLDAP and disposable Open WebUI restarts completed; both users then
+  authenticated again and retained one private chat each.
 - **Last verified SHA:** pending the coherent identity checkpoint commit
-- **Limitations:** production remains local-authenticated. Conversation
-  isolation, Hindsight per-subject namespaces, shared Grocy authorization,
-  finance exclusion, Agent Zero policy, per-user settings, revocation, and
-  real owner-UI DOM acceptance remain unfinished.
+- **Limitations:** production remains local-authenticated. Hindsight
+  per-subject namespaces, shared Grocy authorization, finance exclusion,
+  Agent Zero policy, per-user settings, revocation, and real owner-UI DOM
+  acceptance remain unfinished.

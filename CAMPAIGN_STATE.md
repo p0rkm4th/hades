@@ -214,8 +214,10 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   cutover is intentionally not started.
 - Stable subjects: PARTIAL; synthetic Alpha/Beta subjects are distinct and
   stable across repeated LDAP login in disposable Open WebUI staging.
-- Conversation/memory/Grocy/finance isolation: NOT STARTED for two-user
-  acceptance.
+- Conversation isolation: PASS + PERSISTENCE in isolated staging; Alpha and
+  Beta cannot list or directly open one another's chats, including after
+  LLDAP and WebUI restart.
+- Memory/Grocy/finance isolation: NOT STARTED for two-user acceptance.
 - Agent Zero household policy: owner-only until bounded per-user authority is
   proven.
 - Recovery: existing owner recovery path preserved; identity backup mapping
