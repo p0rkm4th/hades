@@ -40,6 +40,16 @@ else
   printf 'FAIL Hermes API unauthenticated status: %s\n' "$hermes_unauth_status"
   exit 1
 fi
+hermes_cors_status=$(curl -sS -o /dev/null -w '%{http_code}' -X OPTIONS \
+  -H 'Origin: https://untrusted.invalid' \
+  -H 'Access-Control-Request-Method: GET' \
+  "http://${hermes_host}:8642/v1/models" 2>/dev/null || true)
+if [[ "$hermes_cors_status" == 403 ]]; then
+  printf 'PASS Hermes rejects untrusted cross-origin requests\n'
+else
+  printf 'FAIL Hermes untrusted CORS status: %s\n' "$hermes_cors_status"
+  exit 1
+fi
 
 if [[ -z "$(docker port hades-lldap-production 3890/tcp 2>/dev/null || true)" ]]; then
   printf 'PASS LLDAP LDAP listener is not host-published\n'
