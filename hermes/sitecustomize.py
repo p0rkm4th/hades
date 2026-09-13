@@ -40,8 +40,9 @@ def _hades_session_scope(session_key):
         if session_key.removeprefix("hades-user-") == owner_subject:
             return "owner"
         return "household"
-    if session_key.startswith("hades-owner-"):
-        return "owner"
+    # Do not honor a client-selectable owner prefix. Production Open WebUI
+    # emits only the server-expanded hades-user template, and unknown session
+    # formats must fail closed.
     return ""
 
 
