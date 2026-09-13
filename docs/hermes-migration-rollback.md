@@ -110,9 +110,9 @@ bridge or connect production credentials during staging.
 ## Promotion decision
 
 The isolated Hermes 0.21.2 matrix is promotion-ready for a controlled,
-rollback-backed production change window. This is a decision, not an executed
-deployment: production remains on Hermes 0.14.0 until the operator starts the
-separately scheduled change window and runs the owner regression checklist.
+rollback-backed production change window. The subsequent controlled attempt
+and its rollback are recorded below; production currently remains on Hermes
+0.14.0.
 
 ## Preflight backup correction
 
@@ -124,3 +124,20 @@ through its container namespace and passed `pg_restore --list`, the Hermes
 profile and service unit were non-empty, and a SHA-256 manifest verified all
 artifacts. The zero-byte legacy artifacts remain historical evidence only and
 must not be used for rollback.
+
+## Controlled promotion result
+
+On 2026-09-13, production Hermes was briefly started with Hermes 0.21.2,
+Gemma 12B, the retained HADES policy overlay, and a clean runtime working
+directory. Hermes health and immediate composition checks passed. The owner
+regression could not authenticate the existing owner using the available
+protected bootstrap credential, so the rollback rule was applied instead of
+continuing burn-in without owner proof. The original unit and profile were
+restored from the validated preflight set, Hermes 0.14.0 was explicitly
+restarted, and its health plus WebUI health returned successfully. No
+application database or owner identity was changed.
+
+Production decision: Hermes 0.21.2 is deferred, not accepted. A future retry
+requires a verified current owner authentication/session path, followed by
+the owner regression checklist. The preserved 0.14.0 runtime remains the
+daily-driver baseline.

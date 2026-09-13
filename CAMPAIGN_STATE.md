@@ -9,8 +9,9 @@ recorded here.
 
 Household Alpha is accepted as complete/ready. Real household onboarding is
 an owner-input gate only and is not a reason to pause independent engineering
-work. The active independent work is Hermes 0.21.2 production-readiness
-staging; production remains on the known-good Hermes 0.14.0 baseline.
+work. Hermes 0.21.2 promotion was attempted and rolled back after owner
+authentication could not be proven; production remains on the known-good
+Hermes 0.14.0 baseline.
 
 ## CURRENT OBJECTIVE
 
@@ -204,6 +205,15 @@ production remains on Hermes 0.14.0. A fresh private preflight backup set has
 now been created and checksum-validated; it supersedes the older incomplete
 backup artifacts for any future change window.
 
+A controlled production promotion was attempted after this staging decision.
+Hermes 0.21.2 reached health with the retained overlay and Gemma 12B, but the
+owner regression could not authenticate using the available protected
+bootstrap credential. Per rollback policy, the original unit/profile were
+restored and Hermes 0.14.0 was explicitly restarted; production WebUI and
+Hermes are healthy again. No application database or owner identity changed.
+The production decision is DEFERRED, not accepted. A retry requires a verified
+current owner authentication/session path before burn-in.
+
 ## HOUSEHOLD ALPHA STATUS
 
 The detailed bullets below retain historical evidence from staging and
@@ -275,6 +285,6 @@ onboarding is the only owner-input gate; it does not pause independent work.
   rollback inputs.
 - Synthetic identity recovery: PASS in the accepted production checkpoint.
 - Next highest-value action: execute the separately controlled Hermes 0.21.2
-  production change window using the rollback card and owner checklist.
-  Until that window is explicitly started, production remains on Hermes
-  0.14.0.
+  production change window only after the owner authentication path is
+  verified. Until then, production remains on Hermes 0.14.0 and the preserved
+  rollback set remains authoritative.
