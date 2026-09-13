@@ -85,20 +85,28 @@ not select Hindsight's `{user}` bank. With the overlay, a trusted
 `hades-user-*` session selected the isolated bank and the direct retain tool
 completed.
 
-Two promotion blockers remain:
+The exact-bank Hindsight assertion now passes: the trusted candidate session
+selected `hades-user-candidate-alpha`, the retain completed in that bank, and
+canonical recall returned the retained synthetic marker from that same bank.
+The write is asynchronous, so the acceptance check waits for the Hindsight
+operation to complete before reading it. Immediate recall is intentionally
+not treated as proof of persistence.
 
-- The end-to-end assertion must prove that the bank selected for retain is
-  exactly the bank used for fresh recall.
-- Hindsight retain is asynchronous; local Gemma fact extraction took roughly
+Remaining promotion gaps:
+
+- Local Gemma fact extraction took roughly
   50–85 seconds, so immediate recall can miss a newly accepted fact. The
-  acceptance test must wait for canonical completion before recalling.
+  candidate acceptance test now accounts for this asynchronous behavior.
+- A separate synthetic SearXNG endpoint and a bounded Agent Zero staging
+  bridge have not been provisioned; production endpoints remain deliberately
+  excluded from candidate testing.
 
 The candidate also showed auxiliary title-generation timeouts and inherited a
 large staging context file. These affect candidate ergonomics/performance but
 did not alter production. No production service or data was changed.
 
-**Decision remains: do not promote Hermes 0.21.2 yet.** Finish exact-bank
-Hindsight persistence, synthetic Grocy/search/operator, and restart checks.
+**Decision remains: do not promote Hermes 0.21.2 yet.** Finish synthetic
+SearXNG/operator and restart checks.
 The overlay remains required for trusted per-user memory selection; native
 MCP registration may make dynamic tool reconciliation removable only after
 those owner-contract checks pass.
