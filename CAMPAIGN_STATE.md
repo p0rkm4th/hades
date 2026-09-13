@@ -262,6 +262,11 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   group management enabled, synthetic Alpha and Beta synchronized into the
   intended household groups, and a downstream echo received both the stable
   subject and expanded group headers. Production remains unchanged.
+- WebUI model visibility and end-to-end subject memory: PASS + PERSISTENCE in
+  disposable staging. A supported household-group model access grant exposed
+  Hermes to both ordinary users; each retained and recalled only its own fact
+  through WebUI → Hermes → Hindsight. The disposable provider was removed
+  afterward.
 - Shared Grocy is PASS + PERSISTENCE in disposable end-to-end staging;
   finance exclusion is PASS for server-marked disposable household sessions.
 - Agent Zero household policy: owner-only in the current unmarked production

@@ -361,6 +361,29 @@ its own chat.
   implemented. Household Alpha must not be declared until the operational
   boundary is documented for production and survives restart/recovery.
 
+## Household model visibility and WebUI-to-Hermes memory
+
+- **Current status:** PASS + PERSISTENCE (disposable end-to-end staging)
+- **Owner input:** Alpha and Beta authenticated through LDAP and used the
+  normal Open WebUI chat API
+- **DOM result:** not exercised in this checkpoint; the same authenticated API
+  path used by the frontend was exercised
+- **Authoritative systems:** Open WebUI model access records; Hermes and
+  subject-scoped Hindsight banks
+- **Backend verification:** the direct Hermes model catalog returned `hades`,
+  while Open WebUI initially hid it from ordinary users because no local
+  access record existed. The supported model-access endpoint created a
+  household-group read grant; both Alpha and Beta then saw `hades`. Through
+  that model, each user stored and recalled its own restaurant marker through
+  WebUI → Hermes → Hindsight, with the other user's marker absent.
+- **Reload/persistence result:** each user's subject remained stable after
+  LDAP re-login; the provider and disposable Hermes copy were removed after
+  verification, leaving staging clean.
+- **Last verified SHA:** `25390e1`
+- **Limitations:** production model access, subject headers, and per-user
+  Hindsight mapping remain unenabled until an owner-preserving migration is
+  separately approved.
+
 ## User-specific settings isolation
 
 - **Current status:** PASS + PERSISTENCE (isolated staging scope)
