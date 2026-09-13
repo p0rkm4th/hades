@@ -356,3 +356,20 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Last verified SHA:** `705487b`
 - **Limitations:** this proves application preference isolation in staging,
   not production multi-user cutover or browser DOM rendering.
+
+## Identity recovery rehearsal
+
+- **Current status:** PASS (synthetic staging scope)
+- **Owner input:** none; only disposable LLDAP directory data was used
+- **DOM result:** not applicable to the backup contract
+- **Authoritative system:** LLDAP persistent directory database
+- **Backend verification:** the quiesced staging LLDAP data was copied to a
+  separate restore target; SQLite `quick_check` returned `ok`, and the
+  restored pinned LLDAP image reached HTTP 200 health on an isolated port.
+- **Reload/persistence result:** the original staging directory remained
+  running and unchanged; the restored container was stopped and auto-removed
+  after verification
+- **Last verified SHA:** `bf319b4`
+- **Limitations:** this proves synthetic directory backup/start recovery, not
+  owner-data recovery or automatic restoration of Open WebUI subject mappings.
+  The production identity cutover remains gated.

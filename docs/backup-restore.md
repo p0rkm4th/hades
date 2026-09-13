@@ -127,6 +127,14 @@ the embedded server requires its private password; no credential was recovered
 or recorded as part of this campaign. A private operator must supply that
 credential to perform the native export and isolated restore rehearsal.
 
+On 2026-09-13, a synthetic LLDAP directory backup was copied only after the
+staging service was quiesced. SQLite `quick_check` returned `ok`, and the
+backup restored into a separate container using the same pinned image, key
+seed, and JWT secret; its isolated health endpoint returned HTTP 200. The
+restore container was stopped and auto-removed after verification. This
+proves the basic identity-database restore path, but not production owner
+recovery or automatic Open WebUI subject remapping.
+
 ## Missing automation
 
 No final backup job or installer is defined here yet. The next implementation

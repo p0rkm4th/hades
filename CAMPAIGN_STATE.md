@@ -261,6 +261,10 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   sessions, but the Open WebUI scope header is not yet configured.
 - Recovery: existing owner recovery path preserved; identity backup mapping
   still requires a private operational rehearsal.
+- Synthetic identity recovery: PASS. A quiesced LLDAP staging database passed
+  SQLite integrity validation and booted successfully in a separate pinned
+  restore container. Production owner recovery and automatic application
+  subject remapping remain unproven.
 - Next highest-value action: choose and rehearse a supported directory-to-
   application revocation boundary, then run per-user settings isolation and
   restart verification without touching production.
