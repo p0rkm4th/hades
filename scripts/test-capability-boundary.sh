@@ -29,5 +29,24 @@ if 'client-selectable owner prefix' not in source or 'return ""' not in source:
     raise SystemExit('untrusted owner scope does not fail closed')
 if 'privileged_markers = ("agent_zero", "agent-zero", "finance")' not in source:
     raise SystemExit('household privileged tool filtering is missing')
+
+import os
+import hermes.sitecustomize as overlay
+
+os.environ['HADES_OWNER_SUBJECT_ID'] = 'owner-subject-123'
+checks = {
+    'hades-user-owner-subject-123': 'owner',
+    'hades-user-household-456': 'household',
+    'hades-user-': '',
+    'hades-user-contains space': '',
+    'owner-subject-123': '',
+    'hades-owner-owner-subject-123': '',
+}
+for key, expected in checks.items():
+    actual = overlay._hades_session_scope(key)
+    if actual != expected:
+        raise SystemExit(f'session scope mismatch for {key!r}: {actual!r}')
+if overlay._hades_subject_from_session_key('hades-user-../owner'):
+    raise SystemExit('path-like subject was accepted')
 print('PASS privileged capability boundary regression')
 PY
