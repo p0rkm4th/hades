@@ -226,8 +226,9 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   and Beta banks remain separate across Hindsight restart. Production owner
   bank migration/mapping is an explicit gate and remains unchanged.
 - Grocy/finance isolation: NOT STARTED for two-user acceptance.
-- Agent Zero household policy: owner-only until bounded per-user authority is
-  proven.
+- Agent Zero household policy: owner-only in the current unmarked production
+  session; the overlay now fail-closes Agent Zero for server-marked household
+  sessions, but the Open WebUI scope header is not yet configured.
 - Recovery: existing owner recovery path preserved; identity backup mapping
   still requires a private operational rehearsal.
 - Next highest-value action: create the staging acceptance harness for

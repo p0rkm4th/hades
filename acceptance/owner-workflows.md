@@ -220,7 +220,8 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Privileged capability boundary
 
-- **Current status:** PASS (production source/runtime boundary)
+- **Current status:** PARTIAL (production finance exclusion; household scope
+  guard staged)
 - **Owner input:** none; this was a safety regression check
 - **DOM result:** not exercised in this checkpoint
 - **Authoritative system:** Hermes server-side tool catalog and capability
@@ -228,8 +229,13 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Backend verification:** the API overlay no longer reconciles or narrows
   into `mcp-actual-finance-readonly`; finance cannot be enabled by a
   natural-language prompt. The production profile contains no finance toolset.
+  A server-selected `hades-user-*` session scope also blocks prompt-based
+  Agent Zero acquisition.
 - **Reload/persistence result:** Hermes was restarted through its managed
   service after commit `78d99d3`; health recovered and the full smoke suite
   passed 9/9.
-- **Limitations:** a per-user capability source is still required before
-  enabling finance for the owner or any future household policy.
+- **Limitations:** Open WebUI has not yet been configured to send the
+  server-selected subject/scope header in production, so multi-user
+  authorization is not enabled. A per-user capability source is still
+  required before enabling finance for the owner or any future household
+  policy.
