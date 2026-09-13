@@ -244,6 +244,22 @@ try:
             for memory_provider in self._memory_manager.providers:
                 if hasattr(memory_provider, "_bank_id"):
                     memory_provider._bank_id = memory_bank
+                if hasattr(memory_provider, "_auto_recall"):
+                    # The profile intentionally disables global auto-recall;
+                    # once a trusted subject has selected an isolated bank,
+                    # enable scoped prefetch so UI recall does not depend on
+                    # a small model choosing the memory tool correctly.
+                    memory_provider._auto_recall = memory_scope in {
+                        "owner", "household"
+                    }
+                if memory_scope in {"owner", "household"}:
+                    # Bind HADES' synchronous current-query prefetch helper;
+                    # the upstream tools-only mode otherwise suppresses
+                    # prefetch and makes recall depend on model tool choice.
+                    memory_provider._memory_mode = "hybrid"
+                    memory_provider.prefetch = _hades_prefetch.__get__(
+                        memory_provider, type(memory_provider)
+                    )
             _hades_logger.info(
                 "Hindsight bank selected from trusted scope: scope=%s subject_present=%s",
                 memory_scope or "denied", bool(subject),
