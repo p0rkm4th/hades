@@ -188,12 +188,6 @@ try:
         r"bank|account balance|before payday)\b",
         re.IGNORECASE,
     )
-    _HADES_FINANCE_INTENT = re.compile(
-        r"\b(?:finance|finances|spending|spent|subscription|subscriptions|"
-        r"bank|account balance|before payday|transactions?|afford)\b",
-        re.IGNORECASE,
-    )
-
     # The OpenAI-compatible API server constructs AIAgent directly rather
     # than going through HermesCLI's turn resolver.  Route at the agent turn
     # boundary instead; profile/runtime initialization has completed by this
@@ -225,10 +219,9 @@ try:
             extra.extend(_get_tool_definitions(
                 enabled_toolsets=["mcp-grocy"], quiet_mode=True
             ))
-        if not any(name.startswith("mcp_actual_finance_readonly_") for name in existing):
-            extra.extend(_get_tool_definitions(
-                enabled_toolsets=["mcp-actual-finance-readonly"], quiet_mode=True
-            ))
+        # Finance is deliberately not reconciled here.  It is a privileged,
+        # owner-only capability and must be explicitly enabled by a future
+        # capability boundary; a user message must never grant access to it.
         added_count = 0
         for tool in extra:
             name = tool.get("function", {}).get("name")
@@ -284,7 +277,6 @@ try:
             _hades_intent_text,
             re.IGNORECASE,
         )
-        finance_intent = _HADES_FINANCE_INTENT.search(_hades_intent_text)
         agent_zero_intent = re.search(
             r"\b(?:agent zero|agent0|bounded operator|delegate|delegation)\b",
             _hades_intent_text,
@@ -307,23 +299,9 @@ try:
                     )
             except Exception as exc:
                 _hades_logger.warning("API Grocy intent narrowing failed: %s", exc)
-        if finance_intent and isinstance(original_tools, list):
-            try:
-                from model_tools import get_tool_definitions as _get_tool_definitions
-                finance_tools = _get_tool_definitions(
-                    enabled_toolsets=["mcp-actual-finance-readonly"], quiet_mode=True
-                )
-                if finance_tools:
-                    self.tools = finance_tools
-                    self.valid_tool_names = {
-                        t["function"]["name"] for t in finance_tools
-                    }
-                    _hades_logger.warning(
-                        "API finance intent narrowed tool catalog to %d tools",
-                        len(finance_tools),
-                    )
-            except Exception as exc:
-                _hades_logger.warning("API finance intent narrowing failed: %s", exc)
+        # Do not expose finance tools based on intent.  Natural-language
+        # intent is not authorization; finance remains unavailable until a
+        # server-side owner capability is wired into this boundary.
         if agent_zero_intent and isinstance(original_tools, list):
             try:
                 from model_tools import get_tool_definitions as _get_tool_definitions

@@ -69,6 +69,13 @@ else
   printf 'FAIL overlay syntax\n'
   fail=$((fail + 1))
 fi
+if scripts/test-capability-boundary.sh >/dev/null 2>&1; then
+  printf 'PASS privileged capability boundary\n'
+  pass=$((pass + 1))
+else
+  printf 'FAIL privileged capability boundary\n'
+  fail=$((fail + 1))
+fi
 
 if curl -fsS --max-time 10 "$AGENT_ZERO_URL/" >/dev/null 2>&1; then
   printf 'PASS Agent Zero HTTP\n'
