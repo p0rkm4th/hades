@@ -134,11 +134,12 @@ limitation. The real Agent Zero endpoint and credentials were not used.
 **Decision remains: do not promote Hermes 0.21.2 yet.** The isolated
 candidate matrix is materially green. Synthetic Actual Budget and a fresh
 disposable Open WebUI owner-facing path have now passed, so they are no longer
-promotion gaps. The remaining gates are a production-shaped owner migration
-rehearsal that proves existing conversations, settings, and Hindsight history
-remain attached to the existing owner identity, plus a final decision on
-whether the real Agent Zero runtime needs separate validation. Production
-remains on Hermes 0.14.0 until those gates are satisfied.
+promotion gaps. The remaining gates are production Hindsight-history mapping
+evidence and a final decision on whether the real Agent Zero runtime needs
+separate validation. The owner-state rehearsal proved account/chat continuity
+and candidate UI operation, but deliberately did not connect candidate code
+to production Hindsight. Production remains on Hermes 0.14.0 until those gates
+are satisfied.
 
 The matched synthetic Actual Budget 26.9.0 fixture was then started on an
 isolated port. Hermes 0.21.2 discovered all three migrated read-only finance

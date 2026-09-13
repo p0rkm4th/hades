@@ -267,10 +267,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
   for recall/tool acceptance, so the disposable run used the known
   tool-capable Qwen profile. All temporary providers and gateways were
   removed afterward.
-- Household Alpha readiness report: staging contract is substantially green,
-  but production declaration is intentionally pending the owner-preserving
-  identity migration gate. Rendered revocation and Grocy mutation/cross-user
-  read acceptance now pass in disposable staging.
+- Household Alpha readiness report: the current private production checkpoint
+  declares Household Alpha complete/ready; first real household onboarding is
+  owner-gated. Rendered revocation and Grocy mutation/cross-user read
+  acceptance remain recorded as supporting evidence.
 - Shared Grocy is PASS + PERSISTENCE in disposable end-to-end staging;
   finance exclusion is PASS for server-marked disposable household sessions.
 - Agent Zero household policy: owner-only in the current unmarked production
@@ -282,8 +282,8 @@ onboarding is the only owner-input gate; it does not pause independent work.
   SQLite integrity validation and booted successfully in a separate pinned
   restore container. Production owner recovery and automatic application
   subject remapping remain unproven.
-- Next highest-value action: keep staging clean and complete rendered
-  revocation plus Grocy mutation/cross-user acceptance if useful; otherwise
-  prepare the owner-preserving production identity migration rehearsal with
-  private backups and rollback targets. Do not touch production without that
-  owner gate.
+- Next highest-value action: continue Hermes 0.21.2 readiness. The
+  owner-preserving WebUI-state rehearsal now passes through the rendered
+  candidate UI; remaining evidence is production Hindsight-history mapping and
+  final disposition of real Agent Zero validation. Keep production Hermes
+  0.14.0 pinned until those gates are resolved.
