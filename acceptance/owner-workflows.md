@@ -309,6 +309,25 @@ gateway stopped afterward; production was not changed.
   required before enabling finance for the owner or any future household
   policy.
 
+## Production shared Grocy through the owner UI
+
+- **Status:** PASS
+- **Owner input:** synthetic production Alpha added `HADES Synthetic Milk`;
+  synthetic production Beta asked for the shared grocery list.
+- **DOM result:** Alpha's authenticated production HADES UI rendered the
+  mutation response. A separate fresh Beta production HADES UI session
+  rendered the shared-list response without an error.
+- **Authoritative system:** production Grocy shopping-list state.
+- **Backend verification:** Grocy contained the Alpha-created fixture row
+  between the two UI runs; Beta's live shopping-list tool result returned the
+  same item and quantity.
+- **Reload/persistence result:** fixture cleanup was performed through the
+  canonical Grocy client by item ID; a final canonical read found zero
+  remaining fixture rows.
+- **Last verified SHA:** `77c71f4`
+- **Limitations:** synthetic production identities and a synthetic product
+  were used; this proves shared-state routing, not real-person onboarding.
+
 ## Household privileged-capability exclusion
 
 - **Current status:** PASS (disposable Hermes capability scope)
