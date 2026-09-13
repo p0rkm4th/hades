@@ -294,12 +294,12 @@ fully promotion-qualified.
 
 HADES provides [`scripts/test-hermes-candidate.sh`](../scripts/test-hermes-candidate.sh)
 for the promotion-critical subset. It requires a candidate directory and uses
-that directory's `.venv/bin/python -m pytest`, preventing a stale cloned
-`pytest` launcher from selecting a different staging environment. It now also
-fails closed when that interpreter cannot import `pytest`, which prevents a
-mutated candidate environment from being mistaken for a test regression. A
-full candidate suite must use the candidate's own `scripts/run_tests.sh` so
-its hermetic environment setup is preserved.
+that directory's canonical `scripts/run_tests.sh`, preventing a stale cloned
+`pytest` launcher or non-hermetic environment from selecting a different
+staging environment. It fails closed when the candidate interpreter cannot
+import `pytest`, which prevents a mutated candidate environment from being
+mistaken for a test regression. A full candidate suite must use that same
+canonical runner.
 
 After the invalidated aggregate run, the disposable candidate environment was
 restored with `ensurepip` and the declared pytest test dependencies. The

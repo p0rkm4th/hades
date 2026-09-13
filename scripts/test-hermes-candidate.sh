@@ -27,6 +27,12 @@ if ! "$PYTHON" -c 'import pytest' >/dev/null 2>&1; then
   exit 1
 fi
 
+RUNNER="$CANDIDATE/scripts/run_tests.sh"
+if [[ ! -x "$RUNNER" ]]; then
+  printf 'FAIL candidate canonical test runner missing\n' >&2
+  exit 1
+fi
+
 tests=(
   tests/agent/test_memory_provider.py
   tests/agent/test_memory_provider_unavailable_warning.py
@@ -42,4 +48,4 @@ for test in "${tests[@]}"; do
 done
 
 cd "$CANDIDATE"
-exec "$PYTHON" -m pytest -q --disable-warnings "${tests[@]}"
+exec "$RUNNER" "${tests[@]}" -q --disable-warnings
