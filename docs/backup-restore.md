@@ -159,6 +159,12 @@ session JSON artifacts parsed successfully with private permissions. These
 checks prove readable artifacts only; they do not replace isolated restore
 acceptance or a fresh encrypted production backup.
 
+Repeatable offline validation is available in
+[`scripts/check-recovery-artifacts.sh`](../scripts/check-recovery-artifacts.sh).
+It accepts a private recovery directory, prints only component labels and
+structural results, and deliberately does not attempt to inspect Hindsight's
+native database without its protected PostgreSQL credentials.
+
 Readiness-only checks on 2026-09-12 also confirmed that SearXNG's config and
 cache mounts, Agent Zero's dedicated persistent volume, and Hermes' enabled
 systemd service with a private profile are present. Their normal runtime
