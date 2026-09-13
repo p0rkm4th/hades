@@ -113,6 +113,21 @@ outside the repository.
   restarted immediately and its canonical health endpoint returned healthy.
 - Status: PASS — no code change required
 
+## 2026-09-13 — Web outage appended unrelated household context
+
+- Actor: synthetic household account
+- Surface: web-search failure response
+- Expected: report the unavailable search source without presenting unrelated
+  personal or live-household claims
+- Observed: SearXNG failure was reported correctly, but stale Grocy/memory
+  context was appended to the response
+- Failure layer: automatic-memory prefetch on pure web turns
+- Repair/evidence: pure web turns now disable automatic personal-memory
+  prefetch at the agent boundary while explicit memory composition remains
+  available. A repeated synthetic SearXNG outage returned only the connection
+  failure and no unrelated household marker; SearXNG was restored afterward.
+- Status: REPAIRED
+
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 
 - Actor: owner account

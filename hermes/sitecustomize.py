@@ -436,11 +436,16 @@ try:
             re.IGNORECASE,
         )
         # Conversation history can contain the word "memory" even when the
-        # current request is an ordinary Grocy mutation. Disable automatic
-        # personal-memory prefetch for that turn at the agent boundary; the
-        # explicit-memory path remains available for intentional composition.
+        # current request is an ordinary live-domain request. Disable
+        # automatic personal-memory prefetch for pure web/Grocy turns at the
+        # agent boundary; the explicit-memory path remains available for
+        # intentional composition.
         _hades_saved_auto_recall = []
-        if grocy_intent and not memory_intent and self._memory_manager:
+        if (
+            not memory_intent
+            and (grocy_intent or (web_intent and not grocy_intent))
+            and self._memory_manager
+        ):
             for _hades_provider in self._memory_manager.providers:
                 if hasattr(_hades_provider, "_auto_recall"):
                     _hades_saved_auto_recall.append(
