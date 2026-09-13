@@ -153,6 +153,12 @@ stored in Git. This replaces the previously unusable zero-byte Grocy artifact
 in the older migration-preflight set. Native Hindsight export remains
 credential-gated.
 
+The live production Open WebUI database was also copied through SQLite's
+online backup API into that private checkpoint on 2026-09-13. The copy is
+non-empty, mode `0600`, and passed `PRAGMA integrity_check` without stopping
+the service. This is a current consistent database artifact; matching static
+assets and an isolated restore are still required for full recovery proof.
+
 The existing private preflight copies for Open WebUI, LLDAP, and Hermes also
 passed offline SQLite integrity checks on 2026-09-13, and the copied Hermes
 session JSON artifacts parsed successfully with private permissions. These
