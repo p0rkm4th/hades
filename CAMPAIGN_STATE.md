@@ -12,13 +12,12 @@ preserving source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
-`83ea20c` — account-scoped theme preferences now override stale browser-wide
-localStorage on refresh; the owner admin preference was reset from the stuck
-lavender preset to the neutral HADES default in the private runtime. Recovery
-order/evidence runbook and public path-audit correction remain committed and
-public-safe. Native Open WebUI theme changes are now allowed to complete before
-the HADES class is reapplied, so selecting another preset is not pinned by the
-extension handler.
+`sanitized-history release checkpoint` — the reachable `main` history has been sanitized for public release;
+the current tree and full-history audit contain no owner identifiers, tailnet
+hostnames, private network literals, or credential-like tracked paths. Account-
+scoped theme preferences, recovery evidence, and the supported Open WebUI
+theme-handling fixes remain committed. A complete pre-rewrite bundle is held
+outside the repository for rollback if needed.
 Founding capabilities and
 current upstream/A2A decisions are reconciled; Actual remains selected for
 synthetic HADES integration and production finance is gated.
@@ -149,11 +148,10 @@ intentionally maintained in private operations state.
 - It does not replace private owner-UI, canonical-domain, or runtime
   acceptance.
 
-The current tree contains no private network literal, and the smoke probe now
-discovers the model gateway dynamically. The historical public audit still
-finds the retired Docker bridge literal in older commits. Removing it would
-require a coordinated history rewrite/force-push and is therefore a release
-decision, not an automatic campaign mutation.
+The current tree and reachable public history contain no private network
+literal; the smoke probe discovers the model gateway dynamically. The remote
+history rewrite is an explicit release action and does not alter the deployed
+runtime.
 
 ## CAPABILITY LEDGER
 
