@@ -31,7 +31,7 @@ check_history() {
 # `/home/hindsight` is a container-internal service path, not an owner host
 # path. Keep the owner workstation path explicit so the audit does not reject
 # accurate container mount documentation.
-check_history '/home/scootz/|/Users/[[:alnum:]_.-]+/|[[:space:]]192\.168\.|[[:space:]]10\.|[[:space:]]172\.(1[6-9]|2[0-9]|3[01])\.' \
+check_history '/home/scootz/|/Users/[[:alnum:]_.-]+/|(^|[^0-9])(192\.168|10|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)' \
   'local paths and private-network addresses absent'
 check_history 'tail[a-z0-9-]+\.ts\.net' 'tailnet hostnames absent'
 

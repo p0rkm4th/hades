@@ -37,8 +37,24 @@ else
   fail=$((fail + 1))
 fi
 
-if curl -fsS --max-time 10 "$OLLAMA_URL/api/tags" \
+model_ok=1
+if ! curl -fsS --max-time 10 "$OLLAMA_URL/api/tags" \
     | python -c 'import json,sys; d=json.load(sys.stdin); raise SystemExit(0 if isinstance(d.get("models"), list) else 1)' >/dev/null 2>&1; then
+  # On Linux, Ollama may be bound to the Docker bridge rather than loopback.
+  # Discover that gateway from Docker instead of publishing a private address
+  # in this public script.
+  while read -r network_name; do
+    [ "$model_ok" -eq 0 ] && break
+    bridge_gateway="$(docker network inspect "$network_name" --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' 2>/dev/null || true)"
+    if [ -n "$bridge_gateway" ] && curl -fsS --max-time 10 "http://${bridge_gateway}:11434/api/tags" 2>/dev/null \
+        | python -c 'import json,sys; d=json.load(sys.stdin); raise SystemExit(0 if isinstance(d.get("models"), list) else 1)' >/dev/null 2>&1; then
+      model_ok=0
+    fi
+  done < <(docker network ls --format '{{.Name}}' 2>/dev/null || true)
+else
+  model_ok=0
+fi
+if [ "$model_ok" -eq 0 ]; then
   printf 'PASS local-model endpoint\n'
   pass=$((pass + 1))
 else
