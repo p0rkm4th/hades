@@ -180,14 +180,14 @@ staging only when useful; neither is a prerequisite for Household Alpha.
 ## HOUSEHOLD ALPHA STATUS
 
 - Owner daily-driver path: PASS; production smoke remains green.
-- Identity provider: PARTIAL; isolated LLDAP staging is healthy, production
-  cutover is intentionally not started.
+- Identity provider: PARTIAL; a separate pinned production LLDAP is healthy,
+  persistent, private, and grouped. Directory-backed Open WebUI
+  authentication is enabled with local owner fallback preserved.
 - Stable subjects: PARTIAL; synthetic Alpha/Beta subjects are distinct and
   stable across repeated LDAP login in disposable Open WebUI staging.
-- Subject propagation: PASS in disposable staging; Open WebUI expanded the
-  server-side `{{USER_ID}}` connection header into a stable Hermes session key
-  and the disposable downstream endpoint received it. Production is not
-  configured with this header.
+- Subject propagation: PARTIAL; disposable staging proved the server-side
+  `{{USER_ID}}` and group expansion, and production now stores those templates
+  on the existing Hermes connection. Runtime owner verification remains.
 - Conversation isolation: PASS + PERSISTENCE in isolated staging; Alpha and
   Beta cannot list or directly open one another's chats, including after
   LLDAP and WebUI restart.
@@ -196,7 +196,8 @@ staging only when useful; neither is a prerequisite for Household Alpha.
   subject, role, and private chat across WebUI restart and fresh LDAP login.
 - Memory isolation: PASS + PERSISTENCE in isolated Hindsight staging; Alpha
   and Beta banks remain separate across Hindsight restart. Production owner
-  bank migration/mapping is an explicit gate and remains unchanged.
+  mapping remains the existing bank and is being verified through the owner
+  path.
 - Hermes subject-aware memory path: PASS + PERSISTENCE in disposable
   end-to-end staging; Alpha/Beta retained and recalled separate synthetic
   facts, including an adversarial cross-user request. A prior static-bank
