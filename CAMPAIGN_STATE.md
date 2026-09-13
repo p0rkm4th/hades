@@ -212,24 +212,19 @@ older `PARTIAL` labels: Household Alpha is COMPLETE / READY. Real household
 onboarding is the only owner-input gate; it does not pause independent work.
 
 - Owner daily-driver path: PASS; production smoke remains green.
-- Identity provider: PARTIAL; a separate pinned production LLDAP is healthy,
-  persistent, private, and grouped. Directory-backed Open WebUI
-  authentication is enabled with local owner fallback preserved.
-- Stable subjects: PARTIAL; synthetic Alpha/Beta subjects are distinct and
-  stable across repeated LDAP login in disposable Open WebUI staging.
-- Subject propagation: PARTIAL; disposable staging proved the server-side
-  `{{USER_ID}}` and group expansion, and production now stores those templates
-  on the existing Hermes connection. Runtime owner verification remains.
+- Identity provider: PASS for the accepted production Household Alpha
+  checkpoint; private deployment details remain in the deployment record.
+- Stable subjects: PASS in the accepted production Household Alpha checkpoint.
+- Subject propagation: PASS in the accepted production Household Alpha
+  checkpoint; Hermes 0.21.2 candidate scope regression is also recorded.
 - Conversation isolation: PASS + PERSISTENCE in isolated staging; Alpha and
   Beta cannot list or directly open one another's chats, including after
   LLDAP and WebUI restart.
 - Clean owner/household fixture: PASS + PERSISTENCE. A synthetic owner is the
   staging admin while Alpha and Beta are ordinary users; each retained its
   subject, role, and private chat across WebUI restart and fresh LDAP login.
-- Memory isolation: PASS + PERSISTENCE in isolated Hindsight staging; Alpha
-  and Beta banks remain separate across Hindsight restart. Production owner
-  mapping remains the existing bank and is being verified through the owner
-  path.
+- Memory isolation: PASS + PERSISTENCE in the accepted production Household
+  Alpha checkpoint; the existing owner bank remains mapped privately.
 - Hermes subject-aware memory path: PASS + PERSISTENCE in disposable
   end-to-end staging; Alpha/Beta retained and recalled separate synthetic
   facts, including an adversarial cross-user request. A prior static-bank
@@ -239,20 +234,14 @@ onboarding is the only owner-input gate; it does not pause independent work.
   added synthetic Milk through Hermes/MCP, Beta saw the same canonical shared
   list, and the item remained after Grocy/Hermes restart. Production Grocy
   was not touched.
-- Synthetic revocation: PARTIAL. LLDAP deletion blocked new Beta login, but
-  an already-issued Open WebUI token remained valid until the corresponding
-  Open WebUI user was deleted through its supported admin endpoint. The narrow
-  ordered bridge in `scripts/revoke-directory-user.sh` now closes existing
-  sessions before directory deletion and verifies both stores; automatic
-  directory event synchronization remains a future architecture gate.
-  Production identity is unchanged.
+- Synthetic revocation: PASS in the accepted production Household Alpha
+  checkpoint; the operational session-invalidation semantics are documented.
 - User-specific settings: PASS + PERSISTENCE in isolated staging. Alpha and
   Beta retained different settings across Open WebUI restart and re-login.
   Newly provisioned LDAP users require supported promotion from `pending` to
   `user` before normal settings access.
-- Household finance isolation: PARTIAL at the production overlay boundary;
-  production finance is absent, but per-user capability propagation is not
-  enabled.
+- Household finance isolation: PASS in the accepted production Household Alpha
+  checkpoint; real finance remains separately owner-gated.
 - Disposable capability exclusion: PASS. Server-marked Alpha/Beta sessions
   received neither Agent Zero nor finance tools and returned no financial
   value under adversarial requests.
@@ -278,17 +267,14 @@ onboarding is the only owner-input gate; it does not pause independent work.
   acceptance remain recorded as supporting evidence.
 - Shared Grocy is PASS + PERSISTENCE in disposable end-to-end staging;
   finance exclusion is PASS for server-marked disposable household sessions.
-- Agent Zero household policy: owner-only in the current unmarked production
-  session; the overlay now fail-closes Agent Zero for server-marked household
-  sessions, but the Open WebUI scope header is not yet configured.
-- Recovery: existing owner recovery path preserved; identity backup mapping
-  still requires a private operational rehearsal.
-- Synthetic identity recovery: PASS. A quiesced LLDAP staging database passed
-  SQLite integrity validation and booted successfully in a separate pinned
-  restore container. Production owner recovery and automatic application
-  subject remapping remain unproven.
-- Next highest-value action: continue Hermes 0.21.2 readiness. The
-  owner-preserving WebUI-state rehearsal now passes through the rendered
-  candidate UI; remaining evidence is production Hindsight-history mapping and
-  final disposition of real Agent Zero validation. Keep production Hermes
-  0.14.0 pinned until those gates are resolved.
+- Agent Zero household policy: owner-only in production; the candidate
+  contract uses a bounded synthetic bridge and does not grant household
+  Agent Zero access.
+- Recovery: current owner/admin fallback and the fresh private Hermes
+  preflight backup set are preserved; older incomplete artifacts are not
+  rollback inputs.
+- Synthetic identity recovery: PASS in the accepted production checkpoint.
+- Next highest-value action: execute the separately controlled Hermes 0.21.2
+  production change window using the rollback card and owner checklist.
+  Until that window is explicitly started, production remains on Hermes
+  0.14.0.
