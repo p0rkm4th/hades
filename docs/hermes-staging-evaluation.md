@@ -154,6 +154,28 @@ scope, and empty, malformed, or untrusted keys map to denied scope. This
 prevents a malformed identity from inheriting household tools. The check was
 run with the Hermes 0.21.2 candidate interpreter and the repository overlay.
 
+## Supported full-suite qualification attempt
+
+On 2026-09-13, the candidate's documented per-file process-isolated runner
+completed its first full Linux attempt: 3,986 files were discovered, 27,353
+tests passed, 222 were skipped for platform gating, and three files remained
+failed after the runner's retry policy. Four additional files were reported as
+flaky. The run is not a promotion pass.
+
+The run exposed an environment-isolation defect in the qualification setup:
+the runner gives each pytest subprocess a fresh interpreter and temporary
+pytest root, but all workers share the candidate virtualenv filesystem. Tests
+that exercise update/venv behavior removed `pytest` from that shared virtualenv
+while other files were still being scheduled; subsequent files then failed
+with `No module named pytest`. A clean qualification must use an immutable
+candidate environment per worker (or a disposable environment snapshot), and
+must not count environment-mutating tests as ordinary promotion evidence.
+
+The first substantive failures also included a timing-sensitive compression
+stall-fallback assertion and local quickstart assertions returning HTTP 409
+instead of the expected 200. These require separate upstream triage after a
+clean environment is available. Production remains on Hermes 0.14.0.
+
 ## Upstream-only comparison
 
 A separate loopback Hermes 0.21.2 launch was run without the repository
