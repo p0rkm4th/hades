@@ -376,3 +376,11 @@ the memory provider and unavailable-memory paths, declared conversation scope,
 MCP discovery/transport, gateway identity/authentication, Hindsight provider,
 and Hermes state. It excluded only the tracing-observation assertion described
 above; this is strong focused evidence, not full-suite qualification.
+
+A direct disposable diagnostic wrapped the candidate's actual
+`_checkout_read_conn` seam: the context result was present and exactly one
+context-window query was traced. This confirms the remaining FTS5 failure is an
+upstream test-observation defect—the test traces a connection it opens before
+the implementation checks out another pooled connection—not a missing context
+query or incorrect search result. The test still needs an upstream fix before
+the unmodified full suite can be called clean.

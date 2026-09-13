@@ -287,6 +287,13 @@ and Hermes state. It excluded only the known read-connection tracing
 observation assertion; this is focused evidence and not full-suite
 qualification.
 
+A direct disposable diagnostic wrapped the candidate's actual read-connection
+checkout seam and observed the expected single context-window query while the
+context result was present. This confirms the FTS5 failure is an upstream test
+observation defect caused by tracing a different pooled connection, not a
+runtime search defect; the test still needs an upstream correction for a clean
+unmodified full-suite result.
+
 ## HOUSEHOLD ALPHA STATUS
 
 The detailed bullets below retain historical evidence from staging and
