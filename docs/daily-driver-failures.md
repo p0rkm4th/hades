@@ -128,6 +128,18 @@ outside the repository.
   failure and no unrelated household marker; SearXNG was restored afterward.
 - Status: REPAIRED
 
+## 2026-09-13 — Identity-provider outage fails closed
+
+- Actor: synthetic household account
+- Surface: fresh directory login during a controlled production LLDAP outage
+- Expected: authentication fails without guessing a subject or expanding
+  privileges
+- Observed: the LDAP login returned HTTP 400 and no bearer token
+- Failure layer: identity-provider availability
+- Repair/evidence: LLDAP was restored and its health endpoint recovered. The
+  owner account was not probed or changed during this test.
+- Status: PASS — local owner fallback remains a separate preserved path
+
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 
 - Actor: owner account
