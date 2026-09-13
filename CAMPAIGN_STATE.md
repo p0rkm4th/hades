@@ -192,8 +192,12 @@ exists under `integrations/actual-finance-readonly/` and has been exercised
 through the HADES owner path against that canonical synthetic budget. The
 adapter is not enabled in production.
 
-Shared LDAP identity is staged in `docs/shared-identity.md` but intentionally
-deferred until the multi-user roadmap milestone is complete.
+Household Alpha identity work is now active in isolated staging. LLDAP 0.6.3
+is healthy with synthetic Alpha/Beta users and baseline household groups;
+Open WebUI 0.11.1 LDAP login created distinct stable application subjects on
+repeated login. Production remains local-authenticated and unchanged. The
+next action is to prove real owner-UI conversation isolation and then wire
+server-side subject propagation into Hindsight/Grocy capability boundaries.
 
 Browser automation is now provisioned in an isolated temporary environment
 and reaches the HADES login shell at both local and Tailscale URLs in desktop
@@ -202,3 +206,20 @@ native mobile Settings flow: Language precedes Theme, all HADES theme/effect
 selectors render, an Odysseus theme plus Rain creates the expected canvas and
 classes, and both selections persist after reload. No owner credentials were
 stored by the dogfood run; domain workflow browser evidence remains pending.
+
+## HOUSEHOLD ALPHA STATUS
+
+- Owner daily-driver path: PASS; production smoke remains green.
+- Identity provider: PARTIAL; isolated LLDAP staging is healthy, production
+  cutover is intentionally not started.
+- Stable subjects: PARTIAL; synthetic Alpha/Beta subjects are distinct and
+  stable across repeated LDAP login in disposable Open WebUI staging.
+- Conversation/memory/Grocy/finance isolation: NOT STARTED for two-user
+  acceptance.
+- Agent Zero household policy: owner-only until bounded per-user authority is
+  proven.
+- Recovery: existing owner recovery path preserved; identity backup mapping
+  still requires a private operational rehearsal.
+- Next highest-value action: create the staging acceptance harness for
+  authenticated two-user conversation ownership, then evaluate subject-aware
+  Hindsight and shared Grocy boundaries without touching production.

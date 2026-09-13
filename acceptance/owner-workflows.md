@@ -171,3 +171,25 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   makeable. A separate fresh mobile correction query returned the corrected
   label rather than the stale paraphrase, without changing live Grocy state;
   the result survived reload after the canonical checks.
+
+## Multi-user identity foundation
+
+- **Current status:** PARTIAL
+- **Owner input:** synthetic staging authentication only; production owner
+  login was not changed
+- **DOM result:** not yet exercised in this checkpoint; the disposable
+  Open WebUI login API returned successful authenticated sessions for
+  synthetic Alpha and Beta users
+- **Authoritative system:** LLDAP for directory authentication; Open WebUI
+  for application subject provisioning
+- **Backend verification:** LLDAP is healthy, both synthetic users bind
+  successfully, and Open WebUI created two distinct subject IDs. Repeated
+  LDAP login returned the same subject ID for Alpha and for Beta.
+- **Reload/persistence result:** repeated fresh logins preserved each user's
+  subject in the disposable Open WebUI database; service-restart evidence is
+  still outstanding
+- **Last verified SHA:** pending the coherent identity checkpoint commit
+- **Limitations:** production remains local-authenticated. Conversation
+  isolation, Hindsight per-subject namespaces, shared Grocy authorization,
+  finance exclusion, Agent Zero policy, per-user settings, revocation, and
+  real owner-UI DOM acceptance remain unfinished.
