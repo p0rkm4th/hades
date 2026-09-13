@@ -240,8 +240,11 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   was not touched.
 - Synthetic revocation: PARTIAL. LLDAP deletion blocked new Beta login, but
   an already-issued Open WebUI token remained valid until the corresponding
-  Open WebUI user was deleted through its supported admin endpoint. This is a
-  real session-revocation gap; production identity is unchanged.
+  Open WebUI user was deleted through its supported admin endpoint. The narrow
+  ordered bridge in `scripts/revoke-directory-user.sh` now closes existing
+  sessions before directory deletion and verifies both stores; automatic
+  directory event synchronization remains a future architecture gate.
+  Production identity is unchanged.
 - User-specific settings: PASS + PERSISTENCE in isolated staging. Alpha and
   Beta retained different settings across Open WebUI restart and re-login.
   Newly provisioned LDAP users require supported promotion from `pending` to

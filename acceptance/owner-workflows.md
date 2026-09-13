@@ -310,14 +310,15 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   application sessions and user records
 - **Backend verification:** deleting Beta in LLDAP caused a new LDAP login to
   fail with HTTP 400. An already-issued Open WebUI bearer token still worked
-  with HTTP 200. Deleting the corresponding synthetic Open WebUI user through
-  the supported admin endpoint then caused that token to fail with HTTP 401.
+  with HTTP 200. `scripts/revoke-directory-user.sh` now performs the ordered
+  supported deletions—Open WebUI first, then LLDAP—and verifies both stores;
+  the old token then failed with HTTP 401.
 - **Reload/persistence result:** the boundary was verified in live disposable
   staging; no production account was touched
 - **Last verified SHA:** `571a5da`
-- **Limitations:** automatic directory-to-Open-WebUI revocation
-  synchronization is not implemented. Household Alpha must not be declared
-  until the session boundary is designed, rehearsed, and survives restart.
+- **Limitations:** automatic directory event synchronization is not
+  implemented. Household Alpha must not be declared until the operational
+  boundary is documented for production and survives restart/recovery.
 
 ## User-specific settings isolation
 
