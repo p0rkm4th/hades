@@ -237,9 +237,10 @@ interpreter. A full-suite run still exposes one upstream process-global
 auxiliary-provider leak; the repository includes a correct-interpreter check
 and isolated-worker qualification path. The documented per-file runner's first
 full attempt completed 3,986 files with 27,353 passed and 222 platform skips,
-but is not a qualification pass: shared candidate-venv mutation caused later
-workers to fail with `No module named pytest`, alongside a timing-sensitive
-compression fallback failure and local-quickstart HTTP 409 failures. A clean
+but is not a qualification pass: three test failures were counted, multiple
+later files collected no tests after shared candidate-venv mutation caused
+`No module named pytest`, and the run also exposed a timing-sensitive
+compression fallback failure plus local-quickstart HTTP 409 failures. A clean
 run requires immutable/disposable candidate environments per worker.
 
 ## HOUSEHOLD ALPHA STATUS

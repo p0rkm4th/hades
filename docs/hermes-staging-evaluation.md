@@ -158,9 +158,10 @@ run with the Hermes 0.21.2 candidate interpreter and the repository overlay.
 
 On 2026-09-13, the candidate's documented per-file process-isolated runner
 completed its first full Linux attempt: 3,986 files were discovered, 27,353
-tests passed, 222 were skipped for platform gating, and three files remained
-failed after the runner's retry policy. Four additional files were reported as
-flaky. The run is not a promotion pass.
+tests passed, 222 were skipped for platform gating, and three test failures
+were counted after the runner's retry policy. Four additional files were
+reported as flaky, and multiple later files collected no tests after the
+shared virtualenv lost `pytest`. The run is not a promotion pass.
 
 The run exposed an environment-isolation defect in the qualification setup:
 the runner gives each pytest subprocess a fresh interpreter and temporary
