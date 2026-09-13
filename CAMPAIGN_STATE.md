@@ -5,6 +5,13 @@ Private runtime details, credentials, accounts, hostnames, addresses, chat
 history, and owner data belong in the deployment environment and are never
 recorded here.
 
+## CURRENT CAMPAIGN CHECKPOINT
+
+Household Alpha is accepted as complete/ready. Real household onboarding is
+an owner-input gate only and is not a reason to pause independent engineering
+work. The active independent work is Hermes 0.21.2 production-readiness
+staging; production remains on the known-good Hermes 0.14.0 baseline.
+
 ## CURRENT OBJECTIVE
 
 Build an owner-usable HADES composition from mature upstream systems while

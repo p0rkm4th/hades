@@ -73,3 +73,32 @@ those profiles without a model/runtime change. `gemma4:12b` advertises 262K
 context and is a viable staging candidate. The full isolated Hindsight,
 Grocy, SearXNG, Agent Zero, Open WebUI, and rollback matrix remains incomplete;
 production stays on Hermes 0.14.0.
+
+## 0.21.2 HADES composition checkpoint
+
+The disposable candidate was also run as a HADES composition with Hermes
+0.21.2, `gemma4:12b`, synthetic Hindsight, synthetic Grocy, and the existing
+HADES overlay. The candidate remained healthy and native MCP registration
+loaded both the deterministic fixture and synthetic Grocy. Upstream-only
+testing confirmed that `X-Hermes-Session-Key` identifies a session but does
+not select Hindsight's `{user}` bank. With the overlay, a trusted
+`hades-user-*` session selected the isolated bank and the direct retain tool
+completed.
+
+Two promotion blockers remain:
+
+- The end-to-end assertion must prove that the bank selected for retain is
+  exactly the bank used for fresh recall.
+- Hindsight retain is asynchronous; local Gemma fact extraction took roughly
+  50–85 seconds, so immediate recall can miss a newly accepted fact. The
+  acceptance test must wait for canonical completion before recalling.
+
+The candidate also showed auxiliary title-generation timeouts and inherited a
+large staging context file. These affect candidate ergonomics/performance but
+did not alter production. No production service or data was changed.
+
+**Decision remains: do not promote Hermes 0.21.2 yet.** Finish exact-bank
+Hindsight persistence, synthetic Grocy/search/operator, and restart checks.
+The overlay remains required for trusted per-user memory selection; native
+MCP registration may make dynamic tool reconciliation removable only after
+those owner-contract checks pass.
