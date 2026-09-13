@@ -6,6 +6,7 @@ retrieval instead of returning the owner-facing answer. Keep the supported
 provider intact, but expose only the direct memory tools to the HADES profile.
 """
 
+import os
 import re
 
 
@@ -32,6 +33,12 @@ def _hades_session_scope(session_key):
     if not isinstance(session_key, str):
         return ""
     if session_key.startswith("hades-user-"):
+        # Open WebUI uses one server-expanded template for all authenticated
+        # users. Resolve the owner exception from a private service setting,
+        # never from model text or a client-provided role/group claim.
+        owner_subject = os.environ.get("HADES_OWNER_SUBJECT_ID", "").strip()
+        if session_key.removeprefix("hades-user-") == owner_subject:
+            return "owner"
         return "household"
     if session_key.startswith("hades-owner-"):
         return "owner"
