@@ -23,8 +23,8 @@ single-owner deployment.
    secrets directory with separate random values for the JWT secret and key
    seed, then prompts for the LLDAP admin password without echoing it. Never
    commit these files.
-2. Start LLDAP and create the owner account `owner` through its administrator
-   interface. The owner chooses the password; it is never placed in Git or
+2. Start LLDAP and create the owner account through its administrator
+   interface. The owner chooses the username and password; neither is placed in Git or
    sent through HADES chat.
 3. Attach only the Grocy container to the identity network and configure
    Grocy's `LdapAuthMiddleware` with a read-only bind account.

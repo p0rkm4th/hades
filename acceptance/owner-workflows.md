@@ -141,7 +141,7 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   to remain pinned.
 - **Evidence:** `docs/adr/finance-platform.md` and
   `test-data/finance-bakeoff/`.
-- **Owner UI evidence:** test administrator authenticated through the real Open WebUI DOM,
+- **Owner UI evidence:** A designated test administrator authenticated through the real Open WebUI DOM,
   selected the staged `hermes-finance-staging` model, and submitted
   “What is my checking account balance?”. Open WebUI rendered the chat and
   rendered the canonical synthetic balance `$3,395.36`; the staged Hermes log

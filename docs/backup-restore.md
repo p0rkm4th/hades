@@ -88,7 +88,7 @@ session, and are absent from the public repository and CI artifacts.
 
 ## Current recovery artifact policy
 
-The temporary test administrator plaintext credential file and duplicate recovery/database
+The temporary test-admin plaintext credential file and duplicate recovery/database
 copies were retired after authenticated admin use, synthetic non-admin
 dogfood, database health, and restart checks passed. One protected private
 database backup remains pending owner password rotation; it is not a runtime
