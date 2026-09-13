@@ -59,6 +59,11 @@
         preferenceScope = nextScope;
         localThemeChanged = false;
         localEffectChanged = false;
+        // Older releases used these unscoped keys. Remove them once the
+        // authenticated subject is known so a legacy Neon value cannot flash
+        // back into a different account before its remote settings arrive.
+        localStorage.removeItem(themeKey);
+        localStorage.removeItem(effectKey);
       }
       const response = await fetch('/api/v1/users/user/settings?raw=true');
       if (!response.ok) return;
