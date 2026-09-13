@@ -13,14 +13,42 @@ import os
 import subprocess
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+import anyio
+from mcp.server.lowlevel import Server
+from mcp.server.stdio import stdio_server
+from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 
 
 HELPER = os.environ.get("ACTUAL_READONLY_HELPER", "actual_client.js")
 TIMEOUT_SECONDS = float(os.environ.get("ACTUAL_READONLY_TIMEOUT_SECONDS", "30"))
 MAX_TRANSACTIONS = int(os.environ.get("ACTUAL_READONLY_MAX_TRANSACTIONS", "250"))
 
-mcp = FastMCP("hades-actual-finance-readonly")
+TOOLS = [
+    Tool(
+        name="finance_accounts",
+        description="List canonical Actual Budget accounts and current balances.",
+        inputSchema={"type": "object", "properties": {}},
+    ),
+    Tool(
+        name="finance_transactions",
+        description="Read canonical transactions for an ISO date range.",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "start_date": {"type": "string"},
+                "end_date": {"type": "string"},
+                "account": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": MAX_TRANSACTIONS},
+            },
+            "required": ["start_date", "end_date"],
+        },
+    ),
+    Tool(
+        name="finance_status",
+        description="Report Actual Budget version and read freshness metadata.",
+        inputSchema={"type": "object", "properties": {}},
+    ),
+]
 
 
 def _call(action: str, **kwargs: Any) -> dict[str, Any]:
@@ -46,13 +74,11 @@ def _call(action: str, **kwargs: Any) -> dict[str, Any]:
     return result if isinstance(result, dict) else {"ok": False, "error": "Invalid read result."}
 
 
-@mcp.tool()
 def finance_accounts() -> dict[str, Any]:
     """List canonical Actual Budget accounts and their current balances."""
     return _call("accounts")
 
 
-@mcp.tool()
 def finance_transactions(
     start_date: str,
     end_date: str,
@@ -70,11 +96,36 @@ def finance_transactions(
     )
 
 
-@mcp.tool()
 def finance_status() -> dict[str, Any]:
     """Report the selected budget, server version, and read freshness metadata."""
     return _call("status")
 
 
+async def list_tools(_ctx, _params):
+    return ListToolsResult(tools=TOOLS)
+
+
+async def call_tool(_ctx, params):
+    args = params.arguments or {}
+    if params.name == "finance_accounts":
+        result = finance_accounts()
+    elif params.name == "finance_transactions":
+        result = finance_transactions(
+            args.get("start_date", ""), args.get("end_date", ""),
+            args.get("account", ""), args.get("limit", 100),
+        )
+    elif params.name == "finance_status":
+        result = finance_status()
+    else:
+        raise ValueError(f"unknown tool: {params.name}")
+    return CallToolResult(content=[TextContent(type="text", text=json.dumps(result, sort_keys=True))])
+
+
+async def main():
+    server = Server("hades-actual-finance-readonly", on_list_tools=list_tools, on_call_tool=call_tool)
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(read_stream, write_stream, server.create_initialization_options())
+
+
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    anyio.run(main)

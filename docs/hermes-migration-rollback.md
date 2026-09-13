@@ -64,6 +64,11 @@ acceptance evidence are complete.
 
 ## Current disposition
 
-The candidate passes isolated normal-conversation, MCP, and ACP contract
-evidence, but the full cross-component upgrade and rollback matrix is not yet
-complete. Therefore no production migration is authorized by this document.
+The candidate now passes isolated normal conversation, native MCP, ACP,
+Hindsight exact-bank retain/recall, synthetic Grocy read/mutation, disposable
+SearXNG search, bounded Agent Zero bridge success/failure, authenticated
+restart health, and profile backup/extraction evidence. The remaining
+production-shaped gaps are Open WebUI owner-UI migration acceptance, synthetic
+Actual Budget integration, and a real Agent Zero runtime rather than the
+disposable bridge stub. Therefore no production migration is authorized by
+this document.

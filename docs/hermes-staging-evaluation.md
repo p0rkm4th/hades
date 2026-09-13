@@ -130,8 +130,11 @@ three tool attempts before emitting the successful call, so the contract
 passes but weak-model operator prompting remains a performance/quality
 limitation. The real Agent Zero endpoint and credentials were not used.
 
-**Decision remains: do not promote Hermes 0.21.2 yet.** Finish the bounded
-operator decision and production-shaped rollback checks.
+**Decision remains: do not promote Hermes 0.21.2 yet.** The isolated
+candidate matrix is materially green, but promotion still needs
+production-shaped Open WebUI owner-UI acceptance, synthetic Actual Budget
+coverage, and a decision on whether the real Agent Zero runtime can be
+validated without importing production credentials or state.
 The overlay remains required for trusted per-user memory selection; native
 MCP registration may make dynamic tool reconciliation removable only after
 those owner-contract checks pass.

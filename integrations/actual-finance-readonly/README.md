@@ -5,6 +5,9 @@ Budget platform. It exposes only account, transaction, and status reads. It
 does not expose the official client's mutation, import, sync, provider-link,
 or money-movement methods.
 
+The stdio server uses MCP 2.0's low-level API, matching the dependency shipped
+by Hermes 0.21.2; it exposes exactly the three read-only tools listed below.
+
 The bridge uses the official [`@actual-app/api`](https://actualbudget.org/docs/api/)
 Node client because Actual's supported programmatic interface is not a REST
 API. Pin the client and server to matching supported revisions; do not use a
