@@ -300,6 +300,9 @@ staging environment. It fails closed when the candidate interpreter cannot
 import `pytest`, which prevents a mutated candidate environment from being
 mistaken for a test regression. A full candidate suite must use that same
 canonical runner.
+The HADES promotion subset also disables the runner's automatic file retry;
+flakiness therefore remains a failed acceptance signal rather than being
+reported as green after a lucky retry.
 
 After the invalidated aggregate run, the disposable candidate environment was
 restored with `ensurepip` and the declared pytest test dependencies. The

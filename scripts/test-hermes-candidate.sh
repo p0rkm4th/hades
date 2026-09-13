@@ -48,4 +48,8 @@ for test in "${tests[@]}"; do
 done
 
 cd "$CANDIDATE"
-exec "$RUNNER" "${tests[@]}" -q --disable-warnings
+# Promotion evidence must be deterministic. The canonical runner's default
+# retry is useful for exploratory development but would allow a flaky file to
+# exit green; retain the failure so the change window cannot treat flakiness
+# as acceptance.
+exec "$RUNNER" "${tests[@]}" -q --disable-warnings --file-retries 0
