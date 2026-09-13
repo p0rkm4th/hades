@@ -165,14 +165,15 @@ LDAP group propagation; model access; capability exclusion; per-user settings;
 coordinated revocation; and synthetic identity recovery are all evidenced in
 the acceptance records and summarized in `docs/household-alpha-readiness.md`.
 
-Keep production Hermes 0.14.0 and local Open WebUI authentication unchanged.
-The next safe production step requires an owner-approved migration window,
-private backups and rollback targets, exact account mapping, and confirmation
-of an independently recoverable admin path. Mobile browser-DOM evidence now
+Keep production Hermes on its known-good baseline and local Open WebUI
+authentication fallback enabled. A private production migration checkpoint now
+has validated backups/rollback, a recovered dedicated admin, private LLDAP,
+exact owner mapping, and synthetic production identities. Mobile browser-DOM evidence now
 covers rendered login, private-chat sidebar isolation, household model
 visibility, memory retain/recall, shared Grocy read/mutation and cross-user
 read, finance exclusion, revocation, and cross-account settings isolation;
-additional Grocy purchase/consume variations remain optional hardening.
+  additional Grocy purchase/consume variations remain optional hardening. The
+  production migration is still in acceptance, not declared Household Alpha.
 
 Continue independent read-only homelab preparation and Hermes modernization
 staging only when useful; neither is a prerequisite for Household Alpha.
