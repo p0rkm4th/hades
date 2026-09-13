@@ -298,6 +298,25 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   production owner path retains its accepted owner-only behavior; Household
   Alpha authorization is not yet enabled.
 
+## Directory group propagation
+
+- **Current status:** PARTIAL (upstream support identified; staging launch
+  configuration incomplete)
+- **Authoritative system:** LLDAP group membership, synchronized into
+  Open WebUI's local group records
+- **Backend verification:** the pinned Open WebUI source supports LDAP group
+  management and server-side `{{USER_GROUPS}}` / `{{USER_GROUP_IDS}}`
+  connection-header expansion. The staged directory contains the synthetic
+  household group, but this disposable WebUI was launched without the
+  `ENABLE_LDAP_GROUP_MANAGEMENT` setting, so end-to-end group propagation was
+  not claimed.
+- **Cleanup:** a temporary header-probe provider was removed and staging was
+  restarted; the staged OpenAI provider configuration is empty again.
+- **Limitations:** group-based capability selection remains unenabled until a
+  disposable WebUI is relaunched with group management, both synthetic users
+  are provisioned into the intended groups, and the expanded headers are
+  verified downstream.
+
 ## Open WebUI subject-header propagation
 
 - **Current status:** PASS (disposable staging transport)
