@@ -100,12 +100,13 @@ try:
         Hindsight bank. Explicit memory requests remain eligible for retain;
         ordinary shared-state turns do not become personal memory by accident.
         """
-        combined = "\n".join(
-            value for value in (str(user_content or ""), str(assistant_content or ""))
-        )
+        # Classify from the user's request only. Assistant/tool output is
+        # untrusted generated text and must not decide whether a turn is
+        # private or shared.
+        user_text = str(user_content or "")
         if (
-            _HADES_SHARED_MEMORY_INTENT.search(combined)
-            and not _HADES_EXPLICIT_MEMORY_INTENT.search(str(user_content or ""))
+            _HADES_SHARED_MEMORY_INTENT.search(user_text)
+            and not _HADES_EXPLICIT_MEMORY_INTENT.search(user_text)
         ):
             _hades_logger.info("Skipping automatic Hindsight retain for shared-state turn")
             return None
