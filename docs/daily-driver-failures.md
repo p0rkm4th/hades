@@ -40,6 +40,20 @@ outside the repository.
 - Status: REPAIRED for stale-fallback behavior; concurrent response latency
   remains a separate performance investigation
 
+## 2026-09-13 — Common grocery typo bypassed live routing
+
+- Actor: synthetic household account
+- Surface: natural-language Grocy read
+- Input shape: abbreviated typo (`whts on grocry rn`)
+- Expected: route to live Grocy and report canonical stock
+- Observed: the intent gate missed the typo and the model answered from stale
+  memory context instead of querying Grocy
+- Failure layer: narrow lexical intent boundary
+- Repair/evidence: added common `grocy`, `grocry`, and `grocerys` variants to
+  tool routing, shared-state retention suppression, and Grocy narrowing. The
+  same synthetic input then returned the live canonical stock result.
+- Status: REPAIRED — broader language robustness remains ongoing
+
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 
 - Actor: owner account

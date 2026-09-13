@@ -80,7 +80,7 @@ try:
 
     _hades_original_sync_turn = _hindsight.HindsightMemoryProvider.sync_turn
     _HADES_SHARED_MEMORY_INTENT = re.compile(
-        r"\b(?:grocery|groceries|shopping list|pantry|inventory|stock|"
+        r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|pantry|inventory|stock|"
         r"recipe|food|ingredient|bought|purchase|purchased|consume|"
         r"consumed|used up|out of|add it|remove it)\b",
         re.IGNORECASE,
@@ -254,7 +254,7 @@ try:
     _HADES_TOOL_INTENT = re.compile(
         r"\b(?:remember(?:ed|ing)?|recall|forget|did i tell|do you remember|memory|"
         r"weather|forecast|temperature|search|look up|latest|news|web|"
-        r"grocery|groceries|shopping list|recipe|food|pantry|inventory|"
+        r"grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|food|pantry|inventory|"
         r"what(?:'s| is) running|what(?:'s| is) down|homelab|server|proxmox|"
         r"netbox|uptime|docker|finance|finances|spending|spent|subscription|"
         r"bank|account balance|before payday)\b",
@@ -398,7 +398,7 @@ try:
             re.IGNORECASE,
         ))
         grocy_intent = re.search(
-            r"\b(?:grocery|groceries|shopping list|recipe|food|pantry|inventory|"
+            r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|food|pantry|inventory|"
             r"what(?:'s| is) in stock|do we have)\b",
             _hades_intent_text,
             re.IGNORECASE,
