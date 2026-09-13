@@ -235,13 +235,14 @@ current owner authentication/session path before burn-in.
 The promotion-critical candidate subset passes 166/166 with the candidate
 interpreter. A full-suite run still exposes one upstream process-global
 auxiliary-provider leak; the repository includes a correct-interpreter check
-and isolated-worker qualification path. The documented per-file runner's first
-full attempt completed 3,986 files with 27,353 passed and 222 platform skips,
-but is not a qualification pass: three test failures were counted, multiple
-later files collected no tests after shared candidate-venv mutation caused
-`No module named pytest`, and the run also exposed a timing-sensitive
-compression fallback failure plus local-quickstart HTTP 409 failures. A clean
-run requires immutable/disposable candidate environments per worker.
+and isolated-worker qualification path. A direct per-file-runner experiment
+completed 3,986 files with 27,353 passed and 222 platform skips, but bypassed
+the candidate's canonical `scripts/run_tests.sh` hermetic wrapper. Its shared
+virtualenv was mutated by update/venv tests, producing later `No module named
+pytest` errors; that aggregate is not qualification evidence. Candidate triage
+also includes a timing-sensitive compression fallback failure, local-quickstart
+HTTP 409 failures, and four reported flakes. A valid full run requires the
+canonical wrapper with a fresh candidate environment.
 
 ## HOUSEHOLD ALPHA STATUS
 

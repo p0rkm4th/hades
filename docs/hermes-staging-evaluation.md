@@ -154,28 +154,23 @@ scope, and empty, malformed, or untrusted keys map to denied scope. This
 prevents a malformed identity from inheriting household tools. The check was
 run with the Hermes 0.21.2 candidate interpreter and the repository overlay.
 
-## Supported full-suite qualification attempt
+## Full-suite qualification attempt
 
-On 2026-09-13, the candidate's documented per-file process-isolated runner
-completed its first full Linux attempt: 3,986 files were discovered, 27,353
-tests passed, 222 were skipped for platform gating, and three test failures
-were counted after the runner's retry policy. Four additional files were
-reported as flaky, and multiple later files collected no tests after the
-shared virtualenv lost `pytest`. The run is not a promotion pass.
+On 2026-09-13, a direct invocation of the candidate's per-file runner
+completed 3,986 files: 27,353 tests passed and 222 were skipped for platform
+gating. That invocation bypassed the candidate's canonical
+`scripts/run_tests.sh` wrapper, which provides the hermetic environment and
+validates the test interpreter first. Because the direct run shared a mutable
+candidate virtualenv, update/venv tests removed `pytest` while later workers
+were still scheduled; the resulting no-test errors are harness contamination,
+not valid candidate-test results.
 
-The run exposed an environment-isolation defect in the qualification setup:
-the runner gives each pytest subprocess a fresh interpreter and temporary
-pytest root, but all workers share the candidate virtualenv filesystem. Tests
-that exercise update/venv behavior removed `pytest` from that shared virtualenv
-while other files were still being scheduled; subsequent files then failed
-with `No module named pytest`. A clean qualification must use an immutable
-candidate environment per worker (or a disposable environment snapshot), and
-must not count environment-mutating tests as ordinary promotion evidence.
-
-The first substantive failures also included a timing-sensitive compression
-stall-fallback assertion and local quickstart assertions returning HTTP 409
-instead of the expected 200. These require separate upstream triage after a
-clean environment is available. Production remains on Hermes 0.14.0.
+The direct run also exposed a timing-sensitive compression stall-fallback
+assertion and local quickstart assertions returning HTTP 409 instead of the
+expected 200. Four files were reported flaky. These remain candidate triage
+items, but the aggregate direct run must not be presented as a clean
+qualification result. A valid full run must use `scripts/run_tests.sh` with a
+fresh candidate environment. Production remains on Hermes 0.14.0.
 
 ## Upstream-only comparison
 
@@ -302,7 +297,9 @@ for the promotion-critical subset. It requires a candidate directory and uses
 that directory's `.venv/bin/python -m pytest`, preventing a stale cloned
 `pytest` launcher from selecting a different staging environment. It now also
 fails closed when that interpreter cannot import `pytest`, which prevents a
-mutated candidate environment from being mistaken for a test regression.
+mutated candidate environment from being mistaken for a test regression. A
+full candidate suite must use the candidate's own `scripts/run_tests.sh` so
+its hermetic environment setup is preserved.
 
 ### Minimal upstream remediation
 
