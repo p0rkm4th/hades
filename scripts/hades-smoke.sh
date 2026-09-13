@@ -5,7 +5,16 @@ set -u
 # Override endpoint variables for a different private deployment.
 WEBUI_URL="${HADES_WEBUI_URL:-http://127.0.0.1:3000}"
 LLDAP_URL="${HADES_LLDAP_URL:-http://127.0.0.1:17171}"
-HERMES_URL="${HADES_HERMES_URL:-http://127.0.0.1:8642}"
+if [[ -n "${HADES_HERMES_URL:-}" ]]; then
+  HERMES_URL="$HADES_HERMES_URL"
+else
+  # Production Hermes binds to the Docker host mapping rather than loopback
+  # so the containerized WebUI can reach it. Discover that mapping without
+  # committing a deployment-specific private address.
+  hermes_host=$(docker exec hades-open-webui getent hosts host.docker.internal \
+    2>/dev/null | awk 'NR == 1 { print $1 }' || true)
+  HERMES_URL="http://${hermes_host:-127.0.0.1}:8642"
+fi
 HINDSIGHT_URL="${HADES_HINDSIGHT_URL:-http://127.0.0.1:8888}"
 SEARXNG_URL="${HADES_SEARXNG_URL:-http://127.0.0.1:8080}"
 OLLAMA_URL="${HADES_OLLAMA_URL:-http://127.0.0.1:11434}"
