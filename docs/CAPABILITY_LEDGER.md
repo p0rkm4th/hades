@@ -4,7 +4,7 @@ This is a sanitized project-level record of verified capability. Detailed
 owner prompts, URLs, account identifiers, runtime topology, and canonical
 state checks remain in the private acceptance record.
 
-Last reviewed: 2026-09-12
+Last reviewed: 2026-09-13
 
 | Capability | Status | Component / revision | Sanitized evidence | Limitation |
 |---|---|---|---|---|
@@ -14,7 +14,7 @@ Last reviewed: 2026-09-12
 | Adaptive model capability notice | PASS | Open WebUI extension and Hermes deployment overlay | Tool-capable and completion-only local models are presented with distinct capability messaging and routing behavior. | Completion-only models cannot use HADES tools. |
 | HADES themes/effects | PASS + PERSISTENCE | Open WebUI extension assets | Authenticated Tailscale mobile DOM verification confirmed native Settings ordering, all HADES selectors, Odysseus Neon plus Rain canvas/classes, and reload persistence. | Effects remain HADES-owned styling layered onto upstream UI. |
 | Restart/recovery | PASS | HADES runtime composition | Core health endpoints recovered after controlled service restarts without losing accepted state. | External integrations are not included in this result. |
-| Hermes compatibility overlay | PARTIAL | `hermes/sitecustomize.py` | Deployment overlay is now represented in source for review and documented as a compatibility layer. | Smoke coverage and upstream replacement review remain in progress. |
+| Hermes compatibility overlay | PARTIAL | `hermes/sitecustomize.py` | Production 0.14.0 smoke, capability/memory regressions, and the hardened Hermes 0.21.2 promotion-critical subset (166/166) pass. | Full 0.21.2 qualification and owner-authenticated promotion rehearsal remain pending; retain the overlay until upstream parity is proven. |
 | Agent Zero runtime | PASS | Agent Zero v2.12, pinned container image | Private loopback deployment is healthy; real Agent Zero UI produced `A0-READY` with local qwen3:8b. | Delegated context persistence and broader operator tasks remain future work. |
 | Agent Zero delegation | PASS | Agent Zero + Hermes MCP adapter | Official Agent Zero API contract and private one-tool MCP bridge are connected; bounded owner-path success, safe busy-state failure, and mobile DOM rendering were verified. | Persistent delegated context and broader operator tasks remain future work; keep the operator bounded and private. |
 | Household / Grocy runtime | PASS | Grocy v4.7.1, pinned LinuxServer image | Private loopback deployment is healthy with persistent synthetic database storage. | Broader pantry edge cases remain future hardening. |
