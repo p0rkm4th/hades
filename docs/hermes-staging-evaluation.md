@@ -173,6 +173,14 @@ reported Hermes' linked SQLite runtime warning and a stale systemd timeout
 warning; these are candidate change-window hardening items, not production
 changes.
 
+The upstream-only memory comparison is a security boundary: with a trusted
+synthetic session key and the configured `bank_id_template`, Hermes 0.21.2
+initialized the base synthetic bank rather than the subject-specific bank.
+The request completed, but the bank selection was not isolated. The HADES
+subject-to-bank mapping overlay must therefore be retained until upstream
+provides an equivalent server-side mapping and it passes the two-user
+isolation contract.
+
 The matched synthetic Actual Budget 26.9.0 fixture was then started on an
 isolated port. Hermes 0.21.2 discovered all three migrated read-only finance
 tools; a candidate `finance_status` call returned the synthetic budget,
