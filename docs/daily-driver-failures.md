@@ -54,6 +54,22 @@ outside the repository.
   same synthetic input then returned the live canonical stock result.
 - Status: REPAIRED — broader language robustness remains ongoing
 
+## 2026-09-13 — Shorthand grocery action lacked a domain noun
+
+- Actor: synthetic household account
+- Surface: natural-language Grocy mutation
+- Input shape: `add milk pls`
+- Expected: route the explicit household action to Grocy and report the
+  canonical mutation
+- Observed: without a recognized grocery noun, the model could answer from
+  prior context instead of exposing the Grocy mutation tools
+- Failure layer: action-intent routing and automatic-memory boundary
+- Repair/evidence: added a bounded action-plus-common-food recognizer and
+  disabled automatic personal-memory prefetch for ordinary Grocy turns. The
+  same synthetic input then returned a successful Grocy mutation; canonical
+  Grocy showed one existing shopping-list row with its quantity updated to 2.
+- Status: REPAIRED for the covered shorthand vocabulary
+
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 
 - Actor: owner account

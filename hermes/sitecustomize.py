@@ -85,6 +85,12 @@ try:
         r"consumed|used up|out of|add it|remove it)\b",
         re.IGNORECASE,
     )
+    _HADES_GROCY_ACTION_INTENT = re.compile(
+        r"\b(?:add|remove|buy|bought|purchase|consume|used|out of)\s+"
+        r"(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
+        r"pasta|rice|chicken|beef|fruit|vegetables?)\b",
+        re.IGNORECASE,
+    )
     _HADES_EXPLICIT_MEMORY_INTENT = re.compile(
         r"\b(?:remember|memorize|forget|memory|recall|do you remember|"
         r"actually my|correction)\b",
@@ -105,7 +111,10 @@ try:
         # private or shared.
         user_text = str(user_content or "")
         if (
-            _HADES_SHARED_MEMORY_INTENT.search(user_text)
+            (
+                _HADES_SHARED_MEMORY_INTENT.search(user_text)
+                or _HADES_GROCY_ACTION_INTENT.search(user_text)
+            )
             and not _HADES_EXPLICIT_MEMORY_INTENT.search(user_text)
         ):
             _hades_logger.info("Skipping automatic Hindsight retain for shared-state turn")
@@ -143,7 +152,10 @@ try:
         # dependency failure. Explicit memory requests may still compose with
         # a Grocy read.
         if (
-            _HADES_SHARED_MEMORY_INTENT.search(query)
+            (
+                _HADES_SHARED_MEMORY_INTENT.search(query)
+                or _HADES_GROCY_ACTION_INTENT.search(query)
+            )
             and not _HADES_EXPLICIT_MEMORY_INTENT.search(query)
         ):
             return ""
@@ -257,7 +269,11 @@ try:
         r"grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|food|pantry|inventory|"
         r"what(?:'s| is) running|what(?:'s| is) down|homelab|server|proxmox|"
         r"netbox|uptime|docker|finance|finances|spending|spent|subscription|"
-        r"bank|account balance|before payday)\b",
+        r"bank|account balance|before payday|"
+        r"add\s+(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
+        r"pasta|rice|chicken|beef|fruit|vegetables?)|"
+        r"remove\s+(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
+        r"pasta|rice|chicken|beef|fruit|vegetables?))\b",
         re.IGNORECASE,
     )
     # The OpenAI-compatible API server constructs AIAgent directly rather
@@ -402,12 +418,24 @@ try:
             r"what(?:'s| is) in stock|do we have)\b",
             _hades_intent_text,
             re.IGNORECASE,
-        )
+        ) or _HADES_GROCY_ACTION_INTENT.search(_hades_intent_text)
         web_intent = re.search(
             r"\b(?:weather|forecast|temperature|search|look up|latest|news|web)\b",
             _hades_intent_text,
             re.IGNORECASE,
         )
+        # Conversation history can contain the word "memory" even when the
+        # current request is an ordinary Grocy mutation. Disable automatic
+        # personal-memory prefetch for that turn at the agent boundary; the
+        # explicit-memory path remains available for intentional composition.
+        _hades_saved_auto_recall = []
+        if grocy_intent and not memory_intent and self._memory_manager:
+            for _hades_provider in self._memory_manager.providers:
+                if hasattr(_hades_provider, "_auto_recall"):
+                    _hades_saved_auto_recall.append(
+                        (_hades_provider, _hades_provider._auto_recall)
+                    )
+                    _hades_provider._auto_recall = False
         agent_zero_intent = re.search(
             r"\b(?:agent zero|agent0|bounded operator|delegate|delegation)\b",
             _hades_intent_text,
@@ -608,6 +636,8 @@ try:
                             break
             return result
         finally:
+            for _hades_provider, _hades_auto_recall in _hades_saved_auto_recall:
+                _hades_provider._auto_recall = _hades_auto_recall
             if suppress_stream:
                 self.stream_delta_callback = original_stream_callback
                 self._stream_callback = original_internal_stream_callback
