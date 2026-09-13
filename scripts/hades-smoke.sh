@@ -76,6 +76,13 @@ else
   printf 'FAIL privileged capability boundary\n'
   fail=$((fail + 1))
 fi
+if scripts/test-hades-memory-intent.sh >/dev/null 2>&1; then
+  printf 'PASS shared-state memory boundary\n'
+  pass=$((pass + 1))
+else
+  printf 'FAIL shared-state memory boundary\n'
+  fail=$((fail + 1))
+fi
 
 if curl -fsS --max-time 10 "$AGENT_ZERO_URL/" >/dev/null 2>&1; then
   printf 'PASS Agent Zero HTTP\n'
