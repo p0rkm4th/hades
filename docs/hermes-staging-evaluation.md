@@ -273,3 +273,8 @@ failures because that launcher targeted an older staging virtualenv; those
 were eliminated by using the candidate interpreter directly. The full suite
 should still be clean or run in isolated workers before calling the candidate
 fully promotion-qualified.
+
+HADES provides [`scripts/test-hermes-candidate.sh`](../scripts/test-hermes-candidate.sh)
+for the promotion-critical subset. It requires a candidate directory and uses
+that directory's `.venv/bin/python -m pytest`, preventing a stale cloned
+`pytest` launcher from selecting a different staging environment.
