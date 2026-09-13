@@ -21,3 +21,7 @@ Hindsight may provide remembered context but cannot override live truth from
 Grocy, Finance, Proxmox, NetBox, Uptime Kuma, or Home Assistant. HADES should
 not add a shadow store, universal tool registry, planner, scheduler, or event
 bus.
+
+See [`stable-v1-readiness.md`](stable-v1-readiness.md) for the current
+production contract, compatibility overlay inventory, recovery dependencies,
+and remaining owner/authority gates.
