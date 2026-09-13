@@ -149,6 +149,12 @@ intentionally maintained in private operations state.
 - It does not replace private owner-UI, canonical-domain, or runtime
   acceptance.
 
+The current tree contains no private network literal, and the smoke probe now
+discovers the model gateway dynamically. The historical public audit still
+finds the retired Docker bridge literal in older commits. Removing it would
+require a coordinated history rewrite/force-push and is therefore a release
+decision, not an automatic campaign mutation.
+
 ## CAPABILITY LEDGER
 
 See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
