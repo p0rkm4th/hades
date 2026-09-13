@@ -238,13 +238,20 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   added synthetic Milk through Hermes/MCP, Beta saw the same canonical shared
   list, and the item remained after Grocy/Hermes restart. Production Grocy
   was not touched.
+- Synthetic revocation: PARTIAL. LLDAP deletion blocked new Beta login, but
+  an already-issued Open WebUI token remained valid until the corresponding
+  Open WebUI user was deleted through its supported admin endpoint. This is a
+  real session-revocation gap; production identity is unchanged.
+- User-specific settings: NOT STARTED for two-user acceptance.
+- Household finance isolation: PARTIAL at the production overlay boundary;
+  production finance is absent, but per-user capability propagation is not
+  enabled.
 - Grocy/finance isolation: NOT STARTED for two-user acceptance.
 - Agent Zero household policy: owner-only in the current unmarked production
   session; the overlay now fail-closes Agent Zero for server-marked household
   sessions, but the Open WebUI scope header is not yet configured.
 - Recovery: existing owner recovery path preserved; identity backup mapping
   still requires a private operational rehearsal.
-- Next highest-value action: run a disposable Hermes gateway with the staged
-  Hindsight template and subject header, then verify Alpha/Beta memory
-  separation and shared Grocy capability behavior through the complete
-  authenticated path without touching production.
+- Next highest-value action: choose and rehearse a supported directory-to-
+  application revocation boundary, then run per-user settings isolation and
+  restart verification without touching production.

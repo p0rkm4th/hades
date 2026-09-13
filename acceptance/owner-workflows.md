@@ -298,3 +298,23 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Last verified SHA:** `104bac6`
 - **Limitations:** this proves transport/header expansion, not production
   identity cutover or a full Hermes model turn. Production remains unchanged.
+
+## Synthetic account revocation
+
+- **Current status:** PARTIAL
+- **Owner input:** synthetic Beta account only; production identities and data
+  were not changed
+- **DOM result:** not exercised in this checkpoint; supported auth and admin
+  APIs were used while the browser harness was unavailable
+- **Authoritative systems:** LLDAP for new authentication; Open WebUI for
+  application sessions and user records
+- **Backend verification:** deleting Beta in LLDAP caused a new LDAP login to
+  fail with HTTP 400. An already-issued Open WebUI bearer token still worked
+  with HTTP 200. Deleting the corresponding synthetic Open WebUI user through
+  the supported admin endpoint then caused that token to fail with HTTP 401.
+- **Reload/persistence result:** the boundary was verified in live disposable
+  staging; no production account was touched
+- **Last verified SHA:** `571a5da`
+- **Limitations:** automatic directory-to-Open-WebUI revocation
+  synchronization is not implemented. Household Alpha must not be declared
+  until the session boundary is designed, rehearsed, and survives restart.
