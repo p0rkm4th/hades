@@ -217,11 +217,15 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
 - Conversation isolation: PASS + PERSISTENCE in isolated staging; Alpha and
   Beta cannot list or directly open one another's chats, including after
   LLDAP and WebUI restart.
-- Memory/Grocy/finance isolation: NOT STARTED for two-user acceptance.
+- Memory isolation: PASS + PERSISTENCE in isolated Hindsight staging; Alpha
+  and Beta banks remain separate across Hindsight restart. Production owner
+  bank migration/mapping is an explicit gate and remains unchanged.
+- Grocy/finance isolation: NOT STARTED for two-user acceptance.
 - Agent Zero household policy: owner-only until bounded per-user authority is
   proven.
 - Recovery: existing owner recovery path preserved; identity backup mapping
   still requires a private operational rehearsal.
 - Next highest-value action: create the staging acceptance harness for
-  authenticated two-user conversation ownership, then evaluate subject-aware
-  Hindsight and shared Grocy boundaries without touching production.
+  authenticated two-user capability authorization, then exercise subject-aware
+  Hindsight and shared Grocy behavior through a disposable Hermes path without
+  touching production.

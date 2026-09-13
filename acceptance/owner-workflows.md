@@ -196,3 +196,24 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   per-subject namespaces, shared Grocy authorization, finance exclusion,
   Agent Zero policy, per-user settings, revocation, and real owner-UI DOM
   acceptance remain unfinished.
+
+## Hindsight subject namespace boundary
+
+- **Current status:** PASS + PERSISTENCE (isolated backend staging scope)
+- **Owner input:** synthetic Alpha/Beta memory fixtures only; no production
+  Hindsight bank was written
+- **DOM result:** not applicable to this backend contract probe; the
+  owner-facing WebUI integration remains pending
+- **Authoritative system:** Hindsight banks selected by the authenticated
+  server-side subject
+- **Backend verification:** synthetic Alpha and Beta facts were retained into
+  separate `hades-user-*` banks. Each bank recalled its own restaurant fact
+  and not the other bank's fact. The same result held after restarting the
+  disposable Hindsight service.
+- **Reload/persistence result:** PASS; both isolated banks and their facts
+  survived service restart
+- **Last verified SHA:** pending the coherent memory checkpoint commit
+- **Limitations:** production still uses the existing `hades-owner` bank and
+  static Hermes memory configuration. Owner-bank migration/mapping must be
+  explicitly designed before enabling a per-user template; no production
+  memory configuration was changed.
