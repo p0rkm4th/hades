@@ -171,8 +171,8 @@ private backups and rollback targets, exact account mapping, and confirmation
 of an independently recoverable admin path. Mobile browser-DOM evidence now
 covers rendered login, private-chat sidebar isolation, household model
 visibility, memory retain/recall, shared Grocy read/mutation and cross-user
-read, finance exclusion, and revocation; browser-specific settings isolation
-and additional Grocy purchase/consume variations remain optional hardening.
+read, finance exclusion, revocation, and cross-account settings isolation;
+additional Grocy purchase/consume variations remain optional hardening.
 
 Continue independent read-only homelab preparation and Hermes modernization
 staging only when useful; neither is a prerequisite for Household Alpha.

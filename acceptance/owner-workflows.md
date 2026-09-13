@@ -420,17 +420,21 @@ failure banner. No production account was involved.
 - **Current status:** PASS + PERSISTENCE (isolated staging scope)
 - **Owner input:** synthetic Alpha and Beta accounts selected distinct
   synthetic theme values and the Rain background effect
-- **DOM result:** PASS in the rendered disposable staging settings surface;
-  Alpha selected Odysseus Midnight and Rain, and the DOM exposed both
-  selectors plus the matching HADES theme/effect classes.
+- **DOM result:** PASS in the rendered disposable mobile staging settings
+  surface; Alpha retained Odysseus Midnight/Rain while Beta independently
+  retained Odysseus Neon/Dots across separate authenticated browser contexts.
+  The selectors and matching HADES theme/effect classes were present for both.
 - **Authoritative system:** Open WebUI per-user settings store
 - **Backend verification:** Alpha read back only its `alpha-theme` setting and
   Beta read back only its `beta-theme` setting. A newly provisioned LDAP user
   initially entered Open WebUI as `pending`; the supported admin promotion to
   `user` was required before ordinary settings access succeeded.
-- **Reload/persistence result:** after restarting disposable Open WebUI and
-  logging both users in again, each retained its own theme and Rain effect.
-- **Last verified SHA:** `705487b`
+- **Reload/persistence result:** after reload and re-opening Settings, each
+  account restored its own values; the authenticated settings API remained
+  the canonical per-user persistence check. A native-theme selection is also
+  covered by the current regression fix: it clears the stale HADES preset
+  instead of allowing Neon to return during an Open WebUI rerender.
+- **Last verified SHA:** `510ff39`
 - **Limitations:** this proves application preference isolation in staging,
   not production multi-user cutover.
 
