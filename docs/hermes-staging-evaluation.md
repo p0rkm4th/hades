@@ -155,3 +155,23 @@ retargeted.
 The overlay remains required for trusted per-user memory selection; native
 MCP registration may make dynamic tool reconciliation removable only after
 those owner-contract checks pass.
+
+## Owner-state migration rehearsal
+
+On 2026-09-13, the production WebUI data directory was copied into a
+mode-0700 disposable clone after SQLite integrity validation. The clone
+contained the existing account and chat set without changing the source. A
+supervised Hermes 0.21.2 gateway was then bound to loopback port 8643 and the
+clone was run on port 3021 with the candidate model endpoint. The preserved
+Luna account authenticated with its original account ID and admin role; the
+existing chat titles were visible in the rendered UI; a prompt returned the
+exact `DOM-CANDIDATE-OWNER-READY` marker; the resulting marker was present in
+the cloned WebUI database; and the candidate model was visible through the
+UI/API path. The clone container, copied data, candidate gateway, and
+temporary credential were removed afterward. Production WebUI and Hermes
+0.14.0 remained healthy throughout.
+
+This proves the owner-facing identity/chat continuity path against a
+disposable WebUI-state copy. It does not prove production Hindsight history
+mapping or a real Agent Zero runtime, so it is not authorization to promote
+the candidate by itself.

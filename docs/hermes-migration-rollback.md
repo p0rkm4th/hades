@@ -86,5 +86,11 @@ against the isolated candidate profile. It initialized its MCP children and
 wrote a startup record claiming 8643, but no reachable 8643 listener was
 observed from the host, so the rehearsal was stopped before any WebUI traffic
 or data migration. Production WebUI and Hermes remained healthy throughout.
-The next rehearsal must use a supervised/foreground launch with an explicit
-listener assertion before starting the cloned WebUI.
+The detached-launch issue was corrected by using an explicit supervised
+foreground launch and a fresh candidate API key. The follow-up rehearsal
+authenticated the preserved Luna account with the same account ID and admin
+role, rendered existing chat history in the clone, completed a candidate chat
+through the WebUI, and verified the resulting marker in the clone database.
+The clone, temporary credential, candidate gateway, and candidate container
+were removed afterward. This proves WebUI identity/chat continuity, but does
+not prove production Hindsight history mapping or a real Agent Zero runtime.

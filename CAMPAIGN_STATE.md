@@ -180,7 +180,8 @@ covers rendered login, private-chat sidebar isolation, household model
 visibility, memory retain/recall, shared Grocy read/mutation and cross-user
 read, finance exclusion, revocation, and cross-account settings isolation;
   additional Grocy purchase/consume variations remain optional hardening. The
-  production migration is still in acceptance, not declared Household Alpha.
+  production Household Alpha is ready; real household onboarding is separately
+  owner-gated.
 
 Continue independent roadmap work. The current highest-value item is Hermes
 0.21.2 production-readiness; production remains on the known-good 0.14.0
@@ -191,10 +192,12 @@ MCP discovery/call/post-tool continuation with local `gemma4:12b`. Qwen 3 8B
 and 14B are below the candidate's enforced 64K context floor, so they are not
 candidate production profiles. The isolated Hindsight, Grocy, SearXNG,
 bounded Agent Zero bridge, synthetic Actual Budget, disposable Open WebUI,
-and rollback checks are recorded. Remaining gates are the owner-preserving
-migration rehearsal against a disposable copy of existing WebUI state and the
-final disposition of real Agent Zero runtime validation; production remains on
-Hermes 0.14.0.
+and rollback checks are recorded. The owner-preserving rehearsal against a
+disposable copy of existing WebUI state also passed: the original Luna
+account ID/role and existing chat history rendered through candidate Hermes,
+and a candidate chat persisted in the clone. Remaining gates are production
+Hindsight-history mapping evidence and the final disposition of real Agent
+Zero runtime validation; production remains on Hermes 0.14.0.
 
 ## HOUSEHOLD ALPHA STATUS
 
