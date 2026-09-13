@@ -226,6 +226,9 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
 - Conversation isolation: PASS + PERSISTENCE in isolated staging; Alpha and
   Beta cannot list or directly open one another's chats, including after
   LLDAP and WebUI restart.
+- Clean owner/household fixture: PASS + PERSISTENCE. A synthetic owner is the
+  staging admin while Alpha and Beta are ordinary users; each retained its
+  subject, role, and private chat across WebUI restart and fresh LDAP login.
 - Memory isolation: PASS + PERSISTENCE in isolated Hindsight staging; Alpha
   and Beta banks remain separate across Hindsight restart. Production owner
   bank migration/mapping is an explicit gate and remains unchanged.

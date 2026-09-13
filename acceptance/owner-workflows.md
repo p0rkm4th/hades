@@ -197,6 +197,14 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   Agent Zero policy, per-user settings, revocation, and real owner-UI DOM
   acceptance remain unfinished.
 
+The clean staging fixture was rebuilt with a synthetic owner provisioned first;
+the owner retained admin role while Alpha and Beta were promoted to ordinary
+users. Each created a private marker chat. Each user's list contained only its
+own chat, and direct requests for the other user's chat returned HTTP 401.
+After an Open WebUI restart and fresh LDAP login, all three roles and stable
+application subjects remained unchanged and each household user still saw only
+its own chat.
+
 ## Hindsight subject namespace boundary
 
 - **Current status:** PASS + PERSISTENCE (isolated backend staging scope)
