@@ -242,7 +242,10 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
   an already-issued Open WebUI token remained valid until the corresponding
   Open WebUI user was deleted through its supported admin endpoint. This is a
   real session-revocation gap; production identity is unchanged.
-- User-specific settings: NOT STARTED for two-user acceptance.
+- User-specific settings: PASS + PERSISTENCE in isolated staging. Alpha and
+  Beta retained different settings across Open WebUI restart and re-login.
+  Newly provisioned LDAP users require supported promotion from `pending` to
+  `user` before normal settings access.
 - Household finance isolation: PARTIAL at the production overlay boundary;
   production finance is absent, but per-user capability propagation is not
   enabled.

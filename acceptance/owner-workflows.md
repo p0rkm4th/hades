@@ -318,3 +318,21 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 - **Limitations:** automatic directory-to-Open-WebUI revocation
   synchronization is not implemented. Household Alpha must not be declared
   until the session boundary is designed, rehearsed, and survives restart.
+
+## User-specific settings isolation
+
+- **Current status:** PASS + PERSISTENCE (isolated staging scope)
+- **Owner input:** synthetic Alpha and Beta accounts selected distinct
+  synthetic theme values and the Rain background effect
+- **DOM result:** not exercised in this checkpoint; the supported user
+  settings API was used while the browser harness was unavailable
+- **Authoritative system:** Open WebUI per-user settings store
+- **Backend verification:** Alpha read back only its `alpha-theme` setting and
+  Beta read back only its `beta-theme` setting. A newly provisioned LDAP user
+  initially entered Open WebUI as `pending`; the supported admin promotion to
+  `user` was required before ordinary settings access succeeded.
+- **Reload/persistence result:** after restarting disposable Open WebUI and
+  logging both users in again, each retained its own theme and Rain effect.
+- **Last verified SHA:** `705487b`
+- **Limitations:** this proves application preference isolation in staging,
+  not production multi-user cutover or browser DOM rendering.
