@@ -218,6 +218,26 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   explicitly designed before enabling a per-user template; no production
   memory configuration was changed.
 
+## Hermes subject-aware memory path
+
+- **Current status:** PASS + PERSISTENCE (disposable end-to-end staging)
+- **Owner input:** authenticated synthetic Alpha and Beta API sessions
+- **DOM result:** not exercised in this checkpoint; the requests used the
+  authenticated OpenAI-compatible path that Open WebUI calls
+- **Authoritative system:** Hindsight per-subject banks selected by Hermes
+  from the server-propagated session key
+- **Backend verification:** Alpha retained and recalled only synthetic
+  `Test Restaurant Alpha2`; Beta retained and recalled only synthetic
+  `Test Restaurant Beta2`. An Alpha adversarial request for Beta's private
+  preference returned Alpha's own context and no Beta fact.
+- **Reload/persistence result:** Hermes and the disposable Hindsight service
+  were both restarted; fresh Alpha/Beta sessions recalled their original
+  private facts. Direct canonical recalls matched the same separation.
+- **Last verified SHA:** `1f95b02`
+- **Limitations:** this is a disposable Hermes/Hindsight path. Production
+  still uses the static owner bank until migration, header configuration, and
+  owner-data preservation are separately approved and verified.
+
 ## Privileged capability boundary
 
 - **Current status:** PARTIAL (production finance exclusion; household scope

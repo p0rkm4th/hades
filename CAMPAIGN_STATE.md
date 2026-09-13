@@ -229,6 +229,11 @@ stored by the dogfood run; domain workflow browser evidence remains pending.
 - Memory isolation: PASS + PERSISTENCE in isolated Hindsight staging; Alpha
   and Beta banks remain separate across Hindsight restart. Production owner
   bank migration/mapping is an explicit gate and remains unchanged.
+- Hermes subject-aware memory path: PASS + PERSISTENCE in disposable
+  end-to-end staging; Alpha/Beta retained and recalled separate synthetic
+  facts, including an adversarial cross-user request. A prior static-bank
+  failure was corrected by placing `bank_id_template` in the provider's
+  authoritative JSON configuration.
 - Grocy/finance isolation: NOT STARTED for two-user acceptance.
 - Agent Zero household policy: owner-only in the current unmarked production
   session; the overlay now fail-closes Agent Zero for server-marked household
