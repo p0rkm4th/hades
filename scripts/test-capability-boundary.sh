@@ -48,5 +48,10 @@ for key, expected in checks.items():
         raise SystemExit(f'session scope mismatch for {key!r}: {actual!r}')
 if overlay._hades_subject_from_session_key('hades-user-../owner'):
     raise SystemExit('path-like subject was accepted')
+os.environ['HADES_OWNER_SUBJECT_ID'] = ''
+if overlay._hades_session_scope('hades-user-owner-subject-123') != 'household':
+    raise SystemExit('missing owner mapping granted owner scope')
+if overlay._hades_session_scope('hades-user-'):
+    raise SystemExit('empty subject gained a default scope')
 print('PASS privileged capability boundary regression')
 PY
