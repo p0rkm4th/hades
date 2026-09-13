@@ -154,6 +154,25 @@ scope, and empty, malformed, or untrusted keys map to denied scope. This
 prevents a malformed identity from inheriting household tools. The check was
 run with the Hermes 0.21.2 candidate interpreter and the repository overlay.
 
+## Upstream-only comparison
+
+A separate loopback Hermes 0.21.2 launch was run without the repository
+overlay. Ordinary completion succeeded, and upstream Hermes registered the
+configured native MCP servers and their tools. A bounded owner-style Grocy
+turn did not complete: the Gemma candidate repeatedly entered tool-search and
+auxiliary title-generation work and was interrupted after the timeout window.
+This is evidence that base chat and MCP registration are upstream capabilities,
+but it is not evidence of a reliable owner workflow without the overlay.
+
+The overlay therefore remains intentionally narrow rather than being copied
+blindly or removed wholesale. Its subject validation/capability filtering,
+HADES-specific model and web routing, Hindsight reconciliation/streaming
+handling, and owner-facing reliability behavior still require the overlay
+until equivalent upstream-only owner tests pass. The upstream-only probe also
+reported Hermes' linked SQLite runtime warning and a stale systemd timeout
+warning; these are candidate change-window hardening items, not production
+changes.
+
 The matched synthetic Actual Budget 26.9.0 fixture was then started on an
 isolated port. Hermes 0.21.2 discovered all three migrated read-only finance
 tools; a candidate `finance_status` call returned the synthetic budget,
