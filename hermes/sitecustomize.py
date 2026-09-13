@@ -27,6 +27,17 @@ def _hades_subject_from_session_key(session_key):
     return subject
 
 
+def _hades_session_scope(session_key):
+    """Return the server-selected capability scope for a gateway session."""
+    if not isinstance(session_key, str):
+        return ""
+    if session_key.startswith("hades-user-"):
+        return "household"
+    if session_key.startswith("hades-owner-"):
+        return "owner"
+    return ""
+
+
 try:
     import json
     import logging
@@ -203,6 +214,7 @@ try:
     def _hades_agent_init(self, *args, **kwargs):
         session_key = kwargs.get("gateway_session_key")
         subject = _hades_subject_from_session_key(session_key)
+        self._hades_session_scope = _hades_session_scope(session_key)
         if subject and not kwargs.get("user_id"):
             kwargs["user_id"] = subject
             _hades_logger.info("API subject propagated to agent user_id")
@@ -302,7 +314,11 @@ try:
         # Do not expose finance tools based on intent.  Natural-language
         # intent is not authorization; finance remains unavailable until a
         # server-side owner capability is wired into this boundary.
-        if agent_zero_intent and isinstance(original_tools, list):
+        # Household sessions must not gain the bounded operator from prompt
+        # wording. The unmarked legacy owner session remains compatible until
+        # Open WebUI is configured to send the server-generated scope marker.
+        household_session = getattr(self, "_hades_session_scope", "") == "household"
+        if agent_zero_intent and not household_session and isinstance(original_tools, list):
             try:
                 from model_tools import get_tool_definitions as _get_tool_definitions
                 operator_tools = _get_tool_definitions(
