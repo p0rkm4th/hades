@@ -99,6 +99,20 @@ outside the repository.
   The same synthetic input then returned the live canonical stock quantity.
 - Status: REPAIRED for the covered fragment vocabulary
 
+## 2026-09-13 — Hindsight outage must not fall back across users
+
+- Actor: synthetic household account
+- Surface: explicit personal-memory recall during a controlled Hindsight
+  outage
+- Expected: fail closed without using another user's bank, owner memory, or
+  guessed context
+- Observed: Hindsight was unavailable during the request
+- Failure layer: dependency-failure handling
+- Repair/evidence: the synthetic session returned a bounded no-access answer;
+  no synthetic cross-user or stale-memory marker appeared. Hindsight was
+  restarted immediately and its canonical health endpoint returned healthy.
+- Status: PASS — no code change required
+
 ## 2026-09-13 — Built-in theme selection resurrects an old HADES preset
 
 - Actor: owner account
