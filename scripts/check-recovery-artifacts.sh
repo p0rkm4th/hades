@@ -52,4 +52,19 @@ while IFS= read -r -d '' path; do
   json_count=$((json_count + 1))
 done < <(find "$ROOT" -type f -name '*.json' -print0)
 printf 'PASS JSON artifacts: %s\n' "$json_count"
+
+checksum_count=0
+while IFS= read -r -d '' manifest; do
+  manifest_mode=$(stat -Lc '%a' "$manifest")
+  case "$manifest_mode" in
+    600|640|660) ;;
+    *) printf 'FAIL checksum manifest permissions: %s\n' "$manifest_mode"; exit 1 ;;
+  esac
+  if ! (cd "$(dirname "$manifest")" && sha256sum -c "$(basename "$manifest")" >/dev/null 2>&1); then
+    printf 'FAIL checksum manifest verification\n'
+    exit 1
+  fi
+  checksum_count=$((checksum_count + 1))
+done < <(find "$ROOT" -type f -name 'SHA256SUMS' -print0)
+printf 'PASS checksum manifests: %s\n' "$checksum_count"
 printf 'Recovery artifact validation passed\n'
