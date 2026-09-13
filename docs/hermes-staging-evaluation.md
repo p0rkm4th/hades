@@ -257,3 +257,15 @@ conversation scope, MCP discovery and transport, gateway authentication, and
 identity-token resolution. All 166 passed. This is additional candidate
 evidence only; production remains on Hermes 0.14.0 pending the owner-authenticated
 promotion rehearsal.
+
+## Full-suite qualification note
+
+A full candidate-suite run on 2026-09-13 reached 844 passed and 23 skipped
+before stopping at one failure in
+`TestGetTextAuxiliaryClient.test_returns_none_when_nothing_available`. The
+test passes alone and the complete `test_auxiliary_client.py` file passes
+(204/204), so the failure is order-dependent: an earlier test leaves the
+candidate's process-global main-provider state set to a test OpenRouter
+provider. This is upstream test isolation debt, not a production HADES
+failure, but the full suite should be clean or run in isolated workers before
+calling the candidate fully promotion-qualified.
