@@ -36,11 +36,13 @@ Grocy instance, or Hermes production profile has been migrated.
   headers only after a private migration rehearsal.
 - Production Grocy identity mapping and the coordinated revocation procedure
   require private operational verification.
-- Browser DOM acceptance is partial: mobile rendered login, private-chat
-  sidebar isolation, household model visibility, memory retain/recall, and
-  shared Grocy read, and the finance exclusion response pass. Rendered
-  revocation still needs browser verification. The temporary provider and
-  gateway are cleaned up after each run.
+- Browser DOM acceptance is substantially covered: mobile rendered login,
+  private-chat sidebar isolation, household model visibility, memory
+  retain/recall, shared Grocy read and mutation/cross-user read, finance
+  exclusion, and revocation all pass in disposable staging. Browser-specific
+  settings isolation and the remaining Grocy purchase/consume variations are
+  not yet separately exercised. Temporary providers and gateways are cleaned
+  up after each run.
 - Automatic directory event synchronization is not implemented; operators
   must use the ordered revocation bridge until that architecture is approved.
 
