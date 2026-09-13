@@ -153,6 +153,12 @@ stored in Git. This replaces the previously unusable zero-byte Grocy artifact
 in the older migration-preflight set. Native Hindsight export remains
 credential-gated.
 
+The existing private preflight copies for Open WebUI, LLDAP, and Hermes also
+passed offline SQLite integrity checks on 2026-09-13, and the copied Hermes
+session JSON artifacts parsed successfully with private permissions. These
+checks prove readable artifacts only; they do not replace isolated restore
+acceptance or a fresh encrypted production backup.
+
 Readiness-only checks on 2026-09-12 also confirmed that SearXNG's config and
 cache mounts, Agent Zero's dedicated persistent volume, and Hermes' enabled
 systemd service with a private profile are present. Their normal runtime
