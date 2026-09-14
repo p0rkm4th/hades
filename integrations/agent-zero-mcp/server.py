@@ -22,6 +22,7 @@ BASE_URL = os.environ.get("AGENT_ZERO_URL", "http://127.0.0.1:7002").rstrip("/")
 API_KEY = os.environ.get("AGENT_ZERO_API_KEY", "")
 MAX_TASK_CHARS = int(os.environ.get("AGENT_ZERO_MAX_TASK_CHARS", "2000"))
 MAX_RESPONSE_CHARS = int(os.environ.get("AGENT_ZERO_MAX_RESPONSE_CHARS", "4000"))
+MAX_CONTEXT_ID_CHARS = int(os.environ.get("AGENT_ZERO_MAX_CONTEXT_ID_CHARS", "128"))
 TIMEOUT_SECONDS = float(os.environ.get("AGENT_ZERO_TIMEOUT_SECONDS", "90"))
 
 TOOL_NAME = "agent_zero_delegate"
@@ -50,6 +51,11 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
         "lifetime_hours": 1,
     }
     context_id = str(context_id or "").strip()
+    if len(context_id) > MAX_CONTEXT_ID_CHARS:
+        return {
+            "ok": False,
+            "error": f"Context ID exceeds the {MAX_CONTEXT_ID_CHARS}-character delegation limit.",
+        }
     if context_id:
         payload["context_id"] = context_id
 

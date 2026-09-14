@@ -11,6 +11,7 @@ AGENT_ZERO_API_KEY=<private Agent Zero runtime token>
 
 The adapter does not expose host paths, Docker, Proxmox, finance, credentials,
 or HADES administration. Keep the service loopback/private and use the
-preview/authorization boundaries of the delegated task. Both task input and
-upstream response size are bounded; an oversized response is reported as a
-failure instead of being truncated into an apparently complete result.
+preview/authorization boundaries of the delegated task. Task input, delegated
+context identifiers, and upstream response size are bounded; an oversized
+value is reported as a failure instead of being truncated into an apparently
+complete result.
