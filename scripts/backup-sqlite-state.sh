@@ -11,6 +11,7 @@ if [[ -z "$DESTINATION" || ! -d "$DESTINATION" ]]; then
   printf 'usage: %s EXISTING_PRIVATE_DIRECTORY\n' "$0" >&2
   exit 2
 fi
+[[ ! -L "$DESTINATION" ]] || { printf 'FAIL backup destination must not be a symlink\n' >&2; exit 1; }
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # shellcheck disable=SC1090
 source "$repo_dir/config/versions.env"
