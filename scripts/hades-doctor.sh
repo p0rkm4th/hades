@@ -34,9 +34,35 @@ hades_layer_digest() {
 }
 compose_cmd=(docker compose)
 [[ -n "$inputs" ]] && compose_cmd+=(--env-file "$inputs")
+check_compose_boundaries() {
+  local record
+  local records=("$repo_dir"/deploy/*.compose.yaml)
+  if [[ -n "${HADES_DEPLOYMENT_DIR:-}" && -d "${HADES_DEPLOYMENT_DIR:-}" ]]; then
+    records+=("$HADES_OPEN_WEBUI_COMPOSE_FILE" "$HADES_HINDSIGHT_COMPOSE_FILE" "$HADES_SEARXNG_COMPOSE_FILE")
+  fi
+  for record in "${records[@]}"; do
+    [[ -f "$record" ]] || continue
+    if grep -En '(^|[[:space:]])(privileged|network_mode):[[:space:]]*(true|host)([[:space:]]|$)' "$record"; then
+      echo "FAIL authority-amplifying Compose setting: $record"
+      doctor_fail=1
+    fi
+    if grep -Eq '/var/run/docker\.sock|(^|[[:space:]])-?[[:space:]]*/:/[[:space:]]|(^|[[:space:]])-?[[:space:]]*-[[:space:]]*:/host([[:space:]]|$)' "$record"; then
+      echo "FAIL broad host or Docker-socket mount: $record"
+      doctor_fail=1
+    fi
+    case "$record" in
+      *hindsight*|*searxng*|*grocy*|*agent-zero*|*lldap*)
+        if grep -Eq '0\.0\.0\.0:' "$record"; then
+          echo "WARN private service has an all-interface port binding: $record"
+        fi
+        ;;
+    esac
+  done
+}
 config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
 doctor_fail=0
+check_compose_boundaries
 check_secret_file() {
   local name=$1 path=$2
   if [[ ! -f "$path" ]]; then

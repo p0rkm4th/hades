@@ -77,3 +77,16 @@ if bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$permissions_roo
   echo 'FAIL doctor accepted unsafe synthetic secret permissions'; exit 1
 fi
 echo 'PASS unsafe-secret-permissions failure is clear and non-mutating'
+
+bash "$repo_dir/scripts/create-synthetic-private-fixture.sh" "$fixture/boundary"
+boundary_root="$fixture/boundary-target"
+cat >> "$fixture/boundary/records/hindsight.compose.yaml" <<'EOF'
+    privileged: true
+EOF
+if bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$boundary_root" --inputs "$fixture/boundary/operator.env" >/dev/null 2>&1; then
+  echo 'FAIL authority-amplifying private Compose record passed doctor'; exit 1
+fi
+if [[ -e "$boundary_root/var" || -e "$boundary_root/etc" ]]; then
+  echo 'FAIL doctor boundary failure mutated the target'; exit 1
+fi
+echo 'PASS authority-amplifying Compose failure is clear and non-mutating'
