@@ -109,8 +109,9 @@ boundary and authorization gate are recorded in
 ## Current next action
 
 Continue the clean-machine reconstruction sprint. Test-mode contracts, real
-privileged preflight, and a synthetic full installer path now provide
-static/disposable evidence; the next evidence level is two independent fresh
-supported systemd guests using the tracked synthetic private fixture (or
-owner-supplied records) and synthetic canonical backups. Owner-gated real
-integrations remain outside this work.
+privileged preflight, and one fresh Fedora 44 synthetic deployment/reboot now
+provide static, disposable, and first-clean synthetic evidence. The next
+evidence level is an independent fresh supported guest using full synthetic
+Open WebUI, Hindsight, SearXNG, and Hermes application records plus canonical
+application fixtures, followed by a full application household soak. Owner-
+gated real integrations remain outside this work.
