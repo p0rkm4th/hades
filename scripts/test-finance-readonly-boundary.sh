@@ -38,6 +38,7 @@ async def check():
     listed = await module.list_tools(None, None)
     names = [tool.name for tool in listed.tools]
     assert names == ["finance_accounts", "finance_transactions", "finance_status"], names
+    original_transactions = module.finance_transactions
     calls = []
     module.finance_accounts = lambda: calls.append("accounts") or {"ok": True}
     module.finance_status = lambda: calls.append("status") or {"ok": True}
@@ -52,6 +53,7 @@ async def check():
         pass
     else:
         raise AssertionError("unknown finance tool was accepted")
+    module.finance_transactions = original_transactions
     module._call = lambda *args, **kwargs: {"ok": True}
     assert module.finance_transactions("2026-09-14", "2026-09-13")["ok"] is False
     assert module.finance_transactions("bad", "2026-09-14")["ok"] is False
