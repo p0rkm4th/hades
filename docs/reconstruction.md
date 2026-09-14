@@ -4,7 +4,8 @@ The only legitimate deployment inputs are this repository, an operator-input
 file based on [`config/operator-inputs.env.example`](../config/operator-inputs.env.example),
 with field semantics in [`private-input-contract.md`](private-input-contract.md),
 and documented component-specific canonical backups. The authoritative pins
-are in [`config/versions.env`](../config/versions.env).
+are in [`config/versions.env`](../config/versions.env), and the public rebuild
+fields are in [`config/reconstruction-manifest.json`](../config/reconstruction-manifest.json).
 
 Run on a supported fresh systemd guest:
 

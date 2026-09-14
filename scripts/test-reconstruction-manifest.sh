@@ -4,7 +4,20 @@ set -eu
 # Validate the public reconstruction contract without reading private operator
 # records, credentials, or persistent volumes.
 python - <<'PY'
+import json
 from pathlib import Path
+
+machine = json.loads(Path('config/reconstruction-manifest.json').read_text())
+if machine.get('manifest_version') != 1:
+    raise SystemExit('machine manifest version is not 1')
+machine_components = {item['component']: item for item in machine['components']}
+if len(machine_components) != 9 or any(
+    not all(item.get(field) is not None for field in (
+        'pinned_version', 'persistent_state', 'required_secret_inputs',
+        'network_dependency', 'startup_order', 'health_check', 'restore_check'))
+    for item in machine_components.values()
+):
+    raise SystemExit('machine manifest has missing component fields')
 
 source = Path('docs/component-manifest.md').read_text()
 required = (
@@ -15,6 +28,8 @@ start = source.index('## Reconstruction manifest')
 end = source.index('## Boundary rule', start)
 table = source[start:end]
 for component in required:
+    if component not in machine_components:
+        raise SystemExit(f'machine manifest omits {component}')
     rows = [line for line in table.splitlines() if line.startswith('| ' + component + ' |')]
     if len(rows) != 1:
         raise SystemExit(f'manifest must contain exactly one row for {component}')
@@ -38,6 +53,8 @@ for component, expected in expected_order.items():
     cells = [cell.strip() for cell in row.strip('|').split('|')]
     if cells[5] != expected:
         raise SystemExit(f'startup order for {component} is {cells[5]!r}, expected {expected!r}')
+    if machine_components[component]['startup_order'] != int(expected):
+        raise SystemExit(f'machine manifest startup order for {component} is incorrect')
 for phrase in ('Pinned/rebuild source', 'Persistent state', 'Required private inputs',
                'Network dependency', 'Startup order', 'Health check', 'Restore check'):
     if phrase not in table:

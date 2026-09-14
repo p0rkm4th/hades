@@ -22,6 +22,11 @@ digests where private, and owner-selected endpoints belong in the operator
 record. Restore order and canonical checks are detailed in
 [`backup-restore.md`](backup-restore.md).
 
+The same contract is maintained in the machine-readable
+[`config/reconstruction-manifest.json`](../config/reconstruction-manifest.json)
+for validators and future rebuild tooling. It contains no secret values or
+private endpoints; those remain explicit operator inputs.
+
 The authoritative public pins are maintained in
 [`config/versions.env`](../config/versions.env). Every private deployment
 record must carry the matching image/tag or digest rather than silently using
