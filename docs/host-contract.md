@@ -1,7 +1,7 @@
 # HADES clean-host contract
 
-The supported reconstruction target is one fresh Fedora Server or Rocky Linux
-guest, x86_64 or aarch64, with systemd. Minimum: 2 dedicated CPU cores, 8 GB
+The supported reconstruction target is one fresh Fedora Server 44 or Rocky
+Linux 9/10 guest, x86_64 or aarch64, with systemd. Minimum: 2 dedicated CPU cores, 8 GB
 RAM, and 40 GB free disk. Recommended: 4 cores, 16 GB RAM, and 100 GB free
 disk. The host must have working DNS and private-network access to explicitly
 configured upstreams. A container runtime with the Docker Compose plugin,
@@ -28,7 +28,7 @@ The clean layout is:
 The seasoned deployment may use different private paths; that is an operator
 record mapping, not a reason to copy untracked machine state into this tree.
 
-The installer fails before mutation on unsupported OS, missing required tools,
+The installer fails before mutation on an unsupported OS version, missing required tools,
 bad inputs, unsafe secret permissions, invalid URLs, port collisions, or missing
 tracked source. It does not install a GPU stack, migrate production, or delete
 state.

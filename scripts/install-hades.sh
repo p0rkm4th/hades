@@ -53,7 +53,11 @@ preflight() {
   [[ $EUID -eq 0 ]] || fail 'run as root'
   [[ -r /etc/os-release ]] || fail 'cannot read OS identification'
   source /etc/os-release
-  [[ "${ID:-}" == fedora || "${ID_LIKE:-}" == *rhel* || "${ID_LIKE:-}" == *fedora* ]] || fail "unsupported OS: ${PRETTY_NAME:-unknown}; use Fedora Server or Rocky Linux"
+  case "${ID:-}" in
+    fedora) [[ "${VERSION_ID:-}" == 44 ]] || fail "unsupported Fedora version: ${VERSION_ID:-unknown}; use Fedora Server 44" ;;
+    rocky) [[ "${VERSION_ID:-}" =~ ^(9|10)(\.|$) ]] || fail "unsupported Rocky Linux version: ${VERSION_ID:-unknown}; use Rocky Linux 9 or 10" ;;
+    *) fail "unsupported OS: ${PRETTY_NAME:-unknown}; use Fedora Server 44 or Rocky Linux 9/10" ;;
+  esac
   [[ "$(uname -m)" == x86_64 || "$(uname -m)" == aarch64 ]] || fail "unsupported architecture: $(uname -m)"
   need_cmd systemctl; need_cmd curl; need_cmd git; need_cmd openssl; need_cmd docker; need_cmd ss
   docker compose version >/dev/null 2>&1 || fail 'missing Docker Compose plugin'
