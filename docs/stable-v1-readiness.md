@@ -66,7 +66,8 @@ These are deliberate gates, not missing implementation tasks:
   credentials;
 - owner-approved Home Assistant endpoint, token, and entity allowlist;
 - product authorization for deterministic automation; and
-- protected credentials for native Hindsight backup/restore validation.
+- operator-managed encryption key custody, off-host destination, retention,
+  and plaintext-retirement policy for recovery artifacts.
 
 No real finance, homelab mutation, Home Assistant security control, or final
 installer is part of this readiness record.
