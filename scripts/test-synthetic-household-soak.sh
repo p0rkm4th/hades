@@ -17,6 +17,10 @@ bash "$repo_dir/scripts/test-cross-domain-dogfood.sh" >/dev/null
 bash "$repo_dir/scripts/test-multi-user-long-dogfood.sh" >/dev/null
 bash "$repo_dir/scripts/test-hades-memory-intent.sh" >/dev/null
 bash "$repo_dir/scripts/test-source-of-truth-fixture.sh" >/dev/null
+bash "$repo_dir/scripts/test-grocy-recipe-authoring-boundary.sh" >/dev/null
+bash "$repo_dir/scripts/test-capability-boundary.sh" >/dev/null
+bash "$repo_dir/scripts/test-agent-zero-boundary.sh" >/dev/null
+bash "$repo_dir/scripts/test-synthetic-backup-restore.sh" >/dev/null
 
 test -f "$fixture/sandbox${fixture}/private/state/install-contract" || {
   printf 'FAIL synthetic soak did not preserve private install contract marker\n' >&2
