@@ -11,6 +11,9 @@ if [[ -z "$DESTINATION" || ! -d "$DESTINATION" ]]; then
   printf 'usage: %s EXISTING_PRIVATE_DIRECTORY\n' "$0" >&2
   exit 2
 fi
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# shellcheck disable=SC1090
+source "$repo_dir/config/versions.env"
 
 mode=$(stat -Lc '%a' "$DESTINATION")
 case "$mode" in
@@ -102,7 +105,23 @@ for path in "$output"/*.db; do
     exit 1
   }
 done
-(cd "$output" && sha256sum ./*.db > SHA256SUMS)
+cat > "$output/MANIFEST" <<EOF
+backup_format=1
+created_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+hades_manifest_version=$HADES_MANIFEST_VERSION
+hermes_version=$HADES_HERMES_VERSION
+open_webui_version=$HADES_OPEN_WEBUI_VERSION
+lldap_image=$HADES_LLDAP_IMAGE
+hindsight_image_digest=$HADES_HINDSIGHT_IMAGE_DIGEST
+grocy_image=$HADES_GROCY_IMAGE
+agent_zero_image=$HADES_AGENT_ZERO_IMAGE
+searxng_image_record=$HADES_SEARXNG_IMAGE_RECORD
+actual_version=$HADES_ACTUAL_VERSION
+grocy_adapter_revision=$HADES_GROCY_ADAPTER_REVISION
+agent_zero_adapter_revision=$HADES_AGENT_ZERO_ADAPTER_REVISION
+EOF
+chmod 600 "$output/MANIFEST"
+(cd "$output" && sha256sum ./*.db MANIFEST > SHA256SUMS)
 chmod 600 "$output/SHA256SUMS"
 printf 'PASS SQLite backup: %s\n' "$output"
-printf 'PASS artifacts=4 checksums=1\n'
+printf 'PASS artifacts=4 metadata=1 checksums=1\n'

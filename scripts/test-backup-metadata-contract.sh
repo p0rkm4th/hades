@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+helper="$repo_dir/scripts/backup-sqlite-state.sh"
+grep -q 'source "$repo_dir/config/versions.env"' "$helper" || { echo 'FAIL backup helper omits authoritative manifest'; exit 1; }
+grep -q 'backup_format=1' "$helper" || { echo 'FAIL backup metadata format is missing'; exit 1; }
+grep -Fq 'sha256sum ./*.db MANIFEST > SHA256SUMS' "$helper" || { echo 'FAIL backup metadata is not checksummed'; exit 1; }
+for field in lldap_image hindsight_image_digest grocy_image agent_zero_image actual_version; do
+  grep -q "^$field=" "$helper" || { echo "FAIL backup metadata omits $field"; exit 1; }
+done
+echo 'PASS SQLite backups carry authoritative version metadata'

@@ -163,6 +163,9 @@ the run can succeed. It enforces private destination permissions, validates
 each artifact, and writes checksums. It does not encrypt or retain backups,
 and it deliberately does not claim coverage for Hindsight PostgreSQL, Agent
 Zero, or SearXNG.
+Each output also contains a mode-0600 `MANIFEST` with authoritative component
+versions/digests and adapter revisions; this metadata is included in
+`SHA256SUMS` so a restore can prove which composition produced the snapshot.
 
 Native production database/export procedures and isolated restore evidence are
 now present for Hindsight, Agent Zero, SearXNG, and the Hermes profile at the
