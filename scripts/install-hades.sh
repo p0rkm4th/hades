@@ -32,7 +32,7 @@ under_root() { printf '%s/%s' "${root%/}" "${1#/}"; }
 for name in HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE; do
   [[ -n "${!name:-}" ]] || fail "operator input is missing required deployment record variable: $name"
 done
-for name in HADES_STATE_ROOT HADES_CONFIG_ROOT HADES_BACKUP_ROOT HADES_IDENTITY_SECRETS_DIR HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE HADES_HERMES_PROFILE; do
+for name in HADES_STATE_ROOT HADES_CONFIG_ROOT HADES_BACKUP_ROOT HADES_IDENTITY_SECRETS_DIR HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE HADES_HERMES_PROFILE HADES_HINDSIGHT_DATABASE_SECRET_FILE HADES_GROCY_API_KEY_FILE HADES_AGENT_ZERO_CREDENTIAL_FILE; do
   [[ -n "${!name:-}" ]] || fail "operator input is missing required path variable: $name"
   [[ "${!name}" == /* ]] || fail "operator input path must be absolute: $name"
 done
@@ -131,6 +131,20 @@ preflight() {
   while read -r owner mode; do
     [[ "$owner" == 1000 && "$mode" == 600 ]] || fail "LLDAP identity secrets must be service-owned UID 1000 mode 0600 (found $owner mode $mode)"
   done < <(find "$HADES_IDENTITY_SECRETS_DIR" -maxdepth 1 -type f -printf '%U %m\n')
+  validate_secret_file() {
+    local name=$1 path=${!1:-}
+    [[ -n "$path" ]] || fail "required secret-file input is missing: $name"
+    [[ "$path" == /* ]] || fail "secret-file input path must be absolute: $name"
+    [[ -f "$path" ]] || fail "missing secret-file input: $name"
+    [[ ! -L "$path" ]] || fail "secret-file input must not be a symlink: $name"
+    mode=$(stat -c '%a' "$path")
+    [[ "$mode" == 600 || "$mode" == 640 ]] || fail "secret-file input must be mode 0600 or 0640: $name"
+  }
+  validate_secret_file HADES_HINDSIGHT_DATABASE_SECRET_FILE
+  validate_secret_file HADES_GROCY_API_KEY_FILE
+  if [[ -n "${HADES_AGENT_ZERO_CREDENTIAL_FILE:-}" ]]; then
+    validate_secret_file HADES_AGENT_ZERO_CREDENTIAL_FILE
+  fi
   validate_private_records
   echo 'PASS supported host preflight'
 }

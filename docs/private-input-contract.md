@@ -29,7 +29,9 @@ output, or reports. The operator owns rotation and backup custody.
 
 The installer never prints secret contents, copies them into the repository,
 or regenerates stable identity material on rerun. A missing or placeholder
-required value fails before target mutation. Live finance, homelab, Home
+required value or required referenced secret file fails before target mutation.
+Referenced secret files must be absolute, regular non-symlink files with mode
+0600 or 0640. Live finance, homelab, Home
 Assistant, household onboarding, Hermes promotion, and off-host recovery
 custody remain intentionally outside autonomous reconstruction. Operator input,
 private deployment records, and identity-secret paths must be regular files or
