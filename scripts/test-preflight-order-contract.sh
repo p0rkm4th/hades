@@ -10,6 +10,9 @@ record_validation_line=$(grep -n 'validate_private_records$' "$installer" | tail
 [[ -n "$preflight_line" && -n "$preflight_exit_line" && -n "$record_validation_line" ]] || {
   echo 'FAIL installer preflight markers are missing'; exit 1;
 }
+grep -q 'curl --silent --show-error --connect-timeout 5 --max-time 10 --output /dev/null "\$HADES_HERMES_MODEL_ENDPOINT"' "$installer" || {
+  echo 'FAIL preflight omits bounded model-endpoint reachability'; exit 1;
+}
 (( record_validation_line > preflight_line && record_validation_line < preflight_exit_line )) || {
   echo 'FAIL private deployment records are not validated before --preflight exits'; exit 1;
 }

@@ -482,6 +482,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
   running, the Hermes unit was enabled/active, and absolute-path validator and
   doctor runs passed. A private Compose image variable supplied only through
   the operator input file also resolved successfully from an unrelated CWD.
+- Network preflight: PASS on the disposable Fedora guest. A loopback HTTP
+  model fixture satisfied the bounded reachability probe, while the preflight
+  created no install marker or target state. Unreachable model endpoints now
+  fail before mutation.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

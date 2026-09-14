@@ -79,6 +79,11 @@ additional variable in the operator input file. Installer, validator, and
 doctor all passed from `/tmp`, proving private Compose interpolation does not
 depend on the caller's environment or working directory.
 
+The real preflight fixture also served a disposable loopback HTTP endpoint for
+the configured model URL. The bounded reachability probe passed and the
+preflight remained non-mutating; an unreachable endpoint now fails clearly
+before any target directory is created.
+
 After installation, the same guest was rebooted. Systemd returned to
 `running`, Docker restarted Agent Zero, Grocy, and LLDAP automatically, and
 LLDAP returned `healthy` after its normal startup interval. This is reboot
