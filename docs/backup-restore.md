@@ -148,9 +148,11 @@ each artifact, and writes checksums. It does not encrypt or retain backups,
 and it deliberately does not claim coverage for Hindsight PostgreSQL, Agent
 Zero, or SearXNG.
 
-Native production database/export procedures and isolated restore evidence
-remain outstanding for Hermes profile assets, Agent Zero, and SearXNG.
-Retention, encryption, and a complete all-component job remain operator work.
+Native production database/export procedures and isolated restore evidence are
+now present for Hindsight, Agent Zero, SearXNG, and the Hermes profile at the
+documented level: native Hindsight restore, disposable Agent Zero/SearXNG
+launches, and isolated Hermes profile CLI parsing have passed. Retention,
+encryption, and a complete all-component job remain operator work.
 Hindsight native export and same-server isolated restore are now verified.
 
 On 2026-09-13, the live production Grocy database was copied through the
