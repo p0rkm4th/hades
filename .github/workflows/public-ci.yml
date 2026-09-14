@@ -69,6 +69,8 @@ jobs:
 
       - name: Check recovery artifact safety
         run: bash scripts/test-recovery-artifact-safety.sh
+      - name: Check reconstruction manifest
+        run: bash scripts/test-reconstruction-manifest.sh
 
       - name: Check workflow action pinning
         run: bash scripts/test-workflow-pinning.sh
