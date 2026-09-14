@@ -417,3 +417,10 @@ The remaining Modal extra was then restored and its two tests passed, bringing
 the dependency-repaired focused evidence to **167/167**. The residual focused
 set is **5 tests across 4 host/update-shim/browser-environment files**; these
 are not HADES production paths.
+
+The promotion-critical HADES core contract was rerun through the candidate's
+canonical wrapper after the recovery rehearsals: **525/525 passed** across the
+nine HADES-relevant files. The isolated auxiliary-provider test that had
+previously failed during aggregate execution also passes alone; the remaining
+candidate gate is full-suite/environment disposition and an owner-authenticated
+production rehearsal, not a failing HADES core contract.

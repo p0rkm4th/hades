@@ -426,3 +426,7 @@ onboarding is the only owner-input gate; it does not pause independent work.
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change
   window. The preserved rollback set remains authoritative.
+  The promotion-critical HADES core contract was just rerun through the
+  canonical candidate wrapper and passed 525/525; full-suite/environment
+  disposition and an owner-authenticated production rehearsal remain the
+  Hermes promotion gates.
