@@ -86,7 +86,10 @@ def finance_transactions(
     limit: int = 100,
 ) -> dict[str, Any]:
     """Read canonical transactions for an ISO date range; never mutates data."""
-    bounded_limit = max(1, min(int(limit), MAX_TRANSACTIONS))
+    try:
+        bounded_limit = max(1, min(int(limit), MAX_TRANSACTIONS))
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "Transaction limit must be an integer."}
     return _call(
         "transactions",
         startDate=str(start_date),

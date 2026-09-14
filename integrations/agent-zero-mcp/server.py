@@ -48,8 +48,9 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
         ),
         "lifetime_hours": 1,
     }
-    if context_id.strip():
-        payload["context_id"] = context_id.strip()
+    context_id = str(context_id or "").strip()
+    if context_id:
+        payload["context_id"] = context_id
 
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
@@ -65,10 +66,16 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
     except ValueError:
         return {"ok": False, "error": "Agent Zero returned invalid JSON."}
 
+    if not isinstance(result, dict):
+        return {"ok": False, "error": "Agent Zero returned an invalid result."}
+    response_text = result.get("response")
+    if not isinstance(response_text, str) or not response_text.strip():
+        return {"ok": False, "error": "Agent Zero returned no usable result."}
+
     return {
         "ok": True,
-        "context_id": result.get("context_id", ""),
-        "response": result.get("response", ""),
+        "context_id": str(result.get("context_id", "") or ""),
+        "response": response_text,
     }
 
 
@@ -90,9 +97,10 @@ async def list_tools(_ctx, _params):
 async def call_tool(_ctx, params):
     if params.name != TOOL_NAME:
         raise ValueError(f"unknown tool: {params.name}")
+    args = params.arguments or {}
     result = await _delegate(
-        params.arguments.get("task", ""),
-        params.arguments.get("context_id", ""),
+        args.get("task", ""),
+        args.get("context_id", ""),
     )
     return CallToolResult(content=[TextContent(
         type="text", text=json.dumps(result, sort_keys=True)
