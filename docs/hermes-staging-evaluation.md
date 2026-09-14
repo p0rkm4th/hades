@@ -441,3 +441,36 @@ fixture could not find its requested browser binary, and the update-head test
 encountered the live-system process guard. The guard prevented real process
 termination. These remain upstream candidate-environment disposition items;
 production HADES was independently smoke-tested healthy afterward.
+
+## HADES qualification suite definition
+
+The HADES release qualification suite is intentionally narrower than the full
+Hermes repository suite. Its stable entry point is
+[`scripts/test-hermes-core.sh`](../scripts/test-hermes-core.sh), run against a
+fresh Hermes 0.21.2 candidate environment with the declared Hindsight extra.
+It covers memory provider behavior and unavailable-memory handling, declared
+conversation scope, MCP discovery/transport, gateway authentication and
+identity resolution, Hindsight provider behavior, and Hermes state. The one
+FTS5 connection-tracing observation test is excluded explicitly because it
+traces a different pooled connection than the implementation; the exclusion
+does not hide a HADES runtime failure. The narrower
+[`scripts/test-hermes-candidate.sh`](../scripts/test-hermes-candidate.sh)
+remains the fast promotion preflight. Acceptance requires both wrappers to
+pass with a clean candidate checkout; optional providers, desktop update
+shims, real-browser availability, and host-installed binaries are not HADES
+release blockers.
+
+The current residual candidate failures are classified as follows:
+
+| Candidate failure | Classification | Disposition |
+|---|---|---|
+| Minimal-PATH test finds host-installed `hermes` | HOST-SENSITIVE | Upstream test assumption; no HADES change |
+| Desktop shim success/error fixture misses launch marker | UPDATE-SHIM ONLY | Upstream fixture/environment issue; no HADES change |
+| Real-profile relaunch cannot find Chrome | BROWSER-ENVIRONMENT ONLY | Requires a real browser binary; no HADES change |
+| Update-head success path reaches live-process guard | UPSTREAM DEFECT / UPDATE-SHIM ONLY | Test harness did not isolate its restart path; no HADES change |
+| FTS5 trace-observation assertion | UPSTREAM DEFECT | Pooled-connection observation mismatch; no HADES change |
+
+Optional-provider failures from Daytona, FAL, Anthropic, Modal, and web
+providers remain OPTIONAL PROVIDER disposition. The promotion suite therefore
+reports HADES-relevant qualification independently without presenting a
+host-dependent upstream full-suite run as green.
