@@ -17,20 +17,25 @@ an owner decision or secret from defects that can be repaired independently.
 
 ## Independent technical work still available
 
-- Weather/search follow-up reliability: the stale-follow-up repair is deployed;
-  a synthetic HADES API chain now confirms fresh SearXNG calls for the initial
-  weather request and its Sunday follow-up. A fresh owner-UI follow-up is still
-  required before changing this capability from PARTIAL to PASS; no owner
-  session is available in this checkout.
-- Continue Hermes candidate test/environment triage without promoting it.
-- Continue owner-safe cross-domain and read-only composition work.
-- Compare bounded Grocy read/mutation variants against the diagnosed
-  local-model and post-tool continuation latency; do not replay uncertain
-  mutations blindly.
-- Complete the remaining Grocy recipe-authoring owner-browser sequence
-  (ingredient removal/restoration, shortage calculation, and add-missing
-  shopping mutation); the normal owner API now has a serving-count contract,
-  and its synthetic canonical cleanup is verified.
+- Run additional multi-user long-context model dogfood across Alpha, Beta, and
+  Gamma when a disposable model lane is available; the bounded context and
+  identity contracts are already covered, but accumulation-quality failures
+  remain possible.
+- Capture one fresh synthetic web and recipe turn with model, tool,
+  continuation, and total timings; optimize only a repeatable human-visible
+  slowdown or unnecessary loop.
+- Continue isolated Grocy authoring edge cases and canonical reconciliation;
+  pre-write connection failures now return `FAILED`, while ambiguous outcomes
+  remain `OUTCOME UNKNOWN` and are never blindly replayed.
+- Keep candidate-only Hermes residuals documented against the stable HADES
+  qualification suite; production remains on 0.14.0.
+
+Completed independent evidence now includes the synthetic homelab and Home
+Assistant read-only fixtures, mixed-domain memory/web/operator composition
+contract, source-of-truth contradiction harness, reconstruction manifest,
+static security audit, and long-context current-turn preservation regression.
+The fresh owner-UI web follow-up, recipe browser sequence, real integrations,
+and recovery custody remain owner/operator gates rather than hidden defects.
 
 The coordinated revocation bridge is accepted: it deletes the Open WebUI
 account before the directory identity and verifies that the prior bearer token
