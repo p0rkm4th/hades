@@ -72,9 +72,11 @@ not evidence to lower the production cap; the full HADES multi-user run still
 needs authenticated gateway execution.
 
 The repeatable form of this run is
-`HADES_OLLAMA_URL=http://172.18.0.1:11434/v1 scripts/test-ollama-long-dogfood.py`.
-It uses no real tools or credentials and defaults to isolated Alpha, Beta, and
-Gamma conversations with a 400-token allowance.
+`HADES_OLLAMA_URL=http://127.0.0.1:11434/v1 scripts/test-ollama-long-dogfood.py`.
+Set `HADES_OLLAMA_URL` to the private model-gateway address in the operator
+environment when loopback is not the binding. It uses no real tools or
+credentials and defaults to isolated Alpha, Beta, and Gamma conversations with
+a 400-token allowance.
 
 The harness passes all 24 Alpha/Beta/Gamma turns at a 500-token allowance. An
 initial run exposed one Alpha recall miss where the model answered from the

@@ -7,7 +7,7 @@ import sys
 import urllib.request
 
 
-BASE_URL = os.environ.get("HADES_OLLAMA_URL", "http://172.18.0.1:11434/v1").rstrip("/")
+BASE_URL = os.environ.get("HADES_OLLAMA_URL", "http://127.0.0.1:11434/v1").rstrip("/")
 MODEL = os.environ.get("HADES_OLLAMA_MODEL", "qwen3:8b")
 MAX_TOKENS = int(os.environ.get("HADES_OLLAMA_MAX_TOKENS", "400"))
 
