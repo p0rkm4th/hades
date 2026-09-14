@@ -86,6 +86,13 @@ async def main():
     AsyncClient.error = module.httpx.HTTPError("synthetic HTTP status failure")
     http_failed = await module._delegate("task")
     assert not http_failed["ok"] and http_failed["outcome"] == "OUTCOME UNKNOWN"
+    module.httpx.ConnectError = type("ConnectError", (module.httpx.HTTPError,), {})
+    AsyncClient.error = module.httpx.ConnectError("synthetic pre-request connection failure")
+    connect_failed = await module._delegate("task")
+    assert not connect_failed["ok"] and connect_failed["outcome"] == "FAILED"
+    AsyncClient.error = ValueError("synthetic malformed JSON")
+    malformed = await module._delegate("task")
+    assert not malformed["ok"] and malformed["outcome"] == "OUTCOME UNKNOWN"
     AsyncClient.error = None
     AsyncClient.payload = {"response": "bounded", "context_id": "ctx"}
     result = await module._delegate("task", "1234")
