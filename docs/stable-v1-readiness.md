@@ -86,7 +86,7 @@ not commit volume.
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
-| Installation/rebuild | PARTIAL | Two pristine guests pass credential-free contracts and one passes a synthetic full installer path; complete two independent full-stack reconstructions and backup/restore using the four private runtime records plus explicit inputs |
+| Installation/rebuild | PARTIAL | The tracked synthetic private-fixture generator removes ad-hoc record setup; complete two independent full-stack reconstructions and backup/restore using generated or owner-supplied records plus explicit inputs |
 | Security | PASS | Static CI guards now cover authority amplification, mounts, pinned deployment, and read-only finance/operator surfaces; re-run after authority-bearing changes |
 | Performance | PARTIAL | Synthetic web/recipe capture is below the repeated ~30s threshold; owner-visible timing remains for final acceptance |
 
@@ -111,6 +111,6 @@ boundary and authorization gate are recorded in
 Continue the clean-machine reconstruction sprint. Test-mode contracts, real
 privileged preflight, and a synthetic full installer path now provide
 static/disposable evidence; the next evidence level is two independent fresh
-supported systemd guests using the four private deployment records and
-synthetic canonical backups. Owner-gated real integrations remain outside
-this work.
+supported systemd guests using the tracked synthetic private fixture (or
+owner-supplied records) and synthetic canonical backups. Owner-gated real
+integrations remain outside this work.
