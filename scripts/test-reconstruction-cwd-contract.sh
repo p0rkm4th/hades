@@ -12,4 +12,7 @@ for script in scripts/hades-doctor.sh scripts/validate-install.sh; do
     echo "FAIL $script does not pass operator inputs to Compose"; exit 1;
   }
 done
+grep -q 'compose_cmd=(docker compose --env-file "\$inputs")' "$repo_dir/scripts/install-hades.sh" || {
+  echo 'FAIL installer does not pass operator inputs to Compose'; exit 1;
+}
 echo 'PASS reconstruction tools are independent of caller working directory'
