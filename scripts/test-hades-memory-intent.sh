@@ -35,5 +35,17 @@ required = (
 missing = [value for value in required if value not in source.lower()]
 if missing:
     raise SystemExit(f'missing memory-intent coverage: {missing}')
+
+import importlib.util
+spec = importlib.util.spec_from_file_location('hades_overlay_memory_policy', 'hermes/sitecustomize.py')
+overlay = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(overlay)
+for error in ('OUTCOME UNKNOWN', 'request timed out', 'service unavailable',
+              'invalid JSON response', 'connection failed'):
+    if not overlay._hades_transient_error_text(error):
+        raise SystemExit(f'transient error was not suppressed: {error}')
+for ordinary in ('I prefer basil', 'I hate mushrooms', 'remember my preference'):
+    if overlay._hades_transient_error_text(ordinary):
+        raise SystemExit(f'ordinary personal text was misclassified: {ordinary}')
 print('PASS memory intent regression')
 PY

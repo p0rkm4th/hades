@@ -35,6 +35,19 @@ _HADES_LIVE_WEB_INTENT = re.compile(
 )
 
 
+_HADES_TRANSIENT_ERROR = re.compile(
+    r"\b(?:outcome\s+unknown|timed\s*out|timeout|temporarily\s+unavailable|"
+    r"could\s+not\s+be\s+reached|request\s+failed|invalid\s+(?:json|response)|"
+    r"connection\s+(?:failed|error)|service\s+unavailable)\b",
+    re.IGNORECASE,
+)
+
+
+def _hades_transient_error_text(content):
+    """Identify operational failure output that must not become memory."""
+    return bool(_HADES_TRANSIENT_ERROR.search(str(content or "")))
+
+
 def _hades_subject_from_session_key(session_key):
     """Extract the server-generated subject from an Open WebUI key.
 
@@ -181,13 +194,6 @@ try:
         r"transaction|account|afford)\b",
         re.IGNORECASE,
     )
-    _HADES_TRANSIENT_ERROR = re.compile(
-        r"\b(?:outcome\s+unknown|timed\s*out|timeout|temporarily\s+unavailable|"
-        r"could\s+not\s+be\s+reached|request\s+failed|invalid\s+(?:json|response)|"
-        r"connection\s+(?:failed|error)|service\s+unavailable)\b",
-        re.IGNORECASE,
-    )
-
     def _hades_nonpersonal_state_turn(user_text):
         return bool(
             _HADES_SHARED_MEMORY_INTENT.search(user_text)
@@ -210,7 +216,7 @@ try:
         # private or shared.
         user_text = str(user_content or "")
         if (_hades_nonpersonal_state_turn(user_text)
-                or _HADES_TRANSIENT_ERROR.search(str(assistant_content or ""))):
+                or _hades_transient_error_text(assistant_content)):
             _hades_logger.info(
                 "Skipping automatic Hindsight retain for non-personal or transient-error turn"
             )
