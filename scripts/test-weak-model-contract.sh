@@ -16,6 +16,8 @@ for fragment in (
     'if completion_only_model:',
     'self.tools = []',
     'if agent_zero_intent and not household_session:',
+    'hades timing stage=tool',
+    'hades timing stage=turn',
 ):
     if fragment not in overlay:
         raise SystemExit(f'missing weak-model routing contract: {fragment}')

@@ -4,6 +4,11 @@ This campaign measures user-visible stages, not isolated function overhead.
 Production remains unchanged; synthetic fixtures are used for provider paths
 that lack owner authorization.
 
+The overlay now emits bounded `HADES timing stage=tool` and `stage=turn` log
+records. These contain only the tool name, selected model, and elapsed
+milliseconds—never arguments or response content—so stage attribution can be
+captured without adding a tracing dependency or exposing private data.
+
 | Workflow | Evidence | Bottleneck / disposition |
 |---|---|---|
 | Normal chat | Existing owner smoke evidence | Model inference; no new defect isolated |

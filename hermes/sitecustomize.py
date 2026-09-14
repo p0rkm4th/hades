@@ -8,6 +8,7 @@ provider intact, but expose only the direct memory tools to the HADES profile.
 
 import os
 import re
+import time
 
 
 # The maintained Grocy MCP is the source of the household tool catalog.  A
@@ -289,7 +290,15 @@ try:
         return [_hindsight.RETAIN_SCHEMA, _hindsight.RECALL_SCHEMA]
 
     def _hades_handle_tool_call(self, tool_name, args, **kwargs):
-        result = _hades_original_handle_tool_call(self, tool_name, args, **kwargs)
+        started = time.perf_counter()
+        try:
+            result = _hades_original_handle_tool_call(self, tool_name, args, **kwargs)
+        finally:
+            _hades_logger.info(
+                "HADES timing stage=tool name=%s elapsed_ms=%.1f",
+                tool_name,
+                (time.perf_counter() - started) * 1000,
+            )
         if tool_name == "hindsight_retain" and isinstance(result, str):
             try:
                 payload = json.loads(result)
@@ -464,6 +473,7 @@ try:
     _hades_original_run_conversation = _AIAgent.run_conversation
 
     def _hades_run_conversation(self, user_message, *args, **kwargs):
+        turn_started = time.perf_counter()
         original_model = getattr(self, "model", "")
         # Open WebUI sends follow-ups as separate turns.  Domain intent must
         # include the active conversation, otherwise a natural correction such
@@ -741,6 +751,11 @@ try:
                             break
             return result
         finally:
+            _hades_logger.info(
+                "HADES timing stage=turn model=%s elapsed_ms=%.1f",
+                original_model,
+                (time.perf_counter() - turn_started) * 1000,
+            )
             for _hades_provider, _hades_auto_recall in _hades_saved_auto_recall:
                 _hades_provider._auto_recall = _hades_auto_recall
             if suppress_stream:
