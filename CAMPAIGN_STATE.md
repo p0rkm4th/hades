@@ -114,6 +114,8 @@ intentionally maintained in private operations state.
 
 ## PENDING OWNER GATES
 
+The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/current-blockers.md).
+
 - Authorize and provision each external integration independently.
 - Capture owner-UI plus canonical-system verification in private acceptance
   records before enabling writes.
