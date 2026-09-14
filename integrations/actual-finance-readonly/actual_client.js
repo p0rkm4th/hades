@@ -33,6 +33,24 @@ function localBudget(root, groupId) {
   return null;
 }
 
+function freshnessMetadata(local) {
+  const lastSynced = local.metadata.lastSyncedTimestamp || null;
+  let syncedMs = Number.NaN;
+  if (typeof lastSynced === "number") {
+    syncedMs = lastSynced < 1e12 ? lastSynced * 1000 : lastSynced;
+  } else if (typeof lastSynced === "string" && lastSynced.trim()) {
+    syncedMs = Date.parse(lastSynced);
+  }
+  return {
+    retrieved_at: new Date().toISOString(),
+    last_synced: lastSynced,
+    freshness_seconds: Number.isFinite(syncedMs)
+      ? Math.max(0, Math.floor((Date.now() - syncedMs) / 1000))
+      : null,
+    freshness_known: Number.isFinite(syncedMs),
+  };
+}
+
 async function main(request) {
   const root = configuredRoot();
   fs.mkdirSync(root, { recursive: true });
@@ -61,14 +79,25 @@ async function main(request) {
     await api.loadBudget(local.id);
 
     const serverVersion = await api.getServerVersion();
+    const metadata = {
+      source: "Actual Budget canonical",
+      budget: budget.name,
+      group_id: budget.groupId,
+      server_version: serverVersion.version || serverVersion.error,
+      ...freshnessMetadata(local),
+      read_only: true,
+    };
+    if (!metadata.freshness_known) {
+      return {
+        ok: false,
+        error: "Actual Budget freshness is unknown; live finance data is unavailable.",
+        ...metadata,
+      };
+    }
     if (request.action === "status") {
       return {
         ok: true,
-        budget: budget.name,
-        group_id: budget.groupId,
-        server_version: serverVersion.version || serverVersion.error,
-        last_synced: local.metadata.lastSyncedTimestamp || null,
-        read_only: true,
+        ...metadata,
       };
     }
     if (request.action === "accounts") {
@@ -85,8 +114,7 @@ async function main(request) {
       }
       return {
         ok: true,
-        budget: budget.name,
-        server_version: serverVersion.version || serverVersion.error,
+        ...metadata,
         accounts: withBalances.map((item) => ({
           ...item,
           balance: item.balance_cents / 100,
@@ -118,8 +146,7 @@ async function main(request) {
       transactions.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
       return {
         ok: true,
-        budget: budget.name,
-        server_version: serverVersion.version || serverVersion.error,
+        ...metadata,
         transactions: transactions.slice(0, Math.max(1, Number(request.limit) || 100)),
         read_only: true,
       };

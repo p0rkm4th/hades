@@ -41,10 +41,12 @@ Every finance answer must identify, in owner-friendly language:
 - date range and pagination completeness;
 - errors, stale Items, or missing accounts.
 
-The adapter reports the server version and Actual local sync metadata. If the
-server is unavailable, the budget cannot be loaded, or freshness is unknown,
-HADES must say so and avoid confident affordability or “how much did I spend”
-claims. Local memory must never fill a missing live finance answer.
+The adapter reports the canonical source, retrieval time, server version,
+Actual local sync metadata, and computed freshness on every successful read.
+If the server is unavailable, the budget cannot be loaded, or freshness is
+unknown, the adapter returns an explicit failure and HADES must avoid
+confident affordability or “how much did I spend” claims. Local memory must
+never fill a missing live finance answer.
 
 ## Owner acceptance prompts
 
