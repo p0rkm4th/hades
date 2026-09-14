@@ -21,7 +21,9 @@ input template (three Compose records and one Hermes systemd unit), validates
 all of them before deployment, and starts them in dependency order.
 `--test-mode --root DIR` performs a credential-free contract rehearsal and
 creates no containers or synthetic production data. Synthetic fixtures are
-opt-in and are never enabled by the production path.
+opt-in and are never enabled by the production path. The read-only doctor
+returns nonzero when tracked runtime checks or Compose validation fail; missing
+optional live checks remain warnings.
 
 Deployment order is LLDAP, Open WebUI, Hindsight, Grocy, Agent Zero, SearXNG,
 Hermes 0.14.0, then the HADES overlay/assets/adapters. Production migration is

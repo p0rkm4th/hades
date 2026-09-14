@@ -492,6 +492,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
   installer now requires running services for each private Compose record in
   addition to tracked containers and active Hermes before recording deployment
   success.
+- Doctor failure semantics: PASS. A read-only doctor run on the synthetic
+  deployed guest succeeds for healthy tracked containers and Hermes, while
+  runtime/Compose failures now propagate a nonzero exit status instead of
+  printing `FAIL` and returning success.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change
