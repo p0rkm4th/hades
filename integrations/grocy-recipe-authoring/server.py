@@ -66,12 +66,16 @@ async def set_servings(recipe: str, servings: int) -> dict[str, Any]:
         return _result("FAILED", error=f"Servings must be between 1 and {MAX_SERVINGS}.")
 
     headers = {"GROCY-API-KEY": API_KEY}
+    mutation_attempted = False
     try:
         async with httpx.AsyncClient(headers=headers, timeout=TIMEOUT_SECONDS) as client:
             found, error = await _get_recipe(client, recipe_text)
             if error:
                 return error
             recipe_id = int(found["id"])
+            # Once the PUT is attempted, a later transport or decode failure
+            # cannot prove that Grocy rejected the mutation.
+            mutation_attempted = True
             response = await client.put(
                 f"{BASE_URL}/api/objects/recipes/{recipe_id}",
                 json={"base_servings": value},
@@ -86,6 +90,8 @@ async def set_servings(recipe: str, servings: int) -> dict[str, Any]:
     except httpx.TimeoutException:
         return _result("OUTCOME UNKNOWN", error="Grocy serving update timed out; canonical outcome is unknown.")
     except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        if mutation_attempted:
+            return _result("OUTCOME UNKNOWN", error="Grocy serving update was attempted but canonical outcome is unknown.")
         return _result("FAILED", error="Grocy serving update failed.")
 
 
