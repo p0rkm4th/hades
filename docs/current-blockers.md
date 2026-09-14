@@ -15,22 +15,28 @@ an owner decision or secret from defects that can be repaired independently.
 | Encrypted off-host recovery | Encryption key custody, off-host destination, retention, and plaintext-retirement policy are not selected. | Provide an operator-managed key and destination policy. |
 | First real household user | Household Alpha is ready; onboarding needs the chosen real identity and credential flow. | Owner supplies or authorizes the intended identity/invitation. |
 
-## Independent technical work still available
+## Independent technical work status
 
-- The credential-free Qwen multi-user long-context lane is complete: the
+- **Complete:** The credential-free Qwen multi-user long-context lane is
+  complete: the
   repeatable Alpha/Beta/Gamma harness passes 24/24 bounded turns, including
   corrections, topic switches, abandoned mutations, pronouns, and recall.
   Authenticated HADES-session acceptance remains an owner-authenticated
   end-to-end gate, not an unrecorded independent defect.
-- Capture one fresh synthetic web and recipe turn with model, tool,
-  continuation, and total timings; optimize only a repeatable human-visible
-  slowdown or unnecessary loop.
-- Isolated Grocy authoring edge cases and canonical reconciliation are covered;
+- **Complete:** A fresh synthetic web and recipe capture records model, tool,
+  continuation, and total timings. Both workflows are below the repeated
+  roughly-30-second optimization threshold; model/continuation is the bounded
+  future target and no adapter rewrite is justified.
+- **Covered:** Isolated Grocy authoring edge cases and canonical reconciliation
+  are covered;
   pre-write connection failures return `FAILED`, while ambiguous outcomes
-  remain `OUTCOME UNKNOWN` and are never blindly replayed. Reopen this item
-  only for a newly demonstrated mutation defect.
-- Keep candidate-only Hermes residuals documented against the stable HADES
-  qualification suite; production remains on 0.14.0.
+  remain `OUTCOME UNKNOWN` and are never blindly replayed. Reopen only for a
+  newly demonstrated mutation defect.
+- **Documented:** Candidate-only Hermes residuals are classified against the
+  stable HADES qualification suite; production remains on 0.14.0 and no
+  candidate-only upstream/provider failure is a HADES release blocker.
+- **Added:** A public configuration-drift guard now checks the tracked compose
+  set and reconstruction-manifest coverage.
 
 Completed independent evidence now includes the synthetic homelab and Home
 Assistant read-only fixtures, mixed-domain memory/web/operator composition
