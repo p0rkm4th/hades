@@ -24,7 +24,7 @@
     },
     {
       "component": "Hindsight",
-      "pinned_version": "config/versions.env:HADES_HINDSIGHT_IMAGE_DIGEST",
+      "pinned_version": "config/versions.env:HADES_HINDSIGHT_IMAGE",
       "persistent_state": ["embedded PostgreSQL cluster", "subject-bank mappings"],
       "required_secret_inputs": ["HADES_HINDSIGHT_DATABASE_SECRET_FILE", "private compose record"],
       "network_dependency": "private memory API",

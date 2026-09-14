@@ -18,7 +18,7 @@ for line in Path('config/versions.env').read_text().splitlines():
         versions[key] = value
 for component, key in {
     'LLDAP': 'HADES_LLDAP_IMAGE',
-    'Hindsight': 'HADES_HINDSIGHT_IMAGE_DIGEST',
+    'Hindsight': 'HADES_HINDSIGHT_IMAGE',
     'Grocy': 'HADES_GROCY_IMAGE',
     'Agent Zero': 'HADES_AGENT_ZERO_IMAGE',
 }.items():

@@ -7,7 +7,7 @@ runtime secrets and persistent volumes remain outside Git.
 |---|---|---|---|
 | Hermes | intelligence and agent execution | supported upstream deployment/API | 0.14.0; user systemd service; upgrade through upstream installer |
 | Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | 0.11.5; pinned image; no fork or branding patch |
-| Hindsight | durable semantic/personal memory | Hermes external memory provider over supported client API | pinned image digest `sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`; embedded pg0 volume; upgrade by digest |
+| Hindsight | durable semantic/personal memory | Hermes external memory provider over supported client API | `ghcr.io/vectorize-io/hindsight@sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`; embedded pg0 volume; upgrade by digest |
 | Agent Zero | bounded subordinate computer operator | isolated deployment with explicit objective/result boundary | pinned image digest; no shared unrestricted credentials; native A2A evaluated and retained MCP bridge is bounded |
 | Grocy | canonical pantry, groceries, consumption, inventory, recipes | maintained integration, then supported API or tiny adapter | select upstream release; Grocy remains source of truth |
 | Actual Budget / Finance MCP | canonical imported finance account and transaction truth | `integrations/actual-finance-readonly/` small stdio MCP adapter over the official client; synthetic staging only | Actual 26.9.0 server/client must be pinned together; owner authorization and no finance write authority |
@@ -77,7 +77,7 @@ environment values or persistent data:
 | Observed component | Runtime evidence | Reconciliation |
 |---|---|---|
 | Open WebUI | Local `0.11.5-remote-prefs` theme image, LAN binding on `:3000` | Private build input and static theme assets must remain in the operator record; the manifest's upstream 0.11.5 version is the compatibility baseline |
-| SearXNG | `searxng:2026.5.31-7159b8aed`, loopback `:8080` | Record the image digest with the private deployment record before rebuild; tracked settings remain the public configuration source |
+| SearXNG | `searxng/searxng:2026.5.31-7159b8aed@sha256:35b089054ac9b4257976107e71673d9e30ac17c9b50bbf8b4783f2f6d1d1981f`, loopback `:8080` | Record the immutable image reference with the private deployment record; tracked settings remain the public configuration source |
 | LLDAP | Pinned `hades-lldap` on loopback `:17170`; separate local-only production/staging instance on `:17171` | The second instance is staging topology, not a replacement authority; identity migration must be explicitly selected |
 | Grocy / Agent Zero | Pinned compose digests and loopback bindings match tracked contracts | No drift found |
 
