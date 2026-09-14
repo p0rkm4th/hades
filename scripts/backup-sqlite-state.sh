@@ -20,8 +20,8 @@ esac
 
 umask 077
 stamp=$(date +%Y%m%d-%H%M%S)
-output="$DESTINATION/hades-sqlite-$stamp"
-install -d -m 700 "$output"
+output=$(mktemp -d "$DESTINATION/hades-sqlite-${stamp}-XXXXXX")
+chmod 700 "$output"
 
 backup_container_python() {
   local container=$1 source=$2 name=$3 tmp

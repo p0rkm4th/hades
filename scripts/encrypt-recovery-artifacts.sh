@@ -20,8 +20,8 @@ gpg --batch --with-colons --list-keys "$recipient" 2>/dev/null \
   }
 
 stamp=$(date +%Y%m%d-%H%M%S)
-destination="$ROOT/encrypted-$stamp"
-install -d -m 700 "$destination"
+destination=$(mktemp -d "$ROOT/encrypted-${stamp}-XXXXXX")
+chmod 700 "$destination"
 count=0
 while IFS= read -r -d '' source; do
   relative=${source#"$ROOT"/}
