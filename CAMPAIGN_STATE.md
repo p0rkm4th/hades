@@ -169,9 +169,9 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
   adapters, checks the Actual JavaScript adapter, runs the memory,
   capability-boundary, read-only configuration-shape, and public-history
   checks, validates shell syntax, and validates compose shape.
-- The GitHub run for the current pushed head `298797c` completed successfully.
-- It does not replace private owner-UI, canonical-domain, or runtime
-  acceptance.
+- The latest GitHub run for the pushed campaign checkpoint completed
+  successfully. Hosted CI is a tripwire, not a substitute for private
+  owner-UI, canonical-domain, or runtime acceptance.
 
 The current tree and reachable public history contain no private network
 literal; the smoke probe discovers the model gateway dynamically. The remote
