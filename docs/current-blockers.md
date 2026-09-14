@@ -24,6 +24,9 @@ an owner decision or secret from defects that can be repaired independently.
 - Continue Hermes candidate test/environment triage without promoting it.
 - Harden recovery documentation and validate restart behavior.
 - Continue owner-safe cross-domain and read-only composition work.
+- Compare bounded Grocy read/mutation variants against the diagnosed
+  local-model and post-tool continuation latency; do not replay uncertain
+  mutations blindly.
 
 The coordinated revocation bridge is accepted: it deletes the Open WebUI
 account before the directory identity and verifies that the prior bearer token
