@@ -11,6 +11,25 @@ machine = json.loads(Path('config/reconstruction-manifest.json').read_text())
 if machine.get('manifest_version') != 1:
     raise SystemExit('machine manifest version is not 1')
 machine_components = {item['component']: item for item in machine['components']}
+versions = {}
+for line in Path('config/versions.env').read_text().splitlines():
+    if line and not line.startswith('#') and '=' in line:
+        key, value = line.split('=', 1)
+        versions[key] = value
+for component, key in {
+    'LLDAP': 'HADES_LLDAP_IMAGE',
+    'Hindsight': 'HADES_HINDSIGHT_IMAGE_DIGEST',
+    'Grocy': 'HADES_GROCY_IMAGE',
+    'Agent Zero': 'HADES_AGENT_ZERO_IMAGE',
+}.items():
+    if key not in versions or machine_components[component]['pinned_version'] != f'config/versions.env:{key}':
+        raise SystemExit(f'machine manifest pin reference drifted for {component}')
+if machine_components['Open WebUI']['pinned_version'] != f"{versions['HADES_OPEN_WEBUI_VERSION']} plus private deployment record":
+    raise SystemExit('machine manifest Open WebUI version drifted')
+if machine_components['Hermes 0.14 baseline']['pinned_version'] != versions['HADES_HERMES_VERSION']:
+    raise SystemExit('machine manifest Hermes version drifted')
+if machine_components['Actual Budget / Finance MCP']['pinned_version'] != f"{versions['HADES_ACTUAL_VERSION']} server/client pair":
+    raise SystemExit('machine manifest Actual version drifted')
 if len(machine_components) != 9 or any(
     not all(item.get(field) is not None for field in (
         'pinned_version', 'persistent_state', 'required_secret_inputs',
