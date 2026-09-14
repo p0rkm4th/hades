@@ -220,6 +220,9 @@ rehearsals, quarantines partial encryption output on failure, and writes a
 checksum manifest for the encrypted output. Operators
 must supply the key custody, off-host destination, retention, and eventual
 plaintext-retirement policy; none of those secrets belong in Git.
+The wrapper also rejects symlinked recovery trees and source files whose
+permissions are broader than the private recovery contract before invoking
+GPG.
 
 On 2026-09-14, the encryption wrapper was exercised with a disposable
 synthetic recovery marker and an ephemeral GPG encryption key. The encrypted
