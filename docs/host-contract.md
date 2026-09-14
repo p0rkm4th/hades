@@ -14,6 +14,9 @@ On a minimal Fedora guest, the bounded host prerequisite step is explicit:
 `sudo systemctl enable --now docker`. The HADES installer validates these
 prerequisites but does not install packages before its non-mutating preflight;
 this keeps an unsupported or incomplete host from being partially modified.
+The same step is available as the plan-first
+`scripts/prepare-hades-host.sh`; use `--apply` only on the intended supported
+guest.
 
 The core HADES guest is distinct from a local model-inference host. RTX/GPU
 drivers, model caches, and Ollama state are not reconstruction dependencies.
