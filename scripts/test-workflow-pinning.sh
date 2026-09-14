@@ -10,25 +10,26 @@ workflow_root=${1:-.github/workflows}
   exit 1
 }
 
-found=0
-while IFS= read -r reference; do
-  found=$((found + 1))
-  ref=${reference##*@}
-  if [[ ! "$ref" =~ ^[0-9a-fA-F]{40}$ ]]; then
-    printf 'FAIL mutable workflow action reference: %s\n' "$reference" >&2
-    exit 1
-  fi
-done < <(
-  rg --no-heading --no-filename --only-matching \
-    'uses:[[:space:]]*[^[:space:]#]+@[A-Za-z0-9._/-]+' \
-    "$workflow_root" --glob '*.yml' --glob '*.yaml' \
-    | while IFS= read -r line; do
-        printf '%s\n' "${line#*uses: }"
-      done
-)
+python3 - "$workflow_root" <<'PY'
+import re
+import sys
+from pathlib import Path
 
-[[ "$found" -gt 0 ]] || {
-  printf 'FAIL no workflow action references found\n' >&2
-  exit 1
-}
-printf 'PASS workflow action references pinned: %s\n' "$found"
+root = Path(sys.argv[1])
+references = []
+for path in sorted(root.rglob("*")):
+    if path.suffix not in {".yml", ".yaml"}:
+        continue
+    for line in path.read_text(encoding="utf-8").splitlines():
+        match = re.search(r"\buses:\s*([^\s#]+)", line)
+        if match:
+            references.append(match.group(1))
+
+if not references:
+    raise SystemExit("FAIL no workflow action references found")
+for reference in references:
+    ref = reference.rsplit("@", 1)[-1]
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", ref):
+        raise SystemExit(f"FAIL mutable workflow action reference: {reference}")
+print(f"PASS workflow action references pinned: {len(references)}")
+PY
