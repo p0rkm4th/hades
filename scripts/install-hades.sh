@@ -59,6 +59,14 @@ validate_private_records() {
       fail 'private deployment record contains an unpinned latest image'
     fi
   done
+  if (( ! test_mode )); then
+    hindsight_images=$("${compose_cmd[@]}" -f "$HADES_HINDSIGHT_COMPOSE_FILE" config --images)
+    grep -Fxq "$HADES_HINDSIGHT_IMAGE" <<<"$hindsight_images" ||
+      fail 'Hindsight private record does not use config/versions.env:HADES_HINDSIGHT_IMAGE'
+    searxng_images=$("${compose_cmd[@]}" -f "$HADES_SEARXNG_COMPOSE_FILE" config --images)
+    grep -Fxq "$HADES_SEARXNG_IMAGE_RECORD" <<<"$searxng_images" ||
+      fail 'SearXNG private record does not use config/versions.env:HADES_SEARXNG_IMAGE_RECORD'
+  fi
   systemd-analyze verify "$HADES_HERMES_SERVICE_FILE" || fail 'invalid Hermes private service record'
   grep -Eq '^[[:space:]]*WantedBy=' "$HADES_HERMES_SERVICE_FILE" || fail 'Hermes private service record has no install target'
 }
