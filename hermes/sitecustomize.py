@@ -75,6 +75,23 @@ def _hades_session_scope(session_key):
     return ""
 
 
+def _hades_conversation_intent_text(user_message, conversation_history):
+    """Build bounded routing context without truncating the current turn.
+
+    Recent history provides pronoun/domain continuity, but the current user
+    request is authoritative for this turn and must remain inside the cap.
+    """
+    parts = []
+    if isinstance(conversation_history, list):
+        for message in conversation_history[-8:]:
+            if isinstance(message, dict):
+                content = message.get("content", "")
+                if isinstance(content, str):
+                    parts.append(content)
+    parts.append(str(user_message or ""))
+    return "\n".join(parts)[-12000:]
+
+
 try:
     import json
     import logging
@@ -457,13 +474,9 @@ try:
             _hades_history = next(
                 (value for value in args if isinstance(value, list)), []
             )
-        _hades_context_parts = [str(user_message or "")]
-        for _hades_message in _hades_history[-8:]:
-            if isinstance(_hades_message, dict):
-                _hades_content = _hades_message.get("content", "")
-                if isinstance(_hades_content, str):
-                    _hades_context_parts.append(_hades_content)
-        _hades_intent_text = "\n".join(_hades_context_parts)[-12000:]
+        _hades_intent_text = _hades_conversation_intent_text(
+            user_message, _hades_history
+        )
         memory_intent = re.search(
             r"\b(?:remember(?:ed|ing)?|recall|forget|did i tell|do you remember|memory)\b",
             str(user_message or ""),

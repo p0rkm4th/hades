@@ -129,6 +129,20 @@ outside the repository.
 - Status: REPAIRED — canonical systems remain authoritative and transient
   results are not promoted to personal memory by default
 
+## 2026-09-14 — Long history could truncate the current routing request
+
+- Actor: synthetic long-conversation turns
+- Surface: Hermes overlay domain-intent context assembly
+- Expected: recent history may resolve pronouns, but the current user request
+  must remain available when the bounded routing context is truncated
+- Observed: the previous `current message + history` ordering retained only the
+  tail of a 12,000-character context and could drop the current request
+- Failure layer: Hermes conversation-state/routing boundary
+- Repair/evidence: recent history is now assembled first and the current turn
+  last; a synthetic 40-turn and oversized-history regression verifies the
+  12,000-character cap, recent continuity, and current-turn preservation.
+- Status: REPAIRED — this does not replace full multi-user owner dogfood
+
 ## 2026-09-13 — Concurrent shared Grocy mutations are slow to acknowledge
 
 - Actor: synthetic household accounts
