@@ -58,10 +58,9 @@ async def set_servings(recipe: str, servings: int) -> dict[str, Any]:
     recipe_text = str(recipe or "").strip()
     if not recipe_text:
         return _result("FAILED", error="A recipe name or numeric ID is required.")
-    try:
-        value = int(servings)
-    except (TypeError, ValueError):
+    if isinstance(servings, bool) or not isinstance(servings, int):
         return _result("FAILED", error="Servings must be a positive integer.")
+    value = servings
     if value < 1 or value > MAX_SERVINGS:
         return _result("FAILED", error=f"Servings must be between 1 and {MAX_SERVINGS}.")
 

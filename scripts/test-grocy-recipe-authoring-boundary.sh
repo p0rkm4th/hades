@@ -84,7 +84,10 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 async def check():
-    cases = [("", 1), ("Recipe", 0), ("Recipe", 1001), ("Recipe", "two")]
+    cases = [
+        ("", 1), ("Recipe", 0), ("Recipe", 1001), ("Recipe", "two"),
+        ("Recipe", 2.5), ("Recipe", True), ("Recipe", "2"),
+    ]
     for recipe, servings in cases:
         result = await module.set_servings(recipe, servings)
         assert result["outcome"] == "FAILED", (recipe, servings, result)
