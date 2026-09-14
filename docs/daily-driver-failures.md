@@ -115,6 +115,22 @@ outside the repository.
 - Status: DIAGNOSED — no blind Grocy retry, model configuration change, or
   canonical-state mutation made
 
+## 2026-09-14 — Web follow-up freshness passes the API contract
+
+- Actor: synthetic HADES API session
+- Surface: two-turn current-weather request with the first assistant response
+  carried into the follow-up
+- Expected: search the current topic on both turns and use fresh backend data
+- Observed: both turns returned HTTP 200; Hermes logged SearXNG searches for
+  `weather in Chicago tomorrow` and `Chicago weather Sunday` before their
+  respective answers.
+- Failure layer: none in the API contract; the prior stale-follow-up behavior
+  did not recur
+- Repair/evidence: live-web intent detection, tool narrowing, and explicit
+  follow-up guidance were exercised without mutating canonical state. A fresh
+  owner-UI follow-up remains the final acceptance gate.
+- Status: PASS at API level; owner-UI acceptance remains pending
+
 ## 2026-09-13 — Common grocery typo bypassed live routing
 
 - Actor: synthetic household account

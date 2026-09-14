@@ -17,10 +17,11 @@ an owner decision or secret from defects that can be repaired independently.
 
 ## Independent technical work still available
 
-- Weather/search follow-up reliability: the stale-follow-up repair is deployed
-  and static/runtime checks confirm the web backend and routing boundary. A
-  fresh owner-UI follow-up is still required before changing this capability
-  from PARTIAL to PASS; no owner session is available in this checkout.
+- Weather/search follow-up reliability: the stale-follow-up repair is deployed;
+  a synthetic HADES API chain now confirms fresh SearXNG calls for the initial
+  weather request and its Sunday follow-up. A fresh owner-UI follow-up is still
+  required before changing this capability from PARTIAL to PASS; no owner
+  session is available in this checkout.
 - Continue Hermes candidate test/environment triage without promoting it.
 - Harden recovery documentation and validate restart behavior.
 - Continue owner-safe cross-domain and read-only composition work.
