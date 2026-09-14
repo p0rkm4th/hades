@@ -19,6 +19,12 @@ assigning owner or household scope. Invalid, empty, or untrusted keys therefore
 remain denied rather than inheriting ordinary household capability. This is a
 fail-closed security invariant, not candidate-specific cosmetic behavior.
 
+Overlay initialization remains optional for upstream-only Hermes environments,
+but any initialization exception is emitted as an explicit
+`hades.overlay` error. Operators must treat that diagnostic as an unavailable
+HADES policy layer rather than as a healthy HADES deployment; production
+promotion and owner traffic require the overlay to initialize cleanly.
+
 ## Review rule
 
 No behavior is removed solely because an upstream test suite passes. Its
