@@ -111,6 +111,24 @@ outside the repository.
   recovered from that user's bank afterward.
 - Status: REPAIRED — synthetic fixture memories remain cleanup-only test data
 
+## 2026-09-14 — Transient external and canonical results could enter memory
+
+- Actor: synthetic HADES domain turns
+- Surface: Hermes automatic Hindsight retention around web, finance-like,
+  and bounded Agent Zero requests
+- Expected: transient search/operator output and live canonical finance state
+  remain answer context, not durable personal memory; explicit memory requests
+  remain eligible
+- Observed: the existing suppression covered Grocy but did not classify these
+  other non-personal domains before generic `sync_turn`
+- Failure layer: Hermes Hindsight retention intent boundary
+- Repair/evidence: the overlay now suppresses automatic retention and prefetch
+  for web, Agent Zero, and finance-like turns unless the user explicitly asks
+  to remember/recall. Static memory-boundary regression coverage verifies the
+  new classifier terms; no real finance or owner memory was used.
+- Status: REPAIRED — canonical systems remain authoritative and transient
+  results are not promoted to personal memory by default
+
 ## 2026-09-13 — Concurrent shared Grocy mutations are slow to acknowledge
 
 - Actor: synthetic household accounts

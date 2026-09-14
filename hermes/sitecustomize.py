@@ -157,6 +157,20 @@ try:
         r"actually my|correction)\b",
         re.IGNORECASE,
     )
+    _HADES_NONPERSONAL_STATE_INTENT = re.compile(
+        r"\b(?:weather|forecast|temperature|search|look\s+up|latest|news|web|"
+        r"agent\s+zero|agent0|delegat(?:e|ion|ed)|finance|budget|balance|"
+        r"transaction|account|afford)\b",
+        re.IGNORECASE,
+    )
+
+    def _hades_nonpersonal_state_turn(user_text):
+        return bool(
+            _HADES_SHARED_MEMORY_INTENT.search(user_text)
+            or _HADES_GROCY_ACTION_INTENT.search(user_text)
+            or _HADES_GROCY_ITEM_FRAGMENT.search(user_text)
+            or _HADES_NONPERSONAL_STATE_INTENT.search(user_text)
+        )
 
     def _hades_sync_turn(self, user_content, assistant_content, *, session_id=""):
         """Keep shared household turns out of private semantic memory.
@@ -171,14 +185,7 @@ try:
         # untrusted generated text and must not decide whether a turn is
         # private or shared.
         user_text = str(user_content or "")
-        if (
-            (
-                _HADES_SHARED_MEMORY_INTENT.search(user_text)
-                or _HADES_GROCY_ACTION_INTENT.search(user_text)
-                or _HADES_GROCY_ITEM_FRAGMENT.search(user_text)
-            )
-            and not _HADES_EXPLICIT_MEMORY_INTENT.search(user_text)
-        ):
+        if _hades_nonpersonal_state_turn(user_text) and not _HADES_EXPLICIT_MEMORY_INTENT.search(user_text):
             _hades_logger.info("Skipping automatic Hindsight retain for shared-state turn")
             return None
         return _hades_original_sync_turn(
@@ -213,14 +220,7 @@ try:
         # especially when Grocy is unavailable and the model must report a
         # dependency failure. Explicit memory requests may still compose with
         # a Grocy read.
-        if (
-            (
-                _HADES_SHARED_MEMORY_INTENT.search(query)
-                or _HADES_GROCY_ACTION_INTENT.search(query)
-                or _HADES_GROCY_ITEM_FRAGMENT.search(query)
-            )
-            and not _HADES_EXPLICIT_MEMORY_INTENT.search(query)
-        ):
+        if _hades_nonpersonal_state_turn(query) and not _HADES_EXPLICIT_MEMORY_INTENT.search(query):
             return ""
         if self._recall_max_input_chars and len(query) > self._recall_max_input_chars:
             query = query[:self._recall_max_input_chars]
