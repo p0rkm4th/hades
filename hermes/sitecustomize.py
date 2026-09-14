@@ -181,6 +181,12 @@ try:
         r"transaction|account|afford)\b",
         re.IGNORECASE,
     )
+    _HADES_TRANSIENT_ERROR = re.compile(
+        r"\b(?:outcome\s+unknown|timed\s*out|timeout|temporarily\s+unavailable|"
+        r"could\s+not\s+be\s+reached|request\s+failed|invalid\s+(?:json|response)|"
+        r"connection\s+(?:failed|error)|service\s+unavailable)\b",
+        re.IGNORECASE,
+    )
 
     def _hades_nonpersonal_state_turn(user_text):
         return bool(
@@ -203,8 +209,11 @@ try:
         # untrusted generated text and must not decide whether a turn is
         # private or shared.
         user_text = str(user_content or "")
-        if _hades_nonpersonal_state_turn(user_text):
-            _hades_logger.info("Skipping automatic Hindsight retain for non-personal state turn")
+        if (_hades_nonpersonal_state_turn(user_text)
+                or _HADES_TRANSIENT_ERROR.search(str(assistant_content or ""))):
+            _hades_logger.info(
+                "Skipping automatic Hindsight retain for non-personal or transient-error turn"
+            )
             return None
         return _hades_original_sync_turn(
             self, user_content, assistant_content, session_id=session_id
