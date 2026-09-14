@@ -59,9 +59,9 @@ booting services alone is not recovery evidence.
 These are deliberate gates, not missing implementation tasks:
 
 - owner-authenticated Hermes 0.21.2 promotion rehearsal;
-- a clean Hermes 0.21.2 full-suite run, or an explicitly isolated test
-  qualification that resolves the observed process-global auxiliary-provider
-  leakage;
+- a clean Hermes 0.21.2 full-suite run, or an explicitly documented hermetic
+  disposition for the five host/update-shim/browser-environment residual tests
+  and the upstream FTS5 trace-observation assertion;
 - owner-approved Proxmox, NetBox, and Uptime Kuma endpoints and read-only
   credentials;
 - owner-approved Home Assistant endpoint, token, and entity allowlist;

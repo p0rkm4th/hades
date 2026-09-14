@@ -7,7 +7,7 @@ an owner decision or secret from defects that can be repaired independently.
 
 | Area | Current gate | What unblocks it |
 |---|---|---|
-| Hermes 0.21.2 production promotion | Owner-authenticated production rehearsal was not proven during the previous controlled attempt. Candidate HADES core is green, but the full candidate suite still has five host/update-shim/browser-environment failures. | Provide a verified current owner authentication/session path and approve a rollback-backed rehearsal; separately disposition the non-HADES candidate failures. |
+| Hermes 0.21.2 production promotion | Owner-authenticated production rehearsal was not proven during the previous controlled attempt. Candidate HADES core is green, but qualification still has five host/update-shim/browser-environment failures plus an upstream FTS5 trace-observation test defect. | Provide a verified current owner authentication/session path and approve a rollback-backed rehearsal; separately disposition the non-HADES tests and upstream FTS5 observation contract. |
 | Homelab read-only | No approved Proxmox, NetBox, or Uptime Kuma endpoints, credentials, inventory scope, or network path are configured. | Approve endpoints/scope and provision least-privilege read-only credentials. |
 | Home Assistant read-only | No approved URL, token, entity allowlist, or exposure path is configured. | Approve the selected read-only entities and provide the scoped token/path. |
 | Real finance | Production finance is intentionally inactive. | Approve the Actual Budget environment/budget, historical imports, retention, secret storage, and later live-sync provider. |
