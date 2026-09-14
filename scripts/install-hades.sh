@@ -140,9 +140,13 @@ preflight() {
     *) fail "unsupported OS: ${PRETTY_NAME:-unknown}; use Fedora Server 44 or Rocky Linux 9/10" ;;
   esac
   [[ "$(uname -m)" == x86_64 || "$(uname -m)" == aarch64 ]] || fail "unsupported architecture: $(uname -m)"
-  need_cmd systemctl; need_cmd curl; need_cmd git; need_cmd openssl; need_cmd docker; need_cmd ss
+  need_cmd systemctl; need_cmd curl; need_cmd git; need_cmd openssl; need_cmd docker; need_cmd ss; need_cmd nproc
   docker compose version >/dev/null 2>&1 || fail 'missing Docker Compose plugin'
   systemctl --version >/dev/null 2>&1 || fail 'systemd is unavailable'
+  cpu_count=$(nproc --all 2>/dev/null || true)
+  [[ "$cpu_count" =~ ^[0-9]+$ && "$cpu_count" -ge 2 ]] || fail 'at least 2 CPU cores are required'
+  memory_kb=$(awk '/^MemTotal:/ {print $2; exit}' /proc/meminfo)
+  [[ "$memory_kb" =~ ^[0-9]+$ && "$memory_kb" -ge 8388608 ]] || fail 'at least 8 GiB RAM is required'
   available_kb=$(df -Pk / | awk 'NR == 2 {print $4}')
   [[ "$available_kb" =~ ^[0-9]+$ && "$available_kb" -ge 41943040 ]] || fail 'at least 40 GiB free disk is required on the root filesystem'
   for port in 17170 7002 7003; do
