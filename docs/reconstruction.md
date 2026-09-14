@@ -70,6 +70,14 @@ portable static/disposable evidence but still does not claim a full HADES
 reconstruction because the private runtime records were intentionally not
 copied into the guest.
 
+The private-record setup is now reproducible from repository state:
+`scripts/create-synthetic-private-fixture.sh` creates the four mode-restricted
+deployment records, identity files, referenced component secrets, and an
+explicit operator input file under a caller-selected disposable directory.
+This removes the former ad-hoc fixture construction from the next independent
+full-install rehearsal; it remains synthetic evidence and does not replace
+owner-private deployment records.
+
 The first disposable guest also ran the installer in real privileged
 `--preflight` mode with non-secret synthetic identity files and four valid
 minimal private deployment records. Fedora/Docker/systemd, disk, port,
