@@ -298,8 +298,10 @@ that directory's canonical `scripts/run_tests.sh`, preventing a stale cloned
 `pytest` launcher or non-hermetic environment from selecting a different
 staging environment. It fails closed when the candidate interpreter cannot
 import `pytest`, which prevents a mutated candidate environment from being
-mistaken for a test regression. A full candidate suite must use that same
-canonical runner.
+mistaken for a test regression. The wrapper also requires a clean Git checkout
+before the run and fails if upstream tests mutate tracked or untracked candidate
+files afterward; any such result is contamination evidence, not qualification.
+A full candidate suite must use that same canonical runner.
 
 The expanded HADES-relevant core contract is reproducible with
 [`scripts/test-hermes-core.sh`](../scripts/test-hermes-core.sh). It runs the

@@ -33,6 +33,19 @@ if [[ ! -x "$RUNNER" ]]; then
   exit 1
 fi
 
+candidate_clean() {
+  git -C "$CANDIDATE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+    printf 'FAIL candidate is not a Git checkout\n' >&2
+    return 1
+  }
+  [[ -z "$(git -C "$CANDIDATE" status --porcelain --untracked-files=all)" ]] || {
+    printf 'FAIL candidate checkout is dirty; use a fresh disposable checkout\n' >&2
+    return 1
+  }
+}
+
+candidate_clean || exit 1
+
 tests=(
   tests/agent/test_memory_provider.py
   tests/agent/test_memory_provider_unavailable_warning.py
@@ -52,4 +65,12 @@ cd "$CANDIDATE"
 # retry is useful for exploratory development but would allow a flaky file to
 # exit green; retain the failure so the change window cannot treat flakiness
 # as acceptance.
-exec "$RUNNER" "${tests[@]}" -q --disable-warnings --file-retries 0
+set +e
+"$RUNNER" "${tests[@]}" -q --disable-warnings --file-retries 0
+status=$?
+set -e
+if ! candidate_clean; then
+  printf 'FAIL candidate checkout changed during qualification\n' >&2
+  exit 1
+fi
+exit "$status"

@@ -31,6 +31,19 @@ PYTHON="$CANDIDATE/.venv/bin/python"
 RUNNER="$CANDIDATE/scripts/run_tests.sh"
 [[ -x "$RUNNER" ]] || { printf 'FAIL candidate canonical test runner missing\n' >&2; exit 1; }
 
+candidate_clean() {
+  git -C "$CANDIDATE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+    printf 'FAIL candidate is not a Git checkout\n' >&2
+    return 1
+  }
+  [[ -z "$(git -C "$CANDIDATE" status --porcelain --untracked-files=all)" ]] || {
+    printf 'FAIL candidate checkout is dirty; use a fresh disposable checkout\n' >&2
+    return 1
+  }
+}
+
+candidate_clean || exit 1
+
 tests=(
   tests/agent/test_memory_provider.py
   tests/agent/test_memory_provider_unavailable_warning.py
@@ -51,6 +64,14 @@ for test in "${tests[@]}"; do
 done
 
 cd "$CANDIDATE"
-exec "$RUNNER" "${tests[@]}" \
+set +e
+"$RUNNER" "${tests[@]}" \
   -k 'not test_search_projection_skips_context_enrichment_queries' \
   -q --disable-warnings --file-retries 0
+status=$?
+set -e
+if ! candidate_clean; then
+  printf 'FAIL candidate checkout changed during qualification\n' >&2
+  exit 1
+fi
+exit "$status"
