@@ -5,6 +5,11 @@ services:
     image: agent0ai/agent-zero@sha256:680ab243d358b5fd41847f640c2eac1c59b83b154b22fc38004b8a0631b3d028
     container_name: hades-agent-zero
     restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     # Keep the operator private until an explicit owner-facing exposure is added.
     ports:
       - "127.0.0.1:7002:80"

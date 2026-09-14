@@ -29,6 +29,14 @@ for forbidden, label in (
 ):
     if forbidden in compose:
         raise SystemExit(f'forbidden {label} exposed by tracked compose')
+agent_compose = Path('deploy/agent-zero.compose.yaml').read_text()
+for fragment, label in (
+    ('read_only: true', 'Agent Zero read-only root filesystem'),
+    ('- ALL', 'Agent Zero capability drop'),
+    ('no-new-privileges:true', 'Agent Zero no-new-privileges'),
+):
+    if fragment not in agent_compose:
+        raise SystemExit(f'missing {label}')
 if 'mcp-actual-finance-readonly' in overlay:
     raise SystemExit('finance toolset is reachable from the production overlay')
 if 'HADES_OWNER_SUBJECT_ID' not in overlay or 'return ""' not in overlay:
