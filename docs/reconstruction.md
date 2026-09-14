@@ -56,3 +56,11 @@ After installation, the same guest was rebooted. Systemd returned to
 LLDAP returned `healthy` after its normal startup interval. This is reboot
 evidence for the tracked subset only; it is not evidence that missing private
 services or Hermes recovered.
+
+The credential-free synthetic backup drill in
+`scripts/test-synthetic-backup-restore.sh` creates Alpha/Beta identities,
+subject-scoped memory, a conversation marker, and Grocy stock; it destroys the
+source state and restores into a separate target. Stable subject IDs, memory
+banks, private markers, and canonical stock pass integrity checks. This proves
+local restore mechanics only, not encrypted off-host custody or owner-state
+recovery.
