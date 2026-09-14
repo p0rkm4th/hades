@@ -76,6 +76,8 @@ jobs:
         run: bash scripts/test-reconstruction-manifest.sh
       - name: Check clean reconstruction contract
         run: bash scripts/test-clean-reconstruction-contract.sh
+      - name: Check install failure contract
+        run: bash scripts/test-install-failure-contract.sh
       - name: Check authoritative version manifest
         run: bash scripts/test-version-manifest.sh
       - name: Check network exposure policy

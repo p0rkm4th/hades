@@ -30,8 +30,14 @@ preflight() {
   source /etc/os-release
   [[ "${ID:-}" == fedora || "${ID_LIKE:-}" == *rhel* || "${ID_LIKE:-}" == *fedora* ]] || fail "unsupported OS: ${PRETTY_NAME:-unknown}; use Fedora Server or Rocky Linux"
   [[ "$(uname -m)" == x86_64 || "$(uname -m)" == aarch64 ]] || fail "unsupported architecture: $(uname -m)"
-  need_cmd systemctl; need_cmd curl; need_cmd git; need_cmd openssl; need_cmd docker
+  need_cmd systemctl; need_cmd curl; need_cmd git; need_cmd openssl; need_cmd docker; need_cmd ss
   docker compose version >/dev/null 2>&1 || fail 'missing Docker Compose plugin'
+  systemctl --version >/dev/null 2>&1 || fail 'systemd is unavailable'
+  available_kb=$(df -Pk / | awk 'NR == 2 {print $4}')
+  [[ "$available_kb" =~ ^[0-9]+$ && "$available_kb" -ge 41943040 ]] || fail 'at least 40 GiB free disk is required on the root filesystem'
+  for port in 17170 7002 7003; do
+    ss -ltn "sport = :$port" | awk 'NR > 1 {found=1} END {exit !found}' && fail "required private port is already occupied: $port" || true
+  done
   for d in "$HADES_STATE_ROOT" "$HADES_CONFIG_ROOT" "$HADES_BACKUP_ROOT"; do
     parent=$(dirname "$d"); [[ -d "$parent" && -w "$parent" ]] || fail "parent directory is not writable: $parent"
   done
