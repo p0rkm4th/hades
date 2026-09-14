@@ -31,15 +31,12 @@ TOOL_NAME = "agent_zero_delegate"
 async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
     """Run one harmless, bounded task through the private Agent Zero operator."""
     if not API_KEY:
-        return {"ok": False, "error": "Agent Zero delegation is not configured."}
+        return {"ok": False, "outcome": "FAILED", "error": "Agent Zero delegation is not configured."}
     task = str(task or "").strip()
     if not task:
-        return {"ok": False, "error": "A non-empty task is required."}
+        return {"ok": False, "outcome": "FAILED", "error": "A non-empty task is required."}
     if len(task) > MAX_TASK_CHARS:
-        return {
-            "ok": False,
-            "error": f"Task exceeds the {MAX_TASK_CHARS}-character delegation limit.",
-        }
+        return {"ok": False, "outcome": "FAILED", "error": f"Task exceeds the {MAX_TASK_CHARS}-character delegation limit."}
 
     payload: dict[str, Any] = {
         "message": (
@@ -54,6 +51,7 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
     if len(context_id) > MAX_CONTEXT_ID_CHARS:
         return {
             "ok": False,
+            "outcome": "FAILED",
             "error": f"Context ID exceeds the {MAX_CONTEXT_ID_CHARS}-character delegation limit.",
         }
     if context_id:
@@ -68,24 +66,44 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
             )
             response.raise_for_status()
             result = response.json()
+    except httpx.TimeoutException:
+        return {
+            "ok": False,
+            "outcome": "OUTCOME UNKNOWN",
+            "error": "Agent Zero delegation timed out; task outcome is unknown.",
+        }
     except httpx.HTTPError as exc:
-        return {"ok": False, "error": f"Agent Zero request failed: {exc}"}
+        return {"ok": False, "outcome": "FAILED", "error": f"Agent Zero request failed: {exc}"}
     except ValueError:
-        return {"ok": False, "error": "Agent Zero returned invalid JSON."}
+        return {
+            "ok": False,
+            "outcome": "OUTCOME UNKNOWN",
+            "error": "Agent Zero returned invalid JSON; task outcome is unknown.",
+        }
 
     if not isinstance(result, dict):
-        return {"ok": False, "error": "Agent Zero returned an invalid result."}
+        return {
+            "ok": False,
+            "outcome": "OUTCOME UNKNOWN",
+            "error": "Agent Zero returned an invalid result; task outcome is unknown.",
+        }
     response_text = result.get("response")
     if not isinstance(response_text, str) or not response_text.strip():
-        return {"ok": False, "error": "Agent Zero returned no usable result."}
+        return {
+            "ok": False,
+            "outcome": "OUTCOME UNKNOWN",
+            "error": "Agent Zero returned no usable result; task outcome is unknown.",
+        }
     if len(response_text) > MAX_RESPONSE_CHARS:
         return {
             "ok": False,
+            "outcome": "OUTCOME UNKNOWN",
             "error": f"Agent Zero result exceeds the {MAX_RESPONSE_CHARS}-character response limit.",
         }
 
     return {
         "ok": True,
+        "outcome": "SUCCEEDED",
         "context_id": str(result.get("context_id", "") or ""),
         "response": response_text,
     }

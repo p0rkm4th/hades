@@ -28,6 +28,7 @@ class Response:
 
 class AsyncClient:
     payload = {"response": "bounded", "context_id": "ctx"}
+    error = None
 
     def __init__(self, *args, **kwargs):
         pass
@@ -39,11 +40,14 @@ class AsyncClient:
         return None
 
     async def post(self, *args, **kwargs):
+        if self.error:
+            raise self.error
         return Response(self.payload)
 
 httpx = types.ModuleType("httpx")
 httpx.AsyncClient = AsyncClient
 httpx.HTTPError = type("HTTPError", (Exception,), {})
+httpx.TimeoutException = type("TimeoutException", (httpx.HTTPError,), {})
 sys.modules["httpx"] = httpx
 sys.modules["anyio"] = types.ModuleType("anyio")
 
@@ -74,10 +78,15 @@ async def main():
     assert not (await module._delegate("123456789"))["ok"]
     assert not (await module._delegate("task", "12345"))["ok"]
     AsyncClient.payload = {"response": "01234567890", "context_id": "ctx"}
-    assert not (await module._delegate("task"))["ok"]
+    oversized = await module._delegate("task")
+    assert not oversized["ok"] and oversized["outcome"] == "OUTCOME UNKNOWN"
+    AsyncClient.error = module.httpx.TimeoutException()
+    timed_out = await module._delegate("task")
+    assert not timed_out["ok"] and timed_out["outcome"] == "OUTCOME UNKNOWN"
+    AsyncClient.error = None
     AsyncClient.payload = {"response": "bounded", "context_id": "ctx"}
     result = await module._delegate("task", "1234")
-    assert result == {"ok": True, "context_id": "ctx", "response": "bounded"}
+    assert result == {"ok": True, "outcome": "SUCCEEDED", "context_id": "ctx", "response": "bounded"}
 
 asyncio.run(main())
 print("PASS Agent Zero input/output bounds")
