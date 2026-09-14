@@ -8,7 +8,9 @@ The checked-in compose recipe follows Agent Zero's supported Docker layout:
 only `/a0/usr` is persistent. The default binding is loopback on port `7002`,
 so exposing it through LAN or Tailscale requires an explicit owner-approved
 change. Pin the image to the digest verified for a deployment rather than
-silently relying on a moving tag.
+silently relying on a moving tag. The container contract also uses a read-only
+root filesystem, drops all Linux capabilities, and enables
+`no-new-privileges`; only the dedicated operator volume is writable.
 
 The current local test instance was pulled as:
 
