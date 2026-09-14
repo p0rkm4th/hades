@@ -422,8 +422,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
   and same-server isolated restore are now validated. A protected Agent Zero
   archive was restored into a fresh volume with the pinned image and no
   published port while production remained running. The SearXNG configuration
-  archive received the same disposable restore-launch check; encrypted
-  retention remains a separate gate.
+  archive received the same disposable restore-launch check. The Hermes
+  profile archive was also extracted into a fresh temporary home and its
+  pinned production CLI parsed the restored profile while the live service
+  remained active; encrypted retention remains a separate gate.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

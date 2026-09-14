@@ -207,7 +207,9 @@ archives are not in Git. The Agent Zero archive was restored into a fresh
 volume and launched with the pinned image without a published port while
 production remained running. The SearXNG configuration archive was likewise
 restored into a fresh volume and launched without a published port; production
-remained running. Isolated restore of the Hermes profile, encryption, and
+remained running. The Hermes profile archive was extracted into a fresh
+temporary home and its pinned production CLI parsed the restored profile
+successfully; the live service was not stopped or reconfigured. Encryption and
 retention remain private operational work.
 
 The Agent Zero private environment file was found mode `0644` during the
