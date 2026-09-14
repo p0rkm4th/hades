@@ -69,6 +69,28 @@ These are deliberate gates, not missing implementation tasks:
 - operator-managed encryption key custody, off-host destination, retention,
   and plaintext-retirement policy for recovery artifacts.
 
+## Stable-v1 readiness score
+
+This capability score is the roadmap source of truth; it describes readiness,
+not commit volume.
+
+| Capability | Status | Smallest remaining contract |
+|---|---|---|
+| Owner daily-driver | PASS + PERSISTENCE | Fresh owner regression after any runtime promotion |
+| Household multi-user | PASS + PERSISTENCE | Longer owner conversation dogfood remains useful hardening |
+| Private memory | PASS + PERSISTENCE | Preserve subject mapping through any migration |
+| Shared household state | PASS + PERSISTENCE | Complete recipe-authoring browser sequence |
+| Web/search | PARTIAL | Fresh owner-UI follow-up must confirm repaired search freshness |
+| Bounded operator | PASS + PERSISTENCE | Broader tasks and native A2A remain optional hardening |
+| Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope |
+| Homelab | OWNER-GATED | Approve endpoints, inventory scope, and read-only credentials |
+| Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
+| Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
+| Recovery | PARTIAL | Complete private off-host custody, retention, and restore drill |
+| Installation/rebuild | PARTIAL | Reconcile the documented reconstruction manifest before packaging |
+| Security | PASS | Re-run the boundary matrix after any authority-bearing change |
+| Performance | PARTIAL | Reduce or explicitly accept local-model/post-tool latency on slow flows |
+
 No real finance, homelab mutation, Home Assistant security control, or final
 installer is part of this readiness record.
 

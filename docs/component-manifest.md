@@ -15,6 +15,24 @@ runtime secrets and persistent volumes remain outside Git.
 | Home Assistant | physical smart-home state/control | future selected-entity integration | deferred; least privilege required |
 | n8n | deterministic workflows | future configuration | preparation contract in [`automation-boundary.md`](automation-boundary.md); deferred until product-manager authorization of one concrete workflow |
 
+## Reconstruction manifest
+
+This is the minimum rebuild contract. Exact secret values, volume names, image
+digests where private, and owner-selected endpoints belong in the operator
+record. Restore order and canonical checks are detailed in
+[`backup-restore.md`](backup-restore.md).
+
+| Component | Pinned/rebuild source | Persistent state | Required private inputs | Network dependency | Startup order | Health check | Restore check |
+|---|---|---|---|---|---|---|---|
+| LLDAP | Pinned identity image | Directory database and key material | JWT/key seed, admin bootstrap | Private identity network | 1 | LDAP/HTTP health and login | Isolated database restore and identity record check |
+| Open WebUI | Pinned upstream image plus HADES static assets | WebUI database, vector data, matching assets | Database/auth secrets | LLDAP and Hermes | 2 | WebUI health, login, chat reload | SQLite integrity, marker conversation reload, asset match |
+| Hindsight | Pinned image with embedded PostgreSQL | PostgreSQL cluster/export | Database credentials and subject-bank policy | Hermes to private memory API | 3 | PostgreSQL readiness and Hindsight health | Native export restore and subject-scoped marker recall |
+| Grocy | Pinned LinuxServer image | Complete Grocy configuration/database | API key | Hermes to private Grocy API | 4 | Grocy HTTP health | SQLite integrity, stock/list/recipe canonical checks |
+| Hermes 0.14 baseline | Pinned upstream package and private profile | Profile, sessions, skills, state | Provider, MCP, and service credentials | Open WebUI, Hindsight, Grocy, SearXNG, Agent Zero | 5 | Private API health and authenticated model contract | Profile parse, bounded tool call, reload/restart |
+| Agent Zero | Pinned operator image | Dedicated operator volume/settings | Bounded API credential | Hermes to private operator API | 6 | Agent Zero health and authenticated card/API check | Isolated volume restore and harmless bounded delegation |
+| SearXNG | Pinned search image/configuration | Configuration; cache is reconstructable | Any private provider settings | Hermes to private search API | 7 | JSON search response | Config parse and provider search check |
+| HADES policy/assets/adapters | Repository at pushed `main` plus deployed overlay copy | No canonical domain state | Private deployment environment variables | Loaded by Hermes; no separate authority | With Hermes | Overlay syntax, boundary, and MCP registration checks | Source/runtime match, policy tests, and smoke contract |
+
 ## Boundary rule
 
 Hindsight may provide remembered context but cannot override live truth from

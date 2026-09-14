@@ -40,6 +40,9 @@ jobs:
       - name: Check Agent Zero bounds
         run: bash scripts/test-agent-zero-boundary.sh
 
+      - name: Check long-conversation routing boundary
+        run: bash scripts/test-long-conversation-boundary.sh
+
       - name: Check Grocy recipe authoring boundary
         run: bash scripts/test-grocy-recipe-authoring-boundary.sh
 
