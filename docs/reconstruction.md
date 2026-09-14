@@ -23,7 +23,7 @@ all of them before deployment, and starts them in dependency order.
 creates no containers or synthetic production data. Synthetic fixtures are
 opt-in and are never enabled by the production path.
 
-Deployment order is LLDAP, Open WebUI, Hindsight, Grocy, SearXNG, Agent Zero,
+Deployment order is LLDAP, Open WebUI, Hindsight, Grocy, Agent Zero, SearXNG,
 Hermes 0.14.0, then the HADES overlay/assets/adapters. Production migration is
 separate: backup, provision, install, restore, validate, owner acceptance,
 private-network cutover, and temporary rollback retention.

@@ -123,10 +123,10 @@ docker compose -f "$HADES_HINDSIGHT_COMPOSE_FILE" up -d
 compose="$repo_dir/deploy/grocy.compose.yaml"
 docker compose -f "$compose" config --quiet || fail 'invalid compose contract: grocy'
 docker compose -f "$compose" up -d
-docker compose -f "$HADES_SEARXNG_COMPOSE_FILE" up -d
 compose="$repo_dir/deploy/agent-zero.compose.yaml"
 docker compose -f "$compose" config --quiet || fail 'invalid compose contract: agent-zero'
 docker compose -f "$compose" up -d
+docker compose -f "$HADES_SEARXNG_COMPOSE_FILE" up -d
 install -m 0644 "$HADES_HERMES_SERVICE_FILE" /etc/systemd/system/hades-hermes.service
 systemctl daemon-reload
 systemctl enable --now hades-hermes.service
