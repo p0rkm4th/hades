@@ -96,16 +96,20 @@ install -d -m 0750 "$state_root/runtime" "$state_root/compose"
 printf 'manifest=%s\ninstalled_from=%s\nphase=prepared\n' "$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')" "$repo_dir" > "$state_root/install-contract"
 chmod 0640 "$state_root/install-contract"
 export HADES_IDENTITY_SECRETS_DIR
-for component in lldap grocy agent-zero; do
-  compose="$repo_dir/deploy/$component.compose.yaml"
-  HADES_IDENTITY_SECRETS_DIR="$HADES_IDENTITY_SECRETS_DIR" docker compose -f "$compose" config --quiet || fail "invalid compose contract: $component"
-  docker compose -f "$compose" up -d
-done
+compose="$repo_dir/deploy/lldap.compose.yaml"
+docker compose -f "$compose" config --quiet || fail 'invalid compose contract: lldap'
+docker compose -f "$compose" up -d
 docker compose -f "$HADES_OPEN_WEBUI_COMPOSE_FILE" up -d
 docker compose -f "$HADES_HINDSIGHT_COMPOSE_FILE" up -d
+compose="$repo_dir/deploy/grocy.compose.yaml"
+docker compose -f "$compose" config --quiet || fail 'invalid compose contract: grocy'
+docker compose -f "$compose" up -d
 docker compose -f "$HADES_SEARXNG_COMPOSE_FILE" up -d
+compose="$repo_dir/deploy/agent-zero.compose.yaml"
+docker compose -f "$compose" config --quiet || fail 'invalid compose contract: agent-zero'
+docker compose -f "$compose" up -d
 install -m 0644 "$HADES_HERMES_SERVICE_FILE" /etc/systemd/system/hades-hermes.service
 systemctl daemon-reload
 systemctl enable --now hades-hermes.service
-printf 'phase=tracked-components\n' >> "$state_root/install-contract"
-echo 'PASS tracked component deployment completed; private components remain governed by operator records'
+printf 'phase=deployed\n' >> "$state_root/install-contract"
+echo 'PASS HADES component deployment completed from tracked contracts and explicit private records'
