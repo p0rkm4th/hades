@@ -175,13 +175,20 @@ and Hermes returned, then doctor and validation passed again. This is
 are intentionally minimal Alpine services, so it does not claim Open WebUI,
 Hindsight, SearXNG, or model-backed household behavior.
 
-A separate fresh Fedora 44 guest was then taken through the same procedure
-from a new disk and repository archive. Its non-mutating preflight passed after
-the documented minimal-host package step supplied `git` (the cloud image did
-not include it), and the real installer reached the pinned Agent Zero image
-pull. That disposable run was stopped before the large image completed, so it
-is **not** second-clean deployment evidence; the explicit package command is
-now part of the host contract and is not an undocumented reconstruction ritual.
+A second independent fresh Fedora 44 guest was then taken through the same
+procedure from a new disk and repository clone. The documented minimal-host
+package step supplied `git` (the cloud image did not include it), and the
+guest's usable memory was raised to 10 GiB so it exceeded the documented 8 GiB
+minimum after host overhead. The generated private bundle was adjusted only
+to make its Hindsight and SearXNG records consume the authoritative immutable
+image pins; real privileged preflight then passed, the installer pulled the
+pinned images and completed, and doctor/validation passed. After a guest
+reboot, Hermes was enabled and active, all six container groups returned, and
+doctor/validation passed after the normal LLDAP health warm-up. This is
+**second independent clean synthetic deployment and reboot evidence**. As
+with the first guest, the private records intentionally use bounded smoke
+commands rather than full Open WebUI, Hindsight, SearXNG, and Hermes
+application fixtures, so full application reconstruction remains unproven.
 
 ## Evidence hierarchy
 
@@ -190,9 +197,9 @@ now part of the host contract and is not an undocumented reconstruction ritual.
 | Static | PASS | Syntax, pins, provenance, policy, CI, and public-safe configuration are validated. |
 | Disposable component/fixture | PASS | Read-only domain fixtures, synthetic backup/restore, private-record generation, and test-mode installer contracts pass. |
 | First clean machine | PASS for tracked subset | A pristine Fedora system proved the supported-host preflight and tracked LLDAP/Grocy/Agent Zero deployment path. |
-| Second independent clean machine | PASS for credential-free contract | A separate pristine guest reran the static/test-mode reconstruction and restore contracts; private full-stack records were not deployed there. |
-| Reboot/restart | PASS for tracked subset | The first disposable guest recovered its tracked services after reboot; missing private services are not included in this claim. |
-| Full-stack synthetic clean reconstruction | PASS | One fresh Fedora 44 system completed the explicit-input deployment and reboot path; its private records are minimal service fixtures, not full application records. |
+| Second independent clean machine | PASS for tracked/synthetic deployment | A separate pristine Fedora 44 guest completed real preflight, pinned tracked/synthetic deployment, doctor, validation, reboot, and post-reboot validation from the repository and generated inputs. |
+| Reboot/restart | PASS for tracked subset on two guests | Both disposable Fedora guests recovered the tracked services and enabled Hermes after reboot; private records are bounded smoke services, not full application behavior. |
+| Full-stack synthetic clean reconstruction | PASS | Two fresh Fedora 44 systems completed the explicit-input deployment and reboot path; their private records are minimal service fixtures, not full application records. |
 | Full application clean reconstruction | NOT PROVEN | Requires full synthetic Open WebUI/Hindsight/SearXNG/Hermes records and canonical application fixtures on an independent fresh guest. |
 | Fresh-install synthetic household soak | PASS for contract/fixture layer | Generated private inputs, test-mode install/doctor/validation, and owner-style authority/multi-user/memory simulations run as one reproducible sequence; no full application behavior is claimed. |
 | Fresh-install full application household soak | NOT PROVEN | Follows a successful full application reconstruction and exercises the reconstructed HADES application path. |

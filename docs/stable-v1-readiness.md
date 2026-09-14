@@ -86,7 +86,7 @@ not commit volume.
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
-| Installation/rebuild | PARTIAL | First-clean synthetic deployment/reboot and the reproducible synthetic household-soak contract pass; complete an independent full application reconstruction and full application household soak |
+| Installation/rebuild | PARTIAL | Two independent fresh Fedora synthetic deployments/reboots and the reproducible synthetic household-soak contract pass; complete an independent full application reconstruction and full application household soak |
 | Security | PASS | Static CI guards now cover authority amplification, mounts, pinned deployment, and read-only finance/operator surfaces; re-run after authority-bearing changes |
 | Performance | PARTIAL | Synthetic web/recipe capture is below the repeated ~30s threshold; owner-visible timing remains for final acceptance |
 
@@ -109,9 +109,10 @@ boundary and authorization gate are recorded in
 ## Current next action
 
 Continue the clean-machine reconstruction sprint. Test-mode contracts, real
-privileged preflight, and one fresh Fedora 44 synthetic deployment/reboot now
-provide static, disposable, and first-clean synthetic evidence. The next
-evidence level is an independent fresh supported guest using full synthetic
-Open WebUI, Hindsight, SearXNG, and Hermes application records plus canonical
-application fixtures, followed by a full application household soak. Owner-
+privileged preflight, and two independent fresh Fedora 44 synthetic
+deployments/reboots now provide static, disposable, first-clean, and
+second-clean synthetic evidence. The next evidence level is an independent
+fresh supported guest using full synthetic Open WebUI, Hindsight, SearXNG, and
+Hermes application records plus canonical application fixtures, followed by a
+full application household soak. Owner-
 gated real integrations remain outside this work.

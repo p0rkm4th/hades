@@ -22,8 +22,9 @@ an owner decision or secret from defects that can be repaired independently.
   operator-input template, idempotent test-mode installer, non-mutating doctor,
   install validator, and rerunnable disposable rehearsal are present. Two
   independent pristine Fedora guests now pass the credential-free contract
-  rehearsal and synthetic restore checks. A fresh Fedora 44 guest has now
-  completed the real privileged installer path and reboot recovery with
+  rehearsal and synthetic restore checks. Two independent fresh Fedora 44
+  guests have now completed the real privileged installer path, reboot
+  recovery, doctor, validation, and owner-style synthetic checks with
   generated private deployment records; the records are minimal service
   fixtures, so full application reconstruction and household soak remain
   unproven.
