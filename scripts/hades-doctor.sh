@@ -43,6 +43,7 @@ config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 for file in overlay/sitecustomize.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js; do
   [[ -f "$config_root/$file" ]] && echo "PASS HADES layer $file" || echo "WARN HADES layer missing: $file"
 done
+[[ -f "$config_root/reconstruction-manifest.json" ]] && echo 'PASS reconstruction manifest' || echo 'WARN reconstruction manifest missing'
 if [[ -n "$inputs" && -f "$inputs" ]]; then
   perms=$(stat -c '%a' "$inputs")
   [[ "$perms" == 600 || "$perms" == 640 ]] && echo 'PASS operator-input permissions' || echo "WARN operator-input permissions: $perms"

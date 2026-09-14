@@ -73,6 +73,7 @@ validate_started_runtime() {
 preflight() {
   tracked_sources=(
     config/versions.env
+    config/reconstruction-manifest.json
     hermes/config.yaml.example
     hermes/env.example
     hermes/sitecustomize.py
@@ -154,6 +155,7 @@ if ((test_mode)); then
   config_root=$(under_root "$HADES_CONFIG_ROOT"); state_root=$(under_root "$HADES_STATE_ROOT"); backup_root=$(under_root "$HADES_BACKUP_ROOT")
   mkdir -p "$config_root" "$state_root" "$backup_root"; chmod 0750 "$config_root" "$state_root" "$backup_root"
   [[ -e "$config_root/versions.env" ]] || install -m 0644 "$repo_dir/config/versions.env" "$config_root/versions.env"
+  [[ -e "$config_root/reconstruction-manifest.json" ]] || install -m 0644 "$repo_dir/config/reconstruction-manifest.json" "$config_root/reconstruction-manifest.json"
   [[ -e "$config_root/hermes-config.yaml" ]] || install -m 0644 "$repo_dir/hermes/config.yaml.example" "$config_root/hermes-config.yaml"
   [[ -e "$config_root/hermes.env.example" ]] || install -m 0644 "$repo_dir/hermes/env.example" "$config_root/hermes.env.example"
   install -d -m 0750 "$state_root/runtime" "$state_root/compose"
@@ -171,6 +173,7 @@ fi
 config_root=$(under_root "$HADES_CONFIG_ROOT"); state_root=$(under_root "$HADES_STATE_ROOT"); backup_root=$(under_root "$HADES_BACKUP_ROOT")
 mkdir -p "$config_root" "$state_root" "$backup_root"; chmod 0750 "$config_root" "$state_root" "$backup_root"
 [[ -e "$config_root/versions.env" ]] || install -m 0644 "$repo_dir/config/versions.env" "$config_root/versions.env"
+[[ -e "$config_root/reconstruction-manifest.json" ]] || install -m 0644 "$repo_dir/config/reconstruction-manifest.json" "$config_root/reconstruction-manifest.json"
 [[ -e "$config_root/hermes-config.yaml" ]] || install -m 0644 "$repo_dir/hermes/config.yaml.example" "$config_root/hermes-config.yaml"
 [[ -e "$config_root/hermes.env.example" ]] || install -m 0644 "$repo_dir/hermes/env.example" "$config_root/hermes.env.example"
 install -d -m 0750 "$state_root/runtime" "$state_root/compose"

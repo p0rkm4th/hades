@@ -10,4 +10,5 @@ bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$tmp_root" --input
 bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$tmp_root" --inputs "$tmp_root/operator.env"
 bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$tmp_root" --inputs "$tmp_root/operator.env"
 test "$(grep -c '^manifest=' "$tmp_root/var/lib/hades/install-contract")" -eq 1
+test -f "$tmp_root/etc/hades/reconstruction-manifest.json"
 echo 'PASS clean reconstruction contract is rerunnable and state-preserving'

@@ -40,6 +40,7 @@ config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 for file in overlay/sitecustomize.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js; do
   [[ -f "$config_root/$file" ]] || { echo "FAIL HADES layer missing: $file"; exit 1; }
 done
+[[ -f "$config_root/reconstruction-manifest.json" ]] || { echo 'FAIL reconstruction manifest missing'; exit 1; }
 if (( ! test_mode )) && command -v docker >/dev/null 2>&1; then
   for f in "$repo_dir"/deploy/*.compose.yaml; do "${compose_cmd[@]}" -f "$f" config --quiet || { echo "FAIL compose $(basename "$f")"; exit 1; }; done
 fi
