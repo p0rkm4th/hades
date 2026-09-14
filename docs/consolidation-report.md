@@ -32,7 +32,7 @@ isolated-contract evidence, not permission to replace the known-good
 production runtime; a full synthetic owner-contract matrix and rollback
 rehearsal remain before migration.
 
-The 492-line HADES overlay is retained for now. Its behaviors are narrowly
+The HADES overlay is retained for now. Its behaviors are narrowly
 classified in `docs/hermes-overlay-inventory.md`: model/domain policy,
 completion-only isolation, dynamic MCP reconciliation, Hindsight normalization,
 streaming safeguards, and startup discovery. No behavior has sufficient clean
