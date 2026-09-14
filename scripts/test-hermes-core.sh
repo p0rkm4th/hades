@@ -19,6 +19,15 @@ PYTHON="$CANDIDATE/.venv/bin/python"
   exit 1
 }
 
+# The Hindsight provider tests exercise both the client API and embedded
+# provider paths. Fail before collection if a disposable candidate was
+# partially provisioned; otherwise the suite reports misleading behavior
+# failures (and background-thread errors) for a missing dependency.
+"$PYTHON" -c 'import hindsight_client_api' >/dev/null 2>&1 || {
+  printf "FAIL candidate environment missing hindsight-client==0.6.1 (use a fresh/disposable venv)\n" >&2
+  exit 1
+}
+
 RUNNER="$CANDIDATE/scripts/run_tests.sh"
 [[ -x "$RUNNER" ]] || { printf 'FAIL candidate canonical test runner missing\n' >&2; exit 1; }
 
