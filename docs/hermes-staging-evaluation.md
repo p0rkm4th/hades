@@ -416,7 +416,13 @@ files**. This is useful triage evidence, not a clean full-suite result.
 The remaining Modal extra was then restored and its two tests passed, bringing
 the dependency-repaired focused evidence to **167/167**. The residual focused
 set is **5 tests across 4 host/update-shim/browser-environment files**; these
-are not HADES production paths.
+are not HADES production paths. The four residual files are
+`tests/tools/test_build_subprocess_env.py`,
+`tests/test_desktop_update_shim_profile_cleanup.py`,
+`tests/tools/test_browser_real_profile.py`, and
+`tests/hermes_cli/test_update_head_moved_gate.py`. Their failures depend on
+host-installed binaries, desktop/browser availability, or live update-process
+supervision; they need hermetic upstream disposition before release gating.
 
 The promotion-critical HADES core contract was rerun through the candidate's
 canonical wrapper after the recovery rehearsals: **525/525 passed** across the

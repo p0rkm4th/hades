@@ -312,7 +312,11 @@ useful triage evidence, not a clean full-suite result.
 The remaining Modal extra was then restored and its two tests passed, bringing
 the dependency-repaired focused evidence to 167/167. The residual focused
 set is 5 tests across 4 host/update-shim/browser-environment files; these are
-not HADES production paths.
+not HADES production paths. The four residual files are the
+subprocess-environment, desktop update-shim profile-cleanup, real-browser-
+profile, and update-head-moved tests. Their failures depend on host-installed
+binaries, desktop/browser availability, or live update-process supervision;
+they need hermetic upstream disposition before release gating.
 
 ## HOUSEHOLD ALPHA STATUS
 
