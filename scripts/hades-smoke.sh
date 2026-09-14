@@ -25,13 +25,19 @@ pass=0
 fail=0
 check_http() {
   local label="$1" url="$2"
-  if curl -fsS --max-time 10 "$url" >/dev/null; then
-    printf 'PASS %s\n' "$label"
-    pass=$((pass + 1))
-  else
-    printf 'FAIL %s\n' "$label"
-    fail=$((fail + 1))
-  fi
+  # Hermes needs a few seconds to load MCP schemas after a restart. Retry
+  # health checks so a healthy restart is not reported as a false outage.
+  local attempt
+  for attempt in 1 2 3 4 5 6; do
+    if curl -fsS --max-time 10 "$url" >/dev/null; then
+      printf 'PASS %s\n' "$label"
+      pass=$((pass + 1))
+      return
+    fi
+    sleep 2
+  done
+  printf 'FAIL %s\n' "$label"
+  fail=$((fail + 1))
 }
 
 check_http "Open WebUI health" "$WEBUI_URL/health"

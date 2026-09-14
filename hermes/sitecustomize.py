@@ -415,6 +415,7 @@ try:
         )
         original_stream_callback = getattr(self, "stream_delta_callback", None)
         original_internal_stream_callback = getattr(self, "_stream_callback", None)
+        original_ephemeral_system_prompt = getattr(self, "ephemeral_system_prompt", None)
         original_tools = getattr(self, "tools", None)
         original_valid_tool_names = getattr(self, "valid_tool_names", None)
         completion_only_model = bool(re.search(
@@ -497,6 +498,19 @@ try:
                     )
             except Exception as exc:
                 _hades_logger.warning("API web intent narrowing failed: %s", exc)
+        # Small local models may answer a follow-up from the prior assistant
+        # text instead of re-checking live data. Make the owner-facing rule
+        # explicit for this turn; the tool catalog is already narrowed above.
+        if web_intent and not grocy_intent and not memory_intent and not completion_only_model:
+            web_guidance = (
+                "HADES live-web rule: this request concerns current or external "
+                "information. Call web_search before answering, including on a "
+                "follow-up. Use the user's location/topic in the query. Do not "
+                "claim that web access is unavailable when web_search is listed."
+            )
+            self.ephemeral_system_prompt = "\n\n".join(
+                part for part in (original_ephemeral_system_prompt, web_guidance) if part
+            )
         # Do not expose finance tools based on intent.  Natural-language
         # intent is not authorization; finance remains unavailable until a
         # server-side owner capability is wired into this boundary.
@@ -657,6 +671,7 @@ try:
             if suppress_stream:
                 self.stream_delta_callback = original_stream_callback
                 self._stream_callback = original_internal_stream_callback
+            self.ephemeral_system_prompt = original_ephemeral_system_prompt
             if memory_intent:
                 self.tools = original_tools
                 self.valid_tool_names = original_valid_tool_names

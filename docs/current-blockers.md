@@ -17,6 +17,11 @@ an owner decision or secret from defects that can be repaired independently.
 
 ## Independent technical work still available
 
+- Weather/search follow-up reliability: SearXNG itself is healthy and the
+  first weather search worked, but a prior small-model follow-up answered from
+  stale context instead of re-searching. Tool-use enforcement and explicit
+  per-turn live-web guidance are deployed; a fresh owner-UI follow-up is still
+  required to close the defect.
 - Continue Hermes candidate test/environment triage without promoting it.
 - Harden recovery documentation and validate restart behavior.
 - Continue owner-safe cross-domain and read-only composition work.

@@ -38,6 +38,13 @@ The browser dogfood also covered an informal/profane stock question about
 eggs. HADES correctly reported no eggs, matching Grocy's live stock response;
 the result persisted after reload.
 
+Dogfood also exposed a recipe-authoring gap: the production allowlist omitted
+recipe authoring even though the installed Grocy MCP already supported it.
+The allowlist now exposes recipe listing/details, create-by-product-name,
+metadata update, ingredient add, and ingredient removal. Recipe creation is
+still an explicit Grocy mutation; unresolved product names are reported rather
+than silently inventing pantry products.
+
 In a fresh synthetic chat, Hindsight first recalled the test recipe label and
 a following explicit Grocy turn checked current stock and reported the recipe
 as makeable. The single-turn composition path now also performs both tool
