@@ -77,7 +77,7 @@ not commit volume.
 | Capability | Status | Smallest remaining contract |
 |---|---|---|
 | Owner daily-driver | PASS + PERSISTENCE | Fresh owner regression after any runtime promotion |
-| Household multi-user | PARTIAL | Run model-quality Alpha/Beta/Gamma long-context dogfood; deterministic 60-turn isolation/reset harness passes |
+| Household multi-user | PARTIAL | Disposable Qwen harness passes 24 Alpha/Beta/Gamma turns; run the same sequence through authenticated HADES sessions |
 | Private memory | PASS + PERSISTENCE | Preserve subject mapping through any migration |
 | Shared household state | PASS + PERSISTENCE | Complete recipe-authoring browser sequence |
 | Web/search | PARTIAL | Fresh owner-UI follow-up must confirm repaired search freshness |

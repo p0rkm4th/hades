@@ -70,3 +70,15 @@ sequence at 220 tokens exhausted reasoning on several turns, especially for a
 third isolated user. This is a completion-budget/context-quality limitation,
 not evidence to lower the production cap; the full HADES multi-user run still
 needs authenticated gateway execution.
+
+The repeatable form of this run is
+`HADES_OLLAMA_URL=http://172.18.0.1:11434/v1 scripts/test-ollama-long-dogfood.py`.
+It uses no real tools or credentials and defaults to isolated Alpha, Beta, and
+Gamma conversations with a 400-token allowance.
+
+The harness passes all 24 Alpha/Beta/Gamma turns at a 500-token allowance. An
+initial run exposed one Alpha recall miss where the model answered from the
+conversation instead of calling Hindsight; adding the explicit “MUST call
+hindsight_recall” interface rule made the complete run pass. This is evidence
+for the disposable model/tool contract, while authenticated HADES gateway
+execution remains the end-to-end acceptance boundary.
