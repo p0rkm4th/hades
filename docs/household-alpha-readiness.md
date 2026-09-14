@@ -6,13 +6,15 @@ operations evidence.
 
 ## Current assessment
 
-Production identity migration is complete and the existing owner path remains
-healthy. Production Hermes remains on the known-good baseline; finance and
-privileged household capabilities remain excluded.
+The production identity foundation and existing owner path remain healthy;
+synthetic Household Alpha readiness is complete, while real household
+onboarding remains an explicit owner operation. Production Hermes remains on
+the known-good baseline; finance and privileged household capabilities remain
+excluded.
 
 ## Readiness decision
 
-**HADES HOUSEHOLD ALPHA — READY**
+**HADES HOUSEHOLD ALPHA — READY FOR CONTROLLED ONBOARDING**
 
 Production LLDAP is persistent, Scotty's existing identity and local fallback
 are preserved, directory-authenticated Scotty maps to the existing Open WebUI
@@ -39,8 +41,9 @@ administrator and independent recovery path were verified.
 
 ## Remaining gates
 
-- No production readiness gates remain. Real household onboarding still
-  requires Scotty's explicit identity/invitation choice.
+- No additional implementation gate remains for synthetic Household Alpha.
+  Real household onboarding still requires Scotty's explicit
+  identity/invitation choice and the corresponding controlled acceptance.
 - Browser DOM acceptance is substantially covered: mobile rendered login,
   private-chat sidebar isolation, household model visibility, memory
   retain/recall, shared Grocy read and mutation/cross-user read, finance
