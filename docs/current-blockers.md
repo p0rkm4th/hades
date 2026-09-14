@@ -25,10 +25,9 @@ an owner decision or secret from defects that can be repaired independently.
   rehearsal and synthetic restore checks. Two independent fresh Fedora 44
   guests completed the real privileged installer path, reboot recovery,
   doctor, validation, and owner-style synthetic checks with generated private
-  deployment records. A newly added real-mode guard now rejects mutable image
-  references; the second run's mutable Open WebUI smoke record therefore
-  requires a current-HEAD rerun with a pinned application artifact. Full
-  application reconstruction and household soak remain unproven.
+  deployment records. The current-HEAD rerun now emits immutable records
+  directly and passes the real preflight, deployment, reboot, and validation
+  path. Full application reconstruction and household soak remain unproven.
 - **Added:** The reconstruction contract now injects an interruption after
   preparation and verifies that a rerun preserves prepared state. Invalid
   private Compose, mutable image pins, and unsafe secret permissions fail

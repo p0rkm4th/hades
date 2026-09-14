@@ -186,13 +186,10 @@ adjusted only to make its Hindsight and SearXNG records consume the immutable
 image pins; real privileged preflight then passed, the installer pulled the
 pinned images and completed, and doctor/validation passed. After a guest
 reboot, Hermes was enabled and active, all six container groups returned, and
-doctor/validation passed after the normal LLDAP health warm-up. This was
-**second independent clean synthetic deployment and reboot evidence** for the
-source revision used in that run. A later hardening change now rejects
-mutable private image references in real preflight; because that guest's
-synthetic Open WebUI record still used `alpine:3.20`, its deployment is not
-current-HEAD qualification evidence and must be rerun with a pinned
-application artifact. As with the first guest, the private records also used
+doctor/validation passed after the normal LLDAP health warm-up. This is
+**current-HEAD second independent clean synthetic deployment and reboot
+evidence**: the generated records now consume immutable image references
+directly, without post-generation edits. The private records still use
 bounded smoke commands rather than full Open WebUI, Hindsight, SearXNG, and
 Hermes application fixtures, so full application reconstruction remains
 unproven.
@@ -204,9 +201,9 @@ unproven.
 | Static | PASS | Syntax, pins, provenance, policy, CI, and public-safe configuration are validated. |
 | Disposable component/fixture | PASS | Read-only domain fixtures, synthetic backup/restore, private-record generation, and test-mode installer contracts pass. |
 | First clean machine | PASS for tracked subset | A pristine Fedora system proved the supported-host preflight and tracked LLDAP/Grocy/Agent Zero deployment path. |
-| Second independent clean machine | HISTORICAL / RERUN REQUIRED | A separate pristine Fedora 44 guest completed real preflight, deployment, doctor, validation, reboot, and post-reboot validation before the mutable-private-image guard; current-HEAD evidence requires a pinned application record. |
-| Reboot/restart | PASS for tracked subset; current-HEAD rerun pending | Both disposable Fedora guests recovered the tracked services and enabled Hermes; the second run predates the current mutable-image guard. |
-| Full-stack synthetic clean reconstruction | HISTORICAL / RERUN REQUIRED | Two fresh Fedora 44 systems completed the prior explicit-input deployment path; current source requires a new qualifying run with pinned private application records. |
+| Second independent clean machine | PASS for current-HEAD tracked/synthetic deployment | A separate pristine Fedora 44 guest completed current-HEAD real preflight, immutable generated records, deployment, doctor, validation, reboot, post-reboot validation, and owner-style synthetic checks. |
+| Reboot/restart | PASS for tracked subset on two guests | Both disposable Fedora guests recovered the tracked services and enabled Hermes after reboot; private records are bounded smoke services, not full application behavior. |
+| Full-stack synthetic clean reconstruction | PASS for current-HEAD tracked/synthetic path | Two fresh Fedora 44 systems completed the explicit-input deployment and reboot path; their private records are minimal service fixtures, not full application records. |
 | Full application clean reconstruction | NOT PROVEN | Requires full synthetic Open WebUI/Hindsight/SearXNG/Hermes records and canonical application fixtures on an independent fresh guest. |
 | Fresh-install synthetic household soak | PASS for contract/fixture layer | Generated private inputs, test-mode install/doctor/validation, and owner-style authority/multi-user/memory simulations run as one reproducible sequence; no full application behavior is claimed. |
 | Fresh-install full application household soak | NOT PROVEN | Follows a successful full application reconstruction and exercises the reconstructed HADES application path. |
