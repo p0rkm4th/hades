@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+from datetime import date
 from typing import Any
 
 import anyio
@@ -87,13 +88,20 @@ def finance_transactions(
 ) -> dict[str, Any]:
     """Read canonical transactions for an ISO date range; never mutates data."""
     try:
+        start = date.fromisoformat(str(start_date))
+        end = date.fromisoformat(str(end_date))
+    except (TypeError, ValueError):
+        return {"ok": False, "error": "Transaction dates must use ISO YYYY-MM-DD."}
+    if end < start:
+        return {"ok": False, "error": "Transaction end date must not precede start date."}
+    try:
         bounded_limit = max(1, min(int(limit), MAX_TRANSACTIONS))
     except (TypeError, ValueError):
         return {"ok": False, "error": "Transaction limit must be an integer."}
     return _call(
         "transactions",
-        startDate=str(start_date),
-        endDate=str(end_date),
+        startDate=start.isoformat(),
+        endDate=end.isoformat(),
         account=str(account or ""),
         limit=bounded_limit,
     )

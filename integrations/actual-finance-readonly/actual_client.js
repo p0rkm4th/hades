@@ -107,7 +107,6 @@ async function main(request) {
           id: row.id,
           account: account.name,
           date: row.date,
-          amount: row.amount,
           payee: row.payee_name || payees.get(row.payee) || row.payee || null,
           amount_cents: row.amount,
           amount: row.amount / 100,
