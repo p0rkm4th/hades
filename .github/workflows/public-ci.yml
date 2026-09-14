@@ -33,6 +33,7 @@ jobs:
           bash scripts/test-capability-boundary.sh
           bash scripts/test-readonly-config-shapes.sh
           bash scripts/test-recovery-artifact-safety.sh
+          bash scripts/test-workflow-pinning.sh
           bash scripts/public-history-audit.sh
 
       - name: Validate shell scripts
