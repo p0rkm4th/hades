@@ -61,6 +61,31 @@ while IFS= read -r -d '' path; do
 done < <(find "$ROOT" -type f -name '*.json' -print0)
 printf 'PASS JSON artifacts: %s\n' "$json_count"
 
+archive_count=0
+while IFS= read -r -d '' archive; do
+  archive_mode=$(stat -Lc '%a' "$archive")
+  case "$archive_mode" in
+    600|640|660) ;;
+    *) printf 'FAIL recovery archive permissions: %s\n' "$archive_mode"; exit 1 ;;
+  esac
+  [[ -s "$archive" ]] || { printf 'FAIL recovery archive: empty\n'; exit 1; }
+  gzip -t "$archive" >/dev/null 2>&1 || {
+    printf 'FAIL recovery archive compression\n'
+    exit 1
+  }
+  while IFS= read -r entry; do
+    case "$entry" in
+      /*|../*|*/../*|..)
+        printf 'FAIL recovery archive path\n'
+        exit 1
+        ;;
+    esac
+  done < <(tar -tzf "$archive")
+  archive_count=$((archive_count + 1))
+done < <(find "$ROOT" -type f \( -name '*.tar.gz' -o -name '*.tgz' \) \
+  ! -name '*.failed-rehearsal' -print0)
+printf 'PASS recovery archives: %s\n' "$archive_count"
+
 checksum_count=0
 while IFS= read -r -d '' manifest; do
   manifest_mode=$(stat -Lc '%a' "$manifest")
