@@ -73,3 +73,8 @@ environment values or persistent data:
 The untracked Open WebUI/SearXNG service definitions are intentional private
 deployment state, not dead public compose files. This is now an explicit
 rebuild input rather than an undocumented assumption.
+
+The metadata-only permission audit also found the three staged LLDAP secret
+files at mode `0600`, while tracked non-secret settings remain `0644`. Compose
+uses Docker secret mounts for LLDAP rather than embedding values in the
+repository. Secret contents were not read or recorded.
