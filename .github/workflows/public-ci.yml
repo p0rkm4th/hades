@@ -64,6 +64,8 @@ jobs:
         run: bash scripts/test-source-of-truth-fixture.sh
       - name: Check static security boundary audit
         run: bash scripts/test-security-boundary-audit.sh
+      - name: Check weak-model interface contract
+        run: bash scripts/test-weak-model-contract.sh
 
       - name: Check recovery artifact safety
         run: bash scripts/test-recovery-artifact-safety.sh

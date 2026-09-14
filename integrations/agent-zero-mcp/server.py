@@ -112,12 +112,26 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
 async def list_tools():
     return ListToolsResult(tools=[Tool(
         name=TOOL_NAME,
-        description="Run one harmless, bounded task through the private Agent Zero operator.",
+        description=(
+            "Delegate one harmless, bounded, read-only task to the private "
+            "Agent Zero operator. Never include credentials, secrets, or a "
+            "request to modify hosts, infrastructure, finance, or HADES. "
+            "A timeout or invalid result is OUTCOME UNKNOWN, not success."
+        ),
         inputSchema={
             "type": "object",
             "properties": {
-                "task": {"type": "string"},
-                "context_id": {"type": "string"},
+                "task": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": MAX_TASK_CHARS,
+                    "description": "Harmless read-only task; do not request writes or secrets.",
+                },
+                "context_id": {
+                    "type": "string",
+                    "maxLength": MAX_CONTEXT_ID_CHARS,
+                    "description": "Optional bounded continuation identifier.",
+                },
             },
             "required": ["task"],
         },
