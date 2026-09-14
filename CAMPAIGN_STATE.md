@@ -154,6 +154,8 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
   partial-state/idempotency defects. Full HADES reconstruction is not claimed
   until explicit private Open WebUI, Hindsight, SearXNG, and Hermes records are
   supplied to a second independent guest.
+- The first clean guest also passed reboot recovery for the tracked subset:
+  systemd and Docker returned automatically, and LLDAP regained healthy state.
 
 ## ARCHITECTURAL DISCOVERIES
 

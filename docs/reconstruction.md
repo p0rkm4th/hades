@@ -50,3 +50,9 @@ Open WebUI, Hindsight, SearXNG, and Hermes deployment records, so no full
 conversation, memory, search, or Hermes acceptance is claimed. The next
 evidence level is a second independent guest using those explicit records and
 canonical synthetic backups.
+
+After installation, the same guest was rebooted. Systemd returned to
+`running`, Docker restarted Agent Zero, Grocy, and LLDAP automatically, and
+LLDAP returned `healthy` after its normal startup interval. This is reboot
+evidence for the tracked subset only; it is not evidence that missing private
+services or Hermes recovered.
