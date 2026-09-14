@@ -117,15 +117,15 @@ finish. The disposable instance and fixtures were stopped and removed.
 This proves the isolated Open WebUI application-start path, but not recovery of
 owner conversations, authentication, or matching static assets. Those remain
 private operational gates. The Hindsight image includes a bundled PostgreSQL
-server; its native backup tool is available inside the image, but no live
-Hindsight backup was created during this public-safe rehearsal.
+server and its native backup tools.
 
 The live Hindsight PostgreSQL listener passed `pg_isready` on 2026-09-12, and
 the pinned image exposes matching PostgreSQL 18.1 `pg_dump`, `pg_restore`, and
-`pg_isready` binaries. A schema-only export check was not completed because
-the embedded server requires its private password; no credential was recovered
-or recorded as part of this campaign. A private operator must supply that
-credential to perform the native export and isolated restore rehearsal.
+`pg_isready` binaries. A protected custom-format export was created from the
+live database and its archive structure validated. The dump was restored into
+a temporary database on the same embedded PostgreSQL/pgvector server, then
+that temporary database was dropped. The canonical Hindsight database was not
+modified.
 
 On 2026-09-13, a synthetic LLDAP directory backup was copied only after the
 staging service was quiesced. SQLite `quick_check` returned `ok`, and the
@@ -149,18 +149,16 @@ and it deliberately does not claim coverage for Hindsight PostgreSQL, Agent
 Zero, or SearXNG.
 
 Native production database/export procedures and isolated restore evidence
-remain outstanding for Hindsight, Hermes profile assets, Agent Zero, and
-SearXNG. Retention, encryption, and a complete all-component job remain
-operator work.
-Hindsight tool availability and listener readiness are verified, but its native
-export remains credential-gated.
+remain outstanding for Hermes profile assets, Agent Zero, and SearXNG.
+Retention, encryption, and a complete all-component job remain operator work.
+Hindsight native export and same-server isolated restore are now verified.
 
 On 2026-09-13, the live production Grocy database was copied through the
 container's SQLite/PDO path into a private recovery checkpoint. The copy is
 non-empty, mode `0600`, and passed SQLite `PRAGMA integrity_check`; it is not
 stored in Git. This replaces the previously unusable zero-byte Grocy artifact
-in the older migration-preflight set. Native Hindsight export remains
-credential-gated.
+in the older migration-preflight set. Hindsight export is separately validated
+in the recovery section above.
 
 The live production Open WebUI database was also copied through SQLite's
 online backup API into that private checkpoint on 2026-09-13. The copy is

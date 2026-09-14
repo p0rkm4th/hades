@@ -382,9 +382,11 @@ onboarding is the only owner-input gate; it does not pause independent work.
   preflight backup set are preserved; older incomplete artifacts are not
   rollback inputs.
 - Current private recovery checkpoint: fresh Open WebUI, Grocy, LLDAP, and
-  Hermes SQLite snapshots pass integrity checks; matching profile assets,
-  encrypted off-host retention, isolated restore, and native Hindsight export
-  remain unproven.
+  Hermes SQLite snapshots pass integrity checks. A protected Hindsight native
+  export was validated and restored into a temporary database on its matching
+  embedded PostgreSQL/pgvector server; the temporary database was dropped.
+  Matching profile assets, encrypted off-host retention, and isolated restore
+  for the remaining non-SQLite components remain unproven.
 - Synthetic identity recovery: PASS in the accepted production checkpoint.
 - Open WebUI account hygiene: PASS for the authorized cleanup. Clearly
   synthetic Luna/test/dogfood records were removed after a verified private
@@ -411,8 +413,9 @@ onboarding is the only owner-input gate; it does not pause independent work.
   Hermes) with checksums. The first rehearsal exposed and corrected Grocy's
   image path (`/config/data/grocy.db`); the corrected artifact is non-empty and
   valid. After a quiesced LLDAP snapshot, the helper now waits for the
-  container's healthy state before reporting success. Native Hindsight export
-  and encrypted retention remain separate gates.
+  container's healthy state before reporting success. Hindsight native export
+  and same-server isolated restore are now validated; encrypted retention
+  remains a separate gate.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

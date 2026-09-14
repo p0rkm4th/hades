@@ -49,10 +49,9 @@ must remain removable without introducing a HADES core/orchestrator.
 ## Recovery dependencies
 
 The known recovery order is Open WebUI, Hindsight, Grocy, Hermes, Agent Zero,
-then SearXNG. Open WebUI, Grocy, and identity restore rehearsals exist for
-synthetic/disposable state. Native Hindsight export/restore and complete
-private production backup validation remain operator work requiring protected
-credentials. Stable subject-to-memory mappings must be restored together;
+then SearXNG. Open WebUI, Grocy, identity, and Hindsight export/restore
+rehearsals now exist for protected or synthetic state. Complete private
+production backup validation remains operator work. Stable subject-to-memory mappings must be restored together;
 booting services alone is not recovery evidence.
 
 ## Remaining gates
