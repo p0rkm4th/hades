@@ -194,7 +194,8 @@ Encrypted copies can be created with
 by setting `HADES_RECOVERY_GPG_RECIPIENT` to an operator-managed public-key
 identity. The wrapper fails closed when the recipient is unavailable, leaves
 plaintext sources untouched for verification, skips quarantined failed
-rehearsals, and writes a checksum manifest for the encrypted output. Operators
+rehearsals, quarantines partial encryption output on failure, and writes a
+checksum manifest for the encrypted output. Operators
 must supply the key custody, off-host destination, retention, and eventual
 plaintext-retirement policy; none of those secrets belong in Git.
 

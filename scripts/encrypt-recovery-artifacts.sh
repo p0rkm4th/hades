@@ -22,6 +22,17 @@ gpg --batch --with-colons --list-keys "$recipient" 2>/dev/null \
 stamp=$(date +%Y%m%d-%H%M%S)
 destination=$(mktemp -d "$ROOT/encrypted-${stamp}-XXXXXX")
 chmod 700 "$destination"
+
+quarantine_failed_encryption() {
+  local status=$?
+  if (( status != 0 )); then
+    mv "$destination" "$destination.failed-rehearsal" 2>/dev/null || true
+  fi
+  exit "$status"
+}
+
+trap quarantine_failed_encryption EXIT
+
 count=0
 while IFS= read -r -d '' source; do
   relative=${source#"$ROOT"/}
