@@ -90,7 +90,9 @@ The repeatable synthetic timing capture is
 It runs one web-search and one recipe-preview turn against in-process fixtures,
 recording model, tool, continuation, and total milliseconds. It has no real
 provider, recipe write, or credential dependency; use the operator-only
-environment override when Ollama is not bound to loopback.
+environment override when Ollama is not bound to loopback. The model endpoint
+is intentionally host-sensitive: if it is unreachable, the harness exits with
+an explicit dependency message and does not report fabricated timing data.
 
 The 2026-09-14 capture measured web at 15.46s total (8.12s model, 7.34s
 continuation) and recipe preview at 9.73s total (4.95s model, 4.78s
