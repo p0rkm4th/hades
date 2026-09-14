@@ -106,6 +106,36 @@ async def check():
     restarted_result = await restarted.set_servings("Recipe", 2)
     assert restarted_result == result, restarted_result
 
+    class MissingRecipeClient(Client):
+        async def get(self, url):
+            if url.endswith("/recipes"):
+                return Response([])
+            return Response({"id": 7, "base_servings": 1})
+    module.httpx.AsyncClient = MissingRecipeClient
+    result = await module.set_servings("Missing", 2)
+    assert result["outcome"] == "FAILED", result
+
+    class DuplicateRecipeClient(Client):
+        async def get(self, url):
+            if url.endswith("/recipes"):
+                return Response([
+                    {"id": 7, "name": "Recipe"},
+                    {"id": 8, "name": "Recipe"},
+                ])
+            return Response({"id": 7, "base_servings": 1})
+    module.httpx.AsyncClient = DuplicateRecipeClient
+    result = await module.set_servings("Recipe", 2)
+    assert result["outcome"] == "FAILED", result
+
+    class MalformedRecipeListClient(Client):
+        async def get(self, url):
+            if url.endswith("/recipes"):
+                return Response({"recipes": "not-a-list"})
+            return Response({"id": 7, "base_servings": 1})
+    module.httpx.AsyncClient = MalformedRecipeListClient
+    result = await module.set_servings("Recipe", 2)
+    assert result["outcome"] == "FAILED", result
+
     class TimeoutClient(Client):
         async def get(self, url): raise TimeoutException("synthetic timeout")
     module.httpx.AsyncClient = TimeoutClient
