@@ -205,8 +205,10 @@ profile. SearXNG configuration may contain secrets, Agent Zero can contain
 delegated work, and Hermes contains sessions and service credentials; the
 archives are not in Git. The Agent Zero archive was restored into a fresh
 volume and launched with the pinned image without a published port while
-production remained running. Isolated restore for SearXNG and Hermes,
-encryption, and retention remain private operational work.
+production remained running. The SearXNG configuration archive was likewise
+restored into a fresh volume and launched without a published port; production
+remained running. Isolated restore of the Hermes profile, encryption, and
+retention remain private operational work.
 
 The Agent Zero private environment file was found mode `0644` during the
 readiness check and corrected to mode `0600` in the live persistent volume.

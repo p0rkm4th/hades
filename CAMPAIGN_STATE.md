@@ -419,8 +419,9 @@ onboarding is the only owner-input gate; it does not pause independent work.
   container's healthy state before reporting success. Hindsight native export
   and same-server isolated restore are now validated. A protected Agent Zero
   archive was restored into a fresh volume with the pinned image and no
-  published port while production remained running; encrypted retention
-  remains a separate gate.
+  published port while production remained running. The SearXNG configuration
+  archive received the same disposable restore-launch check; encrypted
+  retention remains a separate gate.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change
