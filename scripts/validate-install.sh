@@ -12,10 +12,20 @@ while (($#)); do
   esac
 done
 [[ -f "$repo_dir/config/versions.env" ]] || { echo 'FAIL version manifest missing'; exit 1; }
-if [[ -n "$inputs" && -f "$inputs" ]]; then source "$inputs"; fi
+if [[ -n "$inputs" ]]; then
+  [[ -f "$inputs" ]] || { echo "FAIL missing operator input file: $inputs"; exit 1; }
+  [[ ! -L "$inputs" ]] || { echo 'FAIL operator input file must not be a symlink'; exit 1; }
+  source "$inputs"
+fi
 # The repository manifest is authoritative; operator inputs cannot override pins.
 source "$repo_dir/config/versions.env"
 [[ "${HADES_MANIFEST_VERSION:-}" == 1 ]] || { echo 'FAIL unsupported authoritative manifest version; expected version 1'; exit 1; }
+if [[ -n "$inputs" ]]; then
+  [[ "${HADES_INPUTS_VERSION:-}" == 1 ]] || { echo 'FAIL unsupported operator input contract version; expected version 1'; exit 1; }
+  for name in HADES_STATE_ROOT HADES_CONFIG_ROOT HADES_BACKUP_ROOT HADES_IDENTITY_SECRETS_DIR HADES_DEPLOYMENT_DIR HADES_HERMES_PROFILE; do
+    [[ "${!name:-}" == /* ]] || { echo "FAIL operator input path must be absolute: $name"; exit 1; }
+  done
+fi
 export HADES_LLDAP_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE
 export HADES_IDENTITY_SECRETS_DIR
 compose_cmd=(docker compose)
