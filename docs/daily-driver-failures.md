@@ -109,6 +109,11 @@ outside the repository.
   prefetch for ordinary live household-state questions. A synthetic outage
   retest returned only a clear Grocy connection failure, with no stale
   inventory or personal-memory claim; Grocy was restored and healthy.
+- A bounded concurrent read variant returned HTTP 200 for both requests and
+  each invoked the canonical stock tool once. Total latencies were 18.79s and
+  22.25s; Hermes logged Grocy execution at about 0.02s per request, leaving
+  local-model selection and continuation as the measured bottleneck. The
+  canonical shopping list remained empty.
 - Status: REPAIRED for stale-fallback behavior; concurrent response latency
   remains a separate performance investigation
 
