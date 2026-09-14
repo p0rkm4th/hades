@@ -32,9 +32,9 @@ def answer(user, request):
         return f"Web result: {web['recipe']}."
     if "what recipe" in request.lower():
         return f"Recipe context: {web['recipe']}; pantry truth: {grocy}."
-    if "add" in request.lower() and "onions" not in request.lower():
+    if "add" in request.lower() and "don't add onions" in request.lower():
         grocy["milk"] = 2
-        return "Grocy shopping state updated and verified."
+        return "Grocy shopping state updated and verified; onions excluded."
     if "missing" in request.lower():
         return f"Grocy says missing items are computed from pantry state: {grocy}."
     if "agent zero" in request.lower() and scope != "owner":
@@ -51,7 +51,7 @@ assert "mushroom-free" in answer("alpha", "find a recipe online using what we ha
 assert "pantry truth" in answer("alpha", "what recipe did I mention earlier and are we missing anything"), answer("alpha", "what recipe did I mention earlier and are we missing anything")
 assert "Finance unavailable" in answer("beta", "we need groceries, can we afford it"), answer("beta", "we need groceries, can we afford it")
 assert "Agent Zero unavailable" in answer("beta", "ask Agent Zero to inspect it")
-assert "updated and verified" in answer("alpha", "add whatever we're missing")
+assert "onions excluded" in answer("alpha", "add whatever we're missing but don't add onions")
 assert grocy["milk"] == 2 and grocy["onions"] == 2
 print("PASS cross-domain synthetic dogfood")
 PY
