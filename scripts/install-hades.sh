@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-inputs=''; root=/; preflight_only=0; test_mode=0
+inputs=''; root=/; root_supplied=0; preflight_only=0; test_mode=0
 while (($#)); do
   case "$1" in
     --inputs) inputs=${2:?--inputs needs a file}; shift 2 ;;
-    --root) root=${2:?--root needs a directory}; shift 2 ;;
+    --root) root=${2:?--root needs a directory}; root_supplied=1; shift 2 ;;
     --preflight) preflight_only=1; shift ;;
     --test-mode) test_mode=1; shift ;;
     -h|--help) sed -n '1,20p' "$0"; exit 0 ;;
@@ -19,6 +19,7 @@ if [[ "$test_mode" == 1 && -z "$inputs" ]]; then inputs="$repo_dir/config/operat
 # shellcheck disable=SC1090
 source "$inputs"
 fail() { echo "FAIL $*" >&2; exit 1; }
+if ((test_mode && !root_supplied)); then fail 'test mode requires an explicit --root sandbox'; fi
 need_cmd() { command -v "$1" >/dev/null 2>&1 || fail "missing prerequisite: $1"; }
 under_root() { printf '%s/%s' "${root%/}" "${1#/}"; }
 for name in HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE; do
