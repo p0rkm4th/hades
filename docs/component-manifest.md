@@ -43,3 +43,17 @@ bus.
 See [`stable-v1-readiness.md`](stable-v1-readiness.md) for the current
 production contract, compatibility overlay inventory, recovery dependencies,
 and remaining owner/authority gates.
+
+## Configuration drift audit
+
+The public deployment directory intentionally tracks only the compose contracts
+that are safe to publish: Agent Zero, Grocy, and LLDAP. Open WebUI, Hindsight,
+Hermes, and SearXNG use the private operator deployment/service records; their
+runtime secrets and volumes are not copied into Git. Staging/demo containers
+are disposable and are not treated as production topology.
+
+The audit found no provably obsolete public compose file or adapter to delete.
+The remaining drift risk is documentation-to-private-runtime parity: when a
+component version, image digest, endpoint, or startup dependency changes, the
+reconstruction manifest and operator record must be updated together. Ambiguous
+private state is deliberately retained until an owner-authorized migration.

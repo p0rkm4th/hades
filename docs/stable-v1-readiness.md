@@ -91,6 +91,15 @@ not commit volume.
 | Security | PASS | Re-run the boundary matrix after any authority-bearing change |
 | Performance | PARTIAL | Reduce or explicitly accept local-model/post-tool latency on slow flows |
 
+## Source-of-truth adversarial contract
+
+The synthetic contradiction harness (`scripts/test-source-of-truth-fixture.sh`)
+exercises stale Hindsight, runtime, pantry, finance, web, and availability
+claims. Current canonical systems win—Proxmox for runtime, Grocy for pantry,
+Actual for synthetic finance, and Kuma for observed availability—and a
+disagreement is disclosed as a conflict. Memory remains context only; it never
+becomes a shadow authority.
+
 No real finance, homelab mutation, Home Assistant security control, or final
 installer is part of this readiness record.
 

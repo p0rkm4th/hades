@@ -56,6 +56,8 @@ jobs:
 
       - name: Check synthetic Home Assistant read-only fixture
         run: bash scripts/test-home-assistant-fixture.sh
+      - name: Check synthetic source-of-truth contradictions
+        run: bash scripts/test-source-of-truth-fixture.sh
 
       - name: Check recovery artifact safety
         run: bash scripts/test-recovery-artifact-safety.sh
