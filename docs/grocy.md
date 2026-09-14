@@ -64,6 +64,10 @@ verification failures after a mutation attempt remain `OUTCOME UNKNOWN` and
 require canonical reconciliation before retry.
 Repeated verified requests and an immediate adapter restart are stateless:
 each request resolves and reads Grocy's canonical recipe before success.
+The deployed interpreter was also exercised through a real MCP
+`initialize`/`list_tools` exchange; the companion registered exactly
+`recipe_set_servings`. This catches transport/signature failures that isolated
+function tests cannot see.
 
 Every Grocy mutation must distinguish preview, confirmed apply, and outcome
 unknown. A timeout, connection loss, or malformed upstream response is never a
