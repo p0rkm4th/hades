@@ -21,6 +21,8 @@ for component in required:
     cells = [cell.strip() for cell in rows[0].strip('|').split('|')]
     if len(cells) != 8 or any(not cell for cell in cells):
         raise SystemExit(f'manifest row is incomplete for {component}')
+    if not any(marker in cells[1].lower() for marker in ('pinned', 'repository')):
+        raise SystemExit(f'rebuild source is not explicit for {component}')
 orders = []
 for line in table.splitlines():
     if line.startswith('| ') and line.count('|') == 9 and line[1:3].isdigit():
