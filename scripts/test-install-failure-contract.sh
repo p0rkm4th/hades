@@ -73,4 +73,7 @@ fi
 if [[ -e "$permissions_root/var" || -e "$permissions_root/etc" ]]; then
   echo 'FAIL unsafe synthetic secret permissions mutated the target'; exit 1
 fi
+if bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$permissions_root" --inputs "$fixture/permissions/operator.env" >/dev/null 2>&1; then
+  echo 'FAIL doctor accepted unsafe synthetic secret permissions'; exit 1
+fi
 echo 'PASS unsafe-secret-permissions failure is clear and non-mutating'

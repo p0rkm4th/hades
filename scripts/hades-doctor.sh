@@ -36,6 +36,46 @@ compose_cmd=(docker compose)
 [[ -n "$inputs" ]] && compose_cmd+=(--env-file "$inputs")
 config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
+doctor_fail=0
+check_secret_file() {
+  local name=$1 path=$2
+  if [[ ! -f "$path" ]]; then
+    echo "FAIL $name missing"
+    doctor_fail=1
+  elif [[ -L "$path" ]]; then
+    echo "FAIL $name is a symlink"
+    doctor_fail=1
+  else
+    local mode
+    mode=$(stat -c '%a' "$path")
+    if [[ "$mode" == 600 || "$mode" == 640 ]]; then
+      echo "PASS $name permissions"
+    else
+      echo "FAIL $name permissions=$mode"
+      doctor_fail=1
+    fi
+  fi
+}
+if [[ -n "$inputs" && -d "${HADES_DEPLOYMENT_DIR:-}" ]]; then
+  [[ ! -L "$HADES_IDENTITY_SECRETS_DIR" ]] && echo 'PASS identity secret directory' || { echo 'FAIL identity secret directory is a symlink'; doctor_fail=1; }
+  for secret in jwt_secret key_seed admin_password; do
+    path="$HADES_IDENTITY_SECRETS_DIR/$secret"
+    if [[ -f "$path" && ! -L "$path" && "$(stat -c '%a' "$path")" == 600 ]]; then
+      echo "PASS identity secret $secret permissions"
+    else
+      echo "FAIL identity secret $secret missing, linked, or not mode 0600"
+      doctor_fail=1
+    fi
+  done
+  check_secret_file 'Hindsight database secret' "$HADES_HINDSIGHT_DATABASE_SECRET_FILE"
+  check_secret_file 'Grocy API key' "$HADES_GROCY_API_KEY_FILE"
+  if [[ -n "${HADES_AGENT_ZERO_CREDENTIAL_FILE:-}" ]]; then
+    check_secret_file 'Agent Zero credential' "$HADES_AGENT_ZERO_CREDENTIAL_FILE"
+  fi
+elif [[ -n "$inputs" && "$test_mode" == 0 ]]; then
+  echo "FAIL private deployment directory missing: ${HADES_DEPLOYMENT_DIR:-unset}"
+  doctor_fail=1
+fi
 if [[ -f "$state" ]]; then
   expected_manifest=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
   installed_manifest=$(awk -F= '$1 == "manifest" {print $2}' "$state")
@@ -69,8 +109,7 @@ if [[ -n "$inputs" && -f "$inputs" ]]; then
   perms=$(stat -c '%a' "$inputs")
   [[ "$perms" == 600 || "$perms" == 640 ]] && echo 'PASS operator-input permissions' || echo "WARN operator-input permissions: $perms"
 else echo 'WARN operator-input file not supplied'; fi
-if ((test_mode)); then echo 'PASS read-only synthetic doctor'; exit 0; fi
-doctor_fail=0
+if ((test_mode)); then (( doctor_fail == 0 )) || exit 1; echo 'PASS read-only synthetic doctor'; exit 0; fi
 command -v docker >/dev/null 2>&1 && "${compose_cmd[@]}" version >/dev/null 2>&1 && echo 'PASS container runtime available' || echo 'WARN container runtime unavailable'
 if command -v docker >/dev/null 2>&1; then
   for container in hades-lldap hades-grocy hades-agent-zero; do
