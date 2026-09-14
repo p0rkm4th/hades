@@ -19,6 +19,13 @@ output, or reports. The operator owns rotation and backup custody.
 | Actual endpoint/budget/credentials | finance adapter | owner-gated | explicit authorized environment and scoped references | finance adapter only | owner-controlled | only under authorized finance policy |
 | homelab endpoint/credentials | Proxmox/NetBox/Kuma adapters | owner-gated | read-only URLs and credentials | homelab adapters only | owner-controlled | only under authorized policy |
 | Home Assistant endpoint/token/entity allowlist | HA adapter | owner-gated | URL, scoped token, explicit entity IDs | HA adapter only | owner-controlled | only under authorized policy |
+| `HADES_INPUTS_VERSION` | installer | yes | integer contract version; current value `1` | installer | update only with a documented schema change | record version with deployment evidence |
+| `HADES_STATE_ROOT`, `HADES_CONFIG_ROOT`, `HADES_BACKUP_ROOT` | installer/host layout | yes | absolute filesystem paths on the target host | root/operator | migrate only with state-copy and rollback plan | record paths, never state contents in Git |
+| `HADES_DEPLOYMENT_DIR` | installer | yes | private record directory containing the four runtime definitions | root/operator | update with a controlled deployment change | preserve the private record bundle |
+| `HADES_HERMES_PROFILE` | Hermes service | yes | private profile/state directory | Hermes service account | preserve across reruns; migrate with profile backup | private profile backup and checksum |
+| `HADES_HINDSIGHT_DATABASE_SECRET_FILE`, `HADES_GROCY_API_KEY_FILE`, `HADES_AGENT_ZERO_CREDENTIAL_FILE` | component/adapters | as applicable | paths to mode-restricted secret files | consuming service only | rotate independently with dependent restart | encrypted secret backup or documented regeneration |
+| `HADES_SEARXNG_PRIVATE_SETTINGS_FILE` | SearXNG | optional | path to private provider settings | SearXNG only | regenerate from approved provider configuration | configuration backup only |
+| `HADES_ACTUAL_ENDPOINT`, `HADES_HOMELAB_ENDPOINT`, `HADES_HOME_ASSISTANT_ENDPOINT` | future adapters | owner-gated | approved endpoint references; no implicit discovery | selected adapter only | owner-controlled | only under authorized policy |
 
 The installer never prints secret contents, copies them into the repository,
 or regenerates stable identity material on rerun. A missing or placeholder
