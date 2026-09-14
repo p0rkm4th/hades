@@ -169,7 +169,7 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
   adapters, checks the Actual JavaScript adapter, runs the memory,
   capability-boundary, read-only configuration-shape, and public-history
   checks, validates shell syntax, and validates compose shape.
-- The GitHub run for the current pushed head `8f87222` completed successfully.
+- The GitHub run for the current pushed head `298797c` completed successfully.
 - It does not replace private owner-UI, canonical-domain, or runtime
   acceptance.
 
