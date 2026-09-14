@@ -45,6 +45,14 @@ metadata update, ingredient add, and ingredient removal. Recipe creation is
 still an explicit Grocy mutation; unresolved product names are reported rather
 than silently inventing pantry products.
 
+Every Grocy mutation must distinguish preview, confirmed apply, and outcome
+unknown. A timeout, connection loss, or malformed upstream response is never a
+success; HADES must report the uncertain outcome and check Grocy's canonical
+state before retrying. A successful mutation must include the canonical result
+used for the owner-facing acknowledgement, and repeated requests must follow
+Grocy's duplicate-folding/idempotency behavior rather than create an
+unverified second row.
+
 In a fresh synthetic chat, Hindsight first recalled the test recipe label and
 a following explicit Grocy turn checked current stock and reported the recipe
 as makeable. The single-turn composition path now also performs both tool
