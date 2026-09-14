@@ -96,6 +96,21 @@ outside the repository.
 - Status: REPAIRED for stale-fallback behavior; concurrent response latency
   remains a separate performance investigation
 
+## 2026-09-14 — Grocy read latency is local-model dominated
+
+- Actor: synthetic owner API session
+- Surface: read-only HADES chat asking for live Grocy shopping-list state
+- Expected: query canonical Grocy and return a concise owner-facing answer
+- Observed: the request completed successfully in 40.79 seconds. The first
+  local-model call took 24.8 seconds, the Grocy MCP call took 0.03 seconds,
+  and the post-tool model continuation took 15.8 seconds.
+- Failure layer: local-model inference and post-tool continuation; Grocy and
+  the MCP transport were not the bottleneck
+- Repair/evidence: captured timing from the Hermes agent log without changing
+  canonical state. Optimize or tune the local-model/tool continuation path
+  only after comparing additional bounded read and mutation variants.
+- Status: DIAGNOSED — no blind Grocy retry or canonical-state change made
+
 ## 2026-09-13 — Common grocery typo bypassed live routing
 
 - Actor: synthetic household account
