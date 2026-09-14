@@ -20,3 +20,13 @@ if [[ -e "$tmp_root/unsupported-root/var" || -e "$tmp_root/unsupported-root/etc"
   echo 'FAIL unsupported input version mutated the target'; exit 1
 fi
 echo 'PASS unsupported-input-version failure is clear and non-mutating'
+cp "$repo_dir/config/operator-inputs.env.example" "$tmp_root/relative.env"
+chmod 600 "$tmp_root/relative.env"
+sed -i 's#^HADES_STATE_ROOT=.*#HADES_STATE_ROOT=relative-state#' "$tmp_root/relative.env"
+if bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$tmp_root/relative-root" --inputs "$tmp_root/relative.env" >/dev/null 2>&1; then
+  echo 'FAIL relative operator path was accepted'; exit 1
+fi
+if [[ -e "$tmp_root/relative-root/var" || -e "$tmp_root/relative-root/etc" || -e relative-state ]]; then
+  echo 'FAIL relative input path mutated the target'; exit 1
+fi
+echo 'PASS relative-input-path failure is clear and non-mutating'

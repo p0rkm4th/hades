@@ -31,6 +31,10 @@ under_root() { printf '%s/%s' "${root%/}" "${1#/}"; }
 for name in HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE; do
   [[ -n "${!name:-}" ]] || fail "operator input is missing required deployment record variable: $name"
 done
+for name in HADES_STATE_ROOT HADES_CONFIG_ROOT HADES_BACKUP_ROOT HADES_IDENTITY_SECRETS_DIR HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE HADES_HERMES_PROFILE; do
+  [[ -n "${!name:-}" ]] || fail "operator input is missing required path variable: $name"
+  [[ "${!name}" == /* ]] || fail "operator input path must be absolute: $name"
+done
 validate_private_records() {
   deployment_dir=${HADES_DEPLOYMENT_DIR:-}
   [[ -n "$deployment_dir" ]] || fail 'HADES_DEPLOYMENT_DIR is required for private deployment records'
