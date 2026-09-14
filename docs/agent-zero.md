@@ -21,7 +21,9 @@ repository. `integrations/agent-zero-mcp/server.py` is the deliberately small
 bridge for the documented external API. It exposes one bounded text task,
 enforces a 2,000-character task limit, a bounded response limit, a bounded
 context-ID limit, and a timeout; it returns upstream failures without claiming
-success. The secret-free adapter contract, disposable synthetic API/MCP path,
+success. A failure before the delegation request is sent is `FAILED`; an HTTP
+failure after the request is attempted is `OUTCOME UNKNOWN`, because Agent Zero
+may have accepted the task. The secret-free adapter contract, disposable synthetic API/MCP path,
 and authenticated production marker task are exercised. The production
 container is healthy and private; its derived API token matches the protected
 Hermes profile token.
