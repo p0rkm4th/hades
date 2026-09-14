@@ -80,6 +80,8 @@ jobs:
         run: bash scripts/test-install-failure-contract.sh
       - name: Check authoritative version manifest
         run: bash scripts/test-version-manifest.sh
+      - name: Check private input contract
+        run: bash scripts/test-private-input-contract.sh
       - name: Check network exposure policy
         run: bash scripts/test-network-exposure.sh
 

@@ -35,6 +35,7 @@ examples into a private deployment configuration and substitute local values.
 Upstream Open WebUI branding and license requirements remain in force.
 
 Clean reconstruction is documented in [`docs/reconstruction.md`](docs/reconstruction.md).
+The private value lifecycle is documented in [`docs/private-input-contract.md`](docs/private-input-contract.md).
 Use `--test-mode --root DIR` for a credential-free, disposable contract
 rehearsal; production installs require the explicit private operator-input file
 and never create synthetic users or fixture data by default.
