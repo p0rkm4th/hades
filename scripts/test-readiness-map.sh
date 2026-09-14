@@ -24,9 +24,9 @@ required = (
 names = [row[0] for row in rows]
 if names != list(required):
     raise SystemExit(f"readiness capabilities/order mismatch: {names}")
-allowed = ("PASS", "PARTIAL", "OWNER-GATED", "DEFERRED")
+allowed = {"PASS", "PARTIAL", "OWNER-GATED", "DEFERRED"}
 for capability, status, contract in rows:
-    if not status.startswith(allowed):
+    if status not in allowed:
         raise SystemExit(f"invalid readiness status for {capability}: {status}")
     if not contract or contract.lower() in {"tbd", "unknown", "n/a"}:
         raise SystemExit(f"missing smallest remaining contract for {capability}")

@@ -75,12 +75,12 @@ not commit volume.
 
 | Capability | Status | Smallest remaining contract |
 |---|---|---|
-| Owner daily-driver | PASS + PERSISTENCE | Fresh owner regression after any runtime promotion |
+| Owner daily-driver | PASS | Fresh owner regression after any runtime promotion; current persistence evidence is retained |
 | Household multi-user | PARTIAL | Disposable Qwen harness passes 24 Alpha/Beta/Gamma turns; authenticated HADES-session acceptance remains the end-to-end contract |
-| Private memory | PASS + PERSISTENCE | Preserve subject mapping through any migration |
-| Shared household state | PASS + PERSISTENCE | Complete recipe-authoring browser sequence |
+| Private memory | PASS | Preserve subject mapping through any migration; reload/restart persistence is evidenced |
+| Shared household state | PASS | Complete recipe-authoring browser sequence; current persistence evidence is retained |
 | Web/search | PARTIAL | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary; fresh owner-UI follow-up must confirm search freshness |
-| Bounded operator | PASS + PERSISTENCE | Broader tasks and native A2A remain optional hardening |
+| Bounded operator | PASS | Broader tasks and native A2A remain optional hardening; current persistence evidence is retained |
 | Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope |
 | Homelab | OWNER-GATED | Approve endpoints, inventory scope, and read-only credentials |
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
