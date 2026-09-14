@@ -6,7 +6,7 @@ runtime secrets and persistent volumes remain outside Git.
 | Component | Authority | Planned integration | Version / license / upgrade note |
 |---|---|---|---|
 | Hermes | intelligence and agent execution | supported upstream deployment/API | 0.14.0; user systemd service; upgrade through upstream installer |
-| Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | 0.11.5; pinned image; no fork or branding patch |
+| Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | 0.11.5 compatibility baseline; private image/build record must provide the immutable reference because no public v0.11.5 tag is available; no fork or branding patch |
 | Hindsight | durable semantic/personal memory | Hermes external memory provider over supported client API | `ghcr.io/vectorize-io/hindsight@sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`; embedded pg0 volume; upgrade by digest |
 | Agent Zero | bounded subordinate computer operator | isolated deployment with explicit objective/result boundary | pinned image digest; no shared unrestricted credentials; native A2A evaluated and retained MCP bridge is bounded |
 | Grocy | canonical pantry, groceries, consumption, inventory, recipes | maintained integration, then supported API or tiny adapter | select upstream release; Grocy remains source of truth |
