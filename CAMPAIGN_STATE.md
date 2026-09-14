@@ -294,6 +294,13 @@ observation defect caused by tracing a different pooled connection, not a
 runtime search defect; the test still needs an upstream correction for a clean
 unmodified full-suite result.
 
+A current canonical full-suite recheck after restoring the candidate's
+declared Hindsight dependency completed with 81 failures across 23 files.
+Those failures remain concentrated in optional-provider, host/platform,
+profile, update-shim, and other environment-sensitive contracts; the
+promotion-critical HADES core remains 525/525. This does not qualify the
+candidate for production.
+
 ## HOUSEHOLD ALPHA STATUS
 
 The detailed bullets below retain historical evidence from staging and

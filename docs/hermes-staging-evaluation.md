@@ -399,3 +399,10 @@ upstream test-observation defect—the test traces a connection it opens before
 the implementation checks out another pooled connection—not a missing context
 query or incorrect search result. The test still needs an upstream fix before
 the unmodified full suite can be called clean.
+
+A current canonical full-suite recheck after restoring the candidate's
+declared Hindsight dependency completed with **81 failures across 23 files**.
+Those failures remain concentrated in optional-provider, host/platform,
+profile, update-shim, and other environment-sensitive contracts; the
+promotion-critical HADES core remains **525/525**. This does not qualify the
+candidate for production.
