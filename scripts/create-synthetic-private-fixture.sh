@@ -7,9 +7,13 @@ if [[ -z "$output_dir" || "$output_dir" != /* ]]; then
   exit 2
 fi
 [[ ! -e "$output_dir" ]] || { printf 'FAIL synthetic fixture output already exists: %s\n' "$output_dir" >&2; exit 1; }
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# shellcheck disable=SC1091
+source "$repo_dir/config/versions.env"
 
 records="$output_dir/records"
 identity="$output_dir/identity"
+synthetic_image='alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc'
 mkdir -p "$records" "$identity" "$output_dir/config" "$output_dir/backups" "$output_dir/profile" "$output_dir/state"
 chmod 700 "$output_dir" "$identity"
 
@@ -24,11 +28,16 @@ for spec in \
   'searxng.compose.yaml:hades-synthetic-searxng'; do
   record=${spec%%:*}
   project=${spec#*:}
+  image="$synthetic_image"
+  case "$record" in
+    hindsight.compose.yaml) image="$HADES_HINDSIGHT_IMAGE" ;;
+    searxng.compose.yaml) image="$HADES_SEARXNG_IMAGE_RECORD" ;;
+  esac
   cat > "$records/$record" <<EOF
 name: $project
 services:
   smoke:
-    image: alpine:3.20
+    image: $image
     restart: unless-stopped
     command: ["sleep", "infinity"]
 EOF

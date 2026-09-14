@@ -179,8 +179,10 @@ A second independent fresh Fedora 44 guest was then taken through the same
 procedure from a new disk and repository clone. The documented minimal-host
 package step supplied `git` (the cloud image did not include it), and the
 guest's usable memory was raised to 10 GiB so it exceeded the documented 8 GiB
-minimum after host overhead. The generated private bundle was adjusted only
-to make its Hindsight and SearXNG records consume the authoritative immutable
+minimum after host overhead. (The fixture generator now emits those
+authoritative immutable Hindsight and SearXNG pins directly; the run recorded
+below predates that generator repair.) The generated private bundle was
+adjusted only to make its Hindsight and SearXNG records consume the immutable
 image pins; real privileged preflight then passed, the installer pulled the
 pinned images and completed, and doctor/validation passed. After a guest
 reboot, Hermes was enabled and active, all six container groups returned, and

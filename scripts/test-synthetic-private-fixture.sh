@@ -29,6 +29,12 @@ grep -q '^name: hades-synthetic-searxng$' "$fixture/hades-fixture/records/searxn
 grep -q '^    restart: unless-stopped$' "$fixture/hades-fixture/records/open-webui.compose.yaml"
 grep -q '^    restart: unless-stopped$' "$fixture/hades-fixture/records/hindsight.compose.yaml"
 grep -q '^    restart: unless-stopped$' "$fixture/hades-fixture/records/searxng.compose.yaml"
+if grep -Eq 'image: [^@[:space:]]+:[^@[:space:]]+$' "$fixture/hades-fixture/records"/*.compose.yaml; then
+  echo 'FAIL synthetic private fixture emitted a mutable image'; exit 1
+fi
+source config/versions.env
+grep -Fq "image: $HADES_HINDSIGHT_IMAGE" "$fixture/hades-fixture/records/hindsight.compose.yaml"
+grep -Fq "image: $HADES_SEARXNG_IMAGE_RECORD" "$fixture/hades-fixture/records/searxng.compose.yaml"
 systemd-analyze verify "$fixture/hades-fixture/records/hermes.service"
 for secret in jwt_secret key_seed admin_password; do
   [[ $(stat -c '%a' "$fixture/hades-fixture/identity/$secret") == 600 ]] || {
