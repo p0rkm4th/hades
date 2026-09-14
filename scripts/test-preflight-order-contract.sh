@@ -10,7 +10,7 @@ record_validation_line=$(grep -n 'validate_private_records$' "$installer" | tail
 [[ -n "$preflight_line" && -n "$preflight_exit_line" && -n "$record_validation_line" ]] || {
   echo 'FAIL installer preflight markers are missing'; exit 1;
 }
-grep -q 'curl --silent --show-error --connect-timeout 5 --max-time 10 --output /dev/null "\$HADES_HERMES_MODEL_ENDPOINT"' "$installer" || {
+grep -q 'curl --silent --connect-timeout 5 --max-time 10 --output /dev/null "\$HADES_HERMES_MODEL_ENDPOINT" 2>/dev/null' "$installer" || {
   echo 'FAIL preflight omits bounded model-endpoint reachability'; exit 1;
 }
 grep -q 'configured model endpoint is not reachable; verify the private endpoint' "$installer" || {
