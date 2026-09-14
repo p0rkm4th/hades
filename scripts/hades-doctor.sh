@@ -36,6 +36,9 @@ if [[ -f "$state" ]]; then
   expected_manifest=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
   installed_manifest=$(awk -F= '$1 == "manifest" {print $2}' "$state")
   [[ "$installed_manifest" == "$expected_manifest" ]] && echo 'PASS installation marker and manifest' || { echo 'FAIL installation marker manifest is stale'; exit 1; }
+  expected_reconstruction_manifest=$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')
+  installed_reconstruction_manifest=$(awk -F= '$1 == "reconstruction_manifest" {print $2}' "$state")
+  [[ "$installed_reconstruction_manifest" == "$expected_reconstruction_manifest" ]] && echo 'PASS reconstruction manifest provenance' || { echo 'FAIL reconstruction manifest provenance is stale'; exit 1; }
 else
   echo 'WARN installation marker missing'
 fi

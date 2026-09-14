@@ -16,4 +16,11 @@ fi
 if bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$tmp_root" --inputs "$tmp_root/operator.env" >/dev/null 2>&1; then
   echo 'FAIL stale manifest was accepted by doctor'; exit 1
 fi
+sed -i 's/"manifest_version": 1/"manifest_version": 99/' "$tmp_root/etc/hades/reconstruction-manifest.json"
+if bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$tmp_root" --inputs "$tmp_root/operator.env" >/dev/null 2>&1; then
+  echo 'FAIL stale reconstruction manifest was accepted by validation'; exit 1
+fi
+if bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$tmp_root" --inputs "$tmp_root/operator.env" >/dev/null 2>&1; then
+  echo 'FAIL stale reconstruction manifest was accepted by doctor'; exit 1
+fi
 echo 'PASS stale installation manifest is rejected'

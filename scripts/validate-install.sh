@@ -36,11 +36,15 @@ grep -q '^manifest=' "$state" || { echo 'FAIL installer marker is malformed'; ex
 expected_manifest=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
 installed_manifest=$(awk -F= '$1 == "manifest" {print $2}' "$state")
 [[ "$installed_manifest" == "$expected_manifest" ]] || { echo 'FAIL installer marker manifest is stale'; exit 1; }
+expected_reconstruction_manifest=$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')
+installed_reconstruction_manifest=$(awk -F= '$1 == "reconstruction_manifest" {print $2}' "$state")
+[[ "$installed_reconstruction_manifest" == "$expected_reconstruction_manifest" ]] || { echo 'FAIL installer reconstruction manifest is stale'; exit 1; }
 config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 for file in overlay/sitecustomize.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js; do
   [[ -f "$config_root/$file" ]] || { echo "FAIL HADES layer missing: $file"; exit 1; }
 done
 [[ -f "$config_root/reconstruction-manifest.json" ]] || { echo 'FAIL reconstruction manifest missing'; exit 1; }
+[[ "$(sha256sum "$config_root/reconstruction-manifest.json" | awk '{print $1}')" == "$expected_reconstruction_manifest" ]] || { echo 'FAIL installed reconstruction manifest differs from repository'; exit 1; }
 if (( ! test_mode )) && command -v docker >/dev/null 2>&1; then
   for f in "$repo_dir"/deploy/*.compose.yaml; do "${compose_cmd[@]}" -f "$f" config --quiet || { echo "FAIL compose $(basename "$f")"; exit 1; }; done
 fi
