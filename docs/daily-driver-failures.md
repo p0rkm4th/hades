@@ -147,7 +147,9 @@ outside the repository.
   expose web search and owner-authorized Agent Zero only when those tools are
   present and the session is not household-scoped. Static memory-boundary
   regression coverage verifies the classifier terms; no real finance or owner
-  memory was used.
+  memory was used. The same retention boundary now suppresses operational
+  failure text (timeouts, unavailable services, invalid responses, and unknown
+  outcomes) even when the user wording itself is otherwise neutral.
 - Status: REPAIRED — canonical systems remain authoritative and transient
   results are not promoted to personal memory by default
 
