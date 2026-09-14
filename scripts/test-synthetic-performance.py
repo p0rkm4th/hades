@@ -51,7 +51,11 @@ def run(label, prompt, expected):
         result, _ = synthetic_tool(expected, args)
         messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result)})
     tool_ms = (time.perf_counter() - tool_started) * 1000
-    _, continuation_ms = model_call(messages)
+    continuation, continuation_ms = model_call(messages)
+    continuation_calls = continuation.get("message", {}).get("tool_calls", [])
+    if continuation_calls:
+        loop_names = [call.get("function", {}).get("name") for call in continuation_calls]
+        raise SystemExit(f"{label}: unnecessary continuation tool loop: {loop_names}")
     total_ms = (time.perf_counter() - total_started) * 1000
     return {"workflow": label, "model_ms": round(model_ms, 1), "tool_ms": round(tool_ms, 1), "continuation_ms": round(continuation_ms, 1), "total_ms": round(total_ms, 1)}
 
