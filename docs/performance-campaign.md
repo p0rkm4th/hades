@@ -27,3 +27,21 @@ Grocy retry, token-ceiling tweak, or adapter rewrite is justified by current
 evidence; the next measurement should capture first model call, tool call,
 continuation, and total duration for one fresh owner-approved web and recipe
 turn.
+
+## Disposable weak-model lane — 2026-09-14
+
+Direct Ollama tool-schema probes used the installed Qwen 8B lane without HADES
+credentials or provider state. With a 400-token bounded completion allowance,
+Qwen selected the correct tool for all four domains: web search, canonical
+Grocy stock, private-memory recall, and bounded Agent Zero delegation. Direct
+generation took roughly 5.1–7.1 seconds per selection. A lower 100-token cap
+ended during reasoning before the pantry call, so the cap is a real interface
+parameter rather than an optimization target.
+
+The same lane correctly selected the initial Grocy stock read in a multi-turn
+conversation, then declined to invent recipe inputs for an underspecified
+“what are we missing?” follow-up and did not apply the ambiguous “add whatever
+is missing but do not add onions” request. This preserves preview/confirmation
+semantics; a future recipe-quality run should provide an explicit recipe and
+normalized item list. Dolphin-Mistral rejected the tool-call API request and
+remains a completion-only lane, consistent with its policy classification.
