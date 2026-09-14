@@ -467,6 +467,12 @@ onboarding is the only owner-input gate; it does not pause independent work.
   profile archive was also extracted into a fresh temporary home and its
   pinned production CLI parsed the restored profile while the live service
   remained active; encrypted retention remains a separate gate.
+- Clean reconstruction contract: PASS on a second pristine Fedora 44 x86_64
+  KVM guest. The guest independently reran the credential-free installer,
+  doctor, validator, synthetic backup restore, failure non-mutation, private
+  input, and version-manifest contracts. The private-record preflight gap was
+  repaired and regression-covered; full HADES reconstruction remains unproven
+  without the four private runtime records.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

@@ -20,9 +20,11 @@ an owner decision or secret from defects that can be repaired independently.
 - **In progress:** Clean-machine reconstruction is now the active independent
   workstream. The public version manifest, host/filesystem contract,
   operator-input template, idempotent test-mode installer, non-mutating doctor,
-  install validator, and rerunnable disposable rehearsal are present. A real
-  supported systemd guest, private deployment records, and canonical backup
-  bundle are still required for higher evidence levels.
+  install validator, and rerunnable disposable rehearsal are present. Two
+  independent pristine Fedora guests now pass the credential-free contract
+  rehearsal and synthetic restore checks. A real supported systemd guest with
+  private deployment records and canonical backup bundle is still required for
+  full-stack evidence.
 - **Added:** The credential-free backup→destroy→restore drill preserves stable
   Alpha/Beta subject IDs, memory-bank mappings, conversation marker, and Grocy
   stock. It does not substitute for private encrypted off-host recovery.

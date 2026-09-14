@@ -51,6 +51,14 @@ conversation, memory, search, or Hermes acceptance is claimed. The next
 evidence level is a second independent guest using those explicit records and
 canonical synthetic backups.
 
+A second pristine Fedora 44 x86_64 KVM guest independently reran the
+credential-free reconstruction contract, synthetic backup/identity restore,
+missing-input non-mutation contract, private-input lifecycle contract, and
+authoritative version-manifest contract. All passed. This strengthens the
+portable static/disposable evidence but still does not claim a full HADES
+reconstruction because the private runtime records were intentionally not
+copied into the guest.
+
 After installation, the same guest was rebooted. Systemd returned to
 `running`, Docker restarted Agent Zero, Grocy, and LLDAP automatically, and
 LLDAP returned `healthy` after its normal startup interval. This is reboot
