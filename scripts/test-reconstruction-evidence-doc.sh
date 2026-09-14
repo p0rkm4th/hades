@@ -6,7 +6,7 @@ from pathlib import Path
 
 reconstruction = Path('docs/reconstruction.md').read_text(encoding='utf-8')
 required_rows = {
-    'Full-stack synthetic clean reconstruction': 'PASS',
+    'Full-stack synthetic clean reconstruction': 'HISTORICAL / RERUN REQUIRED',
     'Full application clean reconstruction': 'NOT PROVEN',
     'Fresh-install synthetic household soak': 'PASS',
     'Fresh-install full application household soak': 'NOT PROVEN',

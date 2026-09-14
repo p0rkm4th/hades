@@ -58,6 +58,12 @@ validate_private_records() {
     if grep -Eq '(^|/|:)latest(@|$)' <<<"$images"; then
       fail 'private deployment record contains an unpinned latest image'
     fi
+    if (( ! test_mode )); then
+      while IFS= read -r image; do
+        [[ "$image" =~ @sha256:[0-9a-f]{64}$ ]] ||
+          fail "private deployment record contains a mutable image reference: $record"
+      done <<<"$images"
+    fi
   done
   if (( ! test_mode )); then
     hindsight_images=$("${compose_cmd[@]}" -f "$HADES_HINDSIGHT_COMPOSE_FILE" config --images)
