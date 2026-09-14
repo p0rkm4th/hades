@@ -36,6 +36,9 @@ jobs:
       - name: Check read-only response contracts
         run: python scripts/test-readonly-response-contracts.py
 
+      - name: Check finance read-only MCP boundary
+        run: bash scripts/test-finance-readonly-boundary.sh
+
       - name: Check privileged capability boundary
         run: bash scripts/test-capability-boundary.sh
 
