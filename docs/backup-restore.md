@@ -15,6 +15,22 @@ location with access controls appropriate to the data they contain.
 | SearXNG | Configuration and optional cache | SearXNG for search configuration/cache only | Preserve configuration; cache is reconstructable and need not be treated as authoritative | Recreate cache if absent; verify JSON search and provider wiring. |
 | Hermes | Profile configuration, sessions, skills, and service credentials | Hermes for orchestration/session state | Back up private profile data and secrets separately from public HADES source | Restore secrets with correct permissions, then start Hermes and verify the Open WebUI API contract. |
 
+## Current recovery matrix
+
+This matrix is the current public-safe recovery summary. Exact backup paths,
+identities, credentials, and artifact identifiers belong in the private
+operator record.
+
+| Component | Authority / reconstructability | Consistency method | Restore acceptance | Identity and canonical-state implications | Last verified | Remaining gate |
+|---|---|---|---|---|---|---|
+| Open WebUI | Authoritative for application accounts, conversations, and settings; static HADES assets are reconstructable from the deployment | Quiesce or SQLite online backup, including WAL-aware handling; preserve matching assets | Start with matching assets, authenticate, and reload a marker conversation | Restored application subjects must align with the chosen directory mapping; does not own Grocy, finance, or memory truth | 2026-09-13 | Owner-data restore and production cutover remain operator work |
+| LLDAP | Authoritative for directory identities; application records are separate | Quiesced database copy and isolated pinned-image restore | Verify directory health, login behavior, and restored identity records | Restored identities do not invalidate existing WebUI tokens automatically; use the ordered revocation bridge | 2026-09-13 | Production owner recovery and subject remapping remain gated |
+| Hindsight | Authoritative for durable memory; service can be recreated around a native PostgreSQL export | Native PostgreSQL export/restore, not a raw live data-directory copy | Verify health and a known marker recall in the intended bank/namespace | Stable subject-to-bank mapping must be restored before private recall is trusted; never treat memory as live domain truth | 2026-09-13 | Production owner-bank migration and mapping policy remain unapproved |
+| Grocy | Authoritative for household and grocery state; service image is reconstructable | Consistent SQLite backup of `/config`, with canonical API verification | Verify stock, shopping list, recipes, and restart persistence before mutations | Restore must preserve canonical quantities and duplicate-folding behavior; no HADES shadow state | 2026-09-13 | Complete owner recipe-authoring acceptance and production backup policy |
+| Hermes | Authoritative for orchestration, sessions, skills, and service configuration; package is reconstructable | Private profile/state backup with secrets handled separately and correct permissions | Start after dependencies, verify API health, chat reload, and one bounded tool call | Service credentials must be restored without exposing them; downstream canonical systems remain authoritative | 2026-09-13 | Full candidate promotion and owner-authenticated rehearsal remain gated |
+| Agent Zero | Authoritative for its private operator workspace and delegated context; image is reconstructable | Snapshot the dedicated volume while protecting `.env` and excluding public artifacts | Verify a harmless bounded delegation and a controlled failure response | Restore the same persistent identity before trusting delegated context; no host access expansion | 2026-09-13 | Broader delegation and native A2A interoperability remain future work |
+| SearXNG | Configuration is authoritative; search cache is reconstructable and non-authoritative | Preserve configuration; recreate cache when absent | Verify JSON search and Hermes provider wiring | No household or identity state is canonical here; outage must fail honestly | 2026-09-13 | No independent production gate beyond operator destination/retention policy |
+
 ## Live deployment mount inventory
 
 This inventory was captured from the running production containers on
