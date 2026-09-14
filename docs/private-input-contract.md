@@ -31,4 +31,7 @@ The installer never prints secret contents, copies them into the repository,
 or regenerates stable identity material on rerun. A missing or placeholder
 required value fails before target mutation. Live finance, homelab, Home
 Assistant, household onboarding, Hermes promotion, and off-host recovery
-custody remain intentionally outside autonomous reconstruction.
+custody remain intentionally outside autonomous reconstruction. Operator input,
+private deployment records, and identity-secret paths must be regular files or
+directories rather than symlinks, so their provenance and permissions can be
+validated without following an untracked path.

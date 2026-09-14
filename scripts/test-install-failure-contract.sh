@@ -30,3 +30,11 @@ if [[ -e "$tmp_root/relative-root/var" || -e "$tmp_root/relative-root/etc" || -e
   echo 'FAIL relative input path mutated the target'; exit 1
 fi
 echo 'PASS relative-input-path failure is clear and non-mutating'
+ln -s "$repo_dir/config/operator-inputs.env.example" "$tmp_root/symlink.env"
+if bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$tmp_root/symlink-root" --inputs "$tmp_root/symlink.env" >/dev/null 2>&1; then
+  echo 'FAIL symlinked operator input was accepted'; exit 1
+fi
+if [[ -e "$tmp_root/symlink-root/var" || -e "$tmp_root/symlink-root/etc" ]]; then
+  echo 'FAIL symlinked input mutated the target'; exit 1
+fi
+echo 'PASS symlinked-input failure is clear and non-mutating'

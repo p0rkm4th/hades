@@ -16,6 +16,7 @@ done
 if [[ "$test_mode" == 1 && -z "$inputs" ]]; then inputs="$repo_dir/config/operator-inputs.env.example"; fi
 [[ -f "$repo_dir/config/versions.env" ]] || { echo 'FAIL missing config/versions.env' >&2; exit 1; }
 [[ -f "$inputs" ]] || { echo "FAIL missing operator input file: $inputs" >&2; exit 1; }
+[[ ! -L "$inputs" ]] || { echo 'FAIL operator input file must not be a symlink' >&2; exit 1; }
 # shellcheck disable=SC1090
 source "$inputs"
 # The repository manifest is authoritative; operator inputs cannot override pins.
@@ -39,8 +40,10 @@ validate_private_records() {
   deployment_dir=${HADES_DEPLOYMENT_DIR:-}
   [[ -n "$deployment_dir" ]] || fail 'HADES_DEPLOYMENT_DIR is required for private deployment records'
   [[ -d "$deployment_dir" ]] || fail "private deployment directory does not exist: $deployment_dir"
+  [[ ! -L "$deployment_dir" ]] || fail 'private deployment directory must not be a symlink'
   for record in "$HADES_OPEN_WEBUI_COMPOSE_FILE" "$HADES_HINDSIGHT_COMPOSE_FILE" "$HADES_SEARXNG_COMPOSE_FILE" "$HADES_HERMES_SERVICE_FILE"; do
     [[ -f "$record" ]] || fail "missing required private deployment record: $record"
+    [[ ! -L "$record" ]] || fail 'private deployment records must not be symlinks'
   done
   "${compose_cmd[@]}" -f "$HADES_OPEN_WEBUI_COMPOSE_FILE" config --quiet || fail 'invalid Open WebUI private compose record'
   "${compose_cmd[@]}" -f "$HADES_HINDSIGHT_COMPOSE_FILE" config --quiet || fail 'invalid Hindsight private compose record'
@@ -117,8 +120,10 @@ preflight() {
   [[ "$HADES_HERMES_MODEL_ENDPOINT" =~ ^https?://[^[:space:]]+$ ]] || fail 'HADES_HERMES_MODEL_ENDPOINT must be an http(s) URL'
   curl --silent --connect-timeout 5 --max-time 10 --output /dev/null "$HADES_HERMES_MODEL_ENDPOINT" 2>/dev/null || fail 'configured model endpoint is not reachable; verify the private endpoint and DNS/network path'
   [[ -d "$HADES_IDENTITY_SECRETS_DIR" ]] || fail "missing identity secret directory: $HADES_IDENTITY_SECRETS_DIR"
+  [[ ! -L "$HADES_IDENTITY_SECRETS_DIR" ]] || fail 'identity secret directory must not be a symlink'
   for secret in jwt_secret key_seed admin_password; do
     [[ -f "$HADES_IDENTITY_SECRETS_DIR/$secret" ]] || fail "missing LLDAP identity secret: $HADES_IDENTITY_SECRETS_DIR/$secret"
+    [[ ! -L "$HADES_IDENTITY_SECRETS_DIR/$secret" ]] || fail 'LLDAP identity secrets must not be symlinks'
   done
   if find "$HADES_IDENTITY_SECRETS_DIR" -maxdepth 1 -type f -perm /077 -print -quit | grep -q .; then fail 'identity secret permissions are broader than 0600'; fi
   while read -r owner mode; do
