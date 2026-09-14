@@ -57,8 +57,10 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
     if context_id:
         payload["context_id"] = context_id
 
+    request_attempted = False
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
+            request_attempted = True
             response = await client.post(
                 f"{BASE_URL}/api/api_message",
                 headers={"X-API-KEY": API_KEY},
@@ -73,7 +75,13 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
             "error": "Agent Zero delegation timed out; task outcome is unknown.",
         }
     except httpx.HTTPError as exc:
-        return {"ok": False, "outcome": "FAILED", "error": f"Agent Zero request failed: {exc}"}
+        if request_attempted and exc.__class__.__name__ != "ConnectError":
+            return {
+                "ok": False,
+                "outcome": "OUTCOME UNKNOWN",
+                "error": "Agent Zero request was attempted but its outcome is unknown.",
+            }
+        return {"ok": False, "outcome": "FAILED", "error": "Agent Zero could not be reached before delegation."}
     except ValueError:
         return {
             "ok": False,

@@ -83,6 +83,9 @@ async def main():
     AsyncClient.error = module.httpx.TimeoutException()
     timed_out = await module._delegate("task")
     assert not timed_out["ok"] and timed_out["outcome"] == "OUTCOME UNKNOWN"
+    AsyncClient.error = module.httpx.HTTPError("synthetic HTTP status failure")
+    http_failed = await module._delegate("task")
+    assert not http_failed["ok"] and http_failed["outcome"] == "OUTCOME UNKNOWN"
     AsyncClient.error = None
     AsyncClient.payload = {"response": "bounded", "context_id": "ctx"}
     result = await module._delegate("task", "1234")
