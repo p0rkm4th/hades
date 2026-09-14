@@ -10,6 +10,7 @@ def resolve(domain, remembered, canonical, observed=None):
         'pantry': 'Grocy',
         'finance': 'Actual',
         'availability': 'Uptime Kuma',
+        'web': 'SearXNG',
     }
     answer = f"Current {domain}: {canonical} (source: {labels[domain]})."
     if remembered != canonical:
@@ -23,12 +24,13 @@ cases = [
     ('pantry', '2 cartons', '0 cartons', None),
     ('finance', '$50', '$65', None),
     ('availability', 'online', 'down', 'online'),
+    ('web', 'last week\'s result', 'current result', 'last week\'s result'),
 ]
 for case in cases:
     result = resolve(*case)
     expected_source = {
         'runtime': 'Proxmox', 'pantry': 'Grocy', 'finance': 'Actual',
-        'availability': 'Uptime Kuma',
+        'availability': 'Uptime Kuma', 'web': 'SearXNG',
     }[case[0]]
     if (case[2] not in result or f'source: {expected_source}' not in result
             or 'stale context' not in result):
