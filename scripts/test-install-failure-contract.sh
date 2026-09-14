@@ -43,7 +43,7 @@ fixture=$(mktemp -d)
 trap 'rm -rf -- "$tmp_root" "$fixture"' EXIT
 bash "$repo_dir/scripts/create-synthetic-private-fixture.sh" "$fixture/private"
 fixture_root="$fixture/target"
-sed -i 's/alpine:3.20/alpine:latest/' "$fixture/private/records/open-webui.compose.yaml"
+sed -E -i 's#alpine:3\.20@sha256:[0-9a-f]+#alpine:latest#' "$fixture/private/records/open-webui.compose.yaml"
 if bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$fixture_root" --inputs "$fixture/private/operator.env" >/dev/null 2>&1; then
   echo 'FAIL unpinned private image was accepted'; exit 1
 fi
