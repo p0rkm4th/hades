@@ -69,6 +69,14 @@ The shared synthetic response-contract check also covers selected-entity
 metadata, unavailable-state reporting, partial results, and the read-only
 invariant without contacting Home Assistant.
 
+[`scripts/test-home-assistant-fixture.sh`](../scripts/test-home-assistant-fixture.sh)
+adds a disposable loopback REST fixture for the first integration slice. It
+covers ordinary lights, temperature, and purifier reads; an unavailable and
+stale sensor; excluded lock and camera entities; and rejection of writes. The
+fixture proves that excluded entities are rejected before any request reaches
+the backend, and is exercised in public CI without a Home Assistant token or
+real endpoint.
+
 References: [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/),
 [Home Assistant MCP server](https://www.home-assistant.io/integrations/mcp_server),
 and [Home Assistant authentication](https://developers.home-assistant.io/docs/auth_index/).
