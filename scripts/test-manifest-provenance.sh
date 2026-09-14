@@ -29,4 +29,7 @@ printf '\n# synthetic provenance tamper\n' >> "$tmp_root/etc/hades/overlay/sitec
 if bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$tmp_root" --inputs "$tmp_root/operator.env" >/dev/null 2>&1; then
   echo 'FAIL tampered HADES layer was accepted by validation'; exit 1
 fi
+if bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$tmp_root" --inputs "$tmp_root/operator.env" >/dev/null 2>&1; then
+  echo 'FAIL tampered HADES layer was accepted by doctor'; exit 1
+fi
 echo 'PASS stale installation manifest is rejected'

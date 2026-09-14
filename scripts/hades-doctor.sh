@@ -34,6 +34,7 @@ hades_layer_digest() {
 }
 compose_cmd=(docker compose)
 [[ -n "$inputs" ]] && compose_cmd+=(--env-file "$inputs")
+config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
 if [[ -f "$state" ]]; then
   expected_manifest=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
@@ -48,11 +49,22 @@ if [[ -f "$state" ]]; then
 else
   echo 'WARN installation marker missing'
 fi
-config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 for file in overlay/sitecustomize.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js; do
-  [[ -f "$config_root/$file" ]] && echo "PASS HADES layer $file" || echo "WARN HADES layer missing: $file"
+  if [[ -f "$state" ]]; then
+    [[ -f "$config_root/$file" ]] && echo "PASS HADES layer $file" || { echo "FAIL HADES layer missing: $file"; exit 1; }
+  else
+    [[ -f "$config_root/$file" ]] && echo "PASS HADES layer $file" || echo "WARN HADES layer missing: $file"
+  fi
 done
-[[ -f "$config_root/reconstruction-manifest.json" ]] && echo 'PASS reconstruction manifest' || echo 'WARN reconstruction manifest missing'
+if [[ -f "$state" ]]; then
+  [[ -f "$config_root/reconstruction-manifest.json" ]] || { echo 'FAIL reconstruction manifest missing'; exit 1; }
+  [[ "$(sha256sum "$config_root/reconstruction-manifest.json" | awk '{print $1}')" == "$expected_reconstruction_manifest" ]] || { echo 'FAIL installed reconstruction manifest differs from repository'; exit 1; }
+  installed_layer=$(hades_layer_digest "$config_root/overlay/sitecustomize.py" "$config_root/adapters/grocy-recipe-authoring.py" "$config_root/adapters/agent-zero-mcp.py" "$config_root/assets/hades-theme.css" "$config_root/assets/hades-theme.js")
+  [[ "$installed_layer" == "$expected_layer" ]] || { echo 'FAIL installed HADES layer differs from repository'; exit 1; }
+  echo 'PASS reconstruction manifest'
+else
+  [[ -f "$config_root/reconstruction-manifest.json" ]] && echo 'PASS reconstruction manifest' || echo 'WARN reconstruction manifest missing'
+fi
 if [[ -n "$inputs" && -f "$inputs" ]]; then
   perms=$(stat -c '%a' "$inputs")
   [[ "$perms" == 600 || "$perms" == 640 ]] && echo 'PASS operator-input permissions' || echo "WARN operator-input permissions: $perms"
