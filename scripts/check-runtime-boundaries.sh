@@ -27,6 +27,15 @@ require_binding hades-searxng 8080 '127.0.0.1:8080'
 require_binding hades-hindsight 8888 '127.0.0.1:8888'
 require_binding hades-hindsight 9999 '127.0.0.1:9999'
 
+agent_zero_card_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  'http://127.0.0.1:7002/a2a/.well-known/agent-card.json' 2>/dev/null || true)
+if [[ "$agent_zero_card_status" == 401 ]]; then
+  printf 'PASS Agent Zero native A2A agent card requires authentication\n'
+else
+  printf 'FAIL Agent Zero native A2A agent-card auth status: %s\n' "$agent_zero_card_status"
+  exit 1
+fi
+
 hermes_host=$(docker exec hades-open-webui getent hosts host.docker.internal \
   2>/dev/null | awk 'NR == 1 { print $1 }' || true)
 hermes_listener_count=$(ss -ltnH 2>/dev/null \

@@ -61,6 +61,8 @@ intentionally maintained in private operations state.
   chat rendered the bounded Agent Zero result in the assistant DOM after tool
   completion. This closes the founding bounded-delegation milestone;
   persistent delegated context and broader operator tasks remain future work.
+  The runtime boundary audit also verifies that its native A2A agent card
+  requires authentication.
 - Grocy is deployed privately with a dedicated persistent volume and pinned
   image; its HTTP path passes. The HADES API owner path now successfully calls
   the canonical stock and shopping-list tools against synthetic data. Add,
