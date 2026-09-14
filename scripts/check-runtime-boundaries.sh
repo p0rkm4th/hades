@@ -9,10 +9,14 @@ require_binding() {
   local container=$1 port=$2 expected=$3 actual
   actual=$(docker port "$container" "$port/tcp" 2>/dev/null || true)
   [[ -n "$actual" ]] || { printf 'FAIL %s port %s is not published\n' "$container" "$port"; exit 1; }
-  case "$actual" in
-    "$expected"*) printf 'PASS %s %s -> %s\n' "$container" "$port" "$actual" ;;
-    *) printf 'FAIL %s %s unexpected binding: %s\n' "$container" "$port" "$actual"; exit 1 ;;
-  esac
+  # Require the complete docker-port result. A prefix match would allow an
+  # additional IPv6/public binding after the expected loopback line.
+  if [[ "$actual" == "$expected" ]]; then
+    printf 'PASS %s %s -> %s\n' "$container" "$port" "$actual"
+  else
+    printf 'FAIL %s %s unexpected binding: %s\n' "$container" "$port" "$actual"
+    exit 1
+  fi
 }
 
 require_binding hades-open-webui 8080 '0.0.0.0:3000'
