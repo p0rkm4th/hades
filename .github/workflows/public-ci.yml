@@ -20,7 +20,7 @@ jobs:
           python-version: '3.11'
 
       - name: Compile public Python adapters
-        run: python -m py_compile hermes/sitecustomize.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-ollama-long-dogfood.py
+        run: python -m py_compile hermes/sitecustomize.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py
 
       - name: Check public JavaScript adapter
         run: node --check integrations/actual-finance-readonly/actual_client.js

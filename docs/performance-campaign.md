@@ -84,3 +84,17 @@ conversation instead of calling Hindsight; adding the explicit “MUST call
 hindsight_recall” interface rule made the complete run pass. This is evidence
 for the disposable model/tool contract, while authenticated HADES gateway
 execution remains the end-to-end acceptance boundary.
+
+The repeatable synthetic timing capture is
+`HADES_OLLAMA_URL=http://127.0.0.1:11434/v1 scripts/test-synthetic-performance.py`.
+It runs one web-search and one recipe-preview turn against in-process fixtures,
+recording model, tool, continuation, and total milliseconds. It has no real
+provider, recipe write, or credential dependency; use the operator-only
+environment override when Ollama is not bound to loopback.
+
+The 2026-09-14 capture measured web at 15.46s total (8.12s model, 7.34s
+continuation) and recipe preview at 9.73s total (4.95s model, 4.78s
+continuation). Both fixture tool stages were effectively 0ms. These are below
+the campaign's repeated roughly-30s optimization threshold, so no adapter or
+retry change is justified; model/continuation remains the bounded future
+optimization target.
