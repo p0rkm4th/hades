@@ -13,7 +13,7 @@ work. Hermes 0.21.2 promotion was attempted and rolled back after owner
 authentication could not be proven; production remains on the known-good
 Hermes 0.14.0 baseline.
 
-The current pushed checkpoint is `18cacb7`. Since the prior campaign note, the
+The current pushed checkpoint is `8529c41`. Since the prior campaign note, the
 Grocy serving companion has received explicit success, timeout, malformed-
 verification, pre-mutation HTTP, and post-mutation HTTP coverage; post-PUT
 verification failures are classified as `OUTCOME UNKNOWN` so uncertain writes
