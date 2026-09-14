@@ -17,6 +17,13 @@ an owner decision or secret from defects that can be repaired independently.
 
 ## Independent technical work status
 
+- **In progress:** Clean-machine reconstruction is now the active independent
+  workstream. The public version manifest, host/filesystem contract,
+  operator-input template, idempotent test-mode installer, non-mutating doctor,
+  install validator, and rerunnable disposable rehearsal are present. A real
+  supported systemd guest, private deployment records, and canonical backup
+  bundle are still required for higher evidence levels.
+
 - **Complete:** The credential-free Qwen multi-user long-context lane is
   complete: the
   repeatable Alpha/Beta/Gamma harness passes 24/24 bounded turns, including

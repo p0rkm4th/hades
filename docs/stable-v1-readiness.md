@@ -86,7 +86,7 @@ not commit volume.
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Complete private off-host custody, retention, and restore drill |
-| Installation/rebuild | PARTIAL | Supply private operator image/digest records and complete an isolated restore rehearsal before packaging |
+| Installation/rebuild | PARTIAL | Complete two independent supported-systemd reconstructions and backup/restore using the tracked installer plus explicit private inputs |
 | Security | PASS | Static CI guards now cover authority amplification, mounts, pinned deployment, and read-only finance/operator surfaces; re-run after authority-bearing changes |
 | Performance | PARTIAL | Synthetic web/recipe capture is below the repeated ~30s threshold; owner-visible timing remains for final acceptance |
 
@@ -108,7 +108,8 @@ boundary and authorization gate are recorded in
 
 ## Current next action
 
-Continue synthetic/runtime dogfood only when it can reveal a new systemic
-defect. If no new defect appears, preserve this stable production checkpoint
-and resume the first gated milestone when its required authority becomes
-available.
+Continue the clean-machine reconstruction sprint. The test-mode installer,
+doctor, validator, and static contract checks provide static/disposable
+evidence; the next evidence level is a fresh supported systemd guest using
+private deployment records and synthetic canonical backups. Owner-gated real
+integrations remain outside this work.

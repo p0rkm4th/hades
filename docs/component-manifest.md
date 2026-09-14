@@ -22,12 +22,18 @@ digests where private, and owner-selected endpoints belong in the operator
 record. Restore order and canonical checks are detailed in
 [`backup-restore.md`](backup-restore.md).
 
+The authoritative public pins are maintained in
+[`config/versions.env`](../config/versions.env). Every private deployment
+record must carry the matching image/tag or digest rather than silently using
+`latest`.
+
 | Component | Pinned/rebuild source | Persistent state | Required private inputs | Network dependency | Startup order | Health check | Restore check |
 |---|---|---|---|---|---|---|---|
 | LLDAP | Pinned image digest in `deploy/lldap.compose.yaml` | Directory database and key material | JWT/key seed, admin bootstrap | Private identity network | 1 | LDAP/HTTP health and login | Isolated database restore and identity record check |
 | Open WebUI | Private pinned 0.11.5 image/build record plus HADES static assets | WebUI database, vector data, matching assets | Database/auth secrets | LLDAP and Hermes | 2 | WebUI health, login, chat reload | SQLite integrity, marker conversation reload, asset match |
 | Hindsight | Pinned image with embedded PostgreSQL | PostgreSQL cluster/export | Database credentials and subject-bank policy | Hermes to private memory API | 3 | PostgreSQL readiness and Hindsight health | Native export restore and subject-scoped marker recall |
 | Grocy | Pinned image digest in `deploy/grocy.compose.yaml` | Complete Grocy configuration/database | API key | Hermes to private Grocy API | 4 | Grocy HTTP health | SQLite integrity, stock/list/recipe canonical checks |
+| Actual Budget / Finance MCP | Actual 26.9.0 server/client plus tracked read-only adapter | Private synthetic or owner-authorized Actual state | Endpoint, budget identity, and credentials | Hermes to private finance API | 4 | Adapter read-only health/contract check | Synthetic ledger marker and read-only response; real restore is owner-gated |
 | Hermes 0.14 baseline | Pinned upstream package and private profile | Profile, sessions, skills, state | Provider, MCP, and service credentials | Open WebUI, Hindsight, Grocy, SearXNG, Agent Zero | 5 | Private API health and authenticated model contract | Profile parse, bounded tool call, reload/restart |
 | Agent Zero | Pinned image digest in `deploy/agent-zero.compose.yaml` | Dedicated operator volume/settings | Bounded API credential | Hermes to private operator API | 6 | Agent Zero health and authenticated card/API check | Isolated volume restore and harmless bounded delegation |
 | SearXNG | Private pinned image record plus tracked search configuration | Configuration; cache is reconstructable | Any private provider settings | Hermes to private search API | 7 | JSON search response | Config parse and provider search check |

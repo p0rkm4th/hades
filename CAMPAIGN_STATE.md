@@ -24,8 +24,9 @@ each of these changes, and the production Hermes service remains healthy.
 
 ## CURRENT OBJECTIVE
 
-Build an owner-usable HADES composition from mature upstream systems while
-preserving source-of-truth boundaries and least privilege.
+Prove HADES is reconstructable on a clean supported systemd host from this
+repository, explicit private inputs, and canonical backups while preserving
+source-of-truth boundaries and least privilege.
 
 ## CURRENT HEAD
 
@@ -135,6 +136,13 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
   the preparation contract is in `docs/automation-boundary.md`.
 
 ## INDEPENDENT PROGRESS
+
+- Clean reconstruction foundation added: authoritative version manifest,
+  supported-host/filesystem contract, public-safe operator-input template,
+  bounded idempotent installer, non-mutating doctor, install validator, static
+  exposure/secret checks, and a two-run disposable test-mode rehearsal. Higher
+  evidence levels still require a fresh supported guest and private component
+  records; no production state was changed.
 
 - Deterministic automation preparation is complete without provisioning a
   runner or granting new authority. The proposed boundary requires trusted

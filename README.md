@@ -18,6 +18,9 @@ supported integration is unavailable.
 - `hermes/`: non-secret configuration examples for a Hermes gateway.
 - `docs/`: integration, security, and source-of-truth decisions.
 - `acceptance/`: workflow evidence requirements and status conventions.
+- `config/versions.env`: authoritative pinned version contract.
+- `scripts/install-hades.sh`, `scripts/hades-doctor.sh`, and
+  `scripts/validate-install.sh`: bounded reconstruction tooling.
 
 Runtime secrets, accounts, host addresses, persistent volumes, chat history,
 and deployment-specific state must remain outside Git.
@@ -30,6 +33,11 @@ paths, private network addresses, or legacy application state. Copy the
 examples into a private deployment configuration and substitute local values.
 
 Upstream Open WebUI branding and license requirements remain in force.
+
+Clean reconstruction is documented in [`docs/reconstruction.md`](docs/reconstruction.md).
+Use `--test-mode --root DIR` for a credential-free, disposable contract
+rehearsal; production installs require the explicit private operator-input file
+and never create synthetic users or fixture data by default.
 
 Before publishing changes, run `scripts/public-history-audit.sh HEAD` to check
 the complete reachable history for local paths, private-network addresses,
