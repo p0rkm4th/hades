@@ -6,7 +6,7 @@ manifest="$repo_dir/docs/component-manifest.md"
 
 agent_config_line=$(grep -nF "invalid compose contract: agent-zero" "$installer" | cut -d: -f1)
 agent_line=$(awk -v start="$agent_config_line" 'NR > start && /compose_cmd/ && /up -d/ {print NR; exit}' "$installer")
-searx_line=$(grep -nF 'docker compose -f "$HADES_SEARXNG_COMPOSE_FILE" up -d' "$installer" | cut -d: -f1)
+searx_line=$(grep -nF '"${compose_cmd[@]}" -f "$HADES_SEARXNG_COMPOSE_FILE" up -d' "$installer" | cut -d: -f1)
 hermes_line=$(grep -nF 'install -m 0644 "$HADES_HERMES_SERVICE_FILE"' "$installer" | cut -d: -f1)
 
 [[ -n "$agent_line" && -n "$searx_line" && -n "$hermes_line" ]] || {
