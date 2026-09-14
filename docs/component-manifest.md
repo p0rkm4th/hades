@@ -57,3 +57,19 @@ The remaining drift risk is documentation-to-private-runtime parity: when a
 component version, image digest, endpoint, or startup dependency changes, the
 reconstruction manifest and operator record must be updated together. Ambiguous
 private state is deliberately retained until an owner-authorized migration.
+
+### Observed runtime reconciliation — 2026-09-14
+
+The live, public-safe topology was compared with the manifest without reading
+environment values or persistent data:
+
+| Observed component | Runtime evidence | Reconciliation |
+|---|---|---|
+| Open WebUI | Local `0.11.5-remote-prefs` theme image, LAN binding on `:3000` | Private build input and static theme assets must remain in the operator record; the manifest's upstream 0.11.5 version is the compatibility baseline |
+| SearXNG | `searxng:2026.5.31-7159b8aed`, loopback `:8080` | Record the image digest with the private deployment record before rebuild; tracked settings remain the public configuration source |
+| LLDAP | Pinned `hades-lldap` on loopback `:17170`; separate local-only production/staging instance on `:17171` | The second instance is staging topology, not a replacement authority; identity migration must be explicitly selected |
+| Grocy / Agent Zero | Pinned compose digests and loopback bindings match tracked contracts | No drift found |
+
+The untracked Open WebUI/SearXNG service definitions are intentional private
+deployment state, not dead public compose files. This is now an explicit
+rebuild input rather than an undocumented assumption.
