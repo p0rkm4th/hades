@@ -189,10 +189,12 @@ native database without its protected PostgreSQL credentials.
 Readiness-only checks on 2026-09-12 also confirmed that SearXNG's config and
 cache mounts, Agent Zero's dedicated persistent volume, and Hermes' enabled
 systemd service with a private profile are present. Their normal runtime
-health/smoke paths pass. No SearXNG cache, Agent Zero workspace, or Hermes
-profile was copied: SearXNG configuration may contain secrets, Agent Zero can
-contain delegated work, and Hermes contains sessions and service credentials.
-Their native backup/restore rehearsals remain private operational work.
+health/smoke paths pass. Protected private archives now cover the SearXNG
+configuration, the quiesced Agent Zero workspace, and the quiesced Hermes
+profile. SearXNG configuration may contain secrets, Agent Zero can contain
+delegated work, and Hermes contains sessions and service credentials; the
+archives are not in Git. Their isolated restore rehearsals, encryption, and
+retention remain private operational work.
 
 The Agent Zero private environment file was found mode `0644` during the
 readiness check and corrected to mode `0600` in the live persistent volume.

@@ -385,8 +385,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
   Hermes SQLite snapshots pass integrity checks. A protected Hindsight native
   export was validated and restored into a temporary database on its matching
   embedded PostgreSQL/pgvector server; the temporary database was dropped.
-  Matching profile assets, encrypted off-host retention, and isolated restore
-  for the remaining non-SQLite components remain unproven.
+  Protected private archives now also cover Agent Zero, SearXNG configuration,
+  and the quiesced Hermes profile. Matching profile-asset restores, encrypted
+  off-host retention, and isolated restore for those remaining archives remain
+  unproven.
 - Synthetic identity recovery: PASS in the accepted production checkpoint.
 - Open WebUI account hygiene: PASS for the authorized cleanup. Clearly
   synthetic Luna/test/dogfood records were removed after a verified private
