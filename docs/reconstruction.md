@@ -15,11 +15,17 @@ on an undocumented pre-existing file.
 Run on a supported fresh systemd guest:
 
 ```sh
+sudo /opt/hades/scripts/prepare-hades-host.sh
+sudo /opt/hades/scripts/prepare-hades-host.sh --apply
 sudo /opt/hades/scripts/install-hades.sh --inputs /etc/hades/operator-inputs.env --preflight
 sudo /opt/hades/scripts/install-hades.sh --inputs /etc/hades/operator-inputs.env
 sudo /opt/hades/scripts/hades-doctor.sh --inputs /etc/hades/operator-inputs.env
 sudo /opt/hades/scripts/validate-install.sh --inputs /etc/hades/operator-inputs.env
 ```
+
+The first host-preparation invocation is plan-only. Apply it only after
+confirming that the guest is the intended supported target; it installs the
+bounded Docker/Compose, Git, and OpenSSL prerequisites and enables Docker.
 
 The installer is safe to rerun and preserves state, stable identities, and
 operator secrets. It requires the four private runtime records named in the
