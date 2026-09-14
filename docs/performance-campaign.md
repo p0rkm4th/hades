@@ -45,3 +45,9 @@ is missing but do not add onions” request. This preserves preview/confirmation
 semantics; a future recipe-quality run should provide an explicit recipe and
 normalized item list. Dolphin-Mistral rejected the tool-call API request and
 remains a completion-only lane, consistent with its policy classification.
+
+Qwen 14B was run against the identical schema and four prompts. It also
+selected web, Grocy, private memory, and Agent Zero correctly, at approximately
+6.0–15.5 seconds per selection (web was slowest). This is comparative evidence
+for tool usability, not a benchmark or a production-model change; the existing
+HADES routing policy remains unchanged.
