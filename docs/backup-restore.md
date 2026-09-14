@@ -215,6 +215,14 @@ checksum manifest for the encrypted output. Operators
 must supply the key custody, off-host destination, retention, and eventual
 plaintext-retirement policy; none of those secrets belong in Git.
 
+On 2026-09-14, the encryption wrapper was exercised with a disposable
+synthetic recovery marker and an ephemeral GPG encryption key. The encrypted
+destination was mode `0700`; its checksum manifest verified, and decrypting the
+artifact reproduced the marker. The temporary key, plaintext, and encrypted
+destination were removed after the rehearsal. This validates the mechanics
+only; real key custody, off-host transfer, retention, and plaintext retirement
+remain operator decisions.
+
 Readiness-only checks on 2026-09-12 also confirmed that SearXNG's config and
 cache mounts, Agent Zero's dedicated persistent volume, and Hermes' enabled
 systemd service with a private profile are present. Their normal runtime
