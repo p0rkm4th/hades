@@ -163,9 +163,11 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
 
 ## PUBLIC CI STATUS
 
-- A minimal secret-free GitHub Actions tripwire compiles the public adapters,
-  runs the memory, capability-boundary, read-only configuration-shape, and
-  public-history checks, validates shell syntax, and validates compose shape.
+- The minimal secret-free GitHub Actions tripwire compiles all public Python
+  adapters, checks the Actual JavaScript adapter, runs the memory,
+  capability-boundary, read-only configuration-shape, and public-history
+  checks, validates shell syntax, and validates compose shape.
+- The GitHub run for the current pushed head `c92fafa` completed successfully.
 - It does not replace private owner-UI, canonical-domain, or runtime
   acceptance.
 
@@ -197,9 +199,12 @@ read, finance exclusion, revocation, and cross-account settings isolation;
   production Household Alpha is ready; real household onboarding is separately
   owner-gated.
 
-Continue independent roadmap work. The current highest-value item is Hermes
-0.21.2 production-readiness; production remains on the known-good 0.14.0
-baseline until the owner-preserving candidate rehearsal passes.
+Continue independent roadmap work while production remains on the known-good
+Hermes 0.14.0 baseline. The candidate's HADES core is green, but production
+promotion still requires a fresh owner authentication path; the next
+reachable product acceptance is the repaired web-search follow-up through the
+owner UI, with recovery and synthetic composition work continuing when that
+session is unavailable.
 
 Synthetic production dogfood found that Hermes' automatic Hindsight `sync_turn`
 path retained ordinary Grocy/shared-state turns in a user's private semantic
