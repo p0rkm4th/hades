@@ -717,7 +717,13 @@ try:
 
     _hermes_cli.HermesCLI._resolve_turn_agent_config = _hades_resolve_turn
 
-except Exception:
+except Exception as exc:
     # Hermes can still start if the optional provider is unavailable; its
-    # normal provider diagnostics should report that condition.
-    pass
+    # normal provider diagnostics should report that condition. Do not hide
+    # an overlay initialization failure: without this diagnostic, HADES
+    # capability and source-of-truth protections could be absent while the
+    # process still appears healthy.
+    import logging as _hades_bootstrap_logging
+    _hades_bootstrap_logging.getLogger("hades.overlay").error(
+        "HADES compatibility overlay initialization failed: %s", exc
+    )
