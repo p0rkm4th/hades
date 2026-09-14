@@ -20,6 +20,7 @@ if [[ "$test_mode" == 1 && -z "$inputs" ]]; then inputs="$repo_dir/config/operat
 source "$inputs"
 # The repository manifest is authoritative; operator inputs cannot override pins.
 source "$repo_dir/config/versions.env"
+export HADES_LLDAP_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE
 fail() { echo "FAIL $*" >&2; exit 1; }
 compose_cmd=(docker compose --env-file "$inputs")
 if ((test_mode && !root_supplied)); then fail 'test mode requires an explicit --root sandbox'; fi

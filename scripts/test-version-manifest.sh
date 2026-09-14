@@ -11,6 +11,7 @@ if grep -Eq '(^|[=:])latest([@"[:space:]]|$)' "$manifest"; then echo 'FAIL lates
 for f in scripts/install-hades.sh scripts/hades-doctor.sh scripts/validate-install.sh; do
   grep -q 'config/versions.env' "$f" || { echo "FAIL $f does not reference the authoritative manifest"; exit 1; }
 done
+grep -q 'export HADES_LLDAP_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE' scripts/install-hades.sh || { echo 'FAIL installer does not export manifest image pins'; exit 1; }
 for mapping in 'HADES_LLDAP_IMAGE:deploy/lldap.compose.yaml' 'HADES_GROCY_IMAGE:deploy/grocy.compose.yaml' 'HADES_AGENT_ZERO_IMAGE:deploy/agent-zero.compose.yaml'; do
   key=${mapping%%:*}; file=${mapping#*:}
   grep -q "\${$key:?set $key from config/versions.env}" "$file" || { echo "FAIL $file does not consume $key"; exit 1; }
