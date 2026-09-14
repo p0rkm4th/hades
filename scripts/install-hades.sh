@@ -86,7 +86,7 @@ preflight() {
   perms=$(stat -c '%a' "$inputs"); [[ "$perms" == 600 || "$perms" == 640 ]] || fail "operator input file must be mode 0600 or 0640: $inputs"
   [[ "$HADES_OWNER_BOOTSTRAP_ID" != REQUIRED_OPERATOR_INPUT && "$HADES_HERMES_API_KEY" != REQUIRED_OPERATOR_INPUT ]] || fail 'required operator input is still a placeholder'
   [[ "$HADES_HERMES_MODEL_ENDPOINT" =~ ^https?://[^[:space:]]+$ ]] || fail 'HADES_HERMES_MODEL_ENDPOINT must be an http(s) URL'
-  curl --silent --show-error --connect-timeout 5 --max-time 10 --output /dev/null "$HADES_HERMES_MODEL_ENDPOINT" || fail "configured model endpoint is not reachable: $HADES_HERMES_MODEL_ENDPOINT"
+  curl --silent --show-error --connect-timeout 5 --max-time 10 --output /dev/null "$HADES_HERMES_MODEL_ENDPOINT" || fail 'configured model endpoint is not reachable; verify the private endpoint and DNS/network path'
   [[ -d "$HADES_IDENTITY_SECRETS_DIR" ]] || fail "missing identity secret directory: $HADES_IDENTITY_SECRETS_DIR"
   for secret in jwt_secret key_seed admin_password; do
     [[ -f "$HADES_IDENTITY_SECRETS_DIR/$secret" ]] || fail "missing LLDAP identity secret: $HADES_IDENTITY_SECRETS_DIR/$secret"
