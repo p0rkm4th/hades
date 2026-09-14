@@ -29,6 +29,9 @@ if [[ -n "$inputs" ]]; then
 fi
 export HADES_LLDAP_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE
 export HADES_IDENTITY_SECRETS_DIR
+hades_layer_digest() {
+  sha256sum "$@" | awk '{print $1}' | sha256sum | awk '{print $1}'
+}
 compose_cmd=(docker compose)
 [[ -n "$inputs" ]] && compose_cmd+=(--env-file "$inputs")
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
@@ -39,6 +42,9 @@ if [[ -f "$state" ]]; then
   expected_reconstruction_manifest=$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')
   installed_reconstruction_manifest=$(awk -F= '$1 == "reconstruction_manifest" {print $2}' "$state")
   [[ "$installed_reconstruction_manifest" == "$expected_reconstruction_manifest" ]] && echo 'PASS reconstruction manifest provenance' || { echo 'FAIL reconstruction manifest provenance is stale'; exit 1; }
+  expected_layer=$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js")
+  installed_layer=$(awk -F= '$1 == "layer" {print $2}' "$state")
+  [[ "$installed_layer" == "$expected_layer" ]] && echo 'PASS HADES layer provenance' || { echo 'FAIL HADES layer provenance is stale'; exit 1; }
 else
   echo 'WARN installation marker missing'
 fi

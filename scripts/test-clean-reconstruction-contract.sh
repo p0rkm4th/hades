@@ -12,4 +12,5 @@ bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$tmp_root" --in
 test "$(grep -c '^manifest=' "$tmp_root/var/lib/hades/install-contract")" -eq 1
 test -f "$tmp_root/etc/hades/reconstruction-manifest.json"
 test "$(grep -c '^reconstruction_manifest=' "$tmp_root/var/lib/hades/install-contract")" -eq 1
+test "$(grep -c '^layer=' "$tmp_root/var/lib/hades/install-contract")" -eq 1
 echo 'PASS clean reconstruction contract is rerunnable and state-preserving'

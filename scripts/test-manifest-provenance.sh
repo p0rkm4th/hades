@@ -23,4 +23,10 @@ fi
 if bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$tmp_root" --inputs "$tmp_root/operator.env" >/dev/null 2>&1; then
   echo 'FAIL stale reconstruction manifest was accepted by doctor'; exit 1
 fi
+cp "$repo_dir/config/reconstruction-manifest.json" "$tmp_root/etc/hades/reconstruction-manifest.json"
+cp "$repo_dir/hermes/sitecustomize.py" "$tmp_root/etc/hades/overlay/sitecustomize.py"
+printf '\n# synthetic provenance tamper\n' >> "$tmp_root/etc/hades/overlay/sitecustomize.py"
+if bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$tmp_root" --inputs "$tmp_root/operator.env" >/dev/null 2>&1; then
+  echo 'FAIL tampered HADES layer was accepted by validation'; exit 1
+fi
 echo 'PASS stale installation manifest is rejected'
