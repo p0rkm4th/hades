@@ -12,14 +12,19 @@ mapfile -t actual < <(find deploy -maxdepth 1 -type f -name '*.compose.yaml' -pr
 
 for file in "${expected[@]}"; do
   rg -q '^services:' "$file" || { printf 'FAIL services missing: %s\n' "$file" >&2; exit 1; }
-  rg -q 'image: .+@sha256:[0-9a-f]{64}' "$file" || { printf 'FAIL unpinned image: %s\n' "$file" >&2; exit 1; }
+  case "$file" in
+    deploy/agent-zero.compose.yaml) image_ref='image: ${HADES_AGENT_ZERO_IMAGE:?set HADES_AGENT_ZERO_IMAGE from config/versions.env}' ;;
+    deploy/grocy.compose.yaml) image_ref='image: ${HADES_GROCY_IMAGE:?set HADES_GROCY_IMAGE from config/versions.env}' ;;
+    deploy/lldap.compose.yaml) image_ref='image: ${HADES_LLDAP_IMAGE:?set HADES_LLDAP_IMAGE from config/versions.env}' ;;
+  esac
+  grep -Fq "$image_ref" "$file" || { printf 'FAIL image is not sourced from the authoritative pin: %s\n' "$file" >&2; exit 1; }
   if rg -n '(^|:)\s*(privileged|network_mode):\s*(true|host)' "$file"; then
     printf 'FAIL authority-amplifying compose setting: %s\n' "$file" >&2
     exit 1
   fi
 done
 
-for component in LLDAP 'Open WebUI' Hindsight Grocy 'Hermes 0.14 baseline' 'Agent Zero' SearXNG 'HADES policy/assets/adapters'; do
+for component in LLDAP 'Open WebUI' Hindsight Grocy 'Actual Budget / Finance MCP' 'Hermes 0.14 baseline' 'Agent Zero' SearXNG 'HADES policy/assets/adapters'; do
   rg -q "\| ${component} \|" docs/component-manifest.md || {
     printf 'FAIL manifest component missing: %s\n' "$component" >&2
     exit 1

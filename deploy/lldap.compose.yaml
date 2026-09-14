@@ -5,7 +5,7 @@ name: hades-identity
 # outside Git with strong values for the *_FILE secrets.
 services:
   lldap:
-    image: lldap/lldap:stable@sha256:90b849059c42ed8f92b95624ae71e38ca137a994736c68fb25dd167f2bbc9808
+    image: ${HADES_LLDAP_IMAGE:?set HADES_LLDAP_IMAGE from config/versions.env}
     container_name: hades-lldap
     restart: unless-stopped
     environment:

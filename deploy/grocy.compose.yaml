@@ -2,7 +2,7 @@ name: hades-grocy
 
 services:
   grocy:
-    image: lscr.io/linuxserver/grocy@sha256:8449aff56e6b1f34d37affd969cec35ed56fa7daa175c75f923a015b82561d27
+    image: ${HADES_GROCY_IMAGE:?set HADES_GROCY_IMAGE from config/versions.env}
     container_name: hades-grocy
     restart: unless-stopped
     environment:

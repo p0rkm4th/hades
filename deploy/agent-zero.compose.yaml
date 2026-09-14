@@ -2,7 +2,7 @@ name: hades-agent-zero
 
 services:
   agent-zero:
-    image: agent0ai/agent-zero@sha256:680ab243d358b5fd41847f640c2eac1c59b83b154b22fc38004b8a0631b3d028
+    image: ${HADES_AGENT_ZERO_IMAGE:?set HADES_AGENT_ZERO_IMAGE from config/versions.env}
     container_name: hades-agent-zero
     restart: unless-stopped
     # Agent Zero's pinned upstream entrypoint bootstraps application files

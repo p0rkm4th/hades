@@ -13,8 +13,10 @@ while (($#)); do
 done
 [[ -f "$repo_dir/config/versions.env" ]] || { echo 'FAIL version manifest missing'; exit 1; }
 [[ -f "$repo_dir/docs/component-manifest.md" ]] || { echo 'FAIL component manifest missing'; exit 1; }
-source "$repo_dir/config/versions.env"
 if [[ -n "$inputs" && -f "$inputs" ]]; then source "$inputs"; fi
+# The repository manifest is authoritative; operator inputs cannot override pins.
+source "$repo_dir/config/versions.env"
+export HADES_LLDAP_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE
 export HADES_IDENTITY_SECRETS_DIR
 compose_cmd=(docker compose)
 [[ -n "$inputs" ]] && compose_cmd+=(--env-file "$inputs")
