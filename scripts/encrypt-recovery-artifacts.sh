@@ -31,8 +31,9 @@ while IFS= read -r -d '' source; do
     --encrypt --recipient "$recipient" "$source"
   chmod 600 "$target"
   count=$((count + 1))
-done < <(find "$ROOT" -type f \
-  ! -path "$destination/*" \
+done < <(find "$ROOT" \
+  \( -path "$ROOT/encrypted-*" -o -path "$ROOT/*.failed-rehearsal" \) -prune \
+  -o -type f \
   ! -name '*.gpg' \
   ! -name '*.failed-rehearsal' \
   -print0)
