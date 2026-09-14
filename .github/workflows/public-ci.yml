@@ -25,16 +25,29 @@ jobs:
       - name: Check public JavaScript adapter
         run: node --check integrations/actual-finance-readonly/actual_client.js
 
-      - name: Run secret-free regression checks
-        run: |
-          bash scripts/test-hades-memory-intent.sh
-          bash scripts/test-web-intent.sh
-          python scripts/test-readonly-response-contracts.py
-          bash scripts/test-capability-boundary.sh
-          bash scripts/test-readonly-config-shapes.sh
-          bash scripts/test-recovery-artifact-safety.sh
-          bash scripts/test-workflow-pinning.sh
-          bash scripts/public-history-audit.sh
+      - name: Check memory intent boundary
+        run: bash scripts/test-hades-memory-intent.sh
+
+      - name: Check web intent boundary
+        run: bash scripts/test-web-intent.sh
+
+      - name: Check read-only response contracts
+        run: python scripts/test-readonly-response-contracts.py
+
+      - name: Check privileged capability boundary
+        run: bash scripts/test-capability-boundary.sh
+
+      - name: Check read-only configuration shapes
+        run: bash scripts/test-readonly-config-shapes.sh
+
+      - name: Check recovery artifact safety
+        run: bash scripts/test-recovery-artifact-safety.sh
+
+      - name: Check workflow action pinning
+        run: bash scripts/test-workflow-pinning.sh
+
+      - name: Check public history
+        run: bash scripts/public-history-audit.sh
 
       - name: Validate shell scripts
         run: bash -n scripts/*.sh webui/entrypoint.sh
