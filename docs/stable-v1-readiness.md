@@ -89,7 +89,7 @@ not commit volume.
 | Recovery | PARTIAL | Complete private off-host custody, retention, and restore drill |
 | Installation/rebuild | PARTIAL | Reconcile the documented reconstruction manifest before packaging |
 | Security | PASS | Re-run the boundary matrix after any authority-bearing change |
-| Performance | PARTIAL | Reduce or explicitly accept local-model/post-tool latency on slow flows |
+| Performance | PARTIAL | Capture one fresh owner-approved web and recipe turn with model/tool/continuation stages; optimize only repeated >30s workflows |
 
 ## Source-of-truth adversarial contract
 
