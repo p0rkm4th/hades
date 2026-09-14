@@ -85,6 +85,16 @@ The public synthetic response contract in
 coverage, partial-failure, and read-only invariants without contacting a real
 homelab service.
 
+[`scripts/test-homelab-fixture.sh`](../scripts/test-homelab-fixture.sh) adds a
+disposable loopback fixture for the next integration step. It exposes minimal
+Proxmox, NetBox, and Uptime Kuma-shaped read endpoints with an online node, a
+degraded node, a running guest, a stopped guest, a runtime-versus-inventory
+node contradiction, and a stale monitoring result. The fixture verifies that
+Proxmox remains authoritative for current runtime placement, NetBox remains
+the intended inventory source, Kuma is reported as stale availability
+observation, and writes return `405`. It is exercised in public CI; no real
+homelab endpoint or credential is involved.
+
 ## Remaining owner gate
 
 The exact endpoints, approved inventory scope, service identities, tokens, and

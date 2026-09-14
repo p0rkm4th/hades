@@ -46,6 +46,9 @@ jobs:
       - name: Check read-only configuration shapes
         run: bash scripts/test-readonly-config-shapes.sh
 
+      - name: Check synthetic homelab read-only fixture
+        run: bash scripts/test-homelab-fixture.sh
+
       - name: Check recovery artifact safety
         run: bash scripts/test-recovery-artifact-safety.sh
 
