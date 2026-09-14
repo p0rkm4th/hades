@@ -30,6 +30,8 @@ for forbidden, label in (
     if forbidden in compose:
         raise SystemExit(f'forbidden {label} exposed by tracked compose')
 agent_compose = Path('deploy/agent-zero.compose.yaml').read_text()
+if 'read-only container root' in agent_compose:
+    raise SystemExit('Agent Zero comment contradicts the writable upstream image contract')
 for fragment, label in (
     ('- ALL', 'Agent Zero capability drop'),
     ('no-new-privileges:true', 'Agent Zero no-new-privileges'),

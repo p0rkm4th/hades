@@ -21,8 +21,8 @@ services:
     tmpfs:
       - /tmp
       # The pinned upstream entrypoint writes shell defaults and supervisor
-      # runtime state here; keep those writes ephemeral while retaining a
-      # read-only container root.
+      # runtime state here; keep those writes ephemeral while retaining the
+      # bounded capability and volume-isolation policy.
       - /root
     # Keep the operator private until an explicit owner-facing exposure is added.
     ports:
