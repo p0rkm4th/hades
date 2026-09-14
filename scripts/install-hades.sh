@@ -62,6 +62,29 @@ validate_private_records() {
   systemd-analyze verify "$HADES_HERMES_SERVICE_FILE" || fail 'invalid Hermes private service record'
   grep -Eq '^[[:space:]]*WantedBy=' "$HADES_HERMES_SERVICE_FILE" || fail 'Hermes private service record has no install target'
 }
+validate_secret_file() {
+  local name=$1 path=${!1:-}
+  [[ -n "$path" ]] || fail "required secret-file input is missing: $name"
+  [[ "$path" == /* ]] || fail "secret-file input path must be absolute: $name"
+  [[ -f "$path" ]] || fail "missing secret-file input: $name"
+  [[ ! -L "$path" ]] || fail "secret-file input must not be a symlink: $name"
+  mode=$(stat -c '%a' "$path")
+  [[ "$mode" == 600 || "$mode" == 640 ]] || fail "secret-file input must be mode 0600 or 0640: $name"
+}
+validate_synthetic_secret_contract() {
+  [[ -d "$HADES_IDENTITY_SECRETS_DIR" ]] || fail "missing identity secret directory: $HADES_IDENTITY_SECRETS_DIR"
+  [[ ! -L "$HADES_IDENTITY_SECRETS_DIR" ]] || fail 'identity secret directory must not be a symlink'
+  for secret in jwt_secret key_seed admin_password; do
+    path="$HADES_IDENTITY_SECRETS_DIR/$secret"
+    [[ -f "$path" && ! -L "$path" ]] || fail "missing or linked identity secret: $path"
+    [[ "$(stat -c '%a' "$path")" == 600 ]] || fail "identity secret must be mode 0600: $path"
+  done
+  validate_secret_file HADES_HINDSIGHT_DATABASE_SECRET_FILE
+  validate_secret_file HADES_GROCY_API_KEY_FILE
+  if [[ -n "${HADES_AGENT_ZERO_CREDENTIAL_FILE:-}" ]]; then
+    validate_secret_file HADES_AGENT_ZERO_CREDENTIAL_FILE
+  fi
+}
 validate_started_runtime() {
   for record in "$HADES_OPEN_WEBUI_COMPOSE_FILE" "$HADES_HINDSIGHT_COMPOSE_FILE" "$HADES_SEARXNG_COMPOSE_FILE"; do
     running=$("${compose_cmd[@]}" -f "$record" ps --status running -q 2>/dev/null || true)
@@ -94,6 +117,7 @@ preflight() {
   if ((test_mode)); then
     if [[ -d "${HADES_DEPLOYMENT_DIR:-}" ]]; then
       validate_private_records
+      validate_synthetic_secret_contract
       echo 'PASS synthetic private deployment records'
     fi
     echo 'PASS synthetic host contract (test mode)'
@@ -142,15 +166,6 @@ preflight() {
   while read -r owner mode; do
     [[ "$owner" == 1000 && "$mode" == 600 ]] || fail "LLDAP identity secrets must be service-owned UID 1000 mode 0600 (found $owner mode $mode)"
   done < <(find "$HADES_IDENTITY_SECRETS_DIR" -maxdepth 1 -type f -printf '%U %m\n')
-  validate_secret_file() {
-    local name=$1 path=${!1:-}
-    [[ -n "$path" ]] || fail "required secret-file input is missing: $name"
-    [[ "$path" == /* ]] || fail "secret-file input path must be absolute: $name"
-    [[ -f "$path" ]] || fail "missing secret-file input: $name"
-    [[ ! -L "$path" ]] || fail "secret-file input must not be a symlink: $name"
-    mode=$(stat -c '%a' "$path")
-    [[ "$mode" == 600 || "$mode" == 640 ]] || fail "secret-file input must be mode 0600 or 0640: $name"
-  }
   validate_secret_file HADES_HINDSIGHT_DATABASE_SECRET_FILE
   validate_secret_file HADES_GROCY_API_KEY_FILE
   if [[ -n "${HADES_AGENT_ZERO_CREDENTIAL_FILE:-}" ]]; then

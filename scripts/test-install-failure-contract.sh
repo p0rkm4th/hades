@@ -63,3 +63,14 @@ if [[ -e "$invalid_root/var" || -e "$invalid_root/etc" ]]; then
   echo 'FAIL invalid private compose mutated the target'; exit 1
 fi
 echo 'PASS invalid-private-compose failure is clear and non-mutating'
+
+bash "$repo_dir/scripts/create-synthetic-private-fixture.sh" "$fixture/permissions"
+permissions_root="$fixture/permissions-target"
+chmod 644 "$fixture/permissions/grocy-api-key"
+if bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$permissions_root" --inputs "$fixture/permissions/operator.env" >/dev/null 2>&1; then
+  echo 'FAIL unsafe synthetic secret permissions were accepted'; exit 1
+fi
+if [[ -e "$permissions_root/var" || -e "$permissions_root/etc" ]]; then
+  echo 'FAIL unsafe synthetic secret permissions mutated the target'; exit 1
+fi
+echo 'PASS unsafe-secret-permissions failure is clear and non-mutating'
