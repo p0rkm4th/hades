@@ -37,6 +37,13 @@ validate_private_records() {
   docker compose -f "$HADES_SEARXNG_COMPOSE_FILE" config --quiet || fail 'invalid SearXNG private compose record'
   systemd-analyze verify "$HADES_HERMES_SERVICE_FILE" || fail 'invalid Hermes private service record'
 }
+validate_started_runtime() {
+  for container in hades-lldap hades-grocy hades-agent-zero; do
+    status=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || true)
+    [[ "$status" == running ]] || fail "deployed container is not running: $container (state=${status:-missing})"
+  done
+  systemctl is-active --quiet hades-hermes.service || fail 'deployed Hermes service is not active'
+}
 preflight() {
   [[ -f "$repo_dir/hermes/config.yaml.example" ]] || fail 'Hermes config template is absent'
   [[ -f "$repo_dir/hermes/env.example" ]] || fail 'Hermes environment template is absent'
@@ -130,5 +137,6 @@ docker compose -f "$HADES_SEARXNG_COMPOSE_FILE" up -d
 install -m 0644 "$HADES_HERMES_SERVICE_FILE" /etc/systemd/system/hades-hermes.service
 systemctl daemon-reload
 systemctl enable --now hades-hermes.service
+validate_started_runtime
 printf 'phase=deployed\n' >> "$state_root/install-contract"
 echo 'PASS HADES component deployment completed from tracked contracts and explicit private records'

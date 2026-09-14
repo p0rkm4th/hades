@@ -86,6 +86,8 @@ jobs:
         run: bash scripts/test-manifest-provenance.sh
       - name: Check installer dependency order
         run: bash scripts/test-install-order-contract.sh
+      - name: Check installer runtime validation
+        run: bash scripts/test-install-health-contract.sh
       - name: Check authoritative version manifest
         run: bash scripts/test-version-manifest.sh
       - name: Check private input contract
