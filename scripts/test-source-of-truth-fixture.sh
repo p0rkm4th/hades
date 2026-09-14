@@ -26,10 +26,19 @@ cases = [
 ]
 for case in cases:
     result = resolve(*case)
-    if case[2] not in result or 'source:' not in result or 'stale context' not in result:
+    expected_source = {
+        'runtime': 'Proxmox', 'pantry': 'Grocy', 'finance': 'Actual',
+        'availability': 'Uptime Kuma',
+    }[case[0]]
+    if (case[2] not in result or f'source: {expected_source}' not in result
+            or 'stale context' not in result):
         raise SystemExit(f'canonical precedence failed: {case}: {result}')
     if case[3] is not None and 'conflict' not in result:
         raise SystemExit(f'conflict disclosure failed: {case}: {result}')
+
+unchanged = resolve('pantry', '0 cartons', '0 cartons')
+if 'stale context' in unchanged or 'source: Grocy' not in unchanged:
+    raise SystemExit(f'unchanged canonical result was misclassified: {unchanged}')
 
 print('PASS synthetic source-of-truth contradictions')
 PY
