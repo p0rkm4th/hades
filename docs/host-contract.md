@@ -9,6 +9,12 @@ configured upstreams. A container runtime with the Docker Compose plugin,
 validators. GPU and local Ollama are optional: inference may run on a separate
 private host through the documented Hermes model endpoint.
 
+On a minimal Fedora guest, the bounded host prerequisite step is explicit:
+`sudo dnf install -y moby-engine docker-compose git openssl` followed by
+`sudo systemctl enable --now docker`. The HADES installer validates these
+prerequisites but does not install packages before its non-mutating preflight;
+this keeps an unsupported or incomplete host from being partially modified.
+
 The core HADES guest is distinct from a local model-inference host. RTX/GPU
 drivers, model caches, and Ollama state are not reconstruction dependencies.
 All user-facing defaults bind only to approved/private interfaces; component

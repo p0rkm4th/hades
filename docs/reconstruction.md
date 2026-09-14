@@ -169,6 +169,14 @@ and Hermes returned, then doctor and validation passed again. This is
 are intentionally minimal Alpine services, so it does not claim Open WebUI,
 Hindsight, SearXNG, or model-backed household behavior.
 
+A separate fresh Fedora 44 guest was then taken through the same procedure
+from a new disk and repository archive. Its non-mutating preflight passed after
+the documented minimal-host package step supplied `git` (the cloud image did
+not include it), and the real installer reached the pinned Agent Zero image
+pull. That disposable run was stopped before the large image completed, so it
+is **not** second-clean deployment evidence; the explicit package command is
+now part of the host contract and is not an undocumented reconstruction ritual.
+
 ## Evidence hierarchy
 
 | Evidence level | Current result | Boundary of the claim |
