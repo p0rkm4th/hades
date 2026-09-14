@@ -145,3 +145,19 @@ phase without duplicate or destructive cleanup. Invalid private Compose,
 unpinned image, and unsafe-secret-permission inputs fail before the sandbox is
 mutated. This is partial-install evidence; it does not substitute for a
 privileged deployment interrupted during live service startup.
+
+## Evidence hierarchy
+
+| Evidence level | Current result | Boundary of the claim |
+|---|---|---|
+| Static | PASS | Syntax, pins, provenance, policy, CI, and public-safe configuration are validated. |
+| Disposable component/fixture | PASS | Read-only domain fixtures, synthetic backup/restore, private-record generation, and test-mode installer contracts pass. |
+| First clean machine | PASS for tracked subset | A pristine Fedora system proved the supported-host preflight and tracked LLDAP/Grocy/Agent Zero deployment path. |
+| Second independent clean machine | PASS for credential-free contract | A separate pristine guest reran the static/test-mode reconstruction and restore contracts; private full-stack records were not deployed there. |
+| Reboot/restart | PASS for tracked subset | The first disposable guest recovered its tracked services after reboot; missing private services are not included in this claim. |
+| Full-stack clean reconstruction | NOT PROVEN | Requires one fresh supported systemd guest with the generated private records and synthetic canonical backups. |
+| Fresh-install household soak | NOT PROVEN | Follows a successful full-stack reconstruction and exercises the reconstructed HADES application path. |
+
+The exact remaining external milestone is therefore **one clean supported
+systemd VM** on which the full explicit-input deployment completes. Until that
+evidence exists, installation/rebuild remains `PARTIAL` in the stable-v1 map.
