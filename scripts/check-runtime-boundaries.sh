@@ -28,7 +28,7 @@ require_binding hades-hindsight 8888 '127.0.0.1:8888'
 require_binding hades-hindsight 9999 '127.0.0.1:9999'
 
 agent_zero_card_status=$(curl -sS -o /dev/null -w '%{http_code}' \
-  'http://127.0.0.1:7002/a2a/.well-known/agent-card.json' 2>/dev/null || true)
+  'http://127.0.0.1:7002/a2a/.well-known/agent.json' 2>/dev/null || true)
 if [[ "$agent_zero_card_status" == 401 ]]; then
   printf 'PASS Agent Zero native A2A agent card requires authentication\n'
 else

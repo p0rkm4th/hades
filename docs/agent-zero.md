@@ -33,11 +33,13 @@ import is intentionally not used.
 This integration is intentionally not registered as an Open WebUI-native tool
 or exposed as a separate user-facing assistant. The production Agent Zero
 instance has its native A2A server enabled on the existing loopback-only
-listener; unauthenticated access is rejected. The endpoint is not LAN- or
-Tailscale-exposed, and the token remains private in Agent Zero settings. Hermes retains the smaller bounded MCP bridge because its
-v0.21.2 native client still does not match Agent Zero's card/transport contract.
-Revisit that client interoperability separately; enabling the server no longer
-requires broadening Agent Zero authority.
+listener; unauthenticated access is rejected. The installed FastA2A route is
+the legacy `/.well-known/agent.json` path and advertises the container-local
+URL, while Hermes' v0.21.2 client expects the v1 `agent-card.json` and a
+different card/transport contract. The endpoint is not LAN- or Tailscale-
+exposed, and the token remains private in Agent Zero settings. Hermes retains
+the smaller bounded MCP bridge. Revisit native interoperability separately;
+enabling the server does not broaden Agent Zero authority.
 
 Upstream references:
 

@@ -46,11 +46,11 @@ generalized runtime.
 The pinned Agent Zero image's native A2A server was enabled only in a separate
 disposable container. Its tokenized FastA2A endpoint accepted a standard
 JSON-RPC `message/send` request and returned the expected bounded synthetic
-response. Hermes v0.21.2's native client expects a different agent-card and
-transport shape when pointed at that endpoint; the direct interoperability
-probe failed while the native Agent Zero request passed. Retain the one-tool
-private MCP bridge. Re-evaluate when a matching card/transport contract and
-authenticated lifecycle are available without widening authority.
+response. The installed route is the legacy `agent.json` card path and
+advertises a container-local URL; Hermes v0.21.2 expects a different
+agent-card/transport shape. Retain the one-tool private MCP bridge and
+re-evaluate when a matching card/transport contract and authenticated
+lifecycle are available without widening authority.
 
 ## Domains and gates
 
