@@ -26,6 +26,14 @@ opt-in and are never enabled by the production path. The read-only doctor
 returns nonzero when tracked runtime checks or Compose validation fail; missing
 optional live checks remain warnings.
 
+For a disposable supported-host rehearsal, create the four explicit private
+records and their synthetic file-backed inputs with
+`scripts/create-synthetic-private-fixture.sh /absolute/fixture/path`. The
+script never contacts a provider or writes production paths; start an approved
+loopback model fixture separately, then pass the generated `operator.env` to
+the installer. This keeps the full-install rehearsal reproducible without
+copying private deployment records into the repository.
+
 Deployment order is LLDAP, Open WebUI, Hindsight, Grocy, Agent Zero, SearXNG,
 Hermes 0.14.0, then the HADES overlay/assets/adapters. Production migration is
 separate: backup, provision, install, restore, validate, owner acceptance,
