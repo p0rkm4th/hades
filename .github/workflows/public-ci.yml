@@ -78,6 +78,9 @@ jobs:
       - name: Check configuration drift
         run: bash scripts/test-configuration-drift.sh
 
+      - name: Check stable-v1 readiness map
+        run: bash scripts/test-readiness-map.sh
+
       - name: Check public history
         run: bash scripts/public-history-audit.sh
 
