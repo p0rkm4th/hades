@@ -66,6 +66,14 @@ ownership, and record syntax checks passed; the install marker and target state
 were absent afterward. This proves the complete pre-mutation gate on a
 supported host without deploying or copying production material.
 
+Using the same disposable guest, the real installer then completed against
+minimal safe Compose records and a restart-capable synthetic Hermes unit. The
+tracked services remained running, the Hermes unit was enabled and active, the
+install marker reached `phase=deployed`, and both validator and doctor passed
+when invoked by absolute path from outside the repository. This exercise
+exposed and repaired repository-relative compose discovery and missing export
+of the LLDAP secret-directory input.
+
 After installation, the same guest was rebooted. Systemd returned to
 `running`, Docker restarted Agent Zero, Grocy, and LLDAP automatically, and
 LLDAP returned `healthy` after its normal startup interval. This is reboot

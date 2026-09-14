@@ -14,6 +14,7 @@ done
 [[ -f "$repo_dir/config/versions.env" ]] || { echo 'FAIL version manifest missing'; exit 1; }
 source "$repo_dir/config/versions.env"
 if [[ -n "$inputs" && -f "$inputs" ]]; then source "$inputs"; fi
+export HADES_IDENTITY_SECRETS_DIR
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
 [[ -f "$state" ]] || { echo 'FAIL installer contract marker missing'; exit 1; }
 grep -q '^manifest=' "$state" || { echo 'FAIL installer marker is malformed'; exit 1; }
@@ -25,7 +26,7 @@ for file in overlay/sitecustomize.py adapters/grocy-recipe-authoring.py adapters
   [[ -f "$config_root/$file" ]] || { echo "FAIL HADES layer missing: $file"; exit 1; }
 done
 if (( ! test_mode )) && command -v docker >/dev/null 2>&1; then
-  for f in deploy/*.compose.yaml; do docker compose -f "$f" config --quiet || { echo "FAIL compose $(basename "$f")"; exit 1; }; done
+  for f in "$repo_dir"/deploy/*.compose.yaml; do docker compose -f "$f" config --quiet || { echo "FAIL compose $(basename "$f")"; exit 1; }; done
 fi
 if ((test_mode)); then
   echo 'PASS synthetic authenticated-path placeholder contract'

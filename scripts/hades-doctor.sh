@@ -15,6 +15,7 @@ done
 [[ -f "$repo_dir/docs/component-manifest.md" ]] || { echo 'FAIL component manifest missing'; exit 1; }
 source "$repo_dir/config/versions.env"
 if [[ -n "$inputs" && -f "$inputs" ]]; then source "$inputs"; fi
+export HADES_IDENTITY_SECRETS_DIR
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
 if [[ -f "$state" ]]; then
   expected_manifest=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
@@ -41,7 +42,7 @@ if command -v docker >/dev/null 2>&1; then
   health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' hades-lldap 2>/dev/null || true)
   [[ "$health" == healthy ]] && echo 'PASS LLDAP health' || echo "WARN LLDAP health=${health:-not-configured}"
 fi
-for f in deploy/*.compose.yaml; do
+for f in "$repo_dir"/deploy/*.compose.yaml; do
   if command -v docker >/dev/null 2>&1; then docker compose -f "$f" config --quiet && echo "PASS compose $(basename "$f")" || echo "FAIL compose $(basename "$f")"; fi
 done
 echo 'WARN live health and exposure checks require the target runtime; no repair was performed'

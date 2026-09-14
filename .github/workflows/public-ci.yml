@@ -88,6 +88,8 @@ jobs:
         run: bash scripts/test-install-order-contract.sh
       - name: Check installer runtime validation
         run: bash scripts/test-install-health-contract.sh
+      - name: Check reconstruction tool path contract
+        run: bash scripts/test-reconstruction-cwd-contract.sh
       - name: Check authoritative version manifest
         run: bash scripts/test-version-manifest.sh
       - name: Check private input contract
