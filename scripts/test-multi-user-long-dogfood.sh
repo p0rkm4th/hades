@@ -6,8 +6,10 @@ set -eu
 # owner services or claim model-quality acceptance.
 python - <<'PY'
 import importlib.util
+import logging
 import os
 
+logging.disable(logging.CRITICAL)
 spec = importlib.util.spec_from_file_location("hades_overlay", "hermes/sitecustomize.py")
 overlay = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(overlay)

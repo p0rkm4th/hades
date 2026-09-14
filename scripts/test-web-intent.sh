@@ -7,8 +7,10 @@ set -euo pipefail
 
 python - <<'PY'
 import importlib.util
+import logging
 from pathlib import Path
 
+logging.disable(logging.CRITICAL)
 path = Path("hermes/sitecustomize.py")
 source = path.read_text().lower()
 spec = importlib.util.spec_from_file_location("hades_overlay_test", path)

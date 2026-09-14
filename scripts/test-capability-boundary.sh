@@ -5,7 +5,10 @@ set -eu
 # explicitly authorized by a future server-side capability boundary; neither
 # API initialization nor natural-language intent may add it.
 python - <<'PY'
+import logging
 from pathlib import Path
+
+logging.disable(logging.CRITICAL)
 
 source = Path('hermes/sitecustomize.py').read_text()
 init = source.split('    def _hades_agent_init', 1)[1].split(

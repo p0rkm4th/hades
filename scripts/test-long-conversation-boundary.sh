@@ -5,7 +5,9 @@ set -euo pipefail
 # a synthetic boundary test, not an owner conversation or a backend probe.
 python - <<'PY'
 import importlib.util
+import logging
 
+logging.disable(logging.CRITICAL)
 spec = importlib.util.spec_from_file_location("hades_overlay", "hermes/sitecustomize.py")
 overlay = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(overlay)
