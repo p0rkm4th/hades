@@ -16,7 +16,13 @@ done
 source "$repo_dir/config/versions.env"
 if [[ -n "$inputs" && -f "$inputs" ]]; then source "$inputs"; fi
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
-[[ -f "$state" ]] && echo 'PASS installation marker' || echo 'WARN installation marker missing'
+if [[ -f "$state" ]]; then
+  expected_manifest=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
+  installed_manifest=$(awk -F= '$1 == "manifest" {print $2}' "$state")
+  [[ "$installed_manifest" == "$expected_manifest" ]] && echo 'PASS installation marker and manifest' || { echo 'FAIL installation marker manifest is stale'; exit 1; }
+else
+  echo 'WARN installation marker missing'
+fi
 config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 for file in overlay/sitecustomize.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js; do
   [[ -f "$config_root/$file" ]] && echo "PASS HADES layer $file" || echo "WARN HADES layer missing: $file"

@@ -82,6 +82,8 @@ jobs:
         run: bash scripts/test-install-failure-contract.sh
       - name: Check private-record preflight ordering
         run: bash scripts/test-preflight-order-contract.sh
+      - name: Check manifest provenance
+        run: bash scripts/test-manifest-provenance.sh
       - name: Check authoritative version manifest
         run: bash scripts/test-version-manifest.sh
       - name: Check private input contract

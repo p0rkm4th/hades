@@ -17,6 +17,9 @@ if [[ -n "$inputs" && -f "$inputs" ]]; then source "$inputs"; fi
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
 [[ -f "$state" ]] || { echo 'FAIL installer contract marker missing'; exit 1; }
 grep -q '^manifest=' "$state" || { echo 'FAIL installer marker is malformed'; exit 1; }
+expected_manifest=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
+installed_manifest=$(awk -F= '$1 == "manifest" {print $2}' "$state")
+[[ "$installed_manifest" == "$expected_manifest" ]] || { echo 'FAIL installer marker manifest is stale'; exit 1; }
 config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 for file in overlay/sitecustomize.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js; do
   [[ -f "$config_root/$file" ]] || { echo "FAIL HADES layer missing: $file"; exit 1; }
