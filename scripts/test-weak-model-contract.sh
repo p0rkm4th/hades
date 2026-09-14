@@ -16,6 +16,7 @@ for fragment in (
     'if completion_only_model:',
     'self.tools = []',
     'if agent_zero_intent and not household_session:',
+    'if tool.get("function", {}).get("name") == "web_search"',
     'hades timing stage=tool',
     'hades timing stage=turn',
 ):

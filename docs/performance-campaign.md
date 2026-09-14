@@ -8,6 +8,8 @@ The overlay now emits bounded `HADES timing stage=tool` and `stage=turn` log
 records. These contain only the tool name, selected model, and elapsed
 milliseconds—never arguments or response content—so stage attribution can be
 captured without adding a tracing dependency or exposing private data.
+For the SearXNG-backed profile, web routing exposes `web_search` only; the
+search-only backend cannot support `web_extract`.
 
 | Workflow | Evidence | Bottleneck / disposition |
 |---|---|---|

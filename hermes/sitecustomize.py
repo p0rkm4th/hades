@@ -560,6 +560,13 @@ try:
                 web_tools = _get_tool_definitions(
                     enabled_toolsets=["web"], quiet_mode=True
                 )
+                # The HADES web provider is SearXNG, which is search-only;
+                # exposing web_extract makes weaker models call an operation
+                # that can never succeed and then continue from the error.
+                web_tools = [
+                    tool for tool in web_tools
+                    if tool.get("function", {}).get("name") == "web_search"
+                ]
                 if web_tools:
                     self.tools = web_tools
                     self.valid_tool_names = {
