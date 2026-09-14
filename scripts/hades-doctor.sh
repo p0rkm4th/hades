@@ -27,7 +27,7 @@ if [[ -n "$inputs" ]]; then
     [[ "${!name:-}" == /* ]] || { echo "FAIL operator input path must be absolute: $name"; exit 1; }
   done
 fi
-export HADES_LLDAP_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE
+export HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD
 export HADES_IDENTITY_SECRETS_DIR
 hades_layer_digest() {
   sha256sum "$@" | awk '{print $1}' | sha256sum | awk '{print $1}'
