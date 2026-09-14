@@ -36,6 +36,9 @@ from pathlib import Path
 manifest = json.loads(Path('config/reconstruction-manifest.json').read_text())
 if manifest.get('source_of_truth') != 'config/versions.env' or len(manifest.get('components', [])) != 9:
     raise SystemExit('FAIL machine reconstruction manifest is incomplete')
+identity = Path('docs/shared-identity.md').read_text()
+if 'historical disposable staging proof' not in identity or 'config/versions.env' not in identity:
+    raise SystemExit('FAIL historical identity versions are not clearly separated from current pins')
 PY
 
 printf 'PASS tracked deployment set and reconstruction manifest are aligned\n'

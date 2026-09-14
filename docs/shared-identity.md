@@ -61,10 +61,13 @@ before using `{{USER_GROUPS}}` or `{{USER_GROUP_IDS}}` in a downstream
 connection header. An empty expanded header is not evidence that a user has no
 capabilities; it may indicate that group management was not enabled.
 
-The disposable staging proof used LLDAP 0.6.3 with Open WebUI 0.11.1. The
-staging Open WebUI container was not connected to production model, Hermes,
-Hindsight, Grocy, or Agent Zero services. Its synthetic users are not owner
-accounts and must not be promoted into production.
+The historical disposable staging proof used LLDAP 0.6.3 with Open WebUI
+0.11.1; those versions are evidence of the identity contract, not the current
+rebuild target. The current public pins are maintained in
+[`config/versions.env`](../config/versions.env) and the reconstruction
+manifest. The staging Open WebUI container was not connected to production
+model, Hermes, Hindsight, Grocy, or Agent Zero services. Its synthetic users
+are not owner accounts and must not be promoted into production.
 
 ## Subject propagation design
 
