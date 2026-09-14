@@ -102,17 +102,22 @@ else
   fail=$((fail + 1))
 fi
 
-if curl -fsS --max-time 10 "$AGENT_ZERO_URL/" >/dev/null 2>&1; then
-  printf 'PASS Agent Zero HTTP\n'
-  pass=$((pass + 1))
-else
-  printf 'SKIPPED Agent Zero: not deployed\n'
-fi
-if curl -fsS --max-time 10 "$GROCY_URL/" >/dev/null 2>&1; then
-  printf 'PASS Grocy HTTP\n'
-  pass=$((pass + 1))
-else
-  printf 'SKIPPED Grocy: not deployed\n'
-fi
+check_optional_http() {
+  local label=$1 url=$2 container=$3
+  if curl -fsS --max-time 10 "$url/" >/dev/null 2>&1; then
+    printf 'PASS %s HTTP\n' "$label"
+    pass=$((pass + 1))
+  elif docker inspect "$container" >/dev/null 2>&1; then
+    # An expected deployment that is unreachable is an outage, not an absent
+    # optional component. Keep the smoke result failure-honest.
+    printf 'FAIL %s HTTP: deployed service unavailable\n' "$label"
+    fail=$((fail + 1))
+  else
+    printf 'SKIPPED %s: not deployed\n' "$label"
+  fi
+}
+
+check_optional_http 'Agent Zero' "$AGENT_ZERO_URL" hades-agent-zero
+check_optional_http Grocy "$GROCY_URL" hades-grocy
 printf 'SUMMARY pass=%d fail=%d\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
