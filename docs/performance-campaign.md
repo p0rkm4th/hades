@@ -97,4 +97,6 @@ continuation) and recipe preview at 9.73s total (4.95s model, 4.78s
 continuation). Both fixture tool stages were effectively 0ms. These are below
 the campaign's repeated roughly-30s optimization threshold, so no adapter or
 retry change is justified; model/continuation remains the bounded future
-optimization target.
+optimization target. The follow-up run also asserted that post-tool
+continuation emitted no further tool calls, so an unnecessary model/tool loop
+now fails the harness.
