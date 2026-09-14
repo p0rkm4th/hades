@@ -17,6 +17,9 @@ grep -q 'for container in hades-lldap hades-grocy hades-agent-zero' "$installer"
 grep -q 'deployed container is not running: $container' "$installer" || {
   echo 'FAIL runtime validation has no tracked-container failure'; exit 1;
 }
+grep -q 'private deployment has no running service: $record' "$installer" || {
+  echo 'FAIL runtime validation has no private-record failure'; exit 1;
+}
 grep -q "deployed Hermes service is not active" "$installer" || {
   echo 'FAIL runtime validation omits Hermes'; exit 1;
 }

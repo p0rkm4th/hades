@@ -486,6 +486,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
   model fixture satisfied the bounded reachability probe, while the preflight
   created no install marker or target state. Unreachable model endpoints now
   fail before mutation.
+- Private runtime health: PASS on the synthetic full deployment. The
+  installer now requires running services for each private Compose record in
+  addition to tracked containers and active Hermes before recording deployment
+  success.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

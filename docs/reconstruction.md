@@ -84,6 +84,11 @@ the configured model URL. The bounded reachability probe passed and the
 preflight remained non-mutating; an unreachable endpoint now fails clearly
 before any target directory is created.
 
+The synthetic full deployment path also verifies that every supplied private
+Compose record has at least one running service before the installer writes
+`phase=deployed`; tracked containers and the enabled Hermes unit are checked
+at the same boundary.
+
 After installation, the same guest was rebooted. Systemd returned to
 `running`, Docker restarted Agent Zero, Grocy, and LLDAP automatically, and
 LLDAP returned `healthy` after its normal startup interval. This is reboot

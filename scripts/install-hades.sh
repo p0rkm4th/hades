@@ -40,6 +40,10 @@ validate_private_records() {
   grep -Eq '^[[:space:]]*WantedBy=' "$HADES_HERMES_SERVICE_FILE" || fail 'Hermes private service record has no install target'
 }
 validate_started_runtime() {
+  for record in "$HADES_OPEN_WEBUI_COMPOSE_FILE" "$HADES_HINDSIGHT_COMPOSE_FILE" "$HADES_SEARXNG_COMPOSE_FILE"; do
+    running=$("${compose_cmd[@]}" -f "$record" ps --status running -q 2>/dev/null || true)
+    [[ -n "$running" ]] || fail "private deployment has no running service: $record"
+  done
   for container in hades-lldap hades-grocy hades-agent-zero; do
     status=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || true)
     [[ "$status" == running ]] || fail "deployed container is not running: $container (state=${status:-missing})"
