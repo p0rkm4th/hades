@@ -467,7 +467,7 @@ The current residual candidate failures are classified as follows:
 | Minimal-PATH test finds host-installed `hermes` | HOST-SENSITIVE | Upstream test assumption; no HADES change |
 | Desktop shim success/error fixture misses launch marker | UPDATE-SHIM ONLY | Upstream fixture/environment issue; no HADES change |
 | Real-profile relaunch cannot find Chrome | BROWSER-ENVIRONMENT ONLY | Requires a real browser binary; no HADES change |
-| Update-head success path reaches live-process guard | UPSTREAM DEFECT / UPDATE-SHIM ONLY | Test harness did not isolate its restart path; no HADES change |
+| Update-head success path reaches live-process guard | UPSTREAM DEFECT | Update-shim test harness did not isolate its restart path; no HADES change |
 | FTS5 trace-observation assertion | UPSTREAM DEFECT | Pooled-connection observation mismatch; no HADES change |
 
 Optional-provider failures from Daytona, FAL, Anthropic, Modal, and web
