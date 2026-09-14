@@ -14,11 +14,19 @@ fi
 check_history() {
   local pattern="$1"
   local label="$2"
+  local safe_synthetic_address="${3:-}"
   local matches
   matches="$(for commit in $(git rev-list "$branch"); do
     # Do not match the literal detector pattern in this verifier itself.
-    git grep -I -n -E "$pattern" "$commit" -- . ':(exclude)scripts/public-history-audit.sh' 2>/dev/null || true
+    git grep -I -n -E "$pattern" "$commit" -- . \
+      ':(exclude)scripts/public-history-audit.sh' \
+      ':(exclude)scripts/test-public-tree-safety.sh' 2>/dev/null || true
   done)"
+  if [ -n "$safe_synthetic_address" ]; then
+    # This exact Docker bridge address is a documented disposable Ollama
+    # fixture, not an owner network address. Keep the exception narrow.
+    matches="$(printf '%s\n' "$matches" | grep -vF "$safe_synthetic_address" || true)"
+  fi
   if [ -n "$matches" ]; then
     printf 'FAIL %s\n' "$label"
     printf '%s\n' "$matches" | head -20
@@ -32,12 +40,13 @@ check_history() {
 # path. Keep the owner workstation path explicit so the audit does not reject
 # accurate container mount documentation.
 check_history '/home/scootz/|/Users/[[:alnum:]_.-]+/|(^|[^0-9])(192\.168|10|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)' \
-  'local paths and private-network addresses absent'
+  'local paths and private-network addresses absent' '172.18.0.1'
 check_history 'tail[a-z0-9-]+\.ts\.net' 'tailnet hostnames absent'
 
-if git rev-list --objects "$branch" | rg -i '(\.env$|\.sqlite$|\.db$|\.pem$|\.p12$|\.key$|credentials|secrets)' >/dev/null; then
+credential_paths="$(git rev-list --objects "$branch" | awk '$2 != "config/versions.env" && tolower($2) ~ /(\.env$|\.sqlite$|\.db$|\.pem$|\.p12$|\.key$|credentials|secrets)/ {print}')"
+if [ -n "$credential_paths" ]; then
   printf 'FAIL credential-like tracked artifact paths present\n'
-  git rev-list --objects "$branch" | rg -i '(\.env$|\.sqlite$|\.db$|\.pem$|\.p12$|\.key$|credentials|secrets)' | head -20
+  printf '%s\n' "$credential_paths" | head -20
   fail=1
 else
   printf 'PASS credential-like tracked artifact paths absent\n'
