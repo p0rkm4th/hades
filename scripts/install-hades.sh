@@ -39,6 +39,12 @@ validate_private_records() {
   "${compose_cmd[@]}" -f "$HADES_OPEN_WEBUI_COMPOSE_FILE" config --quiet || fail 'invalid Open WebUI private compose record'
   "${compose_cmd[@]}" -f "$HADES_HINDSIGHT_COMPOSE_FILE" config --quiet || fail 'invalid Hindsight private compose record'
   "${compose_cmd[@]}" -f "$HADES_SEARXNG_COMPOSE_FILE" config --quiet || fail 'invalid SearXNG private compose record'
+  for record in "$HADES_OPEN_WEBUI_COMPOSE_FILE" "$HADES_HINDSIGHT_COMPOSE_FILE" "$HADES_SEARXNG_COMPOSE_FILE"; do
+    images=$("${compose_cmd[@]}" -f "$record" config --images)
+    if grep -Eq '(^|/|:)latest(@|$)' <<<"$images"; then
+      fail 'private deployment record contains an unpinned latest image'
+    fi
+  done
   systemd-analyze verify "$HADES_HERMES_SERVICE_FILE" || fail 'invalid Hermes private service record'
   grep -Eq '^[[:space:]]*WantedBy=' "$HADES_HERMES_SERVICE_FILE" || fail 'Hermes private service record has no install target'
 }

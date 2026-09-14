@@ -496,6 +496,9 @@ onboarding is the only owner-input gate; it does not pause independent work.
   deployed guest succeeds for healthy tracked containers and Hermes, while
   runtime/Compose failures now propagate a nonzero exit status instead of
   printing `FAIL` and returning success.
+- Private image pinning: PASS. Versioned synthetic private images passed the
+  Fedora preflight, while an injected `latest` tag failed before target state
+  or an install marker was created.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

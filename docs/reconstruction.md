@@ -89,7 +89,8 @@ before any target directory is created.
 The synthetic full deployment path also verifies that every supplied private
 Compose record has at least one running service before the installer writes
 `phase=deployed`; tracked containers and the enabled Hermes unit are checked
-at the same boundary.
+at the same boundary. Private Compose records using an unpinned `latest` image
+are rejected during preflight.
 
 After installation, the same guest was rebooted. Systemd returned to
 `running`, Docker restarted Agent Zero, Grocy, and LLDAP automatically, and

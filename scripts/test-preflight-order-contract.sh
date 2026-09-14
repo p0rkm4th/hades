@@ -16,6 +16,9 @@ grep -q 'curl --silent --connect-timeout 5 --max-time 10 --output /dev/null "\$H
 grep -q 'configured model endpoint is not reachable; verify the private endpoint' "$installer" || {
   echo 'FAIL preflight endpoint failure is not actionable'; exit 1;
 }
+grep -q 'private deployment record contains an unpinned latest image' "$installer" || {
+  echo 'FAIL private image pinning is not enforced'; exit 1;
+}
 if grep -q 'not reachable: \$HADES_HERMES_MODEL_ENDPOINT' "$installer"; then
   echo 'FAIL preflight leaks the configured endpoint'; exit 1
 fi
