@@ -6,6 +6,10 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 fixture=$(mktemp -d)
 trap 'rm -rf -- "$fixture"' EXIT
 bash "$repo_dir/scripts/create-synthetic-private-fixture.sh" "$fixture/hades-fixture"
+sandbox="$fixture/sandbox"
+bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs "$fixture/hades-fixture/operator.env"
+bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$sandbox" --inputs "$fixture/hades-fixture/operator.env"
+bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$sandbox" --inputs "$fixture/hades-fixture/operator.env"
 
 input="$fixture/hades-fixture/operator.env"
 [[ $(stat -c '%a' "$input") == 600 ]] || { echo 'FAIL synthetic operator input permissions'; exit 1; }

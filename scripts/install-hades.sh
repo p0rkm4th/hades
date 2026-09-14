@@ -91,7 +91,14 @@ preflight() {
   for source_file in "${tracked_sources[@]}"; do
     [[ -f "$repo_dir/$source_file" ]] || fail "required tracked source is absent: $source_file"
   done
-  if ((test_mode)); then echo 'PASS synthetic host contract (test mode)'; return; fi
+  if ((test_mode)); then
+    if [[ -d "${HADES_DEPLOYMENT_DIR:-}" ]]; then
+      validate_private_records
+      echo 'PASS synthetic private deployment records'
+    fi
+    echo 'PASS synthetic host contract (test mode)'
+    return
+  fi
   [[ $EUID -eq 0 ]] || fail 'run as root'
   [[ -r /etc/os-release ]] || fail 'cannot read OS identification'
   source /etc/os-release
