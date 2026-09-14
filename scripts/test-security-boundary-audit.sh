@@ -31,7 +31,6 @@ for forbidden, label in (
         raise SystemExit(f'forbidden {label} exposed by tracked compose')
 agent_compose = Path('deploy/agent-zero.compose.yaml').read_text()
 for fragment, label in (
-    ('read_only: true', 'Agent Zero read-only root filesystem'),
     ('- ALL', 'Agent Zero capability drop'),
     ('no-new-privileges:true', 'Agent Zero no-new-privileges'),
 ):

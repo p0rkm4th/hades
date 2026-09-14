@@ -32,3 +32,7 @@ The installer fails before mutation on unsupported OS, missing required tools,
 bad inputs, unsafe secret permissions, invalid URLs, port collisions, or missing
 tracked source. It does not install a GPU stack, migrate production, or delete
 state.
+
+The tracked LLDAP Compose contract runs as UID 1000. Its three file-backed
+identity secrets therefore remain mode `0600` and are owned by UID 1000; this
+is narrow service access, not a world-readable relaxation.

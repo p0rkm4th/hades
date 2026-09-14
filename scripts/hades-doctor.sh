@@ -23,6 +23,14 @@ if [[ -n "$inputs" && -f "$inputs" ]]; then
 else echo 'WARN operator-input file not supplied'; fi
 if ((test_mode)); then echo 'PASS read-only synthetic doctor'; exit 0; fi
 command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1 && echo 'PASS container runtime available' || echo 'WARN container runtime unavailable'
+if command -v docker >/dev/null 2>&1; then
+  for container in hades-lldap hades-grocy hades-agent-zero; do
+    status=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || true)
+    [[ "$status" == running ]] && echo "PASS container $container" || echo "FAIL container $container state=${status:-missing}"
+  done
+  health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' hades-lldap 2>/dev/null || true)
+  [[ "$health" == healthy ]] && echo 'PASS LLDAP health' || echo "WARN LLDAP health=${health:-not-configured}"
+fi
 for f in deploy/*.compose.yaml; do
   if command -v docker >/dev/null 2>&1; then docker compose -f "$f" config --quiet && echo "PASS compose $(basename "$f")" || echo "FAIL compose $(basename "$f")"; fi
 done

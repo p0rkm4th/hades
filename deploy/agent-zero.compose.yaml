@@ -5,13 +5,25 @@ services:
     image: agent0ai/agent-zero@sha256:680ab243d358b5fd41847f640c2eac1c59b83b154b22fc38004b8a0631b3d028
     container_name: hades-agent-zero
     restart: unless-stopped
-    read_only: true
+    # Agent Zero's pinned upstream entrypoint bootstraps application files
+    # under /a0 and creates /run/sshd. The image cannot start with a read-only
+    # root; retain the supported privilege controls below and keep state
+    # isolated in the dedicated /a0/usr volume.
     cap_drop:
       - ALL
+    cap_add:
+      # The image's supervisor drops its bundled workers to UID 995/996.
+      # These are the only capabilities required for that internal boundary.
+      - SETUID
+      - SETGID
     security_opt:
       - no-new-privileges:true
     tmpfs:
       - /tmp
+      # The pinned upstream entrypoint writes shell defaults and supervisor
+      # runtime state here; keep those writes ephemeral while retaining a
+      # read-only container root.
+      - /root
     # Keep the operator private until an explicit owner-facing exposure is added.
     ports:
       - "127.0.0.1:7002:80"

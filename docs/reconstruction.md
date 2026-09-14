@@ -15,9 +15,12 @@ sudo /opt/hades/scripts/validate-install.sh --inputs /etc/hades/operator-inputs.
 ```
 
 The installer is safe to rerun and preserves state, stable identities, and
-operator secrets. `--test-mode --root DIR` performs a credential-free contract
-rehearsal and creates no containers or synthetic production data. Synthetic
-fixtures are opt-in and are never enabled by the production path.
+operator secrets. It requires the four private runtime records named in the
+input template (three Compose records and one Hermes systemd unit), validates
+all of them before deployment, and starts them in dependency order.
+`--test-mode --root DIR` performs a credential-free contract rehearsal and
+creates no containers or synthetic production data. Synthetic fixtures are
+opt-in and are never enabled by the production path.
 
 Deployment order is LLDAP, Open WebUI, Hindsight, Grocy, SearXNG, Agent Zero,
 Hermes 0.14.0, then the HADES overlay/assets/adapters. Production migration is

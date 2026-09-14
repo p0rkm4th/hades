@@ -24,6 +24,10 @@ if ((test_mode)); then
   echo 'PASS synthetic authenticated-path placeholder contract'
   echo 'PASS synthetic validation: production credentials and fixture state were not created'
 else
+  for container in hades-lldap hades-grocy hades-agent-zero; do
+    status=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || true)
+    [[ "$status" == running ]] || { echo "FAIL tracked container is not running: $container"; exit 1; }
+  done
   echo 'WARN full conversation, identity, memory, Grocy, search, and operator checks require live private inputs'
 fi
 echo 'PASS install validation contract'
