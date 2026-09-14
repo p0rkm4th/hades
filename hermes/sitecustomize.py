@@ -42,6 +42,36 @@ _HADES_TRANSIENT_ERROR = re.compile(
     re.IGNORECASE,
 )
 
+_HADES_SHARED_MEMORY_INTENT = re.compile(
+    r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|pantry|inventory|stock|"
+    r"recipe|food|ingredient|bought|purchase|purchased|consume|consumed|used up|out of|add it|remove it)\b",
+    re.IGNORECASE,
+)
+_HADES_GROCY_ACTION_INTENT = re.compile(
+    r"\b(?:add|remove|buy|bought|purchase|consume|used|out of|outta)\s+"
+    r"(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|pasta|rice|chicken|beef|fruit|vegetables?)\b",
+    re.IGNORECASE,
+)
+_HADES_GROCY_ITEM_FRAGMENT = re.compile(
+    r"^\s*(?:milk|eggs?|cereal|bread|cheese|pasta|rice|chicken|beef|fruit|vegetables?)\s*[?!.,]*\s*$",
+    re.IGNORECASE,
+)
+_HADES_NONPERSONAL_STATE_INTENT = re.compile(
+    r"\b(?:weather|forecast|temperature|search|look\s+up|latest|news|web|agent\s+zero|agent0|"
+    r"delegat(?:e|ion|ed)|finance|budget|balance|transaction|account|afford)\b",
+    re.IGNORECASE,
+)
+
+
+def _hades_nonpersonal_state_turn(user_text):
+    """Identify live/shared turns that must not enter private memory."""
+    return bool(
+        _HADES_SHARED_MEMORY_INTENT.search(user_text)
+        or _HADES_GROCY_ACTION_INTENT.search(user_text)
+        or _HADES_GROCY_ITEM_FRAGMENT.search(user_text)
+        or _HADES_NONPERSONAL_STATE_INTENT.search(user_text)
+    )
+
 
 def _hades_transient_error_text(content):
     """Identify operational failure output that must not become memory."""
@@ -166,42 +196,11 @@ try:
     _hades_original_aretain_batch = _HindsightClient.aretain_batch
 
     _hades_original_sync_turn = _hindsight.HindsightMemoryProvider.sync_turn
-    _HADES_SHARED_MEMORY_INTENT = re.compile(
-        r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|pantry|inventory|stock|"
-        r"recipe|food|ingredient|bought|purchase|purchased|consume|"
-        r"consumed|used up|out of|add it|remove it)\b",
-        re.IGNORECASE,
-    )
-    _HADES_GROCY_ACTION_INTENT = re.compile(
-        r"\b(?:add|remove|buy|bought|purchase|consume|used|out of|outta)\s+"
-        r"(?:(?:the|some|my)\s+)?(?:milk|eggs?|cereal|bread|cheese|"
-        r"pasta|rice|chicken|beef|fruit|vegetables?)\b",
-        re.IGNORECASE,
-    )
-    _HADES_GROCY_ITEM_FRAGMENT = re.compile(
-        r"^\s*(?:milk|eggs?|cereal|bread|cheese|pasta|rice|chicken|"
-        r"beef|fruit|vegetables?)\s*[?!.,]*\s*$",
-        re.IGNORECASE,
-    )
     _HADES_EXPLICIT_MEMORY_INTENT = re.compile(
         r"\b(?:remember|memorize|forget|memory|recall|do you remember|"
         r"actually my|correction)\b",
         re.IGNORECASE,
     )
-    _HADES_NONPERSONAL_STATE_INTENT = re.compile(
-        r"\b(?:weather|forecast|temperature|search|look\s+up|latest|news|web|"
-        r"agent\s+zero|agent0|delegat(?:e|ion|ed)|finance|budget|balance|"
-        r"transaction|account|afford)\b",
-        re.IGNORECASE,
-    )
-    def _hades_nonpersonal_state_turn(user_text):
-        return bool(
-            _HADES_SHARED_MEMORY_INTENT.search(user_text)
-            or _HADES_GROCY_ACTION_INTENT.search(user_text)
-            or _HADES_GROCY_ITEM_FRAGMENT.search(user_text)
-            or _HADES_NONPERSONAL_STATE_INTENT.search(user_text)
-        )
-
     def _hades_sync_turn(self, user_content, assistant_content, *, session_id=""):
         """Keep shared household turns out of private semantic memory.
 

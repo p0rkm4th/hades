@@ -49,5 +49,18 @@ for error in ('OUTCOME UNKNOWN', 'request timed out', 'service unavailable',
 for ordinary in ('I prefer basil', 'I hate mushrooms', 'remember my preference'):
     if overlay._hades_transient_error_text(ordinary):
         raise SystemExit(f'ordinary personal text was misclassified: {ordinary}')
+for live_state in (
+    'Grocy says there are 2 cartons of milk',
+    'the shared shopping list contains onions',
+    'the weather result says rain',
+    'the web search returned a recipe',
+    'the finance balance is $65',
+    'Agent Zero returned execution output',
+):
+    if not overlay._hades_nonpersonal_state_turn(live_state):
+        raise SystemExit(f'live/shared state was eligible for private memory: {live_state}')
+for personal in ('I prefer basil', 'I hate mushrooms', 'my favorite dinner is pasta'):
+    if overlay._hades_nonpersonal_state_turn(personal):
+        raise SystemExit(f'personal fact was suppressed as live state: {personal}')
 print('PASS memory intent regression')
 PY
