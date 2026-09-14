@@ -59,9 +59,8 @@ booting services alone is not recovery evidence.
 These are deliberate gates, not missing implementation tasks:
 
 - owner-authenticated Hermes 0.21.2 promotion rehearsal;
-- a clean Hermes 0.21.2 full-suite run, or an explicitly documented hermetic
-  disposition for the five host/update-shim/browser-environment residual tests
-  and the upstream FTS5 trace-observation assertion;
+- owner-approved disposition of the candidate-only Hermes 0.21.2 promotion
+  after the documented HADES qualification suite and residual classifications;
 - owner-approved Proxmox, NetBox, and Uptime Kuma endpoints and read-only
   credentials;
 - owner-approved Home Assistant endpoint, token, and entity allowlist;
@@ -77,10 +76,10 @@ not commit volume.
 | Capability | Status | Smallest remaining contract |
 |---|---|---|
 | Owner daily-driver | PASS + PERSISTENCE | Fresh owner regression after any runtime promotion |
-| Household multi-user | PARTIAL | Disposable Qwen harness passes 24 Alpha/Beta/Gamma turns; run the same sequence through authenticated HADES sessions |
+| Household multi-user | PARTIAL | Disposable Qwen harness passes 24 Alpha/Beta/Gamma turns; authenticated HADES-session acceptance remains the end-to-end contract |
 | Private memory | PASS + PERSISTENCE | Preserve subject mapping through any migration |
 | Shared household state | PASS + PERSISTENCE | Complete recipe-authoring browser sequence |
-| Web/search | PARTIAL | Fresh owner-UI follow-up must confirm repaired search freshness |
+| Web/search | PARTIAL | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary; fresh owner-UI follow-up must confirm search freshness |
 | Bounded operator | PASS + PERSISTENCE | Broader tasks and native A2A remain optional hardening |
 | Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope |
 | Homelab | OWNER-GATED | Approve endpoints, inventory scope, and read-only credentials |
@@ -88,8 +87,8 @@ not commit volume.
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Complete private off-host custody, retention, and restore drill |
 | Installation/rebuild | PARTIAL | Supply private operator image/digest records and complete an isolated restore rehearsal before packaging |
-| Security | PASS | Re-run the boundary matrix after any authority-bearing change |
-| Performance | PARTIAL | Capture one fresh owner-approved web and recipe turn with model/tool/continuation stages; optimize only repeated >30s workflows |
+| Security | PASS | Static CI guards now cover authority amplification, mounts, pinned deployment, and read-only finance/operator surfaces; re-run after authority-bearing changes |
+| Performance | PARTIAL | Synthetic web/recipe capture is below the repeated ~30s threshold; owner-visible timing remains for final acceptance |
 
 ## Source-of-truth adversarial contract
 
