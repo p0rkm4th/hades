@@ -586,7 +586,11 @@ try:
                 "HADES live-web rule: this request concerns current or external "
                 "information. Call web_search before answering, including on a "
                 "follow-up. Use the user's location/topic in the query. Do not "
-                "claim that web access is unavailable when web_search is listed."
+                "claim that web access is unavailable when web_search is listed. "
+                "Use only facts actually present in the web_search result; a "
+                "title or snippet is not evidence for missing details. If the "
+                "result does not contain the requested fact, report that it is "
+                "insufficient and do not infer or invent an answer."
             )
             self.ephemeral_system_prompt = "\n\n".join(
                 part for part in (original_ephemeral_system_prompt, web_guidance) if part

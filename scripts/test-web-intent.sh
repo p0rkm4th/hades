@@ -10,9 +10,16 @@ import importlib.util
 from pathlib import Path
 
 path = Path("hermes/sitecustomize.py")
+source = path.read_text().lower()
 spec = importlib.util.spec_from_file_location("hades_overlay_test", path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+
+for phrase in (
+    "title or snippet is not evidence",
+    "do not infer or invent an answer",
+):
+    assert phrase in source, phrase
 
 direct = (
     "what happened today?",
