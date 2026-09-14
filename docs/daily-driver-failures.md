@@ -124,8 +124,12 @@ outside the repository.
 - Failure layer: Hermes Hindsight retention intent boundary
 - Repair/evidence: the overlay now suppresses automatic retention and prefetch
   for web, Agent Zero, and finance-like turns unless the user explicitly asks
-  to remember/recall. Static memory-boundary regression coverage verifies the
-  new classifier terms; no real finance or owner memory was used.
+  to remember/recall; explicit memory tools remain available, but a mixed
+  transcript is never retained wholesale. Mixed explicit-memory turns now
+  expose web search and owner-authorized Agent Zero only when those tools are
+  present and the session is not household-scoped. Static memory-boundary
+  regression coverage verifies the classifier terms; no real finance or owner
+  memory was used.
 - Status: REPAIRED — canonical systems remain authoritative and transient
   results are not promoted to personal memory by default
 

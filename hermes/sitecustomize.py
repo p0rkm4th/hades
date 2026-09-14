@@ -29,7 +29,7 @@ _HADES_GROCY_TOOLSETS = [
 _HADES_LIVE_WEB_INTENT = re.compile(
     r"\b(?:weather|forecast|temperature|search|look\s+up|latest|news|web|"
     r"current|today|tonight|tomorrow|yesterday|recent(?:ly)?|newer|"
-    r"who\s+won|score|what\s+happened|release(?:d)?|version)\b",
+    r"who\s+won|score|what\s+happened|release(?:d)?|version|online|internet)\b",
     re.IGNORECASE,
 )
 
@@ -202,8 +202,8 @@ try:
         # untrusted generated text and must not decide whether a turn is
         # private or shared.
         user_text = str(user_content or "")
-        if _hades_nonpersonal_state_turn(user_text) and not _HADES_EXPLICIT_MEMORY_INTENT.search(user_text):
-            _hades_logger.info("Skipping automatic Hindsight retain for shared-state turn")
+        if _hades_nonpersonal_state_turn(user_text):
+            _hades_logger.info("Skipping automatic Hindsight retain for non-personal state turn")
             return None
         return _hades_original_sync_turn(
             self, user_content, assistant_content, session_id=session_id
@@ -654,6 +654,20 @@ try:
                     tool.get("function", {}).get("name")
                     for tool in original_tools
                     if tool.get("function", {}).get("name") in allowed_grocy
+                )
+            if web_intent:
+                allowed_memory.update(
+                    tool.get("function", {}).get("name")
+                    for tool in original_tools
+                    if tool.get("function", {}).get("name") == "web_search"
+                )
+            if agent_zero_intent and not household_session:
+                allowed_memory.update(
+                    tool.get("function", {}).get("name")
+                    for tool in original_tools
+                    if tool.get("function", {}).get("name", "").endswith(
+                        "agent_zero_delegate"
+                    )
                 )
             self.tools = [
                 tool for tool in original_tools

@@ -27,6 +27,8 @@ jobs:
 
       - name: Check memory intent boundary
         run: bash scripts/test-hades-memory-intent.sh
+      - name: Check mixed-domain composition boundary
+        run: bash scripts/test-composition-boundary.sh
 
       - name: Check web intent boundary
         run: bash scripts/test-web-intent.sh
