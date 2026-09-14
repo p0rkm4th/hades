@@ -156,6 +156,10 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
   supplied to a second independent guest.
 - The first clean guest also passed reboot recovery for the tracked subset:
   systemd and Docker returned automatically, and LLDAP regained healthy state.
+- A disposable backup/destroy/restore drill now proves stable synthetic
+  identity-to-memory mapping and canonical Grocy/conversation markers survive
+  restoration; encrypted off-host custody and full private-component restore
+  remain unproven by design.
 
 ## ARCHITECTURAL DISCOVERIES
 

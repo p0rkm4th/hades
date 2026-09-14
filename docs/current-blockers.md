@@ -23,6 +23,9 @@ an owner decision or secret from defects that can be repaired independently.
   install validator, and rerunnable disposable rehearsal are present. A real
   supported systemd guest, private deployment records, and canonical backup
   bundle are still required for higher evidence levels.
+- **Added:** The credential-free backup→destroy→restore drill preserves stable
+  Alpha/Beta subject IDs, memory-bank mappings, conversation marker, and Grocy
+  stock. It does not substitute for private encrypted off-host recovery.
 
 - **Complete:** The credential-free Qwen multi-user long-context lane is
   complete: the

@@ -85,7 +85,7 @@ not commit volume.
 | Homelab | OWNER-GATED | Approve endpoints, inventory scope, and read-only credentials |
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
-| Recovery | PARTIAL | Complete private off-host custody, retention, and restore drill |
+| Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
 | Installation/rebuild | PARTIAL | First clean Fedora guest proves the tracked subset; complete two independent full reconstructions and backup/restore using the four private runtime records plus explicit inputs |
 | Security | PASS | Static CI guards now cover authority amplification, mounts, pinned deployment, and read-only finance/operator surfaces; re-run after authority-bearing changes |
 | Performance | PARTIAL | Synthetic web/recipe capture is below the repeated ~30s threshold; owner-visible timing remains for final acceptance |
