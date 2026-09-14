@@ -86,7 +86,7 @@ not commit volume.
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
-| Installation/rebuild | PARTIAL | First-clean synthetic deployment and reboot now pass with generated private records; complete an independent second full application reconstruction and fresh-install household soak |
+| Installation/rebuild | PARTIAL | First-clean synthetic deployment/reboot and the reproducible synthetic household-soak contract pass; complete an independent full application reconstruction and full application household soak |
 | Security | PASS | Static CI guards now cover authority amplification, mounts, pinned deployment, and read-only finance/operator surfaces; re-run after authority-bearing changes |
 | Performance | PARTIAL | Synthetic web/recipe capture is below the repeated ~30s threshold; owner-visible timing remains for final acceptance |
 

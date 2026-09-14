@@ -80,6 +80,8 @@ jobs:
         run: bash scripts/test-clean-reconstruction-contract.sh
       - name: Check synthetic private fixture contract
         run: bash scripts/test-synthetic-private-fixture.sh
+      - name: Check synthetic fresh-install household soak
+        run: bash scripts/test-synthetic-household-soak.sh
       - name: Check synthetic backup restore continuity
         run: bash scripts/test-synthetic-backup-restore.sh
       - name: Check backup metadata contract

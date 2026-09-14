@@ -194,7 +194,8 @@ now part of the host contract and is not an undocumented reconstruction ritual.
 | Reboot/restart | PASS for tracked subset | The first disposable guest recovered its tracked services after reboot; missing private services are not included in this claim. |
 | Full-stack synthetic clean reconstruction | PASS | One fresh Fedora 44 system completed the explicit-input deployment and reboot path; its private records are minimal service fixtures, not full application records. |
 | Full application clean reconstruction | NOT PROVEN | Requires full synthetic Open WebUI/Hindsight/SearXNG/Hermes records and canonical application fixtures on an independent fresh guest. |
-| Fresh-install household soak | NOT PROVEN | Follows a successful full-stack reconstruction and exercises the reconstructed HADES application path. |
+| Fresh-install synthetic household soak | PASS for contract/fixture layer | Generated private inputs, test-mode install/doctor/validation, and owner-style authority/multi-user/memory simulations run as one reproducible sequence; no full application behavior is claimed. |
+| Fresh-install full application household soak | NOT PROVEN | Follows a successful full application reconstruction and exercises the reconstructed HADES application path. |
 
 The exact remaining independent milestone is therefore **one independent fresh
 guest with full application fixtures**, followed by a fresh-install household
