@@ -22,6 +22,17 @@ umask 077
 stamp=$(date +%Y%m%d-%H%M%S)
 output=$(mktemp -d "$DESTINATION/hades-sqlite-${stamp}-XXXXXX")
 chmod 700 "$output"
+quiesced_container=""
+
+restore_quiesced_container() {
+  if [[ -n "$quiesced_container" ]]; then
+    docker start "$quiesced_container" >/dev/null 2>&1 || true
+    wait_for_container_ready "$quiesced_container" >/dev/null 2>&1 || true
+    quiesced_container=""
+  fi
+}
+
+trap restore_quiesced_container EXIT
 
 backup_container_python() {
   local container=$1 source=$2 name=$3 tmp
@@ -58,14 +69,17 @@ wait_for_container_ready() {
 backup_container_quiesced() {
   local container=$1 source=$2 name=$3
   docker stop "$container" >/dev/null
+  quiesced_container="$container"
   if ! docker cp "$container:$source" "$output/$name"; then
     if docker start "$container" >/dev/null; then
       wait_for_container_ready "$container" || true
     fi
+    quiesced_container=""
     return 1
   fi
   docker start "$container" >/dev/null
   wait_for_container_ready "$container"
+  quiesced_container=""
   chmod 600 "$output/$name"
 }
 
