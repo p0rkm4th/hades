@@ -17,17 +17,18 @@ an owner decision or secret from defects that can be repaired independently.
 
 ## Independent technical work still available
 
-- Run model-quality multi-user long-context dogfood across Alpha, Beta, and
-  Gamma when a disposable model lane is available. The deterministic 60-turn
-  synthetic harness now covers identity scope, shared state, correction,
-  topic switching, and new-chat reset; accumulation-quality and pronoun
-  failures still require a real model lane.
+- The credential-free Qwen multi-user long-context lane is complete: the
+  repeatable Alpha/Beta/Gamma harness passes 24/24 bounded turns, including
+  corrections, topic switches, abandoned mutations, pronouns, and recall.
+  Authenticated HADES-session acceptance remains an owner-authenticated
+  end-to-end gate, not an unrecorded independent defect.
 - Capture one fresh synthetic web and recipe turn with model, tool,
   continuation, and total timings; optimize only a repeatable human-visible
   slowdown or unnecessary loop.
-- Continue isolated Grocy authoring edge cases and canonical reconciliation;
-  pre-write connection failures now return `FAILED`, while ambiguous outcomes
-  remain `OUTCOME UNKNOWN` and are never blindly replayed.
+- Isolated Grocy authoring edge cases and canonical reconciliation are covered;
+  pre-write connection failures return `FAILED`, while ambiguous outcomes
+  remain `OUTCOME UNKNOWN` and are never blindly replayed. Reopen this item
+  only for a newly demonstrated mutation defect.
 - Keep candidate-only Hermes residuals documented against the stable HADES
   qualification suite; production remains on 0.14.0.
 
