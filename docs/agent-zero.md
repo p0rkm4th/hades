@@ -19,7 +19,8 @@ agent0ai/agent-zero@sha256:680ab243d358b5fd41847f640c2eac1c59b83b154b22fc38004b8
 Model credentials and Agent Zero onboarding settings stay outside this
 repository. `integrations/agent-zero-mcp/server.py` is the deliberately small
 bridge for the documented external API. It exposes one bounded text task,
-enforces a 2,000-character limit and timeout, and returns upstream failures
+enforces a 2,000-character task limit, a bounded response limit, and a timeout;
+it returns upstream failures
 without claiming success. The local API/MCP path has been exercised. A fresh
 synthetic mobile HADES session also rendered a bounded Agent Zero result in
 the assistant DOM after the private tool completed. This closes the founding

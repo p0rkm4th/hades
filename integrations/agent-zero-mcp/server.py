@@ -21,6 +21,7 @@ from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 BASE_URL = os.environ.get("AGENT_ZERO_URL", "http://127.0.0.1:7002").rstrip("/")
 API_KEY = os.environ.get("AGENT_ZERO_API_KEY", "")
 MAX_TASK_CHARS = int(os.environ.get("AGENT_ZERO_MAX_TASK_CHARS", "2000"))
+MAX_RESPONSE_CHARS = int(os.environ.get("AGENT_ZERO_MAX_RESPONSE_CHARS", "4000"))
 TIMEOUT_SECONDS = float(os.environ.get("AGENT_ZERO_TIMEOUT_SECONDS", "90"))
 
 TOOL_NAME = "agent_zero_delegate"
@@ -71,6 +72,11 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
     response_text = result.get("response")
     if not isinstance(response_text, str) or not response_text.strip():
         return {"ok": False, "error": "Agent Zero returned no usable result."}
+    if len(response_text) > MAX_RESPONSE_CHARS:
+        return {
+            "ok": False,
+            "error": f"Agent Zero result exceeds the {MAX_RESPONSE_CHARS}-character response limit.",
+        }
 
     return {
         "ok": True,
