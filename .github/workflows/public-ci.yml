@@ -87,6 +87,9 @@ jobs:
       - name: Check Hermes qualification documentation
         run: bash scripts/test-hermes-qualification-doc.sh
 
+      - name: Check current public tree safety
+        run: bash scripts/test-public-tree-safety.sh
+
       - name: Check public history
         run: bash scripts/public-history-audit.sh
 
