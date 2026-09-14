@@ -31,3 +31,21 @@ Decommissioning stops runtime and removes reconstructable material while
 preserving `/var/lib/hades` and backups by default. Permanent state destruction
 requires a separate, explicit operator action; no destructive uninstall command
 is provided.
+
+## Evidence record
+
+Static and disposable test-mode checks pass. A first clean Fedora 44 KVM guest
+was booted from the public cloud image with systemd, networking, Docker, and
+Compose. After explicit synthetic identity inputs were supplied, the tracked
+LLDAP, Grocy, and Agent Zero subset installed and was safely rerun: LLDAP
+became healthy, Grocy remained running, and Agent Zero's bundled workers
+stabilized. The run exposed and repaired secret ownership, upstream Agent Zero
+startup writes, internal `SETUID`/`SETGID` needs, private-record validation
+order, and owned-port idempotency.
+
+This is **first-clean-machine / tracked-subset evidence**, not a full HADES
+reconstruction pass. The guest did not contain the four required private
+Open WebUI, Hindsight, SearXNG, and Hermes deployment records, so no full
+conversation, memory, search, or Hermes acceptance is claimed. The next
+evidence level is a second independent guest using those explicit records and
+canonical synthetic backups.

@@ -86,7 +86,7 @@ not commit volume.
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Complete private off-host custody, retention, and restore drill |
-| Installation/rebuild | PARTIAL | Complete two independent supported-systemd reconstructions and backup/restore using the tracked installer plus explicit private inputs |
+| Installation/rebuild | PARTIAL | First clean Fedora guest proves the tracked subset; complete two independent full reconstructions and backup/restore using the four private runtime records plus explicit inputs |
 | Security | PASS | Static CI guards now cover authority amplification, mounts, pinned deployment, and read-only finance/operator surfaces; re-run after authority-bearing changes |
 | Performance | PARTIAL | Synthetic web/recipe capture is below the repeated ~30s threshold; owner-visible timing remains for final acceptance |
 

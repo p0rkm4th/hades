@@ -148,6 +148,12 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
   runner or granting new authority. The proposed boundary requires trusted
   subject/capability resolution, explicit preview/apply semantics,
   idempotency, canonical verification, and fail-closed unknown outcomes.
+- First clean Fedora 44 KVM evidence is recorded for the tracked LLDAP, Grocy,
+  and Agent Zero subset. The run exposed and repaired upstream secret
+  ownership, Agent Zero startup-write/capability requirements, and installer
+  partial-state/idempotency defects. Full HADES reconstruction is not claimed
+  until explicit private Open WebUI, Hindsight, SearXNG, and Hermes records are
+  supplied to a second independent guest.
 
 ## ARCHITECTURAL DISCOVERIES
 
