@@ -43,6 +43,9 @@ Every finance answer must identify, in owner-friendly language:
 
 The adapter reports the canonical source, retrieval time, server version,
 Actual local sync metadata, and computed freshness on every successful read.
+Account reads identify account coverage; transaction reads identify the date
+range, account filter, returned count, total matching rows, and whether the
+bounded result is complete.
 If the server is unavailable, the budget cannot be loaded, or freshness is
 unknown, the adapter returns an explicit failure and HADES must avoid
 confident affordability or “how much did I spend” claims. Local memory must

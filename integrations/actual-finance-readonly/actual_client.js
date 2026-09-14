@@ -98,6 +98,7 @@ async function main(request) {
       return {
         ok: true,
         ...metadata,
+        coverage: ["budget", "server_status", "sync_freshness"],
       };
     }
     if (request.action === "accounts") {
@@ -115,6 +116,8 @@ async function main(request) {
       return {
         ok: true,
         ...metadata,
+        coverage: ["accounts", "account_balances"],
+        account_count: withBalances.length,
         accounts: withBalances.map((item) => ({
           ...item,
           balance: item.balance_cents / 100,
@@ -144,10 +147,17 @@ async function main(request) {
         });
       }
       transactions.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+      const requestedLimit = Math.max(1, Number(request.limit) || 100);
       return {
         ok: true,
         ...metadata,
-        transactions: transactions.slice(0, Math.max(1, Number(request.limit) || 100)),
+        coverage: ["transactions"],
+        date_range: { start: request.startDate, end: request.endDate },
+        account_filter: request.account || null,
+        total_matching: transactions.length,
+        returned_count: Math.min(transactions.length, requestedLimit),
+        pagination_complete: transactions.length <= requestedLimit,
+        transactions: transactions.slice(0, requestedLimit),
         read_only: true,
       };
     }
