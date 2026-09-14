@@ -28,6 +28,9 @@ an owner decision or secret from defects that can be repaired independently.
 - Compare bounded Grocy read/mutation variants against the diagnosed
   local-model and post-tool continuation latency; do not replay uncertain
   mutations blindly.
+- Complete Grocy recipe-authoring acceptance after the owner-facing MCP gains
+  a serving-count contract; the current API acceptance covers recipe creation
+  and ingredient resolution only, with canonical cleanup verified.
 
 The coordinated revocation bridge is accepted: it deletes the Open WebUI
 account before the directory identity and verifies that the prior bearer token

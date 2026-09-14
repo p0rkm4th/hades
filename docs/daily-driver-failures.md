@@ -4,6 +4,22 @@ This public-safe log records sanitized failure classes only. Owner prompts,
 account identifiers, URLs, private runtime details, and personal data remain
 outside the repository.
 
+## 2026-09-14 — Recipe-authoring acceptance lacks serving-count coverage
+
+- Actor: synthetic household account
+- Surface: normal HADES owner API with Grocy recipe-authoring tools
+- Expected: create a recipe with a resolved ingredient and verify its serving
+  count against canonical Grocy
+- Observed: recipe creation and one ingredient succeeded, but the installed
+  owner-facing MCP schema exposed no `base_servings`/servings parameter; the
+  serving-count assertion could not be performed
+- Failure layer: Grocy MCP recipe-authoring contract
+- Repair/evidence: canonical Grocy inspection confirmed the unique synthetic
+  recipe and ingredient during the acceptance, then cleanup confirmed no
+  fixture remained. No HADES shadow state or blind retry was introduced.
+- Status: PARTIAL — serving-aware tool contract and owner-browser acceptance
+  remain open
+
 ## 2026-09-13 — Recovery helper initially targeted Grocy placeholder path
 
 - Actor: recovery automation

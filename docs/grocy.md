@@ -45,6 +45,15 @@ metadata update, ingredient add, and ingredient removal. Recipe creation is
 still an explicit Grocy mutation; unresolved product names are reported rather
 than silently inventing pantry products.
 
+An API-level synthetic acceptance then created a uniquely named recipe with
+one resolved ingredient through the normal HADES owner API, and canonical
+Grocy verification plus cleanup confirmed no fixture remained. The acceptance
+is intentionally partial: the installed MCP create/update tool schemas expose
+recipe name and description but not Grocy's `base_servings` field, so serving
+count could not be set or verified through the owner-facing tool. Browser
+acceptance and a serving-aware recipe-authoring path remain open; no shadow
+recipe state is maintained in HADES.
+
 Every Grocy mutation must distinguish preview, confirmed apply, and outcome
 unknown. A timeout, connection loss, or malformed upstream response is never a
 success; HADES must report the uncertain outcome and check Grocy's canonical
