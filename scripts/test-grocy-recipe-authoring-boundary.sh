@@ -97,6 +97,21 @@ async def check():
     result = await module.set_servings("Recipe", 2)
     assert result["outcome"] == "OUTCOME UNKNOWN", result
 
+    class PreMutationHTTPClient(Client):
+        async def get(self, url): raise HTTPError("synthetic resolution failure")
+    module.httpx.AsyncClient = PreMutationHTTPClient
+    result = await module.set_servings("Recipe", 2)
+    assert result["outcome"] == "FAILED", result
+
+    class HTTPVerificationClient(Client):
+        async def get(self, url):
+            if url.endswith("/recipes"):
+                return Response([{"id": 7, "name": "Recipe", "base_servings": 1}])
+            return Response({}, status_code=503)
+    module.httpx.AsyncClient = HTTPVerificationClient
+    result = await module.set_servings("Recipe", 2)
+    assert result["outcome"] == "OUTCOME UNKNOWN", result
+
     class MalformedVerificationClient(Client):
         async def get(self, url):
             if url.endswith("/recipes"):
