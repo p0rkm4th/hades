@@ -2,6 +2,8 @@
 set -Eeuo pipefail
 doc=docs/private-input-contract.md
 [[ -f "$doc" ]] || { echo 'FAIL private input contract missing'; exit 1; }
+grep -q '^HADES_INPUTS_VERSION=1$' config/operator-inputs.env.example || { echo 'FAIL operator input template version is missing'; exit 1; }
+grep -q 'unsupported operator input contract version' scripts/install-hades.sh || { echo 'FAIL installer does not reject unsupported input versions'; exit 1; }
 for field in HADES_OWNER_BOOTSTRAP_ID HADES_HERMES_API_KEY HADES_HERMES_MODEL_ENDPOINT HADES_IDENTITY_SECRETS_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE; do
   grep -Fq "$field" "$doc" || { echo "FAIL private input contract omits $field"; exit 1; }
 done
