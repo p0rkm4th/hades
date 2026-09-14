@@ -31,15 +31,15 @@ the MCP dependency shipped by Hermes 0.21.2. The former MCP 1.x `FastMCP`
 import is intentionally not used.
 
 This integration is intentionally not registered as an Open WebUI-native tool
-or exposed as a separate A2A assistant. In an isolated disposable Agent Zero
-instance, the native A2A server enabled successfully and returned a bounded
-JSON-RPC response. However, its current tokenized endpoint does not expose the
-agent-card path or wire shape expected by Hermes v0.21.2's native A2A client;
-the interoperability probe failed while the direct Agent Zero A2A request
-passed. Hermes therefore retains the smaller bounded MCP bridge for the
-founding milestone. Re-evaluate native A2A when both sides provide a matching
-card/transport contract and an authenticated lifecycle can be exposed without
-broadening Agent Zero authority.
+or exposed as a separate user-facing assistant. The production Agent Zero
+instance now has its native A2A server enabled on the existing loopback-only
+listener. The tokenized agent-card route and a bounded JSON-RPC task were
+verified, including restart persistence and wrong-token rejection. The
+endpoint is not LAN- or Tailscale-exposed, and the token remains private in
+Agent Zero settings. Hermes retains the smaller bounded MCP bridge because its
+v0.21.2 native client still does not match Agent Zero's card/transport contract.
+Revisit that client interoperability separately; enabling the server no longer
+requires broadening Agent Zero authority.
 
 Upstream references:
 
