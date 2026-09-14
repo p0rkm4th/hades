@@ -51,3 +51,11 @@ selected web, Grocy, private memory, and Agent Zero correctly, at approximately
 6.0–15.5 seconds per selection (web was slowest). This is comparative evidence
 for tool usability, not a benchmark or a production-model change; the existing
 HADES routing policy remains unchanged.
+
+Both Qwen 8B and 14B were also given four synthetic contradictions without
+tools. They selected the canonical value in each case (Proxmox runtime,
+Grocy pantry, Actual finance, Kuma availability) and explained that remembered
+or web values could be stale. At a 240-token cap, both lanes sometimes ended
+while still reasoning, and their answers were more verbose than a daily-driver
+response. This validates authority preference only; it does not replace an
+authenticated HADES end-to-end answer-quality run.
