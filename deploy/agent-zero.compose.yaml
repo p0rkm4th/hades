@@ -10,6 +10,8 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    tmpfs:
+      - /tmp
     # Keep the operator private until an explicit owner-facing exposure is added.
     ports:
       - "127.0.0.1:7002:80"

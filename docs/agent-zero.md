@@ -10,7 +10,8 @@ so exposing it through LAN or Tailscale requires an explicit owner-approved
 change. Pin the image to the digest verified for a deployment rather than
 silently relying on a moving tag. The container contract also uses a read-only
 root filesystem, drops all Linux capabilities, and enables
-`no-new-privileges`; only the dedicated operator volume is writable.
+`no-new-privileges`; only the dedicated operator volume is persistent and
+writable. Temporary files use an ephemeral `/tmp` mount.
 
 The current local test instance was pulled as:
 
