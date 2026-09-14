@@ -9,7 +9,7 @@ from pathlib import Path
 source = Path('docs/component-manifest.md').read_text()
 required = (
     'LLDAP', 'Open WebUI', 'Hindsight', 'Grocy', 'Hermes 0.14 baseline',
-    'Agent Zero', 'SearXNG', 'HADES policy/assets/adapters',
+    'Actual Budget / Finance MCP', 'Agent Zero', 'SearXNG', 'HADES policy/assets/adapters',
 )
 start = source.index('## Reconstruction manifest')
 end = source.index('## Boundary rule', start)
