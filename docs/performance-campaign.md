@@ -59,3 +59,12 @@ or web values could be stale. At a 240-token cap, both lanes sometimes ended
 while still reasoning, and their answers were more verbose than a daily-driver
 response. This validates authority preference only; it does not replace an
 authenticated HADES end-to-end answer-quality run.
+
+An eight-turn Qwen 8B conversation covering explicit retain, Grocy read,
+correction retain, web search, an abandoned mutation, topic switch, ambiguous
+pronoun mutation, and recall completed cleanly at a 400-token allowance. The
+model made no tool call for the abandoned or ambiguous mutations. The same
+sequence at 220 tokens exhausted reasoning on several turns, especially for a
+third isolated user. This is a completion-budget/context-quality limitation,
+not evidence to lower the production cap; the full HADES multi-user run still
+needs authenticated gateway execution.
