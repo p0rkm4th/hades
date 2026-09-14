@@ -9,6 +9,16 @@ if [[ -z "$ROOT" || ! -d "$ROOT" ]]; then
   printf 'usage: %s PRIVATE_RECOVERY_DIRECTORY\n' "$0" >&2
   exit 2
 fi
+if [[ -L "$ROOT" ]]; then
+  printf 'FAIL recovery root must not be a symlink\n'
+  exit 1
+fi
+
+link=$(find "$ROOT" -type l -print -quit)
+if [[ -n "$link" ]]; then
+  printf 'FAIL recovery tree contains a symlink\n'
+  exit 1
+fi
 
 mode=$(stat -Lc '%a' "$ROOT")
 case "$mode" in
@@ -73,6 +83,15 @@ while IFS= read -r -d '' archive; do
     printf 'FAIL recovery archive compression\n'
     exit 1
   }
+  archive_listing=$(tar -tvzf "$archive")
+  while IFS= read -r entry; do
+    case "${entry:0:1}" in
+      l|h)
+        printf 'FAIL recovery archive contains a link\n'
+        exit 1
+        ;;
+    esac
+  done <<< "$archive_listing"
   while IFS= read -r entry; do
     case "$entry" in
       /*|../*|*/../*|..)
