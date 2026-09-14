@@ -10,6 +10,17 @@ import os
 import re
 
 
+# A small provider-selection contract for clearly current/external requests.
+# This is intentionally narrower than a general intent classifier; explicit
+# memory and household-domain checks retain precedence in the turn handler.
+_HADES_LIVE_WEB_INTENT = re.compile(
+    r"\b(?:weather|forecast|temperature|search|look\s+up|latest|news|web|"
+    r"current|today|tonight|tomorrow|yesterday|recent(?:ly)?|newer|"
+    r"who\s+won|score|what\s+happened|release(?:d)?|version)\b",
+    re.IGNORECASE,
+)
+
+
 def _hades_subject_from_session_key(session_key):
     """Extract the server-generated subject from an Open WebUI key.
 
@@ -273,6 +284,8 @@ try:
     _HADES_TOOL_INTENT = re.compile(
         r"\b(?:remember(?:ed|ing)?|recall|forget|did i tell|do you remember|memory|"
         r"weather|forecast|temperature|search|look up|latest|news|web|"
+        r"current|today|tonight|tomorrow|yesterday|recent(?:ly)?|newer|"
+        r"who won|score|what happened|release(?:d)?|version|"
         r"grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|food|pantry|inventory|"
         r"what(?:'s| is) running|what(?:'s| is) down|homelab|server|proxmox|"
         r"netbox|uptime|docker|finance|finances|spending|spent|subscription|"
@@ -431,11 +444,7 @@ try:
         ) or _HADES_GROCY_ACTION_INTENT.search(_hades_intent_text)
         if not grocy_intent and _HADES_GROCY_ITEM_FRAGMENT.search(str(user_message or "")):
             grocy_intent = True
-        web_intent = re.search(
-            r"\b(?:weather|forecast|temperature|search|look up|latest|news|web)\b",
-            _hades_intent_text,
-            re.IGNORECASE,
-        )
+        web_intent = _HADES_LIVE_WEB_INTENT.search(_hades_intent_text)
         # Conversation history can contain the word "memory" even when the
         # current request is an ordinary live-domain request. Disable
         # automatic personal-memory prefetch for pure web/Grocy turns at the
