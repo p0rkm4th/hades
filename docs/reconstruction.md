@@ -123,3 +123,11 @@ source state and restores into a separate target. Stable subject IDs, memory
 banks, private markers, and canonical stock pass integrity checks. This proves
 local restore mechanics only, not encrypted off-host custody or owner-state
 recovery.
+
+The reconstruction contract also exercises an explicit test-only interruption
+after preparation. A rerun preserves a persistent state marker, revalidates
+the private records and secret metadata, and reaches the normal prepared
+phase without duplicate or destructive cleanup. Invalid private Compose,
+unpinned image, and unsafe-secret-permission inputs fail before the sandbox is
+mutated. This is partial-install evidence; it does not substitute for a
+privileged deployment interrupted during live service startup.

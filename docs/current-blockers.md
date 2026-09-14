@@ -25,6 +25,11 @@ an owner decision or secret from defects that can be repaired independently.
   rehearsal and synthetic restore checks. A real supported systemd guest with
   generated private deployment records and canonical backup bundle is still
   required for full-stack evidence.
+- **Added:** The reconstruction contract now injects an interruption after
+  preparation and verifies that a rerun preserves prepared state. Invalid
+  private Compose, mutable image pins, and unsafe secret permissions fail
+  before target mutation; bounded upgrade and preservation-first decommission
+  rules are canonicalized in `docs/upgrade-decommission.md`.
 - **Added:** The credential-free backup→destroy→restore drill preserves stable
   Alpha/Beta subject IDs, memory-bank mappings, conversation marker, and Grocy
   stock. It does not substitute for private encrypted off-host recovery.

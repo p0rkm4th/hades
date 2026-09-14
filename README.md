@@ -36,6 +36,8 @@ Upstream Open WebUI branding and license requirements remain in force.
 
 Clean reconstruction is documented in [`docs/reconstruction.md`](docs/reconstruction.md).
 The private value lifecycle is documented in [`docs/private-input-contract.md`](docs/private-input-contract.md).
+The bounded upgrade and preservation-first decommission contract is documented
+in [`docs/upgrade-decommission.md`](docs/upgrade-decommission.md).
 Use `--test-mode --root DIR` for a credential-free, disposable contract
 rehearsal; production installs require the explicit private operator-input file
 and never create synthetic users or fixture data by default.
