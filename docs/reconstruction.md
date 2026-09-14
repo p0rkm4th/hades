@@ -200,3 +200,14 @@ The exact remaining independent milestone is therefore **one independent fresh
 guest with full application fixtures**, followed by a fresh-install household
 soak. Until that evidence exists, installation/rebuild remains `PARTIAL` in the
 stable-v1 map.
+
+## Manual-step inventory
+
+| Observed action | Disposition |
+|---|---|
+| Install Fedora/Rocky host packages and enable Docker | Automated by the plan-first `scripts/prepare-hades-host.sh`; explicit `--apply` remains operator-controlled. |
+| Create identity, component-secret, and synthetic private records | Automated by `scripts/create-synthetic-private-fixture.sh`; production values remain explicit operator inputs. |
+| Supply the model endpoint and private runtime records | Explicit operator input; no value is inferred from the seasoned machine. |
+| Set secret modes/ownership and SELinux labeling | Fixture generator or operator supplies modes/ownership; installer validates them, and the Compose contract applies the SELinux relabel. |
+| Start services in dependency order and enable Hermes | Installer; no shell-history restart sequence is required. |
+| Restore canonical application state | Not performed for the minimal synthetic guest; requires documented component backups and remains part of the full-application milestone. |
