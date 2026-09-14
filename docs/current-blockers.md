@@ -23,7 +23,6 @@ an owner decision or secret from defects that can be repaired independently.
   required before changing this capability from PARTIAL to PASS; no owner
   session is available in this checkout.
 - Continue Hermes candidate test/environment triage without promoting it.
-- Harden recovery documentation and validate restart behavior.
 - Continue owner-safe cross-domain and read-only composition work.
 - Compare bounded Grocy read/mutation variants against the diagnosed
   local-model and post-tool continuation latency; do not replay uncertain
