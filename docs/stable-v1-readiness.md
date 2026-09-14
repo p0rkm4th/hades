@@ -87,7 +87,7 @@ not commit volume.
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Complete private off-host custody, retention, and restore drill |
-| Installation/rebuild | PARTIAL | Reconcile the documented reconstruction manifest before packaging |
+| Installation/rebuild | PARTIAL | Supply private operator image/digest records and complete an isolated restore rehearsal before packaging |
 | Security | PASS | Re-run the boundary matrix after any authority-bearing change |
 | Performance | PARTIAL | Capture one fresh owner-approved web and recipe turn with model/tool/continuation stages; optimize only repeated >30s workflows |
 
