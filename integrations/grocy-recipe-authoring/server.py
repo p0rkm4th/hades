@@ -88,7 +88,16 @@ async def set_servings(recipe: str, servings: int) -> dict[str, Any]:
             return _result("SUCCEEDED", recipe_id=recipe_id, base_servings=value)
     except httpx.TimeoutException:
         return _result("OUTCOME UNKNOWN", error="Grocy serving update timed out; canonical outcome is unknown.")
-    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+    except httpx.HTTPError as exc:
+        # A connection failure cannot have sent the PUT request. Keep this
+        # distinguishable from a timeout or response failure after mutation
+        # was attempted, whose canonical outcome must be reconciled.
+        if mutation_attempted and exc.__class__.__name__ == "ConnectError":
+            return _result("FAILED", error="Grocy could not be reached before the serving update.")
+        if mutation_attempted:
+            return _result("OUTCOME UNKNOWN", error="Grocy serving update was attempted but canonical outcome is unknown.")
+        return _result("FAILED", error="Grocy serving update failed.")
+    except (ValueError, KeyError, TypeError):
         if mutation_attempted:
             return _result("OUTCOME UNKNOWN", error="Grocy serving update was attempted but canonical outcome is unknown.")
         return _result("FAILED", error="Grocy serving update failed.")

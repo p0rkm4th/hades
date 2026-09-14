@@ -59,6 +59,9 @@ the maintained Grocy server. It exposes only `recipe_set_servings`, validates
 positive bounded integers, resolves an exact recipe name or numeric ID, and
 reads the canonical recipe back after every update. A timeout is reported as
 `OUTCOME UNKNOWN`; the adapter never retries an uncertain mutation.
+A connection failure before the PUT is classified as `FAILED`; timeouts or
+verification failures after a mutation attempt remain `OUTCOME UNKNOWN` and
+require canonical reconciliation before retry.
 
 Every Grocy mutation must distinguish preview, confirmed apply, and outcome
 unknown. A timeout, connection loss, or malformed upstream response is never a

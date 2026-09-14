@@ -106,6 +106,14 @@ async def check():
     result = await module.set_servings("Recipe", 2)
     assert result["outcome"] == "FAILED", result
 
+    class ConnectError(HTTPError): pass
+    module.httpx.ConnectError = ConnectError
+    class PreWriteConnectClient(Client):
+        async def put(self, url, json): raise ConnectError("synthetic connect failure")
+    module.httpx.AsyncClient = PreWriteConnectClient
+    result = await module.set_servings("Recipe", 2)
+    assert result["outcome"] == "FAILED", result
+
     class HTTPVerificationClient(Client):
         async def get(self, url):
             if url.endswith("/recipes"):
