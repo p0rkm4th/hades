@@ -7,4 +7,5 @@ for source_file in config/versions.env deploy/lldap.compose.yaml deploy/grocy.co
   grep -q "^    $source_file$" "$installer" || { echo "FAIL preflight source list omits $source_file"; exit 1; }
 done
 grep -q 'required tracked source is absent' "$installer" || { echo 'FAIL missing-source failure is not explicit'; exit 1; }
+grep -q '"\$HADES_HERMES_PROFILE"' "$installer" || { echo 'FAIL Hermes profile parent is not covered by filesystem preflight'; exit 1; }
 echo 'PASS tracked source files are checked before mutation'

@@ -107,7 +107,7 @@ preflight() {
       docker ps -a --format '{{.Names}}' | grep -Fxq "$owned" || fail "required private port is already occupied: $port"
     fi
   done
-  for d in "$HADES_STATE_ROOT" "$HADES_CONFIG_ROOT" "$HADES_BACKUP_ROOT"; do
+  for d in "$HADES_STATE_ROOT" "$HADES_CONFIG_ROOT" "$HADES_BACKUP_ROOT" "$HADES_HERMES_PROFILE"; do
     parent=$(dirname "$d")
     while [[ ! -d "$parent" && "$parent" != / ]]; do parent=$(dirname "$parent"); done
     [[ -d "$parent" && -w "$parent" ]] || fail "nearest existing parent is not writable for $d: $parent"
