@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import urllib.request
+import urllib.error
 
 
 BASE_URL = os.environ.get("HADES_OLLAMA_URL", "http://127.0.0.1:11434/v1").rstrip("/")
@@ -68,8 +69,15 @@ def call(messages):
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(request, timeout=180) as response:
-        return json.load(response)["choices"][0]
+    try:
+        with urllib.request.urlopen(request, timeout=180) as response:
+            return json.load(response)["choices"][0]
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise SystemExit(
+            "HOST-SENSITIVE: long synthetic dogfood needs an Ollama-compatible "
+            f"model endpoint at {BASE_URL}; set HADES_OLLAMA_URL to an approved "
+            "reachable gateway (or start the disposable model lane)"
+        ) from exc
 
 
 def main():
