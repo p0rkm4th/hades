@@ -44,6 +44,8 @@ validate_private_records() {
   for record in "$HADES_OPEN_WEBUI_COMPOSE_FILE" "$HADES_HINDSIGHT_COMPOSE_FILE" "$HADES_SEARXNG_COMPOSE_FILE" "$HADES_HERMES_SERVICE_FILE"; do
     [[ -f "$record" ]] || fail "missing required private deployment record: $record"
     [[ ! -L "$record" ]] || fail 'private deployment records must not be symlinks'
+    mode=$(stat -c '%a' "$record")
+    [[ "$mode" == 600 || "$mode" == 640 ]] || fail 'private deployment records must be mode 0600 or 0640'
   done
   "${compose_cmd[@]}" -f "$HADES_OPEN_WEBUI_COMPOSE_FILE" config --quiet || fail 'invalid Open WebUI private compose record'
   "${compose_cmd[@]}" -f "$HADES_HINDSIGHT_COMPOSE_FILE" config --quiet || fail 'invalid Hindsight private compose record'
@@ -179,7 +181,7 @@ compose="$repo_dir/deploy/agent-zero.compose.yaml"
 "${compose_cmd[@]}" -f "$compose" config --quiet || fail 'invalid compose contract: agent-zero'
 "${compose_cmd[@]}" -f "$compose" up -d
 "${compose_cmd[@]}" -f "$HADES_SEARXNG_COMPOSE_FILE" up -d
-install -m 0644 "$HADES_HERMES_SERVICE_FILE" /etc/systemd/system/hades-hermes.service
+install -m 0600 "$HADES_HERMES_SERVICE_FILE" /etc/systemd/system/hades-hermes.service
 systemctl daemon-reload
 systemctl enable --now hades-hermes.service
 validate_started_runtime

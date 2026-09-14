@@ -499,6 +499,9 @@ onboarding is the only owner-input gate; it does not pause independent work.
 - Private image pinning: PASS. Versioned synthetic private images passed the
   Fedora preflight, while an injected `latest` tag failed before target state
   or an install marker was created.
+- Private record permissions: PASS on the disposable Fedora guest. Four
+  synthetic private records at mode 0600 completed deployment, and the
+  installed Hermes unit remained mode 0600.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

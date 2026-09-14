@@ -90,7 +90,8 @@ The synthetic full deployment path also verifies that every supplied private
 Compose record has at least one running service before the installer writes
 `phase=deployed`; tracked containers and the enabled Hermes unit are checked
 at the same boundary. Private Compose records using an unpinned `latest` image
-are rejected during preflight.
+are rejected during preflight, and all four private records must be mode 0600
+or 0640. The installed Hermes unit is mode 0600.
 
 After installation, the same guest was rebooted. Systemd returned to
 `running`, Docker restarted Agent Zero, Grocy, and LLDAP automatically, and
