@@ -49,8 +49,10 @@ decision.
    account, then record the result in private acceptance evidence.
 6. For deprovisioning, run `scripts/revoke-directory-user.sh` with protected
    operator tokens. It removes the Open WebUI account first, removes the LDAP
-   account second, and verifies both records are gone. Automatic directory
-   event synchronization remains a future architecture decision.
+   account second, and verifies both records are gone. The bridge can continue
+   if a prior interrupted run already removed the application account;
+   automatic directory event synchronization remains a future architecture
+   decision.
 
 For capability-scoped group propagation, enable Open WebUI's supported LDAP
 group-management and group-creation settings, configure the directory's

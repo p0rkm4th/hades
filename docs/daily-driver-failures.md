@@ -227,5 +227,9 @@ outside the repository.
 - Failure layer: application session lifecycle; Open WebUI validates token
   signature and local user existence, not live directory membership
 - Repair/evidence: supported Open WebUI user deletion invalidated the old token
-  with HTTP 401. Automatic directory-to-application revocation remains open.
-- Status: PARTIAL — architecture decision and restart/recovery rehearsal needed
+  with HTTP 401. The ordered bridge is the accepted procedure; it now also
+  continues safely when a prior interrupted run already removed the
+  application account. Automatic directory-to-application event sync remains
+  a separate future architecture decision.
+- Status: PASS operationally — coordinated revocation is deterministic; event
+  synchronization is intentionally not implemented

@@ -54,15 +54,19 @@ for user in x.get("users", x if isinstance(x, list) else []):
     if user.get("email") == os.environ["EMAIL"]:
         print(user.get("id", ""))
         break
-') || {
-  echo "Open WebUI user not found for directory email" >&2
-  exit 1
-}
-[[ -n "$app_id" ]] || { echo "Open WebUI user not found for directory email" >&2; exit 1; }
+')
 
-curl --fail-with-body --silent --show-error -X DELETE \
-  -H "Authorization: Bearer $OPEN_WEBUI_ADMIN_TOKEN" \
-  "$HADES_OPEN_WEBUI_URL/api/v1/users/$app_id" >/dev/null
+if [[ -n "$app_id" ]]; then
+  curl --fail-with-body --silent --show-error -X DELETE \
+    -H "Authorization: Bearer $OPEN_WEBUI_ADMIN_TOKEN" \
+    "$HADES_OPEN_WEBUI_URL/api/v1/users/$app_id" >/dev/null
+else
+  # A prior run may have removed the application account before an operator
+  # lost the response or the directory deletion was attempted. Treat that
+  # state as safe to continue; the final email-based verification below still
+  # fails closed if an application account is present.
+  echo "Open WebUI account already absent; continuing directory revocation" >&2
+fi
 
 delete_json=$(graphql "{\"query\":\"mutation { deleteUser(userId: \\\"$username\\\") { ok } }\"}")
 [[ "$(printf '%s' "$delete_json" | python -c 'import json,sys; print(json.load(sys.stdin).get("data",{}).get("deleteUser",{}).get("ok"))')" == True ]] || {
@@ -81,13 +85,13 @@ raise SystemExit(0 if any(u.get("id") == os.environ["USERNAME"] for u in x.get("
 fi
 if curl --fail-with-body --silent --show-error \
   -H "Authorization: Bearer $OPEN_WEBUI_ADMIN_TOKEN" \
-  "$HADES_OPEN_WEBUI_URL/api/v1/users/" | APP_ID="$app_id" python -c '
+  "$HADES_OPEN_WEBUI_URL/api/v1/users/" | EMAIL="$email" python -c '
 import json, os, sys
 x=json.load(sys.stdin)
 users=x.get("users", x if isinstance(x, list) else [])
-raise SystemExit(0 if any(u.get("id") == os.environ["APP_ID"] for u in users) else 1)
+raise SystemExit(0 if any(u.get("email") == os.environ["EMAIL"] for u in users) else 1)
 '; then
-  echo "Open WebUI user still present after revoke" >&2
+  echo "Open WebUI user still present after revoke: $email" >&2
   exit 1
 fi
 
