@@ -22,6 +22,7 @@ source "$inputs"
 source "$repo_dir/config/versions.env"
 export HADES_LLDAP_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE
 fail() { echo "FAIL $*" >&2; exit 1; }
+[[ "${HADES_MANIFEST_VERSION:-}" == 1 ]] || fail 'unsupported authoritative manifest version; expected version 1'
 [[ "${HADES_INPUTS_VERSION:-}" == 1 ]] || fail 'unsupported operator input contract version; expected version 1'
 compose_cmd=(docker compose --env-file "$inputs")
 if ((test_mode && !root_supplied)); then fail 'test mode requires an explicit --root sandbox'; fi

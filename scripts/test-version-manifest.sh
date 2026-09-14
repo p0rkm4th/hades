@@ -2,11 +2,12 @@
 set -Eeuo pipefail
 manifest=config/versions.env
 [[ -f "$manifest" ]] || { echo 'FAIL version manifest missing'; exit 1; }
-required=(HADES_HERMES_VERSION HADES_OPEN_WEBUI_VERSION HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE_DIGEST HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD HADES_ACTUAL_VERSION HADES_ACTUAL_ADAPTER_REVISION HADES_GROCY_ADAPTER_REVISION HADES_AGENT_ZERO_ADAPTER_REVISION)
+required=(HADES_MANIFEST_VERSION HADES_HERMES_VERSION HADES_OPEN_WEBUI_VERSION HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE_DIGEST HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD HADES_ACTUAL_VERSION HADES_ACTUAL_ADAPTER_REVISION HADES_GROCY_ADAPTER_REVISION HADES_AGENT_ZERO_ADAPTER_REVISION)
 for name in "${required[@]}"; do
   value=$(awk -F= -v key="$name" '$1 == key {print substr($0, index($0,"=")+1)}' "$manifest")
   [[ -n "$value" ]] || { echo "FAIL missing version pin: $name"; exit 1; }
 done
+[[ "$(awk -F= '$1 == "HADES_MANIFEST_VERSION" {print $2}' "$manifest")" == 1 ]] || { echo 'FAIL unsupported manifest version'; exit 1; }
 if grep -Eq '(^|[=:])latest([@"[:space:]]|$)' "$manifest"; then echo 'FAIL latest is not an acceptable version pin'; exit 1; fi
 for f in scripts/install-hades.sh scripts/hades-doctor.sh scripts/validate-install.sh; do
   grep -q 'config/versions.env' "$f" || { echo "FAIL $f does not reference the authoritative manifest"; exit 1; }
