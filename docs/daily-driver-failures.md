@@ -109,7 +109,11 @@ outside the repository.
 - Repair/evidence: captured timing from the Hermes agent log without changing
   canonical state. Optimize or tune the local-model/tool continuation path
   only after comparing additional bounded read and mutation variants.
-- Status: DIAGNOSED — no blind Grocy retry or canonical-state change made
+- A follow-up read with the client response ceiling set to 256 tokens completed
+  in 56.23 seconds; the Grocy call still took 0.02 seconds and the model calls
+  dominated. Lowering that ceiling is therefore not a validated optimization.
+- Status: DIAGNOSED — no blind Grocy retry, model configuration change, or
+  canonical-state mutation made
 
 ## 2026-09-13 — Common grocery typo bypassed live routing
 
