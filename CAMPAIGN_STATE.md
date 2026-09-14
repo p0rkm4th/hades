@@ -301,6 +301,12 @@ profile, update-shim, and other environment-sensitive contracts; the
 promotion-critical HADES core remains 525/525. This does not qualify the
 candidate for production.
 
+Restoring the candidate's declared Anthropic, FAL, Daytona, and Parallel Web
+extras cleared their targeted provider failures: 165/165 tests passed across
+the four affected groups. A focused rerun of the remaining prior failure set
+left 7 failures across 5 host/update-shim/browser-environment files. This is
+useful triage evidence, not a clean full-suite result.
+
 ## HOUSEHOLD ALPHA STATUS
 
 The detailed bullets below retain historical evidence from staging and
