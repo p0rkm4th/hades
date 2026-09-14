@@ -86,6 +86,8 @@ deployment state, not dead public compose files. This is now an explicit
 rebuild input rather than an undocumented assumption.
 
 The metadata-only permission audit also found the three staged LLDAP secret
-files at mode `0600`, while tracked non-secret settings remain `0644`. Compose
-uses Docker secret mounts for LLDAP rather than embedding values in the
-repository. Secret contents were not read or recorded.
+files at mode `0600`, while tracked non-secret settings remain `0644`. The
+LLDAP Compose contract uses read-only bind mounts with an SELinux `Z` relabel
+rather than embedding values in the repository; this preserves narrow service
+access on enforcing Fedora/Rocky hosts. Secret contents were not read or
+recorded.
