@@ -17,10 +17,11 @@ an owner decision or secret from defects that can be repaired independently.
 
 ## Independent technical work still available
 
-- Run additional multi-user long-context model dogfood across Alpha, Beta, and
-  Gamma when a disposable model lane is available; the bounded context and
-  identity contracts are already covered, but accumulation-quality failures
-  remain possible.
+- Run model-quality multi-user long-context dogfood across Alpha, Beta, and
+  Gamma when a disposable model lane is available. The deterministic 60-turn
+  synthetic harness now covers identity scope, shared state, correction,
+  topic switching, and new-chat reset; accumulation-quality and pronoun
+  failures still require a real model lane.
 - Capture one fresh synthetic web and recipe turn with model, tool,
   continuation, and total timings; optimize only a repeatable human-visible
   slowdown or unnecessary loop.

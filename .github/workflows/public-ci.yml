@@ -44,6 +44,8 @@ jobs:
 
       - name: Check long-conversation routing boundary
         run: bash scripts/test-long-conversation-boundary.sh
+      - name: Check multi-user long synthetic dogfood
+        run: bash scripts/test-multi-user-long-dogfood.sh
 
       - name: Check Grocy recipe authoring boundary
         run: bash scripts/test-grocy-recipe-authoring-boundary.sh
