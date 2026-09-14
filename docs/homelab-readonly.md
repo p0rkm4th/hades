@@ -18,6 +18,14 @@ or partial data rather than infer health.
 
 ## Credential-independent preparation
 
+Before any future integration is enabled, run
+[`scripts/check-homelab-readonly-config.sh`](../scripts/check-homelab-readonly-config.sh)
+with the owner-approved values in a protected environment. The preflight only
+checks that all required values have the expected shape; it never contacts a
+homelab endpoint and never prints credential values. It exits with status `2`
+when the owner gate is still incomplete and fails with status `1` for invalid
+configuration.
+
 ### Proxmox VE
 
 Create a dedicated service identity and API token with privilege separation and
