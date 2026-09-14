@@ -21,11 +21,10 @@ repository. `integrations/agent-zero-mcp/server.py` is the deliberately small
 bridge for the documented external API. It exposes one bounded text task,
 enforces a 2,000-character task limit, a bounded response limit, a bounded
 context-ID limit, and a timeout; it returns upstream failures without claiming
-success. The secret-free adapter contract and disposable synthetic API/MCP
-path are exercised. The currently running production container is healthy and
-private, but its derived API token does not match the Hermes profile token, so
-an authenticated production delegation is intentionally not claimed until an
-operator reconciles that private credential.
+success. The secret-free adapter contract, disposable synthetic API/MCP path,
+and authenticated production marker task are exercised. The production
+container is healthy and private; its derived API token matches the protected
+Hermes profile token.
 
 The bridge uses MCP 2.0's low-level stdio server API, which is compatible with
 the MCP dependency shipped by Hermes 0.21.2. The former MCP 1.x `FastMCP`
@@ -34,10 +33,8 @@ import is intentionally not used.
 This integration is intentionally not registered as an Open WebUI-native tool
 or exposed as a separate user-facing assistant. The production Agent Zero
 instance has its native A2A server enabled on the existing loopback-only
-listener; unauthenticated access is rejected. A separately provisioned,
-authenticated A2A probe passed, but current production credential
-reconciliation remains pending. The endpoint is not LAN- or Tailscale-exposed,
-and the token remains private in Agent Zero settings. Hermes retains the smaller bounded MCP bridge because its
+listener; unauthenticated access is rejected. The endpoint is not LAN- or
+Tailscale-exposed, and the token remains private in Agent Zero settings. Hermes retains the smaller bounded MCP bridge because its
 v0.21.2 native client still does not match Agent Zero's card/transport contract.
 Revisit that client interoperability separately; enabling the server no longer
 requires broadening Agent Zero authority.

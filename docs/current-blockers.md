@@ -14,7 +14,6 @@ an owner decision or secret from defects that can be repaired independently.
 | Deterministic automation | No concrete n8n workflow, actor mapping, confirmation rule, or rollback contract is approved. | Approve one bounded workflow and its capability boundary. |
 | Encrypted off-host recovery | Encryption key custody, off-host destination, retention, and plaintext-retirement policy are not selected. | Provide an operator-managed key and destination policy. |
 | First real household user | Household Alpha is ready; onboarding needs the chosen real identity and credential flow. | Owner supplies or authorizes the intended identity/invitation. |
-| Agent Zero production delegation | The private Agent Zero container is healthy, but its derived API token does not match the Hermes profile token, so the authenticated production MCP path is not proven. | Reconcile the private Agent Zero/Hermes token through the supported Agent Zero settings and protected Hermes environment procedure, then rerun the harmless marker task. |
 
 ## Independent technical work still available
 
@@ -25,7 +24,6 @@ an owner decision or secret from defects that can be repaired independently.
 - Continue Hermes candidate test/environment triage without promoting it.
 - Harden recovery documentation and validate restart behavior.
 - Continue owner-safe cross-domain and read-only composition work.
-- Keep Agent Zero delegation bounded and retest after its private token is reconciled.
 
 The coordinated revocation bridge is accepted: it deletes the Open WebUI
 account before the directory identity and verifies that the prior bearer token
