@@ -16,6 +16,8 @@ done
 source "$repo_dir/config/versions.env"
 if [[ -n "$inputs" && -f "$inputs" ]]; then source "$inputs"; fi
 export HADES_IDENTITY_SECRETS_DIR
+compose_cmd=(docker compose)
+[[ -n "$inputs" ]] && compose_cmd+=(--env-file "$inputs")
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
 if [[ -f "$state" ]]; then
   expected_manifest=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
@@ -33,7 +35,7 @@ if [[ -n "$inputs" && -f "$inputs" ]]; then
   [[ "$perms" == 600 || "$perms" == 640 ]] && echo 'PASS operator-input permissions' || echo "WARN operator-input permissions: $perms"
 else echo 'WARN operator-input file not supplied'; fi
 if ((test_mode)); then echo 'PASS read-only synthetic doctor'; exit 0; fi
-command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1 && echo 'PASS container runtime available' || echo 'WARN container runtime unavailable'
+command -v docker >/dev/null 2>&1 && "${compose_cmd[@]}" version >/dev/null 2>&1 && echo 'PASS container runtime available' || echo 'WARN container runtime unavailable'
 if command -v docker >/dev/null 2>&1; then
   for container in hades-lldap hades-grocy hades-agent-zero; do
     status=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || true)
@@ -43,6 +45,6 @@ if command -v docker >/dev/null 2>&1; then
   [[ "$health" == healthy ]] && echo 'PASS LLDAP health' || echo "WARN LLDAP health=${health:-not-configured}"
 fi
 for f in "$repo_dir"/deploy/*.compose.yaml; do
-  if command -v docker >/dev/null 2>&1; then docker compose -f "$f" config --quiet && echo "PASS compose $(basename "$f")" || echo "FAIL compose $(basename "$f")"; fi
+  if command -v docker >/dev/null 2>&1; then "${compose_cmd[@]}" -f "$f" config --quiet && echo "PASS compose $(basename "$f")" || echo "FAIL compose $(basename "$f")"; fi
 done
 echo 'WARN live health and exposure checks require the target runtime; no repair was performed'

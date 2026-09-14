@@ -8,5 +8,8 @@ for script in scripts/hades-doctor.sh scripts/validate-install.sh; do
   grep -q '"\$repo_dir"/deploy/\*.compose.yaml' "$repo_dir/$script" || {
     echo "FAIL $script resolves deployment files relative to its repository"; exit 1;
   }
+  grep -q 'compose_cmd+=(--env-file "\$inputs")' "$repo_dir/$script" || {
+    echo "FAIL $script does not pass operator inputs to Compose"; exit 1;
+  }
 done
 echo 'PASS reconstruction tools are independent of caller working directory'

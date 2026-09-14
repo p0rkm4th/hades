@@ -74,6 +74,11 @@ when invoked by absolute path from outside the repository. This exercise
 exposed and repaired repository-relative compose discovery and missing export
 of the LLDAP secret-directory input.
 
+That fixture was then changed to reference its synthetic image through an
+additional variable in the operator input file. Installer, validator, and
+doctor all passed from `/tmp`, proving private Compose interpolation does not
+depend on the caller's environment or working directory.
+
 After installation, the same guest was rebooted. Systemd returned to
 `running`, Docker restarted Agent Zero, Grocy, and LLDAP automatically, and
 LLDAP returned `healthy` after its normal startup interval. This is reboot

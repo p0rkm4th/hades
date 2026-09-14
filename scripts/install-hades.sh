@@ -19,6 +19,7 @@ if [[ "$test_mode" == 1 && -z "$inputs" ]]; then inputs="$repo_dir/config/operat
 # shellcheck disable=SC1090
 source "$inputs"
 fail() { echo "FAIL $*" >&2; exit 1; }
+compose_cmd=(docker compose --env-file "$inputs")
 if ((test_mode && !root_supplied)); then fail 'test mode requires an explicit --root sandbox'; fi
 need_cmd() { command -v "$1" >/dev/null 2>&1 || fail "missing prerequisite: $1"; }
 under_root() { printf '%s/%s' "${root%/}" "${1#/}"; }
@@ -32,9 +33,9 @@ validate_private_records() {
   for record in "$HADES_OPEN_WEBUI_COMPOSE_FILE" "$HADES_HINDSIGHT_COMPOSE_FILE" "$HADES_SEARXNG_COMPOSE_FILE" "$HADES_HERMES_SERVICE_FILE"; do
     [[ -f "$record" ]] || fail "missing required private deployment record: $record"
   done
-  docker compose -f "$HADES_OPEN_WEBUI_COMPOSE_FILE" config --quiet || fail 'invalid Open WebUI private compose record'
-  docker compose -f "$HADES_HINDSIGHT_COMPOSE_FILE" config --quiet || fail 'invalid Hindsight private compose record'
-  docker compose -f "$HADES_SEARXNG_COMPOSE_FILE" config --quiet || fail 'invalid SearXNG private compose record'
+  "${compose_cmd[@]}" -f "$HADES_OPEN_WEBUI_COMPOSE_FILE" config --quiet || fail 'invalid Open WebUI private compose record'
+  "${compose_cmd[@]}" -f "$HADES_HINDSIGHT_COMPOSE_FILE" config --quiet || fail 'invalid Hindsight private compose record'
+  "${compose_cmd[@]}" -f "$HADES_SEARXNG_COMPOSE_FILE" config --quiet || fail 'invalid SearXNG private compose record'
   systemd-analyze verify "$HADES_HERMES_SERVICE_FILE" || fail 'invalid Hermes private service record'
   grep -Eq '^[[:space:]]*WantedBy=' "$HADES_HERMES_SERVICE_FILE" || fail 'Hermes private service record has no install target'
 }
@@ -124,17 +125,17 @@ printf 'manifest=%s\ninstalled_from=%s\nphase=prepared\n' "$(sha256sum "$repo_di
 chmod 0640 "$state_root/install-contract"
 export HADES_IDENTITY_SECRETS_DIR
 compose="$repo_dir/deploy/lldap.compose.yaml"
-docker compose -f "$compose" config --quiet || fail 'invalid compose contract: lldap'
-docker compose -f "$compose" up -d
-docker compose -f "$HADES_OPEN_WEBUI_COMPOSE_FILE" up -d
-docker compose -f "$HADES_HINDSIGHT_COMPOSE_FILE" up -d
+"${compose_cmd[@]}" -f "$compose" config --quiet || fail 'invalid compose contract: lldap'
+"${compose_cmd[@]}" -f "$compose" up -d
+"${compose_cmd[@]}" -f "$HADES_OPEN_WEBUI_COMPOSE_FILE" up -d
+"${compose_cmd[@]}" -f "$HADES_HINDSIGHT_COMPOSE_FILE" up -d
 compose="$repo_dir/deploy/grocy.compose.yaml"
-docker compose -f "$compose" config --quiet || fail 'invalid compose contract: grocy'
-docker compose -f "$compose" up -d
+"${compose_cmd[@]}" -f "$compose" config --quiet || fail 'invalid compose contract: grocy'
+"${compose_cmd[@]}" -f "$compose" up -d
 compose="$repo_dir/deploy/agent-zero.compose.yaml"
-docker compose -f "$compose" config --quiet || fail 'invalid compose contract: agent-zero'
-docker compose -f "$compose" up -d
-docker compose -f "$HADES_SEARXNG_COMPOSE_FILE" up -d
+"${compose_cmd[@]}" -f "$compose" config --quiet || fail 'invalid compose contract: agent-zero'
+"${compose_cmd[@]}" -f "$compose" up -d
+"${compose_cmd[@]}" -f "$HADES_SEARXNG_COMPOSE_FILE" up -d
 install -m 0644 "$HADES_HERMES_SERVICE_FILE" /etc/systemd/system/hades-hermes.service
 systemctl daemon-reload
 systemctl enable --now hades-hermes.service

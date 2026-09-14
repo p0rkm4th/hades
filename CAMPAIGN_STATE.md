@@ -477,6 +477,11 @@ onboarding is the only owner-input gate; it does not pause independent work.
   installer `--preflight` using safe synthetic identity files and minimal valid
   private Compose/systemd records passed host, ownership, port, and syntax
   checks without creating the install marker or mutating the target state.
+- Synthetic full deployment: PASS on the disposable Fedora guest. Minimal
+  private records completed the real installer path; tracked containers were
+  running, the Hermes unit was enabled/active, and absolute-path validator and
+  doctor runs passed. A private Compose image variable supplied only through
+  the operator input file also resolved successfully from an unrelated CWD.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change
