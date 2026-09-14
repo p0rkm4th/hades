@@ -8,4 +8,5 @@ grep -Fq 'sha256sum ./*.db MANIFEST > SHA256SUMS' "$helper" || { echo 'FAIL back
 for field in lldap_image hindsight_image_digest grocy_image agent_zero_image actual_version; do
   grep -q "^$field=" "$helper" || { echo "FAIL backup metadata omits $field"; exit 1; }
 done
+grep -q 'metadata_count=0' "$repo_dir/scripts/check-recovery-artifacts.sh" || { echo 'FAIL recovery validator omits metadata validation'; exit 1; }
 echo 'PASS SQLite backups carry authoritative version metadata'

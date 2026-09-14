@@ -105,6 +105,22 @@ done < <(find "$ROOT" -type f \( -name '*.tar.gz' -o -name '*.tgz' \) \
   ! -name '*.failed-rehearsal' -print0)
 printf 'PASS recovery archives: %s\n' "$archive_count"
 
+metadata_count=0
+while IFS= read -r -d '' metadata; do
+  metadata_mode=$(stat -Lc '%a' "$metadata")
+  case "$metadata_mode" in
+    600|640) ;;
+    *) printf 'FAIL recovery metadata permissions: %s\n' "$metadata"; exit 1 ;;
+  esac
+  grep -q '^backup_format=1$' "$metadata" || { printf 'FAIL recovery metadata format\n'; exit 1; }
+  grep -q '^hades_manifest_version=1$' "$metadata" || { printf 'FAIL recovery metadata manifest version\n'; exit 1; }
+  for field in hermes_version open_webui_version lldap_image hindsight_image_digest grocy_image agent_zero_image actual_version; do
+    grep -Eq "^${field}=.+$" "$metadata" || { printf 'FAIL recovery metadata field: %s\n' "$field"; exit 1; }
+  done
+  metadata_count=$((metadata_count + 1))
+done < <(find "$ROOT" -type f -name MANIFEST -print0)
+printf 'PASS recovery metadata manifests: %s\n' "$metadata_count"
+
 checksum_count=0
 while IFS= read -r -d '' manifest; do
   manifest_mode=$(stat -Lc '%a' "$manifest")

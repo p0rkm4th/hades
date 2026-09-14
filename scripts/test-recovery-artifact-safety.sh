@@ -27,6 +27,23 @@ for name in ("open-webui.db", "lldap-users.db", "grocy.db", "hermes-state.db"):
     path.chmod(0o600)
 PY
 
+cat > "$fixture/MANIFEST" <<'EOF'
+backup_format=1
+hades_manifest_version=1
+hermes_version=0.14.0
+open_webui_version=0.11.5
+lldap_image=lldap:test@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+hindsight_image_digest=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+grocy_image=grocy:test@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+agent_zero_image=agent:test@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+actual_version=26.9.0
+EOF
+chmod 600 "$fixture/MANIFEST"
+(cd "$fixture" && sha256sum ./*.db MANIFEST > SHA256SUMS)
+chmod 600 "$fixture/SHA256SUMS"
+"$VALIDATOR" "$fixture" >/dev/null
+printf 'PASS valid recovery metadata accepted\n'
+
 expect_rejected() {
   local label=$1 path=$2
   if "$VALIDATOR" "$path" >/dev/null 2>&1; then
