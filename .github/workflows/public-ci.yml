@@ -80,6 +80,8 @@ jobs:
         run: bash scripts/test-synthetic-backup-restore.sh
       - name: Check install failure contract
         run: bash scripts/test-install-failure-contract.sh
+      - name: Check private-record preflight ordering
+        run: bash scripts/test-preflight-order-contract.sh
       - name: Check authoritative version manifest
         run: bash scripts/test-version-manifest.sh
       - name: Check private input contract
