@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+[[ -x "$repo_dir/scripts/create-synthetic-private-fixture.sh" ]] || { echo 'FAIL fixture generator is not executable'; exit 1; }
 fixture=$(mktemp -d)
 trap 'rm -rf -- "$fixture"' EXIT
 bash "$repo_dir/scripts/create-synthetic-private-fixture.sh" "$fixture/hades-fixture"
