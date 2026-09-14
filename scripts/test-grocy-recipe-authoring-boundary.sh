@@ -171,6 +171,15 @@ async def check():
     result = await module.set_servings("Recipe", 2)
     assert result["outcome"] == "OUTCOME UNKNOWN", result
 
+    class PostWriteConnectClient(Client):
+        async def get(self, url):
+            if url.endswith("/recipes"):
+                return Response([{"id": 7, "name": "Recipe", "base_servings": 1}])
+            raise ConnectError("synthetic verification connection failure")
+    module.httpx.AsyncClient = PostWriteConnectClient
+    result = await module.set_servings("Recipe", 2)
+    assert result["outcome"] == "OUTCOME UNKNOWN", result
+
     class MalformedVerificationClient(Client):
         async def get(self, url):
             if url.endswith("/recipes"):
