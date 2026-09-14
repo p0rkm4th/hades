@@ -53,7 +53,29 @@ class TimeoutException(Exception): pass
 class HTTPError(Exception): pass
 httpx.TimeoutException = TimeoutException
 httpx.HTTPError = HTTPError
-httpx.AsyncClient = object
+class Response:
+    def __init__(self, payload, status_code=200):
+        self._payload = payload
+        self.status_code = status_code
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise HTTPError("synthetic HTTP failure")
+    def json(self):
+        return self._payload
+class Client:
+    def __init__(self, *args, **kwargs):
+        self.calls = []
+    async def __aenter__(self): return self
+    async def __aexit__(self, *args): return None
+    async def get(self, url):
+        self.calls.append(("GET", url))
+        if url.endswith("/recipes"):
+            return Response([{"id": 7, "name": "Recipe", "base_servings": 1}])
+        return Response({"id": 7, "name": "Recipe", "base_servings": 2})
+    async def put(self, url, json):
+        self.calls.append(("PUT", url, json))
+        return Response({"id": 7, "base_servings": json["base_servings"]})
+httpx.AsyncClient = Client
 sys.modules["httpx"] = httpx
 
 source_path = Path("integrations/grocy-recipe-authoring/server.py")
@@ -66,6 +88,19 @@ async def check():
     for recipe, servings in cases:
         result = await module.set_servings(recipe, servings)
         assert result["outcome"] == "FAILED", (recipe, servings, result)
+    result = await module.set_servings("Recipe", 2)
+    assert result == {"ok": True, "outcome": "SUCCEEDED", "recipe_id": 7, "base_servings": 2}
+
+    class TimeoutClient(Client):
+        async def get(self, url): raise TimeoutException("synthetic timeout")
+    module.httpx.AsyncClient = TimeoutClient
+    result = await module.set_servings("Recipe", 2)
+    assert result["outcome"] == "OUTCOME UNKNOWN", result
+
+    listed = await module.list_tools()
+    assert listed.tools[0].name == module.TOOL_NAME
+    called = await module.call_tool(module.TOOL_NAME, {"recipe": "Recipe", "servings": 2})
+    assert called.content[0].type == "text"
 
 asyncio.run(check())
 assert module.TOOL_NAME == "recipe_set_servings"
