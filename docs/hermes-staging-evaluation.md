@@ -430,3 +430,12 @@ nine HADES-relevant files. The isolated auxiliary-provider test that had
 previously failed during aggregate execution also passes alone; the remaining
 candidate gate is full-suite/environment disposition and an owner-authenticated
 production rehearsal, not a failing HADES core contract.
+
+A fresh isolated rerun of the four residual files completed with **89 passed
+and 5 failed**. The failures reproduced only in the host/environment
+contracts: the minimal-PATH test found a host-installed `hermes`, the desktop
+shim fixture did not produce its simulated launch marker, the real-browser
+fixture could not find its requested browser binary, and the update-head test
+encountered the live-system process guard. The guard prevented real process
+termination. These remain upstream candidate-environment disposition items;
+production HADES was independently smoke-tested healthy afterward.
