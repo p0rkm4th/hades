@@ -51,8 +51,22 @@ validate_started_runtime() {
   systemctl is-active --quiet hades-hermes.service || fail 'deployed Hermes service is not active'
 }
 preflight() {
-  [[ -f "$repo_dir/hermes/config.yaml.example" ]] || fail 'Hermes config template is absent'
-  [[ -f "$repo_dir/hermes/env.example" ]] || fail 'Hermes environment template is absent'
+  tracked_sources=(
+    config/versions.env
+    hermes/config.yaml.example
+    hermes/env.example
+    hermes/sitecustomize.py
+    integrations/grocy-recipe-authoring/server.py
+    integrations/agent-zero-mcp/server.py
+    webui/hades-theme.css
+    webui/hades-theme.js
+    deploy/lldap.compose.yaml
+    deploy/grocy.compose.yaml
+    deploy/agent-zero.compose.yaml
+  )
+  for source_file in "${tracked_sources[@]}"; do
+    [[ -f "$repo_dir/$source_file" ]] || fail "required tracked source is absent: $source_file"
+  done
   if ((test_mode)); then echo 'PASS synthetic host contract (test mode)'; return; fi
   [[ $EUID -eq 0 ]] || fail 'run as root'
   [[ -r /etc/os-release ]] || fail 'cannot read OS identification'
