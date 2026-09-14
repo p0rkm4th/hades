@@ -88,6 +88,9 @@ The private-record setup is now reproducible from repository state:
 `scripts/create-synthetic-private-fixture.sh` creates the four mode-restricted
 deployment records, identity files, referenced component secrets, and an
 explicit operator input file under a caller-selected disposable directory.
+Each generated Compose record has an explicit isolated project name and
+restart policy so the three synthetic private services cannot collapse into
+one Compose project and participate in reboot acceptance.
 This removes the former ad-hoc fixture construction from the next independent
 full-install rehearsal; it remains synthetic evidence and does not replace
 owner-private deployment records.
@@ -146,6 +149,26 @@ unpinned image, and unsafe-secret-permission inputs fail before the sandbox is
 mutated. This is partial-install evidence; it does not substitute for a
 privileged deployment interrupted during live service startup.
 
+The first full fresh Fedora 44 attempt exposed a packaging defect: Docker's
+file-backed Compose secret mounts kept the host `user_tmp_t` SELinux label, so
+LLDAP restarted with permission denied while reading its UID-1000 secrets.
+The tracked LLDAP contract now uses read-only `:Z` bind mounts, preserving
+secret file permissions and SELinux enforcement. The interrupted guest remains
+diagnostic evidence and must be rerun from the repaired repository before a
+full-stack result is claimed.
+
+That rerun was completed on a fresh Fedora Server 44 cloud guest with an
+80-GiB virtual disk, systemd, Fedora Docker/Compose, a loopback model fixture,
+and the generated private input bundle. The real privileged preflight passed,
+the installer deployed the pinned LLDAP/Grocy/Agent Zero services plus three
+isolated synthetic private Compose records and the Hermes unit, and doctor and
+validation passed after the normal LLDAP health warm-up. The guest was rebooted
+with the operator bundle under persistent storage; all six container groups
+and Hermes returned, then doctor and validation passed again. This is
+**first-clean synthetic deployment and reboot evidence**. The private records
+are intentionally minimal Alpine services, so it does not claim Open WebUI,
+Hindsight, SearXNG, or model-backed household behavior.
+
 ## Evidence hierarchy
 
 | Evidence level | Current result | Boundary of the claim |
@@ -155,9 +178,11 @@ privileged deployment interrupted during live service startup.
 | First clean machine | PASS for tracked subset | A pristine Fedora system proved the supported-host preflight and tracked LLDAP/Grocy/Agent Zero deployment path. |
 | Second independent clean machine | PASS for credential-free contract | A separate pristine guest reran the static/test-mode reconstruction and restore contracts; private full-stack records were not deployed there. |
 | Reboot/restart | PASS for tracked subset | The first disposable guest recovered its tracked services after reboot; missing private services are not included in this claim. |
-| Full-stack clean reconstruction | NOT PROVEN | Requires one fresh supported systemd guest with the generated private records and synthetic canonical backups. |
+| Full-stack synthetic clean reconstruction | PASS | One fresh Fedora 44 system completed the explicit-input deployment and reboot path; its private records are minimal service fixtures, not full application records. |
+| Full application clean reconstruction | NOT PROVEN | Requires full synthetic Open WebUI/Hindsight/SearXNG/Hermes records and canonical application fixtures on an independent fresh guest. |
 | Fresh-install household soak | NOT PROVEN | Follows a successful full-stack reconstruction and exercises the reconstructed HADES application path. |
 
-The exact remaining external milestone is therefore **one clean supported
-systemd VM** on which the full explicit-input deployment completes. Until that
-evidence exists, installation/rebuild remains `PARTIAL` in the stable-v1 map.
+The exact remaining independent milestone is therefore **one independent fresh
+guest with full application fixtures**, followed by a fresh-install household
+soak. Until that evidence exists, installation/rebuild remains `PARTIAL` in the
+stable-v1 map.

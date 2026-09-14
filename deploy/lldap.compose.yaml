@@ -26,10 +26,12 @@ services:
       - hades-identity
     volumes:
       - hades-lldap-data:/data
-    secrets:
-      - lldap_jwt_secret
-      - lldap_key_seed
-      - lldap_admin_password
+      # Compose file-backed secrets are bind mounts. The explicit read-only
+      # SELinux relabel keeps Fedora/Rocky containers able to read the files
+      # without disabling SELinux or broadening host access.
+      - ${HADES_IDENTITY_SECRETS_DIR:?set HADES_IDENTITY_SECRETS_DIR}/jwt_secret:/run/secrets/lldap_jwt_secret:ro,Z
+      - ${HADES_IDENTITY_SECRETS_DIR:?set HADES_IDENTITY_SECRETS_DIR}/key_seed:/run/secrets/lldap_key_seed:ro,Z
+      - ${HADES_IDENTITY_SECRETS_DIR:?set HADES_IDENTITY_SECRETS_DIR}/admin_password:/run/secrets/lldap_admin_password:ro,Z
 
 networks:
   hades-identity:
@@ -39,11 +41,3 @@ networks:
 volumes:
   hades-lldap-data:
     name: hades-lldap-data
-
-secrets:
-  lldap_jwt_secret:
-    file: ${HADES_IDENTITY_SECRETS_DIR:?set HADES_IDENTITY_SECRETS_DIR}/jwt_secret
-  lldap_key_seed:
-    file: ${HADES_IDENTITY_SECRETS_DIR:?set HADES_IDENTITY_SECRETS_DIR}/key_seed
-  lldap_admin_password:
-    file: ${HADES_IDENTITY_SECRETS_DIR:?set HADES_IDENTITY_SECRETS_DIR}/admin_password

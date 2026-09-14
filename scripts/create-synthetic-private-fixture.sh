@@ -18,11 +18,18 @@ for secret in jwt_secret key_seed admin_password; do
   chmod 600 "$identity/$secret"
 done
 
-for record in open-webui.compose.yaml hindsight.compose.yaml searxng.compose.yaml; do
-  cat > "$records/$record" <<'EOF'
+for spec in \
+  'open-webui.compose.yaml:hades-synthetic-open-webui' \
+  'hindsight.compose.yaml:hades-synthetic-hindsight' \
+  'searxng.compose.yaml:hades-synthetic-searxng'; do
+  record=${spec%%:*}
+  project=${spec#*:}
+  cat > "$records/$record" <<EOF
+name: $project
 services:
   smoke:
     image: alpine:3.20
+    restart: unless-stopped
     command: ["sleep", "infinity"]
 EOF
   chmod 600 "$records/$record"

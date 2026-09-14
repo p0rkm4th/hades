@@ -35,4 +35,6 @@ state.
 
 The tracked LLDAP Compose contract runs as UID 1000. Its three file-backed
 identity secrets therefore remain mode `0600` and are owned by UID 1000; this
-is narrow service access, not a world-readable relaxation.
+is narrow service access, not a world-readable relaxation. The Compose
+contract mounts them read-only with an SELinux `Z` relabel so a fresh enforcing
+Fedora/Rocky host does not require a manual `chcon` or an SELinux-wide bypass.

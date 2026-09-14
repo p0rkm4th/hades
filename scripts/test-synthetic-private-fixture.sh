@@ -23,6 +23,12 @@ done
 docker compose -f "$fixture/hades-fixture/records/open-webui.compose.yaml" config --quiet
 docker compose -f "$fixture/hades-fixture/records/hindsight.compose.yaml" config --quiet
 docker compose -f "$fixture/hades-fixture/records/searxng.compose.yaml" config --quiet
+grep -q '^name: hades-synthetic-open-webui$' "$fixture/hades-fixture/records/open-webui.compose.yaml"
+grep -q '^name: hades-synthetic-hindsight$' "$fixture/hades-fixture/records/hindsight.compose.yaml"
+grep -q '^name: hades-synthetic-searxng$' "$fixture/hades-fixture/records/searxng.compose.yaml"
+grep -q '^    restart: unless-stopped$' "$fixture/hades-fixture/records/open-webui.compose.yaml"
+grep -q '^    restart: unless-stopped$' "$fixture/hades-fixture/records/hindsight.compose.yaml"
+grep -q '^    restart: unless-stopped$' "$fixture/hades-fixture/records/searxng.compose.yaml"
 systemd-analyze verify "$fixture/hades-fixture/records/hermes.service"
 for secret in jwt_secret key_seed admin_password; do
   [[ $(stat -c '%a' "$fixture/hades-fixture/identity/$secret") == 600 ]] || {
