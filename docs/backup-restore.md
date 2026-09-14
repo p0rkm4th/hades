@@ -166,8 +166,9 @@ Zero, or SearXNG.
 Each output also contains a mode-0600 `MANIFEST` with authoritative component
 versions/digests and adapter revisions; this metadata is included in
 `SHA256SUMS` so a restore can prove which composition produced the snapshot.
-When present, the recovery validator checks the metadata format, manifest
-version, required component fields, permissions, and checksum; older artifacts
+When present, the recovery validator requires the sibling `SHA256SUMS` to cover
+`MANIFEST`, then checks the metadata format, manifest version, required
+component fields, permissions, and checksum; older artifacts
 without `MANIFEST` remain structurally verifiable but do not gain this newer
 provenance guarantee.
 Native production database/export procedures and isolated restore evidence are

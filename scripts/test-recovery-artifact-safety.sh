@@ -53,6 +53,10 @@ expect_rejected() {
   printf 'PASS %s rejected\n' "$label"
 }
 
+sed -i '/  MANIFEST$/d' "$fixture/SHA256SUMS"
+expect_rejected 'metadata without sibling checksum coverage' "$fixture"
+(cd "$fixture" && sha256sum MANIFEST >> SHA256SUMS)
+
 ln -s "$fixture" "$root_link"
 expect_rejected 'symlinked recovery root' "$root_link"
 

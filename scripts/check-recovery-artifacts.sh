@@ -112,6 +112,9 @@ while IFS= read -r -d '' metadata; do
     600|640) ;;
     *) printf 'FAIL recovery metadata permissions: %s\n' "$metadata"; exit 1 ;;
   esac
+  metadata_checksum="$(dirname "$metadata")/SHA256SUMS"
+  [[ -f "$metadata_checksum" ]] || { printf 'FAIL recovery metadata has no checksum manifest\n'; exit 1; }
+  grep -q '  MANIFEST$' "$metadata_checksum" || { printf 'FAIL recovery metadata is not checksummed\n'; exit 1; }
   grep -q '^backup_format=1$' "$metadata" || { printf 'FAIL recovery metadata format\n'; exit 1; }
   grep -q '^hades_manifest_version=1$' "$metadata" || { printf 'FAIL recovery metadata manifest version\n'; exit 1; }
   for field in hermes_version open_webui_version lldap_image hindsight_image_digest grocy_image agent_zero_image actual_version; do
