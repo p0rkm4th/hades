@@ -23,12 +23,21 @@ for component in required:
         raise SystemExit(f'manifest row is incomplete for {component}')
     if not any(marker in cells[1].lower() for marker in ('pinned', 'repository')):
         raise SystemExit(f'rebuild source is not explicit for {component}')
-orders = []
-for line in table.splitlines():
-    if line.startswith('| ') and line.count('|') == 9 and line[1:3].isdigit():
-        orders.append(line)
-if not all(f'| {number} |' in table for number in range(1, 8)):
-    raise SystemExit('startup order is incomplete')
+expected_order = {
+    'LLDAP': '1',
+    'Open WebUI': '2',
+    'Hindsight': '3',
+    'Grocy': '4',
+    'Actual Budget / Finance MCP': '4',
+    'Hermes 0.14 baseline': '5',
+    'Agent Zero': '6',
+    'SearXNG': '7',
+}
+for component, expected in expected_order.items():
+    row = next(line for line in table.splitlines() if line.startswith('| ' + component + ' |'))
+    cells = [cell.strip() for cell in row.strip('|').split('|')]
+    if cells[5] != expected:
+        raise SystemExit(f'startup order for {component} is {cells[5]!r}, expected {expected!r}')
 for phrase in ('Pinned/rebuild source', 'Persistent state', 'Required private inputs',
                'Network dependency', 'Startup order', 'Health check', 'Restore check'):
     if phrase not in table:
