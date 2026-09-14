@@ -41,8 +41,9 @@ if [[ -n "${HADES_PROXMOX_URL-}" && "${HADES_PROXMOX_URL}" != */api2/json ]]; th
   printf 'FAIL HADES_PROXMOX_URL must end in /api2/json\n'
   invalid=1
 fi
-if [[ -n "${HADES_UPTIME_KUMA_STATUS_SLUG-}" && "${HADES_UPTIME_KUMA_STATUS_SLUG}" == */* ]]; then
-  printf 'FAIL HADES_UPTIME_KUMA_STATUS_SLUG must be a single slug\n'
+if [[ -n "${HADES_UPTIME_KUMA_STATUS_SLUG-}" &&
+      ! "${HADES_UPTIME_KUMA_STATUS_SLUG}" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]]; then
+  printf 'FAIL HADES_UPTIME_KUMA_STATUS_SLUG must be an alphanumeric slug\n'
   invalid=1
 fi
 

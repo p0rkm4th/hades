@@ -39,7 +39,10 @@ if [[ -n "${HADES_HOME_ASSISTANT_ENTITY_ALLOWLIST-}" ]]; then
       invalid=1
       continue
     fi
-    if [[ "$entity" =~ (lock|garage|alarm|camera|door|security|gate) ]]; then
+    # Match security/high-impact terms as entity-name components. A loose
+    # substring check would incorrectly reject benign IDs such as
+    # sensor.indoor_temperature ("indoor" contains "door").
+    if [[ "$entity" =~ (^|[._-])(lock|garage|alarm|camera|door|security|gate)([._-]|$) ]]; then
       printf 'FAIL Home Assistant entity allowlist contains an excluded security/high-impact entity\n'
       invalid=1
     fi
