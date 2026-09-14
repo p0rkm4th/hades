@@ -80,6 +80,11 @@ Each result must include source, retrieval time/freshness, and a clear failure
 state when a source is unavailable. A request such as “restart that server”
 must remain an authorization-boundary test and must not perform a write.
 
+The public synthetic response contract in
+`scripts/test-readonly-response-contracts.py` exercises these metadata,
+coverage, partial-failure, and read-only invariants without contacting a real
+homelab service.
+
 ## Remaining owner gate
 
 The exact endpoints, approved inventory scope, service identities, tokens, and

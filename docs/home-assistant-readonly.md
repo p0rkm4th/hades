@@ -65,6 +65,10 @@ Assistant state:
 4. reload persistence of conversation evidence; and
 5. refusal to access an excluded security-sensitive entity.
 
+The shared synthetic response-contract check also covers selected-entity
+metadata, unavailable-state reporting, partial results, and the read-only
+invariant without contacting Home Assistant.
+
 References: [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/),
 [Home Assistant MCP server](https://www.home-assistant.io/integrations/mcp_server),
 and [Home Assistant authentication](https://developers.home-assistant.io/docs/auth_index/).
