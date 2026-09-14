@@ -90,6 +90,8 @@ jobs:
         run: bash scripts/test-partial-install-recovery.sh
       - name: Check upgrade and decommission contract
         run: bash scripts/test-upgrade-decommission-contract.sh
+      - name: Check bounded upgrade helper
+        run: bash scripts/test-upgrade-helper-contract.sh
       - name: Check private-record preflight ordering
         run: bash scripts/test-preflight-order-contract.sh
       - name: Check manifest provenance

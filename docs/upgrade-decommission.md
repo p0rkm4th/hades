@@ -32,6 +32,15 @@ The public manifest remains the version source of truth. Private deployment
 records must use a specific tag or digest; `latest` and bulk update commands
 are not part of the contract.
 
+For the tracked LLDAP, Grocy, and Agent Zero Compose components,
+`scripts/upgrade-hades.sh` implements this boundary. It is plan-only by
+default. `--apply` requires root, a mode-0700 backup directory,
+`HADES_UPGRADE_BACKUP_VERIFIED=1`, and a complete installer preflight; it
+retains the previous Compose record and version manifest before pulling and
+restarting exactly one component. Open WebUI, Hindsight, SearXNG, and Hermes
+remain private-record/upstream-package changes governed by the same sequence
+but are not bulk-managed by this helper.
+
 ## Bounded decommission sequence
 
 Stop the runtime, remove only reconstructable application/runtime material,
