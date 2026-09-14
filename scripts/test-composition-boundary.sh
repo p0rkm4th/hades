@@ -20,8 +20,8 @@ require('== "web_search"')
 require('if agent_zero_intent and not household_session:')
 require('endswith(\n                        "agent_zero_delegate"')
 require('household_session = getattr(self, "_hades_session_scope", "") == "household"')
-require('if _hades_nonpersonal_state_turn(user_text):')
-require('skipping automatic hindsight retain for non-personal state turn')
+require('_hades_nonpersonal_state_turn(user_text)')
+require('skipping automatic hindsight retain for non-personal or transient-error turn')
 
 # The household denial must remain on the Agent Zero gate; prompt wording
 # cannot create owner authority or make the entire tool catalog visible.
