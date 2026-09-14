@@ -7,6 +7,13 @@ for name in "${required[@]}"; do
   value=$(awk -F= -v key="$name" '$1 == key {print substr($0, index($0,"=")+1)}' "$manifest")
   [[ -n "$value" ]] || { echo "FAIL missing version pin: $name"; exit 1; }
 done
+for name in HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD; do
+  value=$(awk -F= -v key="$name" '$1 == key {print substr($0, index($0,"=")+1)}' "$manifest")
+  [[ "$value" =~ ^[^[:space:]=]+@sha256:[0-9a-f]{64}$ ]] || {
+    echo "FAIL image pin is not an immutable repository-plus-digest reference: $name"
+    exit 1
+  }
+done
 [[ "$(awk -F= '$1 == "HADES_MANIFEST_VERSION" {print $2}' "$manifest")" == 1 ]] || { echo 'FAIL unsupported manifest version'; exit 1; }
 if grep -Eq '(^|[=:])latest([@"[:space:]]|$)' "$manifest"; then echo 'FAIL latest is not an acceptable version pin'; exit 1; fi
 for f in scripts/install-hades.sh scripts/hades-doctor.sh scripts/validate-install.sh; do
