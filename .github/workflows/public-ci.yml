@@ -86,6 +86,8 @@ jobs:
         run: bash scripts/test-backup-metadata-contract.sh
       - name: Check install failure contract
         run: bash scripts/test-install-failure-contract.sh
+      - name: Check partial-install recovery
+        run: bash scripts/test-partial-install-recovery.sh
       - name: Check upgrade and decommission contract
         run: bash scripts/test-upgrade-decommission-contract.sh
       - name: Check private-record preflight ordering

@@ -192,6 +192,10 @@ if ((test_mode)); then
   install -m 0644 "$repo_dir/webui/hades-theme.js" "$config_root/assets/hades-theme.js"
   printf 'manifest=%s\nreconstruction_manifest=%s\nlayer=%s\ninstalled_from=%s\nphase=prepared\n' "$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')" "$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')" "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js")" "$repo_dir" > "$state_root/install-contract"
   chmod 0640 "$state_root/install-contract"
+  if [[ "${HADES_TEST_FAIL_AFTER_PREPARE:-0}" == 1 ]]; then
+    echo 'FAIL synthetic injected interruption after preparation' >&2
+    exit 97
+  fi
   echo 'PASS test-mode installation contract (no containers, no fixture data)'
   exit 0
 fi
