@@ -39,6 +39,15 @@ loopback model fixture separately, then pass the generated `operator.env` to
 the installer. This keeps the full-install rehearsal reproducible without
 copying private deployment records into the repository.
 
+If a Proxmox environment is available, `scripts/proxmox-bootstrap.sh` is the
+optional provisioning handoff. With no `--apply` it only validates inputs and
+prints a plan. With explicit `--apply`, it uses an owner-supplied API token to
+clone a cloud-init-capable Fedora/Rocky template, configure the requested
+guest resources and SSH key, resize the named boot disk, and then hands off to
+the guest-local installer. A failed post-clone API call leaves the VM for
+inspection; the helper never guesses at cleanup or calls the HADES installer
+on the Proxmox host.
+
 Deployment order is LLDAP, Open WebUI, Hindsight, Grocy, Agent Zero, SearXNG,
 Hermes 0.14.0, then the HADES overlay/assets/adapters. Production migration is
 separate: backup, provision, install, restore, validate, owner acceptance,

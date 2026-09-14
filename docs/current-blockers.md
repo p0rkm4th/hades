@@ -30,6 +30,9 @@ an owner decision or secret from defects that can be repaired independently.
   private Compose, mutable image pins, and unsafe secret permissions fail
   before target mutation; bounded upgrade and preservation-first decommission
   rules are canonicalized in `docs/upgrade-decommission.md`.
+- **Added:** `scripts/proxmox-bootstrap.sh` provides a plan-first, explicit
+  Proxmox-to-supported-guest handoff. Its API apply path remains unexercised
+  because no approved Proxmox endpoint or credential is configured.
 - **Added:** The credential-free backup→destroy→restore drill preserves stable
   Alpha/Beta subject IDs, memory-bank mappings, conversation marker, and Grocy
   stock. It does not substitute for private encrypted off-host recovery.

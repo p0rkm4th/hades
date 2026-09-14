@@ -112,6 +112,8 @@ jobs:
         run: bash scripts/test-private-input-contract.sh
       - name: Check network exposure policy
         run: bash scripts/test-network-exposure.sh
+      - name: Check Proxmox bootstrap handoff
+        run: bash scripts/test-proxmox-bootstrap-contract.sh
 
       - name: Check workflow action pinning
         run: bash scripts/test-workflow-pinning.sh
