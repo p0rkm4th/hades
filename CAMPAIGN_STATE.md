@@ -473,6 +473,10 @@ onboarding is the only owner-input gate; it does not pause independent work.
   input, and version-manifest contracts. The private-record preflight gap was
   repaired and regression-covered; full HADES reconstruction remains unproven
   without the four private runtime records.
+- Real preflight fixture: PASS on the disposable Fedora guest. A privileged
+  installer `--preflight` using safe synthetic identity files and minimal valid
+  private Compose/systemd records passed host, ownership, port, and syntax
+  checks without creating the install marker or mutating the target state.
 - Next highest-value action: keep production on Hermes 0.14.0 while the owner
   authentication path and candidate full-suite isolation gate are resolved;
   then execute the separately controlled Hermes 0.21.2 production change

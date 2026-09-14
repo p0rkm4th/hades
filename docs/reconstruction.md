@@ -59,6 +59,13 @@ portable static/disposable evidence but still does not claim a full HADES
 reconstruction because the private runtime records were intentionally not
 copied into the guest.
 
+The first disposable guest also ran the installer in real privileged
+`--preflight` mode with non-secret synthetic identity files and four valid
+minimal private deployment records. Fedora/Docker/systemd, disk, port,
+ownership, and record syntax checks passed; the install marker and target state
+were absent afterward. This proves the complete pre-mutation gate on a
+supported host without deploying or copying production material.
+
 After installation, the same guest was rebooted. Systemd returned to
 `running`, Docker restarted Agent Zero, Grocy, and LLDAP automatically, and
 LLDAP returned `healthy` after its normal startup interval. This is reboot
