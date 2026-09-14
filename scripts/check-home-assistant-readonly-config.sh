@@ -27,8 +27,13 @@ if [[ -n "${HADES_HOME_ASSISTANT_URL-}" ]]; then
 fi
 
 if [[ -n "${HADES_HOME_ASSISTANT_ENTITY_ALLOWLIST-}" ]]; then
-  IFS=',' read -r -a entities <<< "$HADES_HOME_ASSISTANT_ENTITY_ALLOWLIST"
-  if ((${#entities[@]} == 0)); then
+  allowlist=$HADES_HOME_ASSISTANT_ENTITY_ALLOWLIST
+  if [[ "$allowlist" == ,* || "$allowlist" == *, || "$allowlist" == *,,* ]]; then
+    printf 'FAIL Home Assistant entity allowlist contains an empty entry\n'
+    invalid=1
+  fi
+  IFS=',' read -r -a entities <<< "$allowlist"
+  if ((${#entities[@]} == 0)) || [[ -z "${entities[0]-}" ]]; then
     printf 'FAIL Home Assistant entity allowlist is empty\n'
     invalid=1
   fi

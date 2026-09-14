@@ -7,14 +7,14 @@ set -euo pipefail
 expect_status() {
   local expected=$1 label=$2
   shift 2
-  local actual
+  local actual output
   set +e
-  "$@" >/tmp/hades-readonly-config-test.out 2>&1
+  output=$("$@" 2>&1)
   actual=$?
   set -e
   [[ "$actual" -eq "$expected" ]] || {
     printf 'FAIL %s: expected exit %s, got %s\n' "$label" "$expected" "$actual"
-    sed -n '1,20p' /tmp/hades-readonly-config-test.out >&2
+    printf '%s\n' "$output" >&2
     exit 1
   }
   printf 'PASS %s\n' "$label"
@@ -36,6 +36,12 @@ expect_status 1 'Home Assistant rejects malformed entity' env \
   HADES_HOME_ASSISTANT_URL=https://ha.example.test \
   HADES_HOME_ASSISTANT_TOKEN=synthetic-token \
   HADES_HOME_ASSISTANT_ENTITY_ALLOWLIST=sensor.bad-name \
+  bash scripts/check-home-assistant-readonly-config.sh
+
+expect_status 1 'Home Assistant rejects empty allowlist entry' env \
+  HADES_HOME_ASSISTANT_URL=https://ha.example.test \
+  HADES_HOME_ASSISTANT_TOKEN=synthetic-token \
+  HADES_HOME_ASSISTANT_ENTITY_ALLOWLIST=sensor.temperature, \
   bash scripts/check-home-assistant-readonly-config.sh
 
 expect_status 0 'homelab accepts bounded status slug' env \
