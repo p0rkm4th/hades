@@ -187,6 +187,15 @@ structural results, validates protected tar archives and their relative paths,
 and deliberately does not attempt to inspect Hindsight's native database
 without its protected PostgreSQL credentials.
 
+Encrypted copies can be created with
+[`scripts/encrypt-recovery-artifacts.sh`](../scripts/encrypt-recovery-artifacts.sh)
+by setting `HADES_RECOVERY_GPG_RECIPIENT` to an operator-managed public-key
+identity. The wrapper fails closed when the recipient is unavailable, leaves
+plaintext sources untouched for verification, skips quarantined failed
+rehearsals, and writes a checksum manifest for the encrypted output. Operators
+must supply the key custody, off-host destination, retention, and eventual
+plaintext-retirement policy; none of those secrets belong in Git.
+
 Readiness-only checks on 2026-09-12 also confirmed that SearXNG's config and
 cache mounts, Agent Zero's dedicated persistent volume, and Hermes' enabled
 systemd service with a private profile are present. Their normal runtime

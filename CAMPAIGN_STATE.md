@@ -388,7 +388,8 @@ onboarding is the only owner-input gate; it does not pause independent work.
   Protected private archives now also cover Agent Zero, SearXNG configuration,
   and the quiesced Hermes profile. Matching profile-asset restores, encrypted
   off-host retention, and isolated restore for those remaining archives remain
-  unproven.
+  unproven. A fail-closed GPG wrapper now supports operator-managed encrypted
+  copies and checksum manifests; a disposable-key round trip passed.
 - Synthetic identity recovery: PASS in the accepted production checkpoint.
 - Open WebUI account hygiene: PASS for the authorized cleanup. Clearly
   synthetic Luna/test/dogfood records were removed after a verified private
