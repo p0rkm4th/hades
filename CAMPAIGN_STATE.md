@@ -142,7 +142,9 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
   bounded idempotent installer, non-mutating doctor, install validator, static
   exposure/secret checks, and a two-run disposable test-mode rehearsal. Higher
   evidence levels still require a fresh supported guest and private component
-  records; no production state was changed.
+  records; no production state was changed. Two pristine guests now pass the
+  credential-free contract layer, and a disposable guest passes the synthetic
+  full installer path; full private-record reconstruction remains unproven.
 
 - Deterministic automation preparation is complete without provisioning a
   runner or granting new authority. The proposed boundary requires trusted

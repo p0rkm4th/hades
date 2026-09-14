@@ -48,8 +48,8 @@ This is **first-clean-machine / tracked-subset evidence**, not a full HADES
 reconstruction pass. The guest did not contain the four required private
 Open WebUI, Hindsight, SearXNG, and Hermes deployment records, so no full
 conversation, memory, search, or Hermes acceptance is claimed. The next
-evidence level is a second independent guest using those explicit records and
-canonical synthetic backups.
+evidence level is full-stack reconstruction with those explicit records and
+canonical synthetic backups on independent guests.
 
 A second pristine Fedora 44 x86_64 KVM guest independently reran the
 credential-free reconstruction contract, synthetic backup/identity restore,
