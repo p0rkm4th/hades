@@ -37,6 +37,9 @@ jobs:
       - name: Check privileged capability boundary
         run: bash scripts/test-capability-boundary.sh
 
+      - name: Check Agent Zero bounds
+        run: bash scripts/test-agent-zero-boundary.sh
+
       - name: Check read-only configuration shapes
         run: bash scripts/test-readonly-config-shapes.sh
 
