@@ -13,6 +13,14 @@ work. Hermes 0.21.2 promotion was attempted and rolled back after owner
 authentication could not be proven; production remains on the known-good
 Hermes 0.14.0 baseline.
 
+The current pushed checkpoint is `18cacb7`. Since the prior campaign note, the
+Grocy serving companion has received explicit success, timeout, malformed-
+verification, pre-mutation HTTP, and post-mutation HTTP coverage; post-PUT
+verification failures are classified as `OUTCOME UNKNOWN` so uncertain writes
+are not blindly replayed. A disposable GPG recovery rehearsal also verified
+encryption, checksum validation, decryption, and cleanup. Public CI passed for
+each of these changes, and the production Hermes service remains healthy.
+
 ## CURRENT OBJECTIVE
 
 Build an owner-usable HADES composition from mature upstream systems while
