@@ -384,7 +384,7 @@ gateway stopped afterward; production was not changed.
 
 ## Synthetic account revocation
 
-- **Current status:** PASS (operational bridge; automatic sync remains open)
+- **Current status:** PASS (operational bridge; automatic sync remains a future architecture decision)
 - **Owner input:** synthetic Beta account only; production identities and data
   were not changed
 - **DOM result:** PASS for the rendered LDAP login form after revocation;
@@ -401,8 +401,9 @@ gateway stopped afterward; production was not changed.
   staging; no production account was touched
 - **Last verified SHA:** `571a5da`
 - **Limitations:** automatic directory event synchronization is not
-  implemented. Household Alpha must not be declared until the operational
-  boundary is documented for production and survives restart/recovery.
+  implemented. The ordered bridge is the documented production procedure and
+  its restart/recovery boundary is accepted; automatic synchronization would
+  require a separate architecture decision.
 
 The ordered bridge was re-run against the clean group-enabled fixture: Beta's
 pre-revocation session returned HTTP 200, the same token returned HTTP 401

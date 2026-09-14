@@ -1,8 +1,9 @@
 # Home Assistant preparation boundary
 
-Status: **PREPARATION COMPLETE / OWNER GATE**.
+Status: **READY FOR TOKEN / OWNER GATE**.
 
-Home Assistant is not provisioned or contacted by HADES. The intended first
+Home Assistant is not provisioned or contacted by HADES. The credential-free
+preflight is complete and fails closed when configuration is absent. The intended first
 integration is the maintained Home Assistant MCP endpoint (`/api/mcp`) or the
 read-only REST API, using a user-approved token and an explicit entity
 allowlist. HADES must not discover or expose the whole Home Assistant

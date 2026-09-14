@@ -49,7 +49,9 @@ administrator and independent recovery path were verified.
   additional Grocy purchase/consume variations. Temporary providers and
   gateways are cleaned up after each run.
 - Automatic directory event synchronization is not implemented; operators
-  must use the ordered revocation bridge until that architecture is approved.
+  must use the accepted ordered revocation bridge until that architecture is
+  approved. This is an explicit operational procedure, not an unresolved
+  revocation defect.
 
 ## Owner gate
 

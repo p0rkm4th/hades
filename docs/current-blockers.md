@@ -17,14 +17,19 @@ an owner decision or secret from defects that can be repaired independently.
 
 ## Independent technical work still available
 
-- Weather/search follow-up reliability: SearXNG itself is healthy and the
-  first weather search worked, but a prior small-model follow-up answered from
-  stale context instead of re-searching. Tool-use enforcement and explicit
-  per-turn live-web guidance are deployed; a fresh owner-UI follow-up is still
-  required to close the defect.
+- Weather/search follow-up reliability: the stale-follow-up repair is deployed
+  and static/runtime checks confirm the web backend and routing boundary. A
+  fresh owner-UI follow-up is still required before changing this capability
+  from PARTIAL to PASS; no owner session is available in this checkout.
 - Continue Hermes candidate test/environment triage without promoting it.
 - Harden recovery documentation and validate restart behavior.
 - Continue owner-safe cross-domain and read-only composition work.
+
+The coordinated revocation bridge is accepted: it deletes the Open WebUI
+account before the directory identity and verifies that the prior bearer token
+is rejected. Automatic directory-event synchronization remains a documented
+future architecture choice, not an actionable defect in the current ordered
+procedure.
 
 ## Explicitly not blockers
 

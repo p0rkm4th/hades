@@ -24,8 +24,12 @@ and returns the same subject for each user on repeated login. The isolated
 staging path separately proves conversation isolation, Hindsight namespace
 isolation, shared Grocy behavior, and per-user settings persistence. It does
 not prove production cutover or production authorization. Open WebUI bearer
-tokens are not live-checked against LDAP, so revocation is a coordinated
-operation that removes the application account before the directory account.
+tokens are not live-checked against LDAP. The accepted revocation contract is
+therefore a coordinated operation that removes the application account before
+the directory account; the supported bridge also verifies that the old bearer
+token is rejected and that both records are gone. Automatic directory-event
+synchronization is not implemented and remains a separate future architecture
+decision.
 
 ## Migration order
 
