@@ -115,12 +115,13 @@ Statuses describe integrated owner workflows, not unit-test confidence.
 
 ## Homelab
 
-- **Current status:** PREPARATION COMPLETE
+- **Current status:** READY FOR CREDENTIALS
 - **Authoritative systems:** Proxmox VE, NetBox, and Uptime Kuma, each for its
   own domain
 - **Preparation:** read-only credential templates, minimum permission scope,
-  source/freshness requirements, failure behavior, and owner acceptance
-  prompts are documented in `docs/homelab-readonly.md`.
+  source/freshness requirements, failure behavior, owner acceptance prompts,
+  and a fail-closed configuration preflight are documented in
+  `docs/homelab-readonly.md`.
 - **Remaining gate:** exact endpoints and owner-approved credentials are not
   present; no real homelab service has been contacted.
 

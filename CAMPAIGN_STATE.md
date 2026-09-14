@@ -164,7 +164,8 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
 ## PUBLIC CI STATUS
 
 - A minimal secret-free GitHub Actions tripwire compiles the public adapters,
-  runs the memory and public-history checks, and validates shell syntax.
+  runs the memory, capability-boundary, read-only configuration-shape, and
+  public-history checks, validates shell syntax, and validates compose shape.
 - It does not replace private owner-UI, canonical-domain, or runtime
   acceptance.
 
