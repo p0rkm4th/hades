@@ -4,6 +4,24 @@ This public-safe log records sanitized failure classes only. Owner prompts,
 account identifiers, URLs, private runtime details, and personal data remain
 outside the repository.
 
+## 2026-09-14 — Search-only backend exposed unsupported extraction
+
+- Actor: disposable Qwen 8B CLI turn
+- Surface: current-weather request routed through Hermes and SearXNG
+- Expected: use the configured search backend and answer only from returned
+  evidence
+- Observed: SearXNG is search-only, but the web catalog also exposed
+  `web_extract`; the model called it and then continued from the error. After
+  that was removed, an incomplete search snippet still lacked the requested
+  weather conditions.
+- Failure layer: web capability composition and evidence boundary
+- Repair/evidence: HADES now exposes only `web_search` for the SearXNG-backed
+  profile and instructs the model not to infer facts absent from a title or
+  snippet. A repeat CLI turn made exactly one `web_search` call and returned
+  only the supported result link. No provider write or credential was used.
+- Status: REPAIRED — current-answer quality still needs authenticated owner-UI
+  acceptance
+
 ## 2026-09-14 — Recipe-authoring serving count was not exposed
 
 - Actor: synthetic household account
