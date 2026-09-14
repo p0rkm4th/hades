@@ -114,6 +114,11 @@ outside the repository.
   22.25s; Hermes logged Grocy execution at about 0.02s per request, leaving
   local-model selection and continuation as the measured bottleneck. The
   canonical shopping list remained empty.
+- A bounded simultaneous-add variant also returned HTTP 200 for both
+  requests, in 24.68s and 26.86s. Both add-tool calls completed in about
+  0.04s; canonical Grocy folded them into exactly one unfinished row with
+  quantity 2. The verified synthetic row was then removed and canonical
+  state returned to an empty list.
 - Status: REPAIRED for stale-fallback behavior; concurrent response latency
   remains a separate performance investigation
 
