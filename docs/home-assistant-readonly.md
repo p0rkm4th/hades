@@ -10,6 +10,14 @@ instance by default.
 
 ## Proposed first slice
 
+Before any future integration is enabled, run
+[`scripts/check-home-assistant-readonly-config.sh`](../scripts/check-home-assistant-readonly-config.sh)
+with the owner-approved values in a protected environment. The preflight only
+checks endpoint shape, token presence, and a conservative entity allowlist; it
+never contacts Home Assistant and never prints credential or entity values. It
+exits with status `2` when the owner gate is incomplete and status `1` for
+invalid or security-sensitive configuration.
+
 - Read selected sensor, climate, light, presence, and device availability
   entities.
 - Preserve the source entity ID, retrieval time, and unavailable/stale state.
