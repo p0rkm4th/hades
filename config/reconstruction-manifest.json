@@ -92,5 +92,43 @@
       "health_check": "overlay syntax, boundary, and MCP registration checks",
       "restore_check": "source/runtime match and policy smoke contract"
     }
+  ],
+  "provenance": [
+    {
+      "artifact": "repository configuration, HADES overlay, adapters, and theme assets",
+      "classification": "SOURCE CONTROLLED",
+      "source": "repository checkout at the recorded revision",
+      "lifecycle": "validated by source and installed-layer digests"
+    },
+    {
+      "artifact": "private Compose records and Hermes service unit",
+      "classification": "EXPLICIT OPERATOR INPUT",
+      "source": "mode-restricted paths in the operator-input file",
+      "lifecycle": "validated before mutation; retained for rebuild and rollback"
+    },
+    {
+      "artifact": "generated configuration directories and install marker",
+      "classification": "GENERATED FROM SOURCE-CONTROLLED TEMPLATE",
+      "source": "install-hades.sh and config/versions.env",
+      "lifecycle": "safe to reconcile; never authoritative for domain state"
+    },
+    {
+      "artifact": "identity and component secret files",
+      "classification": "GENERATED SECRET WITH DOCUMENTED LIFECYCLE",
+      "source": "operator-supplied or explicitly generated file-backed secrets",
+      "lifecycle": "mode-restricted, rotated with the consuming component, never committed"
+    },
+    {
+      "artifact": "persistent component databases, volumes, and Hermes profile",
+      "classification": "RESTORED CANONICAL STATE",
+      "source": "new component state or documented native/component backup",
+      "lifecycle": "preserved across reruns and restored only after integrity checks"
+    },
+    {
+      "artifact": "upstream container defaults and runtime scratch",
+      "classification": "UPSTREAM APPLICATION DEFAULT",
+      "source": "pinned upstream component runtime",
+      "lifecycle": "reconstructable and never treated as HADES canonical state"
+    }
   ]
 }

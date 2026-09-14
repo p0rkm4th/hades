@@ -38,6 +38,21 @@ if len(machine_components) != 9 or any(
 ):
     raise SystemExit('machine manifest has missing component fields')
 
+allowed_provenance = {
+    'SOURCE CONTROLLED', 'GENERATED FROM SOURCE-CONTROLLED TEMPLATE',
+    'EXPLICIT OPERATOR INPUT', 'GENERATED SECRET WITH DOCUMENTED LIFECYCLE',
+    'RESTORED CANONICAL STATE', 'UPSTREAM APPLICATION DEFAULT',
+}
+provenance = machine.get('provenance', [])
+if len(provenance) != 6 or any(
+    not all(item.get(field) for field in ('artifact', 'classification', 'source', 'lifecycle'))
+    or item['classification'] not in allowed_provenance
+    for item in provenance
+):
+    raise SystemExit('machine manifest provenance classification is incomplete')
+if any('already there' in item['classification'].lower() for item in provenance):
+    raise SystemExit('machine manifest contains implicit artifact provenance')
+
 source = Path('docs/component-manifest.md').read_text()
 required = (
     'LLDAP', 'Open WebUI', 'Hindsight', 'Grocy', 'Hermes 0.14 baseline',

@@ -5,7 +5,12 @@ file based on [`config/operator-inputs.env.example`](../config/operator-inputs.e
 with field semantics in [`private-input-contract.md`](private-input-contract.md),
 and documented component-specific canonical backups. The authoritative pins
 are in [`config/versions.env`](../config/versions.env), and the public rebuild
-fields are in [`config/reconstruction-manifest.json`](../config/reconstruction-manifest.json).
+fields and artifact provenance classifications are in
+[`config/reconstruction-manifest.json`](../config/reconstruction-manifest.json).
+Every runtime-critical artifact is source-controlled, generated from a tracked
+template, an explicit operator input, a documented generated secret, restored
+canonical state, or an upstream application default; no deployment step relies
+on an undocumented pre-existing file.
 
 Run on a supported fresh systemd guest:
 
