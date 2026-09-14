@@ -71,10 +71,10 @@ backup_container_quiesced() {
   docker stop "$container" >/dev/null
   quiesced_container="$container"
   if ! docker cp "$container:$source" "$output/$name"; then
-    if docker start "$container" >/dev/null; then
-      wait_for_container_ready "$container" || true
+    if docker start "$container" >/dev/null && \
+       wait_for_container_ready "$container"; then
+      quiesced_container=""
     fi
-    quiesced_container=""
     return 1
   fi
   docker start "$container" >/dev/null
