@@ -41,8 +41,8 @@ if (( count == 0 )); then
   printf 'FAIL no recovery artifacts found\n' >&2
   exit 1
 fi
-find "$destination" -type f -name '*.gpg' -print0 \
-  | xargs -0 sha256sum | sort > "$destination/SHA256SUMS"
+(cd "$destination" && find . -type f -name '*.gpg' -print0 \
+  | xargs -0 sha256sum | sort > SHA256SUMS)
 chmod 600 "$destination/SHA256SUMS"
 printf 'PASS encrypted recovery artifacts: %s\n' "$count"
 printf 'PASS encrypted destination mode=%s\n' "$(stat -Lc '%a' "$destination")"
