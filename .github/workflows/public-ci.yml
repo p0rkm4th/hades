@@ -78,6 +78,8 @@ jobs:
         run: bash scripts/test-reconstruction-manifest.sh
       - name: Check clean reconstruction contract
         run: bash scripts/test-clean-reconstruction-contract.sh
+      - name: Check reconstruction evidence documentation
+        run: bash scripts/test-reconstruction-evidence-doc.sh
       - name: Check synthetic private fixture contract
         run: bash scripts/test-synthetic-private-fixture.sh
       - name: Check synthetic fresh-install household soak
