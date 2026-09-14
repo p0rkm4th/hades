@@ -93,6 +93,18 @@ async def check():
         assert result["outcome"] == "FAILED", (recipe, servings, result)
     result = await module.set_servings("Recipe", 2)
     assert result == {"ok": True, "outcome": "SUCCEEDED", "recipe_id": 7, "base_servings": 2}
+    duplicate = await module.set_servings("Recipe", 2)
+    assert duplicate == result, duplicate
+
+    # Re-import the stateless adapter to model an immediate restart. It must
+    # resolve and verify canonical state again rather than relying on memory.
+    restarted_spec = importlib.util.spec_from_file_location(
+        "hades_grocy_recipe_authoring_restart", source_path
+    )
+    restarted = importlib.util.module_from_spec(restarted_spec)
+    restarted_spec.loader.exec_module(restarted)
+    restarted_result = await restarted.set_servings("Recipe", 2)
+    assert restarted_result == result, restarted_result
 
     class TimeoutClient(Client):
         async def get(self, url): raise TimeoutException("synthetic timeout")

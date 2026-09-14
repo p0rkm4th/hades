@@ -62,6 +62,8 @@ reads the canonical recipe back after every update. A timeout is reported as
 A connection failure before the PUT is classified as `FAILED`; timeouts or
 verification failures after a mutation attempt remain `OUTCOME UNKNOWN` and
 require canonical reconciliation before retry.
+Repeated verified requests and an immediate adapter restart are stateless:
+each request resolves and reads Grocy's canonical recipe before success.
 
 Every Grocy mutation must distinguish preview, confirmed apply, and outcome
 unknown. A timeout, connection loss, or malformed upstream response is never a
