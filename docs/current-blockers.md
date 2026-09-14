@@ -41,8 +41,10 @@ an owner decision or secret from defects that can be repaired independently.
 Completed independent evidence now includes the synthetic homelab and Home
 Assistant read-only fixtures, mixed-domain memory/web/operator composition
 contract, cross-domain conversation dogfood, source-of-truth contradiction
-harness, reconstruction manifest, static security audit, and long-context
-current-turn preservation regression.
+harness, reconstruction manifest and drift guard, static security audit,
+transient-error memory hygiene, Hermes qualification classification, stable-v1
+readiness-map validation, and long-context current-turn preservation
+regressions.
 The fresh owner-UI web follow-up, recipe browser sequence, real integrations,
 and recovery custody remain owner/operator gates rather than hidden defects.
 
