@@ -11,5 +11,5 @@ if grep -Eq '(^|[=:])latest([@"[:space:]]|$)' "$manifest"; then echo 'FAIL lates
 for f in scripts/install-hades.sh scripts/hades-doctor.sh scripts/validate-install.sh; do
   grep -q 'config/versions.env' "$f" || { echo "FAIL $f does not reference the authoritative manifest"; exit 1; }
 done
-if rg -n '(^|=)sk-[A-Za-z0-9]|REPLACE_WITH_REAL|password=[^$]' config docs >/dev/null; then echo 'FAIL credential-like value found in public contract'; exit 1; fi
+if grep -REn '(^|=)sk-[A-Za-z0-9]|REPLACE_WITH_REAL|password=[^$]' config docs >/dev/null; then echo 'FAIL credential-like value found in public contract'; exit 1; fi
 echo 'PASS authoritative version and public-secret contract'
