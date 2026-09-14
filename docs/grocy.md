@@ -46,13 +46,19 @@ still an explicit Grocy mutation; unresolved product names are reported rather
 than silently inventing pantry products.
 
 An API-level synthetic acceptance then created a uniquely named recipe with
-one resolved ingredient through the normal HADES owner API, and canonical
-Grocy verification plus cleanup confirmed no fixture remained. The acceptance
-is intentionally partial: the installed MCP create/update tool schemas expose
-recipe name and description but not Grocy's `base_servings` field, so serving
-count could not be set or verified through the owner-facing tool. Browser
-acceptance and a serving-aware recipe-authoring path remain open; no shadow
-recipe state is maintained in HADES.
+one resolved ingredient through the normal HADES owner API. A narrow
+HADES-owned companion MCP adapter set the recipe to two servings, and
+canonical Grocy verification confirmed `base_servings=2`; the recipe and its
+ingredient were then removed after verification. No shadow recipe state is
+maintained in HADES. The remaining recipe-authoring acceptance is the full
+owner-browser sequence (ingredient removal/restoration, shortage calculation,
+and add-missing shopping mutation).
+
+The serving adapter is registered as a second private stdio MCP server beside
+the maintained Grocy server. It exposes only `recipe_set_servings`, validates
+positive bounded integers, resolves an exact recipe name or numeric ID, and
+reads the canonical recipe back after every update. A timeout is reported as
+`OUTCOME UNKNOWN`; the adapter never retries an uncertain mutation.
 
 Every Grocy mutation must distinguish preview, confirmed apply, and outcome
 unknown. A timeout, connection loss, or malformed upstream response is never a

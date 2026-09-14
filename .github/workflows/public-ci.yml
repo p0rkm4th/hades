@@ -40,6 +40,9 @@ jobs:
       - name: Check Agent Zero bounds
         run: bash scripts/test-agent-zero-boundary.sh
 
+      - name: Check Grocy recipe authoring boundary
+        run: bash scripts/test-grocy-recipe-authoring-boundary.sh
+
       - name: Check read-only configuration shapes
         run: bash scripts/test-readonly-config-shapes.sh
 

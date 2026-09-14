@@ -10,6 +10,19 @@ import os
 import re
 
 
+# The maintained Grocy MCP is the source of the household tool catalog.  A
+# deployment-local companion exposes only the omitted recipe serving-count
+# operation; keep both toolsets together whenever a Grocy turn is narrowed.
+_HADES_GROCY_TOOLSETS = [
+    "mcp-grocy",
+    # Hermes exposes both the canonical generated name and the raw server
+    # alias for dynamically registered MCP servers. Keep both so API-time
+    # narrowing remains correct during discovery-order changes.
+    "mcp-grocy_recipe_authoring",
+    "grocy_recipe_authoring",
+]
+
+
 # A small provider-selection contract for clearly current/external requests.
 # This is intentionally narrower than a general intent classifier; explicit
 # memory and household-domain checks retain precedence in the turn handler.
@@ -73,6 +86,38 @@ try:
     from plugins.web.searxng.provider import SearXNGWebSearchProvider
     _hades_logger = logging.getLogger("hades.overlay")
     _hades_memory_local = threading.local()
+
+    def _hades_grocy_tool_definitions(_get_tool_definitions):
+        """Return the canonical Grocy tools plus the serving companion.
+
+        MCP discovery can complete after an API agent has initialized. Query
+        the normal toolset first, then use the registry for the one known
+        companion tool so discovery order cannot silently remove it from a
+        narrowed recipe turn.
+        """
+        definitions = _get_tool_definitions(
+            enabled_toolsets=_HADES_GROCY_TOOLSETS, quiet_mode=True
+        )
+        companion_name = "mcp_grocy_recipe_authoring_recipe_set_servings"
+        if not any(
+            tool.get("function", {}).get("name") == companion_name
+            for tool in definitions
+        ):
+            try:
+                from tools.registry import registry as _hades_registry
+                definitions.extend(_hades_registry.get_definitions({companion_name}, quiet=True))
+            except Exception as exc:
+                _hades_logger.warning("Grocy serving tool reconciliation failed: %s", exc)
+        unique = {}
+        for tool in definitions:
+            name = tool.get("function", {}).get("name")
+            if name:
+                unique[name] = tool
+        _hades_logger.info(
+            "Grocy tool catalog reconciled: total=%d serving_tool=%s",
+            len(unique), companion_name in unique,
+        )
+        return list(unique.values())
 
     # The profile plugin is discovered lazily, while the legacy web tool
     # resolves its backend on first use. Register the packaged provider at
@@ -380,9 +425,7 @@ try:
         }
         extra = []
         if not any(name.startswith("mcp_grocy_") for name in existing):
-            extra.extend(_get_tool_definitions(
-                enabled_toolsets=["mcp-grocy"], quiet_mode=True
-            ))
+            extra.extend(_hades_grocy_tool_definitions(_get_tool_definitions))
         # Finance is deliberately not reconciled here.  It is a privileged,
         # owner-only capability and must be explicitly enabled by a future
         # capability boundary; a user message must never grant access to it.
@@ -470,9 +513,7 @@ try:
         if grocy_intent and isinstance(original_tools, list):
             try:
                 from model_tools import get_tool_definitions as _get_tool_definitions
-                grocy_tools = _get_tool_definitions(
-                    enabled_toolsets=["mcp-grocy"], quiet_mode=True
-                )
+                grocy_tools = _hades_grocy_tool_definitions(_get_tool_definitions)
                 if grocy_tools:
                     self.tools = grocy_tools
                     self.valid_tool_names = {
@@ -550,9 +591,7 @@ try:
         ):
             try:
                 from model_tools import get_tool_definitions as _get_tool_definitions
-                extra_grocy = _get_tool_definitions(
-                    enabled_toolsets=["mcp-grocy"], quiet_mode=True
-                )
+                extra_grocy = _hades_grocy_tool_definitions(_get_tool_definitions)
                 names = {t.get("function", {}).get("name") for t in original_tools}
                 for tool in extra_grocy:
                     name = tool.get("function", {}).get("name")

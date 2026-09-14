@@ -109,7 +109,7 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
     }
 
 
-async def list_tools(_ctx, _params):
+async def list_tools():
     return ListToolsResult(tools=[Tool(
         name=TOOL_NAME,
         description="Run one harmless, bounded task through the private Agent Zero operator.",
@@ -124,10 +124,10 @@ async def list_tools(_ctx, _params):
     )])
 
 
-async def call_tool(_ctx, params):
-    if params.name != TOOL_NAME:
-        raise ValueError(f"unknown tool: {params.name}")
-    args = params.arguments or {}
+async def call_tool(tool_name, args):
+    if tool_name != TOOL_NAME:
+        raise ValueError(f"unknown tool: {tool_name}")
+    args = args or {}
     result = await _delegate(
         args.get("task", ""),
         args.get("context_id", ""),
@@ -138,7 +138,9 @@ async def call_tool(_ctx, params):
 
 
 async def main():
-    server = Server("hades-agent-zero", on_list_tools=list_tools, on_call_tool=call_tool)
+    server = Server("hades-agent-zero")
+    server.list_tools()(list_tools)
+    server.call_tool()(call_tool)
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, server.create_initialization_options())
 

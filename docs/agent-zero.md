@@ -28,7 +28,9 @@ Hermes profile token.
 
 The bridge uses MCP 2.0's low-level stdio server API, which is compatible with
 the MCP dependency shipped by Hermes 0.21.2. The former MCP 1.x `FastMCP`
-import is intentionally not used.
+import is intentionally not used. Its registration callbacks follow the
+installed low-level API, and the adapter has a public boundary regression so
+an MCP runtime upgrade cannot silently remove the delegation tool.
 
 This integration is intentionally not registered as an Open WebUI-native tool
 or exposed as a separate user-facing assistant. The production Agent Zero

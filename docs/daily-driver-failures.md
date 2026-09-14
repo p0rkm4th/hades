@@ -4,7 +4,7 @@ This public-safe log records sanitized failure classes only. Owner prompts,
 account identifiers, URLs, private runtime details, and personal data remain
 outside the repository.
 
-## 2026-09-14 — Recipe-authoring acceptance lacks serving-count coverage
+## 2026-09-14 — Recipe-authoring serving count was not exposed
 
 - Actor: synthetic household account
 - Surface: normal HADES owner API with Grocy recipe-authoring tools
@@ -14,11 +14,29 @@ outside the repository.
   owner-facing MCP schema exposed no `base_servings`/servings parameter; the
   serving-count assertion could not be performed
 - Failure layer: Grocy MCP recipe-authoring contract
-- Repair/evidence: canonical Grocy inspection confirmed the unique synthetic
-  recipe and ingredient during the acceptance, then cleanup confirmed no
-  fixture remained. No HADES shadow state or blind retry was introduced.
-- Status: PARTIAL — serving-aware tool contract and owner-browser acceptance
-  remain open
+- Repair/evidence: added a narrow HADES-owned MCP companion that updates only
+  Grocy's canonical `base_servings` field and verifies it with a follow-up
+  read. A second normal HADES API turn set the synthetic recipe to two
+  servings; canonical Grocy confirmed the value, then cleanup confirmed no
+  fixture remained. No HADES shadow state was introduced.
+- Status: REPAIRED for the API serving-count contract — the full owner-browser
+  authoring sequence remains open
+
+## 2026-09-14 — MCP adapter registration lagged the installed runtime
+
+- Actor: HADES deployment
+- Surface: Hermes private MCP server startup
+- Expected: Agent Zero delegation and the Grocy recipe-serving companion
+  remain available after a Hermes restart
+- Observed: the installed MCP runtime rejected the older low-level adapter
+  constructor and callback signatures; both adapters initially failed to
+  register
+- Failure layer: MCP SDK compatibility boundary
+- Repair/evidence: updated both HADES-owned adapters to the installed
+  low-level registration contract, restarted Hermes, and confirmed all three
+  private servers registered 23 tools in total. The existing Agent Zero
+  adapter and the new Grocy serving tool then registered successfully.
+- Status: REPAIRED
 
 ## 2026-09-13 — Recovery helper initially targeted Grocy placeholder path
 

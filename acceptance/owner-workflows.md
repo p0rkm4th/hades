@@ -107,6 +107,10 @@ Statuses describe integrated owner workflows, not unit-test confidence.
   An adversarial shorthand/profane read-only prompt, “shit do we have eggs”,
   rendered a clear no-eggs answer; canonical Grocy showed only the two
   synthetic milk units, and the response remained visible after reload.
+  The normal HADES API also created a unique synthetic recipe, resolved one
+  ingredient, set its canonical serving count to two through the narrow
+  companion MCP tool, and verified `base_servings=2` before cleanup. The full
+  owner-browser authoring sequence remains an explicit follow-up.
 - **Evidence required:** pantry, grocery, purchase, consumption, duplicate,
   correction, recipe-shortage, and reload-persistence workflows verified in
   Grocy through the owner UI
