@@ -307,6 +307,11 @@ the four affected groups. A focused rerun of the remaining prior failure set
 left 7 failures across 5 host/update-shim/browser-environment files. This is
 useful triage evidence, not a clean full-suite result.
 
+The remaining Modal extra was then restored and its two tests passed, bringing
+the dependency-repaired focused evidence to 167/167. The residual focused
+set is 5 tests across 4 host/update-shim/browser-environment files; these are
+not HADES production paths.
+
 ## HOUSEHOLD ALPHA STATUS
 
 The detailed bullets below retain historical evidence from staging and
