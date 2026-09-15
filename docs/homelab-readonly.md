@@ -1,8 +1,8 @@
 # Homelab read-only integration plan
 
-This is preparation only. No homelab endpoint, credential, scan, or runtime
-integration is present in the HADES test deployment. The current upstream MCP
-candidate evaluation is recorded in
+The owner has authorized read-only activation for the current connected LAN.
+No Proxmox, NetBox, or Uptime Kuma credential has yet been provisioned. The
+current upstream MCP candidate evaluation is recorded in
 [`docs/homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
 ## Authority boundaries
@@ -57,8 +57,8 @@ HADES_NETBOX_TOKEN=<private-v2-token>
 
 ### Network discovery
 
-An Nmap MCP or equivalent isolated scan worker may be evaluated for explicit,
-owner-approved CIDR discovery. The reusable parser in
+The HADES-owned bounded scan worker is enabled for the explicitly authorized
+connected-LAN CIDR. The reusable parser in
 `integrations/homelab-readonly/discovery.py` accepts bounded Nmap XML evidence,
 requires a valid retrieval timestamp, and enforces target/host scope without
 invoking a scanner. Scan output is observed evidence only: it must carry
@@ -68,7 +68,9 @@ records. See the candidate selection and command boundary in
 [`homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
 The bounded scan runner also rejects targets larger than 4,096 addresses
-before starting Nmap, even when a containing network is allowlisted.
+before starting Nmap, even when a containing network is allowlisted. Its
+current TCP-connect profile uses fixed ports, a bounded timeout, no scripts or
+version probing, and a bounded packet rate.
 
 `integrations/homelab-readonly/catalog.py` can turn normalized scan evidence
 into a transient review projection containing observed IPs, hostnames, open
@@ -114,9 +116,10 @@ configured HTTP(S) GET endpoints and delegates authority-aware composition to
 `reconcile.py`; the focused contract is
 `scripts/test-homelab-readonly-adapter.sh`. Missing or failed sources produce
 partial results and errors rather than substituting memory or another source.
-Its `homelab_discovery_candidates` tool accepts already-normalized Nmap
-evidence and returns the review-only catalog projection; it does not invoke a
-scanner or perform inventory/management writes.
+Its `homelab_discovery_scan` tool invokes only the bounded worker inside
+`HADES_DISCOVERY_ALLOWED_NETWORKS`; its `homelab_discovery_candidates` tool
+accepts normalized evidence and returns the review-only catalog projection.
+Neither tool performs inventory or management writes.
 
 [`scripts/test-homelab-fixture.sh`](../scripts/test-homelab-fixture.sh) adds a
 disposable loopback fixture for the next integration step. It exposes minimal
@@ -128,11 +131,14 @@ the intended inventory source, Kuma is reported as stale availability
 observation, and writes return `405`. It is exercised in public CI; no real
 homelab endpoint or credential is involved.
 
-## Remaining owner gate
+## Current activation state
 
-The exact endpoints, approved inventory scope, service identities, tokens, and
-allowed network path require owner authorization. Until then, HADES should not
-probe or connect to real homelab services.
+The current connected-LAN discovery contract is authorized and has completed a
+real read-only scan. The result is transient review evidence and is not a
+canonical inventory update. Proxmox, NetBox, and Uptime Kuma remain
+`AUTHORIZED / CREDENTIAL PROVISIONING` until dedicated least-privilege inputs
+exist and their real read, failure, freshness, conflict, and write-surface
+acceptance is complete.
 
 References: [Proxmox API-token monitoring example](https://pve.proxmox.com/pve-docs/pve-admin-guide.pdf),
 [NetBox REST API authentication and read-only tokens](https://netbox.readthedocs.io/en/stable/integrations/rest-api/),

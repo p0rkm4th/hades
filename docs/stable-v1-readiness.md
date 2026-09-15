@@ -83,7 +83,7 @@ not commit volume.
 | Web/search | PARTIAL | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary; fresh owner-UI follow-up must confirm search freshness |
 | Bounded operator | PASS | Bounded inspection remains available and unsafe delegation is rejected before upstream dispatch; broader tasks and native A2A remain optional hardening |
 | Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; owner-scoped local CSV preview/import planning, native CSV/QIF/OFX/QFX/CAMT handoff, and the unregistered reconciled writer contract are dogfood-tested without production writes |
-| Homelab | PARTIAL | Synthetic Proxmox/NetBox/Kuma authority reconciliation, bounded Nmap evidence, review-only catalog candidates, and write-free control planning pass; connect approved endpoints with least-privilege credentials and validate real-network freshness |
+| Homelab | PARTIAL | Authorized current-LAN discovery now passes as transient review evidence with no writes; provision dedicated least-privilege Proxmox/NetBox/Kuma inputs and validate real source reads, freshness, conflicts, and failure handling |
 | Home Assistant | PARTIAL | Synthetic read-only adapter, ordinary-entity reads, stale/unavailable shaping, and security-sensitive filtering pass; connect the approved URL/token/entity allowlist and validate the deployed read path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |

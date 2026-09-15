@@ -46,6 +46,10 @@ are the active campaign.
   import, homelab discovery/control planning, Home Assistant reads, voice,
   browser research, and broader Agent Zero operator work remain bounded or
   staged in the capability ledger.
+- **Homelab activation:** current connected-LAN discovery is authorized and
+  has passed as transient review evidence with zero writes. Proxmox, NetBox,
+  and Uptime Kuma are `AUTHORIZED / CREDENTIAL PROVISIONING`; no endpoint
+  credential has been added to this public repository.
 - **Owner gates:** unchanged gates are consolidated in
   [`docs/current-blockers.md`](docs/current-blockers.md); no authentication or
   credential gate is being re-polled here.

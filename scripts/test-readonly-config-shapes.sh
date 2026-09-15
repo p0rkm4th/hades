@@ -50,6 +50,7 @@ expect_status 0 'homelab accepts bounded status slug' env \
   HADES_PROXMOX_TOKEN_SECRET=synthetic-secret \
   HADES_NETBOX_URL=https://netbox.example.test \
   HADES_NETBOX_TOKEN=synthetic-token \
+  HADES_DISCOVERY_ALLOWED_NETWORKS=192.0.2.0/24 \
   HADES_UPTIME_KUMA_URL=https://status.example.test \
   HADES_UPTIME_KUMA_STATUS_SLUG=hades-status \
   bash scripts/check-homelab-readonly-config.sh
@@ -60,6 +61,7 @@ expect_status 1 'homelab rejects malformed status slug' env \
   HADES_PROXMOX_TOKEN_SECRET=synthetic-secret \
   HADES_NETBOX_URL=https://netbox.example.test \
   HADES_NETBOX_TOKEN=synthetic-token \
+  HADES_DISCOVERY_ALLOWED_NETWORKS=192.0.2.0/24 \
   HADES_UPTIME_KUMA_URL=https://status.example.test \
   HADES_UPTIME_KUMA_STATUS_SLUG=bad/slug \
   bash scripts/check-homelab-readonly-config.sh

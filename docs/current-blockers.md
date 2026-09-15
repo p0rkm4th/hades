@@ -8,7 +8,7 @@ an owner decision or secret from defects that can be repaired independently.
 | Area | Current gate | What unblocks it |
 |---|---|---|
 | Hermes 0.21.2 production promotion | Owner-authenticated production rehearsal was not proven during the previous controlled attempt. Candidate HADES core is green, but qualification still has five host/update-shim/browser-environment failures plus an upstream FTS5 trace-observation test defect. | Provide a verified current owner authentication/session path and approve a rollback-backed rehearsal; separately disposition the non-HADES tests and upstream FTS5 observation contract. |
-| Homelab read-only | No approved Proxmox, NetBox, Uptime Kuma, or owner network scope is configured. | Approve endpoints/scope and provision least-privilege read-only credentials; the bounded synthetic scan worker is ready independently. |
+| Homelab read-only | Read-only activation is authorized for the current connected LAN; dedicated Proxmox, NetBox, and Uptime Kuma endpoints/credentials are not yet provisioned. | Provision least-privilege read-only inputs for the three canonical sources; the bounded current-LAN scan worker is already active and review-only. |
 | Home Assistant read-only | No approved URL, token, entity allowlist, or exposure path is configured. | Approve the selected read-only entities and provide the scoped token/path. |
 | Real finance | Production finance is intentionally inactive. | Approve the Actual Budget environment/budget, historical imports, retention, secret storage, and later live-sync provider. |
 | Deterministic automation | No concrete n8n workflow, actor mapping, confirmation rule, or rollback contract is approved. | Approve one bounded workflow and its capability boundary. |
@@ -122,6 +122,12 @@ an owner decision or secret from defects that can be repaired independently.
   candidate-only upstream/provider failure is a HADES release blocker.
 - **Added:** A public configuration-drift guard now checks the tracked compose
   set and reconstruction-manifest coverage.
+- **Activated:** Current connected-LAN discovery is authorized and has been
+  exercised through the HADES-owned bounded MCP worker. It resolved the
+  primary directly connected `/24`, found live hosts, produced transient
+  review candidates, and performed zero inventory writes. Proxmox, NetBox, and
+  Uptime Kuma remain `AUTHORIZED / CREDENTIAL PROVISIONING` until their
+  dedicated read-only inputs exist.
 - **Updated:** The actual-image full-application composition passes at the
   current checkpoint, including restart persistence and Alpha/Beta isolation.
   A fresh Fedora 44 guest independently booted, accepted the repository,
