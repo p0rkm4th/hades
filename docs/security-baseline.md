@@ -15,8 +15,9 @@
 - Preserve owner data when provenance is ambiguous; do not run broad cleanup,
   prune, migration, or replay operations without a bounded target.
 
-The public CI security audit (`scripts/test-security-boundary-audit.sh`) also
-rejects privileged or host-networked compose services, Docker-socket and broad
-host mounts, finance mutation APIs, and unbounded Agent Zero delegation. The
+The public CI security audit (`scripts/test-security-boundary-audit.sh`) scans
+all tracked Compose records, including generated deployment templates. It
+rejects privileged or host-networked services, Docker-socket and broad host
+mounts, finance mutation APIs, and unbounded Agent Zero delegation. The
 configuration-drift guard checks the same tracked deployment set for pinned
 images and manifest coverage.

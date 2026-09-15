@@ -5,7 +5,10 @@ set -eu
 python - <<'PY'
 from pathlib import Path
 
-compose = '\n'.join(p.read_text() for p in Path('deploy').glob('*.compose.yaml'))
+compose_paths = sorted(Path('deploy').rglob('*.compose.yaml'))
+if not compose_paths:
+    raise SystemExit('no tracked Compose records found')
+compose = '\n'.join(p.read_text() for p in compose_paths)
 overlay = Path('hermes/sitecustomize.py').read_text()
 finance_client = Path('integrations/actual-finance-readonly/actual_client.js').read_text()
 agent_zero = Path('integrations/agent-zero-mcp/server.py').read_text()
