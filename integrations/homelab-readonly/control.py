@@ -81,8 +81,13 @@ def reconcile_control_outcome(
             ("node", target["node"]), ("vmid", target["vmid"]), ("status", expected)
         )
     )
+    same_target = isinstance(observed_runtime, dict) and all(
+        observed_runtime.get(key) == value for key, value in (
+            ("node", target["node"]), ("vmid", target["vmid"])
+        )
+    )
     if matches:
         return {"status": "SUCCEEDED", "canonical_source": "Proxmox", "reconciled": True}
-    if transport_outcome == "FAILED" and isinstance(observed_runtime, dict):
+    if transport_outcome == "FAILED" and same_target:
         return {"status": "FAILED", "canonical_source": "Proxmox", "reconciled": True}
     return {"status": "OUTCOME UNKNOWN", "canonical_source": "Proxmox", "reconciled": False, "retry": False}

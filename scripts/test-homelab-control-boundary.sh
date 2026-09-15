@@ -26,6 +26,10 @@ failed = module.reconcile_control_outcome(plan, {"node": "Alexandra", "vmid": 10
 assert failed["status"] == "SUCCEEDED"  # canonical read-back wins after a lost response
 unknown = module.reconcile_control_outcome(plan, None, transport_outcome="UNKNOWN")
 assert unknown["status"] == "OUTCOME UNKNOWN" and unknown["retry"] is False
+wrong_readback = module.reconcile_control_outcome(
+    plan, {"node": "Beta", "vmid": 999, "status": "stopped"}, transport_outcome="FAILED"
+)
+assert wrong_readback["status"] == "OUTCOME UNKNOWN" and wrong_readback["retry"] is False
 
 for operation, bad_target, bad_runtime in (
     ("shell", target, runtime),
