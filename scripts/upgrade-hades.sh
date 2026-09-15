@@ -37,18 +37,29 @@ fail() { echo "FAIL $*" >&2; exit 1; }
 source "$inputs"
 source "$repo_dir/config/versions.env"
 export HADES_LLDAP_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE
+candidate_version=''
+candidate_image=''
 case "$component" in
   lldap) compose_file="$repo_dir/deploy/lldap.compose.yaml"; container=hades-lldap ;;
   grocy) compose_file="$repo_dir/deploy/grocy.compose.yaml"; container=hades-grocy ;;
   agent-zero) compose_file="$repo_dir/deploy/agent-zero.compose.yaml"; container=hades-agent-zero ;;
-  hermes) private_record='private Hermes package/deployment record' ;;
-  open-webui) private_record='private Open WebUI immutable artifact/deployment record' ;;
+  hermes)
+    private_record='private Hermes package/deployment record'
+    candidate_version=${HADES_HERMES_CANDIDATE_VERSION:-unknown}
+    ;;
+  open-webui)
+    private_record='private Open WebUI immutable artifact/deployment record'
+    candidate_version=${HADES_OPEN_WEBUI_CANDIDATE_VERSION:-unknown}
+    candidate_image=${HADES_OPEN_WEBUI_CANDIDATE_IMAGE:-unknown}
+    ;;
   hindsight) private_record='private Hindsight image/deployment record' ;;
   searxng) private_record='private SearXNG image/deployment record' ;;
 esac
 if [[ -n "${private_record:-}" ]]; then
   echo "PLAN one-component upgrade: $component"
   echo "PLAN source: $repo_dir/config/versions.env plus $private_record"
+  echo "PLAN candidate version: $candidate_version"
+  [[ -z "${candidate_image:-}" ]] || echo "PLAN candidate image: $candidate_image"
   echo 'PLAN required sequence: verified backup -> installer preflight -> private-record validation -> restart -> health -> doctor -> validate -> rollback retention -> owner acceptance'
   ((apply)) && fail "$component is plan-only; use its private operator record and acceptance workflow"
   exit 0

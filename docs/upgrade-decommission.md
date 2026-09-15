@@ -59,7 +59,8 @@ complete. The upgrade helper
 prints plan-only instructions for `hermes`, `open-webui`, `hindsight`, and
 `searxng`; `--apply` is rejected for those private-record components. It can
 still plan and apply the tracked one-component LLDAP, Grocy, or Agent Zero
-changes under the backup and preflight requirements below.
+changes under the backup and preflight requirements below. The plan prints the
+exact candidate version, plus the Open WebUI candidate digest when applicable.
 
 The Open WebUI 0.11.3 candidate was built from immutable amd64 manifest
 `ghcr.io/open-webui/open-webui@sha256:9cd136effce6bb12a6a1988a35ab3b82cb40c48a6768fceeb17c83baf7cfac9c`
