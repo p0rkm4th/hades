@@ -7,11 +7,13 @@ node <<'JS'
 const http = require('http');
 const { spawn } = require('child_process');
 
+let submissions = 0;
 const fixture = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     res.writeHead(200, {'content-type': 'text/html'});
     res.end('<!doctype html><title>HADES Fixture</title><h1>Recipe intake</h1><form method="POST" action="/submit"><label>Item <input name="item"></label><button type="submit">Apply</button></form><p id="state">DRAFT ONLY</p>');
   } else if (req.method === 'POST' && req.url === '/submit') {
+    submissions += 1;
     res.writeHead(200, {'content-type': 'text/html'});
     res.end('<h1>Submitted</h1>');
   } else {
@@ -66,12 +68,19 @@ fixture.listen(0, '127.0.0.1', () => {
     }
     await rpc('tools/call', {name: 'browser_navigate', arguments: {url: 'http://127.0.0.1:' + port + '/'}});
     const snapshot = await rpc('tools/call', {name: 'browser_snapshot', arguments: {}});
-    const text = JSON.stringify(snapshot);
+    const text = (snapshot.result.content || []).map(item => item.text || '').join('\n');
     if (!text.includes('Recipe intake') || !text.includes('DRAFT ONLY') || text.includes('Submitted')) {
       throw new Error('unexpected fixture snapshot or premature submission');
     }
+    if (submissions !== 0) throw new Error('fixture submitted before explicit browser action');
+    const button = text.match(/button "Apply" \[ref=(e[0-9]+)\]/);
+    if (!button) throw new Error('Apply button ref missing from accessibility snapshot');
+    const click = await rpc('tools/call', {name: 'browser_click', arguments: {element: 'Apply button', target: button[1]}});
+    await new Promise(resolve => setTimeout(resolve, 250));
+    if (submissions !== 1) throw new Error('explicit Apply action did not produce exactly one submission: ' + JSON.stringify(click));
     console.log('PASS Playwright MCP isolated navigation and accessibility snapshot');
     console.log('PASS disposable browser fixture remains draft-only before submit');
+    console.log('PASS explicit browser click produces exactly one fixture submission');
     child.kill();
     fixture.close();
   })().catch(error => {
