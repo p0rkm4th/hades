@@ -89,6 +89,26 @@ class _JsonLdParser(HTMLParser):
             return
 
 
+class _VisibleTextParser(HTMLParser):
+    """Extract visible-ish text while retaining element/line boundaries."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.lines: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() in {"br", "div", "h1", "h2", "h3", "li", "p", "section", "tr"}:
+            self.lines.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() in {"div", "h1", "h2", "h3", "li", "p", "section", "tr"}:
+            self.lines.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        if data.strip():
+            self.lines.append(data)
+
+
 def _walk(value: Any):
     if isinstance(value, dict):
         yield value
@@ -200,6 +220,14 @@ def extract_from_paste(source_text: str, source_url: str | None = None) -> dict[
         if recipes:
             return _normalize_recipe(recipes[0], source_url, "schema.org/Recipe JSON-LD")
         raise ValueError("Pasted JSON did not contain a Schema.org Recipe object.")
+
+    if "<" in text and ">" in text:
+        visible = _VisibleTextParser()
+        try:
+            visible.feed(text)
+            text = "\n".join(visible.lines)
+        except Exception as exc:
+            raise ValueError("Pasted HTML could not be safely read.") from exc
 
     lines = [" ".join(line.split()).strip() for line in text.splitlines() if line.strip()]
     title = lines[0].lstrip("# ").strip() if lines else ""

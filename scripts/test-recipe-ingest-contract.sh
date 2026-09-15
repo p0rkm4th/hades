@@ -54,6 +54,12 @@ assert pasted["instructions"] == ["1. Mix everything.", "2. Serve."]
 json_blob = '{"@context":"https://schema.org","@type":"Recipe","name":"Blob Cake","recipeYield":"6 servings","recipeIngredient":["2 cups flour"],"recipeInstructions":"Bake it."}'
 assert module.extract_from_paste(json_blob)["title"] == "Blob Cake"
 assert module.extract_from_paste('<script type="application/ld+json">' + json_blob + '</script>')["title"] == "Blob Cake"
+visible_html = """<article><h1>HTML Soup</h1><p>Serves: 2</p><h2>Ingredients</h2><ul><li>1 cup tomatoes</li><li>2 tbsp basil</li></ul><h2>Directions</h2><p>Stir and serve.</p></article>"""
+html_paste = module.extract_from_paste(visible_html)
+assert html_paste["source"] == "pasted recipe text"
+assert html_paste["title"] == "HTML Soup"
+assert [item["name"] for item in html_paste["ingredients"]] == ["tomatoes", "basil"]
+assert html_paste["instructions"] == ["Stir and serve."]
 for invalid_paste in ("Recipe without sections", "Ingredients:\n- 1 cup flour"):
     try:
         module.extract_from_paste(invalid_paste)
