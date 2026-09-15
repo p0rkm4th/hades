@@ -140,7 +140,7 @@ async def check():
         async def get(self, url): raise TimeoutException("synthetic timeout")
     module.httpx.AsyncClient = TimeoutClient
     result = await module.set_servings("Recipe", 2)
-    assert result["outcome"] == "OUTCOME UNKNOWN", result
+    assert result["outcome"] == "FAILED", result
 
     class PostWriteTimeoutClient(Client):
         async def put(self, url, json): raise TimeoutException("synthetic post-write timeout")
