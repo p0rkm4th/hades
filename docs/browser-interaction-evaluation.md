@@ -42,5 +42,9 @@ authenticated owner session, and household users cannot inherit it.
 No browser profile, credential, production MCP registration, or external
 side-effecting workflow was changed by this evaluation.
 
+The disposable navigation/snapshot contract is reproducible with
+scripts/test-playwright-mcp-fixture.sh. It uses a local fixture and isolated
+in-memory browser state; it intentionally does not submit the fixture form.
+
 Upstream reference:
 https://github.com/microsoft/playwright-mcp.
