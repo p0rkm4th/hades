@@ -80,6 +80,10 @@ dogfood_channel=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/channels/cr
   --data "$(printf '{\"name\":\"household-dogfood\",\"description\":\"Synthetic membership\",\"type\":\"group\",\"is_private\":true,\"user_ids\":[\"%s\"]}' "$beta_user_id")")
 dogfood_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$dogfood_channel")
 
+initial_messages=$(curl -fsS "http://127.0.0.1:${port}/api/v1/channels/${dogfood_id}/messages" \
+  -H "Authorization: Bearer $beta_token")
+python3 -c 'import json,sys; assert json.load(sys.stdin) == []' <<<"$initial_messages"
+
 if ! curl -fsS "http://127.0.0.1:${port}/api/v1/channels/${dogfood_id}" \
   -H "Authorization: Bearer $beta_token" >/dev/null; then
   echo "FAIL Beta cannot read the explicitly shared channel" >&2
@@ -118,6 +122,7 @@ if [[ "$anonymous_status" != 401 && "$anonymous_status" != 403 ]]; then
 fi
 
 echo "PASS authenticated disposable Channels feature and private-channel creation"
+echo "PASS newly created shared conversation has no inherited message history"
 echo "PASS synthetic Beta membership, shared post, and Alpha read-back"
 echo "PASS shared message remains available after disposable Open WebUI restart"
 echo "PASS channel membership does not grant Beta admin authority (config/create denied)"

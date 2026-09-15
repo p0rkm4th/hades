@@ -48,6 +48,8 @@ anonymous channel access is denied. The same fixture also proves synthetic
 Beta membership, shared posting, Alpha read-back, and message persistence
 after a disposable Open WebUI restart. It also verifies that Beta membership
 does not grant admin configuration access or standard-channel creation.
+The fixture also verifies a newly created shared conversation starts without
+inherited message history.
 New-conversation, model-mention, and HADES capability-boundary dogfood
 remains before DOGFOOD GREEN.
 
