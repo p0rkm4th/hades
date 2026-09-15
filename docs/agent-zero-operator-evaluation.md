@@ -16,6 +16,12 @@ server-side route authorization and do not provide a general owner-only
 launcher. Theme JavaScript must not become an authority-bearing navigation
 layer.
 
+The reusable fail-closed policy contract is in
+integrations/operator-access/policy.py. It accepts only a trusted proxy
+assertion plus an owner group, rejects household-only identities, and validates
+the forwarded path. It does not itself authenticate users or forward traffic;
+those remain responsibilities of the selected private proxy.
+
 ## Required smallest implementation
 
 - a private reverse-proxy route to the native Agent Zero endpoint;
