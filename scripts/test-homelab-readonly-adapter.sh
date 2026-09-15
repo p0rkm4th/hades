@@ -39,6 +39,9 @@ server_source = (Path(root) / "server.py").read_text()
 assert "token_path.is_symlink()" in server_source
 assert "MAX_TOKEN_BYTES" in server_source
 assert "homelab_discovery_candidates" in server_source
+assert "homelab_discovery_scan" in server_source
+assert "HADES_DISCOVERY_ALLOWED_NETWORKS" in server_source
+assert "run_bounded_scan" in server_source
 assert "propose_inventory_candidates" in server_source
 assert "does not run Nmap" in server_source
 print("PASS homelab adapter preserves runtime/inventory/availability authority")

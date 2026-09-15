@@ -14,6 +14,7 @@ from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 
 from reconcile import summarize
 from catalog import propose_inventory_candidates
+from scan import DEFAULT_PORTS, run_bounded_scan
 
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
@@ -27,6 +28,18 @@ TOOLS = [Tool(
         "never perform writes or execute network commands."
     ),
     inputSchema={"type": "object", "properties": {}},
+), Tool(
+    name="homelab_discovery_scan",
+    description=(
+        "Run a bounded read-only TCP discovery scan inside the explicitly "
+        "configured HADES_DISCOVERY_ALLOWED_NETWORKS allowlist. Return "
+        "normalized transient evidence only; never write inventory or run "
+        "arbitrary commands."
+    ),
+    inputSchema={"type": "object", "properties": {
+        "target": {"type": "string", "description": "CIDR inside the configured allowlist"},
+        "ports": {"type": "string", "description": "Optional comma-separated TCP ports"},
+    }, "required": ["target"]},
 ), Tool(
     name="homelab_discovery_candidates",
     description=(
@@ -98,7 +111,21 @@ async def list_tools(_ctx, _params):
 
 
 async def call_tool(_ctx, params):
-    if params.name == "homelab_discovery_candidates":
+    if params.name == "homelab_discovery_scan":
+        args = params.arguments or {}
+        target = args.get("target")
+        if not isinstance(target, str) or not target.strip():
+            raise ValueError("discovery scan target is required")
+        allowed = [value.strip() for value in os.environ.get("HADES_DISCOVERY_ALLOWED_NETWORKS", "").split(",") if value.strip()]
+        if not allowed:
+            raise ValueError("HADES_DISCOVERY_ALLOWED_NETWORKS is not configured")
+        ports = args.get("ports", DEFAULT_PORTS)
+        if not isinstance(ports, str):
+            raise ValueError("discovery scan ports must be a string")
+        result = await anyio.to_thread.run_sync(
+            lambda: run_bounded_scan(target, allowed_networks=allowed, ports=ports)
+        )
+    elif params.name == "homelab_discovery_candidates":
         args = params.arguments or {}
         evidence = args.get("evidence")
         netbox = args.get("netbox")
