@@ -189,6 +189,15 @@ async def check():
     result = await module.set_servings("Recipe", 2)
     assert result["outcome"] == "OUTCOME UNKNOWN", result
 
+    class CoercibleVerificationClient(Client):
+        async def get(self, url):
+            if url.endswith("/recipes"):
+                return Response([{"id": 7, "name": "Recipe", "base_servings": 1}])
+            return Response({"id": 7, "base_servings": True})
+    module.httpx.AsyncClient = CoercibleVerificationClient
+    result = await module.set_servings("Recipe", 1)
+    assert result["outcome"] == "OUTCOME UNKNOWN", result
+
     listed = await module.list_tools()
     assert listed.tools[0].name == module.TOOL_NAME
     called = await module.call_tool(module.TOOL_NAME, {"recipe": "Recipe", "servings": 2})

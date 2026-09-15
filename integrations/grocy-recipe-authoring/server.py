@@ -85,7 +85,14 @@ async def set_servings(recipe: str, servings: int) -> dict[str, Any]:
             verified = await client.get(f"{BASE_URL}/api/objects/recipes/{recipe_id}")
             verified.raise_for_status()
             current = verified.json()
-            if not isinstance(current, dict) or int(current.get("base_servings", 0)) != value:
+            canonical_servings = current.get("base_servings") if isinstance(current, dict) else None
+            # Do not coerce malformed read-back values: a verification response
+            # must be canonical before a mutation can be reported successful.
+            if (
+                isinstance(canonical_servings, bool)
+                or not isinstance(canonical_servings, int)
+                or canonical_servings != value
+            ):
                 return _result("OUTCOME UNKNOWN", error="Grocy did not confirm the requested serving count.")
             return _result("SUCCEEDED", recipe_id=recipe_id, base_servings=value)
     except httpx.TimeoutException:
