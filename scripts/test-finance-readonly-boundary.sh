@@ -9,6 +9,11 @@ import sys
 import types
 from pathlib import Path
 
+client_source = Path("integrations/actual-finance-readonly/actual_client.js").read_text()
+assert "lstatSync" in client_source and "isSymbolicLink" in client_source
+assert "MAX_SECRET_BYTES" in client_source and "mode !== 0o600" in client_source
+assert "An explicit Actual Budget selection is required." in client_source
+
 anyio = types.ModuleType("anyio")
 anyio.run = lambda fn: None
 sys.modules["anyio"] = anyio
@@ -61,4 +66,5 @@ async def check():
 
 asyncio.run(check())
 print("PASS finance read-only MCP boundary")
+print("PASS Actual password and budget selection boundaries fail closed")
 PY

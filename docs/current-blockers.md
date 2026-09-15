@@ -91,6 +91,9 @@ an owner decision or secret from defects that can be repaired independently.
   authorization value; malformed truthy values cannot select the privileged
   profile. Anonymous browsing and explicit-submit fixture acceptance remain
   green.
+- **Hardened:** The Actual read-only wrapper now rejects unsafe password files
+  and missing explicit budget selection; it cannot silently choose the first
+  budget. Finance remains production-gated and read-only.
 - **Documented:** Candidate-only Hermes residuals are classified against the
   stable HADES qualification suite; production remains on 0.14.0 and no
   candidate-only upstream/provider failure is a HADES release blocker.

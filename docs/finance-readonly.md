@@ -60,6 +60,11 @@ unknown, the adapter returns an explicit failure and HADES must avoid
 confident affordability or “how much did I spend” claims. Local memory must
 never fill a missing live finance answer.
 
+The official-client wrapper requires an explicitly selected budget by group ID
+or name; it never falls back to the first available budget. Its password-file
+input must be a bounded regular non-symlink file with mode 0600 or 0640. These
+checks are covered by `scripts/test-finance-readonly-boundary.sh`.
+
 ## Owner acceptance prompts
 
 After the owner authorizes the selected finance environment and confirms the

@@ -1,6 +1,7 @@
 /* Read-only bridge around the official @actual-app/api package. */
 const fs = require("fs");
 const path = require("path");
+const MAX_SECRET_BYTES = 8192;
 
 const modulePath = process.env.ACTUAL_API_MODULE;
 if (!modulePath) throw new Error("ACTUAL_API_MODULE is not configured");
@@ -8,7 +9,20 @@ const api = require(modulePath);
 
 function readSecret() {
   if (process.env.ACTUAL_PASSWORD_FILE) {
-    return fs.readFileSync(process.env.ACTUAL_PASSWORD_FILE, "utf8").trim();
+    const secretPath = process.env.ACTUAL_PASSWORD_FILE;
+    const stat = fs.lstatSync(secretPath);
+    if (!stat.isFile() || stat.isSymbolicLink()) {
+      throw new Error("Actual password file must be a regular non-symlink file");
+    }
+    const mode = stat.mode & 0o777;
+    if (mode !== 0o600 && mode !== 0o640) {
+      throw new Error("Actual password file must be mode 0600 or 0640");
+    }
+    const raw = fs.readFileSync(secretPath);
+    if (raw.length === 0 || raw.length > MAX_SECRET_BYTES) {
+      throw new Error("Actual password file is empty or exceeds the bounded size");
+    }
+    return raw.toString("utf8").trim();
   }
   return process.env.ACTUAL_PASSWORD || "";
 }
@@ -64,10 +78,13 @@ async function main(request) {
     const budgets = await api.getBudgets();
     const requestedGroup = process.env.ACTUAL_BUDGET_GROUP_ID || "";
     const requestedName = process.env.ACTUAL_BUDGET_NAME || "";
+    if (!requestedGroup && !requestedName) {
+      return { ok: false, error: "An explicit Actual Budget selection is required." };
+    }
     const budget = budgets.find((item) =>
       (requestedGroup && item.groupId === requestedGroup) ||
       (requestedName && item.name === requestedName)
-    ) || budgets[0];
+    );
     if (!budget) return { ok: false, error: "No Actual Budget is available." };
 
     let local = localBudget(root, budget.groupId);
