@@ -50,6 +50,10 @@ HADES_OWNER_BOOTSTRAP_ID=synthetic-owner
 HADES_HERMES_API_KEY=synthetic-hermes-key
 HADES_HERMES_MODEL_ENDPOINT=http://127.0.0.1:18080
 HADES_HERMES_API_BASE_URL=http://127.0.0.1:8642/v1
+# Host URLs above are used by installer preflight. These container URLs use
+# the Docker host gateway during a full-stack reconstruction.
+HADES_HERMES_CONTAINER_MODEL_ENDPOINT=http://host.docker.internal:18080
+HADES_HERMES_CONTAINER_API_BASE_URL=http://host.docker.internal:8642/v1
 HADES_OPEN_WEBUI_IMAGE=$image_ref
 HADES_OPEN_WEBUI_DATA=$output/state/open-webui
 HADES_HINDSIGHT_DATA=$output/state/hindsight

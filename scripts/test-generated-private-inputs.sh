@@ -19,4 +19,6 @@ done
 bash "$repo_dir/scripts/render-deployment-records.sh" "$fixture/private/operator.env" "$fixture/private/config/private-deployment" >/dev/null
 test -f "$fixture/private/config/searxng/settings.yml"
 ! grep -R 'synthetic-searxng-secret' "$fixture/private/config/private-deployment" >/dev/null
+grep -q '^HADES_HERMES_CONTAINER_API_BASE_URL=http://host.docker.internal:8642/v1$' "$fixture/private/operator.env"
+grep -q '^HADES_HERMES_CONTAINER_MODEL_ENDPOINT=http://host.docker.internal:18080$' "$fixture/private/operator.env"
 echo 'PASS generated v2 private-input bundle'

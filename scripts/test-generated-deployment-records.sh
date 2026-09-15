@@ -13,6 +13,8 @@ HADES_CONFIG_ROOT=$fixture/config
 HADES_HERMES_PROFILE=$fixture/profile
 HADES_HERMES_API_BASE_URL=http://127.0.0.1:8642/v1
 HADES_HERMES_MODEL_ENDPOINT=http://127.0.0.1:11434
+HADES_HERMES_CONTAINER_API_BASE_URL=http://host.docker.internal:8642/v1
+HADES_HERMES_CONTAINER_MODEL_ENDPOINT=http://host.docker.internal:11434
 HADES_OPEN_WEBUI_IMAGE=alpine@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
 HADES_OPEN_WEBUI_DATA=$fixture/data
 HADES_HINDSIGHT_DATA=$fixture/hindsight
@@ -37,6 +39,10 @@ for record in open-webui.compose.yaml hindsight.compose.yaml searxng.compose.yam
 done
 grep -q "WorkingDirectory=$repo_dir" "$fixture/records/hermes.service"
 grep -q 'OPENAI_API_KEYS: "\${HADES_HERMES_API_KEY' "$fixture/records/open-webui.compose.yaml"
+grep -q 'host.docker.internal:host-gateway' "$fixture/records/open-webui.compose.yaml"
+grep -q 'HADES_HERMES_CONTAINER_API_BASE_URL' "$fixture/records/open-webui.compose.yaml"
+grep -q 'host.docker.internal:host-gateway' "$fixture/records/hindsight.compose.yaml"
+grep -q 'HADES_HERMES_CONTAINER_MODEL_ENDPOINT' "$fixture/records/hindsight.compose.yaml"
 ! grep -q 'synthetic-secret' "$fixture/records"/*
 grep -q 'synthetic-searxng-secret' "$fixture/config/searxng/settings.yml"
 docker compose -f "$fixture/records/open-webui.compose.yaml" config --quiet

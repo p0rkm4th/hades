@@ -12,8 +12,10 @@ services:
     environment:
       ENABLE_SIGNUP: "false"
       WEBUI_AUTH: "true"
-      OPENAI_API_BASE_URLS: "${HADES_HERMES_API_BASE_URL:?set HADES_HERMES_API_BASE_URL}"
+      OPENAI_API_BASE_URLS: "${HADES_HERMES_CONTAINER_API_BASE_URL:-${HADES_HERMES_API_BASE_URL:?set HADES_HERMES_API_BASE_URL}}"
       OPENAI_API_KEYS: "${HADES_HERMES_API_KEY:?set HADES_HERMES_API_KEY}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ${HADES_OPEN_WEBUI_DATA:?set HADES_OPEN_WEBUI_DATA}:/app/backend/data
       - ${HADES_CONFIG_ROOT:?set HADES_CONFIG_ROOT}/assets/hades-theme.css:/app/backend/open_webui/static/hades-theme.css:ro,Z

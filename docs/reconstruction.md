@@ -40,10 +40,12 @@ optional live checks remain warnings.
 For a disposable supported-host rehearsal, create the four explicit private
 records and their synthetic file-backed inputs with
 `scripts/create-synthetic-private-fixture.sh /absolute/fixture/path`. The
-script never contacts a provider or writes production paths; start an approved
-loopback model fixture separately, then pass the generated `operator.env` to
-the installer. This keeps the full-install rehearsal reproducible without
-copying private deployment records into the repository.
+script never contacts a provider or writes production paths. For the v2
+full-stack path, `scripts/create-generated-private-inputs.sh` keeps host-only
+preflight URLs separate from container-reachable `host.docker.internal`
+URLs; start the approved model fixture on the host and pass the generated
+`operator.env` to the installer. This keeps the full-install rehearsal
+reproducible without copying private deployment records into the repository.
 
 If a Proxmox environment is available, `scripts/proxmox-bootstrap.sh` is the
 optional provisioning handoff. With no `--apply` it only validates inputs and
