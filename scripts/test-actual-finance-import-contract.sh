@@ -49,6 +49,19 @@ for bad in (
     else:
         raise AssertionError("invalid finance import accepted")
 
+for bad_input, bad_mapping, bad_delimiter, bad_encoding in (
+    ("not-bytes", {"date": "Date", "payee": "Payee", "amount": "Amount"}, ",", "utf-8"),
+    (b"Date,Payee,Amount\n2026-09-01,Store,1.00\n", [], ",", "utf-8"),
+    (b"Date,Payee,Amount\n2026-09-01,Store,1.00\n", {"date": "Date", "payee": "Payee", "amount": "Amount"}, "", "utf-8"),
+    (b"Date,Payee,Amount\n2026-09-01,Store,1.00\n", {"date": "Date", "payee": "Payee", "amount": "Amount"}, ",", None),
+):
+    try:
+        module.build_preview(bad_input, bad_mapping, delimiter=bad_delimiter, encoding=bad_encoding)
+    except module.ImportFormatError:
+        pass
+    else:
+        raise AssertionError("malformed finance preview input escaped")
+
 try:
     module.build_preview(
         b"Date,Payee,Debit,Credit\n2026-09-01,Store,1.00,2.00\n",

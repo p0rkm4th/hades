@@ -71,12 +71,20 @@ def build_preview(
     ``amount`` or both ``inflow`` and ``outflow``. Dates are intentionally
     left as source strings until the caller selects a known format for Actual.
     """
+    if not isinstance(file_bytes, bytes):
+        raise ImportFormatError("CSV file must be provided as bytes")
     if not file_bytes:
         raise ImportFormatError("CSV file is empty")
     if len(file_bytes) > 10 * 1024 * 1024:
         raise ImportFormatError("CSV file exceeds the 10 MiB preview limit")
-    if len(delimiter) != 1:
+    if not isinstance(mapping, dict):
+        raise ImportFormatError("CSV mapping must be an object")
+    if not isinstance(delimiter, str) or len(delimiter) != 1:
         raise ImportFormatError("delimiter must be one character")
+    if not isinstance(encoding, str) or not encoding:
+        raise ImportFormatError("encoding must be a non-empty string")
+    if existing_transactions is not None and not isinstance(existing_transactions, list):
+        raise ImportFormatError("existing transactions must be a list")
     date_column = _required(mapping, "date")
     payee_column = _required(mapping, "payee")
     if not mapping.get("amount", "").strip() and not (
