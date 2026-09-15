@@ -20,6 +20,10 @@ The package supports isolated in-memory sessions and persistent profiles.
 HADES must keep those profiles separate: prompt text cannot select an
 authenticated owner session, and household users cannot inherit it.
 
+The provider-neutral selector in integrations/browser-access/policy.py enforces
+that rule: household scope can select only anonymous browsing, while an owner
+profile requires trusted owner scope and explicit application authorization.
+
 ## Side-effect contract
 
 - Read a page: normally allowed.
