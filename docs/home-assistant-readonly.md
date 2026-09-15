@@ -35,8 +35,9 @@ invalid or security-sensitive configuration.
 
 The default allowlist must exclude locks, garage doors, alarm/security
 controls, cameras, door access, and other physical-security or high-impact
-entities. Any later low-risk control must be separately selected, confirmed,
-and tested with an owner-approved workflow.
+entities. The policy also rejects garage/door/alarm names exposed through
+`switch`, `button`, or `input_boolean` domains. Any later low-risk control must
+be separately selected, confirmed, and tested with an owner-approved workflow.
 
 ## Owner authorization checklist
 

@@ -14,7 +14,7 @@ policy = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(policy)
 
 assert policy.validate_allowlist(["light.living_room", "sensor.apartment_temperature", "light.living_room"]) == ["light.living_room", "sensor.apartment_temperature"]
-for blocked in ("lock.front_door", "cover.garage_door", "alarm_control_panel.home", "camera.entryway", "door_access.front", "LOCK.front_door", "Camera.entryway"):
+for blocked in ("lock.front_door", "cover.garage_door", "switch.garage_door", "button.garage_open", "input_boolean.door_unlock", "alarm_control_panel.home", "camera.entryway", "door_access.front", "LOCK.front_door", "Camera.entryway"):
     try:
         policy.validate_allowlist([blocked])
     except ValueError:

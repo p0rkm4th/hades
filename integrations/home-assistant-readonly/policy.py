@@ -16,7 +16,12 @@ SENSITIVE_MARKERS = (
 
 def is_sensitive_entity(entity_id: str) -> bool:
     normalized = str(entity_id).casefold()
-    return any(normalized.startswith(marker) for marker in SENSITIVE_MARKERS)
+    if any(normalized.startswith(marker) for marker in SENSITIVE_MARKERS):
+        return True
+    domain, _, object_id = normalized.partition(".")
+    return domain in {"cover", "switch", "button", "input_boolean"} and any(
+        marker in object_id for marker in ("garage", "door", "alarm")
+    )
 
 
 def validate_allowlist(entity_ids: list[str]) -> list[str]:

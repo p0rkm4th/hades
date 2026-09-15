@@ -94,6 +94,9 @@ an owner decision or secret from defects that can be repaired independently.
 - **Hardened:** The Actual read-only wrapper now rejects unsafe password files
   and missing explicit budget selection; it cannot silently choose the first
   budget. Finance remains production-gated and read-only.
+- **Hardened:** Home Assistant security filtering now rejects garage/door/alarm
+  controls even when represented as `switch`, `button`, or `input_boolean`,
+  while retaining ordinary read-only entities.
 - **Documented:** Candidate-only Hermes residuals are classified against the
   stable HADES qualification suite; production remains on 0.14.0 and no
   candidate-only upstream/provider failure is a HADES release blocker.
