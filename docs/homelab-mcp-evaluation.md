@@ -9,15 +9,34 @@ authorities instead of handing an agent a general network shell.
 | Capability | Candidate | Disposition | HADES boundary |
 |---|---|---|---|
 | Inventory and IPAM | NetBox Labs `netbox-mcp-server` | Preferred candidate; official NetBox Labs server is read-only | Read-only NetBox objects; intended topology, not live runtime |
-| Virtualization runtime | `k-krawczyk/proxmox-mcp-server` or equivalent | Candidate; community-maintained, read-only mode is available | Read-only Proxmox API token; nodes, guests, status, resources |
+| Virtualization runtime | Direct Proxmox API first; `tedosuji/proxmox-mcp` only as a disposable comparison | No mature first-party Proxmox MCP selected; the reviewed community server supports REST reads but has minimal adoption evidence | Read-only Proxmox API token; nodes, guests, status, resources; no SSH fallback |
 | Network discovery | `ly1595/nmap-mcp` or a smaller bounded wrapper | Candidate for a separately approved scan worker | Explicit CIDR/target allowlist, rate and port bounds, no arbitrary shell |
 | Availability | `mcp-uptime-kuma` or status/metrics endpoint | Prefer published status or metrics; defer authenticated write-capable MCPs | Observation only; stale data remains stale |
 | Read-only homelab summary | [`brenflakes/labops-mcp`](https://github.com/brenflakes/labops-mcp) | Current read-only candidate for source review; do not install directly yet | Keep source-specific authority and HADES conflict handling at the adapter boundary |
-| Broad homelab control | [`Nainounen/homelab-mcp`](https://github.com/Nainounen/homelab-mcp) | Rejected for direct HADES registration; advertises broad VM, Docker, networking, and management control | Would require a separately isolated broker and independently approved operation surface |
+| Broad homelab control | [`Nainounen/homelab-mcp`](https://github.com/Nainounen/homelab-mcp) or [`lidless-labs/proxmox-mcp`](https://github.com/lidless-labs/proxmox-mcp) | Rejected for direct HADES registration; these expose broad lifecycle, guest, Docker, networking, or destructive operations even where confirmation gates exist | Would require a separately isolated broker and independently approved operation surface |
 
 The candidate list is a research result, not an installation or an approval to
 scan. Community MCPs must be pinned, source-reviewed, isolated, and tested in
 the disposable fixture before any owner environment is contacted.
+
+## Current upstream check — 2026-09-15
+
+The official NetBox Labs server is a strong fit for the inventory slice: its
+documented tools are read-only object, ID, and changelog queries, and its
+Docker/HTTP deployment supports an explicit MCP bearer token. Pin a released
+image and keep plugin discovery disabled unless the approved inventory scope
+requires it. The managed NetBox Platform MCP is broader (including CRUD and
+bulk operations), so it is not the default HADES choice.
+
+The reviewed Proxmox candidates are community projects, not a neutral
+authority plane. One current project advertises 65+ tools spanning VM,
+Docker, media, monitoring, storage, and networking control; another exposes
+guest execution, file operations, firewall changes, token management, and
+destructive resource operations behind confirmation flags. Those are useful
+operator products in their own scope, but they are too broad for direct HADES
+registration. HADES should use a small direct Proxmox read adapter or a
+separately isolated read-only MCP process, then retain its own source and
+authority reconciliation.
 
 ## Proposed HADES composition
 
