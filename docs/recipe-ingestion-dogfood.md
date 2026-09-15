@@ -40,12 +40,16 @@ Still required before this is a production capability:
 
 - register the staged MCP server in the deployed Hermes profile;
 - test against a representative public structured-data site and verify URL
-  fetching in the owner-facing path;
+  fetching in the owner-facing path (`scripts/test-recipe-public-url.sh`);
 - exercise a representative structured-data site, a messy page, a duplicate,
   a changed re-import, serving resize, and shortage/add-missing composition;
 - perform owner-visible acceptance.
 
-The fallback for pages without usable Recipe JSON-LD is intentionally not
-implemented yet. HADES must ask for pasted recipe text or report that the URL
-requires a later supported extraction fallback rather than hallucinating a
-recipe.
+The opt-in public acceptance currently passes against King Arthur Baking's
+Banana Bread page, producing a title, 14 ingredients, and 8 instruction steps
+on 2026-09-15. Simply Recipes and Allrecipes also passed the same live check.
+BBC Good Food returned HTTP 402 during evaluation and is recorded as an
+upstream access limitation, not a parser failure. The fallback for pages
+without usable Recipe JSON-LD is intentionally not implemented yet. HADES must
+ask for pasted recipe text or report that the URL requires a later supported
+extraction fallback rather than hallucinating a recipe.
