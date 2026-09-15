@@ -27,6 +27,7 @@ names=(
   "hades-recon-hindsight-$suffix"
   "hades-recon-searx-$suffix"
   "hades-recon-webui-$suffix"
+  "hades-recon-model-$suffix"
 )
 volumes=(
   "hades-recon-lldap-data-$suffix"
@@ -79,10 +80,13 @@ docker run -d --name "${names[3]}" --network "$network" \
   -v "$work/hindsight:/home/hindsight/.pg0" "$HADES_HINDSIGHT_IMAGE" >/dev/null
 docker run -d --name "${names[4]}" --network "$network" \
   -v "$work/searx:/etc/searxng" "$HADES_SEARXNG_IMAGE_RECORD" >/dev/null
+docker run -d --name "${names[6]}" --network "$network" \
+  -v "$repo_dir/scripts/synthetic-openai-backend.py:/opt/synthetic-openai-backend.py:ro" \
+  python:3.11-slim-bookworm python /opt/synthetic-openai-backend.py >/dev/null
 docker run -d --name "${names[5]}" --network "$network" \
   --add-host host.docker.internal:host-gateway \
   -e ENABLE_SIGNUP=false -e WEBUI_AUTH=true \
-  -e OPENAI_API_BASE_URLS=http://host.docker.internal:18642/v1 \
+  -e OPENAI_API_BASE_URLS="http://${names[6]}:8000/v1" \
   -e OPENAI_API_KEYS=synthetic -v "$work/webui:/app/backend/data" \
   "$webui_image" >/dev/null
 
@@ -118,4 +122,8 @@ probe "${names[0]}" 17170 /health
 probe "${names[1]}" 80 /
 probe "${names[3]}" 8888 /health
 probe "${names[5]}" 8080 /health
+docker run --rm --network "$network" \
+  -v "$repo_dir/scripts/test-full-application-client.py:/opt/test-full-application-client.py:ro" \
+  python:3.11-slim-bookworm python /opt/test-full-application-client.py \
+  "http://${names[5]}:8080" "http://${names[6]}:8000/v1"
 printf 'PASS disposable actual-image reconstruction startup and health\n'
