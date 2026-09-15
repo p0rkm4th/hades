@@ -1,6 +1,6 @@
 # ADR: receipt and document OCR
 
-Status: **SELECTED / STAGED; MCP CLI VERIFIED**
+Status: **PASS / SYNTHETIC; MCP CLI VERIFIED**
 
 ## Decision
 
@@ -64,9 +64,11 @@ and low-confidence rejection. This proves the composition and authority
 boundary, not OCR recognition quality or a production Grocy write.
 
 The intake preview accepts an optional caller-owned receipt fingerprint and
-known submitted fingerprints. A duplicate becomes an explicit preview warning
-and cannot be treated as a replay authorization; the module stores no receipt
-history itself.
+known submitted fingerprints. `ReceiptFingerprintLedger` now supplies a small
+protected bounded marker file for deployed composition: receipts classify as
+`NEW`, `POSSIBLE DUPLICATE`, or `ALREADY APPLIED`; a marker becomes applied only
+after canonical Grocy reconciliation. This is idempotency metadata, not a
+receipt database or authority store.
 
 `build_intake_apply_plan` is the next boundary after review. It requires
 explicit review and confirmation, exact product matches, and caller-supplied

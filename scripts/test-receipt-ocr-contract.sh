@@ -4,6 +4,8 @@ set -euo pipefail
 python - <<'PY'
 import importlib.util
 import sys
+import tempfile
+import shutil
 from pathlib import Path
 
 path = Path("integrations/receipt-ocr/evidence.py")
@@ -38,6 +40,20 @@ assert preview["items"][0]["product_id"] == 5
 assert preview["items"][1]["resolution"] == "REVIEW_REQUIRED"
 assert preview["requires_review"] is True
 fingerprint = module.receipt_fingerprint(b"synthetic receipt image")
+ledger_dir = Path(tempfile.mkdtemp(prefix="hades-receipt-ledger-"))
+ledger = module.ReceiptFingerprintLedger(ledger_dir / "fingerprints.json")
+assert ledger.classify(fingerprint) == "NEW"
+assert ledger.mark_submitted(fingerprint) == "POSSIBLE DUPLICATE"
+assert ledger.classify(fingerprint) == "POSSIBLE DUPLICATE"
+assert ledger.mark_applied(fingerprint) == "ALREADY APPLIED"
+assert ledger.classify(fingerprint) == "ALREADY APPLIED"
+try:
+    ledger.classify("not-a-fingerprint")
+except ValueError:
+    pass
+else:
+    raise AssertionError("malformed receipt fingerprint accepted")
+shutil.rmtree(ledger_dir)
 duplicate_preview = module.build_intake_preview(
     dict(evidence, receipt_fingerprint=fingerprint),
     [{"item_index": 0, "product_id": 5, "resolution": "EXACT"}],

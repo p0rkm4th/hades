@@ -1,6 +1,6 @@
 # Recipe URL ingestion dogfood
 
-Status: **STAGED / synthetic dogfood green for the structured-data path**.
+Status: **PASS / synthetic dogfood; owner acceptance remains**.
 
 The disposable contract test exercises the owner-equivalent flow against a
 fake canonical Grocy transport:

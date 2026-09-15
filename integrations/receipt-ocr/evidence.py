@@ -8,8 +8,13 @@ upstream engine) and emits evidence for a later reviewed intake workflow.
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import re
+import tempfile
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 from typing import Any
 
 
@@ -18,6 +23,8 @@ MONEY_RE = re.compile(rf"(?P<amount>{MONEY})\s*$")
 TOTAL_RE = re.compile(rf"^\s*(?P<label>subtotal|tax|total|amount due)\s*:?[ \t]+(?P<amount>{MONEY})\s*$", re.I)
 ITEM_RE = re.compile(rf"^(?P<name>.+?)\s+(?P<amount>{MONEY})\s*$")
 MAX_INTAKE_QUANTITY = Decimal("1000000")
+MAX_LEDGER_ENTRIES = 4096
+FINGERPRINT_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _money(value: str) -> str:
@@ -31,6 +38,89 @@ def _money(value: str) -> str:
 def receipt_fingerprint(image_bytes: bytes) -> str:
     """Return a stable identity for duplicate-review detection."""
     return hashlib.sha256(image_bytes).hexdigest()
+
+
+class ReceiptFingerprintLedger:
+    """Small protected idempotency marker store for reviewed receipt intake.
+
+    This is deliberately a bounded JSON marker file, not a receipt database.
+    A fingerprint is marked ``SUBMITTED`` before an external apply and only
+    becomes ``APPLIED`` after the caller has reconciled canonical Grocy state.
+    """
+
+    def __init__(self, path: str | Path):
+        self.path = Path(path)
+
+    @staticmethod
+    def _validate(fingerprint: str) -> str:
+        if not isinstance(fingerprint, str) or not FINGERPRINT_RE.fullmatch(fingerprint):
+            raise ValueError("receipt fingerprint must be a lowercase SHA-256 value")
+        return fingerprint
+
+    def _load(self) -> dict[str, Any]:
+        if not self.path.exists():
+            return {"fingerprints": {}}
+        if self.path.is_symlink() or not self.path.is_file():
+            raise ValueError("receipt ledger must be a regular non-symlink file")
+        if self.path.stat().st_mode & 0o777 != 0o600:
+            raise ValueError("receipt ledger must be mode 0600")
+        raw = self.path.read_bytes()
+        if len(raw) > 512 * 1024:
+            raise ValueError("receipt ledger exceeds the bounded size")
+        value = json.loads(raw or b"{}")
+        entries = value.get("fingerprints", {}) if isinstance(value, dict) else None
+        if not isinstance(entries, dict) or len(entries) > MAX_LEDGER_ENTRIES:
+            raise ValueError("receipt ledger is malformed or exceeds the entry bound")
+        return {"fingerprints": entries}
+
+    def _store(self, value: dict[str, Any]) -> None:
+        self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        fd, temporary = tempfile.mkstemp(prefix=f".{self.path.name}.", dir=self.path.parent)
+        try:
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump(value, handle, sort_keys=True)
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, self.path)
+        finally:
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+
+    def classify(self, fingerprint: str) -> str:
+        entry = self._load()["fingerprints"].get(self._validate(fingerprint))
+        if not entry:
+            return "NEW"
+        status = entry.get("status") if isinstance(entry, dict) else None
+        if status == "APPLIED":
+            return "ALREADY APPLIED"
+        return "POSSIBLE DUPLICATE"
+
+    def mark_submitted(self, fingerprint: str) -> str:
+        fingerprint = self._validate(fingerprint)
+        value = self._load()
+        entries = value["fingerprints"]
+        if fingerprint not in entries:
+            if len(entries) >= MAX_LEDGER_ENTRIES:
+                raise ValueError("receipt ledger has reached its entry bound")
+            entries[fingerprint] = {"status": "SUBMITTED", "updated_at": self._now()}
+            self._store(value)
+        return self.classify(fingerprint)
+
+    def mark_applied(self, fingerprint: str) -> str:
+        fingerprint = self._validate(fingerprint)
+        value = self._load()
+        entries = value["fingerprints"]
+        if len(entries) >= MAX_LEDGER_ENTRIES and fingerprint not in entries:
+            raise ValueError("receipt ledger has reached its entry bound")
+        entries[fingerprint] = {"status": "APPLIED", "updated_at": self._now()}
+        self._store(value)
+        return "ALREADY APPLIED"
+
+    @staticmethod
+    def _now() -> str:
+        return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def normalize_ocr_lines(lines: list[dict[str, Any]], *, source_ref: str | None = None) -> dict[str, Any]:
@@ -105,9 +195,10 @@ def build_intake_preview(
 ) -> dict[str, Any]:
     """Build a Grocy intake preview; never apply it.
 
-    Fingerprints are supplied by the caller because this module deliberately
-    has no receipt database. A known fingerprint is a duplicate-review signal,
-    not permission to replay or overwrite a canonical intake.
+    A caller may still supply known fingerprints for a stateless preview. For
+    deployed intake, ``ReceiptFingerprintLedger`` provides the small protected
+    marker file used to distinguish a new receipt from a prior submission or
+    canonical application; it is not a receipt database.
     """
     if evidence.get("status") == "FAILED":
         return {"status": "FAILED", "error": evidence.get("error", "OCR failed.")}
