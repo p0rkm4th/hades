@@ -174,10 +174,12 @@ def post_write_failure(method, path, payload=None):
     if path == "/api/objects/recipes":
         return {"created_object_id": 41}
     raise module.GrocyRequestError("connection lost after mutation", after_mutation=True)
-unknown = module.GrocyRecipeImporter(post_write_failure).apply(
-    {"plan": {"recipe": {"name": "Other"}, "ingredients": [{"product_id": 10, "amount": "1", "qu_id": 1}]}, "duplicate": False},
-    confirm=True,
-)
+failure_importer = module.GrocyRecipeImporter(post_write_failure)
+other_recipe = dict(import_recipe)
+other_recipe["title"] = "Other"
+failure_preview = failure_importer.preview(other_recipe)
+assert failure_preview["plan"] and not failure_preview["duplicate"]
+unknown = failure_importer.apply(failure_preview, confirm=True)
 assert unknown["outcome"] == "OUTCOME UNKNOWN"
 
 try:
