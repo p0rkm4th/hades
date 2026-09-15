@@ -14,7 +14,7 @@ assert result["source"] == "nmap.xml"
 assert result["retrieved_at"] == "2026-09-15T12:00:00Z"
 assert result["hosts"] == [{"ip": "192.0.2.2", "hostname": "router-synthetic", "ports": [{"port": 80, "protocol": "tcp", "service": "http"}]}]
 
-for target in ("10.0.0.0/8", "192.0.2.0/28"):
+for target in ("198.51.100.0/24", "192.0.2.0/28"):
     try:
         parse_nmap_xml(xml, target=target, allowed_networks=["192.0.2.0/29"], retrieved_at="2026-09-15T12:00:00Z")
     except ValueError as exc:

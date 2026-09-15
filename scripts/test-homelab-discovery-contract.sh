@@ -89,7 +89,7 @@ else:
     raise AssertionError("discovery fixture accepted an inventory write")
 
 try:
-    external = ipaddress.ip_network("10.0.0.0/8")
+    external = ipaddress.ip_network("198.51.100.0/24")
     assert any(external.subnet_of(network) for network in allowed)
 except AssertionError:
     pass
