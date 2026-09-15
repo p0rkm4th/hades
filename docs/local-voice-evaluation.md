@@ -13,7 +13,7 @@ identity and confirmation mechanism exists.
 | Layer | Candidate | Decision |
 |---|---|---|
 | Audio transport | Wyoming protocol | Selected as the interoperable local voice boundary |
-| Speech-to-text | whisper.cpp | Selected for local, self-hosted STT evaluation |
+| Speech-to-text | faster-whisper 1.2.1 through the bounded local service | Selected candidate for staged local STT; whisper.cpp remains an alternate runtime |
 | Text-to-speech | OHF-Voice `piper1-gpl` through `wyoming-piper` | Candidate selected for local evaluation; GPL-3.0 and voice-model licensing require explicit acceptance before pinning |
 | Wake word | openWakeWord-class service | Deferred until push-to-talk is green |
 | HADES request | Existing Hermes/Open WebUI path | Canonical runtime; no second voice agent |
@@ -35,7 +35,7 @@ The provider-neutral input contract in
 integrations/local-voice/contract.py validates bounded WAV input and maps
 silence, unavailable confidence, low confidence, and accepted transcripts.
 Its regression script does not require an audio device or an STT dependency;
-the actual whisper.cpp/Wyoming composition remains the next staging step.
+the provider-neutral Wyoming-to-STT composition is now staged and tested.
 
 The provider-neutral Wyoming framing contract in
 integrations/local-voice/wyoming.py now round-trips audio-start,
@@ -55,12 +55,12 @@ promoted or registered as a live voice service until a compatible pinned
 runtime or alternate STT implementation passes the same synthetic inference
 contract.
 
-As an alternate lane, the pinned HADES Open WebUI artifact contains
-faster-whisper 1.2.1. A disposable CPU/int8 tiny.en run transcribed the
+The pinned HADES Open WebUI artifact contains faster-whisper 1.2.1. A
+disposable CPU/int8 tiny.en run transcribed the
 synthetic phrase “check the pantry and remember dinner” correctly. This is a
-candidate reuse of an existing artifact, not a new production dependency; it
-still needs an explicit service wrapper, immutable dependency record, Wyoming
-wiring, latency measurement, and voice dogfood before promotion.
+candidate reuse of an existing artifact, not a new production dependency. The
+bounded service wrapper, Wyoming wiring, and timing contract now pass; provider
+license/packaging acceptance and voice dogfood remain before promotion.
 
 The candidate check is reproducible with
 scripts/test-faster-whisper-staging.sh. It uses a generated local speech
