@@ -184,6 +184,10 @@ def build_apply_request(preview: dict[str, Any], *, confirm: bool = False) -> di
         return {"status": "FAILED", "error": "Explicit finance import confirmation is required."}
     if not isinstance(preview, dict) or preview.get("status") != "PREVIEW":
         return {"status": "FAILED", "error": "Only a complete finance preview can be imported."}
+    account_id = preview.get("target_account_id")
+    if not isinstance(account_id, str) or not account_id.strip() or len(account_id.strip()) > 128:
+        return {"status": "FAILED", "error": "Finance preview must contain an explicit Actual target_account_id."}
+    account_id = account_id.strip()
     rows = preview.get("transactions")
     if not isinstance(rows, list) or not rows:
         return {"status": "FAILED", "error": "Finance preview has no transactions."}
@@ -193,6 +197,7 @@ def build_apply_request(preview: dict[str, Any], *, confirm: bool = False) -> di
     if not new_rows:
         return {
             "status": "NOOP_DUPLICATES",
+            "account_id": account_id,
             "transactions": [],
             "writes_performed": False,
             "canonical_target": "Actual Budget importTransactions",
@@ -200,6 +205,7 @@ def build_apply_request(preview: dict[str, Any], *, confirm: bool = False) -> di
     return {
         "status": "READY_TO_APPLY",
         "operation": "importTransactions",
+        "account_id": account_id,
         "transactions": [
             {key: row[key] for key in ("date", "payee", "amount", "imported_id")}
             for row in new_rows
