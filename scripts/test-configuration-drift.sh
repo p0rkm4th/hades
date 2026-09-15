@@ -24,6 +24,27 @@ for file in "${expected[@]}"; do
   fi
 done
 
+# Generated application records are sourced from templates rather than the
+# legacy top-level Compose set. Keep that source set explicit so a new or
+# silently removed deployment definition cannot evade drift review.
+expected_templates=(
+  deploy/templates/hindsight.compose.yaml
+  deploy/templates/open-webui.compose.yaml
+  deploy/templates/receipt-ocr.compose.yaml
+  deploy/templates/searxng.compose.yaml
+)
+mapfile -t actual_templates < <(find deploy/templates -maxdepth 1 -type f -name '*.compose.yaml' -print | sort)
+[[ "${actual_templates[*]}" == "${expected_templates[*]}" ]] || {
+  printf 'FAIL tracked deployment template set drifted: %s\n' "${actual_templates[*]}" >&2
+  exit 1
+}
+for template in "${expected_templates[@]}"; do
+  grep -Eq '^services:' "$template" || {
+    printf 'FAIL generated deployment template has no services: %s\n' "$template" >&2
+    exit 1
+  }
+done
+
 for component in LLDAP 'Open WebUI' Hindsight Grocy 'Actual Budget / Finance MCP' 'Hermes 0.14 baseline' 'Agent Zero' SearXNG 'HADES policy/assets/adapters'; do
   grep -Eq "\| ${component} \|" docs/component-manifest.md || {
     printf 'FAIL manifest component missing: %s\n' "$component" >&2

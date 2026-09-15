@@ -62,7 +62,9 @@ for the formerly private application records. Runtime secrets and volumes are
 not copied into Git. Staging/demo containers
 are disposable and are not treated as production topology.
 
-The audit found no provably obsolete public compose file or adapter to delete.
+The audit explicitly checks both the three safe top-level Compose contracts and
+the four generated application templates, including the staged OCR template.
+It found no provably obsolete public compose file or adapter to delete.
 The remaining drift risk is documentation-to-private-runtime parity: when a
 component version, image digest, endpoint, or startup dependency changes, the
 reconstruction manifest and operator record must be updated together. Ambiguous
