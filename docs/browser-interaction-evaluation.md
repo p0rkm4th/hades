@@ -48,6 +48,22 @@ accepted through truthiness.
 No browser profile, credential, production MCP registration, or external
 side-effecting workflow was changed by this evaluation.
 
+## Current upstream decision — 2026-09-15
+
+The current Playwright MCP core surface includes navigation, clicks, form
+filling, typing, JavaScript evaluation, file upload, and tab operations in
+addition to snapshots and other reads. Its `--isolated` option prevents
+profile persistence, but does not make those tools read-only. Origin allowlists
+also do not replace an HADES authorization boundary because redirects and
+page-side behavior remain outside that setting's guarantee.
+
+Therefore the package remains a staged dependency, not a direct Hermes MCP
+registration. The first production-capable browser slice needs an HADES-owned
+policy adapter that exposes anonymous read/navigation tools separately from
+draft and submit operations, rejects privileged storage/profile access, and
+requires actor-bound confirmation for any side effect. Until then, recipe and
+research flows continue to prefer direct HTTP/structured extraction.
+
 The disposable navigation/snapshot and explicit-submit contract is reproducible with
 scripts/test-playwright-mcp-fixture.sh. It uses a local fixture and isolated
 in-memory browser state, verifies no POST occurs before the explicit Apply
