@@ -94,8 +94,9 @@ transient-error memory hygiene, Hermes qualification classification, stable-v1
 readiness-map validation, and long-context current-turn preservation
 regressions.
 The synthetic fresh-install household-soak contract now composes the generated
-private-input install path with the owner-style boundary suite; full application
-reconstruction and soak remain unproven.
+private-input install path with the owner-style boundary suite, including
+receipt intake, finance-file handoff, homelab control planning, and local voice
+dogfood; full application reconstruction and soak remain unproven.
 The fresh owner-UI web follow-up, recipe browser sequence, real integrations,
 and recovery custody remain owner/operator gates rather than hidden defects.
 
