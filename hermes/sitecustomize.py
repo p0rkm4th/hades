@@ -119,6 +119,20 @@ def _hades_session_scope(session_key):
     return ""
 
 
+def _hades_filter_tools_for_scope(tools, scope):
+    """Remove owner-only tools before a household model invocation."""
+    if not isinstance(tools, list) or scope != "household":
+        return tools
+    privileged_markers = ("agent_zero", "agent-zero", "finance")
+    return [
+        tool for tool in tools
+        if not any(
+            marker in str(tool.get("function", {}).get("name", "")).lower()
+            for marker in privileged_markers
+        )
+    ]
+
+
 def _hades_conversation_intent_text(user_message, conversation_history):
     """Build bounded routing context without truncating the current turn.
 
@@ -447,14 +461,7 @@ try:
             # Capability exclusion must happen before model invocation. The
             # base profile may advertise privileged toolsets globally, so do
             # not rely on a later prompt/intent guard to hide them.
-            privileged_markers = ("agent_zero", "agent-zero", "finance")
-            self.tools = [
-                tool for tool in tools
-                if not any(
-                    marker in str(tool.get("function", {}).get("name", "")).lower()
-                    for marker in privileged_markers
-                )
-            ]
+            self.tools = _hades_filter_tools_for_scope(tools, "household")
             self.valid_tool_names = {
                 tool.get("function", {}).get("name") for tool in self.tools
             }

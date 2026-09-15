@@ -56,5 +56,18 @@ if overlay._hades_session_scope('hades-user-owner-subject-123') != 'household':
     raise SystemExit('missing owner mapping granted owner scope')
 if overlay._hades_session_scope('hades-user-'):
     raise SystemExit('empty subject gained a default scope')
+tools = [
+    {'function': {'name': 'mcp_actual_finance_readonly'}},
+    {'function': {'name': 'agent_zero_delegate'}},
+    {'function': {'name': 'mcp_grocy_stock_overview_tool'}},
+]
+household_tools = overlay._hades_filter_tools_for_scope(tools, 'household')
+household_names = {item['function']['name'] for item in household_tools}
+if household_names != {'mcp_grocy_stock_overview_tool'}:
+    raise SystemExit(f'channel household scope leaked privileged tools: {household_names}')
+owner_tools = overlay._hades_filter_tools_for_scope(tools, 'owner')
+if len(owner_tools) != len(tools):
+    raise SystemExit('owner scope unexpectedly lost tools')
 print('PASS privileged capability boundary regression')
+print('PASS household channel scope strips finance and Agent Zero before model invocation')
 PY
