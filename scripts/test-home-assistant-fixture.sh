@@ -5,7 +5,10 @@ set -euo pipefail
 # read entities and proves excluded security entities and writes are rejected.
 python - <<'PY'
 import json
+import os
+import sys
 import threading
+import types
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError
@@ -13,12 +16,12 @@ from urllib.request import Request, urlopen
 
 now = datetime.now(timezone.utc)
 states = {
-    "light.living_room": {"state": "on", "last_changed": now.isoformat()},
-    "sensor.apartment_temperature": {"state": "21.5", "last_changed": now.isoformat()},
-    "fan.air_purifier": {"state": "on", "last_changed": now.isoformat()},
-    "sensor.bedroom": {"state": "unavailable", "last_changed": (now - timedelta(minutes=10)).isoformat()},
-    "lock.front_door": {"state": "locked", "last_changed": now.isoformat()},
-    "camera.entryway": {"state": "idle", "last_changed": now.isoformat()},
+    "light.living_room": {"state": "on", "last_updated": now.isoformat()},
+    "sensor.apartment_temperature": {"state": "21.5", "last_updated": now.isoformat()},
+    "fan.air_purifier": {"state": "on", "last_updated": now.isoformat()},
+    "sensor.bedroom": {"state": "unavailable", "last_updated": (now - timedelta(minutes=10)).isoformat()},
+    "lock.front_door": {"state": "locked", "last_updated": now.isoformat()},
+    "camera.entryway": {"state": "idle", "last_updated": now.isoformat()},
 }
 requested = []
 
@@ -49,6 +52,26 @@ class Handler(BaseHTTPRequestHandler):
 server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 base = f"http://127.0.0.1:{server.server_port}"
+sys.path.insert(0, "integrations/home-assistant-readonly")
+os.environ["HADES_HOME_ASSISTANT_URL"] = base
+os.environ["HADES_HOME_ASSISTANT_ENTITY_ALLOWLIST"] = ",".join([
+    "light.living_room", "sensor.apartment_temperature", "fan.air_purifier", "sensor.bedroom"
+])
+# Keep this fixture runnable on the dependency-free contract runner. The
+# adapter's HTTP/policy functions are exercised; stdio transport is not.
+sys.modules["anyio"] = types.ModuleType("anyio")
+mcp_server = types.ModuleType("mcp.server")
+mcp_lowlevel = types.ModuleType("mcp.server.lowlevel")
+mcp_lowlevel.Server = object
+mcp_stdio = types.ModuleType("mcp.server.stdio")
+mcp_stdio.stdio_server = object
+mcp_types = types.ModuleType("mcp.types")
+for name in ("CallToolResult", "ListToolsResult", "TextContent", "Tool"):
+    setattr(mcp_types, name, type(name, (), {"__init__": lambda self, *args, **kwargs: None}))
+sys.modules.update({"mcp": types.ModuleType("mcp"), "mcp.server": mcp_server,
+                    "mcp.server.lowlevel": mcp_lowlevel, "mcp.server.stdio": mcp_stdio,
+                    "mcp.types": mcp_types})
+import server as adapter
 allowed = {"light.living_room", "sensor.apartment_temperature", "fan.air_purifier", "sensor.bedroom"}
 excluded = {"lock.front_door", "camera.entryway"}
 
@@ -63,7 +86,7 @@ assert read("sensor.apartment_temperature")["state"] == "21.5"
 assert read("fan.air_purifier")["state"] == "on"
 bedroom = read("sensor.bedroom")
 assert bedroom["state"] == "unavailable"
-assert now - datetime.fromisoformat(bedroom["last_changed"]) > timedelta(minutes=5)
+assert now - datetime.fromisoformat(bedroom["last_updated"]) > timedelta(minutes=5)
 for entity in excluded:
     try:
         read(entity)
@@ -71,6 +94,17 @@ for entity in excluded:
         pass
     else:
         raise AssertionError("security-sensitive entity bypassed allowlist")
+assert not excluded.intersection(requested)
+
+requested.clear()
+shaped = adapter.read_entity("light.living_room")
+assert shaped["status"] == "OK" and shaped["result"]["source"] == "Home Assistant"
+assert shaped["result"]["state"] == "on"
+selected = adapter.read_selected()
+assert selected["status"] == "OK" and len(selected["results"]) == 4
+assert any(item["result"]["state"] == "unavailable" and item["result"]["freshness"] == "STALE" for item in selected["results"])
+denied = adapter.read_entity("lock.front_door")
+assert denied["status"] == "FAILED"
 assert not excluded.intersection(requested)
 
 try:
