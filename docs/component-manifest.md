@@ -81,9 +81,9 @@ environment values or persistent data:
 | Grocy / Agent Zero | Pinned compose digests and loopback bindings match tracked contracts | No drift found |
 
 The old untracked Open WebUI/Hindsight/SearXNG service definitions and Hermes
-unit remain compatibility inputs only. The generated templates and artifact
-manifest are the V1 reconstruction source; private records are not required
-for the generated path.
+unit remain compatibility inputs only. The generated templates and verified
+artifact installers are the V1 reconstruction source; private records are not
+required for the generated path.
 
 The metadata-only permission audit also found the three staged LLDAP secret
 files at mode `0600`, while tracked non-secret settings remain `0644`. The
