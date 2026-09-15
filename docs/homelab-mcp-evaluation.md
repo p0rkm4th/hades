@@ -58,6 +58,15 @@ Nmap binary with an argv list, fixed safe scan flags, an approved target CIDR,
 bounded ports/time, and XML stdout; it never writes inventory. Its normalized
 output still requires review before any future reconciliation step.
 
+Bounded control planning is now staged in
+`integrations/homelab-readonly/control.py`. It accepts only an exact Proxmox
+node/VMID target and a small approved guest operation, requires canonical
+preconditions plus owner authorization and confirmation, and emits a
+write-free plan. It has no executor or transport. The caller must reconcile a
+Proxmox read-back before reporting `SUCCEEDED`, `FAILED`, or `OUTCOME UNKNOWN`
+and must not retry an unknown result blindly. The contract is exercised by
+`scripts/test-homelab-control-boundary.sh`.
+
 ## Selection outcome
 
 The stable candidate shape is **four bounded adapters**, not a single

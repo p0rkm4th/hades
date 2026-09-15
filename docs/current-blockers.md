@@ -66,6 +66,11 @@ an owner decision or secret from defects that can be repaired independently.
   explicit quantity/confirmation gating, canonical synthetic intake,
   duplicate reconciliation, and low-confidence rejection. PaddleOCR
   recognition quality and production registration remain staged work.
+- **Added:** Homelab control planning now has a write-free Proxmox contract
+  for exact guest targets, canonical preconditions, owner authorization,
+  confirmation, and read-back outcome reconciliation. It deliberately has no
+  executor; real homelab credentials and scope remain the only gate to a
+  private execution adapter.
 - **Documented:** Candidate-only Hermes residuals are classified against the
   stable HADES qualification suite; production remains on 0.14.0 and no
   candidate-only upstream/provider failure is a HADES release blocker.
