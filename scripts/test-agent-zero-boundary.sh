@@ -98,6 +98,11 @@ async def main():
     AsyncClient.error = module.httpx.HTTPError("synthetic HTTP status failure")
     http_failed = await module._delegate("task")
     assert not http_failed["ok"] and http_failed["outcome"] == "OUTCOME UNKNOWN"
+    class ResponseError(module.httpx.HTTPError):
+        response = types.SimpleNamespace(status_code=400)
+    AsyncClient.error = ResponseError("synthetic definitive rejection")
+    rejected = await module._delegate("task")
+    assert not rejected["ok"] and rejected["outcome"] == "FAILED"
     module.httpx.ConnectError = type("ConnectError", (module.httpx.HTTPError,), {})
     AsyncClient.error = module.httpx.ConnectError("synthetic pre-request connection failure")
     connect_failed = await module._delegate("task")

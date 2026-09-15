@@ -95,6 +95,13 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
             "error": "Agent Zero delegation timed out; task outcome is unknown.",
         }
     except httpx.HTTPError as exc:
+        status_code = getattr(getattr(exc, "response", None), "status_code", None)
+        if isinstance(status_code, int) and 400 <= status_code < 500:
+            return {
+                "ok": False,
+                "outcome": "FAILED",
+                "error": "Agent Zero rejected the bounded delegation request.",
+            }
         if request_attempted and exc.__class__.__name__ != "ConnectError":
             return {
                 "ok": False,
