@@ -7,6 +7,7 @@ python - <<'PY'
 import json
 import os
 import sys
+import tempfile
 import threading
 import types
 from datetime import datetime, timedelta, timezone
@@ -31,6 +32,9 @@ class Handler(BaseHTTPRequestHandler):
         if not self.path.startswith(prefix):
             self.send_error(404)
             return
+        if self.headers.get("Authorization") != "Bearer synthetic-ha-token":
+            self.send_error(401)
+            return
         entity = self.path[len(prefix):]
         requested.append(entity)
         value = states.get(entity)
@@ -52,8 +56,13 @@ class Handler(BaseHTTPRequestHandler):
 server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 base = f"http://127.0.0.1:{server.server_port}"
+token_file = tempfile.NamedTemporaryFile(prefix="hades-ha-token-", delete=False)
+token_file.write(b"synthetic-ha-token\n")
+token_file.close()
+os.chmod(token_file.name, 0o600)
 sys.path.insert(0, "integrations/home-assistant-readonly")
 os.environ["HADES_HOME_ASSISTANT_URL"] = base
+os.environ["HADES_HOME_ASSISTANT_TOKEN_FILE"] = token_file.name
 os.environ["HADES_HOME_ASSISTANT_ENTITY_ALLOWLIST"] = ",".join([
     "light.living_room", "sensor.apartment_temperature", "fan.air_purifier", "sensor.bedroom"
 ])
@@ -78,7 +87,11 @@ excluded = {"lock.front_door", "camera.entryway"}
 def read(entity):
     if entity not in allowed:
         raise PermissionError(f"entity excluded by read-only allowlist: {entity}")
-    with urlopen(f"{base}/api/states/{entity}", timeout=5) as response:
+    request = Request(
+        f"{base}/api/states/{entity}",
+        headers={"Authorization": "Bearer synthetic-ha-token"},
+    )
+    with urlopen(request, timeout=5) as response:
         return json.load(response)
 
 assert read("light.living_room")["state"] == "on"
@@ -107,14 +120,27 @@ denied = adapter.read_entity("lock.front_door")
 assert denied["status"] == "FAILED"
 assert not excluded.intersection(requested)
 
+with open(token_file.name, "w", encoding="utf-8") as handle:
+    handle.write("wrong-token\n")
+os.chmod(token_file.name, 0o600)
+assert adapter.read_entity("light.living_room")["status"] == "FAILED"
+with open(token_file.name, "w", encoding="utf-8") as handle:
+    handle.write("synthetic-ha-token\n")
+os.chmod(token_file.name, 0o600)
+
 try:
-    urlopen(Request(f"{base}/api/states/light.living_room", method="POST"), timeout=5)
+    urlopen(Request(
+        f"{base}/api/states/light.living_room",
+        headers={"Authorization": "Bearer synthetic-ha-token"},
+        method="POST",
+    ), timeout=5)
 except HTTPError as exc:
     assert exc.code == 405
 else:
     raise AssertionError("synthetic Home Assistant fixture accepted a write")
 
 server.shutdown()
+os.unlink(token_file.name)
 print("PASS Home Assistant selected ordinary-entity fixture")
 print("PASS Home Assistant unavailable/stale entity fixture")
 print("PASS Home Assistant security-sensitive allowlist fixture")
