@@ -52,9 +52,11 @@ real-network access remain outside this fixture.
 
 The first reusable HADES composition slice is
 `integrations/homelab-readonly/`: a single read-only `homelab_summary` MCP
-tool over approved Proxmox, NetBox, and Kuma GET endpoints. It does not run
-Nmap; discovery remains a separate evidence-producing worker and cannot write
-inventory.
+tool over approved Proxmox, NetBox, and Kuma GET endpoints plus the separate
+`scan.run_bounded_scan` evidence worker. The worker invokes only an explicit
+Nmap binary with an argv list, fixed safe scan flags, an approved target CIDR,
+bounded ports/time, and XML stdout; it never writes inventory. Its normalized
+output still requires review before any future reconciliation step.
 
 ## Selection outcome
 
