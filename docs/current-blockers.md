@@ -71,6 +71,9 @@ an owner decision or secret from defects that can be repaired independently.
   confirmation, and read-back outcome reconciliation. It deliberately has no
   executor; real homelab credentials and scope remain the only gate to a
   private execution adapter.
+- **Added:** Bounded Nmap evidence now has a transient review projection for
+  observed IPs, hostnames, open ports, and exact NetBox context matches. It is
+  explicitly non-authoritative and performs no inventory writes.
 - **Added:** Local push-to-talk voice now has synthetic household dogfood for
   pantry, web, preference, attempted-mutation, uncertain-speech, and STT
   outage turns. The bridge normalizes provider exceptions to `FAILED`; voice
