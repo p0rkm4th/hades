@@ -8,13 +8,14 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 component=''; inputs=''; backup_dir=''; apply=0
 usage() {
   cat <<'EOF'
-usage: upgrade-hades.sh --component {lldap|grocy|agent-zero} --inputs FILE
+usage: upgrade-hades.sh --component {hermes|open-webui|hindsight|grocy|lldap|searxng|agent-zero} --inputs FILE
                         --backup-dir DIR [--apply]
 
 Without --apply, validate the requested bounded upgrade and print its plan.
 With --apply, require HADES_UPGRADE_BACKUP_VERIFIED=1 and perform one tracked
-Compose pull/up after installer preflight. Private operator-record components
-remain governed by docs/upgrade-decommission.md.
+Compose pull/up after installer preflight. Hermes, Open WebUI, Hindsight, and
+SearXNG are plan-only because their private operator records require their own
+acceptance workflow.
 EOF
 }
 while (($#)); do
@@ -28,7 +29,7 @@ while (($#)); do
   esac
 done
 fail() { echo "FAIL $*" >&2; exit 1; }
-[[ "$component" =~ ^(lldap|grocy|agent-zero)$ ]] || fail 'component must be exactly lldap, grocy, or agent-zero'
+[[ "$component" =~ ^(hermes|open-webui|hindsight|grocy|lldap|searxng|agent-zero)$ ]] || fail 'component is not in the bounded upgrade map'
 [[ -f "$inputs" && ! -L "$inputs" ]] || fail 'operator input file is missing or linked'
 [[ -d "$backup_dir" && ! -L "$backup_dir" ]] || fail 'backup directory must already exist and not be a symlink'
 [[ "$(stat -c '%a' "$backup_dir")" == 700 ]] || fail 'backup directory must be mode 0700'
@@ -40,7 +41,18 @@ case "$component" in
   lldap) compose_file="$repo_dir/deploy/lldap.compose.yaml"; container=hades-lldap ;;
   grocy) compose_file="$repo_dir/deploy/grocy.compose.yaml"; container=hades-grocy ;;
   agent-zero) compose_file="$repo_dir/deploy/agent-zero.compose.yaml"; container=hades-agent-zero ;;
+  hermes) private_record='private Hermes package/deployment record' ;;
+  open-webui) private_record='private Open WebUI immutable artifact/deployment record' ;;
+  hindsight) private_record='private Hindsight image/deployment record' ;;
+  searxng) private_record='private SearXNG image/deployment record' ;;
 esac
+if [[ -n "${private_record:-}" ]]; then
+  echo "PLAN one-component upgrade: $component"
+  echo "PLAN source: $repo_dir/config/versions.env plus $private_record"
+  echo 'PLAN required sequence: verified backup -> installer preflight -> private-record validation -> restart -> health -> doctor -> validate -> rollback retention -> owner acceptance'
+  ((apply)) && fail "$component is plan-only; use its private operator record and acceptance workflow"
+  exit 0
+fi
 [[ -f "$compose_file" ]] || fail "tracked Compose record missing: $compose_file"
 echo "PLAN one-component upgrade: $component"
 echo "PLAN source: config/versions.env plus $compose_file"

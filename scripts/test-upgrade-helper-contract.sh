@@ -9,9 +9,14 @@ trap 'rm -rf -- "$tmp"' EXIT
 cp "$repo_dir/config/operator-inputs.env.example" "$tmp/operator.env"
 chmod 600 "$tmp/operator.env"
 mkdir -m 700 "$tmp/backup"
-for component in lldap grocy agent-zero; do
+for component in lldap grocy agent-zero hermes open-webui hindsight searxng; do
   output=$(bash "$helper" --component "$component" --inputs "$tmp/operator.env" --backup-dir "$tmp/backup")
   grep -q "^PLAN one-component upgrade: $component$" <<<"$output" || { echo "FAIL $component plan missing"; exit 1; }
+done
+for component in hermes open-webui hindsight searxng; do
+  if HADES_UPGRADE_BACKUP_VERIFIED=1 bash "$helper" --component "$component" --inputs "$tmp/operator.env" --backup-dir "$tmp/backup" --apply >/dev/null 2>&1; then
+    echo "FAIL $component private-record apply was accepted"; exit 1
+  fi
 done
 if bash "$helper" --component all --inputs "$tmp/operator.env" --backup-dir "$tmp/backup" >/dev/null 2>&1; then
   echo 'FAIL bulk component upgrade accepted'; exit 1

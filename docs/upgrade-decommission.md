@@ -39,7 +39,7 @@ authority-bearing services are not changed together:
 
 | Component | Current production baseline | Candidate/action | Acceptance gate |
 |---|---|---|---|
-| Open WebUI | pinned 0.11.1 image plus the tracked HADES compatibility layer | build and test a new immutable image; preserve the Channels patch only if the new source still needs it | disposable login/channel/model-stream test, restart persistence, then owner UI acceptance |
+| Open WebUI | pinned 0.11.1 image plus the tracked HADES compatibility layer | qualify upstream 0.11.3 as a separate immutable candidate; preserve the Channels patch only if the new source still needs it | disposable login/channel/model-stream test, restart persistence, then owner UI acceptance |
 | Hermes | 0.14.0 | qualify 0.21.2 with the explicit HADES suite; keep production unchanged until promotion rehearsal | candidate suite, rollback-backed owner-authenticated rehearsal, and owner approval |
 | Hindsight | pinned digest, API/control ports 8888/9999 | upgrade one digest after backup and runtime/read-back checks | memory persistence, subject mapping, restart, and no port collision |
 | Grocy | pinned digest | upgrade one digest after canonical backup | inventory, recipe, shopping-list, restart, and reconciliation checks |
@@ -49,6 +49,15 @@ authority-bearing services are not changed together:
 Open WebUI and Hermes therefore require two separate controlled changes. The
 remaining owner input is authentication/acceptance and rollback approval, not
 a need to run an unattended or bulk upgrade.
+
+As of 2026-09-15, upstream release records identify Open WebUI 0.11.3 and
+Hermes Agent 0.21.2 as the current candidates. The public version manifest
+intentionally remains pinned to Open WebUI 0.11.1 and Hermes 0.14.0 until
+candidate qualification and owner acceptance complete. The upgrade helper
+prints plan-only instructions for `hermes`, `open-webui`, `hindsight`, and
+`searxng`; `--apply` is rejected for those private-record components. It can
+still plan and apply the tracked one-component LLDAP, Grocy, or Agent Zero
+changes under the backup and preflight requirements below.
 
 For the tracked LLDAP, Grocy, and Agent Zero Compose components,
 `scripts/upgrade-hades.sh` implements this boundary. It is plan-only by
