@@ -21,7 +21,7 @@ trap cleanup EXIT
 
 cat > "$tmp/backend.py" <<'PY'
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-import json, time
+import json, os, time
 
 MODEL = "synthetic-private-model"
 
@@ -54,7 +54,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers(); self.wfile.write(body)
 
-ThreadingHTTPServer(("0.0.0.0", 18796), Handler).serve_forever()
+ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("HADES_PRIVATE_CHAT_MODEL_PORT", "18796"))), Handler).serve_forever()
 PY
 python3 "$tmp/backend.py" >/dev/null 2>&1 &
 backend_pid=$!
