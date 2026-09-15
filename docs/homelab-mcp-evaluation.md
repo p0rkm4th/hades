@@ -76,8 +76,11 @@ The first reusable HADES composition slice is
 tool over approved Proxmox, NetBox, and Kuma GET endpoints plus the separate
 `scan.run_bounded_scan` evidence worker. The worker invokes only an explicit
 Nmap binary with an argv list, fixed safe scan flags, an approved target CIDR,
-bounded ports/time, and XML stdout; it never writes inventory. Its normalized
-output still requires review before any future reconciliation step.
+bounded ports/time, a bounded 256-packet-per-second floor, and XML stdout; it
+never writes inventory. The bounded TCP-connect profile can finish a normal
+`/24` without turning slow filtered hosts into an avoidable whole-scan timeout.
+Its normalized output still requires review before any future reconciliation
+step.
 
 Bounded control planning is now staged in
 `integrations/homelab-readonly/control.py`. It accepts only an exact Proxmox

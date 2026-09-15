@@ -9,8 +9,8 @@ cat >"$fake" <<'EOF'
 import sys
 
 assert sys.argv[1:] == [
-    "-n", "-Pn", "-sT", "--open", "--max-retries", "1", "--host-timeout", "12s",
-    "-T2", "-p", "80,443", "-oX", "-", "192.0.2.0/30",
+    "-n", "-Pn", "-sT", "--open", "--max-retries", "0", "--host-timeout", "12s",
+    "-T3", "--min-rate", "256", "-p", "80,443", "-oX", "-", "192.0.2.0/30",
 ], sys.argv[1:]
 print('<nmaprun><host><status state="up"/><address addr="192.0.2.2" addrtype="ipv4"/>'
       '<hostnames><hostname name="synthetic-router"/></hostnames><ports>'
