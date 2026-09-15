@@ -20,3 +20,12 @@ write-free confirmation-boundary checks, and a confirmation-gated
 `importTransactions` request plan that skips known duplicates and requires
 canonical reconciliation. A real Actual import and owner acceptance remain
 authorization-gated.
+
+The future authorized writer has a bounded reconciliation contract in
+`integrations/actual-finance-import/executor.py`. It accepts an injected
+canonical client, preflights existing `imported_id` values, passes
+`reimportDeleted: false`, and always performs canonical read-back after an
+attempt. Results are `SUCCEEDED`, `FAILED`, or `OUTCOME UNKNOWN`; the latter
+requires reconciliation before any retry. `ImportRejected` is treated as a
+definitive pre-write failure. This contract is synthetic-only until an owner
+authorizes and supplies the real Actual client.
