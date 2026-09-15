@@ -22,6 +22,10 @@ It also verifies:
 - exact Grocy product and quantity-unit matches produce an apply plan;
 - missing or duplicate products prevent the plan from being applied;
 - duplicate recipe titles are rejected before mutation;
+- zero, negative, fractional, missing, and oversized serving counts are
+  rejected rather than truncated or defaulted;
+- zero, negative, malformed, oversized, and duplicate ingredient quantities are
+  rejected before a write plan is produced;
 - a lost response after recipe or ingredient mutation is `OUTCOME UNKNOWN`;
 - confirmation is required and a preview alone performs no write.
 

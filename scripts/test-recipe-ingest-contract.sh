@@ -63,6 +63,32 @@ assert plan["recipe"]["base_servings"] == 4
 assert plan["ingredients"][1]["amount"] == "1/2"
 assert plan["ingredients"][1]["recipe_id"] == "<created_recipe_id>"
 
+for bad_servings in ("0 servings", "-1 servings", "2.5 servings", "two servings", None):
+    invalid_servings = dict(ready, servings=bad_servings)
+    try:
+        module.build_apply_plan(invalid_servings, [{"id": 1, "name": "lb"}, {"id": 2, "name": "cup"}])
+    except ValueError as exc:
+        assert "servings" in str(exc).lower(), (bad_servings, exc)
+    else:
+        raise AssertionError(f"invalid servings accepted: {bad_servings!r}")
+
+for bad_quantity in ("0", "-1", "1/0", "1000001"):
+    invalid_quantity = dict(ready, ingredients=[dict(ready["ingredients"][0], quantity=bad_quantity), ready["ingredients"][1]])
+    try:
+        module.build_apply_plan(invalid_quantity, [{"id": 1, "name": "lb"}, {"id": 2, "name": "cup"}])
+    except ValueError as exc:
+        assert "quantity" in str(exc).lower(), (bad_quantity, exc)
+    else:
+        raise AssertionError(f"invalid quantity accepted: {bad_quantity!r}")
+
+duplicate_ingredient = dict(ready, ingredients=[ready["ingredients"][0], dict(ready["ingredients"][0], name="ground beef")])
+try:
+    module.build_apply_plan(duplicate_ingredient, [{"id": 1, "name": "lb"}])
+except ValueError as exc:
+    assert "duplicate" in str(exc).lower()
+else:
+    raise AssertionError("duplicate ingredient accepted")
+
 try:
     module.build_apply_plan(result, [{"id": 1, "name": "lb"}])
 except ValueError as exc:

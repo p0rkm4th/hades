@@ -23,6 +23,8 @@ from urllib.request import Request, urlopen
 
 MAX_HTML_BYTES = 2 * 1024 * 1024
 DEFAULT_TIMEOUT_SECONDS = 15
+MAX_RECIPE_SERVINGS = 1000
+MAX_INGREDIENT_QUANTITY = Fraction(1_000_000)
 _NUMBER = r"(?:\d+(?:\.\d+)?|\d+\s*/\s*\d+|[¼½¾⅓⅔⅛⅜⅝⅞])"
 _UNIT = r"(?:tsp|teaspoons?|tbsp|tablespoons?|cups?|ounces?|oz|pounds?|lbs?|lb|grams?|g|kilograms?|kg|millilit(?:er|re)s?|ml|lit(?:er|re)s?|l|pinch(?:es)?|cloves?|cans?|packages?|sticks?)"
 _QUANTITY = re.compile(rf"^\s*(?P<quantity>{_NUMBER})(?:\s*[-–]\s*(?P<maximum>{_NUMBER}))?\s*(?P<unit>{_UNIT})?\b\s*(?P<name>.*)$", re.I)
@@ -228,7 +230,9 @@ def resolve_products(recipe: dict[str, Any], products: list[dict[str, Any]]) -> 
 
 
 def _serving_count(value: Any) -> int | None:
-    match = re.search(r"\b(\d+)\b", str(value or ""))
+    """Parse an explicit integer serving count without truncating bad input."""
+    text = " ".join(str(value or "").split())
+    match = re.fullmatch(r"(\d+)(?:\s+[A-Za-z][A-Za-z -]*)?", text)
     return int(match.group(1)) if match else None
 
 
@@ -236,6 +240,19 @@ def _quantity(value: Any) -> str | None:
     text = str(value or "").strip().replace(" ", "")
     vulgar = {"¼": "1/4", "½": "1/2", "¾": "3/4", "⅓": "1/3", "⅔": "2/3", "⅛": "1/8", "⅜": "3/8", "⅝": "5/8", "⅞": "7/8"}
     return vulgar.get(text, text) or None
+
+
+def _validated_quantity(value: Any) -> str:
+    amount = _quantity(value)
+    if not amount:
+        raise ValueError("Ingredient needs a numeric quantity.")
+    try:
+        parsed = Fraction(amount)
+    except (ValueError, ZeroDivisionError) as exc:
+        raise ValueError(f"Ingredient quantity is not numeric: {amount}") from exc
+    if parsed <= 0 or parsed > MAX_INGREDIENT_QUANTITY:
+        raise ValueError("Ingredient quantity must be greater than zero and bounded.")
+    return amount
 
 
 def build_apply_plan(recipe: dict[str, Any], quantity_units: list[dict[str, Any]]) -> dict[str, Any]:
@@ -247,31 +264,32 @@ def build_apply_plan(recipe: dict[str, Any], quantity_units: list[dict[str, Any]
     """
     if recipe.get("requires_review"):
         raise ValueError("Recipe requires review before it can be applied.")
-    servings = _serving_count(recipe.get("servings")) or 1
-    if servings < 1 or servings > 1000:
+    servings = _serving_count(recipe.get("servings"))
+    if servings is None or servings < 1 or servings > MAX_RECIPE_SERVINGS:
         raise ValueError("Recipe servings must be between 1 and 1000.")
     units: dict[str, list[dict[str, Any]]] = {}
     for unit in quantity_units:
         if isinstance(unit, dict) and unit.get("name"):
             units.setdefault(str(unit["name"]).casefold(), []).append(unit)
     rows: list[dict[str, Any]] = []
+    product_ids: set[int] = set()
     for ingredient in recipe.get("ingredients", []):
         if ingredient.get("resolution") != "EXACT" or not ingredient.get("product_id"):
             raise ValueError(f"Ingredient is not exactly resolved: {ingredient.get('name', '')}")
-        amount = _quantity(ingredient.get("quantity"))
+        amount = _validated_quantity(ingredient.get("quantity"))
         unit_name = str(ingredient.get("unit") or "").strip()
-        if not amount or not unit_name:
-            raise ValueError(f"Ingredient needs a numeric quantity and unit: {ingredient.get('raw', '')}")
-        try:
-            Fraction(amount)
-        except (ValueError, ZeroDivisionError) as exc:
-            raise ValueError(f"Ingredient quantity is not numeric: {amount}") from exc
+        if not unit_name:
+            raise ValueError(f"Ingredient needs a quantity unit: {ingredient.get('raw', '')}")
         matches = units.get(unit_name.casefold(), [])
         if len(matches) != 1:
             raise ValueError(f"Quantity unit needs exact review: {unit_name}")
+        product_id = int(ingredient["product_id"])
+        if product_id in product_ids:
+            raise ValueError(f"Duplicate ingredient product needs exact review: {ingredient.get('name', '')}")
+        product_ids.add(product_id)
         rows.append({
             "recipe_id": "<created_recipe_id>",
-            "product_id": int(ingredient["product_id"]),
+            "product_id": product_id,
             "amount": amount,
             "qu_id": int(matches[0]["id"]),
             "note": ingredient.get("raw"),

@@ -108,11 +108,9 @@ boundary and authorization gate are recorded in
 
 ## Current next action
 
-Continue the clean-machine reconstruction sprint. Test-mode contracts, real
-privileged preflight, and two independent fresh Fedora 44 synthetic
-deployments/reboots now provide static, disposable, first-clean, and
-second-clean synthetic evidence. The next evidence level is an independent
-fresh supported guest using full synthetic Open WebUI, Hindsight, SearXNG, and
-Hermes application records plus canonical application fixtures, followed by a
-full application household soak. Owner-
-gated real integrations remain outside this work.
+Continue capability expansion from the highest-value unblocked lane: finish
+the staged recipe URL/OCR composition and canonical disposable Grocy checks,
+then advance the remaining synthetic multi-domain, homelab, smart-home, and
+recovery contracts. Clean-machine reconstruction evidence is retained above;
+it is maintenance evidence rather than the primary roadmap. Owner-gated real
+integrations remain outside this work.
