@@ -99,9 +99,17 @@ an owner decision or secret from defects that can be repaired independently.
   authorization value; malformed truthy values cannot select the privileged
   profile. Anonymous browsing and explicit-submit fixture acceptance remain
   green.
+- **Documented:** Direct Playwright MCP registration remains deferred because
+  its upstream core surface includes submit-capable browser tools. The next
+  browser slice requires an HADES policy adapter separating anonymous reads
+  from draft/submit operations; this is an expansion item, not an owner gate.
 - **Hardened:** The Actual read-only wrapper now rejects unsafe password files
   and missing explicit budget selection; it cannot silently choose the first
   budget. Finance remains production-gated and read-only.
+- **Added:** Local finance files now have a Hermes-registered, inline-base64
+  preview MCP. CSV mapping, duplicate analysis, explicit Actual account
+  targeting, owner-only synthetic dogfood, and timeout-after-write
+  reconciliation pass; native Actual execution remains authorization-gated.
 - **Hardened:** Home Assistant security filtering now rejects garage/door/alarm
   controls even when represented as `switch`, `button`, or `input_boolean`,
   while retaining ordinary read-only entities.
