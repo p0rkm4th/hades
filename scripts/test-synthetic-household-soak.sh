@@ -18,6 +18,8 @@ bash "$repo_dir/scripts/test-multi-user-long-dogfood.sh" >/dev/null
 bash "$repo_dir/scripts/test-hades-memory-intent.sh" >/dev/null
 bash "$repo_dir/scripts/test-source-of-truth-fixture.sh" >/dev/null
 bash "$repo_dir/scripts/test-grocy-recipe-authoring-boundary.sh" >/dev/null
+bash "$repo_dir/scripts/test-recipe-ingest-contract.sh" >/dev/null
+bash "$repo_dir/scripts/test-recipe-mcp-registration.sh" >/dev/null
 bash "$repo_dir/scripts/test-receipt-ocr-dogfood.sh" >/dev/null
 bash "$repo_dir/scripts/test-finance-file-boundary.sh" >/dev/null
 bash "$repo_dir/scripts/test-homelab-control-boundary.sh" >/dev/null
