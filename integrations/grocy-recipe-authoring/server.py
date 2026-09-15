@@ -66,7 +66,7 @@ async def set_servings(recipe: str, servings: int) -> dict[str, Any]:
 
     headers = {"GROCY-API-KEY": API_KEY}
     mutation_attempted = False
-    mutation_response_received = False
+    write_response_received = False
     try:
         async with httpx.AsyncClient(headers=headers, timeout=TIMEOUT_SECONDS) as client:
             found, error = await _get_recipe(client, recipe_text)
@@ -80,7 +80,7 @@ async def set_servings(recipe: str, servings: int) -> dict[str, Any]:
                 f"{BASE_URL}/api/objects/recipes/{recipe_id}",
                 json={"base_servings": value},
             )
-            mutation_response_received = True
+            write_response_received = True
             response.raise_for_status()
             verified = await client.get(f"{BASE_URL}/api/objects/recipes/{recipe_id}")
             verified.raise_for_status()
@@ -103,8 +103,12 @@ async def set_servings(recipe: str, servings: int) -> dict[str, Any]:
         # A connection failure cannot have sent the PUT request. Keep this
         # distinguishable from a timeout or response failure after mutation
         # was attempted, whose canonical outcome must be reconciled.
-        if mutation_attempted and not mutation_response_received and exc.__class__.__name__ == "ConnectError":
+        if mutation_attempted and not write_response_received and exc.__class__.__name__ == "ConnectError":
             return _result("FAILED", error="Grocy could not be reached before the serving update.")
+        if mutation_attempted and write_response_received:
+            status_code = getattr(getattr(exc, "response", None), "status_code", None)
+            if isinstance(status_code, int) and 400 <= status_code < 500:
+                return _result("FAILED", error="Grocy rejected the serving update.")
         if mutation_attempted:
             return _result("OUTCOME UNKNOWN", error="Grocy serving update was attempted but canonical outcome is unknown.")
         return _result("FAILED", error="Grocy serving update failed.")

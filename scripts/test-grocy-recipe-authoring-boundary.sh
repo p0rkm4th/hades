@@ -162,6 +162,19 @@ async def check():
     result = await module.set_servings("Recipe", 2)
     assert result["outcome"] == "FAILED", result
 
+    class RejectedResponse(Response):
+        def __init__(self, payload):
+            super().__init__(payload, status_code=400)
+        def raise_for_status(self):
+            error = HTTPError("synthetic validation rejection")
+            error.response = self
+            raise error
+    class RejectedWriteClient(Client):
+        async def put(self, url, json): return RejectedResponse({})
+    module.httpx.AsyncClient = RejectedWriteClient
+    result = await module.set_servings("Recipe", 2)
+    assert result["outcome"] == "FAILED", result
+
     class HTTPVerificationClient(Client):
         async def get(self, url):
             if url.endswith("/recipes"):
