@@ -49,6 +49,18 @@ assert any("already submitted" in warning for warning in duplicate_preview["warn
 assert duplicate_preview["receipt_fingerprint"] == fingerprint
 assert module.build_intake_preview(dict(evidence, receipt_fingerprint=object()), [])["status"] == "FAILED"
 
+reviewed_preview = dict(preview)
+reviewed_preview["requires_review"] = False
+reviewed_preview["items"] = [dict(preview["items"][0], quantity="2", quantity_unit_id=7)]
+assert module.build_intake_apply_plan(reviewed_preview)["status"] == "FAILED"
+ready_plan = module.build_intake_apply_plan(reviewed_preview, reviewed=True, confirm=True)
+assert ready_plan["status"] == "READY_TO_APPLY"
+assert ready_plan["writes_performed"] is False
+assert ready_plan["items"] == [{"product_id": 5, "amount": "2", "qu_id": 7}]
+assert module.build_intake_apply_plan(duplicate_preview, reviewed=True, confirm=True)["status"] == "FAILED"
+missing_quantity = dict(reviewed_preview, items=[dict(preview["items"][0])])
+assert module.build_intake_apply_plan(missing_quantity, reviewed=True, confirm=True)["status"] == "FAILED"
+
 bad_total = module.normalize_ocr_lines([
     {"text": "Shop", "confidence": 0.99},
     {"text": "Coffee $3.00", "confidence": 0.99},
@@ -63,5 +75,6 @@ print("PASS OCR line evidence normalization")
 print("PASS uncertain receipt lines remain review-required")
 print("PASS receipt Grocy intake is preview-only")
 print("PASS duplicate receipt fingerprints remain review-only")
+print("PASS reviewed OCR intake produces a write-free Grocy apply plan")
 print("PASS OCR failure and total mismatch are explicit")
 PY

@@ -61,6 +61,12 @@ known submitted fingerprints. A duplicate becomes an explicit preview warning
 and cannot be treated as a replay authorization; the module stores no receipt
 history itself.
 
+`build_intake_apply_plan` is the next boundary after review. It requires
+explicit review and confirmation, exact product matches, and caller-supplied
+positive quantity/unit values because OCR line prices are not stock counts. It
+returns a write-free canonical Grocy request plan and requires canonical
+reconciliation before any retry; the OCR module performs no intake mutation.
+
 The official `paddleocr-mcp==0.8.5` CLI was also verified in a disposable
 Python 3.14 virtual environment. The package and CLI install successfully
 without local inference extras and expose the documented self-hosted mode.

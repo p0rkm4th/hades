@@ -17,6 +17,7 @@ MONEY = r"(?:\$\s*)?\d+(?:[,.]\d{3})*(?:\.\d{2})"
 MONEY_RE = re.compile(rf"(?P<amount>{MONEY})\s*$")
 TOTAL_RE = re.compile(rf"^\s*(?P<label>subtotal|tax|total|amount due)\s*:?[ \t]+(?P<amount>{MONEY})\s*$", re.I)
 ITEM_RE = re.compile(rf"^(?P<name>.+?)\s+(?P<amount>{MONEY})\s*$")
+MAX_INTAKE_QUANTITY = Decimal("1000000")
 
 
 def _money(value: str) -> str:
@@ -138,4 +139,63 @@ def build_intake_preview(
         "duplicate": duplicate,
         "receipt_fingerprint": fingerprint,
         "canonical_target": "Grocy stock intake",
+    }
+
+
+def build_intake_apply_plan(
+    preview: dict[str, Any],
+    *,
+    reviewed: bool = False,
+    confirm: bool = False,
+) -> dict[str, Any]:
+    """Build, but never execute, an owner-confirmed Grocy intake request.
+
+    OCR provides line prices, not reliable stock quantities. Quantities and
+    quantity-unit IDs must therefore be supplied by the reviewed caller. The
+    eventual Grocy adapter must reconcile its canonical stock response after
+    applying this plan and classify an uncertain response separately.
+    """
+    if not reviewed:
+        return {"status": "FAILED", "error": "Owner review is required before intake planning."}
+    if not confirm:
+        return {"status": "FAILED", "error": "Explicit intake confirmation is required."}
+    if not isinstance(preview, dict) or preview.get("status") != "PREVIEW":
+        return {"status": "FAILED", "error": "Only a complete intake preview can be applied."}
+    if preview.get("duplicate"):
+        return {"status": "FAILED", "error": "Duplicate receipt requires canonical reconciliation before retry."}
+    rows: list[dict[str, Any]] = []
+    product_ids: set[int] = set()
+    for item in preview.get("items", []):
+        if not isinstance(item, dict) or item.get("resolution") != "EXACT" or not item.get("product_id"):
+            return {"status": "FAILED", "error": "Every receipt item needs an exact Grocy product match."}
+        quantity = item.get("quantity")
+        quantity_unit_id = item.get("quantity_unit_id")
+        if quantity is None or quantity_unit_id is None:
+            return {"status": "FAILED", "error": "Each reviewed item needs a stock quantity and quantity unit."}
+        try:
+            quantity_value = Decimal(str(quantity))
+            unit_id = int(quantity_unit_id)
+        except (InvalidOperation, TypeError, ValueError) as exc:
+            raise ValueError("Reviewed intake quantity and unit must be valid.") from exc
+        product_id = int(item["product_id"])
+        if not quantity_value.is_finite() or quantity_value <= 0 or quantity_value > MAX_INTAKE_QUANTITY or unit_id < 1:
+            return {"status": "FAILED", "error": "Reviewed intake quantity and unit must be positive and bounded."}
+        if product_id in product_ids:
+            return {"status": "FAILED", "error": "Duplicate product rows require review before intake."}
+        product_ids.add(product_id)
+        rows.append({
+            "product_id": product_id,
+            "amount": format(quantity_value, "f"),
+            "qu_id": unit_id,
+        })
+    if not rows:
+        return {"status": "FAILED", "error": "Intake preview has no items."}
+    return {
+        "status": "READY_TO_APPLY",
+        "requires_confirmation": True,
+        "receipt_fingerprint": preview.get("receipt_fingerprint"),
+        "items": rows,
+        "canonical_target": "Grocy stock intake",
+        "writes_performed": False,
+        "reconcile_before_retry": True,
     }
