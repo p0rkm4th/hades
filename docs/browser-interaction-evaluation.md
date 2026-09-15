@@ -71,5 +71,11 @@ scripts/test-playwright-mcp-fixture.sh. It uses a local fixture and isolated
 in-memory browser state, verifies no POST occurs before the explicit Apply
 click, and verifies exactly one POST afterward.
 
+The policy proxy's real MCP round trip is reproducible with
+scripts/test-browser-proxy-fixture.sh: it launches the pinned upstream
+package, filters the advertised tools, navigates to a disposable loopback
+fixture, reads its accessibility snapshot, and rejects a click call. The
+loopback/private-target override exists only inside that test process.
+
 Upstream reference:
 https://github.com/microsoft/playwright-mcp.
