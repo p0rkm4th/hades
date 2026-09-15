@@ -13,14 +13,14 @@ search-only backend cannot support `web_extract`.
 
 | Workflow | Evidence | Bottleneck / disposition |
 |---|---|---|
-| Normal chat | Existing owner smoke evidence | Model inference; no new defect isolated |
+| Normal chat | Synthetic timing harness now covers no-tool response and post-turn continuation; fresh capture host-sensitive | Model inference; no new defect isolated |
 | Memory recall/correction | Owner persistence evidence and async-retain timing | Hindsight extraction is asynchronous; do not treat immediate recall as proof |
-| Grocy read | 40.79s total; model 24.8s + 15.8s continuation; Grocy 0.03s | Local model and continuation, not adapter |
+| Grocy read | 40.79s total; model 24.8s + 15.8s continuation; Grocy 0.03s; expanded harness now measures canonical read | Local model and continuation, not adapter |
 | Grocy mutation | Concurrent synthetic adds 24.68s/26.86s; tool calls ~0.04s | Model/continuation; canonical duplicate merge held |
 | Recipe request | Synthetic authoring/fulfillment contract | Provider timing still needs owner-visible recipe dogfood |
 | Web search | Candidate/API freshness evidence | Model/tool loop and search latency need fresh owner-session sample |
 | Multi-domain request | Routing contracts and contradiction fixture | End-to-end sample remains useful; no blind optimization justified |
-| Agent Zero delegation | Bounded bridge contract; weak model needed three attempts | Tool description/model selection quality; real operator remains owner-gated |
+| Agent Zero delegation | Bounded bridge contract; expanded harness uses a synthetic read-only delegation | Tool description/model selection quality; real operator remains owner-gated |
 
 The current actionable threshold is a workflow that repeatedly exceeds roughly
 30 seconds or loops unnecessarily. Existing measurements point to local-model
@@ -87,12 +87,20 @@ execution remains the end-to-end acceptance boundary.
 
 The repeatable synthetic timing capture is
 `HADES_OLLAMA_URL=http://127.0.0.1:11434/v1 scripts/test-synthetic-performance.py`.
-It runs one web-search and one recipe-preview turn against in-process fixtures,
-recording model, tool, continuation, and total milliseconds. It has no real
-provider, recipe write, or credential dependency; use the operator-only
-environment override when Ollama is not bound to loopback. The model endpoint
-is intentionally host-sensitive: if it is unreachable, the harness exits with
-an explicit dependency message and does not report fabricated timing data.
+It covers normal chat, private-memory recall, canonical Grocy read, an
+unconfirmed Grocy mutation (which must not call a write), recipe preview, web
+search, a multi-domain request, and bounded synthetic Agent Zero delegation.
+Each tool workflow records model-selection time, fixture tool time,
+post-tool continuation, total turn time, and selected tool names. The fixtures
+are read-only and contain no real provider, recipe write, or credential
+dependency; use the operator-only environment override when Ollama is not
+bound to loopback. The model endpoint is intentionally host-sensitive: if it
+is unreachable, the harness exits with an explicit dependency message and does
+not report fabricated timing data.
+
+The expanded matrix was syntax-checked on 2026-09-15. Execution was deferred
+in this environment because `127.0.0.1:11434` was not reachable; this does not
+alter the prior timing capture below.
 
 The 2026-09-14 capture measured web at 15.46s total (8.12s model, 7.34s
 continuation) and recipe preview at 9.73s total (4.95s model, 4.78s

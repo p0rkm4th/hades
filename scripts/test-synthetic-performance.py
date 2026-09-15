@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure bounded synthetic web and recipe turns without real integrations."""
+"""Measure bounded daily-driver workflows without real integrations."""
 
 import json
 import os
@@ -12,7 +12,10 @@ MODEL = os.environ.get("HADES_OLLAMA_MODEL", "qwen3:8b")
 MAX_TOKENS = int(os.environ.get("HADES_PERF_MAX_TOKENS", "400"))
 TOOLS = [
     {"type": "function", "function": {"name": "web_search", "description": "Search current external information.", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}},
+    {"type": "function", "function": {"name": "hindsight_recall", "description": "Recall private personal context for the current user only; never use it as live system state or authority.", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}},
+    {"type": "function", "function": {"name": "mcp_grocy_stock_overview_tool", "description": "Read canonical shared household pantry stock. This is read-only.", "parameters": {"type": "object", "properties": {}}}},
     {"type": "function", "function": {"name": "recipe_set_servings", "description": "Preview a recipe serving change; never apply without confirmation.", "parameters": {"type": "object", "properties": {"recipe": {"type": "string"}, "servings": {"type": "integer"}}, "required": ["recipe", "servings"]}}},
+    {"type": "function", "function": {"name": "agent_zero_delegate", "description": "Delegate a bounded synthetic read-only operator task; never execute or authorize a real action.", "parameters": {"type": "object", "properties": {"task": {"type": "string"}}, "required": ["task"]}}},
 ]
 
 
@@ -38,25 +41,31 @@ def synthetic_tool(name, arguments):
         result = {"title": "Synthetic mushroom-free pasta", "snippet": "A pasta recipe using tomatoes and basil."}
     elif name == "recipe_set_servings":
         result = {"outcome": "PREVIEW", "recipe": arguments.get("recipe"), "servings": arguments.get("servings")}
+    elif name == "hindsight_recall":
+        result = {"memory_scope": "private", "fact": "Beta dislikes mushrooms (synthetic)"}
+    elif name == "mcp_grocy_stock_overview_tool":
+        result = {"authority": "grocy", "stock": [{"item": "tomatoes", "quantity": 2}, {"item": "basil", "quantity": 1}]}
+    elif name == "agent_zero_delegate":
+        result = {"outcome": "SYNTHETIC_READ_ONLY", "task": arguments.get("task"), "authorized": False}
     else:
         raise AssertionError(f"unexpected tool: {name}")
     return result, (time.perf_counter() - started) * 1000
 
 
-def run(label, prompt, expected):
-    messages = [{"role": "system", "content": "Use web_search for current external facts. For recipe serving changes, call recipe_set_servings only to produce a PREVIEW; never claim a write."}, {"role": "user", "content": prompt}]
+def run(label, prompt, expected=None):
+    messages = [{"role": "system", "content": "Use only the named tools when appropriate. Hindsight is private personal context; Grocy is canonical shared pantry state; web is current external truth. All tools are synthetic. Never make a real write or claim one. Recipe changes are preview-only and require confirmation."}, {"role": "user", "content": prompt}]
     total_started = time.perf_counter()
     first, model_ms = model_call(messages)
     message = first.get("message", {})
     calls = message.get("tool_calls", [])
     names = [call.get("function", {}).get("name") for call in calls]
-    if names != [expected]:
-        raise SystemExit(f"{label}: expected [{expected}], got {names}")
+    if expected is not None and names != expected:
+        raise SystemExit(f"{label}: expected {expected}, got {names}")
     messages.append(message)
     tool_started = time.perf_counter()
     for call in calls:
         args = json.loads(call.get("function", {}).get("arguments", "{}"))
-        result, _ = synthetic_tool(expected, args)
+        result, _ = synthetic_tool(call["function"]["name"], args)
         messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result)})
     tool_ms = (time.perf_counter() - tool_started) * 1000
     continuation, continuation_ms = model_call(messages)
@@ -65,11 +74,20 @@ def run(label, prompt, expected):
         loop_names = [call.get("function", {}).get("name") for call in continuation_calls]
         raise SystemExit(f"{label}: unnecessary continuation tool loop: {loop_names}")
     total_ms = (time.perf_counter() - total_started) * 1000
-    return {"workflow": label, "model_ms": round(model_ms, 1), "tool_ms": round(tool_ms, 1), "continuation_ms": round(continuation_ms, 1), "total_ms": round(total_ms, 1)}
+    return {"workflow": label, "tool_calls": names, "model_ms": round(model_ms, 1), "tool_ms": round(tool_ms, 1), "continuation_ms": round(continuation_ms, 1), "total_ms": round(total_ms, 1)}
 
 
 def main():
-    results = [run("web", "Find a recipe online using tomatoes and basil.", "web_search"), run("recipe", "Preview changing the mushroom-free pasta recipe to 4 servings.", "recipe_set_servings")]
+    results = [
+        run("normal_chat", "Say hello and tell me one short cooking tip.", []),
+        run("memory_recall", "MUST use private memory: what does Beta dislike?", ["hindsight_recall"]),
+        run("grocy_read", "What is currently in the shared pantry?", ["mcp_grocy_stock_overview_tool"]),
+        run("grocy_mutation_confirmation", "I want to add milk to the shopping list, but do not change anything yet.", []),
+        run("recipe", "Preview changing the mushroom-free pasta recipe to 4 servings.", ["recipe_set_servings"]),
+        run("web", "Find a recipe online using tomatoes and basil.", ["web_search"]),
+        run("multi_domain", "Find a recipe online using what is currently in our pantry and remember that Beta dislikes mushrooms.", None),
+        run("agent_zero_synthetic", "Delegate a bounded read-only synthetic check of service status; do not execute anything.", ["agent_zero_delegate"]),
+    ]
     print(json.dumps({"model": MODEL, "results": results}, sort_keys=True))
     print("PASS synthetic performance capture")
 
