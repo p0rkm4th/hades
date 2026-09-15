@@ -1,6 +1,6 @@
 # ADR: receipt and document OCR
 
-Status: **SELECTED / STAGED; EVIDENCE CONTRACT GREEN**
+Status: **SELECTED / STAGED; MCP CLI VERIFIED**
 
 ## Decision
 
@@ -55,6 +55,15 @@ The current evidence contract is implemented in
 `scripts/test-receipt-ocr-contract.sh`. It has not yet claimed PaddleOCR
 runtime accuracy; that requires a disposable PaddleOCR deployment and sample
 images.
+
+The official `paddleocr-mcp==0.8.5` CLI was also verified in a disposable
+Python 3.14 virtual environment. The package and CLI install successfully
+without local inference extras and expose the documented self-hosted mode.
+The `local-cpu` extra cannot currently resolve on this host because no
+compatible `paddlepaddle` distribution is available for Python 3.14. This is
+an environment compatibility result, not a reason to add a custom OCR engine;
+the next evaluation should use a supported Python/runtime guest or a bounded
+self-hosted PaddleX service.
 
 ## Non-decision
 
