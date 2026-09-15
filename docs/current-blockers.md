@@ -75,6 +75,11 @@ an owner decision or secret from defects that can be repaired independently.
   pantry, web, preference, attempted-mutation, uncertain-speech, and STT
   outage turns. The bridge normalizes provider exceptions to `FAILED`; voice
   remains non-authenticating and non-authorizing.
+- **Hardened:** The bounded Agent Zero bridge now rejects credential,
+  infrastructure-control, shell/SSH/Docker, and write-capable task text before
+  upstream delegation. Harmless bounded inspection remains available; the
+  interactive operator surface and real broader tasks remain separately
+  staged/owner-scoped.
 - **Documented:** Candidate-only Hermes residuals are classified against the
   stable HADES qualification suite; production remains on 0.14.0 and no
   candidate-only upstream/provider failure is a HADES release blocker.

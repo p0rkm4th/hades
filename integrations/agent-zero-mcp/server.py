@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import json
+import re
 from typing import Any
 
 import httpx
@@ -26,6 +27,11 @@ MAX_CONTEXT_ID_CHARS = int(os.environ.get("AGENT_ZERO_MAX_CONTEXT_ID_CHARS", "12
 TIMEOUT_SECONDS = float(os.environ.get("AGENT_ZERO_TIMEOUT_SECONDS", "90"))
 
 TOOL_NAME = "agent_zero_delegate"
+UNSAFE_TASK_PATTERN = re.compile(
+    r"(?:\b(?:sudo|ssh|shell|exec(?:ute)?|restart|shutdown|stop|start|delete|remove|modify|write|"
+    r"proxmox|netbox|finance|credential|password|secret|token|docker)\b|/var/run/docker\.sock)",
+    re.IGNORECASE,
+)
 
 
 async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
@@ -37,6 +43,12 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
         return {"ok": False, "outcome": "FAILED", "error": "A non-empty task is required."}
     if len(task) > MAX_TASK_CHARS:
         return {"ok": False, "outcome": "FAILED", "error": f"Task exceeds the {MAX_TASK_CHARS}-character delegation limit."}
+    if UNSAFE_TASK_PATTERN.search(task):
+        return {
+            "ok": False,
+            "outcome": "FAILED",
+            "error": "Task requests infrastructure, credentials, or a write-capable operation outside the bounded operator surface.",
+        }
 
     payload: dict[str, Any] = {
         "message": (

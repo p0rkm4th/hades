@@ -77,6 +77,11 @@ spec.loader.exec_module(module)
 async def main():
     assert not (await module._delegate("123456789"))["ok"]
     assert not (await module._delegate("task", "12345"))["ok"]
+    module.MAX_TASK_CHARS = 100
+    unsafe = await module._delegate("password")
+    assert not unsafe["ok"] and unsafe["outcome"] == "FAILED"
+    unsafe_socket = await module._delegate("/var/run/docker.sock")
+    assert not unsafe_socket["ok"] and unsafe_socket["outcome"] == "FAILED"
     AsyncClient.payload = {"response": "01234567890", "context_id": "ctx"}
     oversized = await module._delegate("task")
     assert not oversized["ok"] and oversized["outcome"] == "OUTCOME UNKNOWN"

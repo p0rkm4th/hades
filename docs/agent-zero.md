@@ -31,6 +31,12 @@ and authenticated production marker task are exercised. The production
 container is healthy and private; its derived API token matches the protected
 Hermes profile token.
 
+The bridge now also rejects task text containing credential requests,
+infrastructure control, shell/SSH/Docker access, or write-capable operations
+before making an upstream request. This is defense in depth, not a replacement
+for server-side Agent Zero authorization. Harmless bounded inspection and
+evidence-collection tasks remain eligible for delegation.
+
 The bridge uses MCP 2.0's low-level stdio server API, which is compatible with
 the MCP dependency shipped by Hermes 0.21.2. The former MCP 1.x `FastMCP`
 import is intentionally not used. Its registration callbacks follow the
