@@ -46,8 +46,10 @@ acceptance in `scripts/test-open-webui-channels-fixture.sh` passes: synthetic
 Alpha sees Channels enabled, creates a private household channel, and
 anonymous channel access is denied. The same fixture also proves synthetic
 Beta membership, shared posting, Alpha read-back, and message persistence
-after a disposable Open WebUI restart. New-conversation, model-mention, and
-capability-boundary dogfood remains before DOGFOOD GREEN.
+after a disposable Open WebUI restart. It also verifies that Beta membership
+does not grant admin configuration access or standard-channel creation.
+New-conversation, model-mention, and HADES capability-boundary dogfood
+remains before DOGFOOD GREEN.
 
 Upstream references: https://docs.openwebui.com/features/channels/,
 https://github.com/open-webui/docs/blob/main/docs/features/authentication-access/rbac/permissions.md,

@@ -57,6 +57,23 @@ beta_signup=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/add" \
 beta_token=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])' <<<"$beta_signup")
 beta_user_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$beta_signup")
 
+beta_admin_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/auths/admin/config" \
+  -H "Authorization: Bearer $beta_token")
+if [[ "$beta_admin_status" != 401 && "$beta_admin_status" != 403 ]]; then
+  echo "FAIL Beta received admin config access (HTTP ${beta_admin_status})" >&2
+  exit 1
+fi
+beta_standard_status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  "http://127.0.0.1:${port}/api/v1/channels/create" \
+  -H "Authorization: Bearer $beta_token" \
+  -H 'Content-Type: application/json' \
+  --data '{"name":"beta-must-not-create-standard","description":"","type":"standard","is_private":true,"access_grants":[]}')
+if [[ "$beta_standard_status" != 401 && "$beta_standard_status" != 403 ]]; then
+  echo "FAIL Beta created a standard channel (HTTP ${beta_standard_status})" >&2
+  exit 1
+fi
+
 dogfood_channel=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/channels/create" \
   -H "Authorization: Bearer $token" \
   -H 'Content-Type: application/json' \
@@ -103,4 +120,5 @@ fi
 echo "PASS authenticated disposable Channels feature and private-channel creation"
 echo "PASS synthetic Beta membership, shared post, and Alpha read-back"
 echo "PASS shared message remains available after disposable Open WebUI restart"
+echo "PASS channel membership does not grant Beta admin authority (config/create denied)"
 echo "PASS anonymous Channels access denied (HTTP ${anonymous_status})"
