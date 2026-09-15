@@ -79,6 +79,21 @@ messages=$(curl -fsS "http://127.0.0.1:${port}/api/v1/channels/${dogfood_id}/mes
   -H "Authorization: Bearer $token")
 python3 -c 'import json,sys; x=json.load(sys.stdin); assert any("Synthetic Beta shared household message" in m.get("content","") for m in x)' <<<"$messages"
 
+docker restart "$name" >/dev/null
+for attempt in $(seq 1 60); do
+  if curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then
+    break
+  fi
+  if [[ "$attempt" == 60 ]]; then
+    echo "FAIL Open WebUI fixture did not recover after restart" >&2
+    exit 1
+  fi
+  sleep 1
+done
+reloaded_messages=$(curl -fsS "http://127.0.0.1:${port}/api/v1/channels/${dogfood_id}/messages" \
+  -H "Authorization: Bearer $token")
+python3 -c 'import json,sys; x=json.load(sys.stdin); assert any("Synthetic Beta shared household message" in m.get("content","") for m in x)' <<<"$reloaded_messages"
+
 anonymous_status=$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${port}/api/v1/channels/")
 if [[ "$anonymous_status" != 401 && "$anonymous_status" != 403 ]]; then
   echo "FAIL anonymous Channels access returned HTTP ${anonymous_status}" >&2
@@ -87,4 +102,5 @@ fi
 
 echo "PASS authenticated disposable Channels feature and private-channel creation"
 echo "PASS synthetic Beta membership, shared post, and Alpha read-back"
+echo "PASS shared message remains available after disposable Open WebUI restart"
 echo "PASS anonymous Channels access denied (HTTP ${anonymous_status})"
