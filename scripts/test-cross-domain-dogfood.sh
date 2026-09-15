@@ -29,7 +29,10 @@ def answer(user, request):
     if "what did alpha tell" in request.lower():
         return "Private memory is unavailable for another user."
     if "online" in request.lower() or "find a recipe" in request.lower():
-        return f"Web result: {web['recipe']}."
+        return (
+            f"Web result: {web['recipe']}; pantry truth: {grocy}; "
+            f"personal preference: {memory[user].get('preference', 'none')}."
+        )
     if "what recipe" in request.lower():
         return f"Recipe context: {web['recipe']}; pantry truth: {grocy}."
     if "add" in request.lower() and "don't add onions" in request.lower():
@@ -47,7 +50,10 @@ alpha_answer = answer("alpha", "what do I hate?")
 assert "hates mushrooms" in alpha_answer
 beta_private = answer("beta", "what did Alpha tell you about dinner")
 assert "hates mushrooms" not in beta_private
-assert "mushroom-free" in answer("alpha", "find a recipe online using what we have"), answer("alpha", "find a recipe online using what we have")
+web_composed = answer("alpha", "find a recipe online using what we already have")
+assert "mushroom-free" in web_composed
+assert "pantry truth" in web_composed and "milk" in web_composed
+assert "hates mushrooms" in web_composed
 assert "pantry truth" in answer("alpha", "what recipe did I mention earlier and are we missing anything"), answer("alpha", "what recipe did I mention earlier and are we missing anything")
 assert "Finance unavailable" in answer("beta", "we need groceries, can we afford it"), answer("beta", "we need groceries, can we afford it")
 assert "Agent Zero unavailable" in answer("beta", "ask Agent Zero to inspect it")
