@@ -57,8 +57,8 @@
       "required_secret_inputs": ["owner-authorized endpoint and credentials"],
       "network_dependency": "owner-authorized finance API",
       "startup_order": 4,
-      "health_check": "read-only adapter contract check",
-      "restore_check": "synthetic ledger marker and read-only response"
+      "health_check": "read-only adapter and preview-only finance-file MCP contract checks",
+      "restore_check": "synthetic ledger marker, owner-scoped import preview/reconciliation contract, and read-only response"
     },
     {
       "component": "Hermes 0.14 baseline",

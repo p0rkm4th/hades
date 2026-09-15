@@ -82,7 +82,7 @@ not commit volume.
 | Shared household state | PASS | Recipe URL/paste structured-data path, canonical Grocy authoring/fulfillment, and synthetic receipt-intake review path are evidenced; owner-visible recipe and intake acceptance remains |
 | Web/search | PARTIAL | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary; fresh owner-UI follow-up must confirm search freshness |
 | Bounded operator | PASS | Bounded inspection remains available and unsafe delegation is rejected before upstream dispatch; broader tasks and native A2A remain optional hardening |
-| Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; local CSV/native-file handoff is staged without production writes |
+| Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; owner-scoped local CSV preview/import planning and native CSV/QIF/OFX/QFX/CAMT handoff are dogfood-tested without production writes |
 | Homelab | PARTIAL | Synthetic Proxmox/NetBox/Kuma authority reconciliation, bounded Nmap evidence, review-only catalog candidates, and write-free control planning pass; connect approved endpoints with least-privilege credentials and validate real-network freshness |
 | Home Assistant | PARTIAL | Synthetic read-only adapter, ordinary-entity reads, stale/unavailable shaping, and security-sensitive filtering pass; connect the approved URL/token/entity allowlist and validate the deployed read path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
