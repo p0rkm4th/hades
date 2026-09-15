@@ -84,6 +84,9 @@ an owner decision or secret from defects that can be repaired independently.
   and pasted JSON-LD on one bounded normalized preview path. Grocy writes still
   require exact product resolution, review, confirmation, and canonical
   read-back; messy-site fallback and owner acceptance remain staged.
+- **Hardened:** The staged recipe MCP now validates its Grocy API-key input as
+  a bounded regular non-symlink file with safe permissions before any request.
+  The secret-boundary regression passes; no production recipe MCP is enabled.
 - **Documented:** Candidate-only Hermes residuals are classified against the
   stable HADES qualification suite; production remains on 0.14.0 and no
   candidate-only upstream/provider failure is a HADES release blocker.

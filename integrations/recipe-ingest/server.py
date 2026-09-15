@@ -24,12 +24,22 @@ BASE_URL = (
 API_KEY_FILE = os.environ.get("GROCY_API_KEY_FILE") or os.environ.get(
     "HADES_GROCY_API_KEY_FILE", ""
 )
+MAX_API_KEY_BYTES = 8192
 
 
 def _api_key() -> str:
     if not API_KEY_FILE:
         return ""
-    return Path(API_KEY_FILE).read_text(encoding="utf-8").strip()
+    path = Path(API_KEY_FILE)
+    if not path.is_file() or path.is_symlink():
+        raise ValueError("Grocy API key file must be a regular non-symlink file")
+    mode = path.stat().st_mode & 0o777
+    if mode not in {0o600, 0o640}:
+        raise ValueError("Grocy API key file must be mode 0600 or 0640")
+    raw = path.read_bytes()
+    if not raw or len(raw) > MAX_API_KEY_BYTES:
+        raise ValueError("Grocy API key file is empty or exceeds the bounded size")
+    return raw.decode("utf-8").strip()
 
 
 def _request(method: str, path: str, payload=None):
