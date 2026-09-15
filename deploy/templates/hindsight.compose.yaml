@@ -9,7 +9,10 @@ services:
     restart: unless-stopped
     environment:
       HINDSIGHT_API_HOST: 0.0.0.0
-      HINDSIGHT_API_PORT: "9999"
+      # The API listens on 8888 inside the image; 9999 is the separate
+      # control-plane listener. Keeping these distinct avoids an internal
+      # EADDRINUSE collision during a clean reconstruction.
+      HINDSIGHT_API_PORT: "8888"
       HINDSIGHT_API_ENABLE_OBSERVATIONS: "true"
       HINDSIGHT_API_LLM_BASE_URL: ${HADES_HERMES_MODEL_ENDPOINT:?set HADES_HERMES_MODEL_ENDPOINT}
       HINDSIGHT_API_LLM_API_KEY: ${HADES_HINDSIGHT_LLM_API_KEY:?set HADES_HINDSIGHT_LLM_API_KEY}

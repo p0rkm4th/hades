@@ -213,6 +213,11 @@ guest with full application fixtures**, followed by a fresh-install household
 soak. Until that evidence exists, installation/rebuild remains `PARTIAL` in the
 stable-v1 map.
 
+The clean Hindsight reconstruction contract uses API port 8888 and control
+plane port 9999 inside the image. The generated template now keeps those
+listeners distinct; using 9999 for `HINDSIGHT_API_PORT` caused an internal
+`EADDRINUSE` collision before the API could start.
+
 ## Manual-step inventory
 
 | Observed action | Disposition |
