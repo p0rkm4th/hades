@@ -24,7 +24,7 @@ for component, key in {
 }.items():
     if key not in versions or machine_components[component]['pinned_version'] != f'config/versions.env:{key}':
         raise SystemExit(f'machine manifest pin reference drifted for {component}')
-if machine_components['Open WebUI']['pinned_version'] != f"{versions['HADES_OPEN_WEBUI_VERSION']} plus private deployment record":
+if machine_components['Open WebUI']['pinned_version'] != f"{versions['HADES_OPEN_WEBUI_VERSION']} tracked Dockerfile plus immutable base":
     raise SystemExit('machine manifest Open WebUI version drifted')
 if machine_components['Hermes 0.14 baseline']['pinned_version'] != versions['HADES_HERMES_VERSION']:
     raise SystemExit('machine manifest Hermes version drifted')

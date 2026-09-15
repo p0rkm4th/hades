@@ -204,13 +204,21 @@ preflight() {
   if [[ -n "${HADES_AGENT_ZERO_CREDENTIAL_FILE:-}" ]]; then
     validate_secret_file HADES_AGENT_ZERO_CREDENTIAL_FILE
   fi
-  validate_private_records
+  if (( ! generated_records )); then
+    validate_private_records
+  else
+    for template in open-webui.compose.yaml hindsight.compose.yaml searxng.compose.yaml hermes.service.in; do
+      [[ -f "$repo_dir/deploy/templates/$template" ]] || fail "missing tracked deployment template: $template"
+    done
+  fi
   echo 'PASS supported host preflight'
 }
 preflight
 if ((preflight_only)); then exit 0; fi
 if (( generated_records )); then
   [[ "$root" == / ]] || fail 'operator input contract v2 generated records require the real target root'
+  mkdir -p "$HADES_CONFIG_ROOT/searxng" "$HADES_OPEN_WEBUI_DATA" "$HADES_HINDSIGHT_DATA" "$HADES_SEARXNG_DATA"
+  install -m 0640 "$repo_dir/searxng/settings.yml" "$HADES_CONFIG_ROOT/searxng/settings.yml"
   bash "$repo_dir/scripts/render-deployment-records.sh" "$inputs" "$HADES_DEPLOYMENT_DIR" >/dev/null
   validate_private_records
 fi
