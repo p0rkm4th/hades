@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 prefix=/opt/hades-hermes
 artifact=''
 url=''
 expected_sha=''
+staging=''
 while (($#)); do
   case "$1" in
     --prefix) prefix=${2:?--prefix needs a directory}; shift 2 ;;
@@ -24,7 +24,8 @@ else
   : "${url:=${HADES_HERMES_SOURCE_URL:?missing Hermes source URL}}"
   : "${expected_sha:=${HADES_HERMES_SOURCE_SHA256:?missing Hermes source checksum}}"
   tmp=$(mktemp)
-  trap 'rm -f -- "$tmp"' EXIT
+  staging=$(mktemp -d)
+  trap 'find "$staging" -depth -delete 2>/dev/null || true; rmdir "$staging" 2>/dev/null || true; find "$tmp" -delete 2>/dev/null || true' EXIT
   curl --fail --silent --show-error --location --max-time 120 --output "$tmp" "$url"
   artifact=$tmp
 fi
@@ -32,9 +33,14 @@ fi
 actual_sha=$(sha256sum "$artifact" | awk '{print $1}')
 [[ "$actual_sha" == "$expected_sha" ]] || { echo 'FAIL Hermes artifact checksum mismatch' >&2; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo 'FAIL python3 is required to install Hermes' >&2; exit 1; }
+staging=${staging:-$(mktemp -d)}
+trap 'find "$staging" -depth -delete 2>/dev/null || true; rmdir "$staging" 2>/dev/null || true' EXIT
+tar -xzf "$artifact" -C "$staging"
+source_dir=$(find "$staging" -mindepth 1 -maxdepth 2 -type f -name pyproject.toml -printf '%h\n' -quit)
+[[ -n "$source_dir" ]] || { echo 'FAIL Hermes source archive has no pyproject.toml' >&2; exit 1; }
 mkdir -p "$prefix"
 python3 -m venv "$prefix/venv"
-"$prefix/venv/bin/python" -m pip install --disable-pip-version-check --no-cache-dir "$artifact[all]" >/dev/null
+"$prefix/venv/bin/python" -m pip install --disable-pip-version-check --no-cache-dir "${source_dir}[all]" >/dev/null
 install -d -m 0755 "$prefix/bin"
 printf '%s\n' '#!/usr/bin/env bash' "exec $prefix/venv/bin/python -m hermes_cli.main \"\$@\"" > "$prefix/bin/hermes"
 chmod 0755 "$prefix/bin/hermes"
