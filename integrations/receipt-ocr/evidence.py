@@ -96,10 +96,24 @@ def normalize_ocr_lines(lines: list[dict[str, Any]], *, source_ref: str | None =
     }
 
 
-def build_intake_preview(evidence: dict[str, Any], matches: list[dict[str, Any]]) -> dict[str, Any]:
-    """Build a Grocy intake preview; never apply it."""
+def build_intake_preview(
+    evidence: dict[str, Any],
+    matches: list[dict[str, Any]],
+    *,
+    existing_fingerprints: list[str] | tuple[str, ...] = (),
+) -> dict[str, Any]:
+    """Build a Grocy intake preview; never apply it.
+
+    Fingerprints are supplied by the caller because this module deliberately
+    has no receipt database. A known fingerprint is a duplicate-review signal,
+    not permission to replay or overwrite a canonical intake.
+    """
     if evidence.get("status") == "FAILED":
         return {"status": "FAILED", "error": evidence.get("error", "OCR failed.")}
+    fingerprint = evidence.get("receipt_fingerprint") or evidence.get("fingerprint")
+    if fingerprint is not None and not isinstance(fingerprint, str):
+        return {"status": "FAILED", "error": "Receipt fingerprint must be text."}
+    duplicate = bool(fingerprint and fingerprint in set(existing_fingerprints))
     by_index = {int(match["item_index"]): match for match in matches if isinstance(match, dict) and "item_index" in match}
     rows: list[dict[str, Any]] = []
     for index, item in enumerate(evidence.get("items", [])):
@@ -110,13 +124,18 @@ def build_intake_preview(evidence: dict[str, Any], matches: list[dict[str, Any]]
         else:
             row.update({"resolution": "REVIEW_REQUIRED", "candidates": (match or {}).get("candidates", [])})
         rows.append(row)
+    warnings = list(evidence.get("warnings", []))
+    if duplicate:
+        warnings.append("This receipt fingerprint was already submitted; canonical intake must be reconciled before retry.")
     return {
         "status": "PREVIEW",
         "merchant": evidence.get("merchant"),
         "date": evidence.get("date"),
         "items": rows,
         "totals": evidence.get("totals", {}),
-        "warnings": evidence.get("warnings", []),
+        "warnings": list(dict.fromkeys(warnings)),
         "requires_review": True,
+        "duplicate": duplicate,
+        "receipt_fingerprint": fingerprint,
         "canonical_target": "Grocy stock intake",
     }

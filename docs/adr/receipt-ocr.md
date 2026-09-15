@@ -56,6 +56,11 @@ The current evidence contract is implemented in
 runtime accuracy; that requires a disposable PaddleOCR deployment and sample
 images.
 
+The intake preview accepts an optional caller-owned receipt fingerprint and
+known submitted fingerprints. A duplicate becomes an explicit preview warning
+and cannot be treated as a replay authorization; the module stores no receipt
+history itself.
+
 The official `paddleocr-mcp==0.8.5` CLI was also verified in a disposable
 Python 3.14 virtual environment. The package and CLI install successfully
 without local inference extras and expose the documented self-hosted mode.

@@ -37,6 +37,17 @@ assert preview["status"] == "PREVIEW"
 assert preview["items"][0]["product_id"] == 5
 assert preview["items"][1]["resolution"] == "REVIEW_REQUIRED"
 assert preview["requires_review"] is True
+fingerprint = module.receipt_fingerprint(b"synthetic receipt image")
+duplicate_preview = module.build_intake_preview(
+    dict(evidence, receipt_fingerprint=fingerprint),
+    [{"item_index": 0, "product_id": 5, "resolution": "EXACT"}],
+    existing_fingerprints=[fingerprint],
+)
+assert duplicate_preview["status"] == "PREVIEW"
+assert duplicate_preview["duplicate"] is True
+assert any("already submitted" in warning for warning in duplicate_preview["warnings"])
+assert duplicate_preview["receipt_fingerprint"] == fingerprint
+assert module.build_intake_preview(dict(evidence, receipt_fingerprint=object()), [])["status"] == "FAILED"
 
 bad_total = module.normalize_ocr_lines([
     {"text": "Shop", "confidence": 0.99},
@@ -51,5 +62,6 @@ assert len(module.receipt_fingerprint(b"same image")) == 64
 print("PASS OCR line evidence normalization")
 print("PASS uncertain receipt lines remain review-required")
 print("PASS receipt Grocy intake is preview-only")
+print("PASS duplicate receipt fingerprints remain review-only")
 print("PASS OCR failure and total mismatch are explicit")
 PY
