@@ -43,6 +43,10 @@ command tool is outside the HADES boundary.
 The existing loopback fixture in
 [`docs/homelab-readonly.md`](homelab-readonly.md) remains the independent test
 target. The real Proxmox, NetBox, Kuma, and network path are still owner-gated.
+The additional [`scripts/test-homelab-discovery-contract.sh`](../scripts/test-homelab-discovery-contract.sh)
+fixture proves the Nmap-shaped evidence boundary: an in-scope result can
+describe a device and port, while an inventory mutation and an out-of-scope
+target are rejected.
 
 ## Selection outcome
 
@@ -51,4 +55,3 @@ homelab-control MCP. Stage the NetBox and Proxmox read paths first, add Nmap as
 an evidence-producing scan worker, and keep Kuma observation-only. Do not
 install a third-party server into production merely because it advertises
 write operations.
-
