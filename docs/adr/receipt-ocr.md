@@ -91,6 +91,12 @@ exposes only `receipt_ocr_extract`, passes a validated data URL to the official
 upstream `ocr` tool over local stdio, and keeps Grocy/finance writes outside
 the OCR process.
 
+The gateway image was rebuilt as `hades-receipt-ocr:gateway-staged`; an
+image-backed MCP handshake exposed only `receipt_ocr_extract`, and a path
+input was rejected before the upstream worker was called. This proves the
+container transport and input boundary, not yet representative messy-receipt
+accuracy or Grocy intake application.
+
 The reproducible isolated worker definition is
 `integrations/receipt-ocr/Dockerfile`. It pins Python 3.11 and the official
 MCP package, and includes the native OpenCV/Paddle runtime libraries. The
