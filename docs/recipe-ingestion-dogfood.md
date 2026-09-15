@@ -35,6 +35,8 @@ It also verifies:
   rejected before a write plan is produced;
 - a lost response after recipe or ingredient mutation is `OUTCOME UNKNOWN`;
 - confirmation is required and a preview alone performs no write.
+- changing a reviewed quantity invalidates the preview, and current Grocy
+  state is revalidated before an apply;
 
 Still required before this is a production capability:
 

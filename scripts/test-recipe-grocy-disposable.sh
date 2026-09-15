@@ -82,6 +82,9 @@ recipe = extract_from_html(html, "https://recipes.example.test/synthetic-breakfa
 importer = GrocyRecipeImporter(request)
 preview = importer.preview(recipe)
 assert preview["outcome"] == "PREVIEW" and preview["plan"] and not preview["duplicate"], preview
+tampered = json.loads(json.dumps(preview))
+tampered["plan"]["ingredients"][0]["amount"] = "999"
+assert importer.apply(tampered, confirm=True)["outcome"] == "FAILED"
 assert importer.apply(preview)["outcome"] == "FAILED"
 result = importer.apply(preview, confirm=True)
 assert result["outcome"] == "SUCCEEDED", result

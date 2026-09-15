@@ -16,6 +16,11 @@ API, and reads both back before reporting success. Unresolved or ambiguous
 products remain review items. A transport failure after a write is reported as
 `OUTCOME UNKNOWN` and must be reconciled before retry.
 
+The MCP apply boundary retains a process-local HMAC review token and
+revalidates the reviewed plan against current Grocy products, units, and recipe
+titles before writing. Altered, stale, duplicate, or restart-invalidated
+previews are rejected.
+
 The first extractor is Schema.org JSON-LD because it is the common upstream
 contract and is documented by Schema.org. Site-specific scraping and browser
 fallback remain deferred until representative dogfood demonstrates that the

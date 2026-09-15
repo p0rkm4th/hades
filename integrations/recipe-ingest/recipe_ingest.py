@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import html as html_module
 import json
+import hashlib
+import hmac
+import secrets
 import re
 import socket
 from fractions import Fraction
@@ -450,8 +453,19 @@ class GrocyRecipeImporter:
     HTTP failure.
     """
 
-    def __init__(self, request):
+    def __init__(self, request, signing_key: bytes | None = None):
         self.request = request
+        self._signing_key = signing_key or secrets.token_bytes(32)
+
+    @staticmethod
+    def _signed_payload(preview: dict[str, Any]) -> bytes:
+        return json.dumps(
+            {"recipe": preview.get("recipe"), "plan": preview.get("plan"), "duplicate": preview.get("duplicate")},
+            sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")
+
+    def _review_token(self, preview: dict[str, Any]) -> str:
+        return hmac.new(self._signing_key, self._signed_payload(preview), hashlib.sha256).hexdigest()
 
     def preview(self, recipe: dict[str, Any]) -> dict[str, Any]:
         products = self.request("GET", "/api/objects/products")
@@ -473,7 +487,9 @@ class GrocyRecipeImporter:
             resolved["requires_review"] = True
             resolved["warnings"] = list(resolved.get("warnings", [])) + ["A Grocy recipe with this title already exists."]
             plan = None
-        return {"outcome": "PREVIEW", "recipe": resolved, "plan": plan, "duplicate": duplicate}
+        preview = {"outcome": "PREVIEW", "recipe": resolved, "plan": plan, "duplicate": duplicate}
+        preview["review_token"] = self._review_token(preview)
+        return preview
 
     def reconcile(self, recipe_id: int, expected: dict[str, Any]) -> dict[str, Any]:
         recipe = self.request("GET", f"/api/objects/recipes/{recipe_id}")
@@ -496,7 +512,16 @@ class GrocyRecipeImporter:
         if not confirm:
             return {"outcome": "FAILED", "error": "Explicit confirmation is required."}
         plan = preview.get("plan") if isinstance(preview, dict) else None
-        if not isinstance(plan, dict) or preview.get("duplicate"):
+        token = preview.get("review_token") if isinstance(preview, dict) else None
+        if not isinstance(plan, dict) or preview.get("duplicate") or not isinstance(token, str) or not hmac.compare_digest(token, self._review_token(preview)):
+            return {"outcome": "FAILED", "error": "Preview is missing, altered, duplicate, or not issued by this importer."}
+        try:
+            current = self.preview(preview["recipe"])
+        except (GrocyRequestError, TypeError, ValueError):
+            return {"outcome": "FAILED", "error": "Current Grocy state could not revalidate the reviewed preview."}
+        if current.get("duplicate") or current.get("plan") != plan:
+            return {"outcome": "FAILED", "error": "Grocy state changed since preview; create a new preview before retrying."}
+        if not isinstance(plan, dict):
             return {"outcome": "FAILED", "error": "Only a complete non-duplicate preview can be applied."}
         mutation_attempted = False
         try:

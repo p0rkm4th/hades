@@ -61,6 +61,16 @@ def _request(method: str, path: str, payload=None):
         raise GrocyRequestError(str(exc), after_mutation=method != "GET") from exc
 
 
+_importer = None
+
+
+def _get_importer():
+    global _importer
+    if _importer is None:
+        _importer = GrocyRecipeImporter(_request)
+    return _importer
+
+
 def _text(result: dict) -> CallToolResult:
     return CallToolResult(content=[TextContent(type="text", text=json.dumps(result, sort_keys=True))])
 
@@ -93,16 +103,16 @@ async def list_tools():
 
 async def call_tool(tool_name, args):
     args = args or {}
-    importer = GrocyRecipeImporter(_request)
+    importer = _get_importer()
     try:
         if tool_name == "recipe_url_preview":
             recipe = extract_from_url(str(args.get("url", "")))
-            return _text(importer.preview(recipe))
+            return _text(_importer.preview(recipe))
         if tool_name == "recipe_url_apply":
-            return _text(importer.apply(args.get("preview", {}), confirm=args.get("confirm") is True))
+            return _text(_importer.apply(args.get("preview", {}), confirm=args.get("confirm") is True))
         if tool_name == "recipe_paste_preview":
             recipe = extract_from_paste(args.get("text", ""), args.get("source_url"))
-            return _text(importer.preview(recipe))
+            return _text(_importer.preview(recipe))
     except (ValueError, GrocyRequestError) as exc:
         return _text({"outcome": "FAILED", "error": str(exc)})
     raise ValueError(f"unknown tool: {tool_name}")
