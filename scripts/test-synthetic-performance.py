@@ -63,9 +63,11 @@ def run(label, prompt, expected=None):
         raise SystemExit(f"{label}: expected {expected}, got {names}")
     messages.append(message)
     tool_started = time.perf_counter()
+    tool_timings = []
     for call in calls:
         args = json.loads(call.get("function", {}).get("arguments", "{}"))
-        result, _ = synthetic_tool(call["function"]["name"], args)
+        result, elapsed = synthetic_tool(call["function"]["name"], args)
+        tool_timings.append({"tool": call["function"]["name"], "tool_ms": round(elapsed, 1)})
         messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result)})
     tool_ms = (time.perf_counter() - tool_started) * 1000
     continuation, continuation_ms = model_call(messages)
@@ -74,7 +76,18 @@ def run(label, prompt, expected=None):
         loop_names = [call.get("function", {}).get("name") for call in continuation_calls]
         raise SystemExit(f"{label}: unnecessary continuation tool loop: {loop_names}")
     total_ms = (time.perf_counter() - total_started) * 1000
-    return {"workflow": label, "tool_calls": names, "model_ms": round(model_ms, 1), "tool_ms": round(tool_ms, 1), "continuation_ms": round(continuation_ms, 1), "total_ms": round(total_ms, 1)}
+    return {
+        "workflow": label,
+        "tool_calls": names,
+        # This is complete non-streaming model response latency, not true
+        # time-to-first-token; keep the distinction explicit in the output.
+        "model_ms": round(model_ms, 1),
+        "time_to_tool_ms": round(model_ms, 1) if calls else None,
+        "tool_ms": round(tool_ms, 1),
+        "tool_timings": tool_timings,
+        "continuation_ms": round(continuation_ms, 1),
+        "total_ms": round(total_ms, 1),
+    }
 
 
 def main():

@@ -90,9 +90,11 @@ The repeatable synthetic timing capture is
 It covers normal chat, private-memory recall, canonical Grocy read, an
 unconfirmed Grocy mutation (which must not call a write), recipe preview, web
 search, a multi-domain request, and bounded synthetic Agent Zero delegation.
-Each tool workflow records model-selection time, fixture tool time,
-post-tool continuation, total turn time, and selected tool names. The fixtures
-are read-only and contain no real provider, recipe write, or credential
+Each tool workflow records model-selection time, a `time_to_tool_ms` proxy using
+the complete non-streaming model response, per-tool fixture execution time,
+post-tool continuation, total turn time, and selected tool names. It does not
+claim true time-to-first-token; streaming TTFT requires a reachable streaming
+gateway. The fixtures are read-only and contain no real provider, recipe write, or credential
 dependency; use the operator-only environment override when Ollama is not
 bound to loopback. The model endpoint is intentionally host-sensitive: if it
 is unreachable, the harness exits with an explicit dependency message and does
