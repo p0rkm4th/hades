@@ -67,6 +67,12 @@ not execute arbitrary shell, and must not silently create or update NetBox
 records. See the candidate selection and command boundary in
 [`homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
+`integrations/homelab-readonly/catalog.py` can turn normalized scan evidence
+into a transient review projection containing observed IPs, hostnames, open
+ports, and exact NetBox context matches. Every candidate is marked
+`REVIEW_REQUIRED`, includes `writes_performed: false`, and is never a second
+HADES inventory or an automatic NetBox reconciliation.
+
 ### Uptime Kuma
 
 Prefer a deliberately published status page or metrics endpoint for read-only
