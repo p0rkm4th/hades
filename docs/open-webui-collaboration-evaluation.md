@@ -38,6 +38,12 @@ Production enablement is serialized separately from Hermes promotion and
 requires the Open WebUI migration and rollback contract. No production setting
 was changed by this evaluation.
 
+The pinned HADES artifact's source contains the ENABLE_CHANNELS setting and
+the Channels API is present. Its unauthenticated public config response omits
+the admin-only feature flag, so absence of that flag from /api/config is not
+evidence that Channels are unavailable. Authenticated disposable admin
+acceptance remains required before changing the ledger to DOGFOOD GREEN.
+
 Upstream references: https://docs.openwebui.com/features/channels/,
 https://github.com/open-webui/docs/blob/main/docs/features/authentication-access/rbac/permissions.md,
 and https://docs.openwebui.com/features/extensibility/.
