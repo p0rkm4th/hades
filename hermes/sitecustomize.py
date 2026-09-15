@@ -58,7 +58,10 @@ _HADES_GROCY_ITEM_FRAGMENT = re.compile(
 )
 _HADES_NONPERSONAL_STATE_INTENT = re.compile(
     r"\b(?:weather|forecast|temperature|search|look\s+up|latest|news|web|agent\s+zero|agent0|"
-    r"delegat(?:e|ion|ed)|finance|budget|balance|transaction|account|afford)\b",
+    r"delegat(?:e|ion|ed)|finance|budget|balance|transaction|account|afford|"
+    r"homelab|proxmox|netbox|uptime\s+kuma|virtual\s+machine|\bvm\b|container|"
+    r"home\s+assistant|smart\s+home|light(?:s)?|air\s+purifier|sensor|device(?:s)?|"
+    r"unavailable|offline|locked|garage\s+door|alarm|camera)\b",
     re.IGNORECASE,
 )
 

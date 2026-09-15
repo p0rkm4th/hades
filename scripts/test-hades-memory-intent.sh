@@ -56,6 +56,11 @@ for live_state in (
     'the web search returned a recipe',
     'the finance balance is $65',
     'Agent Zero returned execution output',
+    'Proxmox says VM X is running on Node B',
+    'NetBox lists the server at 10.0.0.5',
+    'Uptime Kuma reports the service is offline',
+    'the living-room light is on',
+    'Home Assistant says the air purifier is unavailable',
 ):
     if not overlay._hades_nonpersonal_state_turn(live_state):
         raise SystemExit(f'live/shared state was eligible for private memory: {live_state}')
