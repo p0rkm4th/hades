@@ -49,13 +49,17 @@ Beta membership, shared posting, Alpha read-back, and message persistence
 after a disposable Open WebUI restart. It also verifies that Beta membership
 does not grant admin configuration access or standard-channel creation.
 The fixture also verifies a newly created shared conversation starts without
-inherited message history.
-New-conversation, model-mention, and HADES capability-boundary dogfood
-remains before DOGFOOD GREEN. The pinned artifact's mention parser contract is
-covered by `scripts/test-open-webui-channel-mentions.sh`; it verifies typed
-model references without claiming model execution. The overlay capability contract separately
-verifies that a household session removes finance and Agent Zero tools before
-model invocation while preserving them for owner scope.
+inherited message history. The pinned 0.11.1 artifact had an upstream Channels
+composition defect: its model-response handler awaited the chat-completion
+endpoint but did not consume the returned streaming response. The HADES image
+now applies an exact build-time compatibility patch, guarded by the pinned
+source shape, so channel model responses are actually persisted and emitted.
+The `scripts/test-open-webui-channel-model-fixture.sh` fixture proves the
+provider request, streamed response, and persisted channel reply against a
+disposable backend. The overlay
+capability contract separately verifies that a household session removes
+finance and Agent Zero tools before model invocation while preserving them for
+owner scope.
 
 Upstream references: https://docs.openwebui.com/features/channels/,
 https://github.com/open-webui/docs/blob/main/docs/features/authentication-access/rbac/permissions.md,
