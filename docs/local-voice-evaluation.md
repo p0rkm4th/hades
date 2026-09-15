@@ -43,6 +43,18 @@ audio-chunk, and audio-stop events, rejects truncated/invalid frames, and
 enforces a bounded payload. It remains transport-only and does not assert
 identity or execute a HADES action.
 
+## Current STT staging result
+
+The official whisper.cpp amd64 image was pulled by immutable digest
+sha256:f2190b995d27f6cd5bb9890792d598f2221893e9a1424fac6848ad904920eb5f.
+Its bundled base English model reached model initialization but the
+whisper-server process exited with status 132 before opening HTTP, including
+when explicitly passed no-GPU mode. This is classified as
+HOST-SENSITIVE / IMAGE-RUNTIME and is not a HADES defect. The image is not
+promoted or registered as a live voice service until a compatible pinned
+runtime or alternate STT implementation passes the same synthetic inference
+contract.
+
 Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
