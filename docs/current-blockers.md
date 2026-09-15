@@ -110,7 +110,10 @@ an owner decision or secret from defects that can be repaired independently.
 - **Added:** Local finance files now have a Hermes-registered, inline-base64
   preview MCP. CSV mapping, duplicate analysis, explicit Actual account
   targeting, owner-only synthetic dogfood, and timeout-after-write
-  reconciliation pass; native Actual execution remains authorization-gated.
+  reconciliation pass; the unregistered native-writer contract now also
+  preflights duplicates and classifies canonical read-back as `SUCCEEDED`,
+  `FAILED`, or `OUTCOME UNKNOWN` without blind replay. Native Actual execution
+  remains authorization-gated.
 - **Hardened:** Home Assistant security filtering now rejects garage/door/alarm
   controls even when represented as `switch`, `button`, or `input_boolean`,
   while retaining ordinary read-only entities.
