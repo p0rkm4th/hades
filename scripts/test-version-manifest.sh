@@ -2,11 +2,14 @@
 set -Eeuo pipefail
 manifest=config/versions.env
 [[ -f "$manifest" ]] || { echo 'FAIL version manifest missing'; exit 1; }
-required=(HADES_MANIFEST_VERSION HADES_HERMES_VERSION HADES_OPEN_WEBUI_VERSION HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE_DIGEST HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD HADES_ACTUAL_VERSION HADES_ACTUAL_ADAPTER_REVISION HADES_GROCY_ADAPTER_REVISION HADES_AGENT_ZERO_ADAPTER_REVISION)
+required=(HADES_MANIFEST_VERSION HADES_HERMES_VERSION HADES_OPEN_WEBUI_VERSION HADES_OPEN_WEBUI_BASE_IMAGE HADES_OPEN_WEBUI_BUILD_SOURCE HADES_HERMES_SOURCE_URL HADES_HERMES_SOURCE_VERSION HADES_HERMES_SOURCE_SHA256 HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE_DIGEST HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD HADES_ACTUAL_VERSION HADES_ACTUAL_ADAPTER_REVISION HADES_GROCY_ADAPTER_REVISION HADES_AGENT_ZERO_ADAPTER_REVISION)
 for name in "${required[@]}"; do
   value=$(awk -F= -v key="$name" '$1 == key {print substr($0, index($0,"=")+1)}' "$manifest")
   [[ -n "$value" ]] || { echo "FAIL missing version pin: $name"; exit 1; }
 done
+[[ "$(awk -F= '$1 == "HADES_OPEN_WEBUI_BASE_IMAGE" {print $2}' "$manifest")" == ghcr.io/open-webui/open-webui@sha256:* ]] || { echo 'FAIL Open WebUI base artifact is not immutable'; exit 1; }
+[[ "$(awk -F= '$1 == "HADES_HERMES_SOURCE_SHA256" {print $2}' "$manifest")" =~ ^[0-9a-f]{64}$ ]] || { echo 'FAIL Hermes source checksum is invalid'; exit 1; }
+grep -q '^FROM ghcr.io/open-webui/open-webui@sha256:' webui/Dockerfile || { echo 'FAIL Open WebUI Dockerfile does not use an immutable base'; exit 1; }
 for name in HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD; do
   value=$(awk -F= -v key="$name" '$1 == key {print substr($0, index($0,"=")+1)}' "$manifest")
   [[ "$value" =~ ^[^[:space:]=]+@sha256:[0-9a-f]{64}$ ]] || {
