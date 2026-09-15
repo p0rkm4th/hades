@@ -4,7 +4,7 @@ This is a sanitized project-level record of verified capability. Detailed
 owner prompts, URLs, account identifiers, runtime topology, and canonical
 state checks remain in the private acceptance record.
 
-Last reviewed: 2026-09-14
+Last reviewed: 2026-09-15
 
 | Capability | Status | Component / revision | Sanitized evidence | Limitation |
 |---|---|---|---|---|
@@ -30,7 +30,7 @@ Last reviewed: 2026-09-14
 
 | Shared Open WebUI Channels | SELECTED / STAGED | Maintained Open WebUI Channels | Upstream Channels are selected as the shared conversation authority; authenticated disposable acceptance proves Channels are enabled, a synthetic Alpha can create a private household channel, and anonymous channel access is denied. HADES channel/private-memory/capability boundaries and the full dogfood sequence remain documented. | Pinned-version migration and Alpha/Beta membership/message/reload/capability-boundary dogfood remain; do not create shared Hindsight or transfer owner authority through membership. |
 | Agent Zero interactive Operator | SELECTED / STAGED | Native Agent Zero UI + future protected private route | Native UI is kept separate from bounded MCP delegation; current loopback/private deployment, fail-closed trusted-proxy/owner-group policy contract, and no-authority-expansion contract are documented and tested. | No tracked reverse proxy or supported global launcher is present; route, trusted identity source, WebSockets, native UI, mobile, and restart acceptance remain before dogfood-green. |
-| Local push-to-talk voice | SELECTED / STAGED | Wyoming protocol + faster-whisper 1.2.1 candidate from pinned HADES artifact + evaluated Piper-compatible TTS | Provider-neutral bounded WAV/transcript, Wyoming event-framing, Wyoming-to-STT bridge, localhost service, non-authentication boundary, failure contract, and real staged faster-whisper CPU/int8 service transcription are defined; no second HADES runtime or wake-word dependency is introduced. | Service correctly returns CLARIFY because calibrated confidence is unavailable; separate transcript-readiness/action-authorization semantics, whisper.cpp host/image issue, TTS selection, Alpha/Beta/Gamma dogfood, and owner-visible latency remain. |
+| Local push-to-talk voice | SELECTED / STAGED | Wyoming protocol + faster-whisper 1.2.1 candidate from pinned HADES artifact + evaluated Piper-compatible TTS | Provider-neutral bounded WAV/transcript, Wyoming event-framing, Wyoming-to-STT bridge, localhost service, separate transcript-readiness/action-authorization fields, non-authentication boundary, failure contract, and real staged faster-whisper CPU/int8 service transcription are defined; no second HADES runtime or wake-word dependency is introduced. | Calibrated confidence policy, whisper.cpp host/image issue, TTS selection, Hermes/Open WebUI wiring, Alpha/Beta/Gamma dogfood, and owner-visible latency remain. |
 | Browser interaction | SELECTED / STAGED | Microsoft @playwright/mcp 0.0.81 | Anonymous-first profile policy, trusted owner-profile selector, isolated/persistent profile separation, direct-extraction preference, and read/draft/submit side-effect contract are documented with an immutable npm integrity value; disposable local navigation, accessibility snapshot, and exactly-once explicit-submit dogfood pass. | Real privileged-profile denial through the deployed HADES actor path remains; no production browser profile is registered. |
 
 Private detailed evidence: the deployment acceptance record maintained outside

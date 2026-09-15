@@ -109,9 +109,11 @@ boundary and authorization gate are recorded in
 
 ## Current next action
 
-Continue capability expansion from the highest-value unblocked lane: finish
-the staged recipe URL/OCR composition and canonical disposable Grocy checks,
-then advance the remaining synthetic multi-domain, homelab, smart-home, and
-recovery contracts. Clean-machine reconstruction evidence is retained above;
-it is maintenance evidence rather than the primary roadmap. Owner-gated real
-integrations remain outside this work.
+Continue capability expansion from the highest-value unblocked lane: complete
+the remaining synthetic household Channels membership/message/reload and
+capability-boundary dogfood, then advance local voice provider selection and
+Hermes/Open WebUI wiring. The authenticated disposable Channels feature and
+private-channel contract now pass; no production setting changed. Clean-machine
+reconstruction evidence is retained above; it is maintenance evidence rather
+than the primary roadmap. Owner-gated real integrations remain outside this
+work.
