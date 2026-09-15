@@ -19,11 +19,27 @@ source "$repo_dir/config/versions.env"
 : "${HADES_OPEN_WEBUI_DATA:?operator input is missing HADES_OPEN_WEBUI_DATA}"
 : "${HADES_HINDSIGHT_DATA:?operator input is missing HADES_HINDSIGHT_DATA}"
 : "${HADES_SEARXNG_DATA:?operator input is missing HADES_SEARXNG_DATA}"
+: "${HADES_SEARXNG_SECRET_FILE:?operator input is missing HADES_SEARXNG_SECRET_FILE}"
 : "${HADES_HERMES_WORKING_DIRECTORY:?operator input is missing HADES_HERMES_WORKING_DIRECTORY}"
 : "${HADES_HERMES_EXECUTABLE:?operator input is missing HADES_HERMES_EXECUTABLE}"
+[[ "$HADES_OPEN_WEBUI_IMAGE" =~ ^[^[:space:]=]+@sha256:[0-9a-f]{64}$ ]] || {
+  echo 'FAIL HADES_OPEN_WEBUI_IMAGE must be an immutable image reference' >&2; exit 1;
+}
 
 mkdir -p "$output"
 chmod 700 "$output"
+[[ -f "$HADES_SEARXNG_SECRET_FILE" && ! -L "$HADES_SEARXNG_SECRET_FILE" ]] || {
+  echo 'FAIL SearXNG secret file is missing or a symlink' >&2; exit 1;
+}
+secret_mode=$(stat -c '%a' "$HADES_SEARXNG_SECRET_FILE")
+[[ "$secret_mode" == 600 || "$secret_mode" == 640 ]] || {
+  echo 'FAIL SearXNG secret file must be mode 0600 or 0640' >&2; exit 1;
+}
+mkdir -p "$HADES_CONFIG_ROOT/searxng"
+awk -v secret="$(<"$HADES_SEARXNG_SECRET_FILE")" \
+  '{gsub("__SEARXNG_SECRET__", secret); print}' \
+  "$repo_dir/searxng/settings.yml" > "$HADES_CONFIG_ROOT/searxng/settings.yml"
+chmod 600 "$HADES_CONFIG_ROOT/searxng/settings.yml"
 revision=$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || printf 'unknown')
 manifest_sha=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
 

@@ -5,6 +5,8 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 fixture=$(mktemp -d)
 trap 'find "$fixture" -depth -mindepth 1 -delete; rmdir "$fixture" 2>/dev/null || true' EXIT
 mkdir -p "$fixture/config" "$fixture/profile" "$fixture/data" "$fixture/hindsight" "$fixture/searxng"
+printf 'synthetic-searxng-secret\n' > "$fixture/searxng-secret"
+chmod 600 "$fixture/searxng-secret"
 cat > "$fixture/operator.env" <<EOF
 HADES_INPUTS_VERSION=2
 HADES_CONFIG_ROOT=$fixture/config
@@ -15,9 +17,11 @@ HADES_OPEN_WEBUI_IMAGE=alpine@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a3
 HADES_OPEN_WEBUI_DATA=$fixture/data
 HADES_HINDSIGHT_DATA=$fixture/hindsight
 HADES_SEARXNG_DATA=$fixture/searxng
+HADES_SEARXNG_SECRET_FILE=$fixture/searxng-secret
 HADES_HERMES_WORKING_DIRECTORY=$repo_dir
 HADES_HERMES_EXECUTABLE=/usr/bin/hermes
 HADES_HERMES_API_KEY=synthetic-secret
+HADES_HINDSIGHT_LLM_API_KEY=synthetic-hindsight-key
 EOF
 chmod 600 "$fixture/operator.env"
 bash "$repo_dir/scripts/render-deployment-records.sh" "$fixture/operator.env" "$fixture/records" >/dev/null
@@ -34,6 +38,7 @@ done
 grep -q "WorkingDirectory=$repo_dir" "$fixture/records/hermes.service"
 grep -q 'OPENAI_API_KEYS: "\${HADES_HERMES_API_KEY' "$fixture/records/open-webui.compose.yaml"
 ! grep -q 'synthetic-secret' "$fixture/records"/*
+grep -q 'synthetic-searxng-secret' "$fixture/config/searxng/settings.yml"
 docker compose -f "$fixture/records/open-webui.compose.yaml" config --quiet
 docker compose -f "$fixture/records/hindsight.compose.yaml" config --quiet
 docker compose -f "$fixture/records/searxng.compose.yaml" config --quiet

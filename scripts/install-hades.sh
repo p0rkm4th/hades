@@ -54,6 +54,9 @@ for name in HADES_STATE_ROOT HADES_CONFIG_ROOT HADES_BACKUP_ROOT HADES_IDENTITY_
   [[ -n "${!name:-}" ]] || fail "operator input is missing required path variable: $name"
   [[ "${!name}" == /* ]] || fail "operator input path must be absolute: $name"
 done
+if (( generated_records )); then
+  [[ "${HADES_SEARXNG_SECRET_FILE:-}" == /* ]] || fail 'operator input path must be absolute: HADES_SEARXNG_SECRET_FILE'
+fi
 validate_private_records() {
   deployment_dir=${HADES_DEPLOYMENT_DIR:-}
   [[ -n "$deployment_dir" ]] || fail 'HADES_DEPLOYMENT_DIR is required for private deployment records'
@@ -110,6 +113,10 @@ validate_synthetic_secret_contract() {
   done
   validate_secret_file HADES_HINDSIGHT_DATABASE_SECRET_FILE
   validate_secret_file HADES_GROCY_API_KEY_FILE
+  if (( generated_records )); then
+    validate_secret_file HADES_SEARXNG_SECRET_FILE
+    [[ -n "${HADES_HINDSIGHT_LLM_API_KEY:-}" && "$HADES_HINDSIGHT_LLM_API_KEY" != REQUIRED_SECRET_INPUT ]] || fail 'Hindsight LLM API key input is missing or still a placeholder'
+  fi
   if [[ -n "${HADES_AGENT_ZERO_CREDENTIAL_FILE:-}" ]]; then
     validate_secret_file HADES_AGENT_ZERO_CREDENTIAL_FILE
   fi
@@ -218,7 +225,6 @@ if ((preflight_only)); then exit 0; fi
 if (( generated_records )); then
   [[ "$root" == / ]] || fail 'operator input contract v2 generated records require the real target root'
   mkdir -p "$HADES_CONFIG_ROOT/searxng" "$HADES_OPEN_WEBUI_DATA" "$HADES_HINDSIGHT_DATA" "$HADES_SEARXNG_DATA"
-  install -m 0640 "$repo_dir/searxng/settings.yml" "$HADES_CONFIG_ROOT/searxng/settings.yml"
   bash "$repo_dir/scripts/render-deployment-records.sh" "$inputs" "$HADES_DEPLOYMENT_DIR" >/dev/null
   validate_private_records
 fi
