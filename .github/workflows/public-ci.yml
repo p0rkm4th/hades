@@ -120,6 +120,8 @@ jobs:
         run: bash scripts/test-private-input-contract.sh
       - name: Check generated deployment records
         run: bash scripts/test-generated-deployment-records.sh
+      - name: Check generated v2 private inputs
+        run: bash scripts/test-generated-private-inputs.sh
       - name: Check Hermes artifact contract
         run: bash scripts/test-hermes-artifact-contract.sh
       - name: Check network exposure policy
