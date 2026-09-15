@@ -16,6 +16,7 @@ done
 for name in grocy-api-key agent-zero-credential searxng-secret; do
   test "$(stat -c '%a' "$fixture/private/secrets/$name")" = 600
 done
+test ! -e "$fixture/private/secrets/hindsight-database"
 bash "$repo_dir/scripts/render-deployment-records.sh" "$fixture/private/operator.env" "$fixture/private/config/private-deployment" >/dev/null
 test -f "$fixture/private/config/searxng/settings.yml"
 ! grep -R 'synthetic-searxng-secret' "$fixture/private/config/private-deployment" >/dev/null

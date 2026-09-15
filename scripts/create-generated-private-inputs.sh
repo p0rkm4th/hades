@@ -34,7 +34,7 @@ for secret in jwt_secret key_seed admin_password; do
   printf 'synthetic-%s\n' "$secret" > "$output/identity/$secret"
   chmod 600 "$output/identity/$secret"
 done
-for secret in hindsight-database grocy-api-key agent-zero-credential searxng-secret; do
+for secret in grocy-api-key agent-zero-credential searxng-secret; do
   printf 'synthetic-%s\n' "$secret" > "$output/secrets/$secret"
   chmod 600 "$output/secrets/$secret"
 done
