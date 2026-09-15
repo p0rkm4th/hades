@@ -545,9 +545,11 @@ class GrocyRecipeImporter:
             return {"outcome": "FAILED", "error": "Only a complete non-duplicate preview can be applied."}
         mutation_attempted = False
         try:
+            # The request may be accepted and committed even if its response
+            # is malformed or lost; mark the boundary before sending it.
+            mutation_attempted = True
             created = self.request("POST", "/api/objects/recipes", plan["recipe"])
             recipe_id = int(created["created_object_id"])
-            mutation_attempted = True
             for ingredient in plan["ingredients"]:
                 row = dict(ingredient)
                 row["recipe_id"] = recipe_id

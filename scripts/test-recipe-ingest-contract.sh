@@ -216,6 +216,20 @@ assert failure_preview["plan"] and not failure_preview["duplicate"]
 unknown = failure_importer.apply(failure_preview, confirm=True)
 assert unknown["outcome"] == "OUTCOME UNKNOWN"
 
+def malformed_create_response(method, path, payload=None):
+    if method == "GET":
+        return request(method, path, payload)
+    if path == "/api/objects/recipes":
+        state["recipes"].append({"id": 42, **payload})
+        return {}
+    raise AssertionError((method, path, payload))
+malformed_importer = module.GrocyRecipeImporter(malformed_create_response)
+malformed_recipe = dict(import_recipe)
+malformed_recipe["title"] = "Malformed Response Recipe"
+malformed_preview = malformed_importer.preview(malformed_recipe)
+malformed_result = malformed_importer.apply(malformed_preview, confirm=True)
+assert malformed_result["outcome"] == "OUTCOME UNKNOWN", malformed_result
+
 try:
     module.extract_from_html('<script type="application/ld+json">{"@type":"Recipe"}</script>')
 except ValueError as exc:
