@@ -13,6 +13,7 @@ from mcp.server.stdio import stdio_server
 from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 
 from reconcile import summarize
+from catalog import propose_inventory_candidates
 
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
@@ -26,6 +27,17 @@ TOOLS = [Tool(
         "never perform writes or execute network commands."
     ),
     inputSchema={"type": "object", "properties": {}},
+), Tool(
+    name="homelab_discovery_candidates",
+    description=(
+        "Turn normalized Nmap evidence into transient review-only device "
+        "candidates. This does not run Nmap, change NetBox, or perform any "
+        "inventory or management write."
+    ),
+    inputSchema={"type": "object", "properties": {
+        "evidence": {"type": "object"},
+        "netbox": {"type": "object"},
+    }, "required": ["evidence"]},
 )]
 
 
@@ -86,9 +98,19 @@ async def list_tools(_ctx, _params):
 
 
 async def call_tool(_ctx, params):
-    if params.name != "homelab_summary":
+    if params.name == "homelab_discovery_candidates":
+        args = params.arguments or {}
+        evidence = args.get("evidence")
+        netbox = args.get("netbox")
+        encoded = json.dumps(evidence, separators=(",", ":")).encode() if isinstance(evidence, dict) else b""
+        if len(encoded) > MAX_RESPONSE_BYTES:
+            raise ValueError("discovery evidence exceeds bounded size")
+        result = propose_inventory_candidates(evidence, netbox)
+    elif params.name == "homelab_summary":
+        result = homelab_summary()
+    else:
         raise ValueError(f"unknown tool: {params.name}")
-    return CallToolResult(content=[TextContent(type="text", text=json.dumps(homelab_summary(), sort_keys=True))])
+    return CallToolResult(content=[TextContent(type="text", text=json.dumps(result, sort_keys=True))])
 
 
 async def main():

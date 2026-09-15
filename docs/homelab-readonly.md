@@ -111,6 +111,9 @@ configured HTTP(S) GET endpoints and delegates authority-aware composition to
 `reconcile.py`; the focused contract is
 `scripts/test-homelab-readonly-adapter.sh`. Missing or failed sources produce
 partial results and errors rather than substituting memory or another source.
+Its `homelab_discovery_candidates` tool accepts already-normalized Nmap
+evidence and returns the review-only catalog projection; it does not invoke a
+scanner or perform inventory/management writes.
 
 [`scripts/test-homelab-fixture.sh`](../scripts/test-homelab-fixture.sh) adds a
 disposable loopback fixture for the next integration step. It exposes minimal
