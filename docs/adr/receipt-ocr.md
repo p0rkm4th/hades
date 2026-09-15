@@ -63,7 +63,10 @@ The `local-cpu` extra cannot currently resolve on this host because no
 compatible `paddlepaddle` distribution is available for Python 3.14. This is
 an environment compatibility result, not a reason to add a custom OCR engine;
 the next evaluation should use a supported Python/runtime guest or a bounded
-self-hosted PaddleX service.
+self-hosted PaddleX service. The same pinned dependency set resolves in the
+already available disposable Python 3.11 container, including
+`paddlepaddle==3.3.1`; this does not authorize installing OCR into the
+production HADES host.
 
 ## Non-decision
 
