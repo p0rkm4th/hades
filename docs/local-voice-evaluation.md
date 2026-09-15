@@ -103,7 +103,10 @@ provider failure are explicit failures, and synthesized audio never
 authenticates a speaker or authorizes an action. The official OHF-Voice Piper
 implementation is a candidate, not yet a pinned or production service.
 
-Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
+The pipeline records bounded `audio_capture_seconds`, `stt_seconds`,
+`model_response_seconds`, `time_to_first_response_seconds`, `tts_seconds`, and
+`total_seconds` fields on successful and failed turns. Measure STT, HADES/model,
+tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
 

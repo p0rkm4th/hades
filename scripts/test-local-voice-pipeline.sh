@@ -27,13 +27,19 @@ result = handle_voice_turn(events, stt_provider=lambda _: {"text": "check the pa
 assert result["status"] == "SUCCEEDED" and result["response"] == "The pantry is ready."
 assert result["transcript"]["transcript_ready"] is True
 assert seen["context"] == {"voice_authenticated": False, "action_authorized": False, "transcript_status": "ACCEPTED"}
+timings = result["timings"]
+assert all(value >= 0 for value in timings.values())
+assert {"audio_capture_seconds", "stt_seconds", "model_response_seconds", "tts_seconds", "time_to_first_response_seconds", "total_seconds"} <= timings.keys()
+assert timings["time_to_first_response_seconds"] <= timings["total_seconds"]
 
 silence = handle_voice_turn(events, stt_provider=lambda _: {"text": "", "confidence": 0.99}, chat_provider=lambda *_: (_ for _ in ()).throw(AssertionError("silence reached HADES")), tts_provider=lambda _: audio.getvalue())
 assert silence["status"] == "SILENCE"
 
 tts_failure = handle_voice_turn(events, stt_provider=lambda _: {"text": "check the pantry", "confidence": 0.91}, chat_provider=lambda *_: "reply", tts_provider=lambda _: b"invalid wav")
 assert tts_failure["status"] == "FAILED" and tts_failure["action_authorized"] is False
+assert "total_seconds" in tts_failure["timings"]
 print("PASS Wyoming audio composes through transcript, HADES, and TTS boundaries")
 print("PASS silence stops before HADES request")
 print("PASS voice pipeline never authorizes an action")
+print("PASS voice pipeline records bounded capture/STT/model/TTS/total timings")
 PY
