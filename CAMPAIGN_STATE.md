@@ -530,6 +530,21 @@ not production promotion. Production remains Hermes 0.14.0 and Open WebUI
 0.11.1. The readiness map and capability ledger carry the authoritative
 remaining contracts and owner gates.
 
+The fresh Fedora 44 reconstruction attempt booted and installed Docker/Compose;
+its first run exposed host-storage exhaustion, and the retry exposed Fedora
+SELinux plus root-created UID-1000 secret-mount issues. The full-application
+harness now uses labeled read-only mounts and service-UID-compatible synthetic
+secrets, and the focused composition passes. The guest still stopped during
+Agent Zero registry acquisition, so full fresh-guest application evidence
+remains unproven.
+
+An independent Fedora 44 reconstruction attempt booted from the verified
+Fedora Cloud image, accepted the current repository, installed the documented
+Docker/Compose prerequisites, and built the pinned Open WebUI artifact. It
+stopped before the remaining image pulls because the temporary guest overlay
+exhausted the host's `/tmp` tmpfs; all temporary artifacts were reclaimed.
+This is a precise environment limitation, not full-application evidence.
+
 ## A2A V1 DECISION
 
 **A2A DEFERRED FOR V1.** The existing bounded Agent Zero MCP bridge is the

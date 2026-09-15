@@ -207,14 +207,17 @@ unproven.
 | Reboot/restart | PASS for tracked subset on two guests | Both disposable Fedora guests recovered the tracked services and enabled Hermes after reboot; private records are bounded smoke services, not full application behavior. |
 | Full-stack synthetic clean reconstruction | PASS for current-HEAD tracked/synthetic path | Two fresh Fedora 44 systems completed the explicit-input deployment and reboot path; their private records are minimal service fixtures, not full application records. |
 | Actual-image application composition | PASS | `scripts/test-full-application-image-startup.sh` starts the six pinned application images plus a disposable OpenAI-compatible model on an isolated Docker network, creates authenticated synthetic Alpha and Beta users, verifies Alpha model-response persistence and Beta isolation across an Open WebUI container restart, and rejects Beta access to Alpha's chat; no host ports or production state are used. |
+| Fresh Fedora 44 full-application attempt | PARTIAL / ENVIRONMENT-LIMITED | A verified Fedora Cloud 44 guest booted, accepted the current repository over SSH, installed Docker 29.7.2 and Compose 5.5.1, built the pinned Open WebUI image, and—after repairing SELinux relabel and UID-1000 secret ownership—started healthy LLDAP and Grocy fixtures. The attempt stopped before full image composition while Agent Zero layers stalled at the registry; all temporary guest artifacts were reclaimed. |
 | Full application clean reconstruction | NOT PROVEN | Requires the same application records and fixtures installed on an independent fresh guest, including a real Hermes gateway path. |
 | Fresh-install synthetic household soak | PASS for contract/fixture layer | Generated private inputs, test-mode install/doctor/validation, and owner-style authority/multi-user/memory simulations run as one reproducible sequence; no full application behavior is claimed. |
 | Fresh-install full application household soak | NOT PROVEN | Follows a successful full application reconstruction and exercises the reconstructed HADES application path. |
 
 The exact remaining independent milestone is therefore **one independent fresh
 guest with full application fixtures**, followed by a fresh-install household
-soak. Until that evidence exists, installation/rebuild remains `PARTIAL` in the
-stable-v1 map.
+soak. The current-HEAD guest attempt established the boot, repository,
+Docker/Compose, and Open WebUI artifact path but was environment-limited during
+image acquisition; it is not full-application evidence. Until the milestone
+exists, installation/rebuild remains `PARTIAL` in the stable-v1 map.
 
 The clean Hindsight reconstruction contract uses API port 8888 and control
 plane port 9999 inside the image. The generated template now keeps those

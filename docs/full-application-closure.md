@@ -47,3 +47,16 @@ The next independent action is a fresh supported Fedora guest using only the
 repository, v2 operator values, the verified Hermes archive, the built
 Open WebUI image, and synthetic state/secrets. Legacy whole-file deployment
 records must not be used for that acceptance run.
+
+An attempt from the current checkpoint booted Fedora Cloud 44, installed
+Docker/Compose, and built the pinned Open WebUI artifact, but stopped during
+remaining image acquisition when the temporary guest overlay consumed the
+host's `/tmp` tmpfs. The temporary guest and downloaded artifacts were
+reclaimed; the full-guest claim remains open.
+
+The retry moved the overlay to the root filesystem and exposed a Fedora
+SELinux/UID-1000 secret-mount defect in the harness. The `:ro,Z` mounts and
+service-UID ownership are now fixed and the focused local composition passes;
+the independent guest reached healthy LLDAP/Grocy before Agent Zero registry
+layers stalled. Full-guest reconstruction therefore remains open pending a
+complete image pull and Hermes gateway/application-path run.

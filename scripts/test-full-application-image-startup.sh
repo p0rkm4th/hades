@@ -52,6 +52,10 @@ mkdir -p "$work/identity" "$work/webui" "$work/hindsight" "$work/searx"
 for secret in jwt_secret key_seed admin_password; do
   printf 'synthetic-%s\n' "$secret" > "$work/identity/$secret"
   chmod 600 "$work/identity/$secret"
+  # LLDAP drops to UID 1000 inside the container. Keep the fixture compatible
+  # with a root-run clean-host acceptance invocation as well as an unprivileged
+  # local run.
+  chown 1000:1000 "$work/identity/$secret" 2>/dev/null || true
 done
 
 docker run -d --name "${names[0]}" --network "$network" \
@@ -60,9 +64,9 @@ docker run -d --name "${names[0]}" --network "$network" \
   -e LLDAP_LDAP_USER_EMAIL=admin@hades.local \
   -e LLDAP_JWT_SECRET_FILE=/run/secrets/jwt -e LLDAP_KEY_SEED_FILE=/run/secrets/seed \
   -e LLDAP_LDAP_USER_PASS_FILE=/run/secrets/pass \
-  -v "$work/identity/jwt_secret:/run/secrets/jwt:ro" \
-  -v "$work/identity/key_seed:/run/secrets/seed:ro" \
-  -v "$work/identity/admin_password:/run/secrets/pass:ro" \
+  -v "$work/identity/jwt_secret:/run/secrets/jwt:ro,Z" \
+  -v "$work/identity/key_seed:/run/secrets/seed:ro,Z" \
+  -v "$work/identity/admin_password:/run/secrets/pass:ro,Z" \
   -v "${volumes[0]}:/data" "$HADES_LLDAP_IMAGE" >/dev/null
 docker run -d --name "${names[1]}" --network "$network" \
   -e PUID=1000 -e PGID=1000 -e TZ=America/Chicago \
