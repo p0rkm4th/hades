@@ -73,6 +73,13 @@ and preserve missing provider confidence as CLARIFY. The contract rejects
 incomplete streams, changed formats, and empty chunks; it is covered by
 scripts/test-local-voice-bridge.sh.
 
+A localhost-only HTTP service boundary is now available in
+integrations/local-voice/service.py. It accepts bounded WAV bodies at
+/inference, returns explicit status, and reports /health without exposing a
+network-wide listener. The service is provider-injectable for contract tests
+and can load faster-whisper for a staged runtime; it is not registered with
+Hermes or Open WebUI yet.
+
 Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
