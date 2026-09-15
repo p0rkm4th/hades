@@ -12,6 +12,7 @@ import html as html_module
 import json
 import re
 import socket
+from fractions import Fraction
 from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
 from ipaddress import ip_address
@@ -224,3 +225,154 @@ def resolve_products(recipe: dict[str, Any], products: list[dict[str, Any]]) -> 
             "One or more ingredients need exact Grocy product review."
         ]
     return result
+
+
+def _serving_count(value: Any) -> int | None:
+    match = re.search(r"\b(\d+)\b", str(value or ""))
+    return int(match.group(1)) if match else None
+
+
+def _quantity(value: Any) -> str | None:
+    text = str(value or "").strip().replace(" ", "")
+    vulgar = {"¼": "1/4", "½": "1/2", "¾": "3/4", "⅓": "1/3", "⅔": "2/3", "⅛": "1/8", "⅜": "3/8", "⅝": "5/8", "⅞": "7/8"}
+    return vulgar.get(text, text) or None
+
+
+def build_apply_plan(recipe: dict[str, Any], quantity_units: list[dict[str, Any]]) -> dict[str, Any]:
+    """Build a Grocy write plan without performing any write.
+
+    All ingredient rows must already have an exact product resolution and a
+    known quantity unit.  The plan is the review/confirmation boundary: its
+    contents can be shown to the owner before the caller applies it.
+    """
+    if recipe.get("requires_review"):
+        raise ValueError("Recipe requires review before it can be applied.")
+    servings = _serving_count(recipe.get("servings")) or 1
+    if servings < 1 or servings > 1000:
+        raise ValueError("Recipe servings must be between 1 and 1000.")
+    units: dict[str, list[dict[str, Any]]] = {}
+    for unit in quantity_units:
+        if isinstance(unit, dict) and unit.get("name"):
+            units.setdefault(str(unit["name"]).casefold(), []).append(unit)
+    rows: list[dict[str, Any]] = []
+    for ingredient in recipe.get("ingredients", []):
+        if ingredient.get("resolution") != "EXACT" or not ingredient.get("product_id"):
+            raise ValueError(f"Ingredient is not exactly resolved: {ingredient.get('name', '')}")
+        amount = _quantity(ingredient.get("quantity"))
+        unit_name = str(ingredient.get("unit") or "").strip()
+        if not amount or not unit_name:
+            raise ValueError(f"Ingredient needs a numeric quantity and unit: {ingredient.get('raw', '')}")
+        try:
+            Fraction(amount)
+        except (ValueError, ZeroDivisionError) as exc:
+            raise ValueError(f"Ingredient quantity is not numeric: {amount}") from exc
+        matches = units.get(unit_name.casefold(), [])
+        if len(matches) != 1:
+            raise ValueError(f"Quantity unit needs exact review: {unit_name}")
+        rows.append({
+            "recipe_id": "<created_recipe_id>",
+            "product_id": int(ingredient["product_id"]),
+            "amount": amount,
+            "qu_id": int(matches[0]["id"]),
+            "note": ingredient.get("raw"),
+        })
+    if not rows:
+        raise ValueError("Recipe has no ingredients.")
+    description = recipe.get("notes") or ""
+    if recipe.get("source_url"):
+        description = f"{description}\nSource: {recipe['source_url']}".strip()
+    return {
+        "recipe": {
+            "name": str(recipe.get("title", "")).strip(),
+            "description": description,
+            "base_servings": servings,
+            "desired_servings": servings,
+            "not_check_shoppinglist": False,
+        },
+        "ingredients": rows,
+    }
+
+
+class GrocyRequestError(RuntimeError):
+    """Transport failure; ``after_mutation`` controls outcome semantics."""
+
+    def __init__(self, message: str, *, after_mutation: bool = False):
+        super().__init__(message)
+        self.after_mutation = after_mutation
+
+
+class GrocyRecipeImporter:
+    """Preview/apply boundary over Grocy's supported generic object API.
+
+    ``request`` is injected so the contract can be tested without a live
+    household service. A production wrapper should provide a request function
+    that sends the API key and raises ``GrocyRequestError`` on transport or
+    HTTP failure.
+    """
+
+    def __init__(self, request):
+        self.request = request
+
+    def preview(self, recipe: dict[str, Any]) -> dict[str, Any]:
+        products = self.request("GET", "/api/objects/products")
+        units = self.request("GET", "/api/objects/quantity_units")
+        resolved = resolve_products(recipe, products if isinstance(products, list) else [])
+        try:
+            plan = build_apply_plan(resolved, units if isinstance(units, list) else [])
+        except ValueError as exc:
+            plan = None
+            resolved = dict(resolved)
+            resolved["requires_review"] = True
+            resolved["warnings"] = list(resolved.get("warnings", [])) + [str(exc)]
+        existing = self.request("GET", "/api/objects/recipes")
+        duplicate = any(
+            isinstance(item, dict) and str(item.get("name", "")).casefold() == str(resolved.get("title", "")).casefold()
+            for item in (existing if isinstance(existing, list) else [])
+        )
+        if duplicate:
+            resolved["requires_review"] = True
+            resolved["warnings"] = list(resolved.get("warnings", [])) + ["A Grocy recipe with this title already exists."]
+            plan = None
+        return {"outcome": "PREVIEW", "recipe": resolved, "plan": plan, "duplicate": duplicate}
+
+    def reconcile(self, recipe_id: int, expected: dict[str, Any]) -> dict[str, Any]:
+        recipe = self.request("GET", f"/api/objects/recipes/{recipe_id}")
+        positions = self.request("GET", "/api/objects/recipes_pos")
+        actual = [item for item in positions if isinstance(item, dict) and int(item.get("recipe_id", -1)) == recipe_id] if isinstance(positions, list) else []
+        expected_rows = expected.get("ingredients", [])
+        if not isinstance(recipe, dict) or int(recipe.get("id", recipe_id)) != recipe_id or len(actual) != len(expected_rows):
+            return {"outcome": "OUTCOME UNKNOWN", "recipe_id": recipe_id}
+        for row in expected_rows:
+            if not any(
+                int(item.get("product_id", -1)) == int(row["product_id"])
+                and str(item.get("amount")) == str(row["amount"])
+                and int(item.get("qu_id", -1)) == int(row["qu_id"])
+                for item in actual
+            ):
+                return {"outcome": "OUTCOME UNKNOWN", "recipe_id": recipe_id}
+        return {"outcome": "SUCCEEDED", "recipe_id": recipe_id, "recipe": recipe, "ingredients": actual}
+
+    def apply(self, preview: dict[str, Any], *, confirm: bool = False) -> dict[str, Any]:
+        if not confirm:
+            return {"outcome": "FAILED", "error": "Explicit confirmation is required."}
+        plan = preview.get("plan") if isinstance(preview, dict) else None
+        if not isinstance(plan, dict) or preview.get("duplicate"):
+            return {"outcome": "FAILED", "error": "Only a complete non-duplicate preview can be applied."}
+        mutation_attempted = False
+        try:
+            created = self.request("POST", "/api/objects/recipes", plan["recipe"])
+            recipe_id = int(created["created_object_id"])
+            mutation_attempted = True
+            for ingredient in plan["ingredients"]:
+                row = dict(ingredient)
+                row["recipe_id"] = recipe_id
+                self.request("POST", "/api/objects/recipes_pos", row)
+            return self.reconcile(recipe_id, plan)
+        except GrocyRequestError as exc:
+            if mutation_attempted or exc.after_mutation:
+                return {"outcome": "OUTCOME UNKNOWN", "error": "Grocy write was attempted; reconcile canonical state before retrying."}
+            return {"outcome": "FAILED", "error": "Grocy write was not completed."}
+        except (KeyError, TypeError, ValueError):
+            if mutation_attempted:
+                return {"outcome": "OUTCOME UNKNOWN", "error": "Grocy write was attempted; reconcile canonical state before retrying."}
+            return {"outcome": "FAILED", "error": "Grocy rejected the recipe write."}

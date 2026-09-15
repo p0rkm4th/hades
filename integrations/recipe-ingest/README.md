@@ -8,11 +8,13 @@ object, and returns one normalized preview contract. The normalized object
 preserves each original ingredient line, a conservative quantity/unit parse,
 instructions, source URL, and review warnings.
 
-The module intentionally does not write Grocy, create products, or use model
-text to fill missing fields. The next integration layer must resolve each
-ingredient against Grocy's canonical products, present a preview, and require
-explicit confirmation before creating the recipe and its `recipes_pos` rows.
-Unresolved or ambiguous products remain review items.
+The module intentionally does not write Grocy during extraction or product
+resolution, create products, or use model text to fill missing fields. Its
+`GrocyRecipeImporter` builds a reviewable plan, requires explicit confirmation,
+creates the recipe and its `recipes_pos` rows through Grocy's generic object
+API, and reads both back before reporting success. Unresolved or ambiguous
+products remain review items. A transport failure after a write is reported as
+`OUTCOME UNKNOWN` and must be reconciled before retry.
 
 The first extractor is Schema.org JSON-LD because it is the common upstream
 contract and is documented by Schema.org. Site-specific scraping and browser
@@ -24,6 +26,11 @@ Contract test:
 ```text
 bash scripts/test-recipe-ingest-contract.sh
 ```
+
+The staged MCP server is `server.py`. Register it privately in Hermes with
+`GROCY_URL` and a protected `GROCY_API_KEY_FILE`; keep it narrowed to recipe
+turns. Its two tools are deliberately separate: `recipe_url_preview` and
+`recipe_url_apply`.
 
 The URL fetch rejects non-HTTP(S), loopback, private, link-local, and reserved
 targets and caps the response at 2 MiB. It is an extraction boundary, not a
