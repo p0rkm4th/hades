@@ -1,6 +1,6 @@
 # Recipe URL ingestion dogfood
 
-Status: **PASS / synthetic dogfood; owner acceptance remains**.
+Status: **OWNER-GATED; synthetic actor/Grocy path passes**.
 
 The disposable contract test exercises the owner-equivalent flow against a
 fake canonical Grocy transport:
@@ -46,6 +46,11 @@ Still required before this is a production capability:
 - exercise a representative structured-data site, a messy page, a duplicate,
   a changed re-import, serving resize, and shortage/add-missing composition;
 - perform owner-visible acceptance.
+
+The repository-side actor path and disposable canonical Grocy read-back are
+complete. The remaining gate is deployment of the private profile plus one
+owner-visible acceptance sequence; no recipe write is permitted from an
+unreviewed preview.
 
 The opt-in public acceptance currently passes against King Arthur Baking's
 Banana Bread page, producing a title, 14 ingredients, and 8 instruction steps

@@ -1,6 +1,6 @@
 # Browser interaction evaluation
 
-Status: SELECTED / STAGED.
+Status: PASS / ANONYMOUS READ-ONLY.
 
 Microsoft Playwright MCP is selected for pages that require dynamic rendering,
 navigation, or an authorized form workflow. Direct HTTP and structured
@@ -45,8 +45,9 @@ accepted through truthiness.
 5. Verify the privileged profile is unavailable to household scope.
 6. Verify reload behavior only for the explicitly selected profile.
 
-No browser profile, credential, production MCP registration, or external
-side-effecting workflow was changed by this evaluation.
+No credential, privileged profile, or external side-effecting workflow was
+changed by this evaluation. The bounded anonymous actor path is accepted;
+privileged browsing remains deferred.
 
 ## Current upstream decision — 2026-09-15
 
@@ -57,7 +58,7 @@ profile persistence, but does not make those tools read-only. Origin allowlists
 also do not replace an HADES authorization boundary because redirects and
 page-side behavior remain outside that setting's guarantee.
 
-Therefore the raw package remains a staged dependency, not a direct Hermes
+Therefore the raw package remains a dependency behind the HADES proxy, not a direct Hermes
 registration. HADES now has a separate `browser-research` proxy at
 `integrations/browser-access/proxy.py`. It launches the pinned package in
 isolated headless mode, forces all browser traffic through a local filtering
