@@ -24,9 +24,11 @@ each of these changes, and the production Hermes service remains healthy.
 
 ## CURRENT OBJECTIVE
 
-Prove HADES is reconstructable on a clean supported systemd host from this
-repository, explicit private inputs, and canonical backups while preserving
-source-of-truth boundaries and least privilege.
+Expand HADES into a useful whole-life personal and household AI by composing
+mature upstream capabilities while preserving identity, authority, memory,
+canonical-state, failure, recovery, and reproducibility boundaries. Clean-host
+reconstruction is now a maintenance lane; capability dogfood and composition
+are the active campaign.
 
 ## CURRENT HEAD
 
@@ -214,6 +216,12 @@ runtime.
 See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 
 ## NEXT ACTION
+
+The historical checkpoint details below are retained as evidence. The current
+active roadmap and readiness source of truth are
+[`docs/stable-v1-readiness.md`](docs/stable-v1-readiness.md),
+[`docs/CAPABILITY_LEDGER.md`](docs/CAPABILITY_LEDGER.md), and
+[`docs/current-blockers.md`](docs/current-blockers.md).
 
 Household Alpha is complete/ready in the current production checkpoint:
 identity mapping, conversation and memory isolation, shared Grocy,
@@ -512,3 +520,15 @@ onboarding is the only owner-input gate; it does not pause independent work.
   canonical candidate wrapper and passed 525/525; full-suite/environment
   disposition and an owner-authenticated production rehearsal remain the
   Hermes promotion gates.
+
+## ACTIVE EXPANSION STATUS — 2026-09-15
+
+The current independent campaign has added and tested unified recipe URL,
+paste, HTML, and JSON-LD preview ingestion; receipt OCR review/intake
+dogfood; Actual CSV/QIF/OFX/QFX/CAMT native-file handoff; bounded homelab
+discovery and Proxmox control planning; local push-to-talk voice dogfood;
+Agent Zero unsafe-task screening; expanded synthetic performance coverage; and
+an immutable Open WebUI 0.11.3 candidate. These changes are staged evidence,
+not production promotion. Production remains Hermes 0.14.0 and Open WebUI
+0.11.1. The readiness map and capability ledger carry the authoritative
+remaining contracts and owner gates.

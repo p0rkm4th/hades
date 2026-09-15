@@ -57,7 +57,7 @@ for live_state in (
     'the finance balance is $65',
     'Agent Zero returned execution output',
     'Proxmox says VM X is running on Node B',
-    'NetBox lists the server at 10.0.0.5',
+    'NetBox lists the server at 198.51.100.5',
     'Uptime Kuma reports the service is offline',
     'the living-room light is on',
     'Home Assistant says the air purifier is unavailable',
