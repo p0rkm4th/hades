@@ -28,11 +28,15 @@ for bad in (b"", b"not wav"):
         raise AssertionError("invalid audio accepted")
 assert voice.classify_transcript("", 0.99)["status"] == "SILENCE"
 assert voice.classify_transcript("  add   milk  ", 0.4)["status"] == "CLARIFY"
-assert voice.classify_transcript("  check the pantry  ", 0.9) == {
-    "status": "ACCEPTED", "text": "check the pantry", "confidence": 0.9,
-    "voice_authenticated": False,
-}
-assert voice.classify_transcript("restart that container", None)["status"] == "CLARIFY"
+accepted = voice.classify_transcript("  check the pantry  ", 0.9)
+assert accepted["status"] == "ACCEPTED"
+assert accepted["transcript_ready"] is True
+assert accepted["action_authorized"] is False
+assert accepted["voice_authenticated"] is False
+clarify = voice.classify_transcript("restart that container", None)
+assert clarify["status"] == "CLARIFY"
+assert clarify["transcript_ready"] is True
+assert clarify["action_authorized"] is False
 assert voice.classify_transcript("x" * (voice.MAX_TRANSCRIPT_CHARS + 1), 1)["status"] == "FAILED"
 print("PASS bounded push-to-talk WAV contract")
 print("PASS silence and low-confidence clarification contract")

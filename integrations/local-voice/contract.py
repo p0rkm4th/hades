@@ -46,11 +46,31 @@ def validate_wav(audio: bytes) -> dict[str, Any]:
 def classify_transcript(text: str | None, confidence: float | None) -> dict[str, Any]:
     value = re.sub(r"\s+", " ", (text or "")).strip()
     if not value:
-        return {"status": "SILENCE", "text": "", "voice_authenticated": False}
+        return {
+            "status": "SILENCE", "text": "", "transcript_ready": False,
+            "action_authorized": False, "voice_authenticated": False,
+        }
     if len(value) > MAX_TRANSCRIPT_CHARS:
-        return {"status": "FAILED", "text": "", "error": "transcript exceeds bounded size", "voice_authenticated": False}
+        return {
+            "status": "FAILED", "text": "", "error": "transcript exceeds bounded size",
+            "transcript_ready": False, "action_authorized": False,
+            "voice_authenticated": False,
+        }
     if confidence is None or not 0 <= confidence <= 1:
-        return {"status": "CLARIFY", "text": value, "reason": "speech confidence is unavailable", "voice_authenticated": False}
+        return {
+            "status": "CLARIFY", "text": value,
+            "reason": "speech confidence is unavailable", "transcript_ready": True,
+            "action_authorized": False, "voice_authenticated": False,
+        }
     if confidence < MIN_CONFIDENCE:
-        return {"status": "CLARIFY", "text": value, "confidence": confidence, "reason": "speech confidence is below the action threshold", "voice_authenticated": False}
-    return {"status": "ACCEPTED", "text": value, "confidence": confidence, "voice_authenticated": False}
+        return {
+            "status": "CLARIFY", "text": value, "confidence": confidence,
+            "reason": "speech confidence is below the action threshold",
+            "transcript_ready": True, "action_authorized": False,
+            "voice_authenticated": False,
+        }
+    return {
+        "status": "ACCEPTED", "text": value, "confidence": confidence,
+        "transcript_ready": True, "action_authorized": False,
+        "voice_authenticated": False,
+    }

@@ -83,10 +83,10 @@ Hermes or Open WebUI yet.
 The real staged service was exercised with faster-whisper CPU/int8 and the
 synthetic speech fixture. It returned the transcript correctly but emitted
 CLARIFY because faster-whisper's available segment scores are not treated as
-calibrated confidence. This preserves mutation safety; the next service
-revision should expose transcript readiness separately from action
-authorization so ordinary conversation need not be mistaken for an approved
-mutation.
+calibrated confidence. The response now exposes `transcript_ready` separately
+from `action_authorized`; ordinary conversation can continue with usable text,
+while `action_authorized` and `voice_authenticated` remain false for every
+voice result until an explicit identity and confirmation policy exists.
 
 Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to

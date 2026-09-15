@@ -26,6 +26,8 @@ request = urllib.request.Request(url, data=audio.getvalue(), method="POST", head
 with urllib.request.urlopen(request) as response:
     result = json.load(response)
 assert result["status"] == "ACCEPTED"
+assert result["transcript_ready"] is True
+assert result["action_authorized"] is False
 assert result["voice_authenticated"] is False
 bad = urllib.request.Request(url, data=b"not wav", method="POST")
 try:
