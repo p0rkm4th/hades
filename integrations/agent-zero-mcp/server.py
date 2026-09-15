@@ -38,7 +38,9 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
     """Run one harmless, bounded task through the private Agent Zero operator."""
     if not API_KEY:
         return {"ok": False, "outcome": "FAILED", "error": "Agent Zero delegation is not configured."}
-    task = str(task or "").strip()
+    if not isinstance(task, str):
+        return {"ok": False, "outcome": "FAILED", "error": "Task must be a string."}
+    task = task.strip()
     if not task:
         return {"ok": False, "outcome": "FAILED", "error": "A non-empty task is required."}
     if len(task) > MAX_TASK_CHARS:
@@ -59,7 +61,9 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
         ),
         "lifetime_hours": 1,
     }
-    context_id = str(context_id or "").strip()
+    if not isinstance(context_id, str):
+        return {"ok": False, "outcome": "FAILED", "error": "Context ID must be a string."}
+    context_id = context_id.strip()
     if len(context_id) > MAX_CONTEXT_ID_CHARS:
         return {
             "ok": False,

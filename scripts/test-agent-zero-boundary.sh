@@ -78,6 +78,10 @@ async def main():
     assert not (await module._delegate("123456789"))["ok"]
     assert not (await module._delegate("task", "12345"))["ok"]
     module.MAX_TASK_CHARS = 100
+    wrong_task_type = await module._delegate({"task": "inspect"})
+    assert not wrong_task_type["ok"] and wrong_task_type["outcome"] == "FAILED"
+    wrong_context_type = await module._delegate("task", {"id": "ctx"})
+    assert not wrong_context_type["ok"] and wrong_context_type["outcome"] == "FAILED"
     unsafe = await module._delegate("password")
     assert not unsafe["ok"] and unsafe["outcome"] == "FAILED"
     unsafe_socket = await module._delegate("/var/run/docker.sock")
