@@ -1,7 +1,9 @@
 # Homelab read-only integration plan
 
 This is preparation only. No homelab endpoint, credential, scan, or runtime
-integration is present in the HADES test deployment.
+integration is present in the HADES test deployment. The current upstream MCP
+candidate evaluation is recorded in
+[`docs/homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
 ## Authority boundaries
 
@@ -52,6 +54,14 @@ IP prefixes only if those are the owner-approved inventory domains.
 HADES_NETBOX_URL=https://netbox.example.invalid
 HADES_NETBOX_TOKEN=<private-v2-token>
 ```
+
+### Network discovery
+
+An Nmap MCP or equivalent isolated scan worker may be evaluated for explicit,
+owner-approved CIDR discovery. Scan output is observed evidence only: it must
+carry target scope and retrieval time, must not execute arbitrary shell, and
+must not silently create or update NetBox records. See the candidate selection
+and command boundary in [`homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
 ### Uptime Kuma
 
