@@ -60,6 +60,12 @@ for bad in ({}, {"source": "netbox", "hosts": []}, {"source": "nmap.xml", "hosts
         pass
     else:
         raise AssertionError("malformed discovery projection accepted")
+try:
+    propose_inventory_candidates(result, [])
+except ValueError as exc:
+    assert "NetBox" in str(exc)
+else:
+    raise AssertionError("malformed NetBox context accepted")
 
 print("PASS bounded Nmap XML evidence normalization")
 print("PASS scanner evidence enforces target and host CIDR scope")

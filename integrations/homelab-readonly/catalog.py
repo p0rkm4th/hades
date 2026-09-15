@@ -11,6 +11,8 @@ from typing import Any
 
 
 def _inventory_index(netbox: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
+    if netbox is not None and not isinstance(netbox, dict):
+        raise ValueError("NetBox context must be a JSON object")
     rows = (netbox or {}).get("results", [])
     index: dict[str, dict[str, Any]] = {}
     if not isinstance(rows, list):
