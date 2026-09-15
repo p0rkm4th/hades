@@ -51,5 +51,13 @@ fresh = overlay._hades_conversation_intent_text(
 )
 assert fresh == "what is the pantry state?"
 assert shared == {"milk": 1, "mushrooms": 0}
+
+# Context overflow may discard old history, but never the current request.
+long_current = "CURRENT-START " + ("x" * 13000) + " CURRENT-END"
+overflow = overlay._hades_conversation_intent_text(
+    long_current, [{"role": "user", "content": "OLD-HISTORY"}]
+)
+assert overflow == long_current
+assert "OLD-HISTORY" not in overflow
 print("PASS multi-user long synthetic dogfood")
 PY

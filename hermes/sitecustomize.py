@@ -139,15 +139,22 @@ def _hades_conversation_intent_text(user_message, conversation_history):
     Recent history provides pronoun/domain continuity, but the current user
     request is authoritative for this turn and must remain inside the cap.
     """
-    parts = []
+    history_parts = []
     if isinstance(conversation_history, list):
         for message in conversation_history[-8:]:
             if isinstance(message, dict):
                 content = message.get("content", "")
                 if isinstance(content, str):
-                    parts.append(content)
-    parts.append(str(user_message or ""))
-    return "\n".join(parts)[-12000:]
+                    history_parts.append(content)
+    current = str(user_message or "")
+    history = "\n".join(history_parts)
+    # Trim only historical context. A left slice of the combined value can
+    # silently remove the beginning of a long current request and change
+    # routing/authorization decisions.
+    history_budget = max(0, 12000 - len(current) - (1 if history else 0))
+    if len(history) > history_budget:
+        history = history[-history_budget:] if history_budget else ""
+    return f"{history}\n{current}" if history else current
 
 
 try:
