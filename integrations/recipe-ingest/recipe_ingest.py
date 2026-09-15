@@ -279,6 +279,8 @@ def _safe_url(url: str) -> str:
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise ValueError("Recipe source must be an http(s) URL.")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("Recipe source URL must not contain embedded credentials.")
     host = parsed.hostname
     try:
         addresses = {ip_address(host)}

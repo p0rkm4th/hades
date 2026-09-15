@@ -237,7 +237,7 @@ except ValueError as exc:
 else:
     raise AssertionError("missing recipe title was accepted")
 
-for invalid in ("file:///tmp/recipe.html", "ftp://example.test/recipe", "http://127.0.0.1/recipe"):
+for invalid in ("file:///tmp/recipe.html", "ftp://example.test/recipe", "http://127.0.0.1/recipe", "https://user:secret@example.test/recipe"):
     try:
         module._safe_url(invalid)
     except ValueError:
