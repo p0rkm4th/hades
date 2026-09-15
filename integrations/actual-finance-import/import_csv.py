@@ -35,7 +35,11 @@ def _money(value: str, row_number: int) -> str:
         raise ImportFormatError(f"row {row_number}: amount is invalid") from exc
     if not amount.is_finite() or amount == 0:
         raise ImportFormatError(f"row {row_number}: amount must be finite and non-zero")
-    return format(amount.quantize(Decimal("0.01")), "f")
+    try:
+        normalized = amount.quantize(Decimal("0.01"))
+    except InvalidOperation as exc:
+        raise ImportFormatError(f"row {row_number}: amount is outside the supported precision") from exc
+    return format(normalized, "f")
 
 
 def _amount(row: dict[str, str], mapping: dict[str, str], row_number: int) -> str:

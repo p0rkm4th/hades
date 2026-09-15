@@ -39,6 +39,7 @@ assert module.build_apply_request(repeat, confirm=True)["status"] == "NOOP_DUPLI
 for bad in (
     b"Date,Payee,Amount\n2026-09-01,Store,0\n",
     b"Date,Payee,Amount\n2026-09-01,Store,not-money\n",
+    b"Date,Payee,Amount\n2026-09-01,Store,1e999999\n",
     b"Date,Payee,Amount\n2026-09-01,,3.00\n",
 ):
     try:
