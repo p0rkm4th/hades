@@ -29,6 +29,7 @@ bash "$repo_dir/scripts/test-homelab-readonly-adapter.sh" >/dev/null
 bash "$repo_dir/scripts/test-homelab-control-boundary.sh" >/dev/null
 bash "$repo_dir/scripts/test-home-assistant-fixture.sh" >/dev/null
 bash "$repo_dir/scripts/test-local-voice-dogfood.sh" >/dev/null
+bash "$repo_dir/scripts/test-synthetic-performance-contract.sh" >/dev/null
 bash "$repo_dir/scripts/test-capability-boundary.sh" >/dev/null
 bash "$repo_dir/scripts/test-agent-zero-boundary.sh" >/dev/null
 bash "$repo_dir/scripts/test-synthetic-backup-restore.sh" >/dev/null

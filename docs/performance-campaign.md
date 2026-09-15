@@ -100,6 +100,11 @@ bound to loopback. The model endpoint is intentionally host-sensitive: if it
 is unreachable, the harness exits with an explicit dependency message and does
 not report fabricated timing data.
 
+The dependency-free field-shape regression is
+`scripts/test-synthetic-performance-contract.sh`. It uses a model stub only
+to verify no-tool and tool-plus-continuation attribution fields; its timings
+must not be interpreted as provider performance.
+
 The expanded matrix was syntax-checked on 2026-09-15. Execution was deferred
 in this environment because `127.0.0.1:11434` was not reachable; this does not
 alter the prior timing capture below.
