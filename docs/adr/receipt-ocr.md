@@ -56,6 +56,13 @@ The current evidence contract is implemented in
 runtime accuracy; that requires a disposable PaddleOCR deployment and sample
 images.
 
+The credential-free end-to-end review workflow is exercised by
+`scripts/test-receipt-ocr-dogfood.sh`. It composes deterministic upstream-shaped
+OCR evidence with exact Grocy product matches, explicit reviewed quantities,
+preview/apply gating, canonical synthetic intake, duplicate reconciliation,
+and low-confidence rejection. This proves the composition and authority
+boundary, not OCR recognition quality or a production Grocy write.
+
 The intake preview accepts an optional caller-owned receipt fingerprint and
 known submitted fingerprints. A duplicate becomes an explicit preview warning
 and cannot be treated as a replay authorization; the module stores no receipt

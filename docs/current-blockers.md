@@ -61,6 +61,11 @@ an owner decision or secret from defects that can be repaired independently.
   pre-write connection failures return `FAILED`, while ambiguous outcomes
   remain `OUTCOME UNKNOWN` and are never blindly replayed. Reopen only for a
   newly demonstrated mutation defect.
+- **Added:** Receipt OCR now has a credential-free end-to-end review dogfood
+  contract from upstream-shaped evidence through exact Grocy matching,
+  explicit quantity/confirmation gating, canonical synthetic intake,
+  duplicate reconciliation, and low-confidence rejection. PaddleOCR
+  recognition quality and production registration remain staged work.
 - **Documented:** Candidate-only Hermes residuals are classified against the
   stable HADES qualification suite; production remains on 0.14.0 and no
   candidate-only upstream/provider failure is a HADES release blocker.
