@@ -19,6 +19,17 @@ fi
 [[ "$image_ref" =~ ^[^[:space:]=]+@sha256:[0-9a-f]{64}$ ]] || { echo 'FAIL Open WebUI artifact reference is not immutable' >&2; exit 1; }
 mkdir -p "$output/identity" "$output/secrets" "$output/state" "$output/config" "$output/backups" "$output/profile"
 chmod 700 "$output" "$output/identity" "$output/secrets"
+cp "$repo_dir/hermes/config.yaml.example" "$output/profile/config.yaml"
+chmod 600 "$output/profile/config.yaml"
+cat > "$output/profile/hermes.env" <<EOF
+API_SERVER_ENABLED=true
+API_SERVER_HOST=127.0.0.1
+API_SERVER_PORT=8642
+API_SERVER_KEY=synthetic-hermes-api-key
+API_SERVER_MODEL_NAME=hermes-agent
+HERMES_MAX_ITERATIONS=12
+EOF
+chmod 600 "$output/profile/hermes.env"
 for secret in jwt_secret key_seed admin_password; do
   printf 'synthetic-%s\n' "$secret" > "$output/identity/$secret"
   chmod 600 "$output/identity/$secret"

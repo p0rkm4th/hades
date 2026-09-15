@@ -8,6 +8,8 @@ image='alpine@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a
 bash "$repo_dir/scripts/create-generated-private-inputs.sh" "$fixture/private" --image-ref "$image" >/dev/null
 grep -q '^HADES_INPUTS_VERSION=2$' "$fixture/private/operator.env"
 grep -q '^HADES_OPEN_WEBUI_IMAGE='"$image"'$' "$fixture/private/operator.env"
+test -f "$fixture/private/profile/config.yaml" && test "$(stat -c '%a' "$fixture/private/profile/config.yaml")" = 600
+test -f "$fixture/private/profile/hermes.env" && test "$(stat -c '%a' "$fixture/private/profile/hermes.env")" = 600
 for name in jwt_secret key_seed admin_password; do
   test "$(stat -c '%a' "$fixture/private/identity/$name")" = 600
 done
