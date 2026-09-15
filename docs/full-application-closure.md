@@ -25,7 +25,8 @@ Grocy, Hindsight, and Open WebUI health, then creates an authenticated
 synthetic Alpha and Beta users, confirms Alpha's assistant response by
 persisted read-back, and rejects Beta access to Alpha's private chat, with
 bounded startup polling and automatic cleanup. The client then restarts
-Open WebUI, signs Alpha in again, and confirms the same chat remains readable.
+Open WebUI, signs Alpha in again, confirms the same chat remains readable, and
+signs Beta in to verify the private-chat denial still holds.
 This is synthetic
 application-path evidence; the campaign does **not** yet claim:
 

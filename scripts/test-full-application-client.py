@@ -41,6 +41,19 @@ if mode == "verify-restart":
     if "Synthetic application response" not in json.dumps(saved):
         raise SystemExit(f"persisted application response missing after restart: {saved}")
     print(f"PASS Alpha chat {chat_id} survives Open WebUI restart")
+    beta = request(
+        "/api/v1/auths/signin",
+        "POST",
+        {"email": "beta@reconstruction.invalid", "password": "Synthetic-Only-123!"},
+    )
+    try:
+        request(f"/api/v1/chats/{chat_id}", token=beta["token"])
+    except HTTPError as exc:
+        if exc.code not in {401, 403}:
+            raise SystemExit(f"Beta received unexpected post-restart status: {exc.code}")
+    else:
+        raise SystemExit("Beta accessed Alpha's chat after restart")
+    print("PASS Beta remains isolated after Open WebUI restart")
     raise SystemExit(0)
 
 alpha = request(
