@@ -67,6 +67,9 @@ not execute arbitrary shell, and must not silently create or update NetBox
 records. See the candidate selection and command boundary in
 [`homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
+The bounded scan runner also rejects targets larger than 4,096 addresses
+before starting Nmap, even when a containing network is allowlisted.
+
 `integrations/homelab-readonly/catalog.py` can turn normalized scan evidence
 into a transient review projection containing observed IPs, hostnames, open
 ports, and exact NetBox context matches. Every candidate is marked

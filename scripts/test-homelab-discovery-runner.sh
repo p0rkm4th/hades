@@ -43,6 +43,13 @@ for target in ("198.51.100.0/24", "192.0.2.0/28"):
     else:
         raise AssertionError("out-of-scope scan started")
 
+try:
+    run_bounded_scan("192.0.2.0/16", allowed_networks=["192.0.0.0/8"], nmap_binary=os.environ["FAKE_NMAP"])
+except ValueError as exc:
+    assert "address limit" in str(exc)
+else:
+    raise AssertionError("oversized scan target accepted")
+
 for ports in ("0", "22;80", "65536", "1-0", ""):
     try:
         run_bounded_scan("192.0.2.0/30", allowed_networks=["192.0.2.0/29"], nmap_binary=os.environ["FAKE_NMAP"], ports=ports)
@@ -64,5 +71,6 @@ else:
 print("PASS bounded Nmap runner emits timestamped read-only evidence")
 print("PASS scanner uses an explicit argv contract and target scope")
 print("PASS invalid targets and port specifications fail before scanning")
+print("PASS oversized CIDR targets fail before scanning")
 print("PASS scanner executable must be a non-symlink")
 PY

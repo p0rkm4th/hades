@@ -17,6 +17,7 @@ from typing import Any
 from discovery import parse_nmap_xml
 
 MAX_SCAN_SECONDS = 60
+MAX_SCAN_ADDRESSES = 4096
 DEFAULT_PORTS = "22,53,80,443,445,631,8080,8443"
 
 
@@ -77,6 +78,8 @@ def run_bounded_scan(
             raise ValueError("allowed discovery scope is invalid") from exc
     if not allowed or not any(requested.subnet_of(scope) for scope in allowed):
         raise ValueError("scan target is outside the allowed discovery scope")
+    if requested.num_addresses > MAX_SCAN_ADDRESSES:
+        raise ValueError("scan target exceeds the bounded address limit")
     binary = Path(nmap_binary)
     if not binary.is_file() or binary.is_symlink() or not os.access(binary, os.X_OK):
         raise ValueError("configured Nmap binary must be an executable non-symlink file")
