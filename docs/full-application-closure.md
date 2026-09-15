@@ -24,7 +24,9 @@ model together on an isolated Docker network. It verifies internal LLDAP,
 Grocy, Hindsight, and Open WebUI health, then creates an authenticated
 synthetic Alpha and Beta users, confirms Alpha's assistant response by
 persisted read-back, and rejects Beta access to Alpha's private chat, with
-bounded startup polling and automatic cleanup. This is synthetic
+bounded startup polling and automatic cleanup. The client then restarts
+Open WebUI, signs Alpha in again, and confirms the same chat remains readable.
+This is synthetic
 application-path evidence; the campaign does **not** yet claim:
 
 - a fresh guest installed with v2 generated records;

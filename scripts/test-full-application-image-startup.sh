@@ -124,6 +124,14 @@ probe "${names[3]}" 8888 /health
 probe "${names[5]}" 8080 /health
 docker run --rm --network "$network" \
   -v "$repo_dir/scripts/test-full-application-client.py:/opt/test-full-application-client.py:ro" \
+  -v "$work:/state" \
   python:3.11-slim-bookworm python /opt/test-full-application-client.py \
-  "http://${names[5]}:8080" "http://${names[6]}:8000/v1"
+  "http://${names[5]}:8080" "http://${names[6]}:8000/v1" create /state/client-chat-id
+docker restart "${names[5]}" >/dev/null
+probe "${names[5]}" 8080 /health
+docker run --rm --network "$network" \
+  -v "$repo_dir/scripts/test-full-application-client.py:/opt/test-full-application-client.py:ro" \
+  -v "$work:/state" \
+  python:3.11-slim-bookworm python /opt/test-full-application-client.py \
+  "http://${names[5]}:8080" "http://${names[6]}:8000/v1" verify-restart /state/client-chat-id
 printf 'PASS disposable actual-image reconstruction startup and health\n'

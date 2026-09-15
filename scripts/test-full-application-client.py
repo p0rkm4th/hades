@@ -11,6 +11,8 @@ from urllib.error import HTTPError
 
 base = sys.argv[1].rstrip("/")
 model_base = sys.argv[2].rstrip("/")
+mode = sys.argv[3] if len(sys.argv) > 3 else "create"
+state_path = sys.argv[4] if len(sys.argv) > 4 else ""
 
 
 def request(path, method="GET", body=None, token=None):
@@ -24,6 +26,22 @@ def request(path, method="GET", body=None, token=None):
     ) as response:
         return json.load(response)
 
+
+if mode == "verify-restart":
+    if not state_path:
+        raise SystemExit("restart verification requires a state file")
+    with open(state_path, encoding="utf-8") as handle:
+        chat_id = handle.read().strip()
+    alpha = request(
+        "/api/v1/auths/signin",
+        "POST",
+        {"email": "alpha@reconstruction.invalid", "password": "Synthetic-Only-123!"},
+    )
+    saved = request(f"/api/v1/chats/{chat_id}", token=alpha["token"])
+    if "Synthetic application response" not in json.dumps(saved):
+        raise SystemExit(f"persisted application response missing after restart: {saved}")
+    print(f"PASS Alpha chat {chat_id} survives Open WebUI restart")
+    raise SystemExit(0)
 
 alpha = request(
     "/api/v1/auths/signup",
@@ -77,6 +95,9 @@ for _ in range(60):
     time.sleep(1)
 if not saved or "Synthetic application response" not in json.dumps(saved):
     raise SystemExit(f"application response was not persisted: {saved}")
+if state_path:
+    with open(state_path, "w", encoding="utf-8") as handle:
+        handle.write(chat_id)
 try:
     request(f"/api/v1/chats/{chat_id}", token=beta_token)
 except HTTPError as exc:
