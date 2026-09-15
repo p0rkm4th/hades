@@ -22,7 +22,14 @@ fi
 source "$repo_dir/config/versions.env"
 [[ "${HADES_MANIFEST_VERSION:-}" == 1 ]] || { echo 'FAIL unsupported authoritative manifest version; expected version 1'; exit 1; }
 if [[ -n "$inputs" ]]; then
-  [[ "${HADES_INPUTS_VERSION:-}" == 1 ]] || { echo 'FAIL unsupported operator input contract version; expected version 1'; exit 1; }
+  [[ "${HADES_INPUTS_VERSION:-}" == 1 || "${HADES_INPUTS_VERSION:-}" == 2 ]] || { echo 'FAIL unsupported operator input contract version; expected version 1 or 2'; exit 1; }
+  if [[ "$HADES_INPUTS_VERSION" == 2 ]]; then
+    HADES_DEPLOYMENT_DIR=${HADES_DEPLOYMENT_DIR:-$HADES_CONFIG_ROOT/private-deployment}
+    HADES_OPEN_WEBUI_COMPOSE_FILE=${HADES_OPEN_WEBUI_COMPOSE_FILE:-$HADES_DEPLOYMENT_DIR/open-webui.compose.yaml}
+    HADES_HINDSIGHT_COMPOSE_FILE=${HADES_HINDSIGHT_COMPOSE_FILE:-$HADES_DEPLOYMENT_DIR/hindsight.compose.yaml}
+    HADES_SEARXNG_COMPOSE_FILE=${HADES_SEARXNG_COMPOSE_FILE:-$HADES_DEPLOYMENT_DIR/searxng.compose.yaml}
+    HADES_HERMES_SERVICE_FILE=${HADES_HERMES_SERVICE_FILE:-$HADES_DEPLOYMENT_DIR/hermes.service}
+  fi
   for name in HADES_STATE_ROOT HADES_CONFIG_ROOT HADES_BACKUP_ROOT HADES_IDENTITY_SECRETS_DIR HADES_DEPLOYMENT_DIR HADES_HERMES_PROFILE; do
     [[ "${!name:-}" == /* ]] || { echo "FAIL operator input path must be absolute: $name"; exit 1; }
   done

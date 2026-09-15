@@ -1,0 +1,22 @@
+name: hades-searxng
+
+# Search cache is disposable. Provider settings are an optional private
+# input, while this service definition is tracked and reproducible.
+services:
+  searxng:
+    image: ${HADES_SEARXNG_IMAGE_RECORD:?set HADES_SEARXNG_IMAGE_RECORD from config/versions.env}
+    container_name: hades-searxng
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${HADES_SEARXNG_PORT:-8080}:8080"
+    volumes:
+      - ${HADES_SEARXNG_DATA:?set HADES_SEARXNG_DATA}:/etc/searxng
+      - ${HADES_CONFIG_ROOT:?set HADES_CONFIG_ROOT}/searxng/settings.yml:/tmp/hades-settings.yml:ro,Z
+    environment:
+      SEARXNG_SETTINGS_PATH: /tmp/hades-settings.yml
+    networks:
+      - hades-application
+
+networks:
+  hades-application:
+    name: hades-application-net

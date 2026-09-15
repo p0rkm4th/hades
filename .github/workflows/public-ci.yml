@@ -118,6 +118,8 @@ jobs:
         run: bash scripts/test-version-manifest.sh
       - name: Check private input contract
         run: bash scripts/test-private-input-contract.sh
+      - name: Check generated deployment records
+        run: bash scripts/test-generated-deployment-records.sh
       - name: Check network exposure policy
         run: bash scripts/test-network-exposure.sh
       - name: Check Proxmox bootstrap handoff

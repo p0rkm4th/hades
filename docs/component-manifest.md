@@ -5,8 +5,8 @@ runtime secrets and persistent volumes remain outside Git.
 
 | Component | Authority | Planned integration | Version / license / upgrade note |
 |---|---|---|---|
-| Hermes | intelligence and agent execution | supported upstream deployment/API | 0.14.0; user systemd service; upgrade through upstream installer |
-| Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | 0.11.5 compatibility baseline; private image/build record must provide the immutable reference because no public v0.11.5 tag is available; no fork or branding patch |
+| Hermes | intelligence and agent execution | supported upstream deployment/API | 0.14.0 from the verified upstream `v2026.5.16` source archive and SHA-256 in `config/versions.env`; install into a new environment, never copy the seasoned venv |
+| Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | 0.11.5 compatibility baseline; `webui/Dockerfile` rebuilds the HADES asset layer from immutable `config/versions.env:HADES_OPEN_WEBUI_BASE_IMAGE`; build output is software custody, not state |
 | Hindsight | durable semantic/personal memory | Hermes external memory provider over supported client API | `ghcr.io/vectorize-io/hindsight@sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`; embedded pg0 volume; upgrade by digest |
 | Agent Zero | bounded subordinate computer operator | isolated deployment with explicit objective/result boundary | pinned image digest; no shared unrestricted credentials; native A2A evaluated and retained MCP bridge is bounded |
 | Grocy | canonical pantry, groceries, consumption, inventory, recipes | maintained integration, then supported API or tiny adapter | select upstream release; Grocy remains source of truth |
@@ -35,13 +35,13 @@ record must carry the matching image/tag or digest rather than silently using
 | Component | Pinned/rebuild source | Persistent state | Required private inputs | Network dependency | Startup order | Health check | Restore check |
 |---|---|---|---|---|---|---|---|
 | LLDAP | Pinned image digest in `deploy/lldap.compose.yaml` | Directory database and key material | JWT/key seed, admin bootstrap | Private identity network | 1 | LDAP/HTTP health and login | Isolated database restore and identity record check |
-| Open WebUI | Private pinned 0.11.5 image/build record plus HADES static assets | WebUI database, vector data, matching assets | Database/auth secrets | LLDAP and Hermes | 2 | WebUI health, login, chat reload | SQLite integrity, marker conversation reload, asset match |
+| Open WebUI | Pinned immutable base plus tracked `webui/Dockerfile` and HADES static assets | WebUI database, vector data, matching assets | Image build output and database/auth secrets | LLDAP and Hermes | 2 | WebUI health, login, chat reload | SQLite integrity, marker conversation reload, asset match |
 | Hindsight | Pinned image with embedded PostgreSQL | PostgreSQL cluster/export | Database credentials and subject-bank policy | Hermes to private memory API | 3 | PostgreSQL readiness and Hindsight health | Native export restore and subject-scoped marker recall |
 | Grocy | Pinned image digest in `deploy/grocy.compose.yaml` | Complete Grocy configuration/database | API key | Hermes to private Grocy API | 4 | Grocy HTTP health | SQLite integrity, stock/list/recipe canonical checks |
 | Actual Budget / Finance MCP | Pinned Actual 26.9.0 server/client plus tracked read-only adapter | Private synthetic or owner-authorized Actual state | Endpoint, budget identity, and credentials | Hermes to private finance API | 4 | Adapter read-only health/contract check | Synthetic ledger marker and read-only response; real restore is owner-gated |
-| Hermes 0.14 baseline | Pinned upstream package and private profile | Profile, sessions, skills, state | Provider, MCP, and service credentials | Open WebUI, Hindsight, Grocy, SearXNG, Agent Zero | 5 | Private API health and authenticated model contract | Profile parse, bounded tool call, reload/restart |
+| Hermes 0.14 baseline | Pinned verified upstream `v2026.5.16` source archive plus generated unit and HADES overlay | Profile, sessions, skills, state | Provider, MCP, and service credentials | Open WebUI, Hindsight, Grocy, SearXNG, Agent Zero | 5 | Private API health and authenticated model contract | Profile parse, bounded tool call, reload/restart |
 | Agent Zero | Pinned image digest in `deploy/agent-zero.compose.yaml` | Dedicated operator volume/settings | Bounded API credential | Hermes to private operator API | 6 | Agent Zero health and authenticated card/API check | Isolated volume restore and harmless bounded delegation |
-| SearXNG | Private pinned image record plus tracked search configuration | Configuration; cache is reconstructable | Any private provider settings | Hermes to private search API | 7 | JSON search response | Config parse and provider search check |
+| SearXNG | Pinned image plus tracked generated deployment and search configuration | Configuration; cache is reconstructable | Any private provider settings | Hermes to private search API | 7 | JSON search response | Config parse and provider search check |
 | HADES policy/assets/adapters | Repository at pushed `main` plus deployed overlay copy | No canonical domain state | Private deployment environment variables | Loaded by Hermes; no separate authority | With Hermes | Overlay syntax, boundary, and MCP registration checks | Source/runtime match, policy tests, and smoke contract |
 
 ## Boundary rule
@@ -57,10 +57,9 @@ and remaining owner/authority gates.
 
 ## Configuration drift audit
 
-The public deployment directory intentionally tracks only the compose contracts
-that are safe to publish: Agent Zero, Grocy, and LLDAP. Open WebUI, Hindsight,
-Hermes, and SearXNG use the private operator deployment/service records; their
-runtime secrets and volumes are not copied into Git. Staging/demo containers
+The public deployment directory tracks the safe base contracts plus templates
+for the formerly private application records. Runtime secrets and volumes are
+not copied into Git. Staging/demo containers
 are disposable and are not treated as production topology.
 
 The audit found no provably obsolete public compose file or adapter to delete.
@@ -76,14 +75,15 @@ environment values or persistent data:
 
 | Observed component | Runtime evidence | Reconciliation |
 |---|---|---|
-| Open WebUI | Local `0.11.5-remote-prefs` theme image, LAN binding on `:3000` | Private build input and static theme assets must remain in the operator record; the manifest's upstream 0.11.5 version is the compatibility baseline |
-| SearXNG | `searxng/searxng:2026.5.31-7159b8aed@sha256:35b089054ac9b4257976107e71673d9e30ac17c9b50bbf8b4783f2f6d1d1981f`, loopback `:8080` | Record the immutable image reference with the private deployment record; tracked settings remain the public configuration source |
+| Open WebUI | Local `0.11.5-remote-prefs` theme image, LAN binding on `:3000` | The tracked Dockerfile and immutable base now explain the application layer; the local image digest remains runtime evidence only |
+| SearXNG | `searxng/searxng:2026.5.31-7159b8aed@sha256:35b089054ac9b4257976107e71673d9e30ac17c9b50bbf8b4783f2f6d1d1981f`, loopback `:8080` | Generated template consumes the immutable manifest reference; tracked settings remain the public configuration source |
 | LLDAP | Pinned `hades-lldap` on loopback `:17170`; separate local-only production/staging instance on `:17171` | The second instance is staging topology, not a replacement authority; identity migration must be explicitly selected |
 | Grocy / Agent Zero | Pinned compose digests and loopback bindings match tracked contracts | No drift found |
 
-The untracked Open WebUI/SearXNG service definitions are intentional private
-deployment state, not dead public compose files. This is now an explicit
-rebuild input rather than an undocumented assumption.
+The old untracked Open WebUI/Hindsight/SearXNG service definitions and Hermes
+unit remain compatibility inputs only. The generated templates and artifact
+manifest are the V1 reconstruction source; private records are not required
+for the generated path.
 
 The metadata-only permission audit also found the three staged LLDAP secret
 files at mode `0600`, while tracked non-secret settings remain `0644`. The

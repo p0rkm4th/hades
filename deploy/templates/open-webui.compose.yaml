@@ -1,0 +1,26 @@
+name: hades-open-webui
+
+# Generated from this tracked template. Values remain operator/environment
+# references so rendered records contain no secret contents.
+services:
+  open-webui:
+    image: ${HADES_OPEN_WEBUI_IMAGE:?set HADES_OPEN_WEBUI_IMAGE from the artifact contract}
+    container_name: hades-open-webui
+    restart: unless-stopped
+    ports:
+      - "${HADES_OPEN_WEBUI_BIND:-127.0.0.1:3000}:8080"
+    environment:
+      ENABLE_SIGNUP: "false"
+      WEBUI_AUTH: "true"
+      OPENAI_API_BASE_URLS: "${HADES_HERMES_API_BASE_URL:?set HADES_HERMES_API_BASE_URL}"
+      OPENAI_API_KEYS: "${HADES_HERMES_API_KEY:?set HADES_HERMES_API_KEY}"
+    volumes:
+      - ${HADES_OPEN_WEBUI_DATA:?set HADES_OPEN_WEBUI_DATA}:/app/backend/data
+      - ${HADES_CONFIG_ROOT:?set HADES_CONFIG_ROOT}/assets/hades-theme.css:/app/backend/open_webui/static/hades-theme.css:ro,Z
+      - ${HADES_CONFIG_ROOT:?set HADES_CONFIG_ROOT}/assets/hades-theme.js:/app/backend/open_webui/static/hades-theme.js:ro,Z
+    networks:
+      - hades-application
+
+networks:
+  hades-application:
+    name: hades-application-net

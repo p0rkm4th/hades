@@ -1,0 +1,25 @@
+name: hades-hindsight
+
+# Generated from this tracked template. Hindsight state is a separate
+# operator-selected persistent path; it is never part of the image artifact.
+services:
+  hindsight:
+    image: ${HADES_HINDSIGHT_IMAGE:?set HADES_HINDSIGHT_IMAGE from config/versions.env}
+    container_name: hades-hindsight
+    restart: unless-stopped
+    environment:
+      HINDSIGHT_API_HOST: 0.0.0.0
+      HINDSIGHT_API_PORT: "9999"
+      HINDSIGHT_API_ENABLE_OBSERVATIONS: "true"
+      HINDSIGHT_API_LLM_BASE_URL: ${HADES_HERMES_MODEL_ENDPOINT:?set HADES_HERMES_MODEL_ENDPOINT}
+    ports:
+      - "127.0.0.1:${HADES_HINDSIGHT_API_PORT:-8888}:8888"
+      - "127.0.0.1:${HADES_HINDSIGHT_CONTROL_PORT:-9999}:9999"
+    volumes:
+      - ${HADES_HINDSIGHT_DATA:?set HADES_HINDSIGHT_DATA}:/home/hindsight/.pg0
+    networks:
+      - hades-application
+
+networks:
+  hades-application:
+    name: hades-application-net

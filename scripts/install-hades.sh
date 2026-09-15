@@ -27,14 +27,29 @@ hades_layer_digest() {
   sha256sum "$@" | awk '{print $1}' | sha256sum | awk '{print $1}'
 }
 [[ "${HADES_MANIFEST_VERSION:-}" == 1 ]] || fail 'unsupported authoritative manifest version; expected version 1'
-[[ "${HADES_INPUTS_VERSION:-}" == 1 ]] || fail 'unsupported operator input contract version; expected version 1'
+[[ "${HADES_INPUTS_VERSION:-}" == 1 || "${HADES_INPUTS_VERSION:-}" == 2 ]] || fail 'unsupported operator input contract version; expected version 1 or 2'
+generated_records=0
+if [[ "$HADES_INPUTS_VERSION" == 2 ]]; then
+  generated_records=1
+  : "${HADES_CONFIG_ROOT:?operator input is missing HADES_CONFIG_ROOT}"
+  : "${HADES_HERMES_PROFILE:?operator input is missing HADES_HERMES_PROFILE}"
+  HADES_DEPLOYMENT_DIR=${HADES_DEPLOYMENT_DIR:-$HADES_CONFIG_ROOT/private-deployment}
+  HADES_OPEN_WEBUI_COMPOSE_FILE=${HADES_OPEN_WEBUI_COMPOSE_FILE:-$HADES_DEPLOYMENT_DIR/open-webui.compose.yaml}
+  HADES_HINDSIGHT_COMPOSE_FILE=${HADES_HINDSIGHT_COMPOSE_FILE:-$HADES_DEPLOYMENT_DIR/hindsight.compose.yaml}
+  HADES_SEARXNG_COMPOSE_FILE=${HADES_SEARXNG_COMPOSE_FILE:-$HADES_DEPLOYMENT_DIR/searxng.compose.yaml}
+  HADES_HERMES_SERVICE_FILE=${HADES_HERMES_SERVICE_FILE:-$HADES_DEPLOYMENT_DIR/hermes.service}
+  export HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE
+  export HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE
+fi
 compose_cmd=(docker compose --env-file "$inputs")
 if ((test_mode && !root_supplied)); then fail 'test mode requires an explicit --root sandbox'; fi
 need_cmd() { command -v "$1" >/dev/null 2>&1 || fail "missing prerequisite: $1"; }
 under_root() { printf '%s/%s' "${root%/}" "${1#/}"; }
-for name in HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE; do
-  [[ -n "${!name:-}" ]] || fail "operator input is missing required deployment record variable: $name"
-done
+if (( ! generated_records )); then
+  for name in HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE; do
+    [[ -n "${!name:-}" ]] || fail "operator input is missing required deployment record variable: $name"
+  done
+fi
 for name in HADES_STATE_ROOT HADES_CONFIG_ROOT HADES_BACKUP_ROOT HADES_IDENTITY_SECRETS_DIR HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE HADES_HERMES_PROFILE HADES_HINDSIGHT_DATABASE_SECRET_FILE HADES_GROCY_API_KEY_FILE HADES_AGENT_ZERO_CREDENTIAL_FILE; do
   [[ -n "${!name:-}" ]] || fail "operator input is missing required path variable: $name"
   [[ "${!name}" == /* ]] || fail "operator input path must be absolute: $name"
@@ -194,6 +209,11 @@ preflight() {
 }
 preflight
 if ((preflight_only)); then exit 0; fi
+if (( generated_records )); then
+  [[ "$root" == / ]] || fail 'operator input contract v2 generated records require the real target root'
+  bash "$repo_dir/scripts/render-deployment-records.sh" "$inputs" "$HADES_DEPLOYMENT_DIR" >/dev/null
+  validate_private_records
+fi
 if ((test_mode)); then
   config_root=$(under_root "$HADES_CONFIG_ROOT"); state_root=$(under_root "$HADES_STATE_ROOT"); backup_root=$(under_root "$HADES_BACKUP_ROOT")
   mkdir -p "$config_root" "$state_root" "$backup_root"; chmod 0750 "$config_root" "$state_root" "$backup_root"
