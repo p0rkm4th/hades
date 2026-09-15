@@ -217,6 +217,9 @@ The clean Hindsight reconstruction contract uses API port 8888 and control
 plane port 9999 inside the image. The generated template now keeps those
 listeners distinct; using 9999 for `HINDSIGHT_API_PORT` caused an internal
 `EADDRINUSE` collision before the API could start.
+The repeatable runtime check is
+`scripts/test-hindsight-runtime.sh`; it starts the pinned digest with isolated
+state and ephemeral host ports, then verifies both listeners before cleanup.
 
 ## Manual-step inventory
 
