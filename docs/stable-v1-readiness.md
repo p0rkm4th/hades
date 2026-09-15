@@ -83,8 +83,8 @@ not commit volume.
 | Web/search | PARTIAL | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary; fresh owner-UI follow-up must confirm search freshness |
 | Bounded operator | PASS | Bounded inspection remains available and unsafe delegation is rejected before upstream dispatch; broader tasks and native A2A remain optional hardening |
 | Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; local CSV/native-file handoff is staged without production writes |
-| Homelab | OWNER-GATED | Approve endpoints, inventory scope, and read-only credentials; bounded Proxmox control planning is staged but has no executor |
-| Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
+| Homelab | PARTIAL | Synthetic Proxmox/NetBox/Kuma authority reconciliation, bounded Nmap evidence, review-only catalog candidates, and write-free control planning pass; connect approved endpoints with least-privilege credentials and validate real-network freshness |
+| Home Assistant | PARTIAL | Synthetic read-only adapter, ordinary-entity reads, stale/unavailable shaping, and security-sensitive filtering pass; connect the approved URL/token/entity allowlist and validate the deployed read path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
 | Installation/rebuild | PARTIAL | Two independent fresh Fedora synthetic deployments/reboots, actual-image six-component composition, and the synthetic household-soak contract pass; complete an independent full application reconstruction and full application household soak |
