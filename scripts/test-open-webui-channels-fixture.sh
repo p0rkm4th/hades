@@ -50,6 +50,35 @@ channel=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/channels/create" \
   --data '{"name":"household","description":"Synthetic household","type":"standard","is_private":true,"access_grants":[]}')
 python3 -c 'import json,sys; x=json.load(sys.stdin); assert x.get("name")=="household" and x.get("is_private") is True' <<<"$channel"
 
+beta_signup=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/add" \
+  -H "Authorization: Bearer $token" \
+  -H 'Content-Type: application/json' \
+  --data '{"name":"Beta","email":"beta@example.invalid","password":"Synthetic-Only-456!","role":"user"}')
+beta_token=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])' <<<"$beta_signup")
+beta_user_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$beta_signup")
+
+dogfood_channel=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/channels/create" \
+  -H "Authorization: Bearer $token" \
+  -H 'Content-Type: application/json' \
+  --data "$(printf '{\"name\":\"household-dogfood\",\"description\":\"Synthetic membership\",\"type\":\"group\",\"is_private\":true,\"user_ids\":[\"%s\"]}' "$beta_user_id")")
+dogfood_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$dogfood_channel")
+
+if ! curl -fsS "http://127.0.0.1:${port}/api/v1/channels/${dogfood_id}" \
+  -H "Authorization: Bearer $beta_token" >/dev/null; then
+  echo "FAIL Beta cannot read the explicitly shared channel" >&2
+  exit 1
+fi
+if ! curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/channels/${dogfood_id}/messages/post" \
+  -H "Authorization: Bearer $beta_token" \
+  -H 'Content-Type: application/json' \
+  --data '{"content":"Synthetic Beta shared household message","data":{},"meta":{}}' >/dev/null; then
+  echo "FAIL Beta cannot post to the explicitly shared channel" >&2
+  exit 1
+fi
+messages=$(curl -fsS "http://127.0.0.1:${port}/api/v1/channels/${dogfood_id}/messages" \
+  -H "Authorization: Bearer $token")
+python3 -c 'import json,sys; x=json.load(sys.stdin); assert any("Synthetic Beta shared household message" in m.get("content","") for m in x)' <<<"$messages"
+
 anonymous_status=$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${port}/api/v1/channels/")
 if [[ "$anonymous_status" != 401 && "$anonymous_status" != 403 ]]; then
   echo "FAIL anonymous Channels access returned HTTP ${anonymous_status}" >&2
@@ -57,4 +86,5 @@ if [[ "$anonymous_status" != 401 && "$anonymous_status" != 403 ]]; then
 fi
 
 echo "PASS authenticated disposable Channels feature and private-channel creation"
+echo "PASS synthetic Beta membership, shared post, and Alpha read-back"
 echo "PASS anonymous Channels access denied (HTTP ${anonymous_status})"

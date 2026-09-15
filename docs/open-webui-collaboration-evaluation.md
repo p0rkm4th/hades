@@ -44,8 +44,9 @@ the admin-only feature flag, so absence of that flag from /api/config is not
 evidence that Channels are unavailable. The authenticated disposable
 acceptance in `scripts/test-open-webui-channels-fixture.sh` passes: synthetic
 Alpha sees Channels enabled, creates a private household channel, and
-anonymous channel access is denied. Full Alpha/Beta membership, message,
-reload, and capability-boundary dogfood remains before DOGFOOD GREEN.
+anonymous channel access is denied. The same fixture also proves synthetic
+Beta membership, shared posting, and Alpha read-back. Reload, new-conversation,
+model-mention, and capability-boundary dogfood remains before DOGFOOD GREEN.
 
 Upstream references: https://docs.openwebui.com/features/channels/,
 https://github.com/open-webui/docs/blob/main/docs/features/authentication-access/rbac/permissions.md,
