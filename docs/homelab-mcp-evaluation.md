@@ -12,6 +12,8 @@ authorities instead of handing an agent a general network shell.
 | Virtualization runtime | `k-krawczyk/proxmox-mcp-server` or equivalent | Candidate; community-maintained, read-only mode is available | Read-only Proxmox API token; nodes, guests, status, resources |
 | Network discovery | `ly1595/nmap-mcp` or a smaller bounded wrapper | Candidate for a separately approved scan worker | Explicit CIDR/target allowlist, rate and port bounds, no arbitrary shell |
 | Availability | `mcp-uptime-kuma` or status/metrics endpoint | Prefer published status or metrics; defer authenticated write-capable MCPs | Observation only; stale data remains stale |
+| Read-only homelab summary | [`brenflakes/labops-mcp`](https://github.com/brenflakes/labops-mcp) | Current read-only candidate for source review; do not install directly yet | Keep source-specific authority and HADES conflict handling at the adapter boundary |
+| Broad homelab control | [`Nainounen/homelab-mcp`](https://github.com/Nainounen/homelab-mcp) | Rejected for direct HADES registration; advertises broad VM, Docker, networking, and management control | Would require a separately isolated broker and independently approved operation surface |
 
 The candidate list is a research result, not an installation or an approval to
 scan. Community MCPs must be pinned, source-reviewed, isolated, and tested in
@@ -70,7 +72,10 @@ and must not retry an unknown result blindly. The contract is exercised by
 ## Selection outcome
 
 The stable candidate shape is **four bounded adapters**, not a single
-homelab-control MCP. Stage the NetBox and Proxmox read paths first, add Nmap as
-an evidence-producing scan worker, and keep Kuma observation-only. Do not
-install a third-party server into production merely because it advertises
-write operations.
+homelab-control MCP: NetBox, Proxmox, Nmap evidence, and Kuma observation.
+`labops-mcp` is a useful read-only upstream candidate to source-review against
+that shape, while broad-control projects such as `homelab-mcp` must not be
+registered directly. Stage the read paths first, add Nmap as an
+evidence-producing scan worker, and keep Kuma observation-only. Do not install
+a third-party server into production merely because it advertises write
+operations.
