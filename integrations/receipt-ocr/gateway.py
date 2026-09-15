@@ -56,6 +56,17 @@ async def receipt_ocr_extract(image_base64: str, mime: str | None = None) -> dic
 
 
 def main() -> None:
+    transport = os.environ.get("HADES_OCR_TRANSPORT", "stdio").strip().lower()
+    if transport == "streamable-http":
+        mcp.run(
+            transport="streamable-http",
+            host=os.environ.get("HADES_OCR_HOST", "0.0.0.0"),
+            port=int(os.environ.get("HADES_OCR_PORT", "8000")),
+            path=os.environ.get("HADES_OCR_PATH", "/mcp"),
+        )
+        return
+    if transport != "stdio":
+        raise SystemExit("HADES_OCR_TRANSPORT must be stdio or streamable-http")
     mcp.run()
 
 

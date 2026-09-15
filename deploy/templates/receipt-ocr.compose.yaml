@@ -1,0 +1,29 @@
+name: hades-receipt-ocr
+
+services:
+  receipt-ocr:
+    image: ${HADES_RECEIPT_OCR_IMAGE:?set HADES_RECEIPT_OCR_IMAGE to the verified gateway image}
+    container_name: hades-receipt-ocr
+    restart: unless-stopped
+    entrypoint: ["python", "/opt/hades-receipt-ocr/gateway.py"]
+    environment:
+      HADES_OCR_TRANSPORT: streamable-http
+      HADES_OCR_HOST: 0.0.0.0
+      HADES_OCR_PORT: "8000"
+      HADES_OCR_PATH: /mcp
+    ports:
+      - "127.0.0.1:8765:8000"
+    networks:
+      - hades-private
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+networks:
+  hades-private:
+    name: hades-private
+    external: true

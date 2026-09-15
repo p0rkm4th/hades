@@ -97,6 +97,18 @@ input was rejected before the upstream worker was called. This proves the
 container transport and input boundary, not yet representative messy-receipt
 accuracy or Grocy intake application.
 
+The same image was run as a loopback-bound Streamable HTTP service using
+`deploy/templates/receipt-ocr.compose.yaml`. The installed Hermes MCP client
+initialized it, discovered only `receipt_ocr_extract`, and received the same
+path rejection. The template is disposable/private staging configuration; it
+is not in the production Compose set.
+
+The candidate Hermes CLI also loaded `hermes/config.yaml.example` in an
+isolated `HERMES_HOME` and completed `hermes mcp test receipt-ocr-gateway`
+against that loopback service, discovering exactly one tool. This is the
+disposable Hermes registration proof; it does not alter the production
+profile.
+
 The reproducible isolated worker definition is
 `integrations/receipt-ocr/Dockerfile`. It pins Python 3.11 and the official
 MCP package, and includes the native OpenCV/Paddle runtime libraries. The

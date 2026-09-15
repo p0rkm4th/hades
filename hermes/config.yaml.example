@@ -38,3 +38,9 @@ mcp_servers:
       GROCY_API_KEY_FILE: "${HADES_GROCY_API_KEY_FILE}"
     timeout: 30
     connect_timeout: 10
+  receipt-ocr-gateway:
+    # Optional private loopback service; the gateway accepts inline image data
+    # only and never receives Docker, filesystem, or URL-fetch authority.
+    url: "${HADES_RECEIPT_OCR_URL}"
+    timeout: 120
+    connect_timeout: 10
