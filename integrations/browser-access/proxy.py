@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import ipaddress
+import http.client
 import json
 import os
 import re
+import select
+import socket
 import subprocess
 import sys
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 from typing import Any
 
@@ -113,10 +118,119 @@ def _child_environment() -> dict[str, str]:
     return environment
 
 
+def _target_allowed(url: str, patterns: tuple[str, ...]) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+        return False
+    host = parsed.hostname.lower().rstrip(".")
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
+    if address is not None and (address.is_private or address.is_loopback or address.is_link_local or address.is_reserved or address.is_unspecified):
+        if os.environ.get("HADES_BROWSER_ALLOW_PRIVATE_TARGETS") != "1":
+            return False
+    return _host_allowed(host, patterns)
+
+
+class _FilteringProxy:
+    def __init__(self, patterns: tuple[str, ...]):
+        self.patterns = patterns
+        self.server = self._make_server()
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def _make_server(self):
+        patterns = self.patterns
+
+        class Handler(BaseHTTPRequestHandler):
+            def _deny(self):
+                self.send_error(403, "browser target is outside HADES host policy")
+
+            def _relay_http(self):
+                target = urlparse(self.path)
+                if not _target_allowed(self.path, patterns):
+                    self._deny()
+                    return
+                port = target.port or (443 if target.scheme == "https" else 80)
+                connection = http.client.HTTPSConnection(target.hostname, port, timeout=30) if target.scheme == "https" else http.client.HTTPConnection(target.hostname, port, timeout=30)
+                try:
+                    body = None
+                    length = self.headers.get("Content-Length")
+                    if length:
+                        body = self.rfile.read(min(int(length), 10 * 1024 * 1024))
+                    path = target.path or "/"
+                    if target.query:
+                        path += "?" + target.query
+                    headers = {key: value for key, value in self.headers.items() if key.lower() not in {"proxy-connection", "connection", "host"}}
+                    headers["Host"] = target.netloc
+                    connection.request(self.command, path, body=body, headers=headers)
+                    response = connection.getresponse()
+                    data = response.read(10 * 1024 * 1024 + 1)
+                    self.send_response(response.status, response.reason)
+                    for key, value in response.getheaders():
+                        if key.lower() not in {"connection", "transfer-encoding"}:
+                            self.send_header(key, value)
+                    self.send_header("Content-Length", str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data[:10 * 1024 * 1024])
+                except Exception:
+                    self.send_error(502, "browser upstream request failed")
+                finally:
+                    connection.close()
+
+            def do_CONNECT(self):
+                host, separator, port_text = self.path.partition(":")
+                port = int(port_text or "443") if separator and port_text.isdigit() else 443
+                target_url = f"https://{host}:{port}"
+                if not _target_allowed(target_url, patterns):
+                    self._deny()
+                    return
+                try:
+                    remote = socket.create_connection((host, port), timeout=30)
+                    self.send_response(200, "Connection Established")
+                    self.end_headers()
+                    sockets = [self.connection, remote]
+                    while True:
+                        ready, _, _ = select.select(sockets, [], [], 30)
+                        if not ready:
+                            break
+                        for source in ready:
+                            data = source.recv(64 * 1024)
+                            if not data:
+                                return
+                            (remote if source is self.connection else self.connection).sendall(data)
+                except Exception:
+                    self.send_error(502, "browser CONNECT failed")
+                finally:
+                    try:
+                        remote.close()
+                    except UnboundLocalError:
+                        pass
+
+            def do_GET(self): self._relay_http()
+            def do_HEAD(self): self._relay_http()
+            def do_POST(self): self._relay_http()
+            def do_PUT(self): self._relay_http()
+            def do_OPTIONS(self): self._relay_http()
+            def log_message(self, *_args): pass
+
+        return ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+
+    @property
+    def port(self) -> int:
+        return int(self.server.server_address[1])
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
 class Upstream:
     def __init__(self, hosts: tuple[str, ...]):
+        self.request_proxy = _FilteringProxy(hosts)
         self.process = subprocess.Popen(
-            build_command(hosts), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            build_command(hosts) + ["--proxy-server", f"http://127.0.0.1:{self.request_proxy.port}", "--proxy-bypass", "none"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=sys.stderr, text=True, bufsize=1, env=_child_environment(),
         )
 
@@ -139,6 +253,7 @@ class Upstream:
 
     def close(self) -> None:
         self.process.terminate()
+        self.request_proxy.close()
 
 
 def _error(message: dict[str, Any], error: Exception) -> dict[str, Any]:

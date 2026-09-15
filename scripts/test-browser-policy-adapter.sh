@@ -46,6 +46,7 @@ assert [tool["name"] for tool in filtered_tools(upstream)] == ["browser_navigate
 command = build_command(("recipes.example", "*.public.example"))
 assert "--isolated" in command and "--headless" in command and "--allowed-hosts" in command
 assert "--storage-state" not in command and "--user-data-dir" not in command
+assert "--proxy-server" not in command
 assert select_profile("household", "anonymous") == {"allowed": True, "profile": "anonymous"}
 print("PASS anonymous browser adapter filters submit, code, storage, and file tools")
 print("PASS browser adapter enforces HTTPS, explicit hosts, and public-target policy")

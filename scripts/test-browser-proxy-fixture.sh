@@ -13,6 +13,11 @@ const fixture = http.createServer((req, res) => {
     res.end('<!doctype html><title>HADES Browser Fixture</title><h1>Read-only research</h1><p>NO SIDE EFFECT</p><button>Apply</button>');
     return;
   }
+  if (req.method === 'GET' && req.url === '/redirect') {
+    res.writeHead(302, {'location': 'http://localhost:' + fixture.address().port + '/'});
+    res.end();
+    return;
+  }
   res.writeHead(404);
   res.end();
 });
@@ -66,6 +71,9 @@ fixture.listen(0, '127.0.0.1', () => {
     const snapshot = await rpc('tools/call', {name: 'browser_snapshot', arguments: {}});
     const text = (snapshot.result.content || []).map(item => item.text || '').join('\n');
     if (!text.includes('Read-only research') || !text.includes('NO SIDE EFFECT')) throw new Error('safe browser snapshot failed');
+    const redirected = await rpc('tools/call', {name: 'browser_navigate', arguments: {url: 'http://127.0.0.1:' + port + '/redirect'}});
+    const redirectText = JSON.stringify(redirected);
+    if (!redirectText.includes('403') || !redirectText.includes('HADES host policy')) throw new Error('unapproved redirect was not blocked: ' + redirectText);
     const denied = await rpc('tools/call', {name: 'browser_click', arguments: {target: 'e1', element: 'Apply'}});
     if (!denied.error || !String(denied.error.message).includes('anonymous read surface')) throw new Error('unsafe browser call was not rejected: ' + JSON.stringify(denied));
     console.log('PASS Playwright MCP round-trip through HADES anonymous browser proxy');

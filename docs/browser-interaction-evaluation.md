@@ -60,7 +60,8 @@ page-side behavior remain outside that setting's guarantee.
 Therefore the raw package remains a staged dependency, not a direct Hermes
 registration. HADES now has a separate `browser-research` proxy at
 `integrations/browser-access/proxy.py`. It launches the pinned package in
-isolated headless mode and exposes only anonymous navigation and read tools;
+isolated headless mode, forces all browser traffic through a local filtering
+proxy, and exposes only anonymous navigation and read tools;
 it requires `HADES_BROWSER_ALLOWED_HOSTS` and remains unavailable when that
 allowlist is empty. Draft, submit, storage, file, evaluation, and privileged
 profile operations remain outside this registered surface. Recipe and research
@@ -74,8 +75,9 @@ click, and verifies exactly one POST afterward.
 The policy proxy's real MCP round trip is reproducible with
 scripts/test-browser-proxy-fixture.sh: it launches the pinned upstream
 package, filters the advertised tools, navigates to a disposable loopback
-fixture, reads its accessibility snapshot, and rejects a click call. The
-loopback/private-target override exists only inside that test process.
+fixture, reads its accessibility snapshot, rejects a click call, and blocks a
+redirect to an unapproved host at the network proxy. The loopback/private-
+target override exists only inside that test process.
 
 Upstream reference:
 https://github.com/microsoft/playwright-mcp.
