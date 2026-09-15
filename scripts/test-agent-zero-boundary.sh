@@ -92,6 +92,12 @@ async def main():
     AsyncClient.payload = {"response": "01234567890", "context_id": "ctx"}
     oversized = await module._delegate("task")
     assert not oversized["ok"] and oversized["outcome"] == "OUTCOME UNKNOWN"
+    AsyncClient.payload = {"response": "bounded", "context_id": "12345"}
+    oversized_context = await module._delegate("task")
+    assert not oversized_context["ok"] and oversized_context["outcome"] == "OUTCOME UNKNOWN"
+    AsyncClient.payload = {"response": "bounded", "context_id": 1234}
+    malformed_context = await module._delegate("task")
+    assert not malformed_context["ok"] and malformed_context["outcome"] == "OUTCOME UNKNOWN"
     AsyncClient.error = module.httpx.TimeoutException()
     timed_out = await module._delegate("task")
     assert not timed_out["ok"] and timed_out["outcome"] == "OUTCOME UNKNOWN"

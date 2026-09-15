@@ -135,11 +135,20 @@ async def _delegate(task: str, context_id: str = "") -> dict[str, Any]:
             "outcome": "OUTCOME UNKNOWN",
             "error": f"Agent Zero result exceeds the {MAX_RESPONSE_CHARS}-character response limit.",
         }
+    returned_context_id = result.get("context_id", "")
+    if returned_context_id is None:
+        returned_context_id = ""
+    if not isinstance(returned_context_id, str) or len(returned_context_id) > MAX_CONTEXT_ID_CHARS:
+        return {
+            "ok": False,
+            "outcome": "OUTCOME UNKNOWN",
+            "error": "Agent Zero returned an invalid or oversized context ID; task outcome is unknown.",
+        }
 
     return {
         "ok": True,
         "outcome": "SUCCEEDED",
-        "context_id": str(result.get("context_id", "") or ""),
+        "context_id": returned_context_id,
         "response": response_text,
     }
 
