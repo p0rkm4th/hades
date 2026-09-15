@@ -1,6 +1,6 @@
 # ADR: receipt and document OCR
 
-Status: **SELECTED / STAGED FOR DISPOSABLE EVALUATION**
+Status: **SELECTED / STAGED; EVIDENCE CONTRACT GREEN**
 
 ## Decision
 
@@ -49,6 +49,12 @@ Disposable dogfood must cover a clean synthetic receipt, poor image/partial
 OCR, tax and total mismatch, duplicate receipt submission, unknown product,
 corrected match, cancel, restart, and canonical Grocy verification. Real
 receipts and owner credentials are not required for this staging work.
+
+The current evidence contract is implemented in
+`integrations/receipt-ocr/evidence.py` and exercised by
+`scripts/test-receipt-ocr-contract.sh`. It has not yet claimed PaddleOCR
+runtime accuracy; that requires a disposable PaddleOCR deployment and sample
+images.
 
 ## Non-decision
 
