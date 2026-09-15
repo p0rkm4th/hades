@@ -57,12 +57,14 @@ profile persistence, but does not make those tools read-only. Origin allowlists
 also do not replace an HADES authorization boundary because redirects and
 page-side behavior remain outside that setting's guarantee.
 
-Therefore the package remains a staged dependency, not a direct Hermes MCP
-registration. The first production-capable browser slice needs an HADES-owned
-policy adapter that exposes anonymous read/navigation tools separately from
-draft and submit operations, rejects privileged storage/profile access, and
-requires actor-bound confirmation for any side effect. Until then, recipe and
-research flows continue to prefer direct HTTP/structured extraction.
+Therefore the raw package remains a staged dependency, not a direct Hermes
+registration. HADES now has a separate `browser-research` proxy at
+`integrations/browser-access/proxy.py`. It launches the pinned package in
+isolated headless mode and exposes only anonymous navigation and read tools;
+it requires `HADES_BROWSER_ALLOWED_HOSTS` and remains unavailable when that
+allowlist is empty. Draft, submit, storage, file, evaluation, and privileged
+profile operations remain outside this registered surface. Recipe and research
+flows should still prefer direct HTTP/structured extraction when sufficient.
 
 The disposable navigation/snapshot and explicit-submit contract is reproducible with
 scripts/test-playwright-mcp-fixture.sh. It uses a local fixture and isolated

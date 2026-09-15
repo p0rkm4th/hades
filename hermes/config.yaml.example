@@ -50,3 +50,11 @@ mcp_servers:
     args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/actual-finance-import/server.py"]
     timeout: 30
     connect_timeout: 10
+  browser-research:
+    # Anonymous read/navigation only; an explicit public host allowlist is required.
+    command: python3
+    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/browser-access/proxy.py"]
+    env:
+      HADES_BROWSER_ALLOWED_HOSTS: "${HADES_BROWSER_ALLOWED_HOSTS}"
+    timeout: 120
+    connect_timeout: 10

@@ -99,10 +99,11 @@ an owner decision or secret from defects that can be repaired independently.
   authorization value; malformed truthy values cannot select the privileged
   profile. Anonymous browsing and explicit-submit fixture acceptance remain
   green.
-- **Documented:** Direct Playwright MCP registration remains deferred because
-  its upstream core surface includes submit-capable browser tools. The next
-  browser slice requires an HADES policy adapter separating anonymous reads
-  from draft/submit operations; this is an expansion item, not an owner gate.
+- **Added:** An HADES `browser-research` proxy now registers only the pinned
+  anonymous navigation/read surface and requires an explicit public-host
+  allowlist. The raw Playwright MCP surface remains unregistered; draft,
+  submit, storage, file, evaluation, and privileged-profile operations are
+  still an expansion item, not an owner gate.
 - **Hardened:** The Actual read-only wrapper now rejects unsafe password files
   and missing explicit budget selection; it cannot silently choose the first
   budget. Finance remains production-gated and read-only.
