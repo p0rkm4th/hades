@@ -32,6 +32,24 @@ The public manifest remains the version source of truth. Private deployment
 records must use a specific tag or digest; `latest` and bulk update commands
 are not part of the contract.
 
+## Current update map
+
+Updates are staged in this order so that the conversation surface and
+authority-bearing services are not changed together:
+
+| Component | Current production baseline | Candidate/action | Acceptance gate |
+|---|---|---|---|
+| Open WebUI | pinned 0.11.1 image plus the tracked HADES compatibility layer | build and test a new immutable image; preserve the Channels patch only if the new source still needs it | disposable login/channel/model-stream test, restart persistence, then owner UI acceptance |
+| Hermes | 0.14.0 | qualify 0.21.2 with the explicit HADES suite; keep production unchanged until promotion rehearsal | candidate suite, rollback-backed owner-authenticated rehearsal, and owner approval |
+| Hindsight | pinned digest, API/control ports 8888/9999 | upgrade one digest after backup and runtime/read-back checks | memory persistence, subject mapping, restart, and no port collision |
+| Grocy | pinned digest | upgrade one digest after canonical backup | inventory, recipe, shopping-list, restart, and reconciliation checks |
+| LLDAP | pinned digest | upgrade one digest after identity backup | login, group/capability mapping, restart, and revocation checks |
+| SearXNG / Agent Zero | pinned records | upgrade independently when a bounded candidate is selected | read-only search freshness or bounded delegation contract; no authority expansion |
+
+Open WebUI and Hermes therefore require two separate controlled changes. The
+remaining owner input is authentication/acceptance and rollback approval, not
+a need to run an unattended or bulk upgrade.
+
 For the tracked LLDAP, Grocy, and Agent Zero Compose components,
 `scripts/upgrade-hades.sh` implements this boundary. It is plan-only by
 default. `--apply` requires root, a mode-0700 backup directory,

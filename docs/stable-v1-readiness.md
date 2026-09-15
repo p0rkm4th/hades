@@ -109,11 +109,11 @@ boundary and authorization gate are recorded in
 
 ## Current next action
 
-Continue capability expansion from the highest-value unblocked lane: resolve
-the remaining disposable Channels mentioned-model execution contract (or
-record its upstream disposition), then advance local voice provider selection
-and Hermes/Open WebUI wiring. The authenticated disposable Channels feature,
-private-channel contract, and bounded homelab scan-evidence worker now pass;
-no production setting changed. Clean-machine reconstruction evidence is
-retained above; it is maintenance evidence rather than the primary roadmap.
-Owner-gated real integrations remain outside this work.
+Continue capability expansion from the highest-value unblocked lane: complete
+the independent full-application reconstruction/household-soak evidence, then
+reconcile any newly exposed defects. The disposable Channels mentioned-model
+execution contract, private-channel contract, local voice timing, bounded
+homelab scan-evidence worker, and Hindsight runtime reconstruction regression
+now pass; no production setting changed. Hermes 0.21.2 promotion and
+owner-visible WebUI/recipe acceptance remain explicit gates, not reasons to
+alter the production 0.14.0/0.11.1 baseline.
