@@ -62,6 +62,17 @@ for bad_input, bad_mapping, bad_delimiter, bad_encoding in (
     else:
         raise AssertionError("malformed finance preview input escaped")
 
+for bad_mapping in (
+    {"date": 1, "payee": "Payee", "amount": "Amount"},
+    {"date": "Date", "payee": "Payee", "amount": None, "inflow": "Credit", "outflow": 2},
+):
+    try:
+        module.build_preview(b"Date,Payee,Amount\n2026-09-01,Store,1.00\n", bad_mapping)
+    except module.ImportFormatError:
+        pass
+    else:
+        raise AssertionError("non-text finance mapping field escaped")
+
 try:
     module.build_preview(
         b"Date,Payee,Debit,Credit\n2026-09-01,Store,1.00,2.00\n",

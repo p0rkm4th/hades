@@ -18,8 +18,17 @@ class ImportFormatError(ValueError):
     pass
 
 
+def _field(mapping: dict[str, Any], key: str) -> str:
+    value = mapping.get(key, "")
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise ImportFormatError(f"mapping field {key} must be text")
+    return value.strip()
+
+
 def _required(mapping: dict[str, str], key: str) -> str:
-    value = mapping.get(key, "").strip()
+    value = _field(mapping, key)
     if not value:
         raise ImportFormatError(f"mapping must specify {key}")
     return value
@@ -43,7 +52,7 @@ def _money(value: str, row_number: int) -> str:
 
 
 def _amount(row: dict[str, str], mapping: dict[str, str], row_number: int) -> str:
-    amount_column = mapping.get("amount", "").strip()
+    amount_column = _field(mapping, "amount")
     if amount_column:
         return _money(row.get(amount_column, ""), row_number)
     inflow_column = _required(mapping, "inflow")
@@ -87,8 +96,11 @@ def build_preview(
         raise ImportFormatError("existing transactions must be a list")
     date_column = _required(mapping, "date")
     payee_column = _required(mapping, "payee")
-    if not mapping.get("amount", "").strip() and not (
-        mapping.get("inflow", "").strip() and mapping.get("outflow", "").strip()
+    amount_column = _field(mapping, "amount")
+    inflow_column = _field(mapping, "inflow")
+    outflow_column = _field(mapping, "outflow")
+    if not amount_column and not (
+        inflow_column and outflow_column
     ):
         raise ImportFormatError("mapping must specify amount or inflow and outflow")
     try:
@@ -103,9 +115,9 @@ def build_preview(
         for column in (
             date_column,
             payee_column,
-            mapping.get("amount", "").strip(),
-            mapping.get("inflow", "").strip(),
-            mapping.get("outflow", "").strip(),
+            amount_column,
+            inflow_column,
+            outflow_column,
         )
         if column and column not in reader.fieldnames
     }
