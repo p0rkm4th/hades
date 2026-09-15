@@ -3,11 +3,14 @@
 Status: **READY FOR TOKEN / OWNER GATE**.
 
 Home Assistant is not provisioned or contacted by HADES. The credential-free
-preflight is complete and fails closed when configuration is absent. The intended first
-integration is the maintained Home Assistant MCP endpoint (`/api/mcp`) or the
-read-only REST API, using a user-approved token and an explicit entity
-allowlist. HADES must not discover or expose the whole Home Assistant
-instance by default.
+preflight is complete and fails closed when configuration is absent. A reusable
+read-only REST MCP adapter now exists at
+`integrations/home-assistant-readonly/server.py`; it exposes only
+`home_assistant_read` and `home_assistant_selected_states`, and requires an
+explicit non-sensitive entity allowlist. The intended first live integration is
+the maintained Home Assistant MCP endpoint (`/api/mcp`) or this read-only REST
+path, using a user-approved token. HADES must not discover or expose the whole
+Home Assistant instance by default.
 
 ## Proposed first slice
 
@@ -76,6 +79,11 @@ stale sensor; excluded lock and camera entities; and rejection of writes. The
 fixture proves that excluded entities are rejected before any request reaches
 the backend, and is exercised in public CI without a Home Assistant token or
 real endpoint.
+
+The adapter policy contract is exercised by
+[`scripts/test-home-assistant-readonly-adapter.sh`](../scripts/test-home-assistant-readonly-adapter.sh).
+It is intentionally transport-agnostic in public evidence: live URL, token,
+entity selection, and endpoint exposure remain owner gates.
 
 References: [Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/),
 [Home Assistant MCP server](https://www.home-assistant.io/integrations/mcp_server),

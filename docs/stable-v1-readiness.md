@@ -63,7 +63,8 @@ These are deliberate gates, not missing implementation tasks:
   after the documented HADES qualification suite and residual classifications;
 - owner-approved Proxmox, NetBox, and Uptime Kuma endpoints and read-only
   credentials;
-- owner-approved Home Assistant endpoint, token, and entity allowlist;
+- owner-approved Home Assistant endpoint, token, and entity allowlist; the
+  reusable read-only adapter is staged but not live-enabled;
 - product authorization for deterministic automation; and
 - operator-managed encryption key custody, off-host destination, retention,
   and plaintext-retirement policy for recovery artifacts.
