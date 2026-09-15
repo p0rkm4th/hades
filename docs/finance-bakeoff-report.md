@@ -55,6 +55,12 @@ requires explicit owner approval of Actual as canonical, real historical-file
 import, and later any SimpleFIN/provider connection. Until those approvals,
 finance remains synthetic-only and no production connector is enabled.
 
+The local-file boundary now classifies Actual-supported CSV, QIF, OFX, QFX, and
+CAMT inputs and emits a digest-only native-import handoff. CSV preview and
+duplicate detection remain deterministic in HADES; non-CSV parsing remains in
+Actual's native importer. This preserves Actual as the parser and canonical
+ledger while keeping finance production owner-gated.
+
 Reevaluate on an Actual major migration, client/server incompatibility,
 read-only boundary failure, restore failure, or materially safer Firefly
 import/API evidence.

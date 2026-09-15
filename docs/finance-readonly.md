@@ -19,6 +19,15 @@ cache only the selected budget locally, and expose only account, balance,
 transaction, and status reads. It must never expose Actual's mutation, import,
 sync, provider-link, reconciliation-write, or money-movement methods.
 
+Local file intake is now bounded by
+`integrations/actual-finance-import/file_boundary.py`. It recognizes the five
+formats supported by Actual—CSV, QIF, OFX, QFX, and CAMT—records only a
+metadata digest, and requires the native Actual import path for the four
+non-CSV formats. The existing CSV module provides a deterministic preview;
+neither path writes a ledger or stores a second transaction history. The
+repeatable format-boundary dogfood is
+`scripts/test-finance-file-boundary.sh`.
+
 ## Secret-safe placeholders
 
 ```dotenv
