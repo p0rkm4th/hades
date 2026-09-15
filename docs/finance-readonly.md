@@ -28,6 +28,14 @@ neither path writes a ledger or stores a second transaction history. The
 repeatable format-boundary dogfood is
 `scripts/test-finance-file-boundary.sh`.
 
+The preview-only MCP surface in
+`integrations/actual-finance-import/server.py` exposes this as
+`finance_file_preview` and `finance_file_apply_preview`. It accepts inline
+base64 only, keeps CSV mapping and duplicate analysis explicit, and returns a
+write-free `importTransactions` request after confirmation. It does not
+execute that request; canonical Actual import and post-import reconciliation
+still require the authorized native client path.
+
 ## Secret-safe placeholders
 
 ```dotenv

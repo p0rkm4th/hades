@@ -3,12 +3,21 @@ set -euo pipefail
 
 python3 - <<'PY'
 import importlib.util
+import base64
+import json
+import sys
 from pathlib import Path
 
+sys.path.insert(0, "integrations/actual-finance-import")
 path = Path("integrations/actual-finance-import/import_csv.py")
 spec = importlib.util.spec_from_file_location("actual_import", path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+
+service_spec = importlib.util.spec_from_file_location("finance_service", "integrations/actual-finance-import/service.py")
+service = importlib.util.module_from_spec(service_spec)
+sys.modules[service_spec.name] = service
+service_spec.loader.exec_module(service)
 
 csv_data = (
     "Posted,Description,Debit,Credit\n"
@@ -30,6 +39,19 @@ assert request["operation"] == "importTransactions"
 assert request["writes_performed"] is False
 assert request["reconcile_after_write"] is True
 assert len(request["transactions"]) == 2
+
+service_preview = service.preview_file(
+    base64.b64encode(csv_data).decode(),
+    "checking.csv",
+    json.dumps(mapping),
+)
+assert service_preview["status"] == "PREVIEW"
+service_request = service.preview_apply_request(json.dumps(service_preview), confirm=True)
+assert service_request["status"] == "READY_TO_APPLY"
+assert service_request["writes_performed"] is False
+assert service.preview_file("not-base64", "checking.csv")["status"] == "FAILED"
+assert service.preview_file(base64.b64encode(b"not a csv").decode(), "checking.csv", json.dumps(mapping))["status"] == "FAILED"
+assert service.preview_file(base64.b64encode(b"!Type:Bank\nD09/01/2026\nT-3.00\nPStore\n^\n").decode(), "checking.qif")["native_import_required"] is True
 
 repeat = module.build_preview(csv_data, mapping, existing_transactions=preview["transactions"])
 assert repeat["duplicate_count"] == 2
