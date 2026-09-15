@@ -26,10 +26,11 @@ TOOLS = [
             "properties": {
                 "file_base64": {"type": "string", "description": "Inline base64 file bytes; no paths or URLs."},
                 "filename": {"type": "string"},
+                "target_account_id": {"type": "string", "description": "Explicit Actual Budget account ID; names are not accepted."},
                 "mapping_json": {"type": "string", "description": "CSV column mapping JSON object."},
                 "existing_transactions_json": {"type": "string", "description": "Optional canonical rows for duplicate analysis."},
             },
-            "required": ["file_base64", "filename"],
+            "required": ["file_base64", "filename", "target_account_id"],
         },
     ),
     Tool(
@@ -58,7 +59,7 @@ async def call_tool(_ctx, params):
     args: dict[str, Any] = params.arguments or {}
     if params.name == "finance_file_preview":
         result = preview_file(
-            args.get("file_base64", ""), args.get("filename", ""),
+            args.get("file_base64", ""), args.get("filename", ""), args.get("target_account_id", ""),
             args.get("mapping_json", "{}"), args.get("existing_transactions_json", "[]"),
         )
     elif params.name == "finance_file_apply_preview":

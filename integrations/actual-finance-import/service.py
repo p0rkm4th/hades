@@ -57,18 +57,25 @@ def _json_list(value: str, label: str) -> list[dict[str, Any]]:
 def preview_file(
     file_base64: str,
     filename: str,
+    target_account_id: str,
     mapping_json: str = "{}",
     existing_transactions_json: str = "[]",
 ) -> dict[str, Any]:
     """Build a review preview without retaining or sending the file anywhere."""
     try:
+        if not isinstance(target_account_id, str) or not target_account_id.strip() or len(target_account_id.strip()) > 128:
+            raise ImportFormatError("target_account_id must be an explicit bounded Actual account ID")
+        target_account_id = target_account_id.strip()
         data = _decode_file(file_base64)
         handoff = build_native_handoff(data, filename)
+        handoff["target_account_id"] = target_account_id
         if handoff["format"] != "CSV":
             return handoff
         mapping = _json_object(mapping_json, "mapping_json")
         existing = _json_list(existing_transactions_json, "existing_transactions_json")
-        return build_preview(data, mapping, existing_transactions=existing)
+        preview = build_preview(data, mapping, existing_transactions=existing)
+        preview["target_account_id"] = target_account_id
+        return preview
     except (ImportFormatError, ValueError) as exc:
         return {"status": "FAILED", "error": str(exc), "writes_performed": False}
 
@@ -77,6 +84,12 @@ def preview_apply_request(preview_json: str, *, confirm: bool = False) -> dict[s
     """Build the CSV import request; this remains a write-free handoff."""
     try:
         preview = _json_object(preview_json, "preview_json")
-        return build_apply_request(preview, confirm=confirm)
+        target_account_id = preview.get("target_account_id")
+        if not isinstance(target_account_id, str) or not target_account_id.strip() or len(target_account_id.strip()) > 128:
+            raise ImportFormatError("preview must contain an explicit Actual target_account_id")
+        result = build_apply_request(preview, confirm=confirm)
+        if result.get("status") == "READY_TO_APPLY":
+            result["account_id"] = target_account_id.strip()
+        return result
     except (ImportFormatError, ValueError) as exc:
         return {"status": "FAILED", "error": str(exc), "writes_performed": False}

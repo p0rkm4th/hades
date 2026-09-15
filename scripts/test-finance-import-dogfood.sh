@@ -24,7 +24,7 @@ def request(user, action, **kwargs):
     if user != "alpha":
         return {"status": "FAILED", "error": "Finance import is owner-only."}
     if action == "preview":
-        return preview_file(base64.b64encode(csv_data).decode(), "checking.csv", json.dumps(mapping))
+        return preview_file(base64.b64encode(csv_data).decode(), "checking.csv", "account-checking", json.dumps(mapping))
     if action == "apply":
         return preview_apply_request(kwargs["preview_json"], confirm=kwargs.get("confirm", False))
     raise AssertionError(action)
@@ -64,7 +64,7 @@ assert first == {"status": "SUCCEEDED", "canonical_source": "Actual Budget"}
 assert len(actual.canonical_rows) == 2
 
 duplicate_preview = preview_file(
-    base64.b64encode(csv_data).decode(), "checking.csv", json.dumps(mapping),
+    base64.b64encode(csv_data).decode(), "checking.csv", "account-checking", json.dumps(mapping),
     json.dumps(actual.canonical_rows),
 )
 assert duplicate_preview["duplicate_count"] == 2
@@ -74,6 +74,7 @@ assert preview_apply_request(json.dumps(duplicate_preview), confirm=True)["statu
 second_data = b"Posted,Description,Amount\n2026-09-03,Pharmacy,-12.00\n"
 second_preview = preview_file(
     base64.b64encode(second_data).decode(), "checking.csv",
+    "account-checking",
     json.dumps({"date": "Posted", "payee": "Description", "amount": "Amount"}),
 )
 second_plan = preview_apply_request(json.dumps(second_preview), confirm=True)

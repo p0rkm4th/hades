@@ -48,15 +48,19 @@ assert len(request["transactions"]) == 2
 service_preview = service.preview_file(
     base64.b64encode(csv_data).decode(),
     "checking.csv",
+    "account-checking",
     json.dumps(mapping),
 )
 assert service_preview["status"] == "PREVIEW"
+assert service_preview["target_account_id"] == "account-checking"
 service_request = service.preview_apply_request(json.dumps(service_preview), confirm=True)
 assert service_request["status"] == "READY_TO_APPLY"
 assert service_request["writes_performed"] is False
-assert service.preview_file("not-base64", "checking.csv")["status"] == "FAILED"
-assert service.preview_file(base64.b64encode(b"not a csv").decode(), "checking.csv", json.dumps(mapping))["status"] == "FAILED"
-assert service.preview_file(base64.b64encode(b"!Type:Bank\nD09/01/2026\nT-3.00\nPStore\n^\n").decode(), "checking.qif")["native_import_required"] is True
+assert service_request["account_id"] == "account-checking"
+assert service.preview_file("not-base64", "checking.csv", "account-checking")["status"] == "FAILED"
+assert service.preview_file(base64.b64encode(b"not a csv").decode(), "checking.csv", "account-checking", json.dumps(mapping))["status"] == "FAILED"
+assert service.preview_file(base64.b64encode(b"!Type:Bank\nD09/01/2026\nT-3.00\nPStore\n^\n").decode(), "checking.qif", "account-checking")["native_import_required"] is True
+assert service.preview_file(base64.b64encode(csv_data).decode(), "checking.csv", "")["status"] == "FAILED"
 
 repeat = module.build_preview(csv_data, mapping, existing_transactions=preview["transactions"])
 assert repeat["duplicate_count"] == 2

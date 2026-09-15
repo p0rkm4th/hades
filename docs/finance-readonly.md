@@ -35,6 +35,8 @@ base64 only, keeps CSV mapping and duplicate analysis explicit, and returns a
 write-free `importTransactions` request after confirmation. It does not
 execute that request; canonical Actual import and post-import reconciliation
 still require the authorized native client path.
+Every preview also requires an explicit Actual `target_account_id`; account
+names are not treated as an unambiguous destination.
 
 ## Secret-safe placeholders
 
