@@ -60,6 +60,40 @@ assert html_paste["source"] == "pasted recipe text"
 assert html_paste["title"] == "HTML Soup"
 assert [item["name"] for item in html_paste["ingredients"]] == ["tomatoes", "basil"]
 assert html_paste["instructions"] == ["Stir and serve."]
+
+class _Headers:
+    def get_content_type(self):
+        return "text/html"
+
+class _Response:
+    headers = _Headers()
+    def geturl(self):
+        return "https://recipes.example.test/fallback"
+    def read(self, _limit):
+        return visible_html.encode()
+    def __enter__(self):
+        return self
+    def __exit__(self, *_args):
+        return None
+
+class _Opener:
+    def open(self, _request, timeout):
+        assert timeout == module.DEFAULT_TIMEOUT_SECONDS
+        return _Response()
+
+original_safe_url = module._safe_url
+original_build_opener = module.build_opener
+module._safe_url = lambda value: value
+module.build_opener = lambda _handler: _Opener()
+try:
+    fetched_fallback = module.extract_from_url("https://recipes.example.test/fallback")
+finally:
+    module._safe_url = original_safe_url
+    module.build_opener = original_build_opener
+assert fetched_fallback["source"] == "public URL visible-text fallback"
+assert fetched_fallback["requires_review"] is True
+assert any("visible-text fallback" in warning for warning in fetched_fallback["warnings"])
+assert fetched_fallback["source_url"] == "https://recipes.example.test/fallback"
 for invalid_paste in ("Recipe without sections", "Ingredients:\n- 1 cup flour"):
     try:
         module.extract_from_paste(invalid_paste)
@@ -204,6 +238,7 @@ assert "final_url = _safe_url(response.geturl())" in path.read_text()
 print("PASS recipe JSON-LD graph extraction")
 print("PASS recipe pasted text, HTML, and JSON-LD converge on one normalized contract")
 print("PASS recipe normalization preserves raw evidence and review state")
+print("PASS recipe URL visible-text fallback remains review-required")
 print("PASS recipe URL fetch boundary rejects unsupported/private targets")
 print("PASS recipe URL redirects revalidate every destination")
 PY

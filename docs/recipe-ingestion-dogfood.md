@@ -51,10 +51,11 @@ The opt-in public acceptance currently passes against King Arthur Baking's
 Banana Bread page, producing a title, 14 ingredients, and 8 instruction steps
 on 2026-09-15. Simply Recipes and Allrecipes also passed the same live check.
 BBC Good Food returned HTTP 402 during evaluation and is recorded as an
-upstream access limitation, not a parser failure. The fallback for fetched
-pages without usable Recipe JSON-LD is intentionally not implemented yet.
-HADES must ask for pasted recipe text/HTML or report that the URL requires a
-later supported extraction fallback rather than hallucinating a recipe.
+upstream access limitation, not a parser failure. Fetched pages without usable
+Recipe JSON-LD now receive the same conservative visible-text section parser
+used for pasted HTML. Successful fallback results are explicitly marked
+review-required; pages without a clear title and Ingredients section still
+fail rather than producing an inferred recipe.
 
 The normalized contract now also accepts explicitly sectioned pasted recipe
 text plus raw pasted HTML or JSON-LD through `recipe_paste_preview`. These

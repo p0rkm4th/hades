@@ -89,7 +89,9 @@ an owner decision or secret from defects that can be repaired independently.
 - **Expanded:** Recipe ingestion now converges URL, pasted text, pasted HTML,
   and pasted JSON-LD on one bounded normalized preview path. Grocy writes still
   require exact product resolution, review, confirmation, and canonical
-  read-back; messy-site fallback and owner acceptance remain staged.
+  read-back; fetched pages with clear visible recipe sections now use a
+  review-required fallback, while site-specific/browser extraction and owner
+  acceptance remain staged.
 - **Hardened:** The staged recipe MCP now validates its Grocy API-key input as
   a bounded regular non-symlink file with safe permissions before any request.
   The secret-boundary regression passes; no production recipe MCP is enabled.

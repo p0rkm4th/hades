@@ -309,7 +309,27 @@ def extract_from_url(url: str, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> dict
         body = response.read(MAX_HTML_BYTES + 1)
     if len(body) > MAX_HTML_BYTES:
         raise ValueError("Recipe source exceeds the bounded preview size.")
-    return extract_from_html(body.decode("utf-8", errors="replace"), final_url)
+    html = body.decode("utf-8", errors="replace")
+    try:
+        return extract_from_html(html, final_url)
+    except ValueError as structured_error:
+        # Some publishers expose a recipe only as visible structured sections.
+        # Reuse the conservative paste parser; it still requires a title and
+        # explicit Ingredients section, preserves review state, and never
+        # turns arbitrary page prose into a write plan.
+        try:
+            fallback = extract_from_paste(html, final_url)
+        except ValueError as fallback_error:
+            raise ValueError(
+                "Recipe URL has no usable Schema.org data or supported visible-text sections."
+            ) from fallback_error
+        fallback["source"] = "public URL visible-text fallback"
+        fallback["warnings"] = list(dict.fromkeys(
+            list(fallback.get("warnings", []))
+            + ["Structured recipe data was unavailable; visible-text fallback requires review."]
+        ))
+        fallback["requires_review"] = True
+        return fallback
 
 
 def resolve_products(recipe: dict[str, Any], products: list[dict[str, Any]]) -> dict[str, Any]:
