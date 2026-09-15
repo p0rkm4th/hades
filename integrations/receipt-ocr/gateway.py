@@ -15,6 +15,20 @@ from input_boundary import ImageInputError, decode_image_input
 mcp = FastMCP("hades-receipt-ocr-gateway")
 
 
+def _classify_upstream_result(result) -> dict:
+    """Classify upstream OCR evidence without treating an empty response as success."""
+    content = [
+        item.text
+        for item in getattr(result, "content", [])
+        if isinstance(getattr(item, "text", None), str)
+    ]
+    if getattr(result, "isError", False):
+        return {"status": "FAILED", "error": "upstream PaddleOCR MCP failed", "content": content}
+    if not any(text.strip() for text in content):
+        return {"status": "FAILED", "error": "upstream PaddleOCR returned no usable text", "content": content}
+    return {"status": "SUCCEEDED", "content": content}
+
+
 async def _upstream_ocr(image: bytes, mime: str) -> dict:
     params = StdioServerParameters(
         command=os.environ.get("PADDLEOCR_MCP_COMMAND", "paddleocr_mcp"),
@@ -35,10 +49,7 @@ async def _upstream_ocr(image: bytes, mime: str) -> dict:
                     "use_textline_orientation": False,
                 },
             })
-    content = [item.text for item in result.content if getattr(item, "text", None) is not None]
-    if getattr(result, "isError", False):
-        return {"status": "FAILED", "error": "upstream PaddleOCR MCP failed", "content": content}
-    return {"status": "SUCCEEDED", "content": content}
+    return _classify_upstream_result(result)
 
 
 @mcp.tool()
