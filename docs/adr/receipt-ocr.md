@@ -68,6 +68,22 @@ already available disposable Python 3.11 container, including
 `paddlepaddle==3.3.1`; this does not authorize installing OCR into the
 production HADES host.
 
+The disposable worker now completes a synthetic CPU receipt inference when the
+oneDNN path is disabled (`FLAGS_use_mkldnn=0` and
+`enable_mkldnn=False`). It recognizes the merchant, item names, and printed
+totals; the repeatable check is
+`scripts/test-receipt-ocr-runtime.sh`. The default oneDNN path reproduced the
+upstream `ConvertPirAttribute2RuntimeAttribute` failure documented in the
+[PaddleOCR issue tracker](https://github.com/PaddlePaddle/PaddleOCR/issues/18162),
+so the fallback is part of the isolated worker contract and not hidden as an
+HADES parser workaround.
+
+The reproducible isolated worker definition is
+`integrations/receipt-ocr/Dockerfile`. It pins Python 3.11 and the official
+MCP package, and includes the native OpenCV/Paddle runtime libraries. The
+worker is intentionally not part of the production Compose set until a
+disposable image can complete actual OCR on representative synthetic images.
+
 ## Non-decision
 
 Do not build an HADES OCR engine, receipt database, or shadow finance ledger.
