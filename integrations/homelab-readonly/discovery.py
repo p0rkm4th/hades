@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ipaddress
 import xml.etree.ElementTree as ET
+from datetime import datetime
 from typing import Any
 
 MAX_XML_BYTES = 2 * 1024 * 1024
@@ -27,11 +28,18 @@ def parse_nmap_xml(
     *,
     target: str,
     allowed_networks: list[str],
+    retrieved_at: str,
 ) -> dict[str, Any]:
     raw = document.encode() if isinstance(document, str) else document
     if not raw or len(raw) > MAX_XML_BYTES:
         raise ValueError("Nmap evidence is empty or exceeds the bounded size")
     requested = _network(target)
+    if not retrieved_at:
+        raise ValueError("Nmap evidence requires a retrieval timestamp")
+    try:
+        datetime.fromisoformat(retrieved_at.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("Nmap evidence retrieval timestamp is invalid") from exc
     allowed = [_network(value) for value in allowed_networks]
     if not any(requested.subnet_of(scope) for scope in allowed):
         raise ValueError("Nmap target is outside the allowed discovery scope")
@@ -79,4 +87,7 @@ def parse_nmap_xml(
             if len(ports) > MAX_PORTS_PER_HOST:
                 raise ValueError("Nmap evidence exceeds the port bound")
         hosts.append({"ip": str(ip), "hostname": hostname, "ports": ports})
-    return {"source": "nmap.xml", "target": str(requested), "hosts": hosts}
+    return {
+        "source": "nmap.xml", "target": str(requested),
+        "retrieved_at": retrieved_at, "hosts": hosts,
+    }
