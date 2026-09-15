@@ -88,6 +88,14 @@ from `action_authorized`; ordinary conversation can continue with usable text,
 while `action_authorized` and `voice_authenticated` remain false for every
 voice result until an explicit identity and confirmation policy exists.
 
+The provider-injected `integrations/local-voice/pipeline.py` composes one
+Wyoming audio turn through STT, an existing HADES chat callback, and local TTS.
+`handle_voice_turn` passes explicit non-authenticated, non-authorizing context
+to the HADES callback, stops silence before any request, and reports TTS
+failure without claiming a successful voice turn. The composition contract is
+covered by `scripts/test-local-voice-pipeline.sh`; it does not register a
+second agent or production endpoint.
+
 The provider-neutral TTS boundary in `integrations/local-voice/tts.py` now
 accepts only bounded text and bounded 16-bit WAV output. Its contract is
 covered by `scripts/test-local-voice-tts.sh`; malformed provider output and
