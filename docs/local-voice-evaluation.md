@@ -37,6 +37,12 @@ silence, unavailable confidence, low confidence, and accepted transcripts.
 Its regression script does not require an audio device or an STT dependency;
 the actual whisper.cpp/Wyoming composition remains the next staging step.
 
+The provider-neutral Wyoming framing contract in
+integrations/local-voice/wyoming.py now round-trips audio-start,
+audio-chunk, and audio-stop events, rejects truncated/invalid frames, and
+enforces a bounded payload. It remains transport-only and does not assert
+identity or execute a HADES action.
+
 Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
