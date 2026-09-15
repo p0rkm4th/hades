@@ -4,6 +4,7 @@ set -euo pipefail
 PYTHONPATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/../integrations/browser-access" && pwd)" python3 - <<'PY'
 import os
 from policy import select_profile
+import proxy
 from proxy import ALLOWED_TOOLS, authorize_call, build_command, filtered_tools, validate_navigation
 from pathlib import Path
 
@@ -15,6 +16,10 @@ assert "HADES_BROWSER_ALLOWED_HOSTS" in config
 os.environ["HADES_BROWSER_ALLOWED_HOSTS"] = "recipes.example,*.public.example"
 assert validate_navigation("https://recipes.example/recipe")
 assert validate_navigation("https://blog.public.example/post")
+original_getaddrinfo = proxy.socket.getaddrinfo
+proxy.socket.getaddrinfo = lambda *args, **kwargs: [(2, 1, 6, '', ('192.168.1.9', 0))]
+assert proxy._target_allowed("https://recipes.example/", ("recipes.example",)) is False
+proxy.socket.getaddrinfo = original_getaddrinfo
 for url in (
     "file:///etc/passwd", "https://user:pass@recipes.example/secret",
     "https://not-allowed.example/", "http://127.0.0.1:8000/",

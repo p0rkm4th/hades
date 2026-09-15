@@ -127,10 +127,28 @@ def _target_allowed(url: str, patterns: tuple[str, ...]) -> bool:
         address = ipaddress.ip_address(host)
     except ValueError:
         address = None
-    if address is not None and (address.is_private or address.is_loopback or address.is_link_local or address.is_reserved or address.is_unspecified):
-        if os.environ.get("HADES_BROWSER_ALLOW_PRIVATE_TARGETS") != "1":
+    if not _host_allowed(host, patterns):
+        return False
+    private_override = os.environ.get("HADES_BROWSER_ALLOW_PRIVATE_TARGETS") == "1"
+    if address is not None:
+        addresses = (address,)
+    else:
+        try:
+            port = parsed.port or (443 if parsed.scheme == "https" else 80)
+            addresses = tuple(
+                ipaddress.ip_address(item[4][0])
+                for item in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+            )
+        except (OSError, ValueError):
             return False
-    return _host_allowed(host, patterns)
+        if not addresses:
+            return False
+    if not private_override and any(
+        item.is_private or item.is_loopback or item.is_link_local or item.is_reserved or item.is_unspecified
+        for item in addresses
+    ):
+        return False
+    return True
 
 
 class _FilteringProxy:
