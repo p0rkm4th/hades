@@ -88,6 +88,8 @@ jobs:
         run: bash scripts/test-synthetic-backup-restore.sh
       - name: Check backup metadata contract
         run: bash scripts/test-backup-metadata-contract.sh
+      - name: Check backup coverage documentation
+        run: bash scripts/test-backup-coverage-doc.sh
       - name: Check install failure contract
         run: bash scripts/test-install-failure-contract.sh
       - name: Check partial-install recovery

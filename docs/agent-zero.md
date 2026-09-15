@@ -53,8 +53,10 @@ the legacy `/.well-known/agent.json` path and advertises the container-local
 URL, while Hermes' v0.21.2 client expects the v1 `agent-card.json` and a
 different card/transport contract. The endpoint is not LAN- or Tailscale-
 exposed, and the token remains private in Agent Zero settings. Hermes retains
-the smaller bounded MCP bridge. Revisit native interoperability separately;
-enabling the server does not broaden Agent Zero authority.
+the smaller bounded MCP bridge. Native A2A is **DEFERRED FOR V1**. Revisit
+only after a mutually compatible authenticated card/transport contract passes
+bounded task, failure, and household-denial acceptance without increasing
+privileges. Enabling the server does not broaden Agent Zero authority.
 
 Upstream references:
 

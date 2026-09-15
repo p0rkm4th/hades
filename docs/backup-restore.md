@@ -27,9 +27,29 @@ operator record.
 | LLDAP | Authoritative for directory identities; application records are separate | Quiesced database copy and isolated pinned-image restore | Verify directory health, login behavior, and restored identity records | Restored identities do not invalidate existing WebUI tokens automatically; use the ordered revocation bridge | 2026-09-13 | Production owner recovery and subject remapping remain gated |
 | Hindsight | Authoritative for durable memory; service can be recreated around a native PostgreSQL export | Native PostgreSQL export/restore, not a raw live data-directory copy | Verify health and a known marker recall in the intended bank/namespace | Stable subject-to-bank mapping must be restored before private recall is trusted; never treat memory as live domain truth | 2026-09-13 | Production owner-bank migration and mapping policy remain unapproved |
 | Grocy | Authoritative for household and grocery state; service image is reconstructable | Consistent SQLite backup of `/config`, with canonical API verification | Verify stock, shopping list, recipes, and restart persistence before mutations | Restore must preserve canonical quantities and duplicate-folding behavior; no HADES shadow state | 2026-09-13 | Complete owner recipe-authoring acceptance and production backup policy |
+| Actual Budget | Authoritative for finance accounts and transactions; HADES stores no ledger copy | Actual-native archive/export or owner-approved consistent application backup; synthetic archive restore is proven | Restore an isolated archive, verify account/transaction markers and import duplicate behavior, then keep live finance disabled until owner approval | Never restore finance state into a HADES shadow store; imported transactions remain canonical Actual state | 2026-09-15 | Owner-selected archive location, retention, and production finance authorization |
 | Hermes | Authoritative for orchestration, sessions, skills, and service configuration; package is reconstructable | Private profile/state backup with secrets handled separately and correct permissions | Start after dependencies, verify API health, chat reload, and one bounded tool call | Service credentials must be restored without exposing them; downstream canonical systems remain authoritative | 2026-09-13 | Full candidate promotion and owner-authenticated rehearsal remain gated |
 | Agent Zero | Authoritative for its private operator workspace and delegated context; image is reconstructable | Snapshot the dedicated volume while protecting `.env` and excluding public artifacts | Verify a harmless bounded delegation and a controlled failure response | Restore the same persistent identity before trusting delegated context; no host access expansion | 2026-09-13 | Broader delegation and native A2A interoperability remain future work |
 | SearXNG | Configuration is authoritative; search cache is reconstructable and non-authoritative | Preserve configuration; recreate cache when absent | Verify JSON search and Hermes provider wiring | No household or identity state is canonical here; outage must fail honestly | 2026-09-13 | No independent production gate beyond operator destination/retention policy |
+| HADES private configuration | Repository policy/assets/adapters plus private operator inputs and deployment records | Rebuild public source from Git; encrypt and back up private records separately with mode/manifest verification | Re-render records, validate pins and permissions, then run the bounded doctor/validation contracts | Secrets and private endpoints never enter Git; restored records must match the authoritative manifest | 2026-09-15 | Owner-selected encrypted custody and private-record retention |
+
+### Recovery objectives
+
+The following are planning assumptions, not guarantees of an owner backup
+service. RPO is the maximum acceptable data loss; RTO is the target time to a
+validated restored service. Exact values remain operator policy where marked.
+
+| Component | RPO assumption | RTO assumption |
+|---|---|---|
+| LLDAP | 24 hours for directory changes | 2 hours to health and login validation |
+| Open WebUI | 24 hours for conversations/settings | 2 hours to login and marker-chat reload |
+| Hindsight | 24 hours for accepted memory | 4 hours to health and scoped recall |
+| Grocy | 24 hours for pantry/recipe changes | 2 hours to canonical stock/recipe validation |
+| Actual Budget | Owner-selected; no autonomous assumption | Owner-selected; finance stays disabled until verified |
+| Hermes | 24 hours for profile/session changes | 2 hours to API and bounded-tool validation |
+| Agent Zero | 24 hours for operator workspace | 4 hours to harmless delegation validation |
+| SearXNG | Configuration-only; cache loss is acceptable | 1 hour to configuration and JSON-search validation |
+| HADES private configuration | Every change-window checkpoint | 1 hour to re-render and pass doctor/validation |
 
 ## Live deployment mount inventory
 

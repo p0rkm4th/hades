@@ -30,6 +30,12 @@ signs Beta in to verify the private-chat denial still holds.
 This is synthetic
 application-path evidence; the campaign does **not** yet claim:
 
+The same six-image composition was rerun from the current pushed checkpoint on
+2026-09-15 and passed again, including Alpha/Beta authentication, model-route
+response persistence, private-chat denial, and Open WebUI restart persistence.
+This strengthens disposable application-composition evidence but does not
+change the fresh-guest boundary below.
+
 - a fresh guest installed with v2 generated records;
 - a real Hermes gateway connected to the real Open WebUI, Hindsight, Grocy,
   SearXNG, and Agent Zero instances;

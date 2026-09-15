@@ -32,15 +32,13 @@ are the active campaign.
 
 ## CURRENT HEAD
 
-`sanitized-history release checkpoint` — the reachable `main` history has been sanitized for public release;
-the current tree and full-history audit contain no owner identifiers, tailnet
-hostnames, private network literals, or credential-like tracked paths. Account-
-scoped theme preferences, recovery evidence, and the supported Open WebUI
-theme-handling fixes remain committed. A complete pre-rewrite bundle is held
-outside the repository for rollback if needed.
-Founding capabilities and
-current upstream/A2A decisions are reconciled; Actual remains selected for
-synthetic HADES integration and production finance is gated.
+The local and remote `main` branches are synchronized at the current pushed
+checkpoint. Recent work added the reconciled Actual import contract and a
+pre-launch 4,096-address limit to the bounded Nmap worker. The current tree
+and public-history audit contain no owner identifiers, tailnet hostnames,
+private network literals, or credential-like tracked paths. Founding
+capabilities and current upstream decisions are reconciled; Actual remains
+selected for synthetic HADES integration and production finance is gated.
 
 ## COMPLETED MILESTONES
 
@@ -241,13 +239,12 @@ read, finance exclusion, revocation, and cross-account settings isolation;
   owner-gated.
 
 Continue independent roadmap work while production remains on the known-good
-Hermes 0.14.0 baseline. The candidate's HADES core is green, but production
-promotion still requires a fresh owner authentication path. The next
-reachable product lanes are Hermes/Open WebUI wiring and model-mention
-composition, local voice dogfood, and the remaining synthetic recovery,
-performance, and security contracts. Public recipe URL preview, bounded Nmap
-evidence parsing, and authenticated Channels membership/restart/authority
-fixtures are now independently evidenced; none changed production state.
+Hermes 0.14.0 baseline. The next P1 is an independent fresh supported guest
+with the full application fixtures; the disposable six-image application
+composition now passes but is not a fresh-guest reconstruction claim.
+Public recipe URL preview, bounded Nmap evidence parsing, authenticated
+Channels membership/restart/authority fixtures, and the reconciled finance
+writer contract are independently evidenced; none changed production state.
 
 Synthetic production dogfood found that Hermes' automatic Hindsight `sync_turn`
 path retained ordinary Grocy/shared-state turns in a user's private semantic
@@ -532,3 +529,14 @@ an immutable Open WebUI 0.11.3 candidate. These changes are staged evidence,
 not production promotion. Production remains Hermes 0.14.0 and Open WebUI
 0.11.1. The readiness map and capability ledger carry the authoritative
 remaining contracts and owner gates.
+
+## A2A V1 DECISION
+
+**A2A DEFERRED FOR V1.** The existing bounded Agent Zero MCP bridge is the
+selected operator path because it has a smaller task surface, explicit
+pre-dispatch rejection, bounded responses, and tested failure semantics. The
+native Agent Zero card/transport remains incompatible with the Hermes 0.21.2
+client contract and would add a second authority-bearing integration surface.
+Reevaluate only when Hermes and Agent Zero publish a mutually compatible,
+authenticated card/transport contract that passes the same bounded task,
+failure, and household-denial tests without broadening privileges.
