@@ -51,9 +51,11 @@ remaining owner input is authentication/acceptance and rollback approval, not
 a need to run an unattended or bulk upgrade.
 
 As of 2026-09-15, upstream release records identify Open WebUI 0.11.3 and
-Hermes Agent 0.21.2 as the current candidates. The public version manifest
-intentionally remains pinned to Open WebUI 0.11.1 and Hermes 0.14.0 until
-candidate qualification and owner acceptance complete. The upgrade helper
+Hermes Agent 0.21.2 as the current candidates. `config/versions.env` records
+those as candidate-only metadata (`HADES_OPEN_WEBUI_CANDIDATE_*` and
+`HADES_HERMES_CANDIDATE_VERSION`); the production pins remain Open WebUI
+0.11.1 and Hermes 0.14.0 until candidate qualification and owner acceptance
+complete. The upgrade helper
 prints plan-only instructions for `hermes`, `open-webui`, `hindsight`, and
 `searxng`; `--apply` is rejected for those private-record components. It can
 still plan and apply the tracked one-component LLDAP, Grocy, or Agent Zero
