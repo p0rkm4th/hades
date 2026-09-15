@@ -146,6 +146,11 @@ def _hades_conversation_intent_text(user_message, conversation_history):
     if isinstance(conversation_history, list):
         for message in conversation_history[-8:]:
             if isinstance(message, dict):
+                # Tool payloads are observations, not user intent. They may
+                # be stale, contradictory, or attacker-controlled and must
+                # not steer a later capability/authority decision.
+                if message.get("role") == "tool":
+                    continue
                 content = message.get("content", "")
                 if isinstance(content, str):
                     history_parts.append(content)

@@ -45,6 +45,9 @@ an owner decision or secret from defects that can be repaired independently.
   complete: the
   repeatable Alpha/Beta/Gamma harness passes 24/24 bounded turns, including
   corrections, topic switches, abandoned mutations, pronouns, and recall.
+  Routing context now excludes tool-role payloads so stale observations cannot
+  steer later capability selection; the current user/assistant conversation
+  text remains bounded and current-turn preserving.
   Authenticated HADES-session acceptance remains an owner-authenticated
   end-to-end gate, not an unrecorded independent defect.
 - **Complete:** The pinned Open WebUI private-chat soak creates Alpha and

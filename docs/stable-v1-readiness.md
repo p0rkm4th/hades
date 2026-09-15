@@ -77,7 +77,7 @@ not commit volume.
 | Capability | Status | Smallest remaining contract |
 |---|---|---|
 | Owner daily-driver | PASS | Fresh owner regression after any runtime promotion; current persistence evidence is retained |
-| Household multi-user | PARTIAL | Disposable Qwen long-context harness and real pinned Open WebUI Alpha/Beta private-chat/channel soaks pass; authenticated HADES gateway composition and owner-visible acceptance remain |
+| Household multi-user | PARTIAL | Disposable Qwen long-context harness (including stale tool-payload exclusion) and real pinned Open WebUI Alpha/Beta private-chat/channel soaks pass; authenticated HADES gateway composition and owner-visible acceptance remain |
 | Private memory | PASS | Preserve subject mapping through any migration; reload/restart persistence is evidenced |
 | Shared household state | PASS | Recipe URL/paste structured-data path, canonical Grocy authoring/fulfillment, and synthetic receipt-intake review path are evidenced; owner-visible recipe and intake acceptance remains |
 | Web/search | PARTIAL | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary; fresh owner-UI follow-up must confirm search freshness |
