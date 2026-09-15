@@ -86,6 +86,11 @@ only, with path/URL rejection and MIME/magic-byte validation. A thin wrapper
 must enforce this contract before delegating to the upstream MCP; direct MCP
 registration is therefore rejected as a security-boundary failure.
 
+The implemented `integrations/receipt-ocr/gateway.py` is that wrapper: it
+exposes only `receipt_ocr_extract`, passes a validated data URL to the official
+upstream `ocr` tool over local stdio, and keeps Grocy/finance writes outside
+the OCR process.
+
 The reproducible isolated worker definition is
 `integrations/receipt-ocr/Dockerfile`. It pins Python 3.11 and the official
 MCP package, and includes the native OpenCV/Paddle runtime libraries. The

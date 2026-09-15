@@ -8,6 +8,7 @@ RUN apt-get update \
 RUN python -m pip install --no-cache-dir \
     "paddleocr-mcp[local-cpu]==0.8.5"
 
+COPY gateway.py input_boundary.py /opt/hades-receipt-ocr/
 ENV HOME=/tmp/hades-ocr
 ENV FLAGS_use_mkldnn=0
 RUN mkdir -p /tmp/hades-ocr && chown -R 65532:65532 /tmp/hades-ocr
