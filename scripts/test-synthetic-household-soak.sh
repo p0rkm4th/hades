@@ -22,6 +22,7 @@ bash "$repo_dir/scripts/test-recipe-ingest-contract.sh" >/dev/null
 bash "$repo_dir/scripts/test-recipe-mcp-registration.sh" >/dev/null
 bash "$repo_dir/scripts/test-receipt-ocr-dogfood.sh" >/dev/null
 bash "$repo_dir/scripts/test-finance-file-boundary.sh" >/dev/null
+bash "$repo_dir/scripts/test-finance-import-dogfood.sh" >/dev/null
 bash "$repo_dir/scripts/test-homelab-fixture.sh" >/dev/null
 bash "$repo_dir/scripts/test-homelab-discovery-parser.sh" >/dev/null
 bash "$repo_dir/scripts/test-homelab-discovery-runner.sh" >/dev/null
