@@ -122,6 +122,14 @@ an owner decision or secret from defects that can be repaired independently.
   candidate-only upstream/provider failure is a HADES release blocker.
 - **Added:** A public configuration-drift guard now checks the tracked compose
   set and reconstruction-manifest coverage.
+- **Updated:** The actual-image full-application composition passes at the
+  current checkpoint, including restart persistence and Alpha/Beta isolation.
+  A fresh Fedora 44 guest independently booted, accepted the repository,
+  installed Docker/Compose, built Open WebUI, and reached healthy LLDAP/Grocy
+  after the harness gained SELinux relabeling and UID-1000 secret ownership.
+  Agent Zero registry acquisition then stalled; temporary guest artifacts were
+  reclaimed, so the full-guest claim remains precisely environment-limited and
+  unproven rather than treated as a production blocker.
 
 Completed independent evidence now includes the synthetic homelab and Home
 Assistant read-only fixtures, mixed-domain memory/web/operator composition

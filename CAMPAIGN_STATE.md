@@ -30,6 +30,32 @@ canonical-state, failure, recovery, and reproducibility boundaries. Clean-host
 reconstruction is now a maintenance lane; capability dogfood and composition
 are the active campaign.
 
+## CURRENT CONTINUATION CHECKPOINT
+
+- **Branches:** local `main` and `origin/main` are synchronized at the pushed
+  checkpoint; verify the exact SHA with `git rev-parse HEAD origin/main`.
+- **Last completed objective:** recovery coverage with component RPO/RTO
+  assumptions and the explicit `A2A DEFERRED FOR V1` decision.
+- **Active independent priority:** complete or precisely close the fresh
+  full-application reconstruction evidence. The local six-image composition
+  passes; a fresh Fedora 44 guest reached healthy LLDAP/Grocy after the
+  harness repair but stalled while acquiring Agent Zero layers.
+- **Open P0/P1/P2:** no newly demonstrated P0/P1/P2 defect is recorded; the
+  fresh-guest application path and subsequent household soak remain open.
+- **Staged capabilities:** recipe URL/paste authoring, receipt OCR, finance
+  import, homelab discovery/control planning, Home Assistant reads, voice,
+  browser research, and broader Agent Zero operator work remain bounded or
+  staged in the capability ledger.
+- **Owner gates:** unchanged gates are consolidated in
+  [`docs/current-blockers.md`](docs/current-blockers.md); no authentication or
+  credential gate is being re-polled here.
+- **Long operations:** none running; temporary Fedora guest artifacts were
+  reclaimed after the environment-limited attempt.
+- **Next independent action:** preserve the repaired harness and attempt the
+  remaining guest evidence only with adequate guest/registry storage; if that
+  external condition cannot be met, retain the precise limitation and advance
+  the next bounded maintenance or capability contract.
+
 ## CURRENT HEAD
 
 The local and remote `main` branches are synchronized at the current pushed
