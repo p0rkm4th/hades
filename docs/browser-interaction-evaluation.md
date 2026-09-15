@@ -22,7 +22,9 @@ authenticated owner session, and household users cannot inherit it.
 
 The provider-neutral selector in integrations/browser-access/policy.py enforces
 that rule: household scope can select only anonymous browsing, while an owner
-profile requires trusted owner scope and explicit application authorization.
+profile requires trusted owner scope and an explicit boolean application
+authorization. Malformed authorization values fail closed rather than being
+accepted through truthiness.
 
 ## Side-effect contract
 

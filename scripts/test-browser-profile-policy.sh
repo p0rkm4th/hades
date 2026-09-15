@@ -15,6 +15,9 @@ assert policy.select_profile("household", "owner", owner_authorized=True)["allow
 assert policy.select_profile("owner", "owner")["allowed"] is False
 assert policy.select_profile("owner", "owner", owner_authorized=True) == {"allowed": True, "profile": "owner"}
 assert policy.select_profile("owner", "scotty-browser")["allowed"] is False
+assert policy.select_profile("owner", "owner", owner_authorized="true")["allowed"] is False
+assert policy.select_profile("owner", "owner", owner_authorized=1)["allowed"] is False
+assert policy.select_profile("owner", {"profile": "owner"})["allowed"] is False
 print("PASS anonymous browser profile is available to household scope")
 print("PASS owner browser profile requires trusted explicit authorization")
 print("PASS prompt-selected unknown profiles are rejected")
