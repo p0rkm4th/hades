@@ -77,7 +77,7 @@ not commit volume.
 | Capability | Status | Smallest remaining contract |
 |---|---|---|
 | Owner daily-driver | PASS | Fresh owner regression after any runtime promotion; current persistence evidence is retained |
-| Household multi-user | PARTIAL | Disposable Qwen harness passes 24 Alpha/Beta/Gamma turns; authenticated HADES-session acceptance remains the end-to-end contract |
+| Household multi-user | PARTIAL | Disposable Qwen long-context harness and real pinned Open WebUI Alpha/Beta private-chat/channel soaks pass; authenticated HADES gateway composition and owner-visible acceptance remain |
 | Private memory | PASS | Preserve subject mapping through any migration; reload/restart persistence is evidenced |
 | Shared household state | PASS | Complete recipe-authoring browser sequence; current persistence evidence is retained |
 | Web/search | PARTIAL | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary; fresh owner-UI follow-up must confirm search freshness |
@@ -87,7 +87,7 @@ not commit volume.
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
-| Installation/rebuild | PARTIAL | Two independent fresh Fedora synthetic deployments/reboots and the reproducible synthetic household-soak contract pass; complete an independent full application reconstruction and full application household soak |
+| Installation/rebuild | PARTIAL | Two independent fresh Fedora synthetic deployments/reboots, actual-image six-component composition, and the synthetic household-soak contract pass; complete an independent full application reconstruction and full application household soak |
 | Security | PASS | Static CI guards now cover authority amplification, mounts, pinned deployment, and read-only finance/operator surfaces; re-run after authority-bearing changes |
 | Performance | PARTIAL | Synthetic web/recipe capture is below the repeated ~30s threshold; owner-visible timing remains for final acceptance |
 
