@@ -95,6 +95,13 @@ The public synthetic response contract in
 coverage, partial-failure, and read-only invariants without contacting a real
 homelab service.
 
+The reusable read-only MCP composition adapter is in
+`integrations/homelab-readonly/`. Its `homelab_summary` tool fetches only
+configured HTTP(S) GET endpoints and delegates authority-aware composition to
+`reconcile.py`; the focused contract is
+`scripts/test-homelab-readonly-adapter.sh`. Missing or failed sources produce
+partial results and errors rather than substituting memory or another source.
+
 [`scripts/test-homelab-fixture.sh`](../scripts/test-homelab-fixture.sh) adds a
 disposable loopback fixture for the next integration step. It exposes minimal
 Proxmox, NetBox, and Uptime Kuma-shaped read endpoints with an online node, a

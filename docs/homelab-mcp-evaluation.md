@@ -48,6 +48,12 @@ fixture proves the Nmap-shaped evidence boundary: an in-scope result can
 describe a device and port, while an inventory mutation and an out-of-scope
 target are rejected.
 
+The first reusable HADES composition slice is
+`integrations/homelab-readonly/`: a single read-only `homelab_summary` MCP
+tool over approved Proxmox, NetBox, and Kuma GET endpoints. It does not run
+Nmap; discovery remains a separate evidence-producing worker and cannot write
+inventory.
+
 ## Selection outcome
 
 The stable candidate shape is **four bounded adapters**, not a single
