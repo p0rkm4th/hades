@@ -36,10 +36,12 @@ are the active campaign.
   checkpoint; verify the exact SHA with `git rev-parse HEAD origin/main`.
 - **Last completed objective:** recovery coverage with component RPO/RTO
   assumptions and the explicit `A2A DEFERRED FOR V1` decision.
-- **Active independent priority:** complete or precisely close the fresh
-  full-application reconstruction evidence. The local six-image composition
-  passes; a fresh Fedora 44 guest reached healthy LLDAP/Grocy after the
-  harness repair but stalled while acquiring Agent Zero layers.
+- **Active independent priority:** close staged capabilities. Reconstruction
+  is maintenance-only: the local six-image composition passes, while a fresh
+  Fedora 44 guest reached healthy LLDAP/Grocy before Agent Zero layers stalled.
+- **Capability queue:** the web/search API and CLI follow-up contract is now
+  classified `OWNER-GATED`; the next independent product work is recipe URL /
+  paste actor-path closure, followed by bounded browser research.
 - **Open P0/P1/P2:** no newly demonstrated P0/P1/P2 defect is recorded; the
   fresh-guest application path and subsequent household soak remain open.
 - **Staged capabilities:** recipe URL/paste authoring, receipt OCR, finance
