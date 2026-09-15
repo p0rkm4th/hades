@@ -18,7 +18,11 @@ end-to-end clean-guest claim.
 
 The generated records render and validate without secret contents, and the
 three real application images plus a clean Hermes venv have each been exercised
-in isolation. The campaign does **not** yet claim:
+in isolation. `scripts/test-full-application-image-startup.sh` now also starts
+the six real pinned application images together on an isolated Docker network
+and verifies internal LLDAP, Grocy, Hindsight, and Open WebUI health, with
+bounded startup polling and automatic cleanup. This is component-composition
+evidence; the campaign does **not** yet claim:
 
 - a fresh guest installed with v2 generated records;
 - a real Hermes gateway connected to the real Open WebUI, Hindsight, Grocy,

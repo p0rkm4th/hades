@@ -7,6 +7,7 @@ from pathlib import Path
 reconstruction = Path('docs/reconstruction.md').read_text(encoding='utf-8')
 required_rows = {
     'Full-stack synthetic clean reconstruction': 'PASS',
+    'Actual-image application composition': 'PASS',
     'Full application clean reconstruction': 'NOT PROVEN',
     'Fresh-install synthetic household soak': 'PASS',
     'Fresh-install full application household soak': 'NOT PROVEN',
@@ -17,6 +18,8 @@ for level, status in required_rows.items():
         raise SystemExit(f'FAIL reconstruction evidence row is missing or overstated: {level}')
 if '| Full-stack clean reconstruction |' in reconstruction or '| Fresh-install household soak |' in reconstruction:
     raise SystemExit('FAIL stale collapsed reconstruction evidence row remains')
+if 'test-full-application-image-startup.sh' not in reconstruction:
+    raise SystemExit('FAIL actual-image composition harness is not documented')
 
 readiness = Path('docs/stable-v1-readiness.md').read_text(encoding='utf-8')
 row = next((line for line in readiness.splitlines() if line.startswith('| Installation/rebuild |')), '')
