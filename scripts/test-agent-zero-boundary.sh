@@ -86,6 +86,9 @@ async def main():
     assert not unsafe["ok"] and unsafe["outcome"] == "FAILED"
     unsafe_socket = await module._delegate("/var/run/docker.sock")
     assert not unsafe_socket["ok"] and unsafe_socket["outcome"] == "FAILED"
+    for unsafe_task in ("reboot the host", "deploy the service", "install a package", "run a command", "network scan 192.0.2.0/24", "nmap the subnet", "chmod the file"):
+        unsafe = await module._delegate(unsafe_task)
+        assert not unsafe["ok"] and unsafe["outcome"] == "FAILED", unsafe_task
     AsyncClient.payload = {"response": "01234567890", "context_id": "ctx"}
     oversized = await module._delegate("task")
     assert not oversized["ok"] and oversized["outcome"] == "OUTCOME UNKNOWN"

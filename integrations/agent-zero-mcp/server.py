@@ -28,8 +28,11 @@ TIMEOUT_SECONDS = float(os.environ.get("AGENT_ZERO_TIMEOUT_SECONDS", "90"))
 
 TOOL_NAME = "agent_zero_delegate"
 UNSAFE_TASK_PATTERN = re.compile(
-    r"(?:\b(?:sudo|ssh|shell|exec(?:ute)?|restart|shutdown|stop|start|delete|remove|modify|write|"
-    r"proxmox|netbox|finance|credential|password|secret|token|docker)\b|/var/run/docker\.sock)",
+    r"(?:\b(?:sudo|ssh|shell|exec(?:ute)?|restart|reboot|shutdown|power\s*off|poweroff|"
+    r"stop|start|kill|delete|remove|destroy|modify|write|deploy|install|uninstall|upgrade|update|"
+    r"configure|command|terminal|nmap|curl|wget|chmod|chown|iptables|mount|"
+    r"proxmox|netbox|finance|credential|password|secret|token|docker)\b|"
+    r"\b(?:network|port)\s+scan\b|/var/run/docker\.sock)",
     re.IGNORECASE,
 )
 
