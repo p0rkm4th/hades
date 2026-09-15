@@ -44,3 +44,9 @@ mcp_servers:
     url: "${HADES_RECEIPT_OCR_URL}"
     timeout: 120
     connect_timeout: 10
+  finance-file-import:
+    # Preview-only local file intake; no Actual credentials or write method.
+    command: python3
+    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/actual-finance-import/server.py"]
+    timeout: 30
+    connect_timeout: 10

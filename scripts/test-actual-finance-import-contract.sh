@@ -19,6 +19,11 @@ service = importlib.util.module_from_spec(service_spec)
 sys.modules[service_spec.name] = service
 service_spec.loader.exec_module(service)
 
+profile = Path("hermes/config.yaml.example").read_text()
+assert "finance-file-import:" in profile
+assert "${HADES_HERMES_WORKING_DIRECTORY}/integrations/actual-finance-import/server.py" in profile
+assert "finance_file_preview" in Path("integrations/actual-finance-import/server.py").read_text()
+
 csv_data = (
     "Posted,Description,Debit,Credit\n"
     "2026-09-01,Grocer,42.50,\n"
