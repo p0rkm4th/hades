@@ -30,6 +30,7 @@ Last reviewed: 2026-09-14
 
 | Shared Open WebUI Channels | SELECTED / STAGED | Maintained Open WebUI Channels | Upstream Channels are selected as the shared conversation authority; HADES channel/private-memory/capability boundaries and the disposable acceptance sequence are documented. | Disposable pinned-version migration and Alpha/Beta channel dogfood remain; do not create shared Hindsight or transfer owner authority through membership. |
 | Agent Zero interactive Operator | SELECTED / STAGED | Native Agent Zero UI + future protected private route | Native UI is kept separate from bounded MCP delegation; current loopback/private deployment, fail-closed trusted-proxy/owner-group policy contract, and no-authority-expansion contract are documented and tested. | No tracked reverse proxy or supported global launcher is present; route, trusted identity source, WebSockets, native UI, mobile, and restart acceptance remain before dogfood-green. |
+| Local push-to-talk voice | SELECTED / STAGED | Wyoming protocol + local whisper.cpp STT + evaluated Piper-compatible TTS | Local voice composition, non-authentication boundary, failure contract, and latency measurements are defined; no second HADES runtime or wake-word dependency is introduced. | TTS implementation/license selection, audio fixture, push-to-talk transport, Alpha/Beta/Gamma dogfood, and owner-visible latency remain. |
 
 Private detailed evidence: the deployment acceptance record maintained outside
 this repository. This ledger deliberately contains no owner data or secrets.
