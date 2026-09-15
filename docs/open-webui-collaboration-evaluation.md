@@ -51,7 +51,9 @@ does not grant admin configuration access or standard-channel creation.
 The fixture also verifies a newly created shared conversation starts without
 inherited message history.
 New-conversation, model-mention, and HADES capability-boundary dogfood
-remains before DOGFOOD GREEN. The overlay capability contract separately
+remains before DOGFOOD GREEN. The pinned artifact's mention parser contract is
+covered by `scripts/test-open-webui-channel-mentions.sh`; it verifies typed
+model references without claiming model execution. The overlay capability contract separately
 verifies that a household session removes finance and Agent Zero tools before
 model invocation while preserving them for owner scope.
 
