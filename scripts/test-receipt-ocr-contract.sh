@@ -60,6 +60,12 @@ assert ready_plan["items"] == [{"product_id": 5, "amount": "2", "qu_id": 7}]
 assert module.build_intake_apply_plan(duplicate_preview, reviewed=True, confirm=True)["status"] == "FAILED"
 missing_quantity = dict(reviewed_preview, items=[dict(preview["items"][0])])
 assert module.build_intake_apply_plan(missing_quantity, reviewed=True, confirm=True)["status"] == "FAILED"
+for bad_review in (
+    dict(reviewed_preview, items=[dict(reviewed_preview["items"][0], quantity="not-a-number")]),
+    dict(reviewed_preview, items=[dict(reviewed_preview["items"][0], quantity_unit_id="not-an-id")]),
+    dict(reviewed_preview, items=[dict(reviewed_preview["items"][0], product_id="not-an-id")]),
+):
+    assert module.build_intake_apply_plan(bad_review, reviewed=True, confirm=True)["status"] == "FAILED"
 
 bad_total = module.normalize_ocr_lines([
     {"text": "Shop", "confidence": 0.99},

@@ -175,10 +175,18 @@ def build_intake_apply_plan(
         try:
             quantity_value = Decimal(str(quantity))
             unit_id = int(quantity_unit_id)
+            product_id = int(item["product_id"])
         except (InvalidOperation, TypeError, ValueError) as exc:
-            raise ValueError("Reviewed intake quantity and unit must be valid.") from exc
-        product_id = int(item["product_id"])
-        if not quantity_value.is_finite() or quantity_value <= 0 or quantity_value > MAX_INTAKE_QUANTITY or unit_id < 1:
+            return {"status": "FAILED", "error": "Reviewed intake quantity, product, and unit must be valid."}
+        if (
+            isinstance(quantity_unit_id, bool)
+            or isinstance(item["product_id"], bool)
+            or not quantity_value.is_finite()
+            or quantity_value <= 0
+            or quantity_value > MAX_INTAKE_QUANTITY
+            or product_id < 1
+            or unit_id < 1
+        ):
             return {"status": "FAILED", "error": "Reviewed intake quantity and unit must be positive and bounded."}
         if product_id in product_ids:
             return {"status": "FAILED", "error": "Duplicate product rows require review before intake."}
