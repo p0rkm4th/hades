@@ -80,6 +80,10 @@ an owner decision or secret from defects that can be repaired independently.
   upstream delegation. Harmless bounded inspection remains available; the
   interactive operator surface and real broader tasks remain separately
   staged/owner-scoped.
+- **Expanded:** Recipe ingestion now converges URL, pasted text, pasted HTML,
+  and pasted JSON-LD on one bounded normalized preview path. Grocy writes still
+  require exact product resolution, review, confirmation, and canonical
+  read-back; messy-site fallback and owner acceptance remain staged.
 - **Documented:** Candidate-only Hermes residuals are classified against the
   stable HADES qualification suite; production remains on 0.14.0 and no
   candidate-only upstream/provider failure is a HADES release blocker.

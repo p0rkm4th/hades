@@ -13,7 +13,7 @@ from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 
-from recipe_ingest import GrocyRecipeImporter, GrocyRequestError, extract_from_url
+from recipe_ingest import GrocyRecipeImporter, GrocyRequestError, extract_from_paste, extract_from_url
 
 
 BASE_URL = (
@@ -69,6 +69,15 @@ async def list_tools():
                          "Requires confirm=true; unresolved products are rejected."),
             inputSchema={"type": "object", "properties": {"preview": {"type": "object"}, "confirm": {"type": "boolean"}}, "required": ["preview", "confirm"]},
         ),
+        Tool(
+            name="recipe_paste_preview",
+            description=("Normalize pasted recipe text, HTML, or JSON-LD and return a reviewable preview. "
+                         "This never writes Grocy or creates products."),
+            inputSchema={"type": "object", "properties": {
+                "text": {"type": "string", "maxLength": 2097152},
+                "source_url": {"type": "string"},
+            }, "required": ["text"]},
+        ),
     ])
 
 
@@ -81,6 +90,9 @@ async def call_tool(tool_name, args):
             return _text(importer.preview(recipe))
         if tool_name == "recipe_url_apply":
             return _text(importer.apply(args.get("preview", {}), confirm=args.get("confirm") is True))
+        if tool_name == "recipe_paste_preview":
+            recipe = extract_from_paste(args.get("text", ""), args.get("source_url"))
+            return _text(importer.preview(recipe))
     except (ValueError, GrocyRequestError) as exc:
         return _text({"outcome": "FAILED", "error": str(exc)})
     raise ValueError(f"unknown tool: {tool_name}")

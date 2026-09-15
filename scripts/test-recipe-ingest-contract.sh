@@ -34,6 +34,34 @@ assert result["ingredients"][3]["quantity"] == "½"
 assert result["requires_review"] is True
 assert any("review" in warning.lower() for warning in result["warnings"])
 
+pasted = module.extract_from_paste("""# Weeknight Pasta
+Serves: 4
+
+Ingredients:
+- 1 cup tomatoes
+- 2 tbsp basil
+
+Instructions:
+1. Mix everything.
+2. Serve.
+""", "https://recipes.example.test/pasted")
+assert pasted["source"] == "pasted recipe text"
+assert pasted["title"] == "Weeknight Pasta"
+assert pasted["servings"] == "4"
+assert [item["name"] for item in pasted["ingredients"]] == ["tomatoes", "basil"]
+assert pasted["instructions"] == ["1. Mix everything.", "2. Serve."]
+
+json_blob = '{"@context":"https://schema.org","@type":"Recipe","name":"Blob Cake","recipeYield":"6 servings","recipeIngredient":["2 cups flour"],"recipeInstructions":"Bake it."}'
+assert module.extract_from_paste(json_blob)["title"] == "Blob Cake"
+assert module.extract_from_paste('<script type="application/ld+json">' + json_blob + '</script>')["title"] == "Blob Cake"
+for invalid_paste in ("Recipe without sections", "Ingredients:\n- 1 cup flour"):
+    try:
+        module.extract_from_paste(invalid_paste)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("underspecified pasted recipe accepted")
+
 resolved = module.resolve_products(result, [
     {"id": 10, "name": "Ground Beef"},
     {"id": 11, "name": "Shredded Cheese"},
@@ -166,6 +194,7 @@ assert "_safe_url(newurl)" in path.read_text()
 assert "final_url = _safe_url(response.geturl())" in path.read_text()
 
 print("PASS recipe JSON-LD graph extraction")
+print("PASS recipe pasted text, HTML, and JSON-LD converge on one normalized contract")
 print("PASS recipe normalization preserves raw evidence and review state")
 print("PASS recipe URL fetch boundary rejects unsupported/private targets")
 print("PASS recipe URL redirects revalidate every destination")

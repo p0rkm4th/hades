@@ -53,3 +53,9 @@ upstream access limitation, not a parser failure. The fallback for pages
 without usable Recipe JSON-LD is intentionally not implemented yet. HADES must
 ask for pasted recipe text or report that the URL requires a later supported
 extraction fallback rather than hallucinating a recipe.
+
+The normalized contract now also accepts explicitly sectioned pasted recipe
+text plus raw pasted HTML or JSON-LD through `recipe_paste_preview`. These
+inputs converge on the same ingredient, serving, instruction, review, Grocy
+resolution, and apply-plan path as URL ingestion. The contract test verifies
+that underspecified paste is rejected and that preview remains write-free.

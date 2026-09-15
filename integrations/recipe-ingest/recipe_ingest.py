@@ -150,7 +150,10 @@ def extract_from_html(source_html: str, source_url: str | None = None) -> dict[s
     recipes = [item for document in parser.documents for item in _walk(document) if isinstance(item, dict) and _is_recipe(item)]
     if not recipes:
         raise ValueError("No Schema.org Recipe JSON-LD was found; preview requires pasted recipe text or a supported fallback.")
-    recipe = recipes[0]
+    return _normalize_recipe(recipes[0], source_url, "schema.org/Recipe JSON-LD")
+
+
+def _normalize_recipe(recipe: dict[str, Any], source_url: str | None, source: str) -> dict[str, Any]:
     raw_ingredients = recipe.get("recipeIngredient", [])
     if isinstance(raw_ingredients, str):
         raw_ingredients = [raw_ingredients]
@@ -167,7 +170,7 @@ def extract_from_html(source_html: str, source_url: str | None = None) -> dict[s
     if not _instructions(recipe.get("recipeInstructions")):
         warnings.append("No instructions were supplied by the source.")
     return {
-        "source": "schema.org/Recipe JSON-LD",
+        "source": source,
         "source_url": source_url,
         "title": title,
         "servings": yield_value or None,
@@ -176,6 +179,68 @@ def extract_from_html(source_html: str, source_url: str | None = None) -> dict[s
         "notes": _text(recipe.get("description")) or None,
         "warnings": warnings,
         "requires_review": bool(warnings),
+    }
+
+
+def extract_from_paste(source_text: str, source_url: str | None = None) -> dict[str, Any]:
+    """Normalize pasted JSON-LD, HTML, or explicitly sectioned recipe text."""
+    if not isinstance(source_text, str) or not source_text.strip():
+        raise ValueError("Pasted recipe content is empty.")
+    if len(source_text.encode("utf-8")) > MAX_HTML_BYTES:
+        raise ValueError("Pasted recipe content exceeds the bounded preview size.")
+    text = source_text.strip()
+    if "application/ld+json" in text.lower():
+        return extract_from_html(text, source_url)
+    try:
+        document = json.loads(text)
+    except json.JSONDecodeError:
+        document = None
+    if document is not None:
+        recipes = [item for item in _walk(document) if isinstance(item, dict) and _is_recipe(item)]
+        if recipes:
+            return _normalize_recipe(recipes[0], source_url, "schema.org/Recipe JSON-LD")
+        raise ValueError("Pasted JSON did not contain a Schema.org Recipe object.")
+
+    lines = [" ".join(line.split()).strip() for line in text.splitlines() if line.strip()]
+    title = lines[0].lstrip("# ").strip() if lines else ""
+    if not title:
+        raise ValueError("Pasted recipe text did not provide a title.")
+    servings: str | None = None
+    ingredient_start = ingredient_end = instruction_start = None
+    for index, line in enumerate(lines[1:], start=1):
+        lower = line.casefold().rstrip(":")
+        if re.match(r"^(?:yield|servings?|serves)\b", lower):
+            servings = line.split(":", 1)[-1].strip()
+        elif lower in {"ingredients", "ingredient list"}:
+            ingredient_start = index + 1
+        elif lower in {"instructions", "directions", "method", "steps"}:
+            if ingredient_start is not None and ingredient_end is None:
+                ingredient_end = index
+            instruction_start = index + 1
+    if ingredient_start is None:
+        raise ValueError("Pasted recipe text needs an Ingredients section.")
+    if ingredient_end is None:
+        ingredient_end = instruction_start - 1 if instruction_start is not None else len(lines)
+    raw_ingredients = [line.lstrip("-*• ").strip() for line in lines[ingredient_start:ingredient_end] if line.strip()]
+    if not raw_ingredients:
+        raise ValueError("Pasted recipe text has no ingredient lines.")
+    ingredients = [parse_ingredient(item) for item in raw_ingredients]
+    warnings = ["Pasted recipe text requires review before Grocy resolution."]
+    if any(item.confidence == "LOW" for item in ingredients):
+        warnings.append("One or more ingredient lines need review before Grocy resolution.")
+    instructions = [line.lstrip("-*• ").strip() for line in lines[instruction_start:] if line.strip()] if instruction_start is not None else []
+    if not instructions:
+        warnings.append("No instructions were supplied by the source.")
+    return {
+        "source": "pasted recipe text",
+        "source_url": source_url,
+        "title": title,
+        "servings": servings,
+        "ingredients": [asdict(item) for item in ingredients],
+        "instructions": instructions,
+        "notes": None,
+        "warnings": list(dict.fromkeys(warnings)),
+        "requires_review": True,
     }
 
 
