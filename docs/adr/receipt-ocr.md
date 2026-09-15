@@ -78,6 +78,14 @@ upstream `ConvertPirAttribute2RuntimeAttribute` failure documented in the
 so the fallback is part of the isolated worker contract and not hidden as an
 HADES parser workaround.
 
+The official MCP `ocr` tool was then inspected over stdio. Its upstream input
+contract accepts absolute filesystem paths and HTTP(S) URLs, so it must not be
+registered directly in Hermes. `integrations/receipt-ocr/input_boundary.py`
+defines the required HADES-owned firewall: bounded inline PNG/JPEG/WebP data
+only, with path/URL rejection and MIME/magic-byte validation. A thin wrapper
+must enforce this contract before delegating to the upstream MCP; direct MCP
+registration is therefore rejected as a security-boundary failure.
+
 The reproducible isolated worker definition is
 `integrations/receipt-ocr/Dockerfile`. It pins Python 3.11 and the official
 MCP package, and includes the native OpenCV/Paddle runtime libraries. The
