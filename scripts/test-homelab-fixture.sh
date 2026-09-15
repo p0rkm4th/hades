@@ -6,11 +6,20 @@ set -euo pipefail
 # endpoint.
 python - <<'PY'
 import json
+import importlib.util
+import sys
 import threading
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
+
+spec = importlib.util.spec_from_file_location(
+    "homelab_reconcile", "integrations/homelab-readonly/reconcile.py"
+)
+reconcile = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = reconcile
+spec.loader.exec_module(reconcile)
 
 now = datetime.now(timezone.utc)
 state = {
@@ -56,6 +65,20 @@ def get(path):
 resources = get("/proxmox/api2/json/cluster/resources")["data"]
 devices = get("/netbox/api/dcim/devices/?name=dinner-app")["results"]
 monitors = get("/kuma/api/status-page/lab")["monitors"]
+summary = reconcile.summarize(
+    {"data": resources}, {"results": devices}, {"monitors": monitors}, now=now
+)
+resource = next(row for row in summary["resources"] if row["name"] == "dinner-app")
+assert summary["authority"] == {
+    "runtime": "Proxmox",
+    "inventory": "NetBox",
+    "availability": "Uptime Kuma",
+}
+assert resource["runtime"]["node"] == "Alexandra"
+assert resource["inventory"]["planned_node"] == "Beta"
+assert resource["availability"]["status"] == "down"
+assert resource["availability_freshness"] == "STALE"
+assert resource["conflicts"]
 nodes = {row["node"]: row for row in resources if row["type"] == "node"}
 guests = {row["name"]: row for row in resources if row["type"] in {"qemu", "lxc"}}
 
