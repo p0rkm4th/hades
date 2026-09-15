@@ -18,7 +18,7 @@ from html.parser import HTMLParser
 from ipaddress import ip_address
 from typing import Any
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 MAX_HTML_BYTES = 2 * 1024 * 1024
@@ -193,17 +193,27 @@ def _safe_url(url: str) -> str:
     return url
 
 
+class _SafeRedirectHandler(HTTPRedirectHandler):
+    """Re-apply the URL/SSRF boundary to every redirect destination."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _safe_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def extract_from_url(url: str, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> dict[str, Any]:
     safe = _safe_url(url)
     request = Request(safe, headers={"User-Agent": "HADES recipe preview/1.0"})
-    with urlopen(request, timeout=timeout) as response:
+    opener = build_opener(_SafeRedirectHandler)
+    with opener.open(request, timeout=timeout) as response:
+        final_url = _safe_url(response.geturl())
         content_type = response.headers.get_content_type()
         if content_type not in {"text/html", "application/xhtml+xml"}:
             raise ValueError(f"Recipe source returned unsupported content type: {content_type}")
         body = response.read(MAX_HTML_BYTES + 1)
     if len(body) > MAX_HTML_BYTES:
         raise ValueError("Recipe source exceeds the bounded preview size.")
-    return extract_from_html(body.decode("utf-8", errors="replace"), safe)
+    return extract_from_html(body.decode("utf-8", errors="replace"), final_url)
 
 
 def resolve_products(recipe: dict[str, Any], products: list[dict[str, Any]]) -> dict[str, Any]:

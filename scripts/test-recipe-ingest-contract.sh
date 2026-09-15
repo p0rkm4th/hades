@@ -161,7 +161,12 @@ for invalid in ("file:///tmp/recipe.html", "ftp://example.test/recipe", "http://
     else:
         raise AssertionError(f"unsafe URL accepted: {invalid}")
 
+assert "class _SafeRedirectHandler" in path.read_text()
+assert "_safe_url(newurl)" in path.read_text()
+assert "final_url = _safe_url(response.geturl())" in path.read_text()
+
 print("PASS recipe JSON-LD graph extraction")
 print("PASS recipe normalization preserves raw evidence and review state")
 print("PASS recipe URL fetch boundary rejects unsupported/private targets")
+print("PASS recipe URL redirects revalidate every destination")
 PY
