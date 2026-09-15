@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import datetime as dt
 import ipaddress
+import os
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -76,8 +77,9 @@ def run_bounded_scan(
             raise ValueError("allowed discovery scope is invalid") from exc
     if not allowed or not any(requested.subnet_of(scope) for scope in allowed):
         raise ValueError("scan target is outside the allowed discovery scope")
-    if not Path(nmap_binary).is_file():
-        raise ValueError("configured Nmap binary is missing")
+    binary = Path(nmap_binary)
+    if not binary.is_file() or binary.is_symlink() or not os.access(binary, os.X_OK):
+        raise ValueError("configured Nmap binary must be an executable non-symlink file")
     if not 1 <= timeout_seconds <= MAX_SCAN_SECONDS:
         raise ValueError("scan timeout exceeds the bounded limit")
     normalized_ports = _validate_ports(ports)

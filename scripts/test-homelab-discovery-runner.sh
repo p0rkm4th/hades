@@ -51,7 +51,18 @@ for ports in ("0", "22;80", "65536", "1-0", ""):
     else:
         raise AssertionError("invalid port specification accepted")
 
+import pathlib
+link = pathlib.Path(os.environ["FAKE_NMAP"]).with_name("nmap-link")
+link.symlink_to(os.environ["FAKE_NMAP"])
+try:
+    run_bounded_scan("192.0.2.0/30", allowed_networks=["192.0.2.0/29"], nmap_binary=str(link))
+except ValueError as exc:
+    assert "non-symlink" in str(exc)
+else:
+    raise AssertionError("symlinked scanner binary accepted")
+
 print("PASS bounded Nmap runner emits timestamped read-only evidence")
 print("PASS scanner uses an explicit argv contract and target scope")
 print("PASS invalid targets and port specifications fail before scanning")
+print("PASS scanner executable must be a non-symlink")
 PY
