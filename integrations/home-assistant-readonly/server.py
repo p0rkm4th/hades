@@ -17,6 +17,7 @@ from policy import shape_state, validate_allowlist
 
 MAX_RESPONSE_BYTES = 512 * 1024
 TIMEOUT_SECONDS = 10
+MAX_TOKEN_BYTES = 8192
 TOOLS = [
     Tool(name="home_assistant_read", description="Read one explicitly allowlisted, non-sensitive Home Assistant entity. Read-only.", inputSchema={"type": "object", "properties": {"entity_id": {"type": "string"}}, "required": ["entity_id"]}),
     Tool(name="home_assistant_selected_states", description="Read all explicitly selected, non-sensitive Home Assistant entities. Read-only.", inputSchema={"type": "object", "properties": {}}),
@@ -25,6 +26,19 @@ TOOLS = [
 
 def _allowlist() -> list[str]:
     return validate_allowlist(os.environ.get("HADES_HOME_ASSISTANT_ENTITY_ALLOWLIST", "").split(","))
+
+
+def _read_token(path: str) -> str:
+    token_path = Path(path)
+    if not token_path.is_file() or token_path.is_symlink():
+        raise ValueError("Home Assistant token file must be a regular non-symlink file")
+    mode = token_path.stat().st_mode & 0o777
+    if mode not in {0o600, 0o640}:
+        raise ValueError("Home Assistant token file must be mode 0600 or 0640")
+    token = token_path.read_bytes()
+    if not token or len(token) > MAX_TOKEN_BYTES:
+        raise ValueError("Home Assistant token file is empty or exceeds the bounded size")
+    return token.decode("utf-8").strip()
 
 
 def _fetch(entity_id: str) -> dict:
@@ -37,7 +51,7 @@ def _fetch(entity_id: str) -> dict:
     headers = {"Accept": "application/json"}
     token_file = os.environ.get("HADES_HOME_ASSISTANT_TOKEN_FILE", "")
     if token_file:
-        headers["Authorization"] = f"Bearer {Path(token_file).read_text(encoding='utf-8').strip()}"
+        headers["Authorization"] = f"Bearer {_read_token(token_file)}"
     request = Request(f"{base}/api/states/{quote(entity_id, safe='.')}", headers=headers, method="GET")
     with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
         body = response.read(MAX_RESPONSE_BYTES + 1)

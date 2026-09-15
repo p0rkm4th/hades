@@ -35,6 +35,9 @@ future = module.summarize(
     now=now,
 )
 assert future["resources"][0]["availability_freshness"] == "UNKNOWN"
+server_source = (Path(root) / "server.py").read_text()
+assert "token_path.is_symlink()" in server_source
+assert "MAX_TOKEN_BYTES" in server_source
 print("PASS homelab adapter preserves runtime/inventory/availability authority")
 print("PASS homelab adapter discloses node conflict and stale Kuma observation")
 print("PASS future monitoring observations fail closed as unknown")

@@ -16,6 +16,7 @@ from reconcile import summarize
 
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
+MAX_TOKEN_BYTES = 8192
 TIMEOUT_SECONDS = 10
 TOOLS = [Tool(
     name="homelab_summary",
@@ -28,6 +29,19 @@ TOOLS = [Tool(
 )]
 
 
+def _read_token(path: str) -> str:
+    token_path = Path(path)
+    if not token_path.is_file() or token_path.is_symlink():
+        raise ValueError("homelab token file must be a regular non-symlink file")
+    mode = token_path.stat().st_mode & 0o777
+    if mode not in {0o600, 0o640}:
+        raise ValueError("homelab token file must be mode 0600 or 0640")
+    token = token_path.read_bytes()
+    if not token or len(token) > MAX_TOKEN_BYTES:
+        raise ValueError("homelab token file is empty or exceeds the bounded size")
+    return token.decode("utf-8").strip()
+
+
 def _fetch(url: str, token_file: str = "") -> dict:
     if not url:
         raise ValueError("homelab source is not configured")
@@ -35,7 +49,7 @@ def _fetch(url: str, token_file: str = "") -> dict:
         raise ValueError("homelab source must use HTTP(S)")
     headers = {"Accept": "application/json"}
     if token_file:
-        headers["Authorization"] = f"Bearer {Path(token_file).read_text(encoding='utf-8').strip()}"
+        headers["Authorization"] = f"Bearer {_read_token(token_file)}"
     request = Request(url, headers=headers, method="GET")
     with urlopen(request, timeout=TIMEOUT_SECONDS) as response:
         body = response.read(MAX_RESPONSE_BYTES + 1)
