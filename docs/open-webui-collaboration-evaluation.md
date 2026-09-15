@@ -61,6 +61,12 @@ capability contract separately verifies that a household session removes
 finance and Agent Zero tools before model invocation while preserving them for
 owner scope.
 
+The companion `scripts/test-open-webui-private-chat-soak.sh` exercises the
+real pinned image's saved-chat route. It creates Alpha through initial signup,
+creates Beta through the administrator-only user route, sends a synthetic
+OpenAI-compatible completion, verifies Alpha persistence, rejects Beta
+retrieval of Alpha's chat, and verifies persistence after WebUI restart.
+
 Upstream references: https://docs.openwebui.com/features/channels/,
 https://github.com/open-webui/docs/blob/main/docs/features/authentication-access/rbac/permissions.md,
 and https://docs.openwebui.com/features/extensibility/.

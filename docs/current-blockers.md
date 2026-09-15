@@ -47,6 +47,11 @@ an owner decision or secret from defects that can be repaired independently.
   corrections, topic switches, abandoned mutations, pronouns, and recall.
   Authenticated HADES-session acceptance remains an owner-authenticated
   end-to-end gate, not an unrecorded independent defect.
+- **Complete:** The pinned Open WebUI private-chat soak creates Alpha and
+  Beta through the real application routes, persists Alpha's synthetic model
+  response, denies Beta access to Alpha's chat, and preserves the chat across
+  restart. The model backend and state are disposable; this does not claim
+  Hermes/Hindsight/Grocy end-to-end behavior.
 - **Complete:** A fresh synthetic web and recipe capture records model, tool,
   continuation, and total timings. Both workflows are below the repeated
   roughly-30-second optimization threshold; model/continuation is the bounded
