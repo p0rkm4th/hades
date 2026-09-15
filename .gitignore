@@ -11,6 +11,7 @@ logs/
 .DS_Store
 .codex/
 .playwright/
+.playwright-mcp/
 *.log
 *.pem
 *.key
