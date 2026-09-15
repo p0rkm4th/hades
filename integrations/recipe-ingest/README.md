@@ -27,9 +27,11 @@ Contract test:
 bash scripts/test-recipe-ingest-contract.sh
 ```
 
-The staged MCP server is `server.py`. Register it privately in Hermes with
-`GROCY_URL` and a protected `GROCY_API_KEY_FILE`; keep it narrowed to recipe
-turns. Its two tools are deliberately separate: `recipe_url_preview` and
+The staged MCP server is registered in the Hermes template as a private stdio
+server. The generated profile substitutes `HADES_HERMES_WORKING_DIRECTORY` and
+the protected `HADES_GROCY_API_KEY_FILE`; `HADES_GROCY_URL` is optional and
+defaults to the private loopback Grocy URL. Keep it narrowed to recipe turns.
+Its two tools are deliberately separate: `recipe_url_preview` and
 `recipe_url_apply`.
 
 The URL fetch rejects non-HTTP(S), loopback, private, link-local, and reserved

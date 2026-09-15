@@ -27,3 +27,14 @@ agent:
   # Qwen supports tools but benefits from explicit call-vs-description guidance.
   tool_use_enforcement:
     - qwen
+mcp_servers:
+  recipe-url-ingest:
+    # The generated private profile substitutes the repository and secret paths.
+    # The server exposes preview plus explicit-confirmation apply only.
+    command: python3
+    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/recipe-ingest/server.py"]
+    env:
+      GROCY_URL: "${HADES_GROCY_URL}"
+      GROCY_API_KEY_FILE: "${HADES_GROCY_API_KEY_FILE}"
+    timeout: 30
+    connect_timeout: 10

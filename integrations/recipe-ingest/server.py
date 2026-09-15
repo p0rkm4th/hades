@@ -16,8 +16,14 @@ from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 from recipe_ingest import GrocyRecipeImporter, GrocyRequestError, extract_from_url
 
 
-BASE_URL = os.environ.get("GROCY_URL", "http://127.0.0.1:7003").rstrip("/")
-API_KEY_FILE = os.environ.get("GROCY_API_KEY_FILE", "")
+BASE_URL = (
+    os.environ.get("GROCY_URL")
+    or os.environ.get("HADES_GROCY_URL")
+    or "http://127.0.0.1:7003"
+).rstrip("/")
+API_KEY_FILE = os.environ.get("GROCY_API_KEY_FILE") or os.environ.get(
+    "HADES_GROCY_API_KEY_FILE", ""
+)
 
 
 def _api_key() -> str:
