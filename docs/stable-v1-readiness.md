@@ -79,17 +79,17 @@ not commit volume.
 | Owner daily-driver | PASS | Fresh owner regression after any runtime promotion; current persistence evidence is retained |
 | Household multi-user | PARTIAL | Disposable Qwen long-context harness and real pinned Open WebUI Alpha/Beta private-chat/channel soaks pass; authenticated HADES gateway composition and owner-visible acceptance remain |
 | Private memory | PASS | Preserve subject mapping through any migration; reload/restart persistence is evidenced |
-| Shared household state | PASS | Complete recipe-authoring browser sequence; current persistence evidence is retained |
+| Shared household state | PASS | Recipe URL/paste structured-data path, canonical Grocy authoring/fulfillment, and synthetic receipt-intake review path are evidenced; owner-visible recipe and intake acceptance remains |
 | Web/search | PARTIAL | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary; fresh owner-UI follow-up must confirm search freshness |
-| Bounded operator | PASS | Broader tasks and native A2A remain optional hardening; current persistence evidence is retained |
-| Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope |
-| Homelab | OWNER-GATED | Approve endpoints, inventory scope, and read-only credentials |
+| Bounded operator | PASS | Bounded inspection remains available and unsafe delegation is rejected before upstream dispatch; broader tasks and native A2A remain optional hardening |
+| Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; local CSV/native-file handoff is staged without production writes |
+| Homelab | OWNER-GATED | Approve endpoints, inventory scope, and read-only credentials; bounded Proxmox control planning is staged but has no executor |
 | Home Assistant | OWNER-GATED | Approve URL, token, entity allowlist, and exposure path |
 | Automation | DEFERRED | Approve one deterministic workflow and rollback contract |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
 | Installation/rebuild | PARTIAL | Two independent fresh Fedora synthetic deployments/reboots, actual-image six-component composition, and the synthetic household-soak contract pass; complete an independent full application reconstruction and full application household soak |
 | Security | PASS | Static CI guards now cover authority amplification, mounts, pinned deployment, and read-only finance/operator surfaces; re-run after authority-bearing changes |
-| Performance | PARTIAL | Synthetic web/recipe capture is below the repeated ~30s threshold; owner-visible timing remains for final acceptance |
+| Performance | PARTIAL | Prior web/recipe capture is below the repeated ~30s threshold; expanded daily-driver matrix is syntax-checked but needs a reachable model lane for fresh timing evidence |
 
 ## Source-of-truth adversarial contract
 
@@ -109,11 +109,11 @@ boundary and authorization gate are recorded in
 
 ## Current next action
 
-Continue capability expansion from the highest-value unblocked lane: complete
-the independent full-application reconstruction/household-soak evidence, then
-reconcile any newly exposed defects. The disposable Channels mentioned-model
-execution contract, private-channel contract, local voice timing, bounded
-homelab scan-evidence worker, and Hindsight runtime reconstruction regression
-now pass; no production setting changed. Hermes 0.21.2 promotion and
-owner-visible WebUI/recipe acceptance remain explicit gates, not reasons to
-alter the production 0.14.0/0.11.1 baseline.
+Continue capability expansion from the highest-value unblocked lane. Receipt
+review/intake, Actual native-file handoff, bounded homelab control planning,
+synthetic voice dogfood, and Agent Zero unsafe-task screening now have
+independent evidence; no production setting changed. The next useful work is
+to compose these staged capabilities into owner-like flows and repair any
+systemic routing or authority defects. Hermes 0.21.2 promotion and
+owner-visible WebUI/recipe/voice acceptance remain explicit gates, not reasons
+to alter the production 0.14.0/0.11.1 baseline.
