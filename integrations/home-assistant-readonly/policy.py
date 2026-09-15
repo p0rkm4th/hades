@@ -15,7 +15,8 @@ SENSITIVE_MARKERS = (
 
 
 def is_sensitive_entity(entity_id: str) -> bool:
-    return any(entity_id.startswith(marker) for marker in SENSITIVE_MARKERS)
+    normalized = str(entity_id).casefold()
+    return any(normalized.startswith(marker) for marker in SENSITIVE_MARKERS)
 
 
 def validate_allowlist(entity_ids: list[str]) -> list[str]:
@@ -41,7 +42,7 @@ def shape_state(state: dict[str, Any], *, now: datetime | None = None, max_age: 
         observed = datetime.fromisoformat(str(raw_updated).replace("Z", "+00:00"))
         if observed.tzinfo is None:
             observed = observed.replace(tzinfo=timezone.utc)
-        freshness = "FRESH" if now - observed <= max_age else "STALE"
+        freshness = "UNKNOWN" if observed > now else ("FRESH" if now - observed <= max_age else "STALE")
     except (TypeError, ValueError):
         pass
     return {

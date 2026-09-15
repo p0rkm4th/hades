@@ -13,7 +13,7 @@ policy = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(policy)
 
 assert policy.validate_allowlist(["light.living_room", "sensor.apartment_temperature", "light.living_room"]) == ["light.living_room", "sensor.apartment_temperature"]
-for blocked in ("lock.front_door", "cover.garage_door", "alarm_control_panel.home", "camera.entryway", "door_access.front"):
+for blocked in ("lock.front_door", "cover.garage_door", "alarm_control_panel.home", "camera.entryway", "door_access.front", "LOCK.front_door", "Camera.entryway"):
     try:
         policy.validate_allowlist([blocked])
     except ValueError:
@@ -23,6 +23,7 @@ for blocked in ("lock.front_door", "cover.garage_door", "alarm_control_panel.hom
 now = datetime(2026, 9, 14, tzinfo=timezone.utc)
 assert policy.shape_state({"entity_id": "light.living_room", "state": "on", "attributes": {}, "last_updated": "2026-09-13T23:00:00Z"}, now=now)["freshness"] == "STALE"
 assert policy.shape_state({"entity_id": "sensor.x", "state": "unavailable", "attributes": {}}, now=now)["state"] == "unavailable"
+assert policy.shape_state({"entity_id": "sensor.x", "state": "on", "attributes": {}, "last_updated": "2026-09-14T00:05:00Z"}, now=now)["freshness"] == "UNKNOWN"
 print("PASS Home Assistant read-only policy and state contract")
 PY
 
