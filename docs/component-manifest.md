@@ -6,7 +6,7 @@ runtime secrets and persistent volumes remain outside Git.
 | Component | Authority | Planned integration | Version / license / upgrade note |
 |---|---|---|---|
 | Hermes | intelligence and agent execution | supported upstream deployment/API | 0.14.0 from the verified upstream `v2026.5.16` source archive and SHA-256 in `config/versions.env`; install into a new environment, never copy the seasoned venv |
-| Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | 0.11.5 compatibility baseline; `webui/Dockerfile` rebuilds the HADES asset layer from immutable `config/versions.env:HADES_OPEN_WEBUI_BASE_IMAGE`; build output is software custody, not state |
+| Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | 0.11.1 compatibility baseline; `webui/Dockerfile` rebuilds the HADES asset layer from immutable `config/versions.env:HADES_OPEN_WEBUI_BASE_IMAGE`; build output is software custody, not state |
 | Hindsight | durable semantic/personal memory | Hermes external memory provider over supported client API | `ghcr.io/vectorize-io/hindsight@sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`; embedded pg0 volume; upgrade by digest |
 | Agent Zero | bounded subordinate computer operator | isolated deployment with explicit objective/result boundary | pinned image digest; no shared unrestricted credentials; native A2A evaluated and retained MCP bridge is bounded |
 | Grocy | canonical pantry, groceries, consumption, inventory, recipes | maintained integration, then supported API or tiny adapter | select upstream release; Grocy remains source of truth |
@@ -75,7 +75,7 @@ environment values or persistent data:
 
 | Observed component | Runtime evidence | Reconciliation |
 |---|---|---|
-| Open WebUI | Local `0.11.5-remote-prefs` theme image, LAN binding on `:3000` | The tracked Dockerfile and immutable base now explain the application layer; the local image digest remains runtime evidence only |
+| Open WebUI | Local HADES theme image derived from pinned 0.11.1 base, LAN binding on `:3000` | The tracked Dockerfile and immutable base now explain the application layer; the local image digest remains runtime evidence only |
 | SearXNG | `searxng/searxng:2026.5.31-7159b8aed@sha256:35b089054ac9b4257976107e71673d9e30ac17c9b50bbf8b4783f2f6d1d1981f`, loopback `:8080` | Generated template consumes the immutable manifest reference; tracked settings remain the public configuration source |
 | LLDAP | Pinned `hades-lldap` on loopback `:17170`; separate local-only production/staging instance on `:17171` | The second instance is staging topology, not a replacement authority; identity migration must be explicitly selected |
 | Grocy / Agent Zero | Pinned compose digests and loopback bindings match tracked contracts | No drift found |

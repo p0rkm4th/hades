@@ -15,7 +15,7 @@ reads are PASS + PERSISTENCE or better in the owner acceptance record. Their
 finite founding contracts are closed; wording sensitivity, broader operator
 tasks, and additional edge cases are hardening work.
 
-Production is healthy on Hermes 0.14.0 and Open WebUI 0.11.5. The owner-facing
+The pinned HADES artifact is based on Open WebUI 0.11.1 and Hermes 0.14.0. The owner-facing
 runtime remains pinned and was not upgraded during this campaign.
 
 ## Hermes upstream decision

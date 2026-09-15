@@ -31,7 +31,7 @@ cat > "$fixture/MANIFEST" <<'EOF'
 backup_format=1
 hades_manifest_version=1
 hermes_version=0.14.0
-open_webui_version=0.11.5
+open_webui_version=0.11.1
 lldap_image=lldap:test@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 hindsight_image_digest=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 grocy_image=grocy:test@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

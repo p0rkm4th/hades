@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-tag=${1:-hades-open-webui:0.11.5-hades}
+tag=${1:-hades-open-webui:0.11.1-hades}
 command -v docker >/dev/null 2>&1 || { echo 'FAIL docker is required to build Open WebUI' >&2; exit 1; }
 docker build --pull=false -t "$tag" "$repo_dir/webui" >/dev/null
 image_id=$(docker image inspect "$tag" --format '{{.Id}}')

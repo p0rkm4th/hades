@@ -14,7 +14,7 @@
     },
     {
       "component": "Open WebUI",
-      "pinned_version": "0.11.5 tracked Dockerfile plus immutable base",
+      "pinned_version": "0.11.1 tracked Dockerfile plus immutable base",
       "artifact_type": "tracked Dockerfile plus immutable upstream base",
       "immutable_reference": "config/versions.env:HADES_OPEN_WEBUI_BASE_IMAGE",
       "artifact_source": "config/versions.env:HADES_OPEN_WEBUI_BUILD_SOURCE",

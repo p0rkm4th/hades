@@ -8,7 +8,7 @@ while the Hermes 0.21.2 promotion branch is parked on owner authentication.
 
 | Component | Production role | Current state | Canonical authority |
 |---|---|---|---|
-| Open WebUI | owner-facing conversation surface | pinned 0.11.5 deployment | conversations, users, settings |
+| Open WebUI | owner-facing conversation surface | pinned 0.11.1 deployment | conversations, users, settings |
 | Hermes | agent execution and tool lifecycle | 0.14.0, healthy | turn execution and tool results |
 | Hindsight | durable personal context | healthy, subject-scoped overlay | private semantic memory |
 | Grocy | household pantry and grocery state | healthy, shared | inventory, shopping, recipes |
