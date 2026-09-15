@@ -80,6 +80,14 @@ network-wide listener. The service is provider-injectable for contract tests
 and can load faster-whisper for a staged runtime; it is not registered with
 Hermes or Open WebUI yet.
 
+The real staged service was exercised with faster-whisper CPU/int8 and the
+synthetic speech fixture. It returned the transcript correctly but emitted
+CLARIFY because faster-whisper's available segment scores are not treated as
+calibrated confidence. This preserves mutation safety; the next service
+revision should expose transcript readiness separately from action
+authorization so ordinary conversation need not be mistaken for an approved
+mutation.
+
 Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
