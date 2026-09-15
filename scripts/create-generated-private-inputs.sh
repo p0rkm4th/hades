@@ -62,7 +62,6 @@ HADES_HINDSIGHT_LLM_API_KEY=synthetic-hindsight-key
 HADES_SEARXNG_SECRET_FILE=$output/secrets/searxng-secret
 HADES_HERMES_WORKING_DIRECTORY=$repo_dir
 HADES_HERMES_EXECUTABLE=/opt/hades-hermes/bin/hermes
-HADES_HINDSIGHT_DATABASE_SECRET_FILE=$output/secrets/hindsight-database
 HADES_GROCY_API_KEY_FILE=$output/secrets/grocy-api-key
 HADES_AGENT_ZERO_CREDENTIAL_FILE=$output/secrets/agent-zero-credential
 EOF

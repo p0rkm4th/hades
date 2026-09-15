@@ -100,7 +100,9 @@ if [[ -n "$inputs" && -d "${HADES_DEPLOYMENT_DIR:-}" ]]; then
       doctor_fail=1
     fi
   done
-  check_secret_file 'Hindsight database secret' "$HADES_HINDSIGHT_DATABASE_SECRET_FILE"
+  if [[ "${HADES_INPUTS_VERSION:-1}" != 2 ]]; then
+    check_secret_file 'Hindsight database secret' "$HADES_HINDSIGHT_DATABASE_SECRET_FILE"
+  fi
   check_secret_file 'Grocy API key' "$HADES_GROCY_API_KEY_FILE"
   if [[ -n "${HADES_AGENT_ZERO_CREDENTIAL_FILE:-}" ]]; then
     check_secret_file 'Agent Zero credential' "$HADES_AGENT_ZERO_CREDENTIAL_FILE"

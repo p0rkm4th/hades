@@ -46,11 +46,12 @@ if ((test_mode && !root_supplied)); then fail 'test mode requires an explicit --
 need_cmd() { command -v "$1" >/dev/null 2>&1 || fail "missing prerequisite: $1"; }
 under_root() { printf '%s/%s' "${root%/}" "${1#/}"; }
 if (( ! generated_records )); then
+  : "${HADES_HINDSIGHT_DATABASE_SECRET_FILE:?operator input is missing HADES_HINDSIGHT_DATABASE_SECRET_FILE}"
   for name in HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE; do
     [[ -n "${!name:-}" ]] || fail "operator input is missing required deployment record variable: $name"
   done
 fi
-for name in HADES_STATE_ROOT HADES_CONFIG_ROOT HADES_BACKUP_ROOT HADES_IDENTITY_SECRETS_DIR HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE HADES_HERMES_PROFILE HADES_HINDSIGHT_DATABASE_SECRET_FILE HADES_GROCY_API_KEY_FILE HADES_AGENT_ZERO_CREDENTIAL_FILE; do
+for name in HADES_STATE_ROOT HADES_CONFIG_ROOT HADES_BACKUP_ROOT HADES_IDENTITY_SECRETS_DIR HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE HADES_HERMES_PROFILE HADES_GROCY_API_KEY_FILE HADES_AGENT_ZERO_CREDENTIAL_FILE; do
   [[ -n "${!name:-}" ]] || fail "operator input is missing required path variable: $name"
   [[ "${!name}" == /* ]] || fail "operator input path must be absolute: $name"
 done
@@ -111,7 +112,7 @@ validate_synthetic_secret_contract() {
     [[ -f "$path" && ! -L "$path" ]] || fail "missing or linked identity secret: $path"
     [[ "$(stat -c '%a' "$path")" == 600 ]] || fail "identity secret must be mode 0600: $path"
   done
-  validate_secret_file HADES_HINDSIGHT_DATABASE_SECRET_FILE
+  if (( ! generated_records )); then validate_secret_file HADES_HINDSIGHT_DATABASE_SECRET_FILE; fi
   validate_secret_file HADES_GROCY_API_KEY_FILE
   if (( generated_records )); then
     validate_secret_file HADES_SEARXNG_SECRET_FILE
@@ -206,7 +207,7 @@ preflight() {
   while read -r owner mode; do
     [[ "$owner" == 1000 && "$mode" == 600 ]] || fail "LLDAP identity secrets must be service-owned UID 1000 mode 0600 (found $owner mode $mode)"
   done < <(find "$HADES_IDENTITY_SECRETS_DIR" -maxdepth 1 -type f -printf '%U %m\n')
-  validate_secret_file HADES_HINDSIGHT_DATABASE_SECRET_FILE
+  if (( ! generated_records )); then validate_secret_file HADES_HINDSIGHT_DATABASE_SECRET_FILE; fi
   validate_secret_file HADES_GROCY_API_KEY_FILE
   if [[ -n "${HADES_AGENT_ZERO_CREDENTIAL_FILE:-}" ]]; then
     validate_secret_file HADES_AGENT_ZERO_CREDENTIAL_FILE

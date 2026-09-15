@@ -34,7 +34,7 @@
       "artifact_source": "https://github.com/vectorize-io/hindsight",
       "state_relationship": "image is separate from the mounted PostgreSQL state",
       "persistent_state": ["embedded PostgreSQL cluster", "subject-bank mappings"],
-      "required_secret_inputs": ["HADES_HINDSIGHT_DATABASE_SECRET_FILE", "HADES_HINDSIGHT_DATA"],
+      "required_secret_inputs": ["HADES_HINDSIGHT_LLM_API_KEY", "HADES_HINDSIGHT_DATA"],
       "network_dependency": "private memory API",
       "startup_order": 3,
       "health_check": "PostgreSQL readiness and Hindsight health",
