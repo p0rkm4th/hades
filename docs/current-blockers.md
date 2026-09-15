@@ -17,8 +17,9 @@ an owner decision or secret from defects that can be repaired independently.
 
 ## Independent technical work status
 
-- **In progress:** Clean-machine reconstruction is now the active independent
-  workstream. The public version manifest, host/filesystem contract,
+- **Maintained:** Clean-machine reconstruction remains an available
+  maintenance/recovery evidence lane; capability expansion is the active
+  independent workstream. The public version manifest, host/filesystem contract,
   operator-input template, idempotent test-mode installer, non-mutating doctor,
   install validator, and rerunnable disposable rehearsal are present. Two
   independent pristine Fedora guests now pass the credential-free contract

@@ -148,3 +148,41 @@ def build_preview(
         "canonical_target": "Actual Budget importTransactions",
     }
 
+
+def build_apply_request(preview: dict[str, Any], *, confirm: bool = False) -> dict[str, Any]:
+    """Build a write-free request for Actual's reconciliation import path.
+
+    The future adapter must call Actual's official ``importTransactions``
+    method, then read canonical transactions back before reporting success.
+    This module never receives an Actual client and never mutates a ledger.
+    """
+    if not confirm:
+        return {"status": "FAILED", "error": "Explicit finance import confirmation is required."}
+    if not isinstance(preview, dict) or preview.get("status") != "PREVIEW":
+        return {"status": "FAILED", "error": "Only a complete finance preview can be imported."}
+    rows = preview.get("transactions")
+    if not isinstance(rows, list) or not rows:
+        return {"status": "FAILED", "error": "Finance preview has no transactions."}
+    if any(not isinstance(row, dict) or row.get("disposition") not in {"NEW", "DUPLICATE"} for row in rows):
+        return {"status": "FAILED", "error": "Finance preview contains an invalid transaction disposition."}
+    new_rows = [row for row in rows if row.get("disposition") == "NEW"]
+    if not new_rows:
+        return {
+            "status": "NOOP_DUPLICATES",
+            "transactions": [],
+            "writes_performed": False,
+            "canonical_target": "Actual Budget importTransactions",
+        }
+    return {
+        "status": "READY_TO_APPLY",
+        "operation": "importTransactions",
+        "transactions": [
+            {key: row[key] for key in ("date", "payee", "amount", "imported_id")}
+            for row in new_rows
+        ],
+        "skipped_duplicate_count": len(rows) - len(new_rows),
+        "writes_performed": False,
+        "reconcile_after_write": True,
+        "reconcile_before_retry": True,
+        "canonical_target": "Actual Budget importTransactions",
+    }

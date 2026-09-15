@@ -16,5 +16,7 @@ data is used only for duplicate classification.
 
 Evidence: [`scripts/test-actual-finance-import-contract.sh`](../../scripts/test-actual-finance-import-contract.sh)
 passes deterministic preview, duplicate detection, malformed-input rejection,
-and write-free confirmation-boundary checks. A real Actual import and owner
-acceptance remain authorization-gated.
+write-free confirmation-boundary checks, and a confirmation-gated
+`importTransactions` request plan that skips known duplicates and requires
+canonical reconciliation. A real Actual import and owner acceptance remain
+authorization-gated.

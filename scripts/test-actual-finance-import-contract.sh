@@ -23,10 +23,18 @@ assert [row["amount"] for row in preview["transactions"]] == ["-42.50", "5.00"]
 assert preview["requires_confirmation"] is True
 assert preview["writes_performed"] is False
 assert len(preview["file_sha256"]) == 64
+assert module.build_apply_request(preview)["status"] == "FAILED"
+request = module.build_apply_request(preview, confirm=True)
+assert request["status"] == "READY_TO_APPLY"
+assert request["operation"] == "importTransactions"
+assert request["writes_performed"] is False
+assert request["reconcile_after_write"] is True
+assert len(request["transactions"]) == 2
 
 repeat = module.build_preview(csv_data, mapping, existing_transactions=preview["transactions"])
 assert repeat["duplicate_count"] == 2
 assert repeat["new_count"] == 0
+assert module.build_apply_request(repeat, confirm=True)["status"] == "NOOP_DUPLICATES"
 
 for bad in (
     b"Date,Payee,Amount\n2026-09-01,Store,0\n",
