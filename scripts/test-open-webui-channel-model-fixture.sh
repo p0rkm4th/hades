@@ -2,13 +2,15 @@
 set -euo pipefail
 name=hades-channel-model-fixture
 volume=hades-channel-model-fixture-data
-port=18792
+port=${HADES_CHANNEL_MODEL_WEBUI_PORT:-18792}
+backend_port=${HADES_CHANNEL_MODEL_BACKEND_PORT:-18793}
+image=${HADES_CHANNEL_MODEL_WEBUI_IMAGE:-hades-open-webui:channel-stage-patched}
 tmp=$(mktemp -d)
 backend="$tmp/backend.py"
 trap 'docker rm -f "$name" >/dev/null 2>&1 || true; docker volume rm "$volume" >/dev/null 2>&1 || true; kill "${backend_pid:-}" >/dev/null 2>&1 || true; rm -rf -- "$tmp"' EXIT
 cat >"$backend" <<'PY'
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-import json, time
+import json, os, time
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_args): pass
     def do_GET(self):
@@ -22,14 +24,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200); self.send_header("Content-Type","text/event-stream"); self.send_header("Cache-Control","no-cache"); self.end_headers()
         for chunk in chunks: self.wfile.write(("data: "+json.dumps(chunk)+chr(10)+chr(10)).encode()); self.wfile.flush()
         self.wfile.write(("data: [DONE]"+chr(10)+chr(10)).encode()); self.wfile.flush()
-ThreadingHTTPServer(("0.0.0.0",18793),Handler).serve_forever()
+ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("HADES_CHANNEL_MODEL_BACKEND_PORT", "18793"))),Handler).serve_forever()
 PY
 docker rm -f "$name" >/dev/null 2>&1 || true
 docker volume rm "$volume" >/dev/null 2>&1 || true
 docker volume create "$volume" >/dev/null
-python3 "$backend" >/dev/null 2>&1 &
+HADES_CHANNEL_MODEL_BACKEND_PORT="$backend_port" python3 "$backend" >/dev/null 2>&1 &
 backend_pid=$!
-docker run -d --name "$name" -p "127.0.0.1:${port}:8080" -v "$volume":/app/backend/data -e ENABLE_SIGNUP=true -e ENABLE_CHANNELS=true -e USER_PERMISSIONS_FEATURES_CHANNELS=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false -e RAG_EMBEDDING_ENGINE=ollama hades-open-webui:channel-stage-patched >/dev/null
+for attempt in $(seq 1 30); do
+    curl -fsS "http://127.0.0.1:${backend_port}/v1/models" >/dev/null 2>&1 && break
+    [[ "$attempt" == 30 ]] && { echo 'FAIL synthetic model backend did not become ready' >&2; exit 1; }
+    sleep 1
+done
+docker run -d --name "$name" -p "127.0.0.1:${port}:8080" -v "$volume":/app/backend/data -e ENABLE_SIGNUP=true -e ENABLE_CHANNELS=true -e USER_PERMISSIONS_FEATURES_CHANNELS=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false -e RAG_EMBEDDING_ENGINE=ollama "$image" >/dev/null
 for attempt in $(seq 1 60); do
     curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1 && break
     [[ "$attempt" == 60 ]] && { echo 'FAIL Open WebUI model fixture did not become healthy' >&2; exit 1; }
@@ -37,7 +44,7 @@ for attempt in $(seq 1 60); do
 done
 signup=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/signup" -H 'Content-Type: application/json' --data '{"name":"Alpha","email":"alpha@example.invalid","password":"Synthetic-Only-123!"}')
 token=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])' <<<"$signup")
-curl -fsS -X POST "http://127.0.0.1:${port}/openai/config/update" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' --data '{"ENABLE_OPENAI_API":true,"OPENAI_API_BASE_URLS":["http://172.17.0.1:18793/v1"],"OPENAI_API_KEYS":["synthetic"],"OPENAI_API_CONFIGS":{}}' >/dev/null
+curl -fsS -X POST "http://127.0.0.1:${port}/openai/config/update" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' --data "{\"ENABLE_OPENAI_API\":true,\"OPENAI_API_BASE_URLS\":[\"http://172.17.0.1:${backend_port}/v1\"],\"OPENAI_API_KEYS\":[\"synthetic\"],\"OPENAI_API_CONFIGS\":{}}" >/dev/null
 models=$(curl -fsS "http://127.0.0.1:${port}/openai/models" -H "Authorization: Bearer $token")
 python3 -c 'import json,sys; assert any(x["id"]=="synthetic-channel-model" for x in json.load(sys.stdin)["data"])' <<<"$models"
 channel=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/channels/create" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' --data '{"name":"model-dogfood","description":"","type":"standard","is_private":true,"access_grants":[]}')

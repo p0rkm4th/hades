@@ -8,10 +8,12 @@ name="hades-private-chat-soak-$$"
 volume="hades-private-chat-soak-$$"
 webui_port=${HADES_PRIVATE_CHAT_WEBUI_PORT:-18795}
 model_port=${HADES_PRIVATE_CHAT_MODEL_PORT:-18796}
+image=${HADES_PRIVATE_CHAT_WEBUI_IMAGE:-hades-open-webui:0.11.1-hades-reconstructed}
 tmp=$(mktemp -d /tmp/hades-private-chat-soak.XXXXXX)
 cleanup() {
   docker rm -f "$name" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true
+  kill "${backend_pid:-}" >/dev/null 2>&1 || true
   if [[ -d "$tmp" ]]; then
     find "$tmp" -depth -mindepth 1 -delete 2>/dev/null || true
     rmdir "$tmp" 2>/dev/null || true
@@ -63,7 +65,7 @@ docker run -d --name "$name" -p "127.0.0.1:${webui_port}:8080" \
   --add-host host.docker.internal:host-gateway \
   -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
   -e RAG_EMBEDDING_ENGINE=ollama -v "$volume:/app/backend/data" \
-  hades-open-webui:0.11.1-hades-reconstructed >/dev/null
+  "$image" >/dev/null
 
 for _ in $(seq 1 90); do
   curl -fsS "http://127.0.0.1:${webui_port}/health" >/dev/null 2>&1 && break

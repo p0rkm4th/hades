@@ -4,7 +4,8 @@ set -euo pipefail
 # Disposable authenticated acceptance for pinned Open WebUI Channels.
 name=hades-channels-fixture
 volume=hades-channels-fixture-data
-port=18769
+port=${HADES_CHANNELS_WEBUI_PORT:-18769}
+image=${HADES_CHANNELS_WEBUI_IMAGE:-hades-open-webui:channel-stage}
 
 docker rm -f "$name" >/dev/null 2>&1 || true
 docker volume rm "$volume" >/dev/null 2>&1 || true
@@ -16,7 +17,7 @@ docker run -d --name "$name" \
   -e ENABLE_CHANNELS=true \
   -e USER_PERMISSIONS_FEATURES_CHANNELS=true \
   -e ENABLE_LOGIN_FORM=true \
-  hades-open-webui:channel-stage >/dev/null
+  "$image" >/dev/null
 
 cleanup() {
   docker rm -f "$name" >/dev/null 2>&1 || true

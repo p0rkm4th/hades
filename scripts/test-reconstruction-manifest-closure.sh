@@ -54,7 +54,7 @@ if '@sha256:' not in versions.get('HADES_OPEN_WEBUI_BASE_IMAGE', ''):
 if '@sha256:' not in versions.get('HADES_HERMES_SOURCE_SHA256', '') and len(versions.get('HADES_HERMES_SOURCE_SHA256', '')) != 64:
     raise SystemExit('FAIL Hermes source checksum is missing')
 dockerfile = Path('webui/Dockerfile').read_text(encoding='utf-8')
-if 'HADES_OPEN_WEB_UI_BASE_IMAGE' in dockerfile or 'ghcr.io/open-webui/open-webui@sha256:' not in dockerfile:
+if 'HADES_OPEN_WEB_UI_BASE_IMAGE' in dockerfile or 'ARG OPEN_WEBUI_BASE_IMAGE=ghcr.io/open-webui/open-webui@sha256:' not in dockerfile:
     raise SystemExit('FAIL Open WebUI Dockerfile does not retain immutable upstream provenance')
 if 'channel_response_compat.py' not in dockerfile:
     raise SystemExit('FAIL Open WebUI compatibility layer is absent from the build')

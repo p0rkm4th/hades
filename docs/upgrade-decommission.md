@@ -59,6 +59,14 @@ prints plan-only instructions for `hermes`, `open-webui`, `hindsight`, and
 still plan and apply the tracked one-component LLDAP, Grocy, or Agent Zero
 changes under the backup and preflight requirements below.
 
+The Open WebUI 0.11.3 candidate was built from immutable amd64 manifest
+`ghcr.io/open-webui/open-webui@sha256:9cd136effce6bb12a6a1988a35ab3b82cb40c48a6768fceeb17c83baf7cfac9c`
+with the tracked HADES asset/compatibility layer. On 2026-09-15 it passed
+`scripts/test-open-webui-candidate.sh`: private-chat persistence and Beta
+access denial across restart, shared-channel membership/restart/authority,
+and streamed model-mention persistence. This is disposable candidate evidence
+only; it does not promote the image or prove owner UI acceptance.
+
 For the tracked LLDAP, Grocy, and Agent Zero Compose components,
 `scripts/upgrade-hades.sh` implements this boundary. It is plan-only by
 default. `--apply` requires root, a mode-0700 backup directory,
