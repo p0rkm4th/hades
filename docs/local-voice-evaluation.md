@@ -67,6 +67,12 @@ scripts/test-faster-whisper-staging.sh. It uses a generated local speech
 fixture and the existing artifact's cached model path; it does not contact
 HADES, Open WebUI, or a live external service.
 
+The Wyoming-to-STT bridge primitives in integrations/local-voice/bridge.py now
+assemble a complete audio-start/chunk/stop sequence into validated WAV bytes
+and preserve missing provider confidence as CLARIFY. The contract rejects
+incomplete streams, changed formats, and empty chunks; it is covered by
+scripts/test-local-voice-bridge.sh.
+
 Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
