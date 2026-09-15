@@ -76,7 +76,7 @@ def preview_file(
         preview = build_preview(data, mapping, existing_transactions=existing)
         preview["target_account_id"] = target_account_id
         return preview
-    except (ImportFormatError, ValueError) as exc:
+    except (ImportFormatError, TypeError, ValueError) as exc:
         return {"status": "FAILED", "error": str(exc), "writes_performed": False}
 
 
@@ -91,5 +91,5 @@ def preview_apply_request(preview_json: str, *, confirm: bool = False) -> dict[s
         if result.get("status") == "READY_TO_APPLY":
             result["account_id"] = target_account_id.strip()
         return result
-    except (ImportFormatError, ValueError) as exc:
+    except (ImportFormatError, KeyError, TypeError, ValueError) as exc:
         return {"status": "FAILED", "error": str(exc), "writes_performed": False}
