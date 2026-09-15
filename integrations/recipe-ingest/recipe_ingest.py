@@ -28,6 +28,20 @@ MAX_INGREDIENT_QUANTITY = Fraction(1_000_000)
 _NUMBER = r"(?:\d+(?:\.\d+)?|\d+\s*/\s*\d+|[¼½¾⅓⅔⅛⅜⅝⅞])"
 _UNIT = r"(?:tsp|teaspoons?|tbsp|tablespoons?|cups?|ounces?|oz|pounds?|lbs?|lb|grams?|g|kilograms?|kg|millilit(?:er|re)s?|ml|lit(?:er|re)s?|l|pinch(?:es)?|cloves?|cans?|packages?|sticks?)"
 _QUANTITY = re.compile(rf"^\s*(?P<quantity>{_NUMBER})(?:\s*[-–]\s*(?P<maximum>{_NUMBER}))?\s*(?P<unit>{_UNIT})?\b\s*(?P<name>.*)$", re.I)
+_UNIT_ALIASES = {
+    "tsp": "tsp", "teaspoon": "tsp", "teaspoons": "tsp",
+    "tbsp": "tbsp", "tablespoon": "tbsp", "tablespoons": "tbsp",
+    "cup": "cup", "cups": "cup",
+    "ounce": "oz", "ounces": "oz", "oz": "oz",
+    "pound": "lb", "pounds": "lb", "lb": "lb", "lbs": "lb",
+    "gram": "g", "grams": "g", "g": "g",
+    "kilogram": "kg", "kilograms": "kg", "kg": "kg",
+    "milliliter": "ml", "milliliters": "ml", "millilitre": "ml", "millilitres": "ml", "ml": "ml",
+    "liter": "l", "liters": "l", "litre": "l", "litres": "l", "l": "l",
+    "pinch": "pinch", "pinches": "pinch", "clove": "clove", "cloves": "clove",
+    "can": "can", "cans": "can", "package": "package", "packages": "package",
+    "stick": "stick", "sticks": "stick",
+}
 
 
 @dataclass(frozen=True)
@@ -242,6 +256,11 @@ def _quantity(value: Any) -> str | None:
     return vulgar.get(text, text) or None
 
 
+def _unit_key(value: Any) -> str:
+    text = " ".join(str(value or "").split()).casefold()
+    return _UNIT_ALIASES.get(text, text)
+
+
 def _validated_quantity(value: Any) -> str:
     amount = _quantity(value)
     if not amount:
@@ -270,7 +289,7 @@ def build_apply_plan(recipe: dict[str, Any], quantity_units: list[dict[str, Any]
     units: dict[str, list[dict[str, Any]]] = {}
     for unit in quantity_units:
         if isinstance(unit, dict) and unit.get("name"):
-            units.setdefault(str(unit["name"]).casefold(), []).append(unit)
+            units.setdefault(_unit_key(unit["name"]), []).append(unit)
     rows: list[dict[str, Any]] = []
     product_ids: set[int] = set()
     for ingredient in recipe.get("ingredients", []):
@@ -280,7 +299,7 @@ def build_apply_plan(recipe: dict[str, Any], quantity_units: list[dict[str, Any]
         unit_name = str(ingredient.get("unit") or "").strip()
         if not unit_name:
             raise ValueError(f"Ingredient needs a quantity unit: {ingredient.get('raw', '')}")
-        matches = units.get(unit_name.casefold(), [])
+        matches = units.get(_unit_key(unit_name), [])
         if len(matches) != 1:
             raise ValueError(f"Quantity unit needs exact review: {unit_name}")
         product_id = int(ingredient["product_id"])

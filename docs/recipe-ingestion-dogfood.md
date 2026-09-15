@@ -14,6 +14,13 @@ Scotty: yes, import it
 HADES: recipe created and read back from Grocy
 ```
 
+The repeatable disposable real-Grocy proof is
+`bash scripts/test-recipe-grocy-disposable.sh`. It uses the pinned image in a
+fresh temporary `/config`, creates only synthetic products/units, verifies
+preview and confirmation behavior, and confirms the recipe plus both
+`recipes_pos` rows through Grocy's canonical API. The temporary container is
+removed after the run; no live household state or credential is used.
+
 It also verifies:
 
 - JSON-LD graphs containing unrelated objects select the Recipe object;
@@ -32,8 +39,8 @@ It also verifies:
 Still required before this is a production capability:
 
 - register the staged MCP server in the deployed Hermes profile;
-- test against a disposable real Grocy instance and verify recipe and
-  `recipes_pos` rows canonically;
+- test against a representative public structured-data site and verify URL
+  fetching in the owner-facing path;
 - exercise a representative structured-data site, a messy page, a duplicate,
   a changed re-import, serving resize, and shortage/add-missing composition;
 - perform owner-visible acceptance.

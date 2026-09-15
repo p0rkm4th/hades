@@ -57,6 +57,7 @@ ready["ingredients"] = [
     {"raw": "1 lb ground beef", "name": "ground beef", "quantity": "1", "unit": "lb", "product_id": 10, "resolution": "EXACT"},
     {"raw": "½ cup salsa", "name": "salsa", "quantity": "½", "unit": "cup", "product_id": 12, "resolution": "EXACT"},
 ]
+ready["ingredients"][1]["unit"] = "cups"
 plan = module.build_apply_plan(ready, [{"id": 1, "name": "lb"}, {"id": 2, "name": "cup"}])
 assert plan["recipe"]["name"] == "Weeknight Tacos"
 assert plan["recipe"]["base_servings"] == 4
