@@ -31,6 +31,12 @@ noise, partial phrases, interruption, STT outage, TTS outage, and HADES
 timeouts. A low-confidence transcription must not trigger a mutation; it must
 clarify.
 
+The provider-neutral input contract in
+integrations/local-voice/contract.py validates bounded WAV input and maps
+silence, unavailable confidence, low confidence, and accepted transcripts.
+Its regression script does not require an audio device or an STT dependency;
+the actual whisper.cpp/Wyoming composition remains the next staging step.
+
 Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
