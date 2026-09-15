@@ -66,6 +66,18 @@ except ValueError as exc:
     assert "NetBox" in str(exc)
 else:
     raise AssertionError("malformed NetBox context accepted")
+for bad in (
+    {"source": "nmap.xml", "target": "not-a-network", "retrieved_at": "2026-09-15T12:00:00Z", "hosts": []},
+    {"source": "nmap.xml", "target": "192.0.2.0/29", "retrieved_at": "", "hosts": []},
+    {"source": "nmap.xml", "target": "192.0.2.0/29", "retrieved_at": "2026-09-15T12:00:00Z", "hosts": [{"ip": "198.51.100.2", "ports": []}]},
+    {"source": "nmap.xml", "target": "192.0.2.0/29", "retrieved_at": "2026-09-15T12:00:00Z", "hosts": [{"ip": "192.0.2.2", "ports": [{"port": 0}]}]},
+):
+    try:
+        propose_inventory_candidates(bad)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("unprovenanceable discovery evidence accepted")
 
 print("PASS bounded Nmap XML evidence normalization")
 print("PASS scanner evidence enforces target and host CIDR scope")
