@@ -234,10 +234,12 @@ read, finance exclusion, revocation, and cross-account settings isolation;
 
 Continue independent roadmap work while production remains on the known-good
 Hermes 0.14.0 baseline. The candidate's HADES core is green, but production
-promotion still requires a fresh owner authentication path; the next
-reachable product acceptance is the repaired web-search follow-up through the
-owner UI, with recovery and synthetic composition work continuing when that
-session is unavailable.
+promotion still requires a fresh owner authentication path. The next
+reachable product lanes are Hermes/Open WebUI wiring and model-mention
+composition, local voice dogfood, and the remaining synthetic recovery,
+performance, and security contracts. Public recipe URL preview, bounded Nmap
+evidence parsing, and authenticated Channels membership/restart/authority
+fixtures are now independently evidenced; none changed production state.
 
 Synthetic production dogfood found that Hermes' automatic Hindsight `sync_turn`
 path retained ordinary Grocy/shared-state turns in a user's private semantic
