@@ -6,6 +6,7 @@ import sys
 import time
 import uuid
 import urllib.request
+from urllib.error import HTTPError
 
 
 base = sys.argv[1].rstrip("/")
@@ -30,6 +31,13 @@ alpha = request(
     {"name": "Alpha", "email": "alpha@reconstruction.invalid", "password": "Synthetic-Only-123!"},
 )
 token = alpha["token"]
+beta = request(
+    "/api/v1/auths/add",
+    "POST",
+    {"name": "Beta", "email": "beta@reconstruction.invalid", "password": "Synthetic-Only-123!", "role": "user"},
+    token,
+)
+beta_token = beta["token"]
 request(
     "/openai/config/update",
     "POST",
@@ -69,4 +77,12 @@ for _ in range(60):
     time.sleep(1)
 if not saved or "Synthetic application response" not in json.dumps(saved):
     raise SystemExit(f"application response was not persisted: {saved}")
-print(f"PASS isolated Open WebUI model route and persisted chat {chat_id}")
+try:
+    request(f"/api/v1/chats/{chat_id}", token=beta_token)
+except HTTPError as exc:
+    if exc.code not in {401, 403}:
+        raise SystemExit(f"Beta received unexpected private-chat status: {exc.code}")
+else:
+    raise SystemExit("Beta accessed Alpha's private chat")
+print(f"PASS isolated Open WebUI model route and persisted Alpha chat {chat_id}")
+print("PASS Beta cannot retrieve Alpha's private chat")
