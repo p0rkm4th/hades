@@ -13,6 +13,10 @@ def _freshness(value: Any, *, now: datetime, max_age: timedelta) -> str:
             observed = observed.replace(tzinfo=timezone.utc)
     except (TypeError, ValueError):
         return "UNKNOWN"
+    if observed > now:
+        # A future observation is not evidence of current availability; it
+        # usually indicates clock skew or malformed upstream data.
+        return "UNKNOWN"
     return "FRESH" if now - observed <= max_age else "STALE"
 
 

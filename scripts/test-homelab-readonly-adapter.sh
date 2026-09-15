@@ -28,8 +28,16 @@ assert resource["availability"]["status"] == "down"
 assert resource["availability_freshness"] == "STALE"
 assert resource["conflicts"]
 assert result["authority"]["runtime"] == "Proxmox"
+future = module.summarize(
+    {"data": [{"type": "qemu", "name": "clock-skewed", "node": "Alexandra", "status": "running"}]},
+    {"results": []},
+    {"monitors": [{"name": "clock-skewed", "status": "up", "last_updated": "2026-09-14T12:05:00+00:00"}]},
+    now=now,
+)
+assert future["resources"][0]["availability_freshness"] == "UNKNOWN"
 print("PASS homelab adapter preserves runtime/inventory/availability authority")
 print("PASS homelab adapter discloses node conflict and stale Kuma observation")
+print("PASS future monitoring observations fail closed as unknown")
 PY
 
 python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py
