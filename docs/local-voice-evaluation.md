@@ -14,7 +14,7 @@ identity and confirmation mechanism exists.
 |---|---|---|
 | Audio transport | Wyoming protocol | Selected as the interoperable local voice boundary |
 | Speech-to-text | whisper.cpp | Selected for local, self-hosted STT evaluation |
-| Text-to-speech | Piper-compatible service | Evaluate current maintained implementation and license before pinning |
+| Text-to-speech | OHF-Voice `piper1-gpl` through `wyoming-piper` | Candidate selected for local evaluation; GPL-3.0 and voice-model licensing require explicit acceptance before pinning |
 | Wake word | openWakeWord-class service | Deferred until push-to-talk is green |
 | HADES request | Existing Hermes/Open WebUI path | Canonical runtime; no second voice agent |
 
@@ -88,6 +88,13 @@ from `action_authorized`; ordinary conversation can continue with usable text,
 while `action_authorized` and `voice_authenticated` remain false for every
 voice result until an explicit identity and confirmation policy exists.
 
+The provider-neutral TTS boundary in `integrations/local-voice/tts.py` now
+accepts only bounded text and bounded 16-bit WAV output. Its contract is
+covered by `scripts/test-local-voice-tts.sh`; malformed provider output and
+provider failure are explicit failures, and synthesized audio never
+authenticates a speaker or authorizes an action. The official OHF-Voice Piper
+implementation is a candidate, not yet a pinned or production service.
+
 Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
@@ -97,5 +104,7 @@ changed by this evaluation.
 
 Upstream references:
 https://github.com/ggml-org/whisper.cpp,
-https://github.com/OHF-Voice/wyoming, and
+https://github.com/OHF-Voice/wyoming,
+https://github.com/OHF-Voice/piper1-gpl,
+https://github.com/OHF-Voice/wyoming-piper, and
 https://github.com/rhasspy/wyoming-satellite.
