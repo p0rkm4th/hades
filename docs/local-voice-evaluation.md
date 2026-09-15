@@ -55,6 +55,18 @@ promoted or registered as a live voice service until a compatible pinned
 runtime or alternate STT implementation passes the same synthetic inference
 contract.
 
+As an alternate lane, the pinned HADES Open WebUI artifact contains
+faster-whisper 1.2.1. A disposable CPU/int8 tiny.en run transcribed the
+synthetic phrase “check the pantry and remember dinner” correctly. This is a
+candidate reuse of an existing artifact, not a new production dependency; it
+still needs an explicit service wrapper, immutable dependency record, Wyoming
+wiring, latency measurement, and voice dogfood before promotion.
+
+The candidate check is reproducible with
+scripts/test-faster-whisper-staging.sh. It uses a generated local speech
+fixture and the existing artifact's cached model path; it does not contact
+HADES, Open WebUI, or a live external service.
+
 Measure STT, HADES/model, tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
