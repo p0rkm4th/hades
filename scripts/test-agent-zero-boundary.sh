@@ -109,6 +109,8 @@ async def main():
     AsyncClient.payload = {"response": "bounded", "context_id": "ctx"}
     result = await module._delegate("task", "1234")
     assert result == {"ok": True, "outcome": "SUCCEEDED", "context_id": "ctx", "response": "bounded"}
+    status_result = await module._delegate("update me on service status")
+    assert status_result["outcome"] == "SUCCEEDED", status_result
 
 asyncio.run(main())
 print("PASS Agent Zero input/output bounds")
