@@ -110,6 +110,15 @@ tool, TTS, and total round-trip latency. Keep voice
 metadata separate from private memory unless the user explicitly asks to
 retain a personal fact.
 
+The synthetic household dogfood in
+`scripts/test-local-voice-dogfood.sh` now composes pantry, web, preference,
+and attempted-mutation turns, including speech-like fragments. It verifies
+that voice context is never authenticated or action-authorized, uncertain
+speech is handled as clarification without a mutation, and STT outages become
+explicit `FAILED` results. The STT bridge now normalizes provider exceptions
+inside the same failure contract. This is composition evidence only; the
+provider license/packaging and owner-visible voice acceptance gates remain.
+
 No microphone, speaker, voice service, wake word, or production setting was
 changed by this evaluation.
 

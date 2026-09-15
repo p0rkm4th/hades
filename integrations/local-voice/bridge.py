@@ -60,7 +60,13 @@ def transcribe(
 ) -> dict[str, Any]:
     """Pass validated audio to a provider and preserve absent confidence."""
     validate_wav(wav_bytes)
-    result = provider(wav_bytes)
+    try:
+        result = provider(wav_bytes)
+    except Exception as exc:
+        # Keep provider/runtime failures inside the voice contract. The
+        # pipeline converts this into an explicit FAILED turn and never sends
+        # a partial provider result to HADES.
+        raise ValueError("STT provider unavailable") from exc
     if not isinstance(result, Mapping):
         raise ValueError("STT provider returned an invalid result")
     return classify_transcript(result.get("text"), result.get("confidence"))

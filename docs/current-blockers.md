@@ -71,6 +71,10 @@ an owner decision or secret from defects that can be repaired independently.
   confirmation, and read-back outcome reconciliation. It deliberately has no
   executor; real homelab credentials and scope remain the only gate to a
   private execution adapter.
+- **Added:** Local push-to-talk voice now has synthetic household dogfood for
+  pantry, web, preference, attempted-mutation, uncertain-speech, and STT
+  outage turns. The bridge normalizes provider exceptions to `FAILED`; voice
+  remains non-authenticating and non-authorizing.
 - **Documented:** Candidate-only Hermes residuals are classified against the
   stable HADES qualification suite; production remains on 0.14.0 and no
   candidate-only upstream/provider failure is a HADES release blocker.
