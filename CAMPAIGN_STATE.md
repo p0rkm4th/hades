@@ -41,7 +41,10 @@ are the active campaign.
   Fedora 44 guest reached healthy LLDAP/Grocy before Agent Zero layers stalled.
 - **Capability queue:** the web/search API and CLI follow-up contract is now
   classified `OWNER-GATED`; the next independent product work is recipe URL /
-  paste actor-path closure, followed by bounded browser research.
+  paste owner acceptance, followed by receipt/OCR synthetic closure. Anonymous
+  browser research and receipt OCR are now accepted at their bounded synthetic
+  scopes; Channels require candidate promotion and voice is explicitly
+  deferred.
 - **Open P0/P1/P2:** no newly demonstrated P0/P1/P2 defect is recorded; the
   fresh-guest application path and subsequent household soak remain open.
 - **Staged capabilities:** recipe URL/paste authoring, receipt OCR, finance
