@@ -2,8 +2,8 @@
 
 This module deliberately stops at a reviewable recipe object.  It does not
 write Grocy, create products, or treat an unparsed ingredient as canonical
-state.  A future MCP/apply layer can consume the normalized object after an
-explicit preview and product-resolution decision.
+state. The staged MCP/apply layer consumes the normalized object only after an
+explicit preview, product-resolution decision, and review-boundary check.
 """
 
 from __future__ import annotations

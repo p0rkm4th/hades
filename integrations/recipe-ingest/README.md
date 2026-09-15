@@ -22,9 +22,10 @@ titles before writing. Altered, stale, duplicate, or restart-invalidated
 previews are rejected.
 
 The first extractor is Schema.org JSON-LD because it is the common upstream
-contract and is documented by Schema.org. Site-specific scraping and browser
-fallback remain deferred until representative dogfood demonstrates that the
-structured-data path is insufficient.
+contract and is documented by Schema.org. A bounded visible-text fallback is
+also available for fetched or pasted HTML with a clear title and explicit
+Ingredients section; it always remains review-required. Site-specific scraping
+and browser automation remain deferred.
 
 Contract test:
 
