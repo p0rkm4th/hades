@@ -46,7 +46,9 @@ target. The real Proxmox, NetBox, Kuma, and network path are still owner-gated.
 The additional [`scripts/test-homelab-discovery-contract.sh`](../scripts/test-homelab-discovery-contract.sh)
 fixture proves the Nmap-shaped evidence boundary: an in-scope result can
 describe a device and port, while an inventory mutation and an out-of-scope
-target are rejected.
+target are rejected. `integrations/homelab-readonly/discovery.py` now provides
+the bounded reusable Nmap XML normalization layer; scanner invocation and
+real-network access remain outside this fixture.
 
 The first reusable HADES composition slice is
 `integrations/homelab-readonly/`: a single read-only `homelab_summary` MCP

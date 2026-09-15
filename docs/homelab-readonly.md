@@ -58,10 +58,13 @@ HADES_NETBOX_TOKEN=<private-v2-token>
 ### Network discovery
 
 An Nmap MCP or equivalent isolated scan worker may be evaluated for explicit,
-owner-approved CIDR discovery. Scan output is observed evidence only: it must
-carry target scope and retrieval time, must not execute arbitrary shell, and
-must not silently create or update NetBox records. See the candidate selection
-and command boundary in [`homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
+owner-approved CIDR discovery. The reusable parser in
+`integrations/homelab-readonly/discovery.py` accepts bounded Nmap XML evidence
+and enforces target/host scope without invoking a scanner. Scan output is
+observed evidence only: it must carry target scope and retrieval time, must
+not execute arbitrary shell, and must not silently create or update NetBox
+records. See the candidate selection and command boundary in
+[`homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
 ### Uptime Kuma
 
