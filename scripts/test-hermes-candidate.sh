@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run promotion-critical Hermes candidate tests with the candidate's own
+# interpreter. Disposable clones can retain a pytest launcher pointing at a
+# different checkout.
+
+CANDIDATE=${1:-}
+if [[ -z "$CANDIDATE" || ! -d "$CANDIDATE" ]]; then
+  printf 'usage: %s HERMES_CANDIDATE_DIRECTORY\n' "$0" >&2
+  exit 2
+fi
+
+PYTHON="$CANDIDATE/.venv/bin/python"
+if [[ ! -x "$PYTHON" ]]; then
+  printf 'FAIL candidate interpreter missing\n' >&2
+  exit 1
+fi
+
+# A candidate test run must fail closed if an earlier test mutated the shared
+# environment. In particular, some upstream update tests can remove packages
+# from the virtualenv; allowing the shell loop below to proceed would turn
+# that into a confusing collection failure instead of an actionable preflight
+# error.
+if ! "$PYTHON" -c 'import pytest' >/dev/null 2>&1; then
+  printf 'FAIL candidate environment missing pytest (use a fresh/disposable venv)\n' >&2
+  exit 1
+fi
+
+RUNNER="$CANDIDATE/scripts/run_tests.sh"
+if [[ ! -x "$RUNNER" ]]; then
+  printf 'FAIL candidate canonical test runner missing\n' >&2
+  exit 1
+fi
+
+candidate_clean() {
+  git -C "$CANDIDATE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
+    printf 'FAIL candidate is not a Git checkout\n' >&2
+    return 1
+  }
+  [[ -z "$(git -C "$CANDIDATE" status --porcelain --untracked-files=all)" ]] || {
+    printf 'FAIL candidate checkout is dirty; use a fresh disposable checkout\n' >&2
+    return 1
+  }
+}
+
+candidate_clean || exit 1
+
+tests=(
+  tests/agent/test_memory_provider.py
+  tests/agent/test_memory_provider_unavailable_warning.py
+  tests/agent/test_declared_conversation_scope.py
+  tests/acp_adapter/test_acp_mcp_discovery.py
+  tests/agent/transports/test_hermes_tools_mcp_server.py
+  tests/gateway/relay/test_auth.py
+  tests/gateway/relay/test_identity_token_resolver.py
+)
+
+for test in "${tests[@]}"; do
+  [[ -f "$CANDIDATE/$test" ]] || { printf 'FAIL missing candidate test: %s\n' "$test"; exit 1; }
+done
+
+cd "$CANDIDATE"
+# Promotion evidence must be deterministic. The canonical runner's default
+# retry is useful for exploratory development but would allow a flaky file to
+# exit green; retain the failure so the change window cannot treat flakiness
+# as acceptance.
+set +e
+"$RUNNER" "${tests[@]}" -q --disable-warnings --file-retries 0
+status=$?
+set -e
+if ! candidate_clean; then
+  printf 'FAIL candidate checkout changed during qualification\n' >&2
+  exit 1
+fi
+exit "$status"

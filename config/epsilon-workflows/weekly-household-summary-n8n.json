@@ -1,0 +1,25 @@
+{
+  "id": "weekly-household-summary",
+  "name": "HADES Weekly Household Summary",
+  "active": false,
+  "settings": {"executionOrder": "v1", "saveDataErrorExecution": "all", "saveDataSuccessExecution": "all", "saveExecutionProgress": false},
+  "nodes": [
+    {"parameters": {"httpMethod": "POST", "path": "weekly-household-summary", "responseMode": "onReceived", "options": {}}, "id": "weekly-run-now", "name": "HADES-local run-now trigger", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [180, 120], "webhookId": "weekly-household-summary"},
+    {"parameters": {"rule": {"interval": [{"field": "weeks", "weeksInterval": 1}]}}, "id": "weekly-schedule", "name": "Bounded weekly schedule", "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2, "position": [180, 300]},
+    {"parameters": {"url": "http://host.docker.internal:8643/v1/epsilon/inventory", "options": {"timeout": 10000}, "response": {"response": {"fullResponse": true, "neverError": true}}}, "id": "weekly-grocy", "name": "Authorized Grocy result source", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "onError": "continueRegularOutput", "position": [500, 220]},
+    {"parameters": {"url": "http://host.docker.internal:8643/v1/epsilon/backup/hades", "options": {"timeout": 10000}, "response": {"response": {"fullResponse": true, "neverError": true}}}, "id": "weekly-backup", "name": "Authorized backup result source", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "onError": "continueRegularOutput", "position": [500, 380]},
+    {"parameters": {"url": "http://hades-core.local:3000/health", "options": {"timeout": 5000}, "response": {"response": {"fullResponse": true, "neverError": true}}}, "id": "weekly-health", "name": "Authorized server health result source", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "onError": "continueRegularOutput", "position": [500, 540]},
+    {"parameters": {"jsCode": "const response = $json;\nconst statusCode = Number(response.statusCode || 0);\nconst body = response.body && typeof response.body === 'object' ? response.body : response;\nlet state = 'UNKNOWN';\nlet reason = 'health source returned no canonical state';\nif ((statusCode && statusCode !== 200) || response.error || response.errorMessage) {\n  state = 'SOURCE_UNAVAILABLE';\n  reason = statusCode ? `health source returned HTTP ${statusCode}` : 'health source could not be reached';\n} else if (body.status === true || body.state === 'UP' || response.status === true) {\n  state = 'UP';\n  reason = 'canonical HADES health status';\n} else if (body.status === false || body.state === 'DOWN' || response.status === false) {\n  state = 'DOWN';\n  reason = 'canonical HADES health status';\n}\nreturn [{ json: { hades_template: 'server-health-watch', resource_id: 'hades-core', hades_state: state, hades_reason: reason, freshness: state === 'SOURCE_UNAVAILABLE' ? 'UNAVAILABLE' : 'CURRENT' } }];"}, "id": "weekly-health-projection", "name": "Bounded server health result projection", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [700, 540]},
+    {"parameters": {"mode": "append", "numberInputs": 3, "options": {}}, "id": "weekly-merge", "name": "Bounded source result collection", "type": "n8n-nodes-base.merge", "typeVersion": 3.2, "position": [820, 380]}
+  ],
+  "connections": {
+    "HADES-local run-now trigger": {"main": [[{"node": "Authorized Grocy result source", "type": "main", "index": 0}, {"node": "Authorized backup result source", "type": "main", "index": 0}, {"node": "Authorized server health result source", "type": "main", "index": 0}]]},
+    "Bounded weekly schedule": {"main": [[{"node": "Authorized Grocy result source", "type": "main", "index": 0}, {"node": "Authorized backup result source", "type": "main", "index": 0}, {"node": "Authorized server health result source", "type": "main", "index": 0}]]},
+    "Authorized Grocy result source": {"main": [[{"node": "Bounded source result collection", "type": "main", "index": 0}]]},
+    "Authorized backup result source": {"main": [[{"node": "Bounded source result collection", "type": "main", "index": 1}]]},
+    "Authorized server health result source": {"main": [[{"node": "Bounded server health result projection", "type": "main", "index": 0}]]},
+    "Bounded server health result projection": {"main": [[{"node": "Bounded source result collection", "type": "main", "index": 2}]]},
+    "Bounded source result collection": {"main": [[]]}
+  },
+  "tags": [{"name": "hades-template:weekly"}, {"name": "hades-owner:owner"}, {"name": "hades-approved:true"}, {"name": "hades-trigger:schedule"}]
+}

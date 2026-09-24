@@ -1,0 +1,9 @@
+{
+  "schema": "hades-epsilon-phase2-fixtures/v1",
+  "production_enablement": false,
+  "backup": ["valid", "stale", "missing", "checksum_mismatch", "invalid_bundle", "storage_unavailable"],
+  "inventory": ["normal_stock", "low_stock", "out_of_stock", "concurrent_grocy_mutation", "grocy_unavailable"],
+  "weekly": ["all_sources_green", "backup_unavailable", "grocy_unavailable", "health_source_unavailable", "unauthorized_domain", "recipient_access_revoked"],
+  "mutation_faults": ["create_timeout", "edit_timeout", "delete_timeout", "double_confirmation", "two_tab_confirmation", "restart_during_mutation"],
+  "required_behavior": "reconcile_canonical_runner_state_before_retry"
+}

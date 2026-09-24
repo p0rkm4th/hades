@@ -1,0 +1,23 @@
+{
+  "schema": "hades-backup-evidence/v1",
+  "custody": "Alexandra temporary protected landing zone",
+  "host": "alexandra",
+  "root": "/tank/hades-backups/manifests",
+  "targets": {
+    "hades-git-bundle": {
+      "label": "HADES Git bundle",
+      "artifact": "hades-latest.bundle",
+      "sha256": "e5a0f0ea7c6668d3dcbe07004d23e3b82ffeee4136f3ac2712efa550ff7ba5e3",
+      "kind": "git-bundle",
+      "max_age_days": 7
+    },
+    "hades-infra-git-bundle": {
+      "label": "hades-infra Git bundle",
+      "artifact": "hades-infra-latest.bundle",
+      "sha256": "dc897e3bc44ed853fce73097d18be50f38e3cdf375d299c959353e8b17ba9048",
+      "kind": "git-bundle",
+      "max_age_days": 7
+    }
+  },
+  "verification": ["artifact_exists", "non_empty", "sha256", "git_bundle_verify", "freshness"]
+}

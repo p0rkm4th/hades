@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+command=${1:-help}
+if [[ "$command" == "-h" || "$command" == "--help" ]]; then command=help; fi
+[[ $# -gt 0 ]] && shift || true
+inputs=''; root=/; test_mode=0; confirm=0; path=''; component=''; backup_dir=''; apply=0
+usage() {
+  echo 'Usage: scripts/hades COMMAND [--inputs FILE] [--root DIR] [--test-mode]'
+  echo 'Commands: install preflight doctor status validate repair reconfigure backup restore upgrade uninstall'
+  echo 'Extra: --path DIR --component NAME --backup-dir DIR --apply --confirm'
+  echo 'restore verifies only; uninstall requires --confirm and preserves state.'
+}
+while (($#)); do
+  case "$1" in
+    --inputs) inputs=${2:?--inputs needs FILE}; shift 2 ;;
+    --root) root=${2:?--root needs DIR}; shift 2 ;;
+    --test-mode) test_mode=1; shift ;;
+    --confirm) confirm=1; shift ;;
+    --path|--checkpoint) path=${2:?--path needs DIR}; shift 2 ;;
+    --component) component=${2:?--component needs NAME}; shift 2 ;;
+    --backup-dir) backup_dir=${2:?--backup-dir needs DIR}; shift 2 ;;
+    --apply) apply=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "FAIL unknown option: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+run_check() {
+  local script=$1; local mode=()
+  (( test_mode )) && mode+=(--test-mode)
+  [[ -n "$inputs" ]] && mode+=(--inputs "$inputs")
+  [[ "$root" != / ]] && mode+=(--root "$root")
+  bash "$repo_dir/scripts/$script" "${mode[@]}"
+}
+run_install() {
+  local mode=()
+  (( test_mode )) && mode+=(--test-mode)
+  [[ -n "$inputs" ]] && mode+=(--inputs "$inputs")
+  [[ "$root" != / ]] && mode+=(--root "$root")
+  bash "$repo_dir/scripts/install-hades.sh" "${mode[@]}"
+}
+case "$command" in
+  help) usage ;;
+  install|repair|reconfigure) run_install ;;
+  preflight)
+    args=(--preflight); (( test_mode )) && args+=(--test-mode)
+    [[ -n "$inputs" ]] && args+=(--inputs "$inputs")
+    [[ "$root" != / ]] && args+=(--root "$root")
+    bash "$repo_dir/scripts/install-hades.sh" "${args[@]}" ;;
+  doctor|status) run_check hades-doctor.sh ;;
+  validate) run_check validate-install.sh ;;
+  backup)
+    [[ -n "$path" ]] || { echo 'FAIL backup requires --path EXISTING_PRIVATE_DIRECTORY' >&2; exit 2; }
+    bash "$repo_dir/scripts/backup-sqlite-state.sh" "$path" ;;
+  restore)
+    [[ -n "$path" ]] || { echo 'FAIL restore requires --path CHECKPOINT_DIRECTORY' >&2; exit 2; }
+    bash "$repo_dir/scripts/check-recovery-artifacts.sh" "$path"
+    echo 'REVIEW native restore boundary: use component procedures, then install, doctor, validate, and owner acceptance.'
+    echo 'REVIEW no application state was changed by this command.'
+    ;;
+  upgrade)
+    [[ -n "$component" && -n "$inputs" && -n "$backup_dir" ]] || { echo 'FAIL upgrade requires --component, --inputs, and --backup-dir' >&2; exit 2; }
+    args=(--component "$component" --inputs "$inputs" --backup-dir "$backup_dir")
+    (( apply )) && args+=(--apply)
+    bash "$repo_dir/scripts/upgrade-hades.sh" "${args[@]}" ;;
+  uninstall)
+    (( confirm )) || { echo 'FAIL uninstall requires --confirm' >&2; exit 2; }
+    [[ -n "$inputs" ]] || { echo 'FAIL uninstall requires --inputs' >&2; exit 2; }
+    source "$inputs"
+    for compose_file in "${HADES_OPEN_WEBUI_COMPOSE_FILE:-}" "${HADES_HINDSIGHT_COMPOSE_FILE:-}" "${HADES_SEARXNG_COMPOSE_FILE:-}" "$repo_dir/deploy/lldap.compose.yaml" "$repo_dir/deploy/grocy.compose.yaml" "$repo_dir/deploy/agent-zero.compose.yaml"; do
+      [[ -f "$compose_file" ]] || continue
+      docker compose --env-file "$inputs" -f "$compose_file" down --remove-orphans
+    done
+    systemctl disable --now hades-hermes.service 2>/dev/null || true
+    echo 'PASS runtime stopped; persistent state, secrets, backups, and source were preserved'
+    ;;
+  *) echo "FAIL unsupported lifecycle command: $command" >&2; usage >&2; exit 2 ;;
+esac

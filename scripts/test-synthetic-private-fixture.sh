@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+[[ -x "$repo_dir/scripts/create-synthetic-private-fixture.sh" ]] || { echo 'FAIL fixture generator is not executable'; exit 1; }
+fixture=$(mktemp -d)
+trap 'rm -rf -- "$fixture"' EXIT
+bash "$repo_dir/scripts/create-synthetic-private-fixture.sh" "$fixture/hades-fixture"
+sandbox="$fixture/sandbox"
+bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs "$fixture/hades-fixture/operator.env"
+bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$sandbox" --inputs "$fixture/hades-fixture/operator.env"
+bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$sandbox" --inputs "$fixture/hades-fixture/operator.env"
+
+input="$fixture/hades-fixture/operator.env"
+[[ $(stat -c '%a' "$input") == 600 ]] || { echo 'FAIL synthetic operator input permissions'; exit 1; }
+for path in \
+  "$fixture/hades-fixture/records/open-webui.compose.yaml" \
+  "$fixture/hades-fixture/records/hindsight.compose.yaml" \
+  "$fixture/hades-fixture/records/searxng.compose.yaml" \
+  "$fixture/hades-fixture/records/hermes.service"; do
+  [[ $(stat -c '%a' "$path") == 600 ]] || { echo "FAIL synthetic private record permissions: $path"; exit 1; }
+done
+docker compose -f "$fixture/hades-fixture/records/open-webui.compose.yaml" config --quiet
+docker compose -f "$fixture/hades-fixture/records/hindsight.compose.yaml" config --quiet
+docker compose -f "$fixture/hades-fixture/records/searxng.compose.yaml" config --quiet
+grep -q '^name: hades-synthetic-open-webui$' "$fixture/hades-fixture/records/open-webui.compose.yaml"
+grep -q '^name: hades-synthetic-hindsight$' "$fixture/hades-fixture/records/hindsight.compose.yaml"
+grep -q '^name: hades-synthetic-searxng$' "$fixture/hades-fixture/records/searxng.compose.yaml"
+grep -q '^    restart: unless-stopped$' "$fixture/hades-fixture/records/open-webui.compose.yaml"
+grep -q '^    restart: unless-stopped$' "$fixture/hades-fixture/records/hindsight.compose.yaml"
+grep -q '^    restart: unless-stopped$' "$fixture/hades-fixture/records/searxng.compose.yaml"
+if grep -Eq 'image: [^@[:space:]]+:[^@[:space:]]+$' "$fixture/hades-fixture/records"/*.compose.yaml; then
+  echo 'FAIL synthetic private fixture emitted a mutable image'; exit 1
+fi
+source config/versions.env
+grep -Fq "image: $HADES_HINDSIGHT_IMAGE" "$fixture/hades-fixture/records/hindsight.compose.yaml"
+grep -Fq "image: $HADES_SEARXNG_IMAGE_RECORD" "$fixture/hades-fixture/records/searxng.compose.yaml"
+# Keep host-local, potentially unreadable service units out of this disposable
+# syntax check; only vendor dependencies are needed for validation.
+SYSTEMD_UNIT_PATH=/usr/lib/systemd/system:/lib/systemd/system \
+  systemd-analyze verify "$fixture/hades-fixture/records/hermes.service"
+for secret in jwt_secret key_seed admin_password; do
+  [[ $(stat -c '%a' "$fixture/hades-fixture/identity/$secret") == 600 ]] || {
+    echo "FAIL synthetic identity secret permissions: $secret"; exit 1;
+  }
+done
+for secret in hindsight-secret grocy-api-key agent-zero-credential; do
+  [[ $(stat -c '%a' "$fixture/hades-fixture/$secret") == 600 ]] || {
+    echo "FAIL synthetic secret permissions: $secret"; exit 1;
+  }
+done
+echo 'PASS synthetic private fixture contract'

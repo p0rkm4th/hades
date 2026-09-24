@@ -1,0 +1,142 @@
+# Copy to the Hermes profile's config.yaml after the private HADES repository
+# and profile location are established. This file contains no credentials.
+# Hermes documents local Ollama as a custom OpenAI-compatible endpoint.
+model:
+  # Hermes Agent's production tool backend is the qualified Tartarus lane.
+  # Fast completion-only models remain selectable in Open WebUI, but must not
+  # be used as the agent's default when their native context is insufficient.
+  default: qwen3.6:35b
+  provider: custom
+  base_url: http://model-server.local:11434/v1
+  # Tune this to the selected model and deployment capacity.
+  context_length: 65536
+  # Bound a single local-model response so stalled tool turns recover promptly.
+  max_tokens: 1024
+  # Keep local Ollama prompts responsive while retaining useful conversation context.
+  ollama_num_ctx: 65536
+memory:
+  # For multi-user Open WebUI, pair this with the server-generated
+  # X-Hermes-Session-Key: hades-user-{{USER_ID}} connection header. Keep a
+  # static bank_id until that header is configured and verified.
+  provider: hindsight
+  bank_id: hades-owner
+  bank_id_template: hades-user-{user}
+providers:
+  custom:
+    # Tartarus Deep is GPU-backed but intentionally slower than Fast; allow
+    # legitimate long generations to finish while keeping the bound finite.
+    request_timeout_seconds: 180
+    stale_timeout_seconds: 180
+    # Fast and degraded fallback requests must fail locally instead of
+    # inheriting Deep's long provider budget when a node is unreachable.
+    models:
+      "qwen3:8b":
+        request_timeout_seconds: 10
+        stale_timeout_seconds: 10
+      "gemma4:12b":
+        request_timeout_seconds: 10
+        stale_timeout_seconds: 10
+# Keep API admission from turning abandoned Deep work into a global Fast/chat
+# outage. Provider queues still enforce their own hardware limits; this is
+# only the Core run-admission ceiling.
+gateway:
+  api_server:
+    max_concurrent_runs: 32
+fallback_providers:
+  # Temporary production fallback when the accepted Tartarus route is
+  # unavailable. Hypnos Gemma is tool-capable and stays on the private LAN;
+  # it is a degraded substitute, not a claim of Deep equivalence.
+  - provider: custom
+    model: gemma4:12b
+    base_url: http://model-server.local:11434/v1
+agent:
+  # A systemd SIGTERM must interrupt wedged chat/MCP work promptly. Hermes
+  # releases/reconciles the turn on interruption; do not let a 180s drain
+  # exceed the service's bounded stop budget and invite SIGKILL.
+  restart_drain_timeout: 0
+  # No unattended cron workload is part of the production HADES gateway.
+  cron_drain_timeout: 0
+  # Qwen supports tools but benefits from explicit call-vs-description guidance.
+  tool_use_enforcement:
+    - qwen
+  # Abort a silently stalled turn before it can hold a conversation lease
+  # indefinitely. Healthy generations refresh activity and are not cut off.
+  turn_liveness:
+    timeout_s: 30
+    poll_s: 5
+mcp_servers:
+  recipe-url-ingest:
+    # The generated private profile substitutes the repository and secret paths.
+    # The server exposes preview plus explicit-confirmation apply only.
+    command: python3
+    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/recipe-ingest/server.py"]
+    env:
+      GROCY_URL: "${HADES_GROCY_URL}"
+      GROCY_API_KEY_FILE: "${HADES_GROCY_API_KEY_FILE}"
+    timeout: 30
+    connect_timeout: 10
+  receipt-ocr-gateway:
+    # Optional private loopback service; the gateway accepts inline image data
+    # only and never receives Docker, filesystem, or URL-fetch authority.
+    url: "${HADES_RECEIPT_OCR_URL}"
+    timeout: 120
+    connect_timeout: 10
+  finance-file-import:
+    # Preview-only local file intake; no Actual credentials or write method.
+    command: python3
+    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/actual-finance-import/server.py"]
+    timeout: 30
+    connect_timeout: 10
+  browser-research:
+    # Anonymous read/navigation only; an explicit public host allowlist is required.
+    command: python3
+    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/browser-access/proxy.py"]
+    env:
+      HADES_BROWSER_ALLOWED_HOSTS: "${HADES_BROWSER_ALLOWED_HOSTS}"
+    timeout: 120
+    connect_timeout: 10
+  public-page-extract:
+    # Static public-page evidence only. No cookies, logins, forms, downloads,
+    # or browser-side actions are available through this server.
+    command: python3
+    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/web-extract/server.py"]
+    timeout: 30
+    connect_timeout: 10
+  homelab-readonly:
+    # Read-only Proxmox/NetBox/Kuma composition plus bounded LAN evidence.
+    # Empty endpoint/token inputs leave the source unavailable; no writes are
+    # exposed by this server.
+    command: python3
+    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/homelab-readonly/server.py"]
+    env:
+      HADES_PROXMOX_URL: "${HADES_PROXMOX_URL}"
+      HADES_PROXMOX_TOKEN_FILE: "${HADES_PROXMOX_TOKEN_FILE}"
+      HADES_PROXMOX_RESOURCES_URLS: "${HADES_PROXMOX_RESOURCES_URLS}"
+      HADES_PROXMOX_TOKEN_FILES: "${HADES_PROXMOX_TOKEN_FILES}"
+      HADES_PROXMOX_TOKEN_IDS: "${HADES_PROXMOX_TOKEN_IDS}"
+      HADES_PROXMOX_CA_FILE: "${HADES_PROXMOX_CA_FILE}"
+      HADES_NETBOX_URL: "${HADES_NETBOX_URL}"
+      HADES_NETBOX_TOKEN_FILE: "${HADES_NETBOX_TOKEN_FILE}"
+      HADES_UPTIME_KUMA_URL: "${HADES_UPTIME_KUMA_URL}"
+      HADES_UPTIME_KUMA_STATUS_SLUG: "${HADES_UPTIME_KUMA_STATUS_SLUG}"
+      HADES_KUMA_TOKEN_FILE: "${HADES_KUMA_TOKEN_FILE}"
+      HADES_CAPABILITY_MATRIX_FILE: "${HADES_CAPABILITY_MATRIX_FILE}"
+      HADES_DISCOVERY_ALLOWED_NETWORKS: "${HADES_DISCOVERY_ALLOWED_NETWORKS}"
+    timeout: 30
+    connect_timeout: 10
+  homelab-control:
+    # Separate owner-confirmed write lane. The token is scoped to the
+    # HADES-managed Proxmox pool; it is not the read-only token above.
+    # Leave the endpoint/template map empty until approved templates exist.
+    command: python3
+    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/homelab-control/server.py"]
+    env:
+      HADES_PROXMOX_CONTROL_URL: "${HADES_PROXMOX_CONTROL_URL}"
+      HADES_PROXMOX_CONTROL_TOKEN_ID: "${HADES_PROXMOX_CONTROL_TOKEN_ID}"
+      HADES_PROXMOX_CONTROL_TOKEN_FILE: "${HADES_PROXMOX_CONTROL_TOKEN_FILE}"
+      HADES_PROXMOX_CONTROL_CA_FILE: "${HADES_PROXMOX_CONTROL_CA_FILE}"
+      HADES_PROXMOX_CONTROL_NODES: "${HADES_PROXMOX_CONTROL_NODES}"
+      HADES_PROXMOX_CONTROL_POOL: "${HADES_PROXMOX_CONTROL_POOL}"
+      HADES_PROXMOX_TEMPLATE_MAP: "${HADES_PROXMOX_TEMPLATE_MAP}"
+    timeout: 120
+    connect_timeout: 10

@@ -1,0 +1,95 @@
+name: hades-open-webui
+
+# Generated from this tracked template. Values remain operator/environment
+# references so rendered records contain no secret contents.
+services:
+  open-webui:
+    image: ${HADES_OPEN_WEBUI_IMAGE:?set HADES_OPEN_WEBUI_IMAGE from the artifact contract}
+    container_name: hades-open-webui
+    restart: unless-stopped
+    ports:
+      - "${HADES_OPEN_WEBUI_BIND:-127.0.0.1:3000}:8080"
+    environment:
+      ENABLE_SIGNUP: "false"
+      WEBUI_AUTH: "true"
+      # LDAP is the shared production identity path. Local password auth stays
+      # enabled as an emergency/admin fallback; LDAP users still authenticate
+      # through the normal Open WebUI login page.
+      ENABLE_LDAP: "${HADES_OPEN_WEBUI_LDAP_ENABLED:-true}"
+      LDAP_SERVER_HOST: "${HADES_OPEN_WEBUI_LDAP_HOST:-hades-lldap}"
+      LDAP_SERVER_PORT: "${HADES_OPEN_WEBUI_LDAP_PORT:-3890}"
+      LDAP_APP_DN: "${HADES_OPEN_WEBUI_LDAP_APP_DN:-uid=admin,ou=people,dc=hades,dc=local}"
+      LDAP_APP_PASSWORD: "${HADES_OPEN_WEBUI_LDAP_APP_PASSWORD:-}"
+      LDAP_SEARCH_BASE: "${HADES_OPEN_WEBUI_LDAP_SEARCH_BASE:-ou=people,dc=hades,dc=local}"
+      LDAP_ATTRIBUTE_FOR_USERNAME: "${HADES_OPEN_WEBUI_LDAP_USERNAME_ATTR:-uid}"
+      LDAP_ATTRIBUTE_FOR_MAIL: "${HADES_OPEN_WEBUI_LDAP_MAIL_ATTR:-mail}"
+      ENABLE_CHANNELS: "${HADES_OPEN_WEBUI_CHANNELS:-true}"
+      USER_PERMISSIONS_FEATURES_CHANNELS: "${HADES_OPEN_WEBUI_CHANNELS:-true}"
+      # Keep the distributed native Ollama catalog explicit. Open WebUI reads
+      # the semicolon-separated list as independent private providers; the
+      # persisted database may narrow each provider with a model allowlist.
+      ENABLE_OLLAMA_API: "true"
+      OLLAMA_BASE_URLS: "${HADES_OLLAMA_BASE_URLS:-http://model-server.local:11434;http://model-server.local:11434}"
+      # The browser-side finance preview is owner-only and fails closed when
+      # this deployment-local Open WebUI user ID is unset.
+      HADES_FINANCE_OWNER_USER_ID: "${HADES_FINANCE_OWNER_USER_ID:-}"
+      HADES_RECEIPT_OWNER_USER_ID: "${HADES_RECEIPT_OWNER_USER_ID:-${HADES_FINANCE_OWNER_USER_ID:-}}"
+      # Optional protected synthetic owner-equivalent IDs for isolated DOM
+      # acceptance. Household IDs must never be placed here.
+      HADES_ACCEPTANCE_OWNER_USER_IDS: "${HADES_ACCEPTANCE_OWNER_USER_IDS:-}"
+      HADES_RECEIPT_OCR_URL: "${HADES_RECEIPT_OCR_URL:-http://hades-receipt-ocr:8000/mcp}"
+      HADES_RECEIPT_GROCY_URL: "${HADES_RECEIPT_GROCY_URL:-http://hades-grocy}"
+      HADES_RECEIPT_GROCY_API_KEY_FILE: "${HADES_RECEIPT_GROCY_API_KEY_FILE:-/run/secrets/hades-grocy-api-key}"
+      HADES_RECEIPT_LEDGER_PATH: "${HADES_RECEIPT_LEDGER_PATH:-/var/lib/hades-receipt/fingerprints.json}"
+      # Native Ollama access is kept separate from the OpenAI-compatible
+      # Hermes Agent bridge. Tartarus is the accepted production Ollama lane;
+      # the physical Hermes node is optional and must not be assumed healthy.
+      OLLAMA_BASE_URL: "${HADES_FAST_OLLAMA_API_BASE_URL:-http://model-server.local:11434}"
+      OPENAI_API_BASE_URLS: "${HADES_HERMES_CONTAINER_API_BASE_URL:-${HADES_HERMES_API_BASE_URL:?set HADES_HERMES_API_BASE_URL}}"
+      OPENAI_API_KEYS: "${HADES_HERMES_API_KEY:?set HADES_HERMES_API_KEY}"
+      # Optional direct completion-only Fast route. Leave empty when Hermes
+      # Compute is not present; the migration is safe and idempotent.
+      HADES_FAST_OPENAI_API_BASE_URL: "${HADES_FAST_OPENAI_API_BASE_URL:-}"
+      # Optional node-local push-to-talk voice transport. It is disabled when
+      # the operator leaves HADES_VOICE_STT_ENGINE/TTS_ENGINE empty.
+      AUDIO_STT_ENGINE: "${HADES_VOICE_STT_ENGINE:-}"
+      AUDIO_STT_MODEL: "${HADES_VOICE_STT_MODEL:-tiny.en}"
+      AUDIO_STT_OPENAI_API_BASE_URL: "${HADES_VOICE_OPENAI_API_BASE_URL:-}"
+      AUDIO_STT_OPENAI_API_KEY: "${HADES_VOICE_API_KEY:-}"
+      AUDIO_STT_OPENAI_API_REQUEST_FORMAT: "${HADES_VOICE_STT_REQUEST_FORMAT:-json}"
+      AUDIO_TTS_ENGINE: "${HADES_VOICE_TTS_ENGINE:-}"
+      AUDIO_TTS_MODEL: "${HADES_VOICE_TTS_MODEL:-piper}"
+      AUDIO_TTS_VOICE: "${HADES_VOICE_TTS_VOICE:-en_US-lessac-medium}"
+      AUDIO_TTS_OPENAI_API_BASE_URL: "${HADES_VOICE_OPENAI_API_BASE_URL:-}"
+      AUDIO_TTS_OPENAI_API_KEY: "${HADES_VOICE_API_KEY:-}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ${HADES_OPEN_WEBUI_DATA:?set HADES_OPEN_WEBUI_DATA}:/app/backend/data
+      - ${HADES_CONFIG_ROOT:?set HADES_CONFIG_ROOT}/assets/hades-theme.css:/app/backend/open_webui/static/hades-theme.css:ro,Z
+      - ${HADES_CONFIG_ROOT:?set HADES_CONFIG_ROOT}/assets/hades-theme.js:/app/backend/open_webui/static/hades-theme.js:ro,Z
+      - ${HADES_CONFIG_ROOT:?set HADES_CONFIG_ROOT}/assets/finance-upload.js:/app/backend/open_webui/static/finance-upload.js:ro,Z
+      - ${HADES_CONFIG_ROOT:?set HADES_CONFIG_ROOT}/assets/receipt-upload.js:/app/backend/open_webui/static/receipt-upload.js:ro,Z
+      - ${HADES_OPEN_WEBUI_SECRET_SOURCE:-/var/lib/hades/secrets/open-webui-secret}:/app/backend/.webui_secret_key:ro,Z
+      - ${HADES_GROCY_API_KEY_SOURCE:-/var/lib/hades/secrets/grocy-api-key}:/run/secrets/hades-grocy-api-key:ro,Z
+      - ${HADES_RECEIPT_LEDGER_ROOT:-/var/lib/hades/state/receipt-ledger}:/var/lib/hades-receipt:rw,Z
+    networks:
+      - hades-application
+      - hades-private
+      - hades-grocy
+      # Open WebUI needs only the private LDAP identity network for sign-in;
+      # model and application traffic remains on its existing networks.
+      - hades-identity
+
+networks:
+  hades-application:
+    name: hades-application-net
+  hades-identity:
+    name: hades-identity-net
+    external: true
+  hades-private:
+    name: hades-private
+    external: true
+  hades-grocy:
+    name: hades-grocy-net
+    external: true

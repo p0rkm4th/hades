@@ -1,0 +1,18 @@
+# Small operational overlay for an already deployed HADES Open WebUI image.
+# It avoids transferring/rebuilding the large upstream base during an urgent
+# frontend lifecycle repair; the full webui/Dockerfile remains authoritative
+# for clean reconstruction.
+ARG RUNTIME_BASE_IMAGE
+FROM ${RUNTIME_BASE_IMAGE}
+
+COPY webui/hades-theme.css /app/backend/open_webui/static/hades-theme.css
+COPY webui/hades-theme.js /app/backend/open_webui/static/hades-theme.js
+COPY webui/hades-theme.css /app/build/static/hades-theme.css
+COPY webui/hades-theme.js /app/build/static/hades-theme.js
+COPY webui/finance-upload.js /app/build/static/finance-upload.js
+COPY webui/receipt-upload.js /app/build/static/receipt-upload.js
+COPY webui/entrypoint.sh /opt/hades/entrypoint.sh
+RUN chmod 0555 /opt/hades/entrypoint.sh
+
+ENTRYPOINT ["/opt/hades/entrypoint.sh"]
+CMD ["bash", "start.sh"]

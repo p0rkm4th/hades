@@ -1,0 +1,15 @@
+{
+  "id": "hades-backup-verification",
+  "status": "APPROVED_TYPED_TEMPLATE",
+  "owner": "hades-owner",
+  "runner": "n8n",
+  "trigger": {"kind": "interval", "minimum_minutes": 1440, "maximum_minutes": 10080},
+  "reads": ["backup.evidence"],
+  "writes": [],
+  "notifications": "hades-local-failure-only",
+  "states": ["HEALTHY", "STALE", "FAILED", "MISSING", "SOURCE_UNAVAILABLE", "UNKNOWN"],
+  "targets": ["hades-git-bundle", "hades-infra-git-bundle"],
+  "forbidden_inputs": ["filesystem_path", "shell_command", "host", "ssh_target"],
+  "deduplication": "state-transition-only",
+  "requires_confirmation": true
+}

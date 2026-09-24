@@ -1,0 +1,140 @@
+# Performance campaign
+
+This campaign measures user-visible stages, not isolated function overhead.
+Production remains unchanged; synthetic fixtures are used for provider paths
+that lack owner authorization.
+
+The overlay now emits bounded `HADES timing stage=tool` and `stage=turn` log
+records. These contain only the tool name, selected model, and elapsed
+milliseconds—never arguments or response content—so stage attribution can be
+captured without adding a tracing dependency or exposing private data.
+For the SearXNG-backed profile, web routing exposes `web_search` only; the
+search-only backend cannot support `web_extract`.
+
+| Workflow | Evidence | Bottleneck / disposition |
+|---|---|---|
+| Normal chat | Synthetic timing harness now covers no-tool response and post-turn continuation; fresh capture host-sensitive | Model inference; no new defect isolated |
+| Memory recall/correction | Owner persistence evidence and async-retain timing | Hindsight extraction is asynchronous; do not treat immediate recall as proof |
+| Grocy read | 40.79s total; model 24.8s + 15.8s continuation; Grocy 0.03s; expanded harness now measures canonical read | Local model and continuation, not adapter |
+| Grocy mutation | Concurrent synthetic adds 24.68s/26.86s; tool calls ~0.04s | Model/continuation; canonical duplicate merge held |
+| Recipe request | Synthetic authoring/fulfillment contract | Provider timing still needs owner-visible recipe dogfood |
+| Web search | Candidate/API freshness evidence | Model/tool loop and search latency need fresh owner-session sample |
+| Multi-domain request | Routing contracts and contradiction fixture | End-to-end sample remains useful; no blind optimization justified |
+| Agent Zero delegation | Bounded bridge contract; expanded harness uses a synthetic read-only delegation | Tool description/model selection quality; real operator remains owner-gated |
+
+The current actionable threshold is a workflow that repeatedly exceeds roughly
+30 seconds or loops unnecessarily. Existing measurements point to local-model
+inference and post-tool continuation as the first optimization targets. No
+Grocy retry, token-ceiling tweak, or adapter rewrite is justified by current
+evidence; the next measurement should capture first model call, tool call,
+continuation, and total duration for one fresh owner-approved web and recipe
+turn.
+
+## Disposable weak-model lane — 2026-09-14
+
+Direct Ollama tool-schema probes used the installed Qwen 8B lane without HADES
+credentials or provider state. With a 400-token bounded completion allowance,
+Qwen selected the correct tool for all four domains: web search, canonical
+Grocy stock, private-memory recall, and bounded Agent Zero delegation. Direct
+generation took roughly 5.1–7.1 seconds per selection. A lower 100-token cap
+ended during reasoning before the pantry call, so the cap is a real interface
+parameter rather than an optimization target.
+
+The same lane correctly selected the initial Grocy stock read in a multi-turn
+conversation, then declined to invent recipe inputs for an underspecified
+“what are we missing?” follow-up and did not apply the ambiguous “add whatever
+is missing but do not add onions” request. This preserves preview/confirmation
+semantics; a future recipe-quality run should provide an explicit recipe and
+normalized item list. Dolphin-Mistral rejected the tool-call API request and
+remains a completion-only lane, consistent with its policy classification.
+
+Qwen 14B was run against the identical schema and four prompts. It also
+selected web, Grocy, private memory, and Agent Zero correctly, at approximately
+6.0–15.5 seconds per selection (web was slowest). This is comparative evidence
+for tool usability, not a benchmark or a production-model change; the existing
+HADES routing policy remains unchanged.
+
+Both Qwen 8B and 14B were also given four synthetic contradictions without
+tools. They selected the canonical value in each case (Proxmox runtime,
+Grocy pantry, Actual finance, Kuma availability) and explained that remembered
+or web values could be stale. At a 240-token cap, both lanes sometimes ended
+while still reasoning, and their answers were more verbose than a daily-driver
+response. This validates authority preference only; it does not replace an
+authenticated HADES end-to-end answer-quality run.
+
+An eight-turn Qwen 8B conversation covering explicit retain, Grocy read,
+correction retain, web search, an abandoned mutation, topic switch, ambiguous
+pronoun mutation, and recall completed cleanly at a 400-token allowance. The
+model made no tool call for the abandoned or ambiguous mutations. The same
+sequence at 220 tokens exhausted reasoning on several turns, especially for a
+third isolated user. This is a completion-budget/context-quality limitation,
+not evidence to lower the production cap; the full HADES multi-user run still
+needs authenticated gateway execution.
+
+The repeatable form of this run is
+`HADES_OLLAMA_URL=http://127.0.0.1:11434/v1 scripts/test-ollama-long-dogfood.py`.
+Set `HADES_OLLAMA_URL` to the private model-gateway address in the operator
+environment when loopback is not the binding. It uses no real tools or
+credentials and defaults to isolated Alpha, Beta, and Gamma conversations with
+a 400-token allowance.
+
+The harness passes all 24 Alpha/Beta/Gamma turns at a 500-token allowance. An
+initial run exposed one Alpha recall miss where the model answered from the
+conversation instead of calling Hindsight; adding the explicit “MUST call
+hindsight_recall” interface rule made the complete run pass. This is evidence
+for the disposable model/tool contract, while authenticated HADES gateway
+execution remains the end-to-end acceptance boundary.
+
+The repeatable synthetic timing capture is
+`HADES_OLLAMA_URL=http://127.0.0.1:11434/v1 scripts/test-synthetic-performance.py`.
+It covers normal chat, private-memory recall, canonical Grocy read, an
+unconfirmed Grocy mutation (which must not call a write), recipe preview, web
+search, a multi-domain request, and bounded synthetic Agent Zero delegation.
+Each tool workflow records model-selection time, a `time_to_tool_ms` proxy using
+the complete non-streaming model response, per-tool fixture execution time,
+post-tool continuation, total turn time, and selected tool names. It does not
+claim true time-to-first-token; streaming TTFT requires a reachable streaming
+gateway. The fixtures are read-only and contain no real provider, recipe write, or credential
+dependency; use the operator-only environment override when Ollama is not
+bound to loopback. The model endpoint is intentionally host-sensitive: if it
+is unreachable, the harness exits with an explicit dependency message and does
+not report fabricated timing data.
+
+The dependency-free field-shape regression is
+`scripts/test-synthetic-performance-contract.sh`. It uses a model stub only
+to verify no-tool and tool-plus-continuation attribution fields; its timings
+must not be interpreted as provider performance.
+
+The expanded matrix was executed on 2026-09-16 in the disposable Rocky
+reconstruction guest (VM 802) against its synthetic OpenAI-compatible backend.
+All eight workflows emitted the bounded attribution fields and the
+multi-domain case completed without an unnecessary continuation tool loop;
+this is fixture performance evidence, not a real-model latency claim.
+
+A later destination check found that the VM 802 backend had regressed to an
+older echo-only fixture, which could not produce tool calls and therefore
+could not support this matrix. The backend was replaced with the tracked
+tool-aware fixture and the matrix was rerun through a temporary read-only
+operator tunnel. All eight workflows passed: total synthetic turn times were
+approximately 90--171 ms, model-selection stages 44--86 ms, and fixture tool
+stages effectively 0 ms. This repairs the fixture path and provides current
+attribution evidence; it does not qualify a real inference model or alter
+production model placement.
+
+The 2026-09-14 capture measured web at 15.46s total (8.12s model, 7.34s
+continuation) and recipe preview at 9.73s total (4.95s model, 4.78s
+continuation). Both fixture tool stages were effectively 0ms. These are below
+the campaign's repeated roughly-30s optimization threshold, so no adapter or
+retry change is justified; model/continuation remains the bounded future
+optimization target. The follow-up run also asserted that post-tool
+continuation emitted no further tool calls, so an unnecessary model/tool loop
+now fails the harness.
+
+## 2026-09-17 real-model lane probe
+
+The installed Ollama-compatible listener was reachable on the local Docker
+bridge, but a bounded run of the Alpha/Beta/Gamma long-conversation harness
+and the expanded timing harness produced no model response within the
+two-minute observation window. The probes were stopped before their individual
+180-second request timeout. This is host-sensitive performance evidence, not a
+HADES routing failure; no model, token, or continuation setting was changed.

@@ -1,0 +1,20 @@
+[Unit]
+Description=HADES node-local push-to-talk STT/TTS runtime
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/hades-voice
+EnvironmentFile=%h/.config/hades-voice/runtime.env
+ExecStart=%h/.local/share/hades-voice/venv/bin/python %h/.local/share/hades-voice/runtime.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=%h/.cache/hades-voice
+
+[Install]
+WantedBy=default.target

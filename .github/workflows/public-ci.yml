@@ -1,0 +1,164 @@
+name: Public CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  public-safety-and-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile public Python adapters
+        run: python -m py_compile hermes/sitecustomize.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py
+
+      - name: Check public JavaScript adapter
+        run: node --check integrations/actual-finance-readonly/actual_client.js
+
+      - name: Check memory intent boundary
+        run: bash scripts/test-hades-memory-intent.sh
+      - name: Check mixed-domain composition boundary
+        run: bash scripts/test-composition-boundary.sh
+
+      - name: Check web intent boundary
+        run: bash scripts/test-web-intent.sh
+
+      - name: Check read-only response contracts
+        run: python scripts/test-readonly-response-contracts.py
+
+      - name: Check finance read-only MCP boundary
+        run: bash scripts/test-finance-readonly-boundary.sh
+
+      - name: Check privileged capability boundary
+        run: bash scripts/test-capability-boundary.sh
+
+      - name: Check Agent Zero bounds
+        run: bash scripts/test-agent-zero-boundary.sh
+
+      - name: Check long-conversation routing boundary
+        run: bash scripts/test-long-conversation-boundary.sh
+      - name: Check multi-user long synthetic dogfood
+        run: bash scripts/test-multi-user-long-dogfood.sh
+      - name: Check cross-domain synthetic dogfood
+        run: bash scripts/test-cross-domain-dogfood.sh
+
+      - name: Check Grocy recipe authoring boundary
+        run: bash scripts/test-grocy-recipe-authoring-boundary.sh
+
+      - name: Check read-only configuration shapes
+        run: bash scripts/test-readonly-config-shapes.sh
+
+      - name: Check synthetic homelab read-only fixture
+        run: bash scripts/test-homelab-fixture.sh
+
+      - name: Check synthetic Home Assistant read-only fixture
+        run: bash scripts/test-home-assistant-fixture.sh
+      - name: Check synthetic source-of-truth contradictions
+        run: bash scripts/test-source-of-truth-fixture.sh
+      - name: Check static security boundary audit
+        run: bash scripts/test-security-boundary-audit.sh
+      - name: Check weak-model interface contract
+        run: bash scripts/test-weak-model-contract.sh
+
+      - name: Check recovery artifact safety
+        run: bash scripts/test-recovery-artifact-safety.sh
+      - name: Check encrypted recovery safety
+        run: bash scripts/test-encryption-safety-contract.sh
+      - name: Check reconstruction manifest
+        run: bash scripts/test-reconstruction-manifest.sh
+      - name: Check clean reconstruction contract
+        run: bash scripts/test-clean-reconstruction-contract.sh
+      - name: Check reconstruction evidence documentation
+        run: bash scripts/test-reconstruction-evidence-doc.sh
+      - name: Check synthetic private fixture contract
+        run: bash scripts/test-synthetic-private-fixture.sh
+      - name: Check synthetic fresh-install household soak
+        run: bash scripts/test-synthetic-household-soak.sh
+      - name: Check synthetic backup restore continuity
+        run: bash scripts/test-synthetic-backup-restore.sh
+      - name: Check backup metadata contract
+        run: bash scripts/test-backup-metadata-contract.sh
+      - name: Check backup coverage documentation
+        run: bash scripts/test-backup-coverage-doc.sh
+      - name: Check install failure contract
+        run: bash scripts/test-install-failure-contract.sh
+      - name: Check partial-install recovery
+        run: bash scripts/test-partial-install-recovery.sh
+      - name: Check upgrade and decommission contract
+        run: bash scripts/test-upgrade-decommission-contract.sh
+      - name: Check bounded upgrade helper
+        run: bash scripts/test-upgrade-helper-contract.sh
+      - name: Check private-record preflight ordering
+        run: bash scripts/test-preflight-order-contract.sh
+      - name: Check manifest provenance
+        run: bash scripts/test-manifest-provenance.sh
+      - name: Check installer dependency order
+        run: bash scripts/test-install-order-contract.sh
+      - name: Check installer runtime validation
+        run: bash scripts/test-install-health-contract.sh
+      - name: Check reconstruction tool path contract
+        run: bash scripts/test-reconstruction-cwd-contract.sh
+      - name: Check supported host versions
+        run: bash scripts/test-host-version-contract.sh
+      - name: Check host preparation contract
+        run: bash scripts/test-host-preparation-contract.sh
+      - name: Check tracked source preflight
+        run: bash scripts/test-source-preflight-contract.sh
+      - name: Check doctor exit contract
+        run: bash scripts/test-doctor-exit-contract.sh
+      - name: Check authoritative version manifest
+        run: bash scripts/test-version-manifest.sh
+      - name: Check private input contract
+        run: bash scripts/test-private-input-contract.sh
+      - name: Check generated deployment records
+        run: bash scripts/test-generated-deployment-records.sh
+      - name: Check generated v2 private inputs
+        run: bash scripts/test-generated-private-inputs.sh
+      - name: Check Hermes artifact contract
+        run: bash scripts/test-hermes-artifact-contract.sh
+      - name: Check network exposure policy
+        run: bash scripts/test-network-exposure.sh
+      - name: Check Proxmox bootstrap handoff
+        run: bash scripts/test-proxmox-bootstrap-contract.sh
+
+      - name: Check workflow action pinning
+        run: bash scripts/test-workflow-pinning.sh
+
+      - name: Check configuration drift
+        run: bash scripts/test-configuration-drift.sh
+
+      - name: Check stable-v1 readiness map
+        run: bash scripts/test-readiness-map.sh
+
+      - name: Check Hermes qualification documentation
+        run: bash scripts/test-hermes-qualification-doc.sh
+
+      - name: Check current public tree safety
+        run: bash scripts/test-public-tree-safety.sh
+
+      - name: Check public history
+        run: bash scripts/public-history-audit.sh
+
+      - name: Validate shell scripts
+        run: bash -n scripts/*.sh webui/entrypoint.sh
+
+      - name: Validate deployment compose files
+        run: |
+          set -a
+          source config/versions.env
+          set +a
+          export HADES_IDENTITY_SECRETS_DIR="$RUNNER_TEMP/hades-identity-secrets"
+          mkdir -p "$HADES_IDENTITY_SECRETS_DIR"
+          for compose_file in deploy/*.compose.yaml; do
+            docker compose -f "$compose_file" config --quiet
+          done

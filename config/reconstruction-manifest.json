@@ -1,0 +1,150 @@
+{
+  "manifest_version": 1,
+  "source_of_truth": "config/versions.env",
+  "components": [
+    {
+      "component": "LLDAP",
+      "pinned_version": "config/versions.env:HADES_LLDAP_IMAGE",
+      "persistent_state": ["directory database", "identity key material"],
+      "required_secret_inputs": ["HADES_IDENTITY_SECRETS_DIR"],
+      "network_dependency": "private identity network",
+      "startup_order": 1,
+      "health_check": "LDAP/HTTP health and login",
+      "restore_check": "SQLite integrity and identity record check"
+    },
+    {
+      "component": "Open WebUI",
+      "pinned_version": "0.11.1 tracked Dockerfile plus immutable base",
+      "artifact_type": "tracked Dockerfile plus immutable upstream base",
+      "immutable_reference": "config/versions.env:HADES_OPEN_WEBUI_BASE_IMAGE",
+      "artifact_source": "config/versions.env:HADES_OPEN_WEBUI_BUILD_SOURCE",
+      "state_relationship": "build output is software custody; WebUI database and assets are persistent state",
+      "persistent_state": ["WebUI database", "vector data", "theme assets"],
+      "required_secret_inputs": ["HADES_HERMES_API_KEY", "HADES_OPEN_WEBUI_DATA"],
+      "network_dependency": "LLDAP and Hermes",
+      "startup_order": 2,
+      "health_check": "WebUI health, login, and chat reload",
+      "restore_check": "SQLite integrity, marker conversation reload, and asset match"
+    },
+    {
+      "component": "Hindsight",
+      "pinned_version": "config/versions.env:HADES_HINDSIGHT_IMAGE",
+      "artifact_type": "OCI image",
+      "immutable_reference": "config/versions.env:HADES_HINDSIGHT_IMAGE",
+      "artifact_source": "https://github.com/vectorize-io/hindsight",
+      "state_relationship": "image is separate from the mounted PostgreSQL state",
+      "persistent_state": ["embedded PostgreSQL cluster", "subject-bank mappings"],
+      "required_secret_inputs": ["HADES_HINDSIGHT_LLM_API_KEY", "HADES_HINDSIGHT_DATA"],
+      "network_dependency": "private memory API",
+      "startup_order": 3,
+      "health_check": "PostgreSQL readiness and Hindsight health",
+      "restore_check": "native export restore and subject-scoped marker recall"
+    },
+    {
+      "component": "Grocy",
+      "pinned_version": "config/versions.env:HADES_GROCY_IMAGE",
+      "persistent_state": ["Grocy database", "configuration", "inventory and recipes"],
+      "required_secret_inputs": ["HADES_GROCY_API_KEY_FILE"],
+      "network_dependency": "private Grocy API",
+      "startup_order": 4,
+      "health_check": "Grocy HTTP health",
+      "restore_check": "SQLite integrity, stock, shopping-list, and recipe checks"
+    },
+    {
+      "component": "Actual Budget / Finance MCP",
+      "pinned_version": "26.9.0 server/client pair",
+      "persistent_state": ["authorized finance state"],
+      "required_secret_inputs": ["owner-authorized endpoint and credentials"],
+      "network_dependency": "owner-authorized finance API",
+      "startup_order": 4,
+      "health_check": "read-only adapter and preview-only finance-file MCP contract checks",
+      "restore_check": "synthetic ledger marker, owner-scoped import preview/reconciliation contract, and read-only response"
+    },
+    {
+      "component": "Hermes 0.14 baseline",
+      "pinned_version": "0.14.0",
+      "artifact_type": "verified upstream source archive",
+      "immutable_reference": "config/versions.env:HADES_HERMES_SOURCE_SHA256",
+      "artifact_source": "config/versions.env:HADES_HERMES_SOURCE_URL",
+      "state_relationship": "installed package is software custody; profile and sessions are persistent state",
+      "persistent_state": ["profile", "sessions", "skills"],
+      "required_secret_inputs": ["HADES_HERMES_PROFILE", "model endpoint", "Hermes release artifact"],
+      "network_dependency": "Open WebUI, Hindsight, Grocy, SearXNG, and Agent Zero",
+      "startup_order": 5,
+      "health_check": "private API health and authenticated model contract",
+      "restore_check": "profile parse, bounded tool call, and reload/restart"
+    },
+    {
+      "component": "Agent Zero",
+      "pinned_version": "config/versions.env:HADES_AGENT_ZERO_IMAGE",
+      "persistent_state": ["dedicated operator volume", "settings"],
+      "required_secret_inputs": ["HADES_AGENT_ZERO_CREDENTIAL_FILE when enabled"],
+      "network_dependency": "private operator API",
+      "startup_order": 6,
+      "health_check": "health and authenticated bounded API check",
+      "restore_check": "isolated volume restore and harmless delegation"
+    },
+    {
+      "component": "SearXNG",
+      "pinned_version": "config/versions.env:HADES_SEARXNG_IMAGE_RECORD plus tracked template",
+      "artifact_type": "OCI image",
+      "immutable_reference": "config/versions.env:HADES_SEARXNG_IMAGE_RECORD",
+      "artifact_source": "https://github.com/searxng/searxng",
+      "state_relationship": "image is separate from configuration and disposable search cache",
+      "persistent_state": ["configuration"],
+      "required_secret_inputs": ["optional provider settings", "HADES_SEARXNG_DATA"],
+      "network_dependency": "private search API and approved providers",
+      "startup_order": 7,
+      "health_check": "JSON search response",
+      "restore_check": "configuration parse and provider search check"
+    },
+    {
+      "component": "HADES policy/assets/adapters",
+      "pinned_version": "repository main plus config/versions.env",
+      "persistent_state": [],
+      "required_secret_inputs": ["operator input file"],
+      "network_dependency": "loaded by Hermes",
+      "startup_order": 8,
+      "health_check": "overlay syntax, boundary, and MCP registration checks",
+      "restore_check": "source/runtime match and policy smoke contract"
+    }
+  ],
+  "provenance": [
+    {
+      "artifact": "repository configuration, HADES overlay, adapters, and theme assets",
+      "classification": "SOURCE CONTROLLED",
+      "source": "repository checkout at the recorded revision",
+      "lifecycle": "validated by source and installed-layer digests"
+    },
+    {
+      "artifact": "private Compose records and Hermes service unit",
+      "classification": "EXPLICIT OPERATOR INPUT",
+      "source": "mode-restricted paths in the operator-input file",
+      "lifecycle": "validated before mutation; retained for rebuild and rollback"
+    },
+    {
+      "artifact": "generated configuration directories and install marker",
+      "classification": "GENERATED FROM SOURCE-CONTROLLED TEMPLATE",
+      "source": "install-hades.sh and config/versions.env",
+      "lifecycle": "safe to reconcile; never authoritative for domain state"
+    },
+    {
+      "artifact": "identity and component secret files",
+      "classification": "GENERATED SECRET WITH DOCUMENTED LIFECYCLE",
+      "source": "operator-supplied or explicitly generated file-backed secrets",
+      "lifecycle": "mode-restricted, rotated with the consuming component, never committed"
+    },
+    {
+      "artifact": "persistent component databases, volumes, and Hermes profile",
+      "classification": "RESTORED CANONICAL STATE",
+      "source": "new component state or documented native/component backup",
+      "lifecycle": "preserved across reruns and restored only after integrity checks"
+    },
+    {
+      "artifact": "upstream container defaults and runtime scratch",
+      "classification": "UPSTREAM APPLICATION DEFAULT",
+      "source": "pinned upstream component runtime",
+      "lifecycle": "reconstructable and never treated as HADES canonical state"
+    }
+  ]
+}

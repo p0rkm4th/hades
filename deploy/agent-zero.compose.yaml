@@ -1,0 +1,42 @@
+name: hades-agent-zero
+
+services:
+  agent-zero:
+    image: ${HADES_AGENT_ZERO_IMAGE:?set HADES_AGENT_ZERO_IMAGE from config/versions.env}
+    container_name: hades-agent-zero
+    restart: unless-stopped
+    # Agent Zero's pinned upstream entrypoint bootstraps application files
+    # under /a0 and creates /run/sshd. The image cannot start with a read-only
+    # root; retain the supported privilege controls below and keep state
+    # isolated in the dedicated /a0/usr volume.
+    cap_drop:
+      - ALL
+    cap_add:
+      # The image's supervisor drops its bundled workers to UID 995/996.
+      # These are the only capabilities required for that internal boundary.
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      # The pinned upstream entrypoint writes shell defaults and supervisor
+      # runtime state here; keep those writes ephemeral while retaining the
+      # bounded capability and volume-isolation policy.
+      - /root
+    # Keep the operator private until an explicit owner-facing exposure is added.
+    ports:
+      - "127.0.0.1:7002:80"
+    networks:
+      - agent-zero-private
+    volumes:
+      - hades-agent-zero-data:/a0/usr
+
+networks:
+  agent-zero-private:
+    name: hades-agent-zero-net
+    driver: bridge
+
+volumes:
+  hades-agent-zero-data:
+    name: hades-agent-zero-data

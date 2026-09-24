@@ -1,0 +1,37 @@
+name: hades-hindsight
+
+# Generated from this tracked template. Hindsight state is a separate
+# operator-selected persistent path; it is never part of the image artifact.
+services:
+  hindsight:
+    image: ${HADES_HINDSIGHT_IMAGE:?set HADES_HINDSIGHT_IMAGE from config/versions.env}
+    container_name: hades-hindsight
+    restart: unless-stopped
+    environment:
+      HINDSIGHT_API_HOST: 0.0.0.0
+      # The API listens on 8888 inside the image; 9999 is the separate
+      # control-plane listener. Keeping these distinct avoids an internal
+      # EADDRINUSE collision during a clean reconstruction.
+      HINDSIGHT_API_PORT: "8888"
+      HINDSIGHT_API_ENABLE_OBSERVATIONS: "true"
+      HINDSIGHT_API_WORKER_ID: ${HADES_HINDSIGHT_WORKER_ID:-hades-hindsight}
+      HINDSIGHT_API_LLM_PROVIDER: ${HADES_HINDSIGHT_LLM_PROVIDER:-ollama}
+      HINDSIGHT_API_LLM_BASE_URL: ${HADES_HERMES_CONTAINER_MODEL_ENDPOINT:-${HADES_HERMES_MODEL_ENDPOINT:?set HADES_HERMES_MODEL_ENDPOINT}}
+      # Hindsight fact extraction must use the same qualified homelab model
+      # route as the production Hermes path; never fall back to a cloud-only
+      # default such as gpt-4o-mini in the private deployment.
+      HINDSIGHT_API_LLM_MODEL: ${HADES_HINDSIGHT_LLM_MODEL:-qwen3:14b}
+      HINDSIGHT_API_LLM_API_KEY: ${HADES_HINDSIGHT_LLM_API_KEY:?set HADES_HINDSIGHT_LLM_API_KEY}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:${HADES_HINDSIGHT_API_PORT:-8888}:8888"
+      - "127.0.0.1:${HADES_HINDSIGHT_CONTROL_PORT:-9999}:9999"
+    volumes:
+      - ${HADES_HINDSIGHT_DATA:?set HADES_HINDSIGHT_DATA}:/home/hindsight/.pg0
+    networks:
+      - hades-application
+
+networks:
+  hades-application:
+    name: hades-application-net

@@ -1,0 +1,39 @@
+{
+  "id": "weekly-household-summary",
+  "status": "PREPARATION_ONLY",
+  "runner": "n8n",
+  "trigger": {
+    "kind": "weekly",
+    "day": "sunday",
+    "time_zone": "America/Chicago"
+  },
+  "allowed_actors": ["hades-owner", "household-summary-recipient"],
+  "inputs": {
+    "week_start": {
+      "type": "date",
+      "required": true,
+      "maximum_window_days": 7
+    }
+  },
+  "reads": ["grocy.household", "uptime_kuma.household", "backup.evidence"],
+  "writes": [],
+  "excluded": [
+    "private_finance",
+    "private_memory",
+    "private_conversations",
+    "credentials",
+    "homelab_mutation",
+    "agent_zero"
+  ],
+  "idempotency": {
+    "key": "weekly-household-summary:{recipient_group}:{week_start}",
+    "duplicate_behavior": "return_existing_summary"
+  },
+  "failure_behavior": {
+    "partial_reads": "label_unavailable_sources",
+    "timeout": "outcome_unknown_without_claiming_success",
+    "retry": "read_only_retry_with_same_idempotency_key"
+  },
+  "retention": "summary_only_no_raw_private_payloads",
+  "requires_approval": true
+}

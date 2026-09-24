@@ -1,0 +1,65 @@
+{
+  "schema": "hades-decision-backends/v1",
+  "generated_from_hades": "b786e28",
+  "generated_from_infra": "a5388fa",
+  "candidates": [
+    {
+      "name": "CURRENT",
+      "kind": "local_control",
+      "status": "control",
+      "source": "maintained HADES routing signals",
+      "revision": "HADES b786e28",
+      "score_semantics": "heuristic_score",
+      "privacy_boundary": "local_only",
+      "supported_decisions": ["Intent", "CapabilityFamily", "ToolRequired", "ToolFamily", "NeedsClarification", "ReasoningTier", "RetrievalNeeded"],
+      "runtime_status": "available"
+    },
+    {
+      "name": "Jev",
+      "kind": "hosted_typed_decision_api",
+      "status": "research_only",
+      "source": "https://jevtypesafe.org/docs/jev-sdk/",
+      "revision": "provider-managed; pin endpoint/schema before use",
+      "score_semantics": "provider_calibrated_probability",
+      "privacy_boundary": "synthetic_or_public_only",
+      "supported_decisions": ["Choice", "Score", "Noul"],
+      "runtime_status": "not_configured"
+    },
+    {
+      "name": "SemIf-Qwen3.5-4B",
+      "kind": "local_direct_score",
+      "status": "evaluated_not_qualified",
+      "source": "https://github.com/TheoLeeCJ/SemIf",
+      "revision": "repo ca3ba65f142967030ecb453346e94d6f476a69df; model Qwen/Qwen3.5-4B @ 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+      "license": "repository MIT; model terms require separate review",
+      "score_semantics": "typed_option_probability",
+      "privacy_boundary": "local_only",
+      "supported_decisions": ["Choice", "Boolean", "Score"],
+      "runtime_status": "dependencies_not_installed"
+    },
+    {
+      "name": "NanoJev",
+      "kind": "local_direct_score",
+      "status": "deferred_domain_mismatch",
+      "source": "https://github.com/TianyuCodings/NanoJev",
+      "revision": "repo 76fdfc9ecdca45a9bcef17991a07d3041a87685a; checkpoint unified-games-v1",
+      "license": "repository MIT; checkpoint/data terms require separate review",
+      "score_semantics": "typed_option_probability",
+      "privacy_boundary": "local_only",
+      "supported_decisions": ["Choice", "Boolean", "Score"],
+      "runtime_status": "dependencies_not_installed"
+    },
+    {
+      "name": "GLiClass",
+      "kind": "local_zero_shot_classifier",
+      "status": "evaluated_not_qualified",
+      "source": "https://github.com/Knowledgator/gliclass",
+      "revision": "repo 40baa67cdea577449bc3f6a251646377b2cb0a6c; model pin pending",
+      "license": "repository Apache-2.0; model terms require separate review",
+      "score_semantics": "classifier_score",
+      "privacy_boundary": "local_only",
+      "supported_decisions": ["Intent", "CapabilityFamily", "ToolFamily"],
+      "runtime_status": "dependencies_not_installed"
+    }
+  ]
+}

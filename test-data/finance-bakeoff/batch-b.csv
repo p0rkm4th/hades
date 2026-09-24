@@ -1,0 +1,8 @@
+external_id,date,account,payee,amount,category,transfer_account,memo
+tx-grocery-001,2026-01-03,Checking,Market Basket,-125.40,Groceries,,Overlapping source row
+tx-utility-001,2026-01-04,Checking,City Utilities,-140.00,Utilities,,Overlapping source row
+tx-stream-001,2026-01-05,Checking,StreamFlix,-15.99,Subscriptions,,Overlapping source row
+tx-diner-001,2026-01-07,Checking,The Copper Diner,-48.25,Dining,,Overlapping source row
+tx-diner-002,2026-01-08,Checking,The Copper Diner,-48.25,Dining,,Nearby same-merchant transaction
+tx-cloud-001,2026-01-11,Checking,CloudBox,-9.99,Subscriptions,,New recurring service
+tx-phone-001,2026-01-12,Checking,Synthetic Mobile,-65.00,Utilities,,New recurring bill

@@ -1,0 +1,40 @@
+name: hades-receipt-ocr
+
+services:
+  receipt-ocr:
+    image: ${HADES_RECEIPT_OCR_IMAGE:?set HADES_RECEIPT_OCR_IMAGE to the verified gateway image}
+    container_name: hades-receipt-ocr
+    restart: unless-stopped
+    entrypoint: ["python", "/opt/hades-receipt-ocr/gateway.py"]
+    environment:
+      HADES_OCR_TRANSPORT: streamable-http
+      HADES_OCR_HOST: 0.0.0.0
+      HADES_OCR_PORT: "8000"
+      HADES_OCR_PATH: /mcp
+      # PaddlePaddle 3.3.x has a CPU oneDNN/PIR incompatibility on this path.
+      FLAGS_use_mkldnn: "0"
+      FLAGS_enable_pir_api: "0"
+    ports:
+      - "127.0.0.1:8765:8000"
+    networks:
+      - hades-private
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      # PaddleOCR model files are disposable cache, not application state,
+      # but must survive a normal container restart to avoid redownloading.
+      - hades-paddle-cache:/tmp/hades-ocr
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+networks:
+  hades-private:
+    name: hades-private
+    external: true
+
+volumes:
+  hades-paddle-cache:
+    name: hades-paddle-cache
