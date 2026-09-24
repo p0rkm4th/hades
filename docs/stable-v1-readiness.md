@@ -1,8 +1,9 @@
 # HADES stable-v1 readiness
 
-This is a readiness record for the current deployment, not an installer or a
-new runtime layer. Production remains on the known-good Hermes 0.14.0 path
-while the Hermes 0.21.2 promotion branch is parked on owner authentication.
+This is a readiness record for the current product contract, not an installer
+or a new runtime layer. The current source/deployment pin is Hermes 0.21.2;
+private owner acceptance and component-specific gates remain separate from
+source-level readiness.
 
 ## Current component contract
 
