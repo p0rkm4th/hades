@@ -80,6 +80,8 @@ jobs:
         run: bash scripts/test-config-schema.sh
       - name: Check model and cloud policy paths
         run: bash scripts/test-model-policy-contract.sh
+      - name: Check product setup CLI
+        run: bash scripts/test-setup-cli-contract.sh
       - name: Check clean reconstruction contract
         run: bash scripts/test-clean-reconstruction-contract.sh
       - name: Check reconstruction evidence documentation
