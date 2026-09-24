@@ -92,6 +92,8 @@ jobs:
         run: bash scripts/test-synthetic-household-soak.sh
       - name: Check synthetic backup restore continuity
         run: bash scripts/test-synthetic-backup-restore.sh
+      - name: Check applied SQLite restore
+        run: bash scripts/test-synthetic-restore-cli.sh
       - name: Check backup metadata contract
         run: bash scripts/test-backup-metadata-contract.sh
       - name: Check backup coverage documentation

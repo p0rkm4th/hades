@@ -7,12 +7,12 @@ if [[ "$command" == "-h" || "$command" == "--help" ]]; then command=help; fi
 if [[ "$command" == setup ]]; then
   exec python3 "$repo_dir/scripts/setup-hades.py" "$@"
 fi
-inputs=''; root=/; test_mode=0; confirm=0; path=''; component=''; backup_dir=''; apply=0; json_mode=0
+inputs=''; root=/; test_mode=0; confirm=0; path=''; target=''; component=''; backup_dir=''; apply=0; json_mode=0
 usage() {
   echo 'Usage: scripts/hades COMMAND [--inputs FILE] [--root DIR] [--test-mode]'
   echo 'Commands: setup install preflight doctor status version validate repair reconfigure backup restore upgrade uninstall'
-  echo 'Extra: --path DIR --component NAME --backup-dir DIR --apply --confirm'
-  echo 'restore verifies only; uninstall requires --confirm and preserves state.'
+  echo 'Extra: --path DIR --target DIR --component NAME --backup-dir DIR --apply --confirm'
+  echo 'restore verifies by default; --apply --confirm restores supported SQLite state to a prepared target.'
 }
 while (($#)); do
   case "$1" in
@@ -21,6 +21,7 @@ while (($#)); do
     --test-mode) test_mode=1; shift ;;
     --confirm) confirm=1; shift ;;
     --path|--checkpoint) path=${2:?--path needs DIR}; shift 2 ;;
+    --target) target=${2:?--target needs DIR}; shift 2 ;;
     --component) component=${2:?--component needs NAME}; shift 2 ;;
     --backup-dir) backup_dir=${2:?--backup-dir needs DIR}; shift 2 ;;
     --apply) apply=1; shift ;;
@@ -107,8 +108,15 @@ case "$command" in
   restore)
     [[ -n "$path" ]] || { echo 'FAIL restore requires --path CHECKPOINT_DIRECTORY' >&2; exit 2; }
     bash "$repo_dir/scripts/check-recovery-artifacts.sh" "$path"
-    echo 'REVIEW native restore boundary: use component procedures, then install, doctor, validate, and owner acceptance.'
-    echo 'REVIEW no application state was changed by this command.'
+    if (( apply )); then
+      (( confirm )) || { echo 'FAIL applied restore requires --confirm' >&2; exit 2; }
+      [[ -n "$target" ]] || { echo 'FAIL applied restore requires --target PREPARED_TARGET' >&2; exit 2; }
+      python3 "$repo_dir/scripts/restore-sqlite-state.py" "$path" "$target" --confirm
+      echo 'REVIEW restart the prepared stack, then run doctor, validate, authentication, canonical-state, and owner acceptance checks.'
+    else
+      echo 'PASS checkpoint verified; no application state was changed.'
+      echo 'REVIEW use --apply --confirm --target PREPARED_TARGET for supported SQLite state; other components require native restore procedures.'
+    fi
     ;;
   upgrade)
     [[ -n "$component" && -n "$inputs" && -n "$backup_dir" ]] || { echo 'FAIL upgrade requires --component, --inputs, and --backup-dir' >&2; exit 2; }

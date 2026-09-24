@@ -38,9 +38,14 @@ free disk. See [`host-contract.md`](host-contract.md) and
 operator fixes a failed dependency. `reconfigure` rerenders explicit private
 records and reruns the installer. `backup` creates a protected SQLite
 checkpoint; native Hindsight, finance, and other component exports remain
-component-specific. `restore` verifies a checkpoint but deliberately stops at
-the native restore boundary so a generic script cannot corrupt authoritative
-state. `upgrade` handles one bounded component with a retained rollback copy.
+component-specific. `restore` verifies a checkpoint by default. With an
+explicit `--apply --confirm --target` it restores the supported Open WebUI,
+LLDAP, Grocy, and Hermes SQLite state into an already-prepared, stopped target
+and retains a rollback checkpoint. Hindsight/PostgreSQL, Agent Zero, SearXNG,
+secrets, and external canonical applications still require their documented
+native restore procedures; the command does not pretend to restore those
+automatically. `upgrade` handles one bounded component with a retained rollback
+copy.
 `uninstall --confirm` stops runtime services but preserves source, state,
 secrets, and backups; permanent deletion is intentionally outside this tool.
 

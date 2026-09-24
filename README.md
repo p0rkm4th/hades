@@ -9,7 +9,7 @@ changes authority.
 ## Preview install
 
 This repository currently publishes the prerelease branch/tag
-`public-release-candidate` / `v0.1.0-preview.7`:
+`public-release-candidate` / `v0.1.0-preview.8`:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/p0rkm4th/Hades/public-release-candidate/install.sh | \
