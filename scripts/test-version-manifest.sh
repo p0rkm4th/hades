@@ -10,6 +10,7 @@ done
 [[ "$(awk -F= '$1 == "HADES_OPEN_WEBUI_BASE_IMAGE" {print $2}' "$manifest")" == ghcr.io/open-webui/open-webui@sha256:* ]] || { echo 'FAIL Open WebUI base artifact is not immutable'; exit 1; }
 [[ "$(awk -F= '$1 == "HADES_OPEN_WEBUI_CANDIDATE_IMAGE" {print $2}' "$manifest")" =~ ^ghcr.io/open-webui/open-webui@sha256:[0-9a-f]{64}$ ]] || { echo 'FAIL Open WebUI candidate artifact is not immutable'; exit 1; }
 [[ "$(awk -F= '$1 == "HADES_HERMES_SOURCE_SHA256" {print $2}' "$manifest")" =~ ^[0-9a-f]{64}$ ]] || { echo 'FAIL Hermes source checksum is invalid'; exit 1; }
+[[ "$(awk -F= '$1 == "HADES_HERMES_SOURCE_URL" {print $2}' "$manifest")" == https://github.com/NousResearch/hermes-agent/archive/refs/tags/*.tar.gz ]] || { echo 'FAIL Hermes source is not a public pinned archive URL'; exit 1; }
 grep -Eq '^ARG OPEN_WEBUI_BASE_IMAGE=ghcr\.io/open-webui/open-webui@sha256:[0-9a-f]{64}$' webui/Dockerfile || { echo 'FAIL Open WebUI Dockerfile does not use an immutable base'; exit 1; }
 for name in HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD HADES_N8N_IMAGE_RECORD; do
   value=$(awk -F= -v key="$name" '$1 == key {print substr($0, index($0,"=")+1)}' "$manifest")

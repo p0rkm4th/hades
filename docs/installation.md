@@ -61,6 +61,9 @@ server, or an owner-approved cloud/frontier endpoint. HADES does not silently
 change between these paths. If a cloud endpoint is selected, its URL and key
 are operator inputs and its privacy/retention policy must be reviewed by the
 operator. A completion-only fast route must not be presented as tool-capable.
+Hermes is fetched from the pinned upstream release archive and verified by
+the SHA-256 in `config/versions.env`; a local private archive is not required
+for a public reconstruction.
 
 ## Clean-room boundary
 
