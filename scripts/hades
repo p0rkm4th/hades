@@ -70,6 +70,8 @@ value = {
 if os.path.isfile(provenance):
     try: value['provenance'] = json.loads(Path(provenance).read_text())
     except Exception: value['status'] = 'degraded'
+else:
+    value['status'] = 'not-installed'
 if inputs and not os.path.isfile(inputs):
     value['status'] = 'degraded'; value['checks']['operator_inputs'] = False
 elif inputs:
@@ -81,7 +83,7 @@ case "$command" in
   help) usage ;;
   version)
     if (( json_mode )); then json_status; else
-      echo "release_version=$(awk -F= '$1 == \"HADES_RELEASE_VERSION\" {print $2}' "$repo_dir/config/versions.env")"
+      echo "release_version=$(awk -F= '$1 == "HADES_RELEASE_VERSION" {print $2}' "$repo_dir/config/versions.env")"
       echo "hades_commit=$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || echo unknown)"
       echo "manifest_sha256=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')"
       echo "source=$repo_dir"
