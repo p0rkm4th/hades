@@ -72,3 +72,17 @@ production state, or synthetic users. Full reconstruction additionally needs
 private deployment records and canonical backups described in
 [`reconstruction.md`](reconstruction.md) and [`backup-restore.md`](backup-restore.md).
 Static or synthetic tests do not prove owner-authenticated product behavior.
+## Product-level setup
+
+On a fresh host, inspect the first-run plan and then run the setup wizard:
+
+```sh
+sudo scripts/hades setup --test-mode
+sudo scripts/hades setup --profile standalone --exposure local --yes
+```
+
+The setup path asks only for product choices, generates fresh local secrets,
+creates the dedicated runtime account, builds the pinned Open WebUI artifact,
+installs the pinned Hermes artifact, and writes a private operator-input file.
+Use the lower-level operator-input flow below when integrating an existing
+deployment or an external model server.

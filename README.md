@@ -9,7 +9,7 @@ changes authority.
 ## Preview install
 
 This repository currently publishes the prerelease branch/tag
-`public-release-candidate` / `v0.1.0-preview.3`:
+`public-release-candidate` / `v0.1.0-preview.5`:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/p0rkm4th/Hades/public-release-candidate/install.sh | \
@@ -20,6 +20,18 @@ curl -fsSL https://raw.githubusercontent.com/p0rkm4th/Hades/public-release-candi
 Review the script or download it first. The default supported path is one
 Linux host with 2+ CPU cores, 8 GiB RAM, 40 GiB free disk, and Docker Compose.
 Advanced distributed profiles are optional.
+
+For a product-level first-run setup that generates fresh local secrets and
+asks only for profile, exposure, owner ID, and model endpoint, use:
+
+```sh
+sudo ./scripts/hades setup --test-mode
+sudo ./scripts/hades setup --profile standalone --exposure local --yes
+```
+
+The setup command builds the pinned local UI artifact and installs the
+tracked Hermes artifact; it does not create cloud accounts or silently enable
+remote providers.
 
 HADES is a composition of mature upstream systems for owner-facing local
 intelligence. It is intentionally not a new agent runtime, memory database,

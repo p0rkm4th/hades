@@ -4,10 +4,13 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 command=${1:-help}
 if [[ "$command" == "-h" || "$command" == "--help" ]]; then command=help; fi
 [[ $# -gt 0 ]] && shift || true
+if [[ "$command" == setup ]]; then
+  exec python3 "$repo_dir/scripts/setup-hades.py" "$@"
+fi
 inputs=''; root=/; test_mode=0; confirm=0; path=''; component=''; backup_dir=''; apply=0; json_mode=0
 usage() {
   echo 'Usage: scripts/hades COMMAND [--inputs FILE] [--root DIR] [--test-mode]'
-  echo 'Commands: install preflight doctor status version validate repair reconfigure backup restore upgrade uninstall'
+  echo 'Commands: setup install preflight doctor status version validate repair reconfigure backup restore upgrade uninstall'
   echo 'Extra: --path DIR --component NAME --backup-dir DIR --apply --confirm'
   echo 'restore verifies only; uninstall requires --confirm and preserves state.'
 }
