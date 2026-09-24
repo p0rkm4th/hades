@@ -49,6 +49,10 @@ mode-0600/0640 files and are never accepted as command-line arguments. The
 repository manifest pins tracked dependencies; operator inputs cannot override
 those pins.
 
+After installation, `scripts/hades version` reports release/source identity and
+`scripts/hades doctor --json` reports machine-readable provenance and health
+metadata without secret values.
+
 ## Model paths
 
 The model endpoint is explicit in the operator input. It may point to a local
