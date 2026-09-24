@@ -120,6 +120,8 @@ jobs:
         run: bash scripts/test-host-version-contract.sh
       - name: Check host preparation contract
         run: bash scripts/test-host-preparation-contract.sh
+      - name: Check host OS detection matrix
+        run: bash scripts/test-host-os-detection-matrix.sh
       - name: Check tracked source preflight
         run: bash scripts/test-source-preflight-contract.sh
       - name: Check doctor exit contract

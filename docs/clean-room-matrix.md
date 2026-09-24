@@ -16,3 +16,10 @@ synthetic contract is not a full owner deployment.
 The installer rejects unsupported OS versions rather than silently claiming
 portability. Any manual clean-room repair is red until encoded and rerun from a
 reset machine.
+
+`scripts/test-host-os-detection-matrix.sh` additionally exercises the
+non-mutating host-preparation classifier in disposable Fedora 44, Rocky 9,
+Ubuntu 24.04, Debian stable, Arch, and openSUSE containers. Fedora/Rocky are
+accepted as supported plan-only targets; the other four fail closed. This is
+OS-classification evidence only and does not upgrade the unverified rows into
+full install, restart, or owner-acceptance evidence.
