@@ -76,6 +76,8 @@ jobs:
         run: bash scripts/test-encryption-safety-contract.sh
       - name: Check reconstruction manifest
         run: bash scripts/test-reconstruction-manifest.sh
+      - name: Check public configuration schema and profiles
+        run: bash scripts/test-config-schema.sh
       - name: Check clean reconstruction contract
         run: bash scripts/test-clean-reconstruction-contract.sh
       - name: Check reconstruction evidence documentation

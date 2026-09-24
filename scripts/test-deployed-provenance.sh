@@ -19,6 +19,10 @@ assert value["schema"] == "hades/deployed-provenance/v1"
 assert value["hades_sha"].startswith("0123")
 assert value["infra_sha"].startswith("fedc")
 assert value["hermes_version"] == "0.21.2"
+assert value["hades_version"] == "0.21.2"
+assert value["hades_commit"].startswith("0123")
+assert value["profile"] == "standalone"
+assert value["config_schema"] == 1
 assert len(value["overlay_sha256"]) == 64 and len(value["manifest_sha256"]) == 64
 assert "generated_at" in value
 print("PASS deployed provenance artifact is bounded, machine-readable, and hashed")

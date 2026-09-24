@@ -45,6 +45,24 @@ compose_cmd=(docker compose --env-file "$inputs")
 if ((test_mode && !root_supplied)); then fail 'test mode requires an explicit --root sandbox'; fi
 need_cmd() { command -v "$1" >/dev/null 2>&1 || fail "missing prerequisite: $1"; }
 under_root() { printf '%s/%s' "${root%/}" "${1#/}"; }
+write_provenance() {
+  local output overlay_sha manifest_sha hades_sha infra_sha deployment_id profile
+  output=$(under_root "${HADES_PROVENANCE_FILE:-${HADES_STATE_ROOT}/provenance.json}")
+  overlay_sha=$(under_root "${HADES_CONFIG_ROOT}/overlay/sitecustomize.py")
+  manifest_sha=$(under_root "${HADES_CONFIG_ROOT}/reconstruction-manifest.json")
+  hades_sha=$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || printf 'unknown')
+  infra_sha=${HADES_INFRA_COMMIT:-unknown}
+  deployment_id=${HADES_DEPLOYMENT_ID:-}
+  profile=${HADES_PROFILE:-standalone}
+  python3 "$repo_dir/scripts/write-deployed-provenance.py" \
+    --output "$output" --hades-sha "$hades_sha" --infra-sha "$infra_sha" \
+    --hermes-version "$HADES_HERMES_VERSION" --overlay "$overlay_sha" \
+    --hades-version "${HADES_RELEASE_VERSION:-preview}" \
+    --manifest "$manifest_sha" --deployment-path "$repo_dir" \
+    --profile "$profile" --deployment-id "$deployment_id" >/dev/null
+  chmod 0640 "$output"
+  printf 'provenance=%s\n' "$output" >> "$(under_root "${HADES_STATE_ROOT}/install-contract")"
+}
 if (( ! generated_records )); then
   : "${HADES_HINDSIGHT_DATABASE_SECRET_FILE:?operator input is missing HADES_HINDSIGHT_DATABASE_SECRET_FILE}"
   for name in HADES_DEPLOYMENT_DIR HADES_OPEN_WEBUI_COMPOSE_FILE HADES_HINDSIGHT_COMPOSE_FILE HADES_SEARXNG_COMPOSE_FILE HADES_HERMES_SERVICE_FILE; do
@@ -253,6 +271,8 @@ if ((test_mode)); then
   install -m 0644 "$repo_dir/webui/hades-theme.js" "$config_root/assets/hades-theme.js"
   printf 'manifest=%s\nreconstruction_manifest=%s\nlayer=%s\ninstalled_from=%s\nphase=prepared\n' "$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')" "$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')" "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js")" "$repo_dir" > "$state_root/install-contract"
   chmod 0640 "$state_root/install-contract"
+  # Test mode still emits deterministic provenance, but never contacts a provider.
+  write_provenance
   if [[ "${HADES_TEST_FAIL_AFTER_PREPARE:-0}" == 1 ]]; then
     echo 'FAIL synthetic injected interruption after preparation' >&2
     exit 97
@@ -292,5 +312,6 @@ install -m 0600 "$HADES_HERMES_SERVICE_FILE" /etc/systemd/system/hades-hermes.se
 systemctl daemon-reload
 systemctl enable --now hades-hermes.service
 validate_started_runtime
+write_provenance
 printf 'phase=deployed\n' >> "$state_root/install-contract"
 echo 'PASS HADES component deployment completed from tracked contracts and explicit private records'

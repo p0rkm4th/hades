@@ -1,0 +1,5 @@
+profile: cpu-only
+roles: [CORE, CANONICAL_APPS]
+model_path: cpu
+network_exposure: local
+notes: Local functionality remains available; inference may be slower.

@@ -1,0 +1,5 @@
+profile: proxmox
+roles: [CORE, CANONICAL_APPS, OPERATOR]
+model_path: configured-private-model-servers
+network_exposure: lan
+notes: Provisioning is an explicit operator handoff; HADES never guesses topology.

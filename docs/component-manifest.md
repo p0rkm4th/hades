@@ -5,7 +5,7 @@ runtime secrets and persistent volumes remain outside Git.
 
 | Component | Authority | Planned integration | Version / license / upgrade note |
 |---|---|---|---|
-| Hermes | intelligence and agent execution | supported upstream deployment/API | 0.14.0 from the verified upstream `v2026.5.16` source archive and SHA-256 in `config/versions.env`; install into a new environment, never copy the seasoned venv |
+| Hermes | intelligence and agent execution | supported upstream deployment/API | 0.21.2 from the verified source artifact and SHA-256 in `config/versions.env`; install into a new environment, never copy a seasoned venv |
 | Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | 0.11.1 compatibility baseline; `webui/Dockerfile` rebuilds the HADES asset layer from immutable `config/versions.env:HADES_OPEN_WEBUI_BASE_IMAGE` and applies the exact Channels stream-consumption compatibility patch; build output is software custody, not state |
 | Hindsight | durable semantic/personal memory | Hermes external memory provider over supported client API | `ghcr.io/vectorize-io/hindsight@sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`; embedded pg0 volume; upgrade by digest |
 | Agent Zero | bounded subordinate computer operator | isolated deployment with explicit objective/result boundary | pinned image digest; no shared unrestricted credentials; native A2A evaluated and retained MCP bridge is bounded |
@@ -13,7 +13,7 @@ runtime secrets and persistent volumes remain outside Git.
 | Actual Budget / Finance MCP | canonical imported finance account and transaction truth | `integrations/actual-finance-readonly/` read adapter plus `integrations/actual-finance-import/` preview-only file MCP; synthetic staging only | Actual 26.9.0 server/client must be pinned together; owner authorization remains required for native import execution and no finance write authority is registered |
 | Proxmox / NetBox / Uptime Kuma | homelab and availability truth | registered read-only MCP profile in `hermes/config.yaml.example`, bounded LAN discovery, and `docs/homelab-readonly.md` | owner-approved endpoints and protected token files required for live reads; no writes |
 | Home Assistant | physical smart-home state/control | future selected-entity integration | deferred; least privilege required |
-| n8n | deterministic workflows | future configuration | preparation contract in [`automation-boundary.md`](automation-boundary.md); deferred until product-manager authorization of one concrete workflow |
+| n8n | deterministic typed workflows | optional private runtime | immutable image pin in `config/versions.env`; arbitrary workflow generation and mutation remain outside the product boundary |
 
 ## Reconstruction manifest
 

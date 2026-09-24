@@ -6,7 +6,7 @@ source_dir=${HADES_SOURCE_DIR:-/opt/hades}
 [[ $# -gt 0 ]] || { echo 'Usage: install.sh COMMAND [options]' >&2; exit 2; }
 command=$1; shift
 case "$command" in
-  install|preflight|doctor|status|validate|repair|reconfigure|backup|restore|upgrade|uninstall) ;;
+  install|preflight|doctor|status|version|validate|repair|reconfigure|backup|restore|upgrade|uninstall) ;;
   help|-h|--help) echo 'Usage: install.sh COMMAND [options]'; exit 0 ;;
   *) echo "FAIL unsupported lifecycle command: $command" >&2; exit 2 ;;
 esac

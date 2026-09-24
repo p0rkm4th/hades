@@ -1,0 +1,5 @@
+profile: existing-model-server
+roles: [CORE, CANONICAL_APPS]
+model_path: existing-openai-compatible-endpoint
+network_exposure: local
+notes: HADES does not install or reconfigure the existing model server.

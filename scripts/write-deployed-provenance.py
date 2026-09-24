@@ -24,21 +24,34 @@ def main() -> int:
     parser.add_argument("--hades-sha", required=True)
     parser.add_argument("--infra-sha", required=True)
     parser.add_argument("--hermes-version", required=True)
+    parser.add_argument("--hades-version", default="")
     parser.add_argument("--overlay", required=True, type=Path)
     parser.add_argument("--manifest", required=True, type=Path)
     parser.add_argument("--deployment-path", required=True)
+    parser.add_argument("--profile", default="standalone")
+    parser.add_argument("--deployment-id", default="")
+    parser.add_argument("--config-schema", default="1")
     args = parser.parse_args()
     for name, value in (("hades SHA", args.hades_sha), ("infra SHA", args.infra_sha)):
-        if len(value) != 40 or any(char not in "0123456789abcdef" for char in value.lower()):
+        if value not in {"unknown", "not-applicable"} and (len(value) != 40 or any(char not in "0123456789abcdef" for char in value.lower())):
             raise SystemExit(f"{name} must be a Git SHA")
+    deployment_id = args.deployment_id or f"hades-{args.hades_sha[:12]}"
+    built_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     artifact = {
         "schema": "hades/deployed-provenance/v1",
+        "hades_version": args.hades_version or args.hermes_version,
+        "hades_commit": args.hades_sha,
+        "infra_commit": args.infra_sha,
+        "profile": args.profile,
+        "deployment_id": deployment_id,
+        "built_at": built_at,
+        "config_schema": int(args.config_schema),
         "hades_sha": args.hades_sha,
         "infra_sha": args.infra_sha,
         "hermes_version": args.hermes_version,
         "overlay_sha256": digest(args.overlay),
         "manifest_sha256": digest(args.manifest),
-        "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "generated_at": built_at,
         "deployment_path": args.deployment_path,
         "classification": "tested-source-and-deployment-artifact-identity",
     }

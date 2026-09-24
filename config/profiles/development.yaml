@@ -1,0 +1,5 @@
+profile: development
+roles: [CORE]
+model_path: synthetic-or-local
+network_exposure: local
+notes: For contributors; never the normal user path.

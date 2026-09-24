@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/hades/config.schema.json",
+  "type": "object",
+  "required": ["schema", "deployment", "network", "models", "privacy", "features"],
+  "properties": {
+    "schema": {"const": 1},
+    "deployment": {"type": "object", "required": ["profile"], "properties": {"profile": {"enum": ["standalone", "standalone-gpu", "cpu-only", "distributed", "existing-model-server", "proxmox", "development"]}}},
+    "network": {"type": "object", "required": ["exposure", "hostname"], "properties": {"exposure": {"enum": ["local", "lan", "tailscale", "custom"]}, "hostname": {"type": "string", "minLength": 1}}},
+    "models": {"type": "object", "required": ["primary", "fallback"], "properties": {"primary": {"type": "object", "required": ["type", "provider", "model"]}, "fallback": {"type": "object", "required": ["enabled"]}}},
+    "privacy": {"type": "object", "required": ["cloud_fallback"]},
+    "features": {"type": "object"}
+  },
+  "additionalProperties": false
+}

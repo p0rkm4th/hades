@@ -1,0 +1,24 @@
+schema: 1
+deployment:
+  profile: standalone
+network:
+  exposure: lan
+  hostname: hades
+models:
+  primary:
+    type: local
+    provider: existing-model-server
+    model: auto
+  fallback:
+    enabled: false
+privacy:
+  cloud_fallback:
+    general_chat: false
+    personal_memory: false
+    finance: false
+    files: false
+features:
+  grocy: true
+  hindsight: true
+  n8n: true
+  agent_zero: false

@@ -4,10 +4,10 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 command=${1:-help}
 if [[ "$command" == "-h" || "$command" == "--help" ]]; then command=help; fi
 [[ $# -gt 0 ]] && shift || true
-inputs=''; root=/; test_mode=0; confirm=0; path=''; component=''; backup_dir=''; apply=0
+inputs=''; root=/; test_mode=0; confirm=0; path=''; component=''; backup_dir=''; apply=0; json_mode=0
 usage() {
   echo 'Usage: scripts/hades COMMAND [--inputs FILE] [--root DIR] [--test-mode]'
-  echo 'Commands: install preflight doctor status validate repair reconfigure backup restore upgrade uninstall'
+  echo 'Commands: install preflight doctor status version validate repair reconfigure backup restore upgrade uninstall'
   echo 'Extra: --path DIR --component NAME --backup-dir DIR --apply --confirm'
   echo 'restore verifies only; uninstall requires --confirm and preserves state.'
 }
@@ -21,6 +21,7 @@ while (($#)); do
     --component) component=${2:?--component needs NAME}; shift 2 ;;
     --backup-dir) backup_dir=${2:?--backup-dir needs DIR}; shift 2 ;;
     --apply) apply=1; shift ;;
+    --json) json_mode=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "FAIL unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -39,15 +40,60 @@ run_install() {
   [[ "$root" != / ]] && mode+=(--root "$root")
   bash "$repo_dir/scripts/install-hades.sh" "${mode[@]}"
 }
+json_status() {
+  python3 - "$repo_dir" "$root" "$inputs" "$json_mode" <<'PY'
+import hashlib, json, os, subprocess, sys
+from pathlib import Path
+repo, root, inputs, _ = sys.argv[1:]
+def sha(path):
+    try: return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    except OSError: return None
+def git_head():
+    try: return subprocess.check_output(['git','-C',repo,'rev-parse','HEAD'], text=True).strip()
+    except Exception: return 'unknown'
+manifest = Path(repo) / 'config/versions.env'
+release = 'unknown'
+try:
+    release = next(line.split('=',1)[1] for line in manifest.read_text().splitlines() if line.startswith('HADES_RELEASE_VERSION='))
+except (OSError, StopIteration):
+    pass
+state_root = os.path.join(root.rstrip('/'), 'var/lib/hades')
+provenance = os.path.join(state_root, 'provenance.json')
+value = {
+  'status': 'ok',
+  'hades_commit': git_head(),
+  'release_version': release,
+  'manifest_sha256': sha(manifest),
+  'provenance': None,
+  'checks': {'source_manifest': manifest.is_file(), 'provenance': os.path.isfile(provenance)},
+}
+if os.path.isfile(provenance):
+    try: value['provenance'] = json.loads(Path(provenance).read_text())
+    except Exception: value['status'] = 'degraded'
+if inputs and not os.path.isfile(inputs):
+    value['status'] = 'degraded'; value['checks']['operator_inputs'] = False
+elif inputs:
+    value['checks']['operator_inputs'] = True
+print(json.dumps(value, sort_keys=True, indent=2))
+PY
+}
 case "$command" in
   help) usage ;;
+  version)
+    if (( json_mode )); then json_status; else
+      echo "release_version=$(awk -F= '$1 == \"HADES_RELEASE_VERSION\" {print $2}' "$repo_dir/config/versions.env")"
+      echo "hades_commit=$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || echo unknown)"
+      echo "manifest_sha256=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')"
+      echo "source=$repo_dir"
+    fi
+    ;;
   install|repair|reconfigure) run_install ;;
   preflight)
     args=(--preflight); (( test_mode )) && args+=(--test-mode)
     [[ -n "$inputs" ]] && args+=(--inputs "$inputs")
     [[ "$root" != / ]] && args+=(--root "$root")
     bash "$repo_dir/scripts/install-hades.sh" "${args[@]}" ;;
-  doctor|status) run_check hades-doctor.sh ;;
+  doctor|status) if (( json_mode )); then json_status; else run_check hades-doctor.sh; fi ;;
   validate) run_check validate-install.sh ;;
   backup)
     [[ -n "$path" ]] || { echo 'FAIL backup requires --path EXISTING_PRIVATE_DIRECTORY' >&2; exit 2; }

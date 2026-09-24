@@ -1,0 +1,5 @@
+profile: standalone
+roles: [CORE, CANONICAL_APPS, INFERENCE_FAST]
+model_path: cpu-or-configured-local-server
+network_exposure: local
+notes: One Linux host; safest default for a new installation.

@@ -1,0 +1,5 @@
+profile: standalone-gpu
+roles: [CORE, CANONICAL_APPS, INFERENCE_FAST, INFERENCE_DEEP]
+model_path: detected-local-gpu
+network_exposure: local
+notes: Selected only after GPU/container usability checks succeed.

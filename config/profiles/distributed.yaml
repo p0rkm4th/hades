@@ -1,0 +1,5 @@
+profile: distributed
+roles: [CORE, CANONICAL_APPS, INFERENCE_FAST, INFERENCE_DEEP, STORAGE, OPERATOR, VOICE]
+model_path: configured-private-model-servers
+network_exposure: lan-or-tailscale
+notes: Requires an explicit inventory and approved private endpoints.
