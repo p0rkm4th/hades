@@ -37,15 +37,30 @@ fi
 [[ "$expected_sha" =~ ^[0-9a-f]{64}$ ]] || { echo 'FAIL Hermes artifact checksum is invalid' >&2; exit 1; }
 actual_sha=$(sha256sum "$artifact" | awk '{print $1}')
 [[ "$actual_sha" == "$expected_sha" ]] || { echo 'FAIL Hermes artifact checksum mismatch' >&2; exit 1; }
-command -v python3 >/dev/null 2>&1 || { echo 'FAIL python3 is required to install Hermes' >&2; exit 1; }
+python_bin=''
+for candidate in python3.13 python3.12 python3.11 python3; do
+  if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null; then
+    python_bin=$(command -v "$candidate")
+    break
+  fi
+done
+[[ -n "$python_bin" ]] || {
+  echo 'FAIL Hermes requires Python 3.11 or newer; install a compatible python3.x package' >&2
+  exit 1
+}
 staging=${staging:-$(mktemp -d)}
 trap 'find "$staging" -depth -delete 2>/dev/null || true; rmdir "$staging" 2>/dev/null || true' EXIT
 tar -xzf "$artifact" -C "$staging"
 source_dir=$(find "$staging" -mindepth 1 -maxdepth 2 -type f -name pyproject.toml -printf '%h\n' -quit)
 [[ -n "$source_dir" ]] || { echo 'FAIL Hermes source archive has no pyproject.toml' >&2; exit 1; }
 mkdir -p "$prefix"
-python3 -m venv "$prefix/venv"
-"$prefix/venv/bin/python" -m pip install --disable-pip-version-check --no-cache-dir \
+"$python_bin" -m venv "$prefix/venv"
+"$prefix/venv/bin/python" -m pip install --disable-pip-version-check --no-cache-dir --upgrade pip >/dev/null
+# Upstream intentionally rejects ordinary wheel/sdist builds. Its documented
+# package-build escape hatch is HERMES_NIX_BUILD=1; use it only for this
+# verified source archive so the installed venv remains self-contained after
+# the staging directory is removed.
+HERMES_NIX_BUILD=1 "$prefix/venv/bin/python" -m pip install --disable-pip-version-check --no-cache-dir \
   "${source_dir}[all]" "hindsight-client==${HADES_HERMES_HINDSIGHT_CLIENT_VERSION:-0.6.1}" >/dev/null
 install -d -m 0755 "$prefix/bin"
 printf '%s\n' '#!/usr/bin/env bash' "exec $prefix/venv/bin/python -m hermes_cli.main \"\$@\"" > "$prefix/bin/hermes"

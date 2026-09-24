@@ -82,6 +82,8 @@ jobs:
         run: bash scripts/test-model-policy-contract.sh
       - name: Check product setup CLI
         run: bash scripts/test-setup-cli-contract.sh
+      - name: Check Hermes Python compatibility
+        run: bash scripts/test-hermes-python-compatibility.sh
       - name: Check clean reconstruction contract
         run: bash scripts/test-clean-reconstruction-contract.sh
       - name: Check reconstruction evidence documentation

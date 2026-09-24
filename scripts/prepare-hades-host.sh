@@ -38,6 +38,13 @@ case "${ID:-}" in
 esac
 
 packages=(git openssl)
+if [[ "${ID:-}" == rocky ]]; then
+  # The pinned Hermes release requires Python >=3.11. Rocky 9's default
+  # python3 package is 3.9, so install the explicit compatible interpreter.
+  packages+=(python3.11)
+else
+  packages+=(python3)
+fi
 printf 'HADES host prerequisite plan: %s\n' "${packages[*]}"
 if (( ! apply )); then
   printf 'PLAN ONLY: rerun with --apply to install packages and enable Docker\n'
