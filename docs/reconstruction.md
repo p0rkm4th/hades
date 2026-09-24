@@ -57,7 +57,7 @@ inspection; the helper never guesses at cleanup or calls the HADES installer
 on the Proxmox host.
 
 Deployment order is LLDAP, Open WebUI, Hindsight, Grocy, Agent Zero, SearXNG,
-Hermes 0.14.0, then the HADES overlay/assets/adapters. Production migration is
+Hermes 0.21.2, then the HADES overlay/assets/adapters. Production migration is
 separate: backup, provision, install, restore, validate, owner acceptance,
 private-network cutover, and temporary rollback retention.
 

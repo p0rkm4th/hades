@@ -62,7 +62,7 @@
     },
     {
       "component": "Hermes 0.14 baseline",
-      "pinned_version": "0.14.0",
+      "pinned_version": "0.21.2",
       "artifact_type": "verified upstream source archive",
       "immutable_reference": "config/versions.env:HADES_HERMES_SOURCE_SHA256",
       "artifact_source": "config/versions.env:HADES_HERMES_SOURCE_URL",
