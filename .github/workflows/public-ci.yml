@@ -122,6 +122,8 @@ jobs:
         run: bash scripts/test-source-preflight-contract.sh
       - name: Check doctor exit contract
         run: bash scripts/test-doctor-exit-contract.sh
+      - name: Check JSON doctor exit contract
+        run: bash scripts/test-json-doctor-exit-contract.sh
       - name: Check authoritative version manifest
         run: bash scripts/test-version-manifest.sh
       - name: Check private input contract

@@ -80,6 +80,7 @@ if inputs and not os.path.isfile(inputs):
 elif inputs:
     value['checks']['operator_inputs'] = True
 print(json.dumps(value, sort_keys=True, indent=2))
+sys.exit(0 if value['status'] == 'ok' else 1)
 PY
 }
 case "$command" in
