@@ -152,6 +152,11 @@ jobs:
 
       - name: Check public history
         run: bash scripts/public-history-audit.sh
+      - name: Check reachable public history for secrets
+        run: >-
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo:ro"
+          zricethezav/gitleaks@sha256:e1b35e12a8c6fa8901f060459cfb6b2fc4c484d3afbe3b029733a3bbfab07055
+          git --source /repo --no-banner --redact --log-opts=HEAD --exit-code 1
 
       - name: Validate shell scripts
         run: bash -n scripts/*.sh webui/entrypoint.sh

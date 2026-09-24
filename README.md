@@ -1,5 +1,26 @@
 # HADES
 
+HADES is a self-hosted personal and household AI: local chat, durable
+context, canonical household inventory and recipes, bounded web research, and
+optional typed automation. It can run on one ordinary Linux machine or use
+explicit private model servers. Cloud routing is opt-in and never silently
+changes authority.
+
+## Preview install
+
+This repository currently publishes the prerelease branch/tag
+`public-release-candidate` / `v0.1.0-preview.1`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/p0rkm4th/Hades/public-release-candidate/install.sh | \
+  HADES_REPO_REF=public-release-candidate bash -s -- install \
+  --inputs /etc/hades/operator-inputs.env
+```
+
+Review the script or download it first. The default supported path is one
+Linux host with 2+ CPU cores, 8 GiB RAM, 40 GiB free disk, and Docker Compose.
+Advanced distributed profiles are optional.
+
 HADES is a composition of mature upstream systems for owner-facing local
 intelligence. It is intentionally not a new agent runtime, memory database,
 workflow engine, or chat frontend.
