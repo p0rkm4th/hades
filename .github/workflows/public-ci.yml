@@ -162,6 +162,10 @@ jobs:
 
       - name: Check public history
         run: bash scripts/public-history-audit.sh
+
+      - name: Check public audit output redaction
+        run: bash scripts/test-public-history-audit-redaction.sh
+
       - name: Check reachable public history for secrets
         run: >-
           docker run --rm -v "$GITHUB_WORKSPACE:/repo:ro"
