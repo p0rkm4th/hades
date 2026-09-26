@@ -4,7 +4,9 @@ umask 077
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 suffix="$$"
-image="hades-open-webui:finance-access-$suffix"
+image="${HADES_FINANCE_UI_IMAGE:-hades-open-webui:finance-access-$suffix}"
+remove_image=1
+if [[ -n "${HADES_FINANCE_UI_IMAGE:-}" ]]; then remove_image=0; fi
 container="hades-finance-access-$suffix"
 volume="hades-finance-access-$suffix"
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-finance-access.XXXXXX")
@@ -15,7 +17,7 @@ cleanup() {
   if ((status != 0)); then docker logs --tail 50 "$container" >&2 2>/dev/null || true; fi
   docker rm -f "$container" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true
-  docker image rm "$image" >/dev/null 2>&1 || true
+  if ((remove_image)); then docker image rm "$image" >/dev/null 2>&1 || true; fi
   find "$work" -depth -mindepth 1 -delete 2>/dev/null || true
   rmdir "$work" 2>/dev/null || true
   exit "$status"
@@ -25,7 +27,7 @@ for binary in docker curl python3 node; do command -v "$binary" >/dev/null; done
 playwright_module=${HADES_PLAYWRIGHT_MODULE:-playwright}
 HADES_PLAYWRIGHT_MODULE="$playwright_module" node -e 'require(process.env.HADES_PLAYWRIGHT_MODULE)'
 printf 'Date,Payee,Amount\n2026-09-01,Synthetic Market,-4.29\n' >"$work/synthetic.csv"
-docker build -f "$repo_dir/webui/Dockerfile" -t "$image" "$repo_dir"
+if ((remove_image)); then docker build -f "$repo_dir/webui/Dockerfile" -t "$image" "$repo_dir"; fi
 start_webui() {
   docker run -d --name "$container" -p "127.0.0.1:${port}:8080" \
     -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
@@ -64,22 +66,38 @@ async function attach(page) {
  const beta=await login('beta-finance@example.invalid');
  try {
    await attach(beta.page); await beta.page.waitForTimeout(500);
-   if(await beta.page.locator('#hades-finance-csv-contextual-button').count()) throw Error('household saw owner-only Review CSV action');
+   const betaActionCount=await beta.page.locator('#hades-finance-csv-contextual-button').count();
+   if(betaActionCount) {
+     const diagnostic=await beta.page.evaluate(async()=>({tokenPresent:Boolean(localStorage.getItem('token')),tokenUser:(()=>{try{return JSON.parse(atob(localStorage.getItem('token').split('.')[1])).id}catch(_){return null}})(),access:await fetch('/api/v1/hades/finance/access').then(async r=>({status:r.status,body:(await r.text()).slice(0,240)}))}));
+     throw Error(`household saw owner-only Review CSV action: ${JSON.stringify(diagnostic)}`);
+   }
+   const betaFileId=await beta.page.evaluate(()=>[...window.__hadesUploadedFileIds.values()].at(-1));
+   if(!betaFileId) throw Error('synthetic household upload id was not observed');
+   const betaStored=await beta.page.evaluate(async id=>({status:(await fetch(`/api/v1/files/${encodeURIComponent(id)}`)).status}),betaFileId);
+   if(betaStored.status!==200) throw Error(`synthetic attached file was not available for the denial probe: ${JSON.stringify(betaStored)}`);
    const access=await beta.page.evaluate(async()=>{const r=await fetch('/api/v1/hades/finance/access');return {status:r.status,body:await r.json()}});
    if(access.status!==200||access.body.allowed!==false) throw Error(`household access policy mismatch: ${JSON.stringify(access)}`);
    const denied=await beta.page.evaluate(async()=>{const f=new FormData();f.append('file',new Blob(['Date,Amount\n2026-09-01,-1'],{type:'text/csv'}),'synthetic.csv');const r=await fetch('/api/v1/hades/finance/inspect',{method:'POST',body:f});return {status:r.status,body:await r.json()}});
    if(denied.status!==403) throw Error(`household inspect was not denied: ${JSON.stringify(denied)}`);
    const previewDenied=await beta.page.evaluate(async()=>{const f=new FormData();f.append('file',new Blob(['Date,Payee,Amount\n2026-09-01,Market,-1'],{type:'text/csv'}),'synthetic.csv');f.append('target_account_id','synthetic-account');f.append('mapping_json','{"date":"Date","payee":"Payee","amount":"Amount"}');const r=await fetch('/api/v1/hades/finance/preview',{method:'POST',body:f});return {status:r.status,body:await r.json()}});
    if(previewDenied.status!==403) throw Error(`household preview was not denied: ${JSON.stringify(previewDenied)}`);
+   const betaStillStored=await beta.page.evaluate(async id=>({status:(await fetch(`/api/v1/files/${encodeURIComponent(id)}`)).status}),betaFileId);
+   if(betaStillStored.status!==200) throw Error('household denial had a side effect on its unrelated attachment');
  } finally { await beta.browser.close(); }
  const alpha=await login('alpha-finance@example.invalid');
  try {
    await attach(alpha.page); await alpha.page.locator('#hades-finance-csv-contextual-button').waitFor({state:'visible',timeout:10000});
+   const alphaFileId=await alpha.page.evaluate(()=>[...window.__hadesUploadedFileIds.values()].at(-1));
+   if(!alphaFileId) throw Error('synthetic owner upload id was not observed');
+   const alphaStored=await alpha.page.evaluate(async id=>({status:(await fetch(`/api/v1/files/${encodeURIComponent(id)}`)).status}),alphaFileId);
+   if(alphaStored.status!==200) throw Error(`synthetic owner upload was not available before review: ${JSON.stringify(alphaStored)}`);
    const access=await alpha.page.evaluate(async()=>{const r=await fetch('/api/v1/hades/finance/access');return {status:r.status,body:await r.json()}});
    if(access.status!==200||access.body.allowed!==true) throw Error(`owner access policy mismatch: ${JSON.stringify(access)}`);
    await alpha.page.locator('#hades-finance-csv-contextual-button').click();
    const modal=alpha.page.locator('#hades-finance-csv-modal');
    await modal.waitFor({state:'visible',timeout:5000});
+   const alphaDeleted=await alpha.page.evaluate(async id=>({status:(await fetch(`/api/v1/files/${encodeURIComponent(id)}`)).status}),alphaFileId);
+   if(alphaDeleted.status!==404) throw Error(`Open WebUI retained the statement after starting finance review: ${JSON.stringify(alphaDeleted)}; dialog=${await modal.innerText()}`);
    await modal.getByRole('button',{name:'Review statement',exact:true}).click();
    await alpha.page.getByText(/I found 1 transaction rows in synthetic\.csv/).waitFor({timeout:10000});
    const reviewed=await modal.innerText();

@@ -82,7 +82,7 @@
     target.style.color = error ? '#ff9b9b' : 'var(--hades-cyan, #64e8f2)';
   }
 
-  function openModal(attachedFile) {
+  function openModal(attachedFile, initialError = '') {
     if (document.getElementById(modalId)) return;
     const file = el('input', { type: 'file', accept: '.csv,text/csv' });
     if (attachedFile) {
@@ -137,7 +137,7 @@
     panel.style.cssText = 'width:min(680px,100%);max-height:90vh;overflow:auto;background:var(--hades-panel,#101923);color:var(--color-gray-100,#eee);border:1px solid var(--hades-border,#426);border-radius:14px;padding:20px;box-shadow:0 0 32px rgb(0 0 0 / 45%);';
     panel.append(
       el('h2', { id: `${modalId}-title`, textContent: 'Finance CSV preview' }),
-      el('p', { textContent: 'Owner-only statement review. I will identify the file first, then ask which account it belongs to. Nothing is imported from this screen.' }),
+      el('p', { textContent: 'Owner-only statement review. The Open WebUI upload is removed before review starts; the file stays in this dialog only. I will identify it first, then ask which account it belongs to. Nothing is imported from this screen.' }),
       el('label', { textContent: 'Statement file' }), file,
       el('label', { textContent: 'Actual Budget account name (optional; HADES resolves internal IDs)' }), account,
       el('details', {}, [el('summary', { textContent: 'Advanced column mapping (optional)' }), mapping]),
@@ -147,18 +147,46 @@
     dialog.appendChild(panel);
     dialog.addEventListener('click', event => { if (event.target === dialog) closeModal(); });
     document.body.appendChild(dialog);
+    if (initialError) showResult(result, initialError, true);
     file.focus();
   }
 
-  async function resolveAttachedFile(filename) {
+  async function resolveAttachedFile(filename, id) {
     const pair = [...uploadedFiles.entries()].find(([name]) => name === filename) || [...uploadedFiles.entries()].at(-1);
-    const id = pair?.[1];
+    id = id || pair?.[1];
     filename = pair?.[0] || filename;
     if (!id) return null;
     const response = await nativeFetch(`/api/v1/files/${encodeURIComponent(id)}/content`);
     if (!response.ok) return null;
     const blob = await response.blob();
-    return new File([blob], filename, { type: 'text/csv' });
+    return { file: new File([blob], filename, { type: 'text/csv' }), id, filename };
+  }
+
+  async function removeAttachedUpload(filename, id) {
+    const pair = [...uploadedFiles.entries()].find(([name]) => name === filename);
+    id = id || pair?.[1];
+    if (!id) throw new Error('I could not confirm the uploaded CSV identity. Remove the attachment and select the statement again; no finance review was sent.');
+    const removeButtons = [...document.querySelectorAll('button')].filter(isNativeRemove);
+    if (removeButtons.length !== 1) {
+      throw new Error(`For privacy, attach only this CSV before review (${removeButtons.length} removable attachments detected). Remove other attachments and try again; no finance review was sent.`);
+    }
+    const remove = removeButtons[0];
+    remove.click();
+    const deletion = await nativeFetch(`/api/v1/files/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    if (!deletion.ok) throw new Error('I could not remove the uploaded CSV copy. Remove the attachment manually; no finance review was sent.');
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const response = await nativeFetch(`/api/v1/files/${encodeURIComponent(id)}`, { cache: 'no-store' });
+      if (response.status === 404) {
+        uploadedFiles.delete(filename);
+        return;
+      }
+      if (!response.ok) throw new Error('I could not verify removal of the uploaded CSV copy. Remove the attachment manually; no finance review was sent.');
+      await new Promise(resolve => window.setTimeout(resolve, 100));
+    }
+    throw new Error('The uploaded CSV copy is still present. Remove the attachment manually; no finance review was sent.');
   }
 
   async function installContextualAction() {
@@ -167,18 +195,28 @@
       /\.csv(?:\s|$)/i.test(button.textContent || '') && !isNativeRemove(button)
     );
     if (!chip) return;
-    const filename = [...uploadedFiles.keys()].find(name => (chip.textContent || '').includes(name))
-      || [...uploadedFiles.keys()].at(-1)
+    const capturedPair = [...uploadedFiles.entries()].find(([name]) => (chip.textContent || '').includes(name))
+      || [...uploadedFiles.entries()].at(-1);
+    const filename = capturedPair?.[0]
       || (chip.textContent || '').trim().split(/\s+/)[0];
+    const capturedFileId = capturedPair?.[1];
     const host = chip.parentElement;
     if (!host) return;
     if (!(await financeOwnerUiAllowed()) || document.getElementById(buttonId)) return;
     const button = el('button', { id: buttonId, type: 'button', title: 'Review this CSV with HADES finance', textContent: 'Review CSV', onclick: async () => {
       button.disabled = true;
-      const file = await resolveAttachedFile(filename);
-      button.disabled = false;
-      if (file) openModal(file);
-      else openModal();
+      try {
+        const attached = await resolveAttachedFile(filename, capturedFileId);
+        if (attached) {
+          await removeAttachedUpload(attached.filename, attached.id);
+        }
+        button.disabled = false;
+        if (attached) openModal(attached.file);
+        else openModal();
+      } catch (error) {
+        button.disabled = false;
+        openModal(undefined, error.message || 'I could not safely prepare that statement. No finance review was sent.');
+      }
     }});
     button.style.cssText = 'margin:4px 0 0 8px;border:1px solid var(--hades-border,#426);border-radius:8px;padding:5px 9px;background:var(--hades-panel,#101923);color:var(--hades-cyan,#64e8f2);cursor:pointer;';
     host.appendChild(button);

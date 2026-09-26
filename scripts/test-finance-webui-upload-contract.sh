@@ -29,6 +29,8 @@ assert 'position:fixed;right' not in ui  # the review dialog may still be modal;
 assert 'hades-finance-csv-button' not in ui
 assert 'hades-finance-csv-contextual-button' in ui
 assert 'uploadedFiles' in ui and '/content' in ui
+assert "method: 'DELETE'" in ui and 'response.status === 404' in ui
+assert 'The Open WebUI upload is removed before review starts' in ui
 assert 'Review CSV' in ui
 assert "/api/v1/hades/finance/access" in ui
 assert "result?.allowed === true" in ui
@@ -36,5 +38,6 @@ assert 'finance-upload.js?v=$asset_version\\"></script>' in entrypoint
 assert "HADES_FINANCE_OWNER_USER_ID" in compose
 print("PASS WebUI finance CSV control is same-origin and confirmation-safe")
 print("PASS finance upload route is owner-ID gated and non-persistent")
+print("PASS owner statement review deletes and verifies its persisted Open WebUI attachment first")
 print("PASS Open WebUI artifact includes finance upload assets and parser")
 PY
