@@ -31,7 +31,7 @@ if ((remove_image)); then docker build -f "$repo_dir/webui/Dockerfile" -t "$imag
 start_webui() {
   docker run -d --name "$container" -p "127.0.0.1:${port}:8080" \
     -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
-    -e RAG_EMBEDDING_ENGINE=ollama -e HADES_FINANCE_OWNER_USER_ID="${owner_id:-}" \
+    -e BYPASS_EMBEDDING_AND_RETRIEVAL=true -e HADES_FINANCE_OWNER_USER_ID="${owner_id:-}" \
     -v "$volume:/app/backend/data" "$image" >/dev/null
   for _ in $(seq 1 120); do curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1 && break; sleep 1; done
   curl -fsS "http://127.0.0.1:${port}/health" >/dev/null
@@ -89,8 +89,19 @@ async function attach(page) {
    await attach(alpha.page); await alpha.page.locator('#hades-finance-csv-contextual-button').waitFor({state:'visible',timeout:10000});
    const alphaFileId=await alpha.page.evaluate(()=>[...window.__hadesUploadedFileIds.values()].at(-1));
    if(!alphaFileId) throw Error('synthetic owner upload id was not observed');
-   const alphaStored=await alpha.page.evaluate(async id=>({status:(await fetch(`/api/v1/files/${encodeURIComponent(id)}`)).status}),alphaFileId);
+   const alphaStored=await alpha.page.evaluate(async id=>{const r=await fetch(`/api/v1/files/${encodeURIComponent(id)}`);return {status:r.status,body:await r.json()};},alphaFileId);
    if(alphaStored.status!==200) throw Error(`synthetic owner upload was not available before review: ${JSON.stringify(alphaStored)}`);
+   let syntheticPendingReads=0;
+   await alpha.page.route(`**/api/v1/files/${encodeURIComponent(alphaFileId)}`,async route=>{
+     if(route.request().method()==='GET'&&syntheticPendingReads<2){
+       syntheticPendingReads+=1;
+       const upstream=await route.fetch();
+       const record=await upstream.json();
+       record.data={...(record.data||{}),status:'pending'};
+       return route.fulfill({response:upstream,contentType:'application/json',body:JSON.stringify(record)});
+     }
+     return route.continue();
+   });
    const access=await alpha.page.evaluate(async()=>{const r=await fetch('/api/v1/hades/finance/access');return {status:r.status,body:await r.json()}});
    if(access.status!==200||access.body.allowed!==true) throw Error(`owner access policy mismatch: ${JSON.stringify(access)}`);
    await alpha.page.locator('#hades-finance-csv-contextual-button').click();
@@ -98,6 +109,7 @@ async function attach(page) {
    await modal.waitFor({state:'visible',timeout:5000});
    const alphaDeleted=await alpha.page.evaluate(async id=>({status:(await fetch(`/api/v1/files/${encodeURIComponent(id)}`)).status}),alphaFileId);
    if(alphaDeleted.status!==404) throw Error(`Open WebUI retained the statement after starting finance review: ${JSON.stringify(alphaDeleted)}; dialog=${await modal.innerText()}`);
+   if(syntheticPendingReads!==2) throw Error(`finance review did not wait for the two simulated processing states: ${syntheticPendingReads}`);
    await modal.getByRole('button',{name:'Review statement',exact:true}).click();
    await alpha.page.getByText(/I found 1 transaction rows in synthetic\.csv/).waitFor({timeout:10000});
    const reviewed=await modal.innerText();

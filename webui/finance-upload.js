@@ -162,10 +162,28 @@
     return { file: new File([blob], filename, { type: 'text/csv' }), id, filename };
   }
 
+  async function waitForUploadProcessingToSettle(id) {
+    for (let attempt = 0; attempt < 240; attempt += 1) {
+      const response = await nativeFetch(`/api/v1/files/${encodeURIComponent(id)}`, { cache: 'no-store' });
+      if (response.status === 404) {
+        throw new Error('The uploaded CSV is no longer available. No finance review was sent.');
+      }
+      if (!response.ok) {
+        throw new Error('I could not verify that Open WebUI finished processing the uploaded CSV. No finance review was sent.');
+      }
+      const record = await response.json().catch(() => null);
+      const status = record?.data?.status || record?.status || '';
+      if (status !== 'pending' && status !== 'processing') return;
+      await new Promise(resolve => window.setTimeout(resolve, 250));
+    }
+    throw new Error('Open WebUI is still processing the uploaded CSV. Wait a moment and try Review CSV again; no finance review was sent.');
+  }
+
   async function removeAttachedUpload(filename, id) {
     const pair = [...uploadedFiles.entries()].find(([name]) => name === filename);
     id = id || pair?.[1];
     if (!id) throw new Error('I could not confirm the uploaded CSV identity. Remove the attachment and select the statement again; no finance review was sent.');
+    await waitForUploadProcessingToSettle(id);
     const removeButtons = [...document.querySelectorAll('button')].filter(isNativeRemove);
     if (removeButtons.length !== 1) {
       throw new Error(`For privacy, attach only this CSV before review (${removeButtons.length} removable attachments detected). Remove other attachments and try again; no finance review was sent.`);
@@ -205,16 +223,19 @@
     if (!(await financeOwnerUiAllowed()) || document.getElementById(buttonId)) return;
     const button = el('button', { id: buttonId, type: 'button', title: 'Review this CSV with HADES finance', textContent: 'Review CSV', onclick: async () => {
       button.disabled = true;
+      button.textContent = 'Securing CSV…';
       try {
         const attached = await resolveAttachedFile(filename, capturedFileId);
         if (attached) {
           await removeAttachedUpload(attached.filename, attached.id);
         }
         button.disabled = false;
+        button.textContent = 'Review CSV';
         if (attached) openModal(attached.file);
         else openModal();
       } catch (error) {
         button.disabled = false;
+        button.textContent = 'Review CSV';
         openModal(undefined, error.message || 'I could not safely prepare that statement. No finance review was sent.');
       }
     }});
