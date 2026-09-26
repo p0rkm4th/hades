@@ -14,6 +14,7 @@ assert "/api/v1/hades/finance/preview" in route
 assert "/api/v1/hades/finance/inspect" in route
 assert "HADES_FINANCE_OWNER_USER_ID" in route
 assert "Finance CSV preview is owner-only" in route
+assert "hades_finance_access" in route and "/api/v1/hades/finance/access" in route
 assert "10 * 1024 * 1024" in route
 assert "preview_file" in route
 assert "writes_performed" not in route  # route delegates; no ad-hoc writer
@@ -29,6 +30,8 @@ assert 'hades-finance-csv-button' not in ui
 assert 'hades-finance-csv-contextual-button' in ui
 assert 'uploadedFiles' in ui and '/content' in ui
 assert 'Review CSV' in ui
+assert "/api/v1/hades/finance/access" in ui
+assert "result?.allowed === true" in ui
 assert 'finance-upload.js?v=$asset_version\\"></script>' in entrypoint
 assert "HADES_FINANCE_OWNER_USER_ID" in compose
 print("PASS WebUI finance CSV control is same-origin and confirmation-safe")

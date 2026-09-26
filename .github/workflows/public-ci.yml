@@ -20,10 +20,12 @@ jobs:
           python-version: '3.11'
 
       - name: Compile public Python adapters
-        run: python -m py_compile hermes/sitecustomize.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py
+        run: python -m py_compile hermes/sitecustomize.py webui/finance_upload_compat.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py
 
       - name: Check public JavaScript adapter
         run: node --check integrations/actual-finance-readonly/actual_client.js
+      - name: Check finance attachment JavaScript
+        run: node --check webui/finance-upload.js
 
       - name: Check memory intent boundary
         run: bash scripts/test-hades-memory-intent.sh
@@ -38,6 +40,10 @@ jobs:
 
       - name: Check finance read-only MCP boundary
         run: bash scripts/test-finance-readonly-boundary.sh
+      - name: Check owner-only finance attachment UI contract
+        run: |
+          bash scripts/test-finance-webui-upload-contract.sh
+          bash -n scripts/test-finance-owner-affordance-authenticated-ui.sh
 
       - name: Check privileged capability boundary
         run: bash scripts/test-capability-boundary.sh

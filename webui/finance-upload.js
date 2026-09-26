@@ -7,6 +7,7 @@
   const modalId = 'hades-finance-csv-modal';
   const maxBytes = 10 * 1024 * 1024;
   const uploadedFiles = window.__hadesUploadedFileIds || (window.__hadesUploadedFileIds = new Map());
+  let financeAccessState = { token: null, promise: null, value: null };
   const isNativeRemove = button => /remove\s+file/i.test(button.getAttribute('aria-label') || '');
 
   // Open WebUI uploads attachments before it submits the chat turn. Keep only
@@ -33,6 +34,24 @@
   function authHeaders(extra = {}) {
     const token = window.localStorage.getItem('token');
     return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+  }
+
+  async function financeOwnerUiAllowed() {
+    const token = window.localStorage.getItem('token') || '';
+    if (token !== financeAccessState.token) financeAccessState = { token, promise: null, value: null };
+    if (!token) return false;
+    if (financeAccessState.value !== null) return financeAccessState.value;
+    if (financeAccessState.promise) return financeAccessState.promise;
+    const current = financeAccessState;
+    current.promise = (async () => {
+      try {
+        const response = await nativeFetch('/api/v1/hades/finance/access', { headers: authHeaders() });
+        const result = response.ok ? await response.json() : null;
+        current.value = window.localStorage.getItem('token') === current.token && result?.allowed === true;
+      } catch (_) { current.value = false; }
+      return current.value;
+    })();
+    return current.promise;
   }
 
   function sessionUserId() {
@@ -142,7 +161,7 @@
     return new File([blob], filename, { type: 'text/csv' });
   }
 
-  function installContextualAction() {
+  async function installContextualAction() {
     if (document.getElementById(buttonId)) return;
     const chip = [...document.querySelectorAll('button')].find(button =>
       /\.csv(?:\s|$)/i.test(button.textContent || '') && !isNativeRemove(button)
@@ -153,6 +172,7 @@
       || (chip.textContent || '').trim().split(/\s+/)[0];
     const host = chip.parentElement;
     if (!host) return;
+    if (!(await financeOwnerUiAllowed()) || document.getElementById(buttonId)) return;
     const button = el('button', { id: buttonId, type: 'button', title: 'Review this CSV with HADES finance', textContent: 'Review CSV', onclick: async () => {
       button.disabled = true;
       const file = await resolveAttachedFile(filename);

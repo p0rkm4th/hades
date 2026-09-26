@@ -7,6 +7,18 @@ MAIN = Path("/app/backend/open_webui/main.py")
 MARKER = "\n\n##################################\n#\n# Chat Endpoints"
 ROUTE = r'''
 
+# Keep the browser affordance aligned with the same owner policy as the
+# inspection and preview routes. The write routes below still enforce it.
+def _hades_finance_owner_allowed(user):
+    owner_id = os.environ.get('HADES_FINANCE_OWNER_USER_ID', '').strip()
+    acceptance_ids = {value.strip() for value in os.environ.get('HADES_ACCEPTANCE_OWNER_USER_IDS', '').split(',') if value.strip()}
+    return (str(getattr(user, 'id', '')) == owner_id and getattr(user, 'role', '') == 'admin') or str(getattr(user, 'id', '')) in acceptance_ids
+
+@app.get('/api/v1/hades/finance/access')
+async def hades_finance_access(user=Depends(get_verified_user)):
+    """Report whether this verified session may use owner finance review."""
+    return JSONResponse({'allowed': _hades_finance_owner_allowed(user)})
+
 # HADES finance statement inspection: same-origin, owner-scoped, write-free.
 @app.post('/api/v1/hades/finance/inspect')
 async def hades_finance_statement_inspect(request: Request, user=Depends(get_verified_user)):
@@ -14,10 +26,7 @@ async def hades_finance_statement_inspect(request: Request, user=Depends(get_ver
     import base64 as _hades_base64
     import sys as _hades_sys
 
-    owner_id = os.environ.get('HADES_FINANCE_OWNER_USER_ID', '').strip()
-    acceptance_ids = {value.strip() for value in os.environ.get('HADES_ACCEPTANCE_OWNER_USER_IDS', '').split(',') if value.strip()}
-    owner_allowed = (str(getattr(user, 'id', '')) == owner_id and getattr(user, 'role', '') == 'admin') or str(getattr(user, 'id', '')) in acceptance_ids
-    if not owner_allowed:
+    if not _hades_finance_owner_allowed(user):
         raise HTTPException(status_code=403, detail='Finance statement inspection is owner-only.')
     form = await request.form(max_part_size=10 * 1024 * 1024)
     upload = form.get('file')
@@ -42,10 +51,7 @@ async def hades_finance_csv_preview(request: Request, user=Depends(get_verified_
     import base64 as _hades_base64
     import sys as _hades_sys
 
-    owner_id = os.environ.get('HADES_FINANCE_OWNER_USER_ID', '').strip()
-    acceptance_ids = {value.strip() for value in os.environ.get('HADES_ACCEPTANCE_OWNER_USER_IDS', '').split(',') if value.strip()}
-    owner_allowed = (str(getattr(user, 'id', '')) == owner_id and getattr(user, 'role', '') == 'admin') or str(getattr(user, 'id', '')) in acceptance_ids
-    if not owner_allowed:
+    if not _hades_finance_owner_allowed(user):
         raise HTTPException(status_code=403, detail='Finance CSV preview is owner-only.')
 
     form = await request.form(max_part_size=10 * 1024 * 1024)
