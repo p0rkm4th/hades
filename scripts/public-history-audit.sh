@@ -32,8 +32,9 @@ check_history() {
     matches="$(printf '%s\n' "$matches" | grep -vF "$second_safe_synthetic_address" || true)"
   fi
   if [ -n "$matches" ]; then
-    printf 'FAIL %s\n' "$label"
-    printf '%s\n' "$matches" | head -20
+    local match_count
+    match_count="$(printf '%s\n' "$matches" | awk 'END { print NR }')"
+    printf 'FAIL %s (findings=%s; matched values and paths redacted)\n' "$label" "$match_count"
     fail=1
   else
     printf 'PASS %s\n' "$label"
@@ -49,8 +50,8 @@ check_history 'tail[a-z0-9-]+\.ts\.net' 'tailnet hostnames absent'
 
 credential_paths="$(git rev-list --objects "$branch" | awk '$2 != "config/versions.env" && tolower($2) ~ /(\.env$|\.sqlite$|\.db$|\.pem$|\.p12$|\.key$|credentials|secrets)/ {print}')"
 if [ -n "$credential_paths" ]; then
-  printf 'FAIL credential-like tracked artifact paths present\n'
-  printf '%s\n' "$credential_paths" | head -20
+  credential_path_count="$(printf '%s\n' "$credential_paths" | awk 'END { print NR }')"
+  printf 'FAIL credential-like tracked artifact paths present (findings=%s; paths redacted)\n' "$credential_path_count"
   fail=1
 else
   printf 'PASS credential-like tracked artifact paths absent\n'
