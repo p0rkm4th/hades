@@ -21,7 +21,7 @@ HADES_HINDSIGHT_DATA=$fixture/hindsight
 HADES_SEARXNG_DATA=$fixture/searxng
 HADES_SEARXNG_SECRET_FILE=$fixture/searxng-secret
 HADES_HERMES_WORKING_DIRECTORY=$repo_dir
-HADES_HERMES_EXECUTABLE=/usr/bin/hermes
+HADES_HERMES_EXECUTABLE=/usr/bin/bash
 HADES_HERMES_API_KEY=synthetic-secret
 HADES_HINDSIGHT_LLM_API_KEY=synthetic-hindsight-key
 EOF
