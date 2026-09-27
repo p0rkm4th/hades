@@ -88,3 +88,50 @@ grep -Fq 'fail=0' <<<"$clean_range_output" || { echo 'FAIL range audit treated e
 cleaned_tree_output=$(cd "$tmp" && bash "$repo_dir/scripts/test-public-tree-safety.sh" HEAD 2>&1)
 grep -Fq 'PASS current public tree safety' <<<"$cleaned_tree_output" || { echo 'FAIL public-tree guard rejected the cleaned range tip' >&2; exit 1; }
 echo 'PASS public history audit scans new ranges, preserves legacy baseline, and redacts synthetic findings'
+
+# A suspicious path can be introduced while reusing an existing blob, so no
+# new blob object is reachable from the delta. The path audit must still catch
+# its addition, but it must not reject a cleanup-only deletion from a legacy
+# base.
+reuse="$tmp/reused-blob"
+mkdir -p "$reuse"
+git -C "$reuse" init -q
+git -C "$reuse" config user.name 'Synthetic Audit'
+git -C "$reuse" config user.email 'audit@example.invalid'
+printf '%s\n' 'synthetic harmless text' >"$reuse/README.md"
+git -C "$reuse" add README.md
+git -C "$reuse" commit -qm 'safe base with reusable blob'
+reuse_base=$(git -C "$reuse" rev-parse HEAD)
+mkdir -p "$reuse/config"
+git -C "$reuse" mv README.md config/reused.credentials.json
+git -C "$reuse" commit -qm 'reuse old blob at credential-like path'
+reuse_head=$(git -C "$reuse" rev-parse HEAD)
+old_blob=$(git -C "$reuse" rev-parse "$reuse_base:README.md")
+new_blob=$(git -C "$reuse" rev-parse "$reuse_head:config/reused.credentials.json")
+if [[ "$old_blob" != "$new_blob" ]]; then
+  echo 'FAIL synthetic rename did not reuse the baseline blob' >&2
+  exit 1
+fi
+set +e
+reuse_output=$(cd "$reuse" && bash "$audit" "$reuse_base..$reuse_head" 2>&1)
+reuse_status=$?
+set -e
+if (( reuse_status != 1 )) || ! grep -Fq 'credential-like tracked artifact paths present' <<<"$reuse_output"; then
+  echo 'FAIL range audit missed a newly introduced credential-like path reusing a baseline blob' >&2
+  exit 1
+fi
+if grep -Fq 'config/reused.credentials.json' <<<"$reuse_output"; then
+  echo 'FAIL reused-blob range audit disclosed the synthetic path' >&2
+  exit 1
+fi
+
+legacy_base="$reuse_head"
+git -C "$reuse" rm -q config/reused.credentials.json
+git -C "$reuse" commit -qm 'remove legacy credential-like path'
+cleanup_head=$(git -C "$reuse" rev-parse HEAD)
+cleanup_output=$(cd "$reuse" && bash "$audit" "$legacy_base..$cleanup_head" 2>&1)
+if ! grep -Fq 'credential-like tracked artifact paths absent' <<<"$cleanup_output"; then
+  echo 'FAIL cleanup-only range was rejected for a legacy credential-like path' >&2
+  exit 1
+fi
+echo 'PASS range path audit detects reused-blob additions and allows cleanup-only legacy path removals'

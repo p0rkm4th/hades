@@ -172,6 +172,9 @@ jobs:
             bash scripts/public-history-audit.sh "$head"
           fi
 
+      - name: Check public history audit redaction and range paths
+        run: bash scripts/test-public-history-audit-redaction.sh
+
       - name: Validate shell scripts
         run: bash -n scripts/*.sh webui/entrypoint.sh
 

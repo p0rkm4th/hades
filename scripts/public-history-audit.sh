@@ -73,7 +73,10 @@ check_history '/home/(scootz|scotty)/|/Users/[[:alnum:]_.-]+/|(^|[^0-9])(192\.16
   'local paths and private-network addresses absent' '172.17.0.1' '172.18.0.1'
 check_history 'tail[a-z0-9-]+\.ts\.net' 'tailnet hostnames absent'
 
-credential_paths="$(git rev-list --objects "$history_ref" | awk '$2 != "config/versions.env" && tolower($2) ~ /(\.env$|\.sqlite$|\.db$|\.pem$|\.p12$|\.key$|credentials|secrets)/ {print}')"
+# Inspect changed paths rather than only newly reachable blob objects: an
+# introduced path can reuse a blob already reachable from BASE and otherwise
+# disappear from `git rev-list --objects BASE..HEAD` output.
+credential_paths="$(git log --format= --name-only --diff-filter=AMRT "$history_ref" | awk '$0 != "config/versions.env" && tolower($0) ~ /(^|\/)(\.env$|[^/]*\.(sqlite|db|pem|p12|key)$|[^/]*credentials[^/]*|[^/]*secrets[^/]*)(\/|$)/ {print}' | sort -u)"
 if [ -n "$credential_paths" ]; then
   credential_path_count="$(printf '%s\n' "$credential_paths" | awk 'END { print NR }')"
   printf 'FAIL credential-like tracked artifact paths present (findings=%s; paths redacted)\n' "$credential_path_count"
