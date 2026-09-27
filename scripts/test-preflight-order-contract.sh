@@ -5,7 +5,7 @@ installer="$repo_dir/scripts/install-hades.sh"
 
 preflight_line=$(grep -n '^preflight()' "$installer" | cut -d: -f1)
 preflight_exit_line=$(grep -n '^if ((preflight_only)); then exit 0; fi$' "$installer" | cut -d: -f1)
-record_validation_line=$(grep -n 'validate_private_records$' "$installer" | tail -1 | cut -d: -f1)
+record_validation_line=$(awk -v start="$preflight_line" -v end="$preflight_exit_line" 'NR > start && NR < end && /validate_private_records$/ { line = NR } END { print line }' "$installer")
 
 [[ -n "$preflight_line" && -n "$preflight_exit_line" && -n "$record_validation_line" ]] || {
   echo 'FAIL installer preflight markers are missing'; exit 1;
