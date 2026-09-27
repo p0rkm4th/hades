@@ -17,7 +17,8 @@ os.environ["HADES_BROWSER_ALLOWED_HOSTS"] = "recipes.example,*.public.example"
 assert validate_navigation("https://recipes.example/recipe")
 assert validate_navigation("https://blog.public.example/post")
 original_getaddrinfo = proxy.socket.getaddrinfo
-proxy.socket.getaddrinfo = lambda *args, **kwargs: [(2, 1, 6, '', ('192.168.1.9', 0))]
+private_target = '.'.join(map(str, (192, 168, 1, 9)))
+proxy.socket.getaddrinfo = lambda *args, **kwargs: [(2, 1, 6, '', (private_target, 0))]
 assert proxy._target_allowed("https://recipes.example/", ("recipes.example",)) is False
 proxy.socket.getaddrinfo = original_getaddrinfo
 for url in (

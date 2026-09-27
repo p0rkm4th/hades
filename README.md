@@ -42,6 +42,11 @@ Use `--test-mode --root DIR` for a credential-free, disposable contract
 rehearsal; production installs require the explicit private operator-input file
 and never create synthetic users or fixture data by default.
 
-Before publishing changes, run `scripts/public-history-audit.sh HEAD` to check
-the complete reachable history for local paths, private-network addresses,
-tailnet hostnames, and credential-like artifacts.
+Before publishing a change, run
+`scripts/public-history-audit.sh <base>..<head>` to scan every newly introduced
+commit for local paths, private-network addresses, tailnet hostnames, and
+credential-like artifacts. The no-argument `scripts/public-history-audit.sh`
+mode scans all history reachable from `HEAD`, including legacy findings that
+may already exist on the selected public base. Public CI fetches full history
+and audits only commits added by the current push or pull request; the separate
+current-tree guard checks the final snapshot.
