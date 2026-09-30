@@ -65,6 +65,11 @@ with tempfile.TemporaryDirectory() as root:
         "time": time,
         "_hades_logger": logging.getLogger("backup-freshness-test"),
         "Path": Path,
+        # The handler's early privacy gate is exercised in its dedicated
+        # contract; keep this route test focused on backup freshness dispatch.
+        "_hades_explicit_private_research_request": lambda _text: False,
+        "_hades_private_person_fallback_suspected": lambda _text: False,
+        "_HADES_PRIVATE_RESEARCH_FOLLOWUP": re.compile(r"(?!)"),
         "_hades_health_watch_state_path": lambda: state,
         "_hades_phase2_resource_shares": lambda _subject: set(),
     }

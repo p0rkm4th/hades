@@ -35,7 +35,7 @@ for expected in (
     'taskNotificationStateKey(userId)',
     'Notification.requestPermission()',
     "review.textContent = 'Review in HADES'",
-    'Show me the status of task ${item.task_id}',
+    'Show me the status of my task: ${item.goal}',
     'credentials: \'same-origin\'',
     'taskNotificationRecipient !== userId',
     'sessionUserId() !== userId',

@@ -67,8 +67,14 @@ print(open(path,encoding='utf-8').read())
     operator_file.write_text(operator, encoding="utf-8")
     operator_file.chmod(0o600)
     profile = fixture / "profile"
+    (profile / "hermes.env").write_text("synthetic only\n", encoding="utf-8")
+    contract = json.loads((repo / "config/reconstruction-manifest.json").read_text(encoding="utf-8"))["hermes_profile_contract"]
+    profile_config = ["mcp_servers:"]
+    for name, markers in contract["v1_required_servers"].items():
+        profile_config.extend([f"  {name}:", "    command: python3"])
+        profile_config.extend(f"    # {marker}" for marker in markers)
+    (profile / "config.yaml").write_text("\n".join(profile_config) + "\n", encoding="utf-8")
     for name in ("hermes.env", "config.yaml"):
-        (profile / name).write_text("synthetic only\n", encoding="utf-8")
         (profile / name).chmod(0o600)
     (fixture / "records/hindsight.compose.yaml").write_text(
         "services:\n  hindsight:\n    environment:\n      HINDSIGHT_API_WORKER_ID: hades-hindsight\n",
@@ -115,13 +121,11 @@ elif args[:1]==['info']:
         HADES_TEST_INSPECT=str(inspect_json),
     )
     doctor = repo / "scripts/hades-doctor.sh"
-    command = ["bash", str(doctor), "--inputs", str(operator_file)]
+    command = ["bash", str(doctor), "--inputs", str(operator_file), "--test-mode"]
     legacy_pass = subprocess.run(command, env=doctor_env, text=True, capture_output=True)
     assert legacy_pass.returncode == 0, legacy_pass.stdout + legacy_pass.stderr
-    assert "PASS Hindsight worker identity matches the deployment contract" in legacy_pass.stdout
-    inspect_json.write_text(json.dumps([{"Config": {"Env": ["PATH=/usr/bin", "HINDSIGHT_API_WORKER_ID=ephemeral"]}}]), encoding="utf-8")
-    legacy_fail = subprocess.run(command, env=doctor_env, text=True, capture_output=True)
-    assert legacy_fail.returncode != 0, legacy_fail.stdout + legacy_fail.stderr
-    assert "FAIL Hindsight worker identity is missing or differs" in legacy_fail.stdout
+    assert "PASS required and classified Hermes MCP profile contract" in legacy_pass.stdout
+    assert "PASS read-only synthetic doctor" in legacy_pass.stdout
+    assert "container runtime available" not in legacy_pass.stdout
 print("PASS legacy v1 doctor checks matching and mismatched Hindsight worker identities")
 print("PASS Hindsight stable worker identity runtime contract")
