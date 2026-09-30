@@ -5,6 +5,11 @@ services:
     image: ${HADES_AGENT_ZERO_IMAGE:?set HADES_AGENT_ZERO_IMAGE from config/versions.env}
     container_name: hades-agent-zero
     restart: unless-stopped
+    # Native Operator login is enabled only when the operator explicitly
+    # supplies a protected password file. The renderer creates this env file
+    # with mode 0600; /dev/null keeps the bounded API-only baseline unchanged.
+    env_file:
+      - ${HADES_AGENT_ZERO_AUTH_ENV_FILE:-/dev/null}
     # Agent Zero's pinned upstream entrypoint bootstraps application files
     # under /a0 and creates /run/sshd. The image cannot start with a read-only
     # root; retain the supported privilege controls below and keep state

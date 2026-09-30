@@ -8,6 +8,7 @@ location with access controls appropriate to the data they contain.
 
 | Component | Persistent state | Authority | Backup requirement | Restore note |
 |---|---|---|---|---|
+| Phase 3 automation | Isolated SQLite database at `<HERMES_HOME>/profiles/hades/state/phase3/automations.sqlite`; contains typed records, run ledger, results, and audit rows | HADES Phase 3 store; source data remains canonical in Grocy, health, or backup evidence | `scripts/backup-sqlite-state.sh` includes an online SQLite snapshot when this file exists; retain the matching manifest/checksum set | Restore the isolated database before Hermes. The one-time importer copies only Phase 3 tables from the former shared Epsilon database and never deletes or replaces that source. Revalidate current identity and resource grants before resuming schedules. |
 | Open WebUI | `/app/backend/data/webui.db` plus Chroma data and HADES-owned static assets; SQLite WAL sidecars were present during inspection | Open WebUI for conversations and account/config state | Quiesce WebUI or use a consistent database backup; preserve the deployed asset files separately | Restore the database and matching assets before starting the service; verify authentication and chat reload. Never copy only a live `.db` while its `-wal`/`-shm` sidecars are active. |
 | Hindsight | PostgreSQL cluster under `/home/hindsight/.pg0/instances/hindsight/data` | Hindsight for semantic memory | Use PostgreSQL native consistent backup/export, not a raw live directory copy | Restore before Hermes; verify bank health and a known memory recall without treating it as live domain truth. |
 | Grocy | `/config/data/grocy.db` and application configuration | Grocy for household/grocery state | Back up the complete persistent config using a consistent snapshot or native database method | Restore before enabling HADES mutations; verify stock and shopping-list state canonically. |
@@ -23,6 +24,7 @@ operator record.
 
 | Component | Authority / reconstructability | Consistency method | Restore acceptance | Identity and canonical-state implications | Last verified | Remaining gate |
 |---|---|---|---|---|---|---|
+| Phase 3 automation | HADES-owned typed records and execution ledger; canonical source data remains in its owning service | SQLite online backup from the isolated database; legacy import copies only Phase 3 tables once | Restore before Hermes, then validate record ownership, run/result isolation, and current grants before allowing scheduled reads | Preserve owner subject IDs and audit/run history; restored schedules must remain disabled until current identity/resource authorization is confirmed | 2026-09-24 source contract | End-to-end authenticated runner and production restore acceptance |
 | Open WebUI | Authoritative for application accounts, conversations, and settings; static HADES assets are reconstructable from the deployment | Quiesce or SQLite online backup, including WAL-aware handling; preserve matching assets | Start with matching assets, authenticate, and reload a marker conversation | Restored application subjects must align with the chosen directory mapping; does not own Grocy, finance, or memory truth | 2026-09-13 | Owner-data restore and production cutover remain operator work |
 | LLDAP | Authoritative for directory identities; application records are separate | Quiesced database copy and isolated pinned-image restore | Verify directory health, login behavior, and restored identity records | Restored identities do not invalidate existing WebUI tokens automatically; use the ordered revocation bridge | 2026-09-13 | Production owner recovery and subject remapping remain gated |
 | Hindsight | Authoritative for durable memory; service can be recreated around a native PostgreSQL export | Native PostgreSQL export/restore, not a raw live data-directory copy | Verify health and a known marker recall in the intended bank/namespace | Stable subject-to-bank mapping must be restored before private recall is trusted; never treat memory as live domain truth | 2026-09-13 | Production owner-bank migration and mapping policy remain unapproved |
@@ -41,6 +43,7 @@ validated restored service. Exact values remain operator policy where marked.
 
 | Component | RPO assumption | RTO assumption |
 |---|---|---|
+| Phase 3 automation | 24 hours for schedules and run history | 1 hour to restore the database and revalidate current grants |
 | LLDAP | 24 hours for directory changes | 2 hours to health and login validation |
 | Open WebUI | 24 hours for conversations/settings | 2 hours to login and marker-chat reload |
 | Hindsight | 24 hours for accepted memory | 4 hours to health and scoped recall |
@@ -50,6 +53,26 @@ validated restored service. Exact values remain operator policy where marked.
 | Agent Zero | 24 hours for operator workspace | 4 hours to harmless delegation validation |
 | SearXNG | Configuration-only; cache loss is acceptable | 1 hour to configuration and JSON-search validation |
 | HADES private configuration | Every change-window checkpoint | 1 hour to re-render and pass doctor/validation |
+
+## Current automated Backup Check scope
+
+The fixed owner Backup Check currently verifies two repository artifacts:
+the HADES Git bundle and the HADES infrastructure Git bundle. It checks each
+artifact's presence, seven-day freshness, expected SHA-256, and Git bundle
+validity. It does **not** back up or verify Open WebUI, LLDAP, Hindsight,
+Grocy, Hermes profile state, Agent Zero, or SearXNG data. Their backup and
+restore requirements remain in the recovery matrix above; a healthy
+repository check must not be presented as a complete HADES recovery proof.
+
+The current source result renderer shows each repository target's latest
+state, the time its latest check completed, and its most recent verified
+artifact date. It retains last-good evidence across a later stale/missing
+result by scanning up to the latest 100 completed results for that automation.
+If there is no recent successful result, the response says so instead of
+claiming the old artifact is healthy. This is repository behavior; production
+acceptance after a bounded overlay update is still pending. Full application
+state coverage, encrypted off-site custody, and complete restore acceptance
+remain separate gates.
 
 ## Live deployment mount inventory
 
@@ -155,6 +178,14 @@ owner conversations, authentication, or matching static assets. Those remain
 private operational gates. The Hindsight image includes a bundled PostgreSQL
 server and its native backup tools.
 
+`scripts/test-grocy-backup-restore.sh` restores one SQLite snapshot into a
+fresh temporary Grocy volume using the exact digest-pinned image, starts it
+with `--network none` and no published port, and checks a known synthetic
+shopping-list item through Grocy's authenticated API. It removes only its
+uniquely named test container and volume. This is component-level canonical
+restore evidence; it does not prove a full HADES destroy/restore or recovery of
+LLDAP/WebUI identity alignment, Hermes, Hindsight, Agent Zero, or SearXNG.
+
 The live Hindsight PostgreSQL listener passed `pg_isready` on 2026-09-12, and
 the pinned image exposes matching PostgreSQL 18.1 `pg_dump`, `pg_restore`, and
 `pg_isready` binaries. A protected custom-format export was created from the
@@ -175,14 +206,21 @@ recovery or automatic Open WebUI subject remapping.
 
 [`scripts/backup-sqlite-state.sh`](../scripts/backup-sqlite-state.sh) now
 provides a private, component-specific SQLite backup helper for Open WebUI,
-LLDAP, Grocy, and Hermes. It uses online SQLite backup for WebUI, a native
-SQLite snapshot for Grocy, a brief quiesced copy for the LLDAP image (which
+LLDAP, Grocy, Hermes, and the isolated Phase 3 database when present. It uses
+online SQLite backup for WebUI, a native SQLite snapshot for Grocy, Python's
+standard-library SQLite backup and immutable integrity APIs for host-side
+snapshots, online
+SQLite backup for Phase 3 state, a brief quiesced copy for the LLDAP image (which
 does not ship SQLite tooling), and SQLite backup for Hermes state. The
 quiesced LLDAP path waits for the container's health check after restart before
 the run can succeed. It enforces private destination permissions, validates
-each artifact, and writes checksums. It does not encrypt or retain backups,
+each artifact, and writes checksums. Its manifest records whether Phase 3
+state was present. It does not encrypt or retain backups,
 and it deliberately does not claim coverage for Hindsight PostgreSQL, Agent
 Zero, or SearXNG.
+The LLDAP container defaults to the production name `hades-lldap-production`;
+reconstructed Compose deployments can select their actual container with
+`HADES_LLDAP_CONTAINER` (for example, `hades-lldap`).
 Each output also contains a mode-0600 `MANIFEST` with authoritative component
 versions/digests and adapter revisions; this metadata is included in
 `SHA256SUMS` so a restore can prove which composition produced the snapshot.
@@ -191,19 +229,22 @@ When present, the recovery validator requires the sibling `SHA256SUMS` to cover
 component fields, permissions, and checksum; older artifacts
 without `MANIFEST` remain structurally verifiable but do not gain this newer
 provenance guarantee.
-Native production database/export procedures and isolated restore evidence are
-now present for Hindsight, Agent Zero, SearXNG, and the Hermes profile at the
-documented level: native Hindsight restore, disposable Agent Zero/SearXNG
-launches, and isolated Hermes profile CLI parsing have passed. Retention,
-encryption, and a complete all-component job remain operator work.
-Hindsight native export and same-server isolated restore are now verified.
+Native database/export procedures and isolated restore evidence are present at
+the documented level for Hindsight, Agent Zero, SearXNG, and the Hermes
+profile: the Hindsight native procedure was exercised against an isolated
+database, while disposable Agent Zero/SearXNG launches and isolated Hermes
+profile CLI parsing passed. The current production Hindsight custom-format
+export is now captured on Alexandra and checksum-verified; encrypted custody,
+and a component-level isolated restore now pass. Retention, encrypted custody,
+and a complete all-component job remain operator work.
 
 On 2026-09-13, the live production Grocy database was copied through the
 container's SQLite/PDO path into a private recovery checkpoint. The copy is
 non-empty, mode `0600`, and passed SQLite `PRAGMA integrity_check`; it is not
 stored in Git. This replaces the previously unusable zero-byte Grocy artifact
-in the older migration-preflight set. Hindsight export is separately validated
-in the recovery section above.
+in the older migration-preflight set. The Hindsight export procedure and its
+isolated restore rehearsal are recorded above; the current production export
+is captured in the protected Alexandra rollback tree with its checksum sidecar.
 
 The live production Open WebUI database was also copied through SQLite's
 online backup API into that private checkpoint on 2026-09-13. The copy is
@@ -274,6 +315,59 @@ readiness check and corrected to mode `0600` in the live persistent volume.
 Future restore checks must preserve that restriction before the service is
 started.
 
+When the protected Hindsight database credential is available, the tracked
+[`scripts/backup-hindsight-native.sh`](../scripts/backup-hindsight-native.sh)
+helper creates a mode-restricted custom-format archive, validates it through
+`pg_restore --list`, and writes a checksum sidecar. It accepts only a private
+env file containing one `PGPASSWORD` assignment, passes that file through
+`docker exec --env-file`, and never prints or copies the credential. The
+helper is intentionally not run by reconstruction or CI; production export
+remains an explicit operator action.
+
+The pinned-image native restore path also has a disposable end-to-end
+rehearsal: `scripts/test-hindsight-native-backup-restore.sh` creates a synthetic
+bank and memory through Hindsight's API, backs up, destroys the source volume,
+restores into a new volume, and checks the SQL marker, tagged-memory listing,
+fresh recall, and service health. It uses a local synthetic extraction model;
+it does not read production state or validate production subject-bank mapping.
+
+### Guest C synthetic identity-aware component restore replay
+
+The protected Guest C SQLite snapshot and matching native Hindsight archive
+were restored into uniquely named local Docker volumes and an isolated private
+network using the pinned LLDAP/Hindsight images and the reconstructed HADES
+Open WebUI image. The restored LLDAP database and its synthetic identity
+secrets authenticated Alpha, Beta, and Gamma through Open WebUI LDAP; all
+three retained their snapshot subject IDs and roles, and each could see the
+archived `hermes-agent` model. Authenticated chat-history reads returned each
+account's own marker history; Beta and Gamma did not see Alpha's fruit markers.
+A synthetic Alpha theme preference written on the restored target survived an
+Open WebUI restart and did not alter Beta's settings.
+
+The native Hindsight archive restored five tagged explicit-memory records into
+Alpha's `hades-user-<subject-id>` bank and zero into Beta's and Gamma's banks.
+The raw Alpha archive includes historical mango and corrected pear records.
+The replay then pointed the restored WebUI model connection at an isolated
+Hermes 0.21.2 gateway using the tracked HADES overlay and Guest C's actual
+operator setting (no configured owner subject). Through authenticated chat,
+Alpha's typo-form recall returned only the corrected pear; Beta and Gamma
+received no matching private memory. Restored chat histories remained scoped
+to each account. An Alpha-only theme setting survived an Open WebUI restart,
+while Beta's setting was unchanged. The direct bank listing still shows both
+historical fruit records, so the corrected answer is specifically evidence
+from the authenticated HADES route, not an archive rewrite.
+
+This is an identity-aware LLDAP/Open WebUI/Hindsight component restore replay,
+with Grocy also restored from the same SQLite snapshot. The pinned Grocy
+container returned the `HADES Synthetic Milk` shopping-list row with quantity
+1 through its authenticated API. Beta's authenticated Hermes chat also
+returned the row through HADES's direct read-only Grocy route. This did not
+call the Grocy MCP tool or perform a mutation. This is not a complete HADES
+recovery: it used the locally reconstructed Open WebUI image and did not start
+Agent Zero or SearXNG; there was no guest boot or destruction cycle. The
+uniquely named containers, volumes, private network, and temporary credential
+copies were removed; Guest C and production were not changed by the replay.
+
 ## Private operator procedure outline
 
 The following is intentionally a procedure outline, not an executable public
@@ -297,3 +391,33 @@ SQLite-backed Open WebUI and Grocy, use SQLite's online backup facility while
 the writer is quiesced. For Hermes and Agent Zero, snapshot their private
 profiles/volumes only after stopping their writers. SearXNG configuration can
 be exported separately from its reconstructable cache.
+
+### Guest C reconstruction mount and component restore rehearsal — 2026-09-29
+
+Read-only mount inspection on the disposable Fedora 44 Guest C found the
+current generated layout differs from the historical production inventory
+above. Agent Zero uses the named `hades-agent-zero-data` volume at `/a0/usr`.
+SearXNG uses the generated persistent state directory at `/etc/searxng`, a
+separate read-only operator settings file at `/tmp/hades-settings.yml`, and a
+disposable cache volume at `/var/cache/searxng`. The settings file must be
+protected as private configuration; cache loss does not require backup.
+
+The Agent Zero workspace was stopped, archived to a mode-0600 temporary
+artifact, restored to a fresh volume, and launched from the exact pinned image
+in an isolated network with no published ports. The restored local UI returned
+HTTP 200 and the workspace environment file retained its source mode. That
+mode was `0644`, exposing an installer defect because the file contains
+secrets. The tracked installer now changes it to `0600`; doctor and install
+validation fail if the file is absent or has another mode. The canonical
+installer repaired Guest C, after which the file was root-owned mode `0600`
+and both checks passed. The isolated Agent Zero rehearsal did not exercise a
+delegated task because no disposable model backend was configured.
+
+For SearXNG, the generated config directory was archived with a mode-0600
+temporary artifact, restored into a fresh volume, and started with the same
+read-only settings input and pinned image on a private network without
+published ports. The restored endpoint returned JSON search HTTP 200 with two
+results. Temporary containers, volumes, networks, and archives were removed.
+These are component-level Guest C drills, not whole-guest destruction/restore,
+encrypted off-host custody, production acceptance, or independent clean-guest
+release evidence.

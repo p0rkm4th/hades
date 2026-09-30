@@ -64,11 +64,14 @@ and low-confidence rejection. This proves the composition and authority
 boundary, not OCR recognition quality or a production Grocy write.
 
 The intake preview accepts an optional caller-owned receipt fingerprint and
-known submitted fingerprints. `ReceiptFingerprintLedger` now supplies a small
-protected bounded marker file for deployed composition: receipts classify as
-`NEW`, `POSSIBLE DUPLICATE`, or `ALREADY APPLIED`; a marker becomes applied only
-after canonical Grocy reconciliation. This is idempotency metadata, not a
-receipt database or authority store.
+known submitted fingerprints. `ReceiptFingerprintLedger` supplies the bounded
+marker helper used by the standalone evidence contract. The injected Open
+WebUI owner apply endpoint maintains the same `SUBMITTED` / `APPLIED` lifecycle
+in its protected runtime file. Its check, marker, Grocy write, and canonical
+read-back now run under a cross-process file lock; unsafe ledger shape, mode,
+size, or capacity fails closed. The marker is flushed before a Grocy write and
+becomes applied only after canonical read-back. This is idempotency metadata,
+not a receipt database or authority store.
 
 `build_intake_apply_plan` is the next boundary after review. It requires
 explicit review and confirmation, exact product matches, and caller-supplied
@@ -134,6 +137,19 @@ The reproducible isolated worker definition is
 MCP package, and includes the native OpenCV/Paddle runtime libraries. The
 worker is intentionally not part of the production Compose set until a
 disposable image can complete actual OCR on representative synthetic images.
+
+### Immutable worker base — 2026-09-29
+
+The worker's Python base is pinned in `config/versions.env` as the official
+multi-platform `python:3.11-slim-bookworm` manifest digest
+`sha256:a36c24f9cbdf4fd0f52d67f0823eeac19c2028c637cecc392d97f980d4fec56b`.
+The Dockerfile requires that value through the explicit
+`HADES_RECEIPT_OCR_BASE_IMAGE` build argument; it does not fall back to a
+mutable tag. Build the staged image with that argument and record the resulting
+local image ID before supplying `HADES_RECEIPT_OCR_IMAGE` to the private
+Compose deployment. The pinned base does not make Debian apt repository
+contents bit-for-bit reproducible; the resulting image ID remains the runtime
+artifact identity.
 
 ## Non-decision
 

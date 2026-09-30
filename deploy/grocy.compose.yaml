@@ -20,7 +20,7 @@ services:
 networks:
   grocy-private:
     name: hades-grocy-net
-    driver: bridge
+    external: true
 
 volumes:
   hades-grocy-data:

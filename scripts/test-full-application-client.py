@@ -2,6 +2,7 @@
 """Exercise the isolated Open WebUI application path over its private network."""
 
 import json
+import os
 import sys
 import time
 import uuid
@@ -13,6 +14,11 @@ base = sys.argv[1].rstrip("/")
 model_base = sys.argv[2].rstrip("/")
 mode = sys.argv[3] if len(sys.argv) > 3 else "create"
 state_path = sys.argv[4] if len(sys.argv) > 4 else ""
+model_key = os.environ.get("HADES_TEST_MODEL_KEY", "synthetic")
+model_name = os.environ.get("HADES_TEST_MODEL_NAME", "synthetic-reconstruction-model")
+run_id = os.environ.get("HADES_TEST_RUN_ID", "reconstruction")
+alpha_email = f"alpha-{run_id}@reconstruction.invalid"
+beta_email = f"beta-{run_id}@reconstruction.invalid"
 
 
 def request(path, method="GET", body=None, token=None):
@@ -35,7 +41,7 @@ if mode == "verify-restart":
     alpha = request(
         "/api/v1/auths/signin",
         "POST",
-        {"email": "alpha@reconstruction.invalid", "password": "Synthetic-Only-123!"},
+        {"email": alpha_email, "password": "Synthetic-Only-123!"},
     )
     saved = request(f"/api/v1/chats/{chat_id}", token=alpha["token"])
     if "Synthetic application response" not in json.dumps(saved):
@@ -44,7 +50,7 @@ if mode == "verify-restart":
     beta = request(
         "/api/v1/auths/signin",
         "POST",
-        {"email": "beta@reconstruction.invalid", "password": "Synthetic-Only-123!"},
+        {"email": beta_email, "password": "Synthetic-Only-123!"},
     )
     try:
         request(f"/api/v1/chats/{chat_id}", token=beta["token"])
@@ -59,13 +65,13 @@ if mode == "verify-restart":
 alpha = request(
     "/api/v1/auths/signup",
     "POST",
-    {"name": "Alpha", "email": "alpha@reconstruction.invalid", "password": "Synthetic-Only-123!"},
+    {"name": "Alpha", "email": alpha_email, "password": "Synthetic-Only-123!"},
 )
 token = alpha["token"]
 beta = request(
     "/api/v1/auths/add",
     "POST",
-    {"name": "Beta", "email": "beta@reconstruction.invalid", "password": "Synthetic-Only-123!", "role": "user"},
+    {"name": "Beta", "email": beta_email, "password": "Synthetic-Only-123!", "role": "user"},
     token,
 )
 beta_token = beta["token"]
@@ -75,7 +81,7 @@ request(
     {
         "ENABLE_OPENAI_API": True,
         "OPENAI_API_BASE_URLS": [model_base],
-        "OPENAI_API_KEYS": ["synthetic"],
+        "OPENAI_API_KEYS": [model_key],
         "OPENAI_API_CONFIGS": {},
     },
     token,
@@ -87,7 +93,7 @@ chat = request(
     "/api/chat/completions",
     "POST",
     {
-        "model": "synthetic-reconstruction-model",
+        "model": model_name,
         "messages": [{"id": message_id, "role": "user", "content": "reconstruction marker"}],
         "stream": False,
         "parent_id": None,

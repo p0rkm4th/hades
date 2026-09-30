@@ -6,11 +6,11 @@ from pathlib import Path
 
 reconstruction = Path('docs/reconstruction.md').read_text(encoding='utf-8')
 required_rows = {
-    'Full-stack synthetic clean reconstruction': 'PASS',
+    'Full-stack synthetic clean reconstruction': 'PARTIAL',
     'Actual-image application composition': 'PASS',
-    'Full application clean reconstruction': 'NOT PROVEN',
+    'Full application clean reconstruction': 'PARTIAL',
     'Fresh-install synthetic household soak': 'PASS',
-    'Fresh-install full application household soak': 'NOT PROVEN',
+    'Fresh-install full application household soak': 'PARTIAL',
 }
 for level, status in required_rows.items():
     rows = [line for line in reconstruction.splitlines() if line.startswith(f'| {level} |')]
@@ -23,7 +23,7 @@ if 'test-full-application-image-startup.sh' not in reconstruction:
 
 readiness = Path('docs/stable-v1-readiness.md').read_text(encoding='utf-8')
 row = next((line for line in readiness.splitlines() if line.startswith('| Installation/rebuild |')), '')
-if '| PARTIAL |' not in row or 'full application' not in row.lower():
+if '| PARTIAL |' not in row or 'generated-installer' not in row.lower():
     raise SystemExit('FAIL stable-v1 installation/rebuild status is missing or overstated')
 print('PASS reconstruction evidence documentation remains honest and granular')
 PY

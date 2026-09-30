@@ -1,0 +1,20 @@
+capture_schema: public-history-audit/v1
+audited_at_utc: 2026-09-17
+branch: HEAD
+
+current_tree:
+  public_tree_safety: PASS
+  private_topology_in_current_files: absent
+  credential_like_tracked_paths: absent
+
+history:
+  synthetic_docker_bridge_exceptions: <PRIVATE_LAN_ADDRESS>, <PRIVATE_LAN_ADDRESS>
+  result: FAIL_REACHABLE_PRE_REDACTION_COMMITS
+  reachable_commit_count: 898
+  affected_commit_count: 284
+  finding: earlier reachable commits contain private destination addresses and workstation-specific paths in historical acceptance/scripts
+  current_remediation: current files are redacted or derive paths; no new private values are introduced
+  remaining_action: history rewrite or branch retirement requires explicit release/owner authorization
+  safety_disposition: no history rewrite, reset, force-push, or deletion performed
+
+result: CURRENT_TREE_SAFE_HISTORY_REMEDIATION_REQUIRES_EXPLICIT_AUTHORIZATION

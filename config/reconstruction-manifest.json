@@ -21,10 +21,11 @@
       "state_relationship": "build output is software custody; WebUI database and assets are persistent state",
       "persistent_state": ["WebUI database", "vector data", "theme assets"],
       "required_secret_inputs": ["HADES_HERMES_API_KEY", "HADES_OPEN_WEBUI_DATA"],
-      "network_dependency": "LLDAP and Hermes",
+      "network_dependency": "LLDAP and Hermes; authenticated Task notification reads use the Hermes gateway server-side",
       "startup_order": 2,
-      "health_check": "WebUI health, login, and chat reload",
-      "restore_check": "SQLite integrity, marker conversation reload, and asset match"
+      "health_check": "WebUI health, login, chat reload, and actor-isolated Task notification snapshot",
+      "restore_check": "SQLite integrity, marker conversation reload, and asset match",
+      "required_assets": ["webui/hades-theme.css", "webui/hades-theme.js", "webui/finance-upload.js", "webui/receipt-upload.js"]
     },
     {
       "component": "Hindsight",
@@ -42,7 +43,9 @@
     },
     {
       "component": "Grocy",
-      "pinned_version": "config/versions.env:HADES_GROCY_IMAGE",
+      "pinned_version": "config/versions.env:HADES_GROCY_IMAGE and HADES_GROCY_MCP_VERSION",
+      "artifact_type": "immutable Grocy OCI image plus separately locked maintained grocy-mcp Python environment",
+      "artifact_source": "config/versions.env and integrations/grocy-mcp/requirements.lock",
       "persistent_state": ["Grocy database", "configuration", "inventory and recipes"],
       "required_secret_inputs": ["HADES_GROCY_API_KEY_FILE"],
       "network_dependency": "private Grocy API",
@@ -61,8 +64,8 @@
       "restore_check": "synthetic ledger marker, owner-scoped import preview/reconciliation contract, and read-only response"
     },
     {
-      "component": "Hermes 0.14 baseline",
-      "pinned_version": "0.14.0",
+      "component": "Hermes",
+      "pinned_version": "config/versions.env:HADES_HERMES_VERSION",
       "artifact_type": "verified upstream source archive",
       "immutable_reference": "config/versions.env:HADES_HERMES_SOURCE_SHA256",
       "artifact_source": "config/versions.env:HADES_HERMES_SOURCE_URL",
@@ -72,16 +75,18 @@
       "network_dependency": "Open WebUI, Hindsight, Grocy, SearXNG, and Agent Zero",
       "startup_order": 5,
       "health_check": "private API health and authenticated model contract",
-      "restore_check": "profile parse, bounded tool call, and reload/restart"
+      "restore_check": "profile parse, bounded tool call, and reload/restart",
+      "required_profile": "hermes/config.yaml.example"
     },
     {
       "component": "Agent Zero",
       "pinned_version": "config/versions.env:HADES_AGENT_ZERO_IMAGE",
       "persistent_state": ["dedicated operator volume", "settings"],
-      "required_secret_inputs": ["HADES_AGENT_ZERO_CREDENTIAL_FILE when enabled"],
+      "required_secret_inputs": [],
+      "optional_secret_inputs": ["HADES_AGENT_ZERO_OPERATOR_PASSWORD_FILE enables native UI login and synchronizes the running API token to Hermes; disabled when unset", "HADES_AGENT_ZERO_CREDENTIAL_FILE for externally managed API credentials"],
       "network_dependency": "private operator API",
       "startup_order": 6,
-      "health_check": "health and authenticated bounded API check",
+      "health_check": "health, native UI auth when enabled, and synchronized API credential matches live service",
       "restore_check": "isolated volume restore and harmless delegation"
     },
     {
@@ -100,13 +105,130 @@
     },
     {
       "component": "HADES policy/assets/adapters",
-      "pinned_version": "repository main plus config/versions.env",
+      "pinned_version": "repository main plus config/versions.env, including the Grocy MCP credential launcher",
       "persistent_state": [],
       "required_secret_inputs": ["operator input file"],
       "network_dependency": "loaded by Hermes",
       "startup_order": 8,
-      "health_check": "overlay syntax, boundary, and MCP registration checks",
-      "restore_check": "source/runtime match and policy smoke contract"
+      "health_check": "overlay syntax, boundary, web/page/research MCP registration checks; anonymous browser source/runtime and DNS pinning contract",
+      "restore_check": "source/runtime match and policy smoke contract",
+      "installed_layer_files": [
+        "overlay/sitecustomize.py",
+        "adapters/grocy-mcp-launch.py",
+        "adapters/grocy-recipe-authoring.py",
+        "adapters/agent-zero-mcp.py",
+        "assets/hades-theme.css",
+        "assets/hades-theme.js",
+        "assets/finance-upload.js",
+        "assets/receipt-upload.js"
+      ],
+      "layer_digest_sources": [
+        "hermes/sitecustomize.py",
+        "integrations/grocy-mcp/launch.py",
+        "integrations/grocy-mcp/requirements.lock",
+        "integrations/grocy-recipe-authoring/server.py",
+        "integrations/agent-zero-mcp/server.py",
+        "webui/hades-theme.css",
+        "webui/hades-theme.js",
+        "webui/finance-upload.js",
+        "webui/receipt-upload.js"
+      ]
+    }
+  ],
+  "hermes_profile_contract": {
+    "v1_required_servers": {
+      "grocy": [
+        "integrations/grocy-mcp/launch.py",
+        "GROCY_API_KEY_FILE"
+      ],
+      "grocy_recipe_authoring": [
+        "integrations/grocy-recipe-authoring/server.py",
+        "GROCY_API_KEY_FILE"
+      ],
+      "recipe-url-ingest": [
+        "integrations/recipe-ingest/server.py",
+        "GROCY_API_KEY_FILE"
+      ],
+      "homelab-readonly": [
+        "integrations/homelab-readonly/server.py"
+      ]
+    },
+    "owner_gated_servers": {
+      "receipt-ocr-gateway": "Owner-confirmed receipt review and apply; endpoint is supplied through private operator input.",
+      "finance-file-import": "Preview-only private file intake; finance data and activation remain owner-gated."
+    },
+    "optional_staged_servers": {
+      "hades-agent-zero": "Bounded delegation stays disabled until explicit owner activation and private Agent Zero credentials are supplied.",
+      "homelab-control": "VM writes stay disabled until an explicitly scoped private credential and approved template map are supplied.",
+      "browser-research": "Anonymous browser reads require an explicit public-host allowlist; dynamic fallback remains disabled by default.",
+      "public-page-extract": "Static public-page evidence support; live Web/search owner acceptance remains open.",
+      "public-research": "OSINT implementation is in progress; retain its source and policy contracts without treating owner acceptance as complete."
+    },
+    "test_only": [
+      "Synthetic Proxmox fixtures and test-only private-input bundles are never production profile registrations."
+    ],
+    "post_v1": [
+      "Agent Zero native A2A remains deferred for V1."
+    ]
+  },
+  "optional_components": [
+    {
+      "component": "Receipt OCR gateway and worker",
+      "pinned_version": "config/versions.env:HADES_RECEIPT_OCR_BASE_IMAGE plus pinned paddlepaddle/paddleocr-mcp packages in integrations/receipt-ocr/Dockerfile",
+      "artifact_type": "locally built OCI image; bind the resulting image ID as a private operator input",
+      "artifact_source": "https://hub.docker.com/_/python plus integrations/receipt-ocr/Dockerfile",
+      "activation": "OWNER-GATED; Hermes registration is disabled in the canonical profile; owner-scoped upload and explicit review/apply are required",
+      "source_files": [
+        "integrations/receipt-ocr/Dockerfile",
+        "integrations/receipt-ocr/gateway.py",
+        "integrations/receipt-ocr/input_boundary.py",
+        "deploy/templates/receipt-ocr.compose.yaml",
+        "webui/receipt-upload.js",
+        "scripts/test-receipt-ocr-image-contract.sh",
+        "scripts/test-receipt-ocr-gateway-contract.sh"
+      ],
+      "required_operator_inputs": ["HADES_RECEIPT_OCR_IMAGE", "HADES_RECEIPT_OCR_URL"],
+      "persistent_state": ["disposable PaddleOCR model cache"],
+      "network_dependency": "loopback/private Streamable HTTP gateway; no public listener",
+      "test_fixture": "synthetic receipt images and disposable authenticated Alpha/Beta browser sessions",
+      "health_check": "pinned Hermes MCP initialize/list-tools and bounded receipt_ocr_extract contract",
+      "restore_check": "rebuild from pinned base and tracked source, verify image ID, reconnect owner-gated endpoint; model cache may be regenerated"
+    },
+    {
+      "component": "Agent Zero bounded MCP delegation",
+      "pinned_version": "integrations/agent-zero-mcp/server.py",
+      "activation": "OPTIONAL/STAGED; Hermes profile entry is disabled by default; explicit owner enablement and HADES_AGENT_ZERO_CREDENTIAL_FILE or HADES_AGENT_ZERO_OPERATOR_PASSWORD_FILE are required",
+      "persistent_state": [],
+      "required_secret_inputs": [],
+      "optional_secret_inputs": ["AGENT_ZERO_API_KEY generated from an explicit private operator input"],
+      "network_dependency": "loopback Agent Zero API",
+      "startup_order": 8,
+      "health_check": "bounded delegation contract and policy refusal tests",
+      "restore_check": "adapter reconstructed from source; private credential is regenerated or restored from owner custody"
+    },
+    {
+      "component": "Anonymous dynamic public-page research fallback",
+      "pinned_version": "integrations/browser-access/proxy.py:@playwright/mcp@0.0.81",
+      "activation": "OPTIONAL/STAGED; HADES_PUBLIC_RESEARCH_DYNAMIC_ENABLED defaults false and requires an explicit HADES_BROWSER_ALLOWED_HOSTS allowlist",
+      "persistent_state": [],
+      "required_secret_inputs": [],
+      "optional_secret_inputs": ["HADES_BROWSER_ALLOWED_HOSTS is an operator-selected public-host allowlist; no browser credentials or cookies are accepted"],
+      "network_dependency": "anonymous page navigation to explicitly allowlisted public hosts",
+      "startup_order": 8,
+      "health_check": "page-render read-only guard, host policy, and single-answer DNS pinning checks",
+      "restore_check": "generated from tracked source; no persistent state"
+    },
+    {
+      "component": "Agent Zero Operator gateway",
+      "pinned_version": "config/versions.env:HADES_NGINX_IMAGE plus tracked proxy/auth source",
+      "activation": "OPTIONAL/STAGED; disabled by default and explicitly owner-enabled",
+      "persistent_state": [],
+      "required_secret_inputs": ["Open WebUI session, mapped LLDAP subject/groups, and strict-read-only LLDAP reader credentials when enabled"],
+      "optional_secret_inputs": ["HADES_AGENT_ZERO_OPERATOR_PASSWORD_FILE enables native Agent Zero login", "HADES_AGENT_ZERO_OPERATOR_PROXY_ENABLED=true enables the gateway"],
+      "network_dependency": "loopback-only Open WebUI, Agent Zero, and LLDAP",
+      "startup_order": 7,
+      "health_check": "Nginx config parse, per-request WebUI session and live LLDAP owner/admin check, and cookie isolation",
+      "restore_check": "gateway source/config regenerated; no persistent state"
     }
   ],
   "provenance": [

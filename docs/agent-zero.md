@@ -29,7 +29,11 @@ failure after the request is attempted is `OUTCOME UNKNOWN`, because Agent Zero
 may have accepted the task. The secret-free adapter contract, disposable synthetic API/MCP path,
 and authenticated production marker task are exercised. The production
 container is healthy and private; its derived API token matches the protected
-Hermes profile token.
+Hermes profile token. That is the current deployed baseline. The v2 clean
+install path can instead take an explicit native Operator password and
+synchronize the live pinned service token into a protected Hermes
+`EnvironmentFile` after Agent Zero starts; it does not copy a token from a
+development host.
 
 The bridge now also rejects task text containing credential requests,
 infrastructure control, shell/SSH/Docker access, operational verbs/utilities
@@ -44,6 +48,43 @@ the MCP dependency shipped by Hermes 0.21.2. The former MCP 1.x `FastMCP`
 import is intentionally not used. Its registration callbacks follow the
 installed low-level API, and the adapter has a public boundary regression so
 an MCP runtime upgrade cannot silently remove the delegation tool.
+
+## Optional interactive Operator access
+
+The native Agent Zero UI is a separate, optional owner/admin surface. Its
+loopback gateway is disabled by default and requires the explicit Operator
+password plus the live LLDAP authority inputs described in
+[`private-input-contract.md`](private-input-contract.md). When enabled, the
+gateway listens on the HADES host's loopback address, normally port `7004`.
+On that host, open `http://127.0.0.1:7004/` and complete both the HADES
+owner/admin session check and Agent Zero's native login.
+
+From an authorized workstation, keep the service private and forward the
+loopback port over the existing SSH access to the HADES host. Replace
+`user@hades-host` with the SSH account and host alias you already use:
+
+```sh
+scripts/open-agent-zero-operator.sh user@hades-host
+```
+
+Use the SSH target or profile already authorized for your HADES host. The
+helper binds the local port to `127.0.0.1` only, checks that the chosen local
+port is unprivileged, and keeps the tunnel open until Ctrl-C. A different
+local port can be supplied as the second argument. While the tunnel is
+running, open the URL printed by the helper. Do not publish port `7004` on
+the LAN, Tailscale, or the public internet. Removing
+owner/admin LLDAP membership denies the next HTTP request or WebSocket
+handshake; an already-open WebSocket remains authorized until it reconnects.
+To disable the feature, set
+`HADES_AGENT_ZERO_OPERATOR_PROXY_ENABLED=false` and rerun
+`scripts/install-hades.sh`; the installer stops the gateway and restores the
+configured direct Open WebUI bind without deleting application state.
+
+This documented SSH-tunnel path has not yet been exercised from an external
+workstation against a live enabled guest. See
+[`agent-zero-operator-evaluation.md`](agent-zero-operator-evaluation.md) for
+the current acceptance boundary. The ordinary Hermes delegation path remains
+separate and bounded.
 
 This integration is intentionally not registered as an Open WebUI-native tool
 or exposed as a separate user-facing assistant. The production Agent Zero

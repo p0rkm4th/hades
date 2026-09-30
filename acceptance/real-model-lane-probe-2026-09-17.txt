@@ -1,0 +1,17 @@
+# Real-model lane probe — 2026-09-17
+
+Scope: bounded weak-model/performance evidence only. No production HADES
+configuration, conversation, memory, Grocy, or provider state was changed.
+
+The installed Ollama-compatible listener was reachable on the local Docker
+bridge at `<docker-bridge-endpoint>`. The long multi-user dogfood and expanded timing
+harness were pointed at that endpoint. Neither produced a response within a
+bounded two-minute observation window; the long dogfood was interrupted before
+its 180-second per-request timeout, and the parallel timing probe was stopped
+with it. No result was reported as a pass.
+
+Disposition: HOST-SENSITIVE / PERFORMANCE FOLLOW-UP. The existing dependency-
+free interface contracts remain the qualification evidence. A real-model
+decision requires a reachable responsive lane and should be rerun with a
+bounded model timeout; this probe does not justify changing model, token, or
+tool-loop settings.

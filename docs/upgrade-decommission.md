@@ -40,7 +40,7 @@ authority-bearing services are not changed together:
 | Component | Current production baseline | Candidate/action | Acceptance gate |
 |---|---|---|---|
 | Open WebUI | pinned 0.11.1 image plus the tracked HADES compatibility layer | qualify upstream 0.11.3 as a separate immutable candidate; preserve the Channels patch only if the new source still needs it | disposable login/channel/model-stream test, restart persistence, then owner UI acceptance |
-| Hermes | 0.14.0 | qualify 0.21.2 with the explicit HADES suite; keep production unchanged until promotion rehearsal | candidate suite, rollback-backed owner-authenticated rehearsal, and owner approval |
+| Hermes | 0.21.2 active; 0.14.0 rollback artifact retained | qualify a later pinned upstream version as a separate candidate | bounded candidate suite, rollback-backed owner-authenticated rehearsal, and owner approval |
 | Hindsight | pinned digest, API/control ports 8888/9999 | upgrade one digest after backup and runtime/read-back checks | memory persistence, subject mapping, restart, and no port collision |
 | Grocy | pinned digest | upgrade one digest after canonical backup | inventory, recipe, shopping-list, restart, and reconciliation checks |
 | LLDAP | pinned digest | upgrade one digest after identity backup | login, group/capability mapping, restart, and revocation checks |
@@ -50,12 +50,11 @@ Open WebUI and Hermes therefore require two separate controlled changes. The
 remaining owner input is authentication/acceptance and rollback approval, not
 a need to run an unattended or bulk upgrade.
 
-As of 2026-09-15, upstream release records identify Open WebUI 0.11.3 and
-Hermes Agent 0.21.2 as the current candidates. `config/versions.env` records
-those as candidate-only metadata (`HADES_OPEN_WEBUI_CANDIDATE_*` and
-`HADES_HERMES_CANDIDATE_VERSION`); the production pins remain Open WebUI
-0.11.1 and Hermes 0.14.0 until candidate qualification and owner acceptance
-complete. The upgrade helper
+The 2026-09-15 candidate note below is historical. Open WebUI remains pinned at
+0.11.1; Hermes 0.21.2 was later promoted on VM 802 and is the current
+`config/versions.env` reconstruction pin. Hermes 0.14.0 remains a rollback
+artifact. Future promotions still require a separately qualified candidate.
+The upgrade helper
 prints plan-only instructions for `hermes`, `open-webui`, `hindsight`, and
 `searxng`; `--apply` is rejected for those private-record components. It can
 still plan and apply the tracked one-component LLDAP, Grocy, or Agent Zero
@@ -87,9 +86,11 @@ may be removed as a separate operator choice after backups are verified.
 Permanent state destruction is intentionally not implemented by this project;
 it requires a separately reviewed, explicit operator action.
 
-## Future production migration
+## Production migration contract
 
 Verify backups, provision a fresh supported guest, install from the repository
 and explicit operator inputs, restore canonical state, validate, obtain owner
 acceptance, then cut over private DNS/network routing while retaining the old
-environment for rollback. This campaign does not migrate production.
+environment for rollback. The active migration record is
+[`production-migration-20260916.md`](production-migration-20260916.md); this
+runbook supplies its preservation-first upgrade and decommission safety rules.

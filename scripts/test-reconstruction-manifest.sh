@@ -22,12 +22,20 @@ for component, key in {
     'Grocy': 'HADES_GROCY_IMAGE',
     'Agent Zero': 'HADES_AGENT_ZERO_IMAGE',
 }.items():
-    if key not in versions or machine_components[component]['pinned_version'] != f'config/versions.env:{key}':
+    expected_pin = (
+        'config/versions.env:HADES_GROCY_IMAGE and HADES_GROCY_MCP_VERSION'
+        if component == 'Grocy' else f'config/versions.env:{key}'
+    )
+    if key not in versions or machine_components[component]['pinned_version'] != expected_pin:
         raise SystemExit(f'machine manifest pin reference drifted for {component}')
+if 'HADES_GROCY_MCP_VERSION' not in versions or 'integrations/grocy-mcp/requirements.lock' not in machine_components['Grocy'].get('artifact_source', ''):
+    raise SystemExit('machine manifest omits the locked maintained Grocy MCP source')
 if machine_components['Open WebUI']['pinned_version'] != f"{versions['HADES_OPEN_WEBUI_VERSION']} tracked Dockerfile plus immutable base":
     raise SystemExit('machine manifest Open WebUI version drifted')
-if machine_components['Hermes 0.14 baseline']['pinned_version'] != versions['HADES_HERMES_VERSION']:
+if machine_components['Hermes']['pinned_version'] != 'config/versions.env:HADES_HERMES_VERSION':
     raise SystemExit('machine manifest Hermes version drifted')
+if versions['HADES_HERMES_VERSION'] != versions['HADES_HERMES_SOURCE_VERSION']:
+    raise SystemExit('Hermes artifact version differs from the runtime version')
 if machine_components['Actual Budget / Finance MCP']['pinned_version'] != f"{versions['HADES_ACTUAL_VERSION']} server/client pair":
     raise SystemExit('machine manifest Actual version drifted')
 if len(machine_components) != 9 or any(
@@ -37,6 +45,11 @@ if len(machine_components) != 9 or any(
     for item in machine_components.values()
 ):
     raise SystemExit('machine manifest has missing component fields')
+optional_agent_zero_inputs = machine_components['Agent Zero'].get('optional_secret_inputs', [])
+if not any('HADES_AGENT_ZERO_OPERATOR_PASSWORD_FILE enables native UI login' in item for item in optional_agent_zero_inputs) or not any(
+    'HADES_AGENT_ZERO_CREDENTIAL_FILE' in item for item in optional_agent_zero_inputs
+):
+    raise SystemExit('Agent Zero optional native-login input contract is missing or changed')
 
 allowed_provenance = {
     'SOURCE CONTROLLED', 'GENERATED FROM SOURCE-CONTROLLED TEMPLATE',
@@ -55,7 +68,7 @@ if any('already there' in item['classification'].lower() for item in provenance)
 
 source = Path('docs/component-manifest.md').read_text()
 required = (
-    'LLDAP', 'Open WebUI', 'Hindsight', 'Grocy', 'Hermes 0.14 baseline',
+    'LLDAP', 'Open WebUI', 'Hindsight', 'Grocy', 'Hermes',
     'Actual Budget / Finance MCP', 'Agent Zero', 'SearXNG', 'HADES policy/assets/adapters',
 )
 start = source.index('## Reconstruction manifest')
@@ -78,7 +91,7 @@ expected_order = {
     'Hindsight': '3',
     'Grocy': '4',
     'Actual Budget / Finance MCP': '4',
-    'Hermes 0.14 baseline': '5',
+    'Hermes': '5',
     'Agent Zero': '6',
     'SearXNG': '7',
 }

@@ -1,0 +1,13 @@
+{
+  "schema": "hades-decision-shadow-config/v1",
+  "enabled": false,
+  "candidate": null,
+  "mode": "replay_only",
+  "fallback": "CURRENT",
+  "max_sample_rate": 0.0,
+  "privacy_class_allowlist": ["public_synthetic", "redacted_synthetic", "household_synthetic", "synthetic_private", "synthetic_finance", "synthetic_infra", "synthetic_home"],
+  "record_raw_request": false,
+  "record_raw_context": false,
+  "production_steering": false,
+  "reason": "No candidate is qualified for HADES routing; enable only after candidate promotion evidence."
+}

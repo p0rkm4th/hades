@@ -1,0 +1,50 @@
+capture_schema: destination-reconciliation-candidate/v1
+captured_at_utc: 2026-09-17T01:53:36Z
+destination: Erebus VM 802 / <LAN-IP> / hades-core
+method: generated authoritative Git bundle, remote hash verification, clean parallel checkout; no active service or original checkout mutation
+
+authoritative_source:
+  revision: 43940efbf80a3a89a8b4bd459471c696d8061681
+  bundle_sha256: ceb338fd36e42655fed31a534b3261b83ec1f1d93af0e5fea5c2dae4a05adf9b
+  bundle_verification: complete history; remote verification passed
+
+candidate_checkout:
+  path: <destination candidate checkout>
+  revision: b102dfdf42fc564c040c432cb2c6e87ee1f27d22
+  working_tree: clean
+  generated_private_inputs_test: PASS
+  stable_v1_readiness_test: PASS
+  destination_source_verifier_contract: PASS
+  generated_deployment_records_test: PASS
+  configuration_drift_test: PASS
+  reconstruction_manifest_test: PASS
+  version_manifest_test: PASS
+  candidate_suite_stderr: CLEAN
+  reconstruction_manifest_closure: PASS
+  reconstruction_evidence_documentation: PASS
+  backup_coverage_documentation: PASS
+  synthetic_backup_destroy_restore: PASS
+  clean_reconstruction_rerunnable: PASS
+  public_tree_safety: PASS
+  candidate_host_portability: PASS
+  cutover_contract_suite: PASS
+  open_webui_candidate_0_11_3: PASS
+  open_webui_candidate_contracts:
+    - Alpha/Beta private-chat isolation and restart persistence
+    - Channels shared-message persistence and membership boundaries
+    - anonymous access denial and Beta admin denial
+    - streamed channel model response persistence
+  production_version_disposition: retain Open WebUI 0.11.1; candidate promotion remains owner-gated
+
+validation_quality:
+  systemd_lookup_isolation: SYSTEMD_UNIT_PATH excludes unreadable host-local units during disposable validation
+  result: generated and synthetic fixture validation completed without stderr warnings
+
+active_checkout_preservation:
+  path: <active destination checkout>
+  service_working_directory: <active destination checkout>
+  service_state: active; unchanged during candidate preparation
+  working_tree: preserved with existing tracked and untracked changes
+  mutation_disposition: no reset, clean, stash, checkout, restart, or cutover performed
+
+result: CLEAN_RECONCILIATION_CANDIDATE_READY; production source/runtime switch remains separately owner-gated

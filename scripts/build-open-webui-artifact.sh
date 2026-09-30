@@ -11,7 +11,7 @@ if [[ -n "$base_override" && ! "$base_override" =~ ^ghcr\.io/open-webui/open-web
 fi
 build_args=()
 [[ -n "$base_override" ]] && build_args+=(--build-arg "OPEN_WEBUI_BASE_IMAGE=$base_override")
-docker build --pull=false "${build_args[@]}" -t "$tag" "$repo_dir/webui" >/dev/null
+docker build --pull=false "${build_args[@]}" -f "$repo_dir/webui/Dockerfile" -t "$tag" "$repo_dir" >/dev/null
 image_id=$(docker image inspect "$tag" --format '{{.Id}}')
 [[ "$image_id" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo 'FAIL built Open WebUI image identity is invalid' >&2; exit 1; }
 printf 'HADES_OPEN_WEBUI_IMAGE=%s@%s\n' "${tag%%:*}" "$image_id"

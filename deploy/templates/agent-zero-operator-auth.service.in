@@ -1,0 +1,27 @@
+[Unit]
+Description=HADES Agent Zero Operator live authorization gate
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@HADES_OPERATOR_RUNTIME_USER@
+Group=@HADES_OPERATOR_RUNTIME_GROUP@
+EnvironmentFile=@HADES_OPERATOR_AUTH_ENV_FILE@
+Environment=PYTHONPATH=@HADES_OPERATOR_SOURCE_ROOT@
+WorkingDirectory=@HADES_OPERATOR_SOURCE_ROOT@
+ExecStart=/usr/bin/python3 @HADES_OPERATOR_SOURCE_ROOT@/integrations/operator-access/proxy_auth_server.py
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadOnlyPaths=@HADES_OPERATOR_AUTHORITY_CONFIG@ @HADES_OPERATOR_READER_PASSWORD_FILE@
+
+[Install]
+WantedBy=multi-user.target

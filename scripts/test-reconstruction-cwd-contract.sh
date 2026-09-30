@@ -11,6 +11,9 @@ for script in scripts/hades-doctor.sh scripts/validate-install.sh; do
   grep -q 'compose_cmd+=(--env-file "\$inputs")' "$repo_dir/$script" || {
     echo "FAIL $script does not pass operator inputs to Compose"; exit 1;
   }
+  grep -q '(cd "\$repo_dir" && runuser -u "\$runtime_user" -- env' "$repo_dir/$script" || {
+    echo "FAIL $script does not run its Grocy functional check from the repository root"; exit 1;
+  }
 done
 grep -q 'compose_cmd=(docker compose --env-file "\$inputs")' "$repo_dir/scripts/install-hades.sh" || {
   echo 'FAIL installer does not pass operator inputs to Compose'; exit 1;

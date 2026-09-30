@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -20,24 +22,52 @@ jobs:
           python-version: '3.11'
 
       - name: Compile public Python adapters
-        run: python -m py_compile hermes/sitecustomize.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py
+        run: python -m py_compile hermes/sitecustomize.py integrations/public-research/research.py integrations/public-research/server.py integrations/browser-access/proxy.py integrations/browser-access/research_reader.py webui/task_notification_compat.py webui/receipt_upload_compat.py webui/finance_upload_compat.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-public-research-contract.py scripts/test-browser-network-pinning.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py scripts/test-homelab-service-health-contract.py scripts/test-receipt-ocr-concurrent-apply.py scripts/test-receipt-ocr-owner-boundary.py
 
       - name: Check public JavaScript adapter
         run: node --check integrations/actual-finance-readonly/actual_client.js
+      - name: Check HADES theme JavaScript
+        run: node --check webui/hades-theme.js
+      - name: Check browser read-only network guard
+        run: node --check integrations/browser-access/read-only-network.js
+      - name: Check finance attachment JavaScript
+        run: node --check webui/finance-upload.js
 
       - name: Check memory intent boundary
         run: bash scripts/test-hades-memory-intent.sh
+      - name: Check service-level homelab health contract
+        run: python scripts/test-homelab-service-health-contract.py
+
       - name: Check mixed-domain composition boundary
         run: bash scripts/test-composition-boundary.sh
 
       - name: Check web intent boundary
         run: bash scripts/test-web-intent.sh
+      - name: Check public research evidence contract
+        run: python scripts/test-public-research-contract.py
+      - name: Check public page decompression and redirect bounds
+        run: python scripts/test-web-extract-runtime.py
+      - name: Check anonymous browser policy and DNS pinning
+        run: bash scripts/test-browser-policy-adapter.sh && python scripts/test-browser-network-pinning.py
 
       - name: Check read-only response contracts
         run: python scripts/test-readonly-response-contracts.py
 
       - name: Check finance read-only MCP boundary
         run: bash scripts/test-finance-readonly-boundary.sh
+      - name: Check finance statement coverage and source freshness
+        run: python scripts/test-finance-guidance-source-window.py
+      - name: Check owner-only finance attachment UI contract
+        run: |
+          bash scripts/test-finance-webui-upload-contract.sh
+          bash -n scripts/test-finance-owner-affordance-authenticated-ui.sh
+
+      - name: Check receipt apply serialization and ledger safety
+        run: |
+          python3 scripts/test-receipt-ocr-concurrent-apply.py
+          python3 scripts/test-receipt-ocr-owner-boundary.py
+          bash scripts/test-receipt-webui-upload-contract.sh
+          bash -n scripts/test-receipt-ocr-authenticated-browser.sh
 
       - name: Check privileged capability boundary
         run: bash scripts/test-capability-boundary.sh
@@ -45,8 +75,73 @@ jobs:
       - name: Check Agent Zero bounds
         run: bash scripts/test-agent-zero-boundary.sh
 
+      - name: Check Agent Zero workspace secret permissions
+        run: bash scripts/test-agent-zero-workspace-permissions.sh
+
+      - name: Check Agent Zero Operator session authority
+        run: python3 scripts/test-operator-session-auth.py
+
+      - name: Check optional Agent Zero Operator proxy rendering
+        run: bash scripts/test-agent-zero-operator-proxy-render.sh
+
       - name: Check long-conversation routing boundary
         run: bash scripts/test-long-conversation-boundary.sh
+      - name: Check confirmation conversation isolation
+        run: bash scripts/test-confirmation-conversation-isolation.sh
+      - name: Check persistent Task chat surface
+        run: bash scripts/test-task-chat-surface.sh
+      - name: Check persistent Task notification feed
+        run: bash scripts/test-task-notification-contract.sh
+      - name: Check persistent Task store contract
+        run: bash scripts/test-task-store.sh
+      - name: Check Phase 3 self-service policy
+        run: bash scripts/test-phase3-self-service.sh
+      - name: Check Phase 3 owner usability surface
+        run: bash scripts/test-phase3-owner-surface.sh
+      - name: Check Phase 3 runner contract
+        run: bash scripts/test-phase3-runner.sh
+      - name: Check authenticated Phase 3 runner request
+        run: bash scripts/test-phase3-request.sh
+      - name: Check Phase 3 due scheduler dispatch
+        run: bash scripts/test-phase3-scheduler-dispatch.sh
+      - name: Check Phase 3 result client
+        run: bash scripts/test-phase3-result-client.sh
+      - name: Check Phase 2 backup freshness routing
+        run: bash scripts/test-phase2-backup-freshness.sh
+      - name: Check Phase 3 result key inputs
+        run: bash scripts/test-phase3-result-key-inputs.sh
+      - name: Check Phase 3 runner key input
+        run: bash scripts/test-phase3-runner-key-input.sh
+      - name: Check fixed Phase 3 n8n dispatcher artifact
+        run: bash scripts/test-phase3-n8n-dispatch-artifact.sh
+      - name: Check reloadable Phase 3 authority policy
+        run: bash scripts/test-phase3-authority-policy.sh
+      - name: Check live LLDAP authority source
+        run: bash scripts/test-phase3-lldap-authority.sh
+      - name: Check Epsilon Phase 3 endpoint integration
+        run: bash scripts/test-epsilon-phase3-endpoint.sh
+      - name: Check Epsilon source package closure
+        run: bash scripts/test-package-epsilon-source.sh
+      - name: Check generated integration package path
+        run: python scripts/test-generated-integration-path.py
+      - name: Check health-watch conversation-bound confirmations
+        run: bash scripts/test-health-watch-contract.sh
+      - name: Check Epsilon Phase 2 contracts
+        run: bash scripts/test-epsilon-phase2-contracts.sh
+      - name: Check Epsilon fixed workflow artifact
+        run: bash scripts/test-epsilon-workflow-artifact.sh
+      - name: Check deployed provenance writer
+        run: bash scripts/test-deployed-provenance.sh
+      - name: Check Hindsight extraction route
+        run: bash scripts/test-hindsight-route-contract.sh
+      - name: Check Hindsight worker identity contract
+        run: python scripts/test-hindsight-worker-runtime-contract.py
+      - name: Check Hindsight aggregate-only reader privacy
+        run: python scripts/test-hindsight-aggregate-stats.py
+      - name: Check Hindsight explicit-memory ownership and fallback
+        run: python scripts/test-hindsight-explicit-memory-route.py
+      - name: Check focused Hindsight overlay composition
+        run: python scripts/test-prepare-hindsight-overlay-candidate.py
       - name: Check multi-user long synthetic dogfood
         run: bash scripts/test-multi-user-long-dogfood.sh
       - name: Check cross-domain synthetic dogfood
@@ -54,6 +149,8 @@ jobs:
 
       - name: Check Grocy recipe authoring boundary
         run: bash scripts/test-grocy-recipe-authoring-boundary.sh
+      - name: Check concurrent canonical Grocy recipe and shopping writes
+        run: bash scripts/test-grocy-spaghetti-concurrency.sh
 
       - name: Check read-only configuration shapes
         run: bash scripts/test-readonly-config-shapes.sh
@@ -76,8 +173,14 @@ jobs:
         run: bash scripts/test-encryption-safety-contract.sh
       - name: Check reconstruction manifest
         run: bash scripts/test-reconstruction-manifest.sh
+      - name: Check reconstruction manifest source closure
+        run: bash scripts/test-reconstruction-manifest-closure.sh
+      - name: Check reconstructed Grocy MCP registration and secret boundary
+        run: bash scripts/test-grocy-mcp-reconstruction-contract.sh
       - name: Check clean reconstruction contract
         run: bash scripts/test-clean-reconstruction-contract.sh
+      - name: Check synthetic model streaming contract
+        run: python3 scripts/test-synthetic-openai-backend.py
       - name: Check reconstruction evidence documentation
         run: bash scripts/test-reconstruction-evidence-doc.sh
       - name: Check synthetic private fixture contract
@@ -102,6 +205,8 @@ jobs:
         run: bash scripts/test-preflight-order-contract.sh
       - name: Check manifest provenance
         run: bash scripts/test-manifest-provenance.sh
+      - name: Require clean committed source for production installs
+        run: bash scripts/test-install-source-provenance.sh
       - name: Check installer dependency order
         run: bash scripts/test-install-order-contract.sh
       - name: Check installer runtime validation
@@ -147,7 +252,28 @@ jobs:
         run: bash scripts/test-public-tree-safety.sh
 
       - name: Check public history
-        run: bash scripts/public-history-audit.sh
+        env:
+          PUBLIC_HISTORY_EVENT: ${{ github.event_name }}
+          PUBLIC_HISTORY_BEFORE: ${{ github.event.before }}
+          PUBLIC_HISTORY_AFTER: ${{ github.sha }}
+          PUBLIC_HISTORY_PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUBLIC_HISTORY_PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ "$PUBLIC_HISTORY_EVENT" == pull_request ]]; then
+            base="$PUBLIC_HISTORY_PR_BASE"
+            head="$PUBLIC_HISTORY_PR_HEAD"
+          else
+            base="$PUBLIC_HISTORY_BEFORE"
+            head="$PUBLIC_HISTORY_AFTER"
+          fi
+          if [[ "$base" =~ ^0+$ ]]; then
+            base="$(git merge-base origin/main "$head" 2>/dev/null || true)"
+          fi
+          if [[ -n "$base" ]] && git cat-file -e "$base^{commit}" 2>/dev/null; then
+            bash scripts/public-history-audit.sh "$base..$head"
+          else
+            bash scripts/public-history-audit.sh "$head"
+          fi
 
       - name: Validate shell scripts
         run: bash -n scripts/*.sh webui/entrypoint.sh

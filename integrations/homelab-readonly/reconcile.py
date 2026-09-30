@@ -20,6 +20,30 @@ def _freshness(value: Any, *, now: datetime, max_age: timedelta) -> str:
     return "FRESH" if now - observed <= max_age else "STALE"
 
 
+def _compact(row: dict[str, Any] | None, fields: tuple[str, ...]) -> dict[str, Any] | None:
+    """Keep the composed answer bounded and expose only decision fields.
+
+    Upstream API rows can contain large plugin/config blobs. Returning those
+    verbatim made the owner tool answer needlessly large and encouraged weak
+    models to summarize or invent details instead of following the authority
+    fields below.
+    """
+    if not isinstance(row, dict):
+        return None
+    return {key: row[key] for key in fields if key in row}
+
+
+def _bounded_ping_ms(value: Any) -> int | float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if value < 0 or value > 60000:
+        return None
+    # Avoid NaN/Infinity in serialized output.
+    if value != value or value in (float("inf"), float("-inf")):
+        return None
+    return value
+
+
 def summarize(
     proxmox: dict[str, Any] | None,
     netbox: dict[str, Any] | None,
@@ -59,9 +83,26 @@ def summarize(
             conflicts.append("NetBox intended node differs from Proxmox runtime node")
         resources.append({
             "name": name,
-            "runtime": current,
-            "inventory": planned,
-            "availability": monitor,
+            "runtime": _compact(
+                current,
+                ("name", "node", "type", "vmid", "status", "cpu", "maxcpu", "mem", "maxmem", "disk", "maxdisk", "uptime"),
+            ),
+            # Inventory presence is not liveness. Keep an explicit field so a
+            # consumer cannot interpret a NetBox-only record as online when
+            # Proxmox has not observed it.
+            "runtime_status": current.get("status") if current else "NOT_OBSERVED",
+            "currently_online": bool(
+                current and current.get("status") in {"online", "running"}
+            ),
+            "inventory": _compact(
+                planned,
+                ("name", "planned_node", "role", "status", "primary_ip", "site"),
+            ),
+            "availability": _compact(
+                monitor,
+                ("name", "status", "last_updated", "monitor_type"),
+            ),
+            "probe_ping_ms": _bounded_ping_ms(monitor.get("ping_ms")) if monitor else None,
             "availability_freshness": _freshness(
                 monitor.get("last_updated") if monitor else None,
                 now=now,
@@ -69,6 +110,30 @@ def summarize(
             ) if monitor else "UNKNOWN",
             "conflicts": conflicts,
         })
+    online_names = [
+        resource["name"] for resource in resources
+        if resource["currently_online"]
+    ]
+    inventory_only_names = [
+        resource["name"] for resource in resources
+        if resource["runtime_status"] == "NOT_OBSERVED"
+        and resource["inventory"] is not None
+    ]
+    availability_summary = [
+        {
+            "name": resource["name"],
+            "status": (resource["availability"] or {}).get("status"),
+            "freshness": resource["availability_freshness"],
+            **({"ping_ms": resource["probe_ping_ms"]} if resource["probe_ping_ms"] is not None else {}),
+        }
+        for resource in resources
+        if resource["availability"] is not None
+    ]
+    conflicts = [
+        {"name": resource["name"], "reasons": resource["conflicts"]}
+        for resource in resources
+        if resource["conflicts"]
+    ]
     return {
         "status": "OK" if proxmox is not None and netbox is not None and kuma is not None else "PARTIAL",
         "authority": {
@@ -76,6 +141,24 @@ def summarize(
             "inventory": "NetBox",
             "availability": "Uptime Kuma",
         },
+        "online_names": online_names,
+        "inventory_only_names": inventory_only_names,
+        "source_counts": {
+            "proxmox_runtime_rows": len(runtime_rows),
+            "netbox_inventory_rows": len(inventory_rows),
+            "kuma_monitor_rows": len(availability_rows),
+            "composed_resources": len(resources),
+        },
+        "availability_summary": availability_summary,
+        "conflicts": conflicts,
+        "answer_contract": {
+            "currently_online_source": "Proxmox runtime only",
+            "inventory_only_source": "NetBox records not observed in Proxmox",
+            "availability_source": "Uptime Kuma monitor status and freshness",
+            "memory_is_not_authority": True,
+            "writes_performed": False,
+        },
+        "liveness_rule": "Only resources with runtime_status=online (hosts) or running (guests) are currently live; inventory_only_names are not observed by Proxmox.",
         "resources": resources,
         "retrieved_at": now.isoformat(),
     }

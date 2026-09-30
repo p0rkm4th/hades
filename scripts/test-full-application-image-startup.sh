@@ -49,6 +49,10 @@ trap cleanup EXIT
 
 docker network create "$network" >/dev/null
 mkdir -p "$work/identity" "$work/webui" "$work/hindsight" "$work/searx"
+# Hindsight is intentionally rootless (UID 1000).  Prepare the disposable
+# bind mount explicitly so a clean guest does not fail before application
+# startup merely because the invoking controller owns the temporary folder.
+chown 1000:1000 "$work/hindsight" 2>/dev/null || true
 for secret in jwt_secret key_seed admin_password; do
   printf 'synthetic-%s\n' "$secret" > "$work/identity/$secret"
   chmod 600 "$work/identity/$secret"

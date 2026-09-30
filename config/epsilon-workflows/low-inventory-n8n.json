@@ -1,0 +1,14 @@
+{
+  "id": "low-inventory-summary",
+  "name": "HADES Low Grocery Summary",
+  "active": false,
+  "settings": {"executionOrder": "v1", "saveDataErrorExecution": "all", "saveDataSuccessExecution": "all", "saveExecutionProgress": false},
+  "nodes": [
+    {"parameters": {"httpMethod": "POST", "path": "low-inventory-summary", "responseMode": "onReceived", "options": {}}, "id": "inventory-run-now", "name": "HADES-local run-now trigger", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "position": [240, 120], "webhookId": "low-inventory-summary"},
+    {"parameters": {"rule": {"interval": [{"field": "days", "daysInterval": 7}]}}, "id": "inventory-schedule", "name": "Bounded weekly schedule", "type": "n8n-nodes-base.scheduleTrigger", "typeVersion": 1.2, "position": [240, 300]},
+    {"parameters": {"url": "http://host.docker.internal:8643/v1/epsilon/inventory", "options": {"timeout": 10000}, "response": {"response": {"fullResponse": true, "neverError": true}}}, "id": "inventory-source", "name": "Authorized current Grocy source", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "onError": "continueRegularOutput", "position": [560, 300]},
+{"parameters": {"mode": "manual", "assignments": {"assignments": [{"id": "template", "name": "hades_template", "value": "low-inventory-summary", "type": "string"}, {"id": "state", "name": "hades_state", "value": "={{$json.error ? 'SOURCE_UNAVAILABLE' : $json.body.hades_state}}", "type": "string"}, {"id": "reason", "name": "hades_reason", "value": "={{$json.error ? 'Grocy source could not be reached' : $json.body.hades_reason}}", "type": "string"}, {"id": "low", "name": "low", "value": "={{JSON.stringify($json.body.low || [])}}", "type": "string"}, {"id": "out", "name": "out", "value": "={{JSON.stringify($json.body.out || [])}}", "type": "string"}, {"id": "no_minimum", "name": "no_minimum", "value": "={{JSON.stringify($json.body.no_minimum || [])}}", "type": "string"}]}}, "id": "inventory-projection", "name": "Bounded inventory result projection", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [820, 300]}
+  ],
+  "connections": {"HADES-local run-now trigger": {"main": [[{"node": "Authorized current Grocy source", "type": "main", "index": 0}]]}, "Bounded weekly schedule": {"main": [[{"node": "Authorized current Grocy source", "type": "main", "index": 0}]]}, "Authorized current Grocy source": {"main": [[{"node": "Bounded inventory result projection", "type": "main", "index": 0}]]}, "Bounded inventory result projection": {"main": [[]]}},
+  "tags": [{"name": "hades-template:inv"}, {"name": "hades-owner:owner"}, {"name": "hades-approved:true"}, {"name": "hades-trigger:schedule"}]
+}

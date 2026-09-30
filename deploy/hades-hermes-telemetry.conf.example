@@ -1,0 +1,6 @@
+# Optional read-only homelab telemetry drop-in.
+# Copy this file to the Hermes systemd drop-in directory, then provision the
+# protected /etc/hades/homelab-telemetry.env from its private operator inputs.
+# The integration remains unavailable until those explicit inputs are set.
+[Service]
+EnvironmentFile=-/etc/hades/homelab-telemetry.env

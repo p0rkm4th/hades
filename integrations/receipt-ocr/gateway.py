@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import os
 
 from fastmcp import FastMCP
@@ -26,6 +27,15 @@ def _classify_upstream_result(result) -> dict:
         return {"status": "FAILED", "error": "upstream PaddleOCR MCP failed", "content": content}
     if not any(text.strip() for text in content):
         return {"status": "FAILED", "error": "upstream PaddleOCR returned no usable text", "content": content}
+    # PaddleOCR can return a non-empty JSON error payload with an otherwise
+    # successful MCP envelope. Do not promote that into OCR evidence.
+    for text in content:
+        try:
+            payload = json.loads(text)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict) and isinstance(payload.get("error"), str):
+            return {"status": "FAILED", "error": payload["error"], "content": content}
     return {"status": "SUCCEEDED", "content": content}
 
 

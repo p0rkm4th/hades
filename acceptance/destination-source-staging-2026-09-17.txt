@@ -1,0 +1,42 @@
+capture_schema: destination-source-staging/v1
+captured_at_utc: 2026-09-17T02:29:26Z
+destination: Erebus VM 802 / <LAN-IP> / hades-core
+change_scope: Hermes source/runtime staging only; no DNS or normal endpoint cutover
+
+candidate:
+  revision: b102dfdf42fc564c040c432cb2c6e87ee1f27d22
+  working_tree: clean
+  source_verification: PASS
+  active_service_working_directory: candidate checkout
+  runtime_surface_comparison: PASS (candidate-to-current differences are
+    limited to migration/control scripts; no differences under hermes,
+    integrations, config, or deploy)
+  upstream_runtime_pins: PASS (Hermes 0.14.0; source 2026.5.16; Hindsight client 0.6.1)
+
+rollback:
+  prior_service_unit: preserved in protected destination rollback directory
+  unit_checksum: verified after staging
+  alexandra_staged_unit_snapshot: PASS
+  alexandra_package_checksum: PASS
+  application_data: untouched
+  laptop_production: preserved and still active
+
+post_change_checks:
+  systemd_reload_and_restart: PASS
+  hermes_service_active: PASS
+  hermes_private_bridge_health: PASS
+  open_webui_container: PASS
+  lldap_container: PASS
+  hindsight_container: PASS
+  grocy_container: PASS
+  searxng_container: PASS
+  agent_zero_container: PASS
+
+not_performed:
+  owner_authentication: NOT RUN
+  authoritative_hades_local_cutover: NOT RUN
+  laptop_shutdown_or_cleanup: NOT RUN
+  production_version_promotion: NOT RUN
+
+result: CLEAN_CANDIDATE_ACTIVE_WITH_INDEPENDENT_UNIT_ROLLBACK
+limitation: owner-visible destination acceptance and normal endpoint cutover remain separate gates

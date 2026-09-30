@@ -19,4 +19,23 @@ test "$(grep -c '^manifest=' "$sandbox${tmp_root}/private/state/install-contract
 test -f "$sandbox${tmp_root}/private/config/reconstruction-manifest.json"
 test "$(grep -c '^reconstruction_manifest=' "$sandbox${tmp_root}/private/state/install-contract")" -eq 1
 test "$(grep -c '^layer=' "$sandbox${tmp_root}/private/state/install-contract")" -eq 1
+marker="$sandbox${tmp_root}/private/state/install-contract"
+if source_revision=$(git -c "safe.directory=$repo_dir" -C "$repo_dir" rev-parse --verify HEAD 2>/dev/null); then
+  source_tree=$(git -c "safe.directory=$repo_dir" -C "$repo_dir" rev-parse 'HEAD^{tree}')
+  if [[ -z "$(git -c "safe.directory=$repo_dir" -C "$repo_dir" status --porcelain=v1 --untracked-files=all)" ]]; then
+    source_clean=true
+  else
+    source_clean=false
+  fi
+else
+  source_revision=archive
+  source_tree=unavailable
+  source_clean=unknown
+fi
+test "$(grep -c '^source_revision=' "$marker")" -eq 1
+test "$(grep -c '^source_tree=' "$marker")" -eq 1
+test "$(grep -c '^source_clean=' "$marker")" -eq 1
+grep -Fxq "source_revision=$source_revision" "$marker"
+grep -Fxq "source_tree=$source_tree" "$marker"
+grep -Fxq "source_clean=$source_clean" "$marker"
 echo 'PASS clean reconstruction contract is rerunnable and state-preserving'

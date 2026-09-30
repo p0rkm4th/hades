@@ -24,7 +24,11 @@ API_KEY = os.environ.get("AGENT_ZERO_API_KEY", "")
 MAX_TASK_CHARS = int(os.environ.get("AGENT_ZERO_MAX_TASK_CHARS", "2000"))
 MAX_RESPONSE_CHARS = int(os.environ.get("AGENT_ZERO_MAX_RESPONSE_CHARS", "4000"))
 MAX_CONTEXT_ID_CHARS = int(os.environ.get("AGENT_ZERO_MAX_CONTEXT_ID_CHARS", "128"))
-TIMEOUT_SECONDS = float(os.environ.get("AGENT_ZERO_TIMEOUT_SECONDS", "90"))
+# A dead operator must fail locally instead of holding a Hermes turn for the
+# historical 90-second default. Deployments may raise this deliberately for
+# a proven long-running task, but ordinary bounded delegation remains appliance
+# responsive when the operator is unavailable.
+TIMEOUT_SECONDS = float(os.environ.get("AGENT_ZERO_TIMEOUT_SECONDS", "15"))
 
 TOOL_NAME = "agent_zero_delegate"
 UNSAFE_TASK_PATTERN = re.compile(
@@ -195,10 +199,16 @@ async def call_tool(tool_name, args):
     )])
 
 
+async def _list_tools(_context, _params):
+    return await list_tools()
+
+
+async def _call_tool(_context, params):
+    return await call_tool(params.name, params.arguments)
+
+
 async def main():
-    server = Server("hades-agent-zero")
-    server.list_tools()(list_tools)
-    server.call_tool()(call_tool)
+    server = Server("hades-agent-zero", on_list_tools=_list_tools, on_call_tool=_call_tool)
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, server.create_initialization_options())
 

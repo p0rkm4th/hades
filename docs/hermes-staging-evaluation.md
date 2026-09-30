@@ -1,6 +1,9 @@
 # Hermes upstream staging evaluation
 
-Status: staging evidence collected; production remains pinned.
+Status: historical staging evidence. Hermes 0.21.2 was later promoted on VM
+802; see `stable-v1-readiness.md` for current deployment state. The findings
+below record the original candidate qualification and remain useful for future
+upgrade decisions.
 
 ## Candidate
 
@@ -441,6 +444,14 @@ fixture could not find its requested browser binary, and the update-head test
 encountered the live-system process guard. The guard prevented real process
 termination. These remain upstream candidate-environment disposition items;
 production HADES was independently smoke-tested healthy afterward.
+
+On 2026-09-16, a fresh clean detached candidate checkout reran the canonical
+HADES core wrapper with an isolated temporary directory and eight workers:
+**525/525 passed**, with the checkout clean afterward. The first disposable
+attempt used the exhausted `/tmp` tmpfs and failed only while pytest wrote
+cache/duration data; the root-filesystem rerun passed without candidate-code or
+production changes. See
+[`acceptance/hermes-0.21.2-core-qualification-2026-09-16.txt`](../acceptance/hermes-0.21.2-core-qualification-2026-09-16.txt).
 
 ## HADES qualification suite definition
 

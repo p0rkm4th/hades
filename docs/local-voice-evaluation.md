@@ -1,5 +1,11 @@
 # Local voice evaluation
 
+> Historical evaluation record. The current deployed boundary is documented
+> in [`delta-local-voice.md`](delta-local-voice.md): node-local `runtime.py`
+> on Hermes Compute is registered with Open WebUI through authenticated
+> OpenAI-compatible audio configuration. The provider-injected service below
+> remains a contract/test harness, not the production listener.
+
 Status: SELECTED / STAGED.
 
 The first voice milestone is push-to-talk, not wake word: capture audio,
@@ -73,12 +79,12 @@ and preserve missing provider confidence as CLARIFY. The contract rejects
 incomplete streams, changed formats, and empty chunks; it is covered by
 scripts/test-local-voice-bridge.sh.
 
-A localhost-only HTTP service boundary is now available in
+A localhost-only HTTP service boundary remains available in
 integrations/local-voice/service.py. It accepts bounded WAV bodies at
 /inference, returns explicit status, and reports /health without exposing a
 network-wide listener. The service is provider-injectable for contract tests
-and can load faster-whisper for a staged runtime; it is not registered with
-Hermes or Open WebUI yet.
+and is separate from the production node runtime; it is not the listener
+registered with Hermes or Open WebUI.
 
 The real staged service was exercised with faster-whisper CPU/int8 and the
 synthetic speech fixture. It returned the transcript correctly but emitted
@@ -100,8 +106,9 @@ The provider-neutral TTS boundary in `integrations/local-voice/tts.py` now
 accepts only bounded text and bounded 16-bit WAV output. Its contract is
 covered by `scripts/test-local-voice-tts.sh`; malformed provider output and
 provider failure are explicit failures, and synthesized audio never
-authenticates a speaker or authorizes an action. The official OHF-Voice Piper
-implementation is a candidate, not yet a pinned or production service.
+authenticates a speaker or authorizes an action. Production currently uses
+the node-local Piper runtime documented in `delta-local-voice.md`; this
+evaluation's provider-license discussion is historical.
 
 The pipeline records bounded `audio_capture_seconds`, `stt_seconds`,
 `model_response_seconds`, `time_to_first_response_seconds`, `tts_seconds`, and
@@ -119,8 +126,9 @@ explicit `FAILED` results. The STT bridge now normalizes provider exceptions
 inside the same failure contract. This is composition evidence only; the
 provider license/packaging and owner-visible voice acceptance gates remain.
 
-No microphone, speaker, voice service, wake word, or production setting was
-changed by this evaluation.
+This document did not itself change production settings. The later Delta
+deployment and acceptance record contains the live-service and browser
+evidence.
 
 Upstream references:
 https://github.com/ggml-org/whisper.cpp,

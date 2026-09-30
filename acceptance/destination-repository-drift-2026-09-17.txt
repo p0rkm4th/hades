@@ -1,0 +1,39 @@
+capture_schema: destination-repository-drift/v1
+captured_at_utc: 2026-09-17T01:43:30Z
+destination: Erebus VM 802 / <LAN-IP>
+method: read-only SSH inspection; no service restart or repository mutation
+
+authoritative_source:
+  local_hades_revision: e280ed6
+  destination_revision: c3f7262
+  ancestry: destination revision is an ancestor of the local authoritative revision
+
+destination_checkout:
+  path: <destination checkout>
+  branch: detached HEAD
+  tracked_modified_files: 10
+  untracked_path: <pre-migration backup directory>/
+  disposition: preserve; do not discard or overwrite without a controlled reconciliation
+
+comparison_against_authoritative_e280ed6:
+  byte_identical_modified_files: 8
+  destination_only_deltas: 2
+  destination_only_delta_files:
+    - scripts/create-generated-private-inputs.sh
+    - scripts/test-generated-private-inputs.sh
+  destination_only_delta_summary:
+    - create-generated-private-inputs.sh omits HADES_OPEN_WEBUI_BIND=127.0.0.1:3000
+    - test-generated-private-inputs.sh omits the synthetic-model, bind, and profile-path regressions
+  assessment: destination checkout is not equivalent to authoritative source; the two unique deltas weaken reconstruction coverage and require preservation plus controlled reconciliation
+  safe_next_step: snapshot destination changes, reconcile onto authoritative revision, rerun generated-input and deployment validators, then perform owner-visible acceptance
+
+active_runtime:
+  hades_hermes_service: enabled and active
+  executable: /opt/hades-hermes/bin/hermes
+  working_directory: <destination checkout>
+  generated_profile: <generated profile>/hermes.env
+  application_containers: healthy read-only inventory observed
+
+result: DESTINATION_SOURCE_DRIFT_REQUIRES_CONTROLLED_RECONCILIATION
+cutover_effect: owner acceptance and authoritative DNS/DHCP gates remain open;
+the destination must be reconciled or explicitly frozen before production cutover.

@@ -22,6 +22,8 @@ states = {
     "fan.air_purifier": {"state": "on", "last_updated": now.isoformat()},
     "sensor.bedroom": {"state": "unavailable", "last_updated": (now - timedelta(minutes=10)).isoformat()},
     "lock.front_door": {"state": "locked", "last_updated": now.isoformat()},
+    "cover.garage_door": {"state": "closed", "last_updated": now.isoformat()},
+    "alarm_control_panel.home": {"state": "armed_away", "last_updated": now.isoformat()},
     "camera.entryway": {"state": "idle", "last_updated": now.isoformat()},
 }
 requested = []
@@ -82,7 +84,7 @@ sys.modules.update({"mcp": types.ModuleType("mcp"), "mcp.server": mcp_server,
                     "mcp.types": mcp_types})
 import server as adapter
 allowed = {"light.living_room", "sensor.apartment_temperature", "fan.air_purifier", "sensor.bedroom"}
-excluded = {"lock.front_door", "camera.entryway"}
+excluded = {"lock.front_door", "cover.garage_door", "alarm_control_panel.home", "camera.entryway"}
 
 def read(entity):
     if entity not in allowed:
@@ -118,6 +120,8 @@ assert selected["status"] == "OK" and len(selected["results"]) == 4
 assert any(item["result"]["state"] == "unavailable" and item["result"]["freshness"] == "STALE" for item in selected["results"])
 denied = adapter.read_entity("lock.front_door")
 assert denied["status"] == "FAILED"
+for entity in ("cover.garage_door", "alarm_control_panel.home", "camera.entryway"):
+    assert adapter.read_entity(entity)["status"] == "FAILED"
 assert not excluded.intersection(requested)
 
 with open(token_file.name, "w", encoding="utf-8") as handle:

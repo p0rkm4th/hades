@@ -6,11 +6,17 @@ set -euo pipefail
 node <<'JS'
 const http = require('http');
 const { spawn } = require('child_process');
+let mutationCount = 0;
 
 const fixture = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/') {
     res.writeHead(200, {'content-type': 'text/html'});
-    res.end('<!doctype html><title>HADES Browser Fixture</title><h1>Read-only research</h1><p>NO SIDE EFFECT</p><button>Apply</button>');
+    res.end('<!doctype html><title>HADES Browser Fixture</title><h1>Read-only research</h1><p id="js-result">SCRIPT DID NOT RUN</p><p>NO SIDE EFFECT</p><button>Apply</button><script>document.getElementById("js-result").textContent="PAGE SCRIPT RAN";fetch("/mutate", {method:"POST", body:"should be blocked"}).catch(() => {}); const x = new XMLHttpRequest(); try { x.open("POST", "/mutate"); x.send("should be blocked"); } catch (_) {}</script>');
+    return;
+  }
+  if (req.method === 'POST' && req.url === '/mutate') {
+    mutationCount += 1;
+    res.writeHead(204); res.end();
     return;
   }
   if (req.method === 'GET' && req.url === '/redirect') {
@@ -70,7 +76,9 @@ fixture.listen(0, '127.0.0.1', () => {
     await rpc('tools/call', {name: 'browser_navigate', arguments: {url: 'http://127.0.0.1:' + port + '/'}});
     const snapshot = await rpc('tools/call', {name: 'browser_snapshot', arguments: {}});
     const text = (snapshot.result.content || []).map(item => item.text || '').join('\n');
-    if (!text.includes('Read-only research') || !text.includes('NO SIDE EFFECT')) throw new Error('safe browser snapshot failed');
+    if (!text.includes('Read-only research') || !text.includes('NO SIDE EFFECT') || !text.includes('PAGE SCRIPT RAN')) throw new Error('safe browser snapshot or JavaScript rendering failed: ' + text);
+    await new Promise(resolve => setTimeout(resolve, 250));
+    if (mutationCount !== 0) throw new Error('page scripts dispatched a mutating request');
     const redirected = await rpc('tools/call', {name: 'browser_navigate', arguments: {url: 'http://127.0.0.1:' + port + '/redirect'}});
     const redirectText = JSON.stringify(redirected);
     if (!redirectText.includes('403') || !redirectText.includes('HADES host policy')) throw new Error('unapproved redirect was not blocked: ' + redirectText);
@@ -79,6 +87,7 @@ fixture.listen(0, '127.0.0.1', () => {
     console.log('PASS Playwright MCP round-trip through HADES anonymous browser proxy');
     console.log('PASS upstream side-effecting tools are filtered and rejected');
     console.log('PASS explicit private-target override is confined to disposable fixture');
+    console.log('PASS page-script fetch/XHR writes are blocked before dispatch');
     child.kill();
     fixture.close();
   })().catch(error => {

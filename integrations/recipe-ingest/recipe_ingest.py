@@ -20,7 +20,7 @@ from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
 from ipaddress import ip_address
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
@@ -29,7 +29,7 @@ DEFAULT_TIMEOUT_SECONDS = 15
 MAX_RECIPE_SERVINGS = 1000
 MAX_INGREDIENT_QUANTITY = Fraction(1_000_000)
 _NUMBER = r"(?:\d+(?:\.\d+)?|\d+\s*/\s*\d+|[¼½¾⅓⅔⅛⅜⅝⅞])"
-_UNIT = r"(?:tsp|teaspoons?|tbsp|tablespoons?|cups?|ounces?|oz|pounds?|lbs?|lb|grams?|g|kilograms?|kg|millilit(?:er|re)s?|ml|lit(?:er|re)s?|l|pinch(?:es)?|cloves?|cans?|packages?|sticks?)"
+_UNIT = r"(?:tsp|teaspoons?|tbsp|tablespoons?|cups?|ounces?|oz|pounds?|lbs?|lb|grams?|g|kilograms?|kg|millilit(?:er|re)s?|ml|lit(?:er|re)s?|l|pinch(?:es)?|cloves?|cans?|packages?|packs?|pieces?|sticks?)"
 _QUANTITY = re.compile(rf"^\s*(?P<quantity>{_NUMBER})(?:\s*[-–]\s*(?P<maximum>{_NUMBER}))?\s*(?P<unit>{_UNIT})?\b\s*(?P<name>.*)$", re.I)
 _UNIT_ALIASES = {
     "tsp": "tsp", "teaspoon": "tsp", "teaspoons": "tsp",
@@ -43,6 +43,7 @@ _UNIT_ALIASES = {
     "liter": "l", "liters": "l", "litre": "l", "litres": "l", "l": "l",
     "pinch": "pinch", "pinches": "pinch", "clove": "clove", "cloves": "clove",
     "can": "can", "cans": "can", "package": "package", "packages": "package",
+    "pack": "pack", "packs": "pack", "piece": "piece", "pieces": "piece",
     "stick": "stick", "sticks": "stick",
 }
 
@@ -95,20 +96,47 @@ class _JsonLdParser(HTMLParser):
 class _VisibleTextParser(HTMLParser):
     """Extract visible-ish text while retaining element/line boundaries."""
 
+    _SUPPRESSED = {"head", "script", "style", "noscript", "template", "svg", "nav", "footer", "aside", "form", "button"}
+    _VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.lines: list[str] = []
+        self._suppressed_stack: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag.lower() in {"br", "div", "h1", "h2", "h3", "li", "p", "section", "tr"}:
+        tag = tag.lower()
+        if self._suppressed_stack:
+            if tag not in self._VOID:
+                self._suppressed_stack.append(tag)
+            return
+        attributes = {key.lower(): (value or "") for key, value in attrs}
+        style = re.sub(r"\s+", "", attributes.get("style", "")).casefold()
+        hidden = (
+            "hidden" in attributes
+            or attributes.get("aria-hidden", "").casefold() == "true"
+            or "display:none" in style
+            or "visibility:hidden" in style
+        )
+        if tag in self._SUPPRESSED or hidden:
+            if tag not in self._VOID:
+                self._suppressed_stack.append(tag)
+            return
+        if tag in {"br", "article", "div", "h1", "h2", "h3", "li", "main", "p", "section", "tr"}:
             self.lines.append("\n")
 
     def handle_endtag(self, tag: str) -> None:
-        if tag.lower() in {"div", "h1", "h2", "h3", "li", "p", "section", "tr"}:
+        tag = tag.lower()
+        if self._suppressed_stack:
+            if tag in self._suppressed_stack:
+                index = len(self._suppressed_stack) - 1 - self._suppressed_stack[::-1].index(tag)
+                del self._suppressed_stack[index:]
+            return
+        if tag in {"article", "div", "h1", "h2", "h3", "li", "main", "p", "section", "tr"}:
             self.lines.append("\n")
 
     def handle_data(self, data: str) -> None:
-        if data.strip():
+        if not self._suppressed_stack and data.strip():
             self.lines.append(data)
 
 
@@ -177,6 +205,7 @@ def extract_from_html(source_html: str, source_url: str | None = None) -> dict[s
 
 
 def _normalize_recipe(recipe: dict[str, Any], source_url: str | None, source: str) -> dict[str, Any]:
+    source_url, source_url_redacted = _safe_provenance_url(source_url)
     raw_ingredients = recipe.get("recipeIngredient", [])
     if isinstance(raw_ingredients, str):
         raw_ingredients = [raw_ingredients]
@@ -192,6 +221,8 @@ def _normalize_recipe(recipe: dict[str, Any], source_url: str | None, source: st
         warnings.append("One or more ingredient lines need review before Grocy resolution.")
     if not _instructions(recipe.get("recipeInstructions")):
         warnings.append("No instructions were supplied by the source.")
+    if source_url_redacted:
+        warnings.append("Source URL query and fragment were removed before saving provenance.")
     return {
         "source": source,
         "source_url": source_url,
@@ -213,7 +244,13 @@ def extract_from_paste(source_text: str, source_url: str | None = None) -> dict[
         raise ValueError("Pasted recipe content exceeds the bounded preview size.")
     text = source_text.strip()
     if "application/ld+json" in text.lower():
-        return extract_from_html(text, source_url)
+        try:
+            return extract_from_html(text, source_url)
+        except ValueError:
+            # Malformed or irrelevant structured data may coexist with a
+            # clearly sectioned visible recipe. The fallback still requires
+            # explicit title/Ingredients content and remains review-required.
+            pass
     try:
         document = json.loads(text)
     except json.JSONDecodeError:
@@ -262,6 +299,9 @@ def extract_from_paste(source_text: str, source_url: str | None = None) -> dict[
     instructions = [line.lstrip("-*• ").strip() for line in lines[instruction_start:] if line.strip()] if instruction_start is not None else []
     if not instructions:
         warnings.append("No instructions were supplied by the source.")
+    source_url, source_url_redacted = _safe_provenance_url(source_url)
+    if source_url_redacted:
+        warnings.append("Source URL query and fragment were removed before saving provenance.")
     return {
         "source": "pasted recipe text",
         "source_url": source_url,
@@ -289,6 +329,52 @@ def _safe_url(url: str) -> str:
     if any(address.is_private or address.is_loopback or address.is_link_local or address.is_reserved for address in addresses):
         raise ValueError("Private or loopback recipe URLs are not allowed.")
     return url
+
+
+def _safe_provenance_url(url: str | None) -> tuple[str | None, bool]:
+    """Validate and minimize a URL that will be persisted as recipe provenance.
+
+    This does not fetch or resolve DNS: pasted sources are untrusted metadata,
+    and query strings/fragments often contain tracking or bearer credentials.
+    """
+    if url is None or (isinstance(url, str) and not url.strip()):
+        return None, False
+    if not isinstance(url, str) or len(url) > 2048:
+        raise ValueError("Recipe source URL must be a bounded http(s) URL.")
+    if any(ord(char) < 32 or ord(char) == 127 for char in url):
+        raise ValueError("Recipe source URL must not contain control characters.")
+    if any(char.isspace() for char in url):
+        raise ValueError("Recipe source URL must not contain whitespace.")
+    try:
+        parsed = urlparse(url.strip())
+        hostname = parsed.hostname
+        # Accessing port validates malformed and out-of-range port syntax.
+        _ = parsed.port
+    except ValueError as exc:
+        raise ValueError("Recipe source URL is invalid.") from exc
+    if parsed.scheme.lower() not in {"http", "https"} or not hostname:
+        raise ValueError("Recipe source must be an http(s) URL.")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("Recipe source URL must not contain embedded credentials.")
+    normalized_host = hostname.rstrip(".").casefold()
+    if normalized_host in {"localhost", "local", "internal", "home.arpa"} or normalized_host.endswith(
+        (".localhost", ".local", ".internal", ".lan", ".home.arpa")
+    ):
+        raise ValueError("Private or local recipe source URLs are not allowed.")
+    try:
+        address = ip_address(normalized_host)
+    except ValueError:
+        address = None
+        label = r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
+        if len(normalized_host) > 253 or not re.fullmatch(rf"{label}(?:\.{label})*", normalized_host):
+            raise ValueError("Recipe source URL hostname is invalid.")
+    if address is not None and (
+        address.is_private or address.is_loopback or address.is_link_local
+        or address.is_reserved or address.is_unspecified or address.is_multicast
+    ):
+        raise ValueError("Private or local recipe source URLs are not allowed.")
+    safe = urlunsplit((parsed.scheme.lower(), parsed.netloc, parsed.path, "", ""))
+    return safe, bool(parsed.query or parsed.fragment)
 
 
 class _SafeRedirectHandler(HTTPRedirectHandler):
@@ -402,15 +488,38 @@ def _validated_quantity(value: Any) -> str:
     return amount
 
 
+def _source_fingerprint(recipe: dict[str, Any]) -> str:
+    """Fingerprint the reviewed source content for safe re-import detection."""
+    content = {
+        "title": str(recipe.get("title", "")).strip(),
+        "servings": str(recipe.get("servings", "")).strip(),
+        "ingredients": [
+            {
+                "raw": str(item.get("raw", "")).strip(),
+                "name": str(item.get("name", "")).strip(),
+                "quantity": str(item.get("quantity", "")).strip(),
+                "unit": str(item.get("unit", "")).strip(),
+            }
+            for item in recipe.get("ingredients", [])
+            if isinstance(item, dict)
+        ],
+        "instructions": [str(item).strip() for item in recipe.get("instructions", [])],
+        "notes": str(recipe.get("notes", "")).strip(),
+        "source_url": str(recipe.get("source_url", "")).strip(),
+    }
+    encoded = json.dumps(content, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def build_apply_plan(recipe: dict[str, Any], quantity_units: list[dict[str, Any]]) -> dict[str, Any]:
     """Build a Grocy write plan without performing any write.
 
     All ingredient rows must already have an exact product resolution and a
     known quantity unit.  The plan is the review/confirmation boundary: its
-    contents can be shown to the owner before the caller applies it.
+    contents can be shown to the owner before the caller applies it.  A
+    source may still carry ``requires_review`` (for example pasted text); the
+    explicit ``confirm=true`` apply call is the approval boundary.
     """
-    if recipe.get("requires_review"):
-        raise ValueError("Recipe requires review before it can be applied.")
     servings = _serving_count(recipe.get("servings"))
     if servings is None or servings < 1 or servings > MAX_RECIPE_SERVINGS:
         raise ValueError("Recipe servings must be between 1 and 1000.")
@@ -446,6 +555,7 @@ def build_apply_plan(recipe: dict[str, Any], quantity_units: list[dict[str, Any]
     description = recipe.get("notes") or ""
     if recipe.get("source_url"):
         description = f"{description}\nSource: {recipe['source_url']}".strip()
+    description = f"{description}\nHADES normalized recipe SHA-256: {_source_fingerprint(recipe)}".strip()
     return {
         "recipe": {
             "name": str(recipe.get("title", "")).strip(),
@@ -482,7 +592,12 @@ class GrocyRecipeImporter:
     @staticmethod
     def _signed_payload(preview: dict[str, Any]) -> bytes:
         return json.dumps(
-            {"recipe": preview.get("recipe"), "plan": preview.get("plan"), "duplicate": preview.get("duplicate")},
+            {
+                "recipe": preview.get("recipe"),
+                "plan": preview.get("plan"),
+                "duplicate": preview.get("duplicate"),
+                "duplicate_status": preview.get("duplicate_status"),
+            },
             sort_keys=True, separators=(",", ":"),
         ).encode("utf-8")
 
@@ -490,9 +605,19 @@ class GrocyRecipeImporter:
         return hmac.new(self._signing_key, self._signed_payload(preview), hashlib.sha256).hexdigest()
 
     def preview(self, recipe: dict[str, Any]) -> dict[str, Any]:
+        normalized_recipe = dict(recipe)
+        source_url, source_url_redacted = _safe_provenance_url(recipe.get("source_url"))
+        normalized_recipe["source_url"] = source_url
+        if source_url_redacted:
+            normalized_recipe["requires_review"] = True
+            warnings = list(normalized_recipe.get("warnings", []))
+            warning = "Source URL query and fragment were removed before saving provenance."
+            if warning not in warnings:
+                warnings.append(warning)
+            normalized_recipe["warnings"] = warnings
         products = self.request("GET", "/api/objects/products")
         units = self.request("GET", "/api/objects/quantity_units")
-        resolved = resolve_products(recipe, products if isinstance(products, list) else [])
+        resolved = resolve_products(normalized_recipe, products if isinstance(products, list) else [])
         try:
             plan = build_apply_plan(resolved, units if isinstance(units, list) else [])
         except ValueError as exc:
@@ -501,15 +626,42 @@ class GrocyRecipeImporter:
             resolved["requires_review"] = True
             resolved["warnings"] = list(resolved.get("warnings", [])) + [str(exc)]
         existing = self.request("GET", "/api/objects/recipes")
-        duplicate = any(
-            isinstance(item, dict) and str(item.get("name", "")).casefold() == str(resolved.get("title", "")).casefold()
-            for item in (existing if isinstance(existing, list) else [])
-        )
+        matches = [
+            item for item in (existing if isinstance(existing, list) else [])
+            if isinstance(item, dict)
+            and str(item.get("name", "")).casefold() == str(resolved.get("title", "")).casefold()
+        ]
+        duplicate = bool(matches)
+        duplicate_status = None
         if duplicate:
+            source_url = str(resolved.get("source_url") or "").strip()
+            fingerprint = _source_fingerprint(resolved)
+            current_description = str(matches[0].get("description") or "")
+            old_fingerprint = re.search(r"(?m)^HADES normalized recipe SHA-256: ([0-9a-f]{64})$", current_description)
+            old_source = re.search(r"(?m)^Source: (.+)$", current_description)
+            same_source = bool(source_url and old_source and old_source.group(1).strip() == source_url)
+            if len(matches) > 1:
+                duplicate_status = "MULTIPLE_TITLE_MATCHES"
+                message = "Multiple Grocy recipes have this title; resolve the canonical recipe manually before importing."
+            elif same_source and old_fingerprint and old_fingerprint.group(1) == fingerprint:
+                duplicate_status = "UNCHANGED_SOURCE"
+                message = "This source matches the recipe already imported; no changes are needed."
+            elif same_source and old_fingerprint:
+                duplicate_status = "CHANGED_SOURCE"
+                message = "This source has changed since import; review the existing Grocy recipe manually before replacing anything."
+            elif same_source:
+                duplicate_status = "SOURCE_UNVERIFIED"
+                message = "This recipe came from the same source, but its imported content has no saved fingerprint; review it manually."
+            else:
+                duplicate_status = "TITLE_CONFLICT"
+                message = "A Grocy recipe with this title already exists; review it before importing another."
             resolved["requires_review"] = True
-            resolved["warnings"] = list(resolved.get("warnings", [])) + ["A Grocy recipe with this title already exists."]
+            resolved["warnings"] = list(resolved.get("warnings", [])) + [message]
             plan = None
-        preview = {"outcome": "PREVIEW", "recipe": resolved, "plan": plan, "duplicate": duplicate}
+        preview = {
+            "outcome": "PREVIEW", "recipe": resolved, "plan": plan,
+            "duplicate": duplicate, "duplicate_status": duplicate_status,
+        }
         preview["review_token"] = self._review_token(preview)
         return preview
 

@@ -1,0 +1,26 @@
+HADES synthetic performance attribution capture
+
+Environment
+- Disposable Rocky reconstruction guest VM 802.
+- Synthetic OpenAI-compatible backend; no owner model or production traffic.
+- Harness: scripts/test-synthetic-performance.py.
+
+Coverage
+- normal chat
+- private-memory recall
+- Grocy read
+- Grocy mutation confirmation boundary
+- recipe serving preview
+- web search
+- multi-domain web + Grocy + memory selection
+- bounded Agent Zero delegation
+
+Result
+- PASS synthetic performance capture.
+- Every workflow reported model latency, time-to-tool, tool latency,
+  continuation latency, total duration, and tool-loop detection.
+- Multi-domain selection emitted web_search, mcp_grocy_stock_overview_tool,
+  and hindsight_recall without an unnecessary continuation tool loop.
+- The synthetic backend is intentionally sub-human-latency and is not an
+  optimization claim. A real model lane is still required for meaningful
+  human-facing performance decisions.

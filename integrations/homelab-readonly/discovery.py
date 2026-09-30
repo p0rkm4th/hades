@@ -33,6 +33,13 @@ def parse_nmap_xml(
     raw = document.encode() if isinstance(document, str) else document
     if not raw or len(raw) > MAX_XML_BYTES:
         raise ValueError("Nmap evidence is empty or exceeds the bounded size")
+    try:
+        xml_text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("Nmap evidence must be UTF-8 XML") from exc
+    declaration_scan = xml_text.upper()
+    if "<!DOCTYPE" in declaration_scan or "<!ENTITY" in declaration_scan:
+        raise ValueError("Nmap evidence must not contain DTD or entity declarations")
     requested = _network(target)
     if not retrieved_at:
         raise ValueError("Nmap evidence requires a retrieval timestamp")

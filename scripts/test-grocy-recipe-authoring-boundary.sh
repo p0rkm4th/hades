@@ -12,6 +12,7 @@ import types
 from pathlib import Path
 
 os.environ["GROCY_API_KEY"] = "synthetic-test-key"
+os.environ.pop("GROCY_API_KEY_FILE", None)
 
 anyio = types.ModuleType("anyio")
 anyio.run = lambda fn: None
@@ -82,6 +83,29 @@ source_path = Path("integrations/grocy-recipe-authoring/server.py")
 spec = importlib.util.spec_from_file_location("hades_grocy_recipe_authoring", source_path)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+
+import tempfile
+
+with tempfile.TemporaryDirectory(prefix="hades-grocy-recipe-key-") as key_dir:
+    key_path = Path(key_dir) / "grocy-api-key"
+    key_path.write_text("synthetic-file-key\n", encoding="utf-8")
+    key_path.chmod(0o600)
+    os.environ["GROCY_API_KEY_FILE"] = str(key_path)
+    os.environ.pop("GROCY_API_KEY", None)
+    assert module._load_api_key() == "synthetic-file-key"
+    key_path.chmod(0o644)
+    assert module._load_api_key() == ""
+    key_path.chmod(0o600)
+    key_path.write_text("synthetic-key\nsecond-line\n", encoding="utf-8")
+    assert module._load_api_key() == ""
+    key_path.unlink()
+    link_path = Path(key_dir) / "key-link"
+    link_path.symlink_to(Path("/dev/null"))
+    os.environ["GROCY_API_KEY_FILE"] = str(link_path)
+    assert module._load_api_key() == ""
+os.environ.pop("GROCY_API_KEY_FILE", None)
+os.environ["GROCY_API_KEY"] = "synthetic-test-key"
+assert module._load_api_key() == "synthetic-test-key"
 
 async def check():
     cases = [
@@ -210,6 +234,36 @@ async def check():
     module.httpx.AsyncClient = CoercibleVerificationClient
     result = await module.set_servings("Recipe", 1)
     assert result["outcome"] == "OUTCOME UNKNOWN", result
+
+    class StatefulClient(Client):
+        recipe = {"id": 7, "name": "Recipe", "base_servings": 4}
+        writes = 0
+        async def get(self, url):
+            self.calls.append(("GET", url))
+            if url.endswith("/recipes"):
+                return Response([dict(self.recipe)])
+            return Response(dict(self.recipe))
+        async def put(self, url, json):
+            self.calls.append(("PUT", url, json))
+            type(self).writes += 1
+            type(self).recipe.update(json)
+            return Response(dict(self.recipe))
+
+    module.httpx.AsyncClient = StatefulClient
+    preview = await module.preview_servings("Recipe", 6)
+    assert preview == {
+        "ok": False, "outcome": "PREVIEW", "recipe_id": 7,
+        "recipe": "Recipe", "current_servings": 4, "requested_servings": 6,
+    }, preview
+    assert StatefulClient.writes == 0
+    stale = await module.apply_servings_preview(7, 3, 6)
+    assert stale["outcome"] == "STALE PREVIEW" and stale["current_servings"] == 4, stale
+    assert StatefulClient.writes == 0
+    applied = await module.apply_servings_preview(7, 4, 6)
+    assert applied == {"ok": True, "outcome": "SUCCEEDED", "recipe_id": 7, "base_servings": 6}, applied
+    assert StatefulClient.writes == 1
+    repeated = await module.apply_servings_preview(7, 4, 6)
+    assert repeated == applied and StatefulClient.writes == 1, repeated
 
     listed = await module.list_tools()
     assert listed.tools[0].name == module.TOOL_NAME

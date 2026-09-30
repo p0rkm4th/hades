@@ -105,9 +105,21 @@ The dependency-free field-shape regression is
 to verify no-tool and tool-plus-continuation attribution fields; its timings
 must not be interpreted as provider performance.
 
-The expanded matrix was syntax-checked on 2026-09-15. Execution was deferred
-in this environment because `127.0.0.1:11434` was not reachable; this does not
-alter the prior timing capture below.
+The expanded matrix was executed on 2026-09-16 in the disposable Rocky
+reconstruction guest (VM 802) against its synthetic OpenAI-compatible backend.
+All eight workflows emitted the bounded attribution fields and the
+multi-domain case completed without an unnecessary continuation tool loop;
+this is fixture performance evidence, not a real-model latency claim.
+
+A later destination check found that the VM 802 backend had regressed to an
+older echo-only fixture, which could not produce tool calls and therefore
+could not support this matrix. The backend was replaced with the tracked
+tool-aware fixture and the matrix was rerun through a temporary read-only
+operator tunnel. All eight workflows passed: total synthetic turn times were
+approximately 90--171 ms, model-selection stages 44--86 ms, and fixture tool
+stages effectively 0 ms. This repairs the fixture path and provides current
+attribution evidence; it does not qualify a real inference model or alter
+production model placement.
 
 The 2026-09-14 capture measured web at 15.46s total (8.12s model, 7.34s
 continuation) and recipe preview at 9.73s total (4.95s model, 4.78s
@@ -117,3 +129,44 @@ retry change is justified; model/continuation remains the bounded future
 optimization target. The follow-up run also asserted that post-tool
 continuation emitted no further tool calls, so an unnecessary model/tool loop
 now fails the harness.
+
+## 2026-09-28 authenticated meal-read timing
+
+A redacted authenticated probe asked two natural meal-planning questions of
+Owner, Household A, and Household B. Completed turns ranged from 4.4s to
+38.1s. Browser-visible first response text arrived in 715ms on a later Owner
+turn; completion responses began at 116–131ms in the measured runs. Each
+completed turn showed one HTTP 200 `hermes-agent` completion and no visible
+tool names. The probe retained only response digests/lengths and route timing
+metadata, not answer text or pantry contents. These signals do not establish
+which internal Hermes path answered or whether each answer was correct.
+
+A separate Household B meal read did not settle within 90 seconds. The
+diagnostic omitted response content; the browser was closed and the user chat
+may retain an unanswered prompt. Treat this as a reliability failure, not a
+completed latency sample. Together with the earlier 23s and 38s Household B
+turns, it justifies focused latency investigation. The candidate deterministic
+meal route passes the pinned Hermes and disposable authenticated synthetic
+household UI checks, but it is not deployed; production overlay provenance
+remains unresolved. No performance improvement or production fix is claimed.
+
+A strict-host-key, read-only VM 802 check confirmed `hades-hermes.service` was
+active, but the bounded journal query for 03:09:30–03:13:00 UTC contained zero
+`HADES timing stage=tool|turn` records. The live delay therefore remains
+unattributed; no prompt, response, or application record was read.
+
+The same read-only check confirmed the active overlay SHA-256 remains
+`40f37c7be0c12e0df552148a8d5cab098f26ef8ecb7b767c39a14621fed55759`; those
+timing format strings are present in that artifact, and the Hermes unit sends
+stdout to journald. A widened query through 03:17 UTC still found no records.
+The missing trace could reflect an early-return/cancellation path or another
+runtime logging condition; source mapping is insufficient to distinguish them.
+
+## 2026-09-17 real-model lane probe
+
+The installed Ollama-compatible listener was reachable on the local Docker
+bridge, but a bounded run of the Alpha/Beta/Gamma long-conversation harness
+and the expanded timing harness produced no model response within the
+two-minute observation window. The probes were stopped before their individual
+180-second request timeout. This is host-sensitive performance evidence, not a
+HADES routing failure; no model, token, or continuation setting was changed.

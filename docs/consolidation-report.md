@@ -54,9 +54,10 @@ lifecycle are available without widening authority.
 
 ## Domains and gates
 
-Homelab remains preparation-complete: Proxmox, NetBox, and Uptime Kuma are
-defined as separate read-only authorities, but endpoints and credentials are
-owner-gated. Home Assistant is preparation-complete with an explicit entity
+Homelab is partially activated: Proxmox and NetBox read-only inputs plus the
+published Uptime Kuma status path are live through HADES, with each source
+retaining separate authority. Physical-host recovery and hardware acceptance
+remain open. Home Assistant is preparation-complete with an explicit entity
 allowlist and security-sensitive exclusions. Actual Budget is selected for
 synthetic finance integration; real files, provider credentials, sync, and
 finance writes remain owner-gated. LLDAP/shared identity remains deferred

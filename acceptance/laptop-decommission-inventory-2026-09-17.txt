@@ -1,0 +1,32 @@
+# HADES laptop decommission inventory — 2026-09-17
+
+Method:
+- `scripts/inventory-laptop-decommission.sh` plus read-only `docker system df`
+- no containers, services, images, volumes, or files were removed
+
+Host and disk:
+- host: hades-garuda-x1
+- `/home`: 280G total, 238G used, 39G available, 87% used
+
+Laptop production remains active:
+- user-level `hades-hermes.service`: enabled and active
+- six named production containers: running with `unless-stopped` restart policy
+- production runtime remains the rollback source
+
+Docker accounting:
+- images: 640 total, 6 active, 178.3GB, 127.4GB reclaimable
+- containers: 11 total, 11 active, 1.265GB
+- local volumes: 387 total, 9 active, 3.016GB, 2.86GB reclaimable
+- build cache: 0B
+
+Classification:
+- candidate after owner cutover: the six named production containers and
+  user-level Hermes
+- preserve: HADES and hades-infra checkouts, SSH/Tailscale/admin tooling,
+  `/var/lib/hades`, and `/var/backups/hades`
+- review required: all other containers, volumes, images, model files, caches,
+  staging assets, and personal files
+
+This is an inventory baseline, not cleanup authorization. Cleanup remains
+conditional on owner acceptance, authoritative `hades.local` routing, and
+destination stability.

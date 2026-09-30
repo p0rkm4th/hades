@@ -2,7 +2,9 @@
 set -euo pipefail
 
 dockerfile=integrations/receipt-ocr/Dockerfile
-grep -q '^FROM python:3.11-slim-bookworm$' "$dockerfile"
+grep -q '^ARG HADES_RECEIPT_OCR_BASE_IMAGE$' "$dockerfile"
+grep -q '^FROM ${HADES_RECEIPT_OCR_BASE_IMAGE}$' "$dockerfile"
+grep -Eq '^HADES_RECEIPT_OCR_BASE_IMAGE=python:3\.11-slim-bookworm@sha256:[0-9a-f]{64}$' config/versions.env
 grep -q 'libgomp1 libgl1 libglib2.0-0' "$dockerfile"
 grep -q 'paddleocr-mcp\[local-cpu\]==0.8.5' "$dockerfile"
 grep -q '^USER 65532:65532$' "$dockerfile"

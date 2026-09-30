@@ -30,10 +30,12 @@ state = {
         {"type": "lxc", "vmid": 102, "name": "archive", "node": "Beta", "status": "stopped"},
     ]},
     "/netbox/api/dcim/devices/?name=dinner-app": {"results": [
-        {"name": "dinner-app", "status": "active", "site": "Kitchen Lab", "planned_node": "Beta"},
+        {"name": "dinner-app", "status": "active", "site": "Kitchen Lab", "planned_node": "Beta", "primary_ip": "192.0.2.44"},
+        {"name": "inventory-only", "status": "active", "site": "Kitchen Lab", "planned_node": "Beta", "primary_ip": "192.0.2.45"},
     ]},
     "/kuma/api/status-page/lab": {"monitors": [
         {"name": "dinner-app", "status": "down", "last_updated": (now - timedelta(minutes=10)).isoformat()},
+        {"name": "archive", "status": "up", "last_updated": (now - timedelta(minutes=1)).isoformat()},
     ]},
 }
 
@@ -75,15 +77,29 @@ assert summary["authority"] == {
     "availability": "Uptime Kuma",
 }
 assert resource["runtime"]["node"] == "Alexandra"
+assert resource["runtime_status"] == "running"
+assert resource["currently_online"] is True
 assert resource["inventory"]["planned_node"] == "Beta"
+assert resource["inventory"]["primary_ip"] == "192.0.2.44"
 assert resource["availability"]["status"] == "down"
 assert resource["availability_freshness"] == "STALE"
 assert resource["conflicts"]
+inventory_only = next(row for row in summary["resources"] if row["name"] == "inventory-only")
+assert inventory_only["runtime_status"] == "NOT_OBSERVED"
+assert inventory_only["currently_online"] is False
+assert inventory_only["inventory"]["primary_ip"] == "192.0.2.45"
+assert "inventory-only" in summary["inventory_only_names"]
+archive = next(row for row in summary["resources"] if row["name"] == "archive")
+assert archive["availability"]["status"] == "up"
+assert archive["availability_freshness"] == "FRESH"
+assert archive["runtime_status"] == "stopped"
+assert archive["currently_online"] is False
 nodes = {row["node"]: row for row in resources if row["type"] == "node"}
 guests = {row["name"]: row for row in resources if row["type"] in {"qemu", "lxc"}}
 
 assert nodes["Alexandra"]["status"] == "online"
 assert nodes["Beta"]["status"] == "degraded"
+assert next(row for row in summary["resources"] if row["name"] == "Beta")["currently_online"] is False
 assert guests["dinner-app"]["node"] == "Alexandra"
 assert guests["dinner-app"]["status"] == "running"
 assert guests["archive"]["status"] == "stopped"
@@ -92,6 +108,8 @@ assert guests["dinner-app"]["node"] != devices[0]["planned_node"]
 monitor = monitors[0]
 assert monitor["status"] == "down"
 assert now - datetime.fromisoformat(monitor["last_updated"]) > timedelta(minutes=5)
+fresh_monitor = monitors[1]
+assert now - datetime.fromisoformat(fresh_monitor["last_updated"]) < timedelta(minutes=5)
 
 try:
     urlopen(Request(f"http://127.0.0.1:{server.server_port}/proxmox/api2/json/cluster/resources", method="POST"), timeout=5)

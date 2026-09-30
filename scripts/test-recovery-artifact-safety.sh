@@ -42,6 +42,9 @@ chmod 600 "$fixture/MANIFEST"
 (cd "$fixture" && sha256sum ./*.db MANIFEST > SHA256SUMS)
 chmod 600 "$fixture/SHA256SUMS"
 "$VALIDATOR" "$fixture" >/dev/null
+for db in "$fixture"/*.db; do
+  [[ ! -e "$db-wal" && ! -e "$db-shm" ]] || { printf 'FAIL validator created SQLite sidecars\n'; exit 1; }
+done
 printf 'PASS valid recovery metadata accepted\n'
 
 expect_rejected() {

@@ -10,12 +10,36 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
+import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
 
 class ImportFormatError(ValueError):
     pass
+
+
+def suggest_mapping(headers: list[str]) -> dict[str, str]:
+    """Suggest ordinary banking-column meanings without silently importing."""
+    normalized = {re.sub(r"[^a-z0-9]", "", header.casefold()): header for header in headers}
+
+    def find(*names: str) -> str:
+        for name in names:
+            if name in normalized:
+                return normalized[name]
+        return ""
+
+    mapping = {
+        "date": find("date", "posted", "posteddate", "transactiondate", "transdate"),
+        "payee": find("payee", "description", "merchant", "name", "memo"),
+        "amount": find("amount", "transactionamount", "signedamount"),
+        "inflow": find("credit", "credits", "inflow", "deposit", "moneyin"),
+        "outflow": find("debit", "debits", "outflow", "withdrawal", "moneyout"),
+    }
+    if mapping["amount"]:
+        mapping.pop("inflow")
+        mapping.pop("outflow")
+    return {key: value for key, value in mapping.items() if value}
 
 
 def _field(mapping: dict[str, Any], key: str) -> str:

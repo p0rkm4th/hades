@@ -70,6 +70,16 @@ unknown, the adapter returns an explicit failure and HADES must avoid
 confident affordability or “how much did I spend” claims. Local memory must
 never fill a missing live finance answer.
 
+Separately, the owner-only local statement reader can answer historical
+spending questions from its explicitly configured CSV. For a month-to-date
+comparison it uses the latest transaction date in the current month and
+compares the same calendar days of the previous month. It can identify which
+statement category or description groups account for an observed difference;
+those groups show where amounts differ, not the cause. If the CSV does not
+cover the current month or has no prior-period expense rows, HADES says it
+cannot compare. This path includes pending statement rows and remains distinct
+from a live Actual Budget balance, forecast, or ledger operation.
+
 The official-client wrapper requires an explicitly selected budget by group ID
 or name; it never falls back to the first available budget. Its password-file
 input must be a bounded regular non-symlink file with mode 0600 or 0640. These

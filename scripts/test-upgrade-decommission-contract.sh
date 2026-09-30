@@ -14,10 +14,11 @@ for phrase in \
   'Authority-bearing migration' \
   'preserve `/var/lib/hades`' \
   'latest' \
-  'does not migrate production'; do
+  'active migration record' \
+  'production-migration-20260916.md'; do
   grep -Fq "$phrase" "$runbook" || { echo "FAIL runbook omits: $phrase"; exit 1; }
 done
-if rg -n 'rm -rf|destroy-everything|docker compose .* down -v|docker volume prune' "$runbook"; then
+if grep -En 'rm -rf|destroy-everything|docker compose .* down -v|docker volume prune' "$runbook"; then
   echo 'FAIL decommission runbook contains destructive cleanup'; exit 1
 fi
 echo 'PASS bounded upgrade and preservation-first decommission contract'

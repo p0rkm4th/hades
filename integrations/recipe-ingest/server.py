@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -62,6 +63,9 @@ def _request(method: str, path: str, payload=None):
 
 
 _importer = None
+_PREVIEW_TTL_SECONDS = 15 * 60
+_PREVIEW_CACHE_LIMIT = 32
+_preview_cache: dict[str, tuple[float, dict]] = {}
 
 
 def _get_importer():
@@ -69,6 +73,30 @@ def _get_importer():
     if _importer is None:
         _importer = GrocyRecipeImporter(_request)
     return _importer
+
+
+def _cache_preview(preview: dict) -> None:
+    token = preview.get("review_token") if isinstance(preview, dict) else None
+    if not isinstance(token, str) or not token:
+        return
+    now = time.monotonic()
+    for cached_token, (created, _value) in list(_preview_cache.items()):
+        if now - created > _PREVIEW_TTL_SECONDS:
+            _preview_cache.pop(cached_token, None)
+    while len(_preview_cache) >= _PREVIEW_CACHE_LIMIT:
+        _preview_cache.pop(next(iter(_preview_cache)))
+    _preview_cache[token] = (now, preview)
+
+
+def _cached_preview(token: str):
+    entry = _preview_cache.get(token)
+    if not entry:
+        return None
+    created, preview = entry
+    if time.monotonic() - created > _PREVIEW_TTL_SECONDS:
+        _preview_cache.pop(token, None)
+        return None
+    return preview
 
 
 def _text(result: dict) -> CallToolResult:
@@ -86,8 +114,13 @@ async def list_tools():
         Tool(
             name="recipe_url_apply",
             description=("Apply a previously reviewed recipe preview to canonical Grocy. "
-                         "Requires confirm=true; unresolved products are rejected."),
-            inputSchema={"type": "object", "properties": {"preview": {"type": "object"}, "confirm": {"type": "boolean"}}, "required": ["preview", "confirm"]},
+                         "Requires confirm=true; pass the exact preview or its short-lived "
+                         "review_token; unresolved products are rejected."),
+            inputSchema={"type": "object", "properties": {
+                "preview": {"type": "object"},
+                "review_token": {"type": "string"},
+                "confirm": {"type": "boolean"},
+            }, "required": ["confirm"]},
         ),
         Tool(
             name="recipe_paste_preview",
@@ -107,21 +140,41 @@ async def call_tool(tool_name, args):
     try:
         if tool_name == "recipe_url_preview":
             recipe = extract_from_url(str(args.get("url", "")))
-            return _text(_importer.preview(recipe))
+            preview = _importer.preview(recipe)
+            _cache_preview(preview)
+            return _text(preview)
         if tool_name == "recipe_url_apply":
-            return _text(_importer.apply(args.get("preview", {}), confirm=args.get("confirm") is True))
+            preview = args.get("preview")
+            if not isinstance(preview, dict):
+                preview = _cached_preview(str(args.get("review_token", "")).strip())
+            if preview is None:
+                return _text({"outcome": "FAILED", "error": "Review token is missing or expired; create a new preview."})
+            result = _importer.apply(preview, confirm=args.get("confirm") is True)
+            if result.get("outcome") == "SUCCEEDED":
+                token = preview.get("review_token")
+                if isinstance(token, str):
+                    _preview_cache.pop(token, None)
+            return _text(result)
         if tool_name == "recipe_paste_preview":
             recipe = extract_from_paste(args.get("text", ""), args.get("source_url"))
-            return _text(_importer.preview(recipe))
+            preview = _importer.preview(recipe)
+            _cache_preview(preview)
+            return _text(preview)
     except (ValueError, GrocyRequestError) as exc:
         return _text({"outcome": "FAILED", "error": str(exc)})
     raise ValueError(f"unknown tool: {tool_name}")
 
 
+async def _list_tools(_context, _params):
+    return await list_tools()
+
+
+async def _call_tool(_context, params):
+    return await call_tool(params.name, params.arguments)
+
+
 async def main():
-    server = Server("hades-recipe-ingest")
-    server.list_tools()(list_tools)
-    server.call_tool()(call_tool)
+    server = Server("hades-recipe-ingest", on_list_tools=_list_tools, on_call_tool=_call_tool)
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, server.create_initialization_options())
 

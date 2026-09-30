@@ -13,6 +13,14 @@ echo 'PASS symlinked backup destination rejected'
 grep -q 'source "$repo_dir/config/versions.env"' "$helper" || { echo 'FAIL backup helper omits authoritative manifest'; exit 1; }
 grep -q 'backup_format=1' "$helper" || { echo 'FAIL backup metadata format is missing'; exit 1; }
 grep -Fq 'sha256sum ./*.db MANIFEST > SHA256SUMS' "$helper" || { echo 'FAIL backup metadata is not checksummed'; exit 1; }
+grep -Fq 'HADES_EPSILON_PHASE3_STATE_FILE' "$helper" || { echo 'FAIL backup helper omits isolated Phase 3 state'; exit 1; }
+grep -Fq 'lldap_container=${HADES_LLDAP_CONTAINER:-hades-lldap-production}' "$helper" || { echo 'FAIL backup helper does not support reconstructed LLDAP container names'; exit 1; }
+grep -Fq 'source.backup(destination)' "$helper" || { echo 'FAIL backup helper does not use SQLite online backup API'; exit 1; }
+grep -Fq 'PRAGMA integrity_check' "$helper" || { echo 'FAIL backup helper does not validate SQLite integrity'; exit 1; }
+if grep -Eq '(^|[[:space:]])sqlite3[[:space:]]' "$helper"; then echo 'FAIL backup helper depends on the host sqlite3 CLI'; exit 1; fi
+grep -Fq 'mode=ro&immutable=1' "$helper" || { echo 'FAIL backup helper does not validate snapshots without mutation'; exit 1; }
+grep -Fq 'mode=ro&immutable=1' "$repo_dir/scripts/check-recovery-artifacts.sh" || { echo 'FAIL recovery validator does not open SQLite snapshots immutably'; exit 1; }
+grep -Fq 'phase3_state=$phase3_state' "$helper" || { echo 'FAIL backup manifest omits Phase 3 state presence'; exit 1; }
 for field in lldap_image hindsight_image_digest grocy_image agent_zero_image actual_version; do
   grep -q "^$field=" "$helper" || { echo "FAIL backup metadata omits $field"; exit 1; }
 done

@@ -7,10 +7,26 @@
   let localThemeChanged = false;
   let localEffectChanged = false;
   let preferenceScope = '';
+  let taskNotificationRecipient = '';
+  let taskNotificationAuthorizationEpoch = 0;
+  let automationNotificationRecipient = '';
+  let automationNotificationAuthorizationEpoch = 0;
+  const taskDesktopNotifications = new Set();
+  const automationDesktopNotifications = new Map();
   const preferenceStorageKey = key => preferenceScope ? `${key}:${preferenceScope}` : key;
   const getLocalPreference = key => localStorage.getItem(preferenceStorageKey(key));
   const setLocalPreference = (key, value) => localStorage.setItem(preferenceStorageKey(key), value);
   const removeLocalPreference = key => localStorage.removeItem(preferenceStorageKey(key));
+  const authHeaders = (extra = {}) => {
+    const token = localStorage.getItem('token');
+    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+  };
+  const sessionUserId = () => {
+    try {
+      const token = localStorage.getItem('token');
+      return token ? JSON.parse(atob(token.split('.')[1])).id : '';
+    } catch (_) { return ''; }
+  };
   const themes = [
     ['odysseus-neon', '⚡ Odysseus Neon'], ['odysseus-midnight', '🌌 Odysseus Midnight'],
     ['odysseus-cyberpunk', '🟪 Odysseus Cyberpunk'], ['odysseus-retrowave', '🟣 Odysseus Retrowave'],
@@ -36,6 +52,74 @@
   const effectClasses = effects.map(([value]) => 'hades-effect-' + value);
   const isTheme = value => themes.some(([candidate]) => candidate === value);
   const isEffect = value => effects.some(([candidate]) => candidate === value);
+  const uncertainCompletionMessage = "I couldn't confirm the result because the connection was interrupted. Your request may have completed, so check before trying again.";
+
+  function humanizeNativeCapabilityErrors(root = document) {
+    const nodes = root.querySelectorAll?.('*') || [];
+    for (const node of nodes) {
+      if (node.children.length || !node.textContent) continue;
+      if (/^(?:failed to fetch|there was an issue with the response|connection error|request timed out)(?:[.:].*)?$/i.test(node.textContent.trim())) {
+        node.textContent = uncertainCompletionMessage;
+        if (node.closest?.('#response-content-container')) node.setAttribute('data-hades-failure', 'true');
+      }
+      if (/Permission denied when accessing microphone:\s*NotSupportedError:\s*Not supported/i.test(node.textContent)) {
+        node.textContent = 'Voice input is not available in this browser or on this device.';
+      }
+    }
+    const duplicateFailureText = [...document.querySelectorAll('#response-content-container *')]
+      .filter(node => !node.children.length && node.textContent.trim() === uncertainCompletionMessage);
+    for (const duplicate of duplicateFailureText.slice(1)) duplicate.remove();
+  }
+
+  function labelVoiceRecordingCancel(root = document) {
+    const confirm = root.querySelector?.('#confirm-recording-button');
+    if (!confirm) return;
+    let bar = confirm.parentElement;
+    while (bar && bar !== document.body) {
+      const buttons = [...bar.querySelectorAll?.('button') || []];
+      if (buttons.length === 2 && buttons.includes(confirm)) {
+        const cancel = buttons.find(button => button !== confirm);
+        if (cancel && !cancel.getAttribute('aria-label')) {
+          cancel.setAttribute('aria-label', 'Cancel recording');
+          cancel.title = 'Cancel recording';
+        }
+        return;
+      }
+      bar = bar.parentElement;
+    }
+  }
+
+  function showVoiceFailureNotice() {
+    const form = document.querySelector('#message-input-container')?.closest('form') || document.body;
+    let notice = document.getElementById('hades-voice-failure-notice');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'hades-voice-failure-notice';
+      notice.setAttribute('role', 'alert');
+      notice.setAttribute('aria-live', 'assertive');
+      notice.style.cssText = 'padding:0 12px 4px;color:var(--color-gray-400,#9ca3af);font-size:.75rem;';
+      form.appendChild(notice);
+    }
+    notice.textContent = 'Voice transcription is unavailable right now. Try recording again or type your message.';
+    clearTimeout(showVoiceFailureNotice.timer);
+    showVoiceFailureNotice.timer = setTimeout(() => notice.remove(), 7000);
+  }
+
+  function showTtsFailureNotice() {
+    const form = document.querySelector('#message-input-container')?.closest('form') || document.body;
+    let notice = document.getElementById('hades-tts-failure-notice');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'hades-tts-failure-notice';
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('aria-live', 'polite');
+      notice.style.cssText = 'padding:0 12px 4px;color:var(--color-gray-400,#9ca3af);font-size:.75rem;';
+      form.appendChild(notice);
+    }
+    notice.textContent = 'Read Aloud is unavailable right now. The text response is still available.';
+    clearTimeout(showTtsFailureNotice.timer);
+    showTtsFailureNotice.timer = setTimeout(() => notice.remove(), 7000);
+  }
 
   function saveRemotePreference(key, value) {
     // User settings are the account-level source of truth. localStorage is
@@ -43,18 +127,22 @@
     // Open WebUI deployments.
     fetch('/api/v1/users/user/settings/update', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ [key]: value })
     }).catch(() => {});
   }
 
   async function loadRemotePreferences() {
     try {
-      const userResponse = await fetch('/api/v1/users/user');
-      if (!userResponse.ok) return;
-      const user = await userResponse.json();
-      const nextScope = String(user.id || '');
-      if (!nextScope) return;
+      const userId = sessionUserId();
+      if (!userId) return;
+      void pollTaskNotifications();
+      // The authenticated token already provides the stable subject used to
+      // scope browser-local fallbacks.  The user-by-ID endpoint is an admin
+      // surface in current Open WebUI releases and returns 401 for ordinary
+      // authenticated users.  Calling it here caused needless console noise
+      // and made the theme depend on a privilege the chat UI does not need.
+      const nextScope = String(userId);
       if (preferenceScope !== nextScope) {
         preferenceScope = nextScope;
         localThemeChanged = false;
@@ -65,7 +153,7 @@
         localStorage.removeItem(themeKey);
         localStorage.removeItem(effectKey);
       }
-      const response = await fetch('/api/v1/users/user/settings?raw=true');
+      const response = await fetch('/api/v1/users/user/settings?raw=true', { headers: authHeaders() });
       if (!response.ok) return;
       const settings = await response.json();
       // localStorage is shared by every account using this browser profile,
@@ -225,6 +313,370 @@
       if (surface) surface.classList.add('hades-composer-surface');
     });
   }
+  function taskNotificationStateKey(userId) {
+    return `hades-task-notification-state:${userId}`;
+  }
+  function taskNotificationReviewKey(userId) {
+    return `hades-task-notification-review:${userId}`;
+  }
+  function automationNotificationStateKey(userId) {
+    return `hades-automation-notification-state:${userId}`;
+  }
+  function automationNotificationReviewKey(userId) {
+    return `hades-automation-notification-review:${userId}`;
+  }
+  function applyQueuedAutomationReview() {
+    const userId = sessionUserId();
+    if (!userId || window.location.pathname !== '/') return;
+    const key = automationNotificationReviewKey(userId);
+    const prompt = localStorage.getItem(key);
+    const composer = document.querySelector('#chat-input');
+    if (!prompt || !composer) return;
+    localStorage.removeItem(key);
+    if (composer.isContentEditable) composer.textContent = prompt;
+    else composer.value = prompt;
+    composer.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: prompt }));
+    composer.focus();
+  }
+  function clearAutomationNotifications() {
+    document.getElementById('hades-automation-notification')?.remove();
+    for (const { notification } of automationDesktopNotifications.values()) notification.close();
+    automationDesktopNotifications.clear();
+  }
+  function renderAutomationNotificationNotice(items, userId) {
+    const visible = items.slice(0, 3);
+    if (!visible.length || !userId) return;
+    const reviewPrompt = 'Show me my latest automation results';
+    let notice = document.getElementById('hades-automation-notification');
+    if (!notice) {
+      notice = document.createElement('section');
+      notice.id = 'hades-automation-notification';
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('aria-live', 'polite');
+      notice.style.cssText = 'position:fixed;z-index:10000;right:16px;bottom:230px;max-width:min(420px,calc(100vw - 32px));padding:14px 16px;border:1px solid #fbbf24;border-radius:12px;background:#0f172a;color:#f8fafc;box-shadow:0 8px 32px #0008;font:14px/1.45 system-ui,sans-serif';
+      document.body.appendChild(notice);
+    }
+    notice.dataset.hadesSources = JSON.stringify(visible.map(item => ({
+      source_key: item.source_key,
+      state_key: item.state_key,
+    })));
+    notice.replaceChildren();
+    const heading = document.createElement('strong');
+    heading.textContent = 'Automation result needs attention';
+    notice.appendChild(heading);
+    for (const item of visible) {
+      const message = document.createElement('div');
+      message.textContent = `${item.title}: ${item.message}`;
+      message.style.marginTop = '6px';
+      notice.appendChild(message);
+    }
+    const review = document.createElement('button');
+    review.type = 'button';
+    review.textContent = 'Review in HADES';
+    review.style.cssText = 'margin:10px 8px 0 0;padding:6px 10px;border-radius:8px;border:1px solid #94a3b8;background:#1e293b;color:inherit;cursor:pointer';
+    review.addEventListener('click', () => {
+      localStorage.setItem(automationNotificationReviewKey(userId), reviewPrompt);
+      if (window.location.pathname !== '/') window.location.assign('/');
+      else applyQueuedAutomationReview();
+      notice.remove();
+    });
+    notice.appendChild(review);
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      const enable = document.createElement('button');
+      enable.type = 'button';
+      enable.textContent = 'Enable desktop alerts';
+      enable.style.cssText = review.style.cssText;
+      enable.addEventListener('click', async () => {
+        try { await Notification.requestPermission(); } catch (_) {}
+        enable.remove();
+      }, { once: true });
+      notice.appendChild(enable);
+    }
+    const dismiss = document.createElement('button');
+    dismiss.type = 'button';
+    dismiss.textContent = 'Dismiss';
+    dismiss.style.cssText = review.style.cssText;
+    dismiss.addEventListener('click', () => notice.remove(), { once: true });
+    notice.appendChild(dismiss);
+  }
+  function showAutomationNotifications(items, userId) {
+    const visible = items.slice(0, 3);
+    if (!visible.length || !userId) return;
+    if (document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      for (const item of visible) {
+        const notification = new Notification('HADES result needs attention', {
+          body: `${item.title}: ${item.message}`,
+          tag: `hades-automation-${userId}-${item.source_key}`,
+        });
+        automationDesktopNotifications.set(item.source_key, { notification, stateKey: item.state_key });
+        notification.onclose = () => {
+          if (automationDesktopNotifications.get(item.source_key)?.notification === notification) {
+            automationDesktopNotifications.delete(item.source_key);
+          }
+        };
+        notification.onclick = () => {
+          localStorage.setItem(automationNotificationReviewKey(userId), 'Show me my latest automation results');
+          window.open('/', '_blank')?.focus();
+          notification.close();
+        };
+      }
+      return;
+    }
+    renderAutomationNotificationNotice(visible, userId);
+  }
+  async function pollAutomationNotifications() {
+    const userId = sessionUserId();
+    if (!userId || !localStorage.getItem('token')) {
+      if (automationNotificationRecipient) {
+        clearAutomationNotifications();
+        automationNotificationRecipient = '';
+        automationNotificationAuthorizationEpoch += 1;
+      }
+      return;
+    }
+    if (automationNotificationRecipient !== userId) {
+      clearAutomationNotifications();
+      automationNotificationRecipient = userId;
+      automationNotificationAuthorizationEpoch += 1;
+    }
+    const requestEpoch = automationNotificationAuthorizationEpoch;
+    try {
+      const response = await fetch('/api/v1/hades/automations/notifications', {
+        credentials: 'same-origin', headers: authHeaders(), cache: 'no-store'
+      });
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem(automationNotificationStateKey(userId));
+        localStorage.removeItem(automationNotificationReviewKey(userId));
+        // An old account's authorization failure must not dismiss the new
+        // account's result alert in a shared browser tab.
+        if (sessionUserId() === userId && requestEpoch === automationNotificationAuthorizationEpoch) {
+          automationNotificationAuthorizationEpoch += 1;
+          clearAutomationNotifications();
+          automationNotificationRecipient = '';
+        }
+        return;
+      }
+      if (!response.ok) return;
+      const result = await response.json();
+      if (sessionUserId() !== userId || requestEpoch !== automationNotificationAuthorizationEpoch || result?.error || result?.version !== 1 || !Array.isArray(result.notifications)) return;
+      let previous;
+      const key = automationNotificationStateKey(userId);
+      try { previous = JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { previous = null; }
+      if (!previous || typeof previous !== 'object' || Array.isArray(previous)) previous = null;
+      const latest = {};
+      const alerts = [];
+      const currentBySource = new Map();
+      for (const item of result.notifications.slice(0, 5)) {
+        if (!item || !/^[a-f0-9]{64}$/.test(item.source_key || '') ||
+            !/^[a-f0-9]{64}$/.test(item.state_key || '') || typeof item.actionable !== 'boolean' ||
+            typeof item.title !== 'string' || typeof item.message !== 'string') continue;
+        currentBySource.set(item.source_key, item);
+        const prior = previous?.[item.source_key];
+        latest[item.source_key] = item.state_key;
+        if (previous && item.actionable && prior !== item.state_key) alerts.push(item);
+      }
+      for (const [sourceKey, delivery] of automationDesktopNotifications) {
+        const current = currentBySource.get(sourceKey);
+        if (!current || !current.actionable || current.state_key !== delivery.stateKey) {
+          delivery.notification.close();
+          automationDesktopNotifications.delete(sourceKey);
+        }
+      }
+      const existingNotice = document.getElementById('hades-automation-notification');
+      let displayedSources = [];
+      if (existingNotice) {
+        try { displayedSources = JSON.parse(existingNotice.dataset.hadesSources || '[]'); }
+        catch (_) { displayedSources = []; }
+      }
+      const reconciled = new Map();
+      for (const item of alerts) reconciled.set(item.source_key, item);
+      for (const displayed of displayedSources) {
+        if (!displayed || typeof displayed.source_key !== 'string') continue;
+        const current = currentBySource.get(displayed.source_key);
+        if (current?.actionable && current.state_key === displayed.state_key && !reconciled.has(current.source_key)) {
+          reconciled.set(current.source_key, current);
+        }
+      }
+      localStorage.setItem(key, JSON.stringify(latest));
+      const reconciledItems = [...reconciled.values()];
+      if (existingNotice) {
+        if (document.hidden && alerts.length) showAutomationNotifications(alerts, userId);
+        if (reconciledItems.length) renderAutomationNotificationNotice(reconciledItems, userId);
+        else existingNotice.remove();
+      } else if (alerts.length) {
+        showAutomationNotifications(alerts, userId);
+      }
+    } catch (_) {
+      // Best-effort polling cannot interfere with chat or the canonical run state.
+    }
+  }
+  function installAutomationNotifications() {
+    if (window.__hadesAutomationNotificationsInstalled) return;
+    window.__hadesAutomationNotificationsInstalled = true;
+    applyQueuedAutomationReview();
+    void pollAutomationNotifications();
+    window.setInterval(() => { void pollAutomationNotifications(); }, 30000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) void pollAutomationNotifications();
+    });
+  }
+  function applyQueuedTaskReview() {
+    const userId = sessionUserId();
+    if (!userId || window.location.pathname !== '/') return;
+    const key = taskNotificationReviewKey(userId);
+    const prompt = localStorage.getItem(key);
+    const composer = document.querySelector('#chat-input');
+    if (!prompt || !composer) return;
+    localStorage.removeItem(key);
+    if (composer.isContentEditable) composer.textContent = prompt;
+    else composer.value = prompt;
+    composer.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: prompt }));
+    composer.focus();
+  }
+  function showTaskNotification(item) {
+    const statusText = {
+      AWAITING_APPROVAL: 'needs your approval',
+      BLOCKED: 'is blocked and needs review',
+      FAILED: 'could not be completed',
+      OUTCOME_UNKNOWN: 'has an uncertain result to review',
+      COMPLETED: 'is complete'
+    }[item.status];
+    if (!statusText) return;
+    const userId = sessionUserId();
+    if (!userId) return;
+    const reviewPrompt = `Show me the status of my task: ${item.goal}`;
+    if (document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      const notification = new Notification('HADES Task update', {
+        body: `${item.goal}: ${statusText}`,
+        tag: `hades-task-${userId}-${item.task_id}-${item.revision}`,
+      });
+      taskDesktopNotifications.add(notification);
+      notification.onclose = () => taskDesktopNotifications.delete(notification);
+      notification.onclick = () => {
+        localStorage.setItem(taskNotificationReviewKey(userId), reviewPrompt);
+        window.open('/', '_blank')?.focus();
+        notification.close();
+      };
+      return;
+    }
+    let notice = document.getElementById('hades-task-notification');
+    if (!notice) {
+      notice = document.createElement('section');
+      notice.id = 'hades-task-notification';
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('aria-live', 'polite');
+      notice.style.cssText = 'position:fixed;z-index:10000;right:16px;bottom:88px;max-width:min(420px,calc(100vw - 32px));padding:14px 16px;border:1px solid #7dd3fc;border-radius:12px;background:#0f172a;color:#f8fafc;box-shadow:0 8px 32px #0008;font:14px/1.45 system-ui,sans-serif';
+      document.body.appendChild(notice);
+    }
+    notice.replaceChildren();
+    const message = document.createElement('div');
+    message.textContent = `${item.goal}: ${statusText}.`;
+    notice.appendChild(message);
+    const review = document.createElement('button');
+    review.type = 'button';
+    review.textContent = 'Review in HADES';
+    review.style.cssText = 'margin:10px 8px 0 0;padding:6px 10px;border-radius:8px;border:1px solid #94a3b8;background:#1e293b;color:inherit;cursor:pointer';
+    review.addEventListener('click', () => {
+      localStorage.setItem(taskNotificationReviewKey(userId), reviewPrompt);
+      if (window.location.pathname !== '/') window.location.assign('/');
+      else applyQueuedTaskReview();
+      notice.remove();
+    });
+    notice.appendChild(review);
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      const enable = document.createElement('button');
+      enable.type = 'button';
+      enable.textContent = 'Enable desktop alerts';
+      enable.style.cssText = review.style.cssText;
+      enable.addEventListener('click', async () => {
+        try { await Notification.requestPermission(); } catch (_) {}
+        enable.remove();
+      }, { once: true });
+      notice.appendChild(enable);
+    }
+    const dismiss = document.createElement('button');
+    dismiss.type = 'button';
+    dismiss.textContent = 'Dismiss';
+    dismiss.style.cssText = review.style.cssText;
+    dismiss.addEventListener('click', () => notice.remove(), { once: true });
+    notice.appendChild(dismiss);
+  }
+  function clearTaskNotificationSurface() {
+    document.getElementById('hades-task-notification')?.remove();
+    for (const notification of taskDesktopNotifications) notification.close();
+    taskDesktopNotifications.clear();
+  }
+  async function pollTaskNotifications() {
+    const userId = sessionUserId();
+    if (!userId || !localStorage.getItem('token')) {
+      if (taskNotificationRecipient) {
+        clearTaskNotificationSurface();
+        taskNotificationRecipient = '';
+        taskNotificationAuthorizationEpoch += 1;
+      }
+      return;
+    }
+    if (taskNotificationRecipient !== userId) {
+      clearTaskNotificationSurface();
+      taskNotificationRecipient = userId;
+      taskNotificationAuthorizationEpoch += 1;
+    }
+    const requestEpoch = taskNotificationAuthorizationEpoch;
+    try {
+      const response = await fetch('/api/v1/hades/tasks/notifications', {
+        credentials: 'same-origin',
+        headers: authHeaders(),
+        cache: 'no-store'
+      });
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem(taskNotificationStateKey(userId));
+        localStorage.removeItem(taskNotificationReviewKey(userId));
+        // A stale request from a previous account must not dismiss the new
+        // account's alerts after a shared browser switches identities.
+        if (sessionUserId() === userId) {
+          taskNotificationAuthorizationEpoch += 1;
+          clearTaskNotificationSurface();
+          taskNotificationRecipient = '';
+        }
+        return;
+      }
+      if (!response.ok) return;
+      const result = await response.json();
+      if (sessionUserId() !== userId || requestEpoch !== taskNotificationAuthorizationEpoch) return;
+      if (result?.version !== 1 || !Array.isArray(result.tasks)) return;
+      let previous;
+      const key = taskNotificationStateKey(userId);
+      try { previous = JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { previous = null; }
+      if (!previous || typeof previous !== 'object' || Array.isArray(previous)) previous = null;
+      const latest = {};
+      for (const item of result.tasks.slice(0, 100)) {
+        if (!item || typeof item.task_id !== 'string' || !Number.isInteger(item.revision) ||
+            !['AWAITING_APPROVAL', 'BLOCKED', 'FAILED', 'OUTCOME_UNKNOWN', 'COMPLETED'].includes(item.status)) continue;
+        const state = `${item.revision}:${item.status}`;
+        const prior = previous?.[item.task_id];
+        const priorRevision = typeof prior === 'string' ? Number(prior.split(':', 1)[0]) : -1;
+        if (Number.isFinite(priorRevision) && priorRevision > item.revision) {
+          latest[item.task_id] = prior;
+          continue;
+        }
+        latest[item.task_id] = state;
+        if (prior !== undefined && prior !== state) showTaskNotification(item);
+      }
+      localStorage.setItem(key, JSON.stringify(latest));
+    } catch (_) {
+      // Notification polling is best-effort; chat remains usable when offline.
+    }
+  }
+  function installTaskNotifications() {
+    if (window.__hadesTaskNotificationsInstalled) return;
+    window.__hadesTaskNotificationsInstalled = true;
+    applyQueuedTaskReview();
+    void pollTaskNotifications();
+    window.setInterval(() => { void pollTaskNotifications(); }, 30000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) void pollTaskNotifications();
+    });
+  }
   function selectedModelName() {
     const button = document.querySelector('#model-selector-model-button[aria-label^="Selected model:"]');
     return button?.getAttribute('aria-label')?.replace(/^Selected model:\s*/, '').trim() || button?.textContent?.trim() || '';
@@ -256,7 +708,11 @@
     const select = document.querySelector('select[aria-label="Theme"]');
     applyEffect(getLocalPreference(effectKey) || 'none');
     markComposer();
+    labelVoiceRecordingCancel();
     updateToolNotice();
+    installTaskNotifications();
+    installAutomationNotifications();
+    applyQueuedTaskReview();
     if (!select) return;
     moveLanguageBeforeTheme(select);
     if (!select.dataset.hadesThemes) {
@@ -335,10 +791,323 @@
     applyTheme(savedThemeAtStartup);
   }
   applyEffect(getLocalPreference(effectKey) || 'none');
-  new MutationObserver(() => requestAnimationFrame(install)).observe(document.documentElement, { childList: true, subtree: true });
+  new MutationObserver(() => requestAnimationFrame(() => {
+    install();
+    humanizeNativeCapabilityErrors();
+    labelVoiceRecordingCancel();
+  })).observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener('click', event => {
     if (event.target.closest('#model-selector-model-button, [role="option"][data-value]'))
       requestAnimationFrame(() => requestAnimationFrame(updateToolNotice));
+  }, true);
+  let composerBusyNoticeTimer;
+  let composerBusyClearTimer;
+  let composerBusyWatchdogTimer;
+  let composerBusyHardTimeoutTimer;
+  let hadesComposerBusy = false;
+  let completionGeneration = 0;
+  // /api/chat/completions admits an asynchronous task, and one user turn may
+  // include several bounded model calls around tool execution. Allow more than
+  // a single provider timeout before cancelling a genuinely silent task; the
+  // shorter watchdog interrupted real research turns after evidence retrieval.
+  const completionSilentTimeoutMs = 270000;
+  function clearComposerFailureNotice() {
+    document.getElementById('hades-composer-failure-notice')?.remove();
+  }
+  function renderComposerFailureResult(assistantCountAtStart = 0) {
+    const assistants = [...document.querySelectorAll('#response-content-container .markdown-prose')];
+    const turnAssistants = assistants.slice(assistantCountAtStart);
+    const current = turnAssistants.at(-1);
+    const message = uncertainCompletionMessage;
+    if (current?.getAttribute('data-hades-failure') === 'true') return;
+    const nativeFailure = turnAssistants.find(node =>
+      /^(?:failed to fetch|there was an issue with the response|connection error|request timed out)(?:[.:].*)?$/i.test(node.innerText?.trim() || '')
+    );
+    if (nativeFailure) {
+      nativeFailure.textContent = message;
+      nativeFailure.setAttribute('data-hades-failure', 'true');
+      return;
+    }
+    if (current && !current.innerText?.trim()) {
+      current.textContent = message;
+      current.setAttribute('data-hades-failure', 'true');
+      for (const duplicate of turnAssistants.slice(0, -1)) {
+        if (!duplicate.innerText?.trim()) duplicate.remove();
+      }
+      return;
+    }
+    const container = document.querySelector('#response-content-container');
+    if (!container) return;
+    const fallback = document.createElement('div');
+    fallback.className = 'markdown-prose';
+    fallback.setAttribute('data-hades-failure', 'true');
+    fallback.textContent = message;
+    container.appendChild(fallback);
+  }
+  // Open WebUI can replace its Stop control with Send as soon as the user
+  // starts typing a follow-up, even while the streaming request is alive.
+  // Track the actual completion response instead of trusting that transient
+  // button state. The cloned stream is drained separately so the application
+  // receives the original response untouched.
+  if (!window.__hadesCompletionFetchGuard) {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = function (...args) {
+      const request = args[0];
+      const url = typeof request === 'string' ? request : request?.url || '';
+      const transcription = String(url).includes('/api/v1/audio/transcriptions');
+      if (transcription) {
+        return nativeFetch(...args).then(response => {
+          if (!response.ok) showVoiceFailureNotice();
+          return response;
+        }, error => {
+          showVoiceFailureNotice();
+          throw error;
+        });
+      }
+      const speech = /\/v1\/audio\/speech|\/audio\/speech/.test(String(url));
+      if (speech) {
+        return nativeFetch(...args).then(response => {
+          if (!response.ok) showTtsFailureNotice();
+          return response;
+        }, error => {
+          showTtsFailureNotice();
+          throw error;
+        });
+      }
+      const completion = String(url).includes('/api/chat/completions');
+      if (!completion) return nativeFetch(...args);
+      hadesComposerBusy = true;
+      clearComposerFailureNotice();
+      const generation = ++completionGeneration;
+      let failureRendered = false;
+      const assistantCountAtStart = document.querySelectorAll('#response-content-container .markdown-prose').length;
+      const providerErrorCountAtStart = [...document.querySelectorAll('#response-content-container *')]
+        .filter(node => !node.children.length &&
+          /there was an issue with the response|connection error|failed to fetch|request timed out|could not get a reply/i.test(node.textContent || '')).length;
+      let lastAssistantText = '';
+      let assistantStableSince = Date.now();
+      const clearWatchdog = () => {
+        clearInterval(composerBusyWatchdogTimer);
+        composerBusyWatchdogTimer = undefined;
+        clearTimeout(composerBusyHardTimeoutTimer);
+        composerBusyHardTimeoutTimer = undefined;
+      };
+      const renderFailureOnce = () => {
+        if (failureRendered) return;
+        failureRendered = true;
+        showComposerFailureNotice(assistantCountAtStart);
+      };
+      const settleFromRenderedDom = () => {
+        if (generation !== completionGeneration) return;
+        const assistants = [...document.querySelectorAll('#response-content-container .markdown-prose')];
+        const current = assistants.at(-1)?.innerText?.trim() || '';
+        if (current !== lastAssistantText) {
+          lastAssistantText = current;
+          assistantStableSince = Date.now();
+        }
+        const stopButton = document.querySelector('#message-input-container button[aria-label="Stop"]');
+        const renderedNewAssistant = assistants.length > assistantCountAtStart && current;
+        const providerErrorCount = [...document.querySelectorAll('#response-content-container *')]
+          .filter(node => !node.children.length &&
+            /there was an issue with the response|connection error|failed to fetch|request timed out|could not get a reply/i.test(node.textContent || '')).length;
+        const renderedProviderError = providerErrorCount > providerErrorCountAtStart ||
+          (assistants.length > assistantCountAtStart &&
+            /there was an issue with the response|connection error|failed to fetch|request timed out|could not get a reply/i.test(current));
+        // Open WebUI renders provider failures as a visible assistant error,
+        // but some releases leave the native Stop control active because the
+        // websocket error frame does not pass through the normal stream EOF
+        // cleanup. Treat the visible error as terminal: release the local
+        // guard and click the stale control. This never fires for a healthy
+        // stream because it requires a newly rendered error turn.
+        if (renderedProviderError) {
+          clearWatchdog();
+          clearTimeout(composerBusyClearTimer);
+          hadesComposerBusy = false;
+          completionGeneration += 1;
+          if (stopButton) stopButton.click();
+          return;
+        }
+        // The task/websocket path can finish while a stale native Stop control
+        // remains rendered. A visibly stable assistant turn is the stronger
+        // completion signal here: once the text has stopped changing for a
+        // bounded settlement window, release the guard and clear that stale
+        // control. Resetting assistantStableSince on every text change keeps
+        // this from interrupting a genuinely streaming turn.
+        if (renderedNewAssistant && Date.now() - assistantStableSince >= 3000) {
+          clearWatchdog();
+          clearTimeout(composerBusyClearTimer);
+          hadesComposerBusy = false;
+          if (stopButton) stopButton.click();
+        }
+      };
+      const expireSilentCompletion = () => {
+        if (generation !== completionGeneration || !hadesComposerBusy) return;
+        clearWatchdog();
+        clearTimeout(composerBusyClearTimer);
+        // A provider can return an HTTP 200 stream that never emits a usable
+        // assistant turn. Bound that state in the browser as well as in the
+        // backend, cancel the current task when the conversation URL gives us
+        // its id, and return the composer to a recoverable state.
+        const conversationMatch = window.location.pathname.match(/^\/c\/([^/]+)/);
+        if (conversationMatch) {
+          nativeFetch(`/api/tasks/chat/${encodeURIComponent(conversationMatch[1])}/stop`, {
+            method: 'POST', credentials: 'same-origin',
+          }).catch(() => {});
+        }
+        hadesComposerBusy = false;
+        completionGeneration += 1;
+        renderFailureOnce();
+      };
+      clearWatchdog();
+      composerBusyWatchdogTimer = setInterval(() => {
+        if (generation !== completionGeneration) return clearWatchdog();
+        settleFromRenderedDom();
+        if (generation !== completionGeneration || !hadesComposerBusy) return clearWatchdog();
+        if (Date.now() - assistantStableSince < completionSilentTimeoutMs) return;
+        expireSilentCompletion();
+      }, 250);
+      // Keep a separate one-shot timer. Some browsers throttle or suspend
+      // interval callbacks while a streaming page is quiet; the hard timer
+      // guarantees that a silent provider cannot leave the composer guarded
+      // forever merely because the response promise never settles.
+      composerBusyHardTimeoutTimer = setTimeout(expireSilentCompletion, completionSilentTimeoutMs);
+      return nativeFetch(...args).then(response => {
+        const clear = () => {
+          clearWatchdog();
+          clearTimeout(composerBusyClearTimer);
+          // Open WebUI can still be committing the assistant turn after the
+          // response body closes. Keep the composer protected for a bounded
+          // settlement window so a rapid follow-up cannot create a blank
+          // assistant slot during that lifecycle gap.
+          composerBusyClearTimer = setTimeout(() => {
+            if (generation !== completionGeneration) return;
+            const assistants = [...document.querySelectorAll('#response-content-container .markdown-prose')];
+            const current = assistants.at(-1)?.innerText?.trim() || '';
+            if (assistants.length <= assistantCountAtStart || !current) {
+              hadesComposerBusy = false;
+              completionGeneration += 1;
+              renderFailureOnce();
+              const failedStopButton = document.querySelector('#message-input-container button[aria-label="Stop"]');
+              if (failedStopButton) failedStopButton.click();
+              return;
+            }
+            hadesComposerBusy = false;
+            // Some provider failures close the response without clearing
+            // Open WebUI's native Stop control. Wait long enough for Svelte
+            // to commit fast completion-only assistant text, then settle the
+            // stale control. The response clone is at EOF here, so clicking
+            // Stop now cannot truncate an active generation.
+            const stopButton = document.querySelector('#message-input-container button[aria-label="Stop"]');
+            if (stopButton) stopButton.click();
+          }, 5000);
+        };
+        // Current Open WebUI returns a small JSON task-admission response
+        // here. The assistant stream is delivered asynchronously through the
+        // task/websocket lifecycle, so EOF on this response is not model
+        // completion. Treating JSON admission as stream completion caused the
+        // guard to click Stop five seconds later before the real assistant
+        // turn arrived. Only an actual SSE response owns EOF cleanup.
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.toLowerCase().includes('text/event-stream')) {
+          if (!response.ok) clear();
+          return response;
+        }
+        if (!response.body) { clear(); return response; }
+        try {
+          const mirror = response.clone();
+          (async () => {
+            try {
+              const reader = mirror.body?.getReader();
+              if (reader) while (!(await reader.read()).done) {}
+            } catch (_) {
+              // The original request owns user-visible failure handling.
+            } finally {
+              clear();
+            }
+          })();
+        } catch (_) {
+          clear();
+        }
+        return response;
+      }, error => {
+        clearWatchdog();
+        clearTimeout(composerBusyClearTimer);
+        hadesComposerBusy = false;
+        completionGeneration += 1;
+        showComposerFailureNotice(assistantCountAtStart);
+        throw error;
+      });
+    };
+    window.__hadesCompletionFetchGuard = true;
+  }
+  function showComposerBusyNotice() {
+    const form = document.querySelector('#message-input-container')?.closest('form');
+    if (!form) return;
+    let notice = document.getElementById('hades-composer-busy-notice');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'hades-composer-busy-notice';
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('aria-live', 'polite');
+      notice.style.cssText = 'padding:0 12px 4px;color:var(--color-gray-400,#9ca3af);font-size:.75rem;';
+      form.appendChild(notice);
+    }
+    notice.textContent = "I'm still finishing the last reply. Your message is still in the composer.";
+    clearTimeout(composerBusyNoticeTimer);
+    composerBusyNoticeTimer = setTimeout(() => { notice.textContent = ''; }, 3500);
+  }
+  function showComposerFailureNotice(assistantCountAtStart = 0) {
+    const form = document.querySelector('#message-input-container')?.closest('form');
+    if (!form) return;
+    renderComposerFailureResult(assistantCountAtStart);
+    document.getElementById('hades-composer-busy-notice')?.remove();
+    let notice = document.getElementById('hades-composer-failure-notice');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'hades-composer-failure-notice';
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('aria-live', 'assertive');
+      notice.style.cssText = 'padding:0 12px 4px;color:var(--color-gray-400,#9ca3af);font-size:.75rem;';
+      form.appendChild(notice);
+    }
+    notice.textContent = 'Check the chat before trying again.';
+  }
+  // Open WebUI optimistically renders a new user turn even when a stream is
+  // already active. The active Stop control is the authoritative UI signal;
+  // hold accidental Enter/submit events locally instead of creating blank
+  // assistant bubbles that can never receive a corresponding response.
+  function guardBusyComposerEvent(event) {
+    const stopButton = document.querySelector('#message-input-container button[aria-label="Stop"]');
+    const busy = hadesComposerBusy || stopButton;
+    if (event.type === 'keydown') {
+      if (event.key !== 'Enter' || event.shiftKey || !event.target.closest?.('#chat-input')) return;
+    } else if (!event.target.closest?.('#message-input-container')) return;
+    if (!busy) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    showComposerBusyNotice();
+  }
+  // Capture at window before Open WebUI's document-level handlers. The app
+  // can otherwise consume the event first and leave the user with a silent
+  // no-op when its transient Stop control and stream state disagree.
+  window.addEventListener('keydown', guardBusyComposerEvent, true);
+  window.addEventListener('submit', guardBusyComposerEvent, true);
+  /* Keep the handler close to the composer contract for browsers/extensions
+     that dispatch through document rather than window. The window handler
+     normally stops propagation first, so this is only a defensive fallback. */
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' || event.shiftKey || !event.target.closest?.('#chat-input')) return;
+    if (!hadesComposerBusy && !document.querySelector('#message-input-container button[aria-label="Stop"]')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    showComposerBusyNotice();
+  }, true);
+  document.addEventListener('submit', event => {
+    if (!event.target.closest?.('#message-input-container')) return;
+    if (!hadesComposerBusy && !document.querySelector('#message-input-container button[aria-label="Stop"]')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    showComposerBusyNotice();
   }, true);
   install();
   // The settings view can replace the native select after the extension has

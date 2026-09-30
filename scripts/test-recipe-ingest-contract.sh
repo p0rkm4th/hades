@@ -3,6 +3,8 @@ set -euo pipefail
 
 python - <<'PY'
 import importlib.util
+import json
+import re
 import sys
 from pathlib import Path
 
@@ -33,6 +35,38 @@ assert result["ingredients"][0]["unit"] == "lb"
 assert result["ingredients"][3]["quantity"] == "½"
 assert result["requires_review"] is True
 assert any("review" in warning.lower() for warning in result["warnings"])
+
+grocy_units = module.extract_from_paste("""# Grocy Units
+Serves: 1
+
+Ingredients:
+- 1 Piece HADES Synthetic Milk
+- 1 Pack HADES Synthetic Milk
+
+Instructions:
+- Combine the synthetic acceptance ingredients.
+""")
+assert [item["unit"] for item in grocy_units["ingredients"]] == ["Piece", "Pack"]
+assert [item["name"] for item in grocy_units["ingredients"]] == [
+    "HADES Synthetic Milk", "HADES Synthetic Milk"
+]
+
+reviewed_plan = module.build_apply_plan(
+    {
+        "requires_review": True,
+        "servings": "1",
+        "ingredients": [{
+            "raw": "1 Piece HADES Synthetic Milk",
+            "name": "HADES Synthetic Milk",
+            "quantity": "1",
+            "unit": "Piece",
+            "product_id": 1,
+            "resolution": "EXACT",
+        }],
+    },
+    [{"id": 2, "name": "Piece"}],
+)
+assert reviewed_plan["ingredients"][0]["product_id"] == 1
 
 pasted = module.extract_from_paste("""# Weeknight Pasta
 Serves: 4
@@ -67,26 +101,40 @@ class _Headers:
 
 class _Response:
     headers = _Headers()
+    def __init__(self, body):
+        self.body = body
     def geturl(self):
         return "https://recipes.example.test/fallback"
     def read(self, _limit):
-        return visible_html.encode()
+        return self.body.encode()
     def __enter__(self):
         return self
     def __exit__(self, *_args):
         return None
 
 class _Opener:
+    def __init__(self, body):
+        self.body = body
     def open(self, _request, timeout):
         assert timeout == module.DEFAULT_TIMEOUT_SECONDS
-        return _Response()
+        return _Response(self.body)
 
 original_safe_url = module._safe_url
 original_build_opener = module.build_opener
 module._safe_url = lambda value: value
-module.build_opener = lambda _handler: _Opener()
+module.build_opener = lambda _handler: _Opener(visible_html)
 try:
     fetched_fallback = module.extract_from_url("https://recipes.example.test/fallback")
+    messy_html = """<html><head><title>Recipe publisher</title><script>window.tracking = true</script></head>
+<body><nav>Home | Search | Ingredients archive</nav>
+<main><article><script type="application/ld+json">{ malformed recipe metadata }</script>
+<h1>Grandma's Weeknight Soup</h1><p>Serves: 4</p>
+<div hidden>Hidden Ingredients: fake ingredient</div>
+<section><h2>Ingredients</h2><ul><li>1–2 cups tomatoes, chopped</li><li>salt to taste</li></ul></section>
+<section><h2>Directions</h2><p>Simmer until tender.</p></section></article></main>
+<footer>More Recipes | Ingredients | Subscribe</footer></body></html>"""
+    module.build_opener = lambda _handler: _Opener(messy_html)
+    messy_fallback = module.extract_from_url("https://recipes.example.test/messy")
 finally:
     module._safe_url = original_safe_url
     module.build_opener = original_build_opener
@@ -94,6 +142,14 @@ assert fetched_fallback["source"] == "public URL visible-text fallback"
 assert fetched_fallback["requires_review"] is True
 assert any("visible-text fallback" in warning for warning in fetched_fallback["warnings"])
 assert fetched_fallback["source_url"] == "https://recipes.example.test/fallback"
+assert messy_fallback["source"] == "public URL visible-text fallback"
+assert messy_fallback["title"] == "Grandma's Weeknight Soup", messy_fallback
+assert [item["raw"] for item in messy_fallback["ingredients"]] == [
+    "1–2 cups tomatoes, chopped", "salt to taste"
+], messy_fallback
+assert messy_fallback["instructions"] == ["Simmer until tender."], messy_fallback
+assert messy_fallback["requires_review"] is True
+assert all(hidden not in str(messy_fallback) for hidden in ("tracking", "Home", "fake ingredient", "Subscribe"))
 for invalid_paste in ("Recipe without sections", "Ingredients:\n- 1 cup flour"):
     try:
         module.extract_from_paste(invalid_paste)
@@ -161,11 +217,12 @@ else:
 try:
     module.build_apply_plan(result, [{"id": 1, "name": "lb"}])
 except ValueError as exc:
-    assert "review" in str(exc).lower()
+    assert "exactly resolved" in str(exc).lower()
 else:
-    raise AssertionError("unreviewed recipe produced an apply plan")
+    raise AssertionError("unresolved recipe produced an apply plan")
 
 import_recipe = dict(result)
+import_recipe["source_url"] = "https://recipes.example.test/tacos?token=SYNTHETIC_APPLY_SENTINEL#private"
 import_recipe["requires_review"] = False
 import_recipe["warnings"] = []
 import_recipe["ingredients"] = [
@@ -174,7 +231,9 @@ import_recipe["ingredients"] = [
 ]
 
 state = {"recipes": [], "positions": []}
+request_events = []
 def request(method, path, payload=None):
+    request_events.append((method, path))
     if method == "GET" and path == "/api/objects/products":
         return [{"id": 10, "name": "ground beef"}, {"id": 12, "name": "salsa"}]
     if method == "GET" and path == "/api/objects/quantity_units":
@@ -194,13 +253,53 @@ def request(method, path, payload=None):
     raise AssertionError((method, path, payload))
 
 importer = module.GrocyRecipeImporter(request)
+requests_before = len(request_events)
+try:
+    importer.preview(dict(import_recipe, source_url="http://127.0.0.1/recipe"))
+except ValueError as exc:
+    assert "private or local" in str(exc).lower()
+else:
+    raise AssertionError("local provenance passed the importer boundary")
+assert len(request_events) == requests_before, request_events
 preview = importer.preview(import_recipe)
 assert preview["outcome"] == "PREVIEW" and preview["plan"]
+assert preview["recipe"]["source_url"] == "https://recipes.example.test/tacos"
+assert "SYNTHETIC_APPLY_SENTINEL" not in json.dumps(preview)
+assert "SYNTHETIC_APPLY_SENTINEL" not in preview["plan"]["recipe"]["description"]
+assert "Source URL query and fragment were removed" in " ".join(preview["recipe"]["warnings"])
 assert importer.apply(preview)["outcome"] == "FAILED"
 applied = importer.apply(preview, confirm=True)
 assert applied["outcome"] == "SUCCEEDED" and applied["recipe_id"] == 40
+assert "SYNTHETIC_APPLY_SENTINEL" not in applied["recipe"]["description"]
+assert "Source: https://recipes.example.test/tacos" in applied["recipe"]["description"]
 duplicate = importer.preview(import_recipe)
 assert duplicate["duplicate"] is True and duplicate["plan"] is None
+assert duplicate["duplicate_status"] == "UNCHANGED_SOURCE", duplicate
+assert any("matches the recipe already imported" in warning for warning in duplicate["recipe"]["warnings"])
+
+changed_source = dict(import_recipe)
+changed_source["ingredients"] = [dict(row) for row in import_recipe["ingredients"]]
+changed_source["ingredients"][0]["quantity"] = "2"
+changed_preview = importer.preview(changed_source)
+assert changed_preview["duplicate"] is True and changed_preview["plan"] is None
+assert changed_preview["duplicate_status"] == "CHANGED_SOURCE", changed_preview
+assert any("source has changed" in warning for warning in changed_preview["recipe"]["warnings"])
+assert importer.apply(changed_preview, confirm=True)["outcome"] == "FAILED"
+
+stored_description = state["recipes"][0]["description"]
+state["recipes"][0]["description"] = re.sub(
+    r"(?m)^HADES normalized recipe SHA-256: [0-9a-f]{64}$", "", stored_description
+).strip()
+legacy_preview = importer.preview(import_recipe)
+assert legacy_preview["duplicate_status"] == "SOURCE_UNVERIFIED", legacy_preview
+assert importer.apply(legacy_preview, confirm=True)["outcome"] == "FAILED"
+state["recipes"][0]["description"] = stored_description
+
+state["recipes"].append(dict(state["recipes"][0], id=41))
+ambiguous_duplicate = importer.preview(import_recipe)
+assert ambiguous_duplicate["duplicate_status"] == "MULTIPLE_TITLE_MATCHES", ambiguous_duplicate
+assert ambiguous_duplicate["plan"] is None
+state["recipes"].pop()
 
 def post_write_failure(method, path, payload=None):
     if method == "GET":

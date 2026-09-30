@@ -7,17 +7,36 @@ Wants=network-online.target
 # explicit protected operator input and is not copied into this unit.
 [Service]
 Type=simple
+User=@HADES_HERMES_RUNTIME_USER@
+Group=@HADES_HERMES_RUNTIME_GROUP@
 WorkingDirectory=@HADES_HERMES_WORKING_DIRECTORY@
 EnvironmentFile=-@HADES_HERMES_PROFILE@/hermes.env
+EnvironmentFile=-@HADES_DEPLOYMENT_DIR@/hades-owner-policy.env
+EnvironmentFile=-@HADES_DEPLOYMENT_DIR@/grocy-mcp.env
+# Optional Agent Zero client key generated from the live pinned runtime after
+# startup. Hermes child MCP adapters inherit it without putting it in the unit.
+EnvironmentFile=-@HADES_AGENT_ZERO_CLIENT_ENV_FILE@
 Environment=HERMES_HOME=@HADES_HERMES_PROFILE@
 Environment=PYTHONPATH=@HADES_CONFIG_ROOT@/overlay
+Environment=HADES_HERMES_EXECUTABLE=@HADES_HERMES_EXECUTABLE@
+Environment=HADES_HERMES_WORKING_DIRECTORY=@HADES_HERMES_WORKING_DIRECTORY@
 Environment=SEARXNG_URL=http://127.0.0.1:@HADES_SEARXNG_PORT@
-Environment=API_SERVER_HOST=127.0.0.1
+Environment=API_SERVER_HOST=@HADES_HERMES_API_BIND_HOST@
 Environment=API_SERVER_PORT=8642
-ExecStart=@HADES_HERMES_EXECUTABLE@ -p hades gateway run --quiet
+# Source the protected profile environment explicitly. Some systemd builds
+# expose EnvironmentFile values to the manager but not to this Python entry
+# point during a fresh bootstrap; keep secrets out of the generated unit.
+ExecStart=/bin/bash -c 'set -a; source @HADES_HERMES_PROFILE@/hermes.env; if [[ -r @HADES_DEPLOYMENT_DIR@/hades-owner-policy.env ]]; then source @HADES_DEPLOYMENT_DIR@/hades-owner-policy.env; fi; if [[ -r @HADES_DEPLOYMENT_DIR@/grocy-mcp.env ]]; then source @HADES_DEPLOYMENT_DIR@/grocy-mcp.env; fi; if [[ -r @HADES_AGENT_ZERO_CLIENT_ENV_FILE@ ]]; then source @HADES_AGENT_ZERO_CLIENT_ENV_FILE@; fi; set +a; exec @HADES_HERMES_EXECUTABLE@ -p hades gateway run --quiet'
 Restart=on-failure
 RestartSec=3
-TimeoutStopSec=240
+# Provider calls are independently bounded. Do not let a wedged turn hold
+# service restart hostage for minutes; systemd must finish recovery promptly.
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=@HADES_HERMES_PROFILE@
 
 [Install]
 WantedBy=multi-user.target

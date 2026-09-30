@@ -1,0 +1,10 @@
+# HADES laptop production decommission evidence
+# This template is intentionally invalid until the post-cutover operator
+# records real results. Never place passwords, tokens, or secret values here.
+schema=laptop-production-decommission/v1
+production_services_disabled=NOT RUN
+production_containers_removed=NOT RUN
+allowlisted_cleanup=NOT RUN
+ambiguous_material_preserved=NOT RUN
+disk_usage_before_after_recorded=NOT RUN
+operator_notes=REQUIRED

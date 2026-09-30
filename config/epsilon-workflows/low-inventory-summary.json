@@ -1,0 +1,14 @@
+{
+  "id": "low-inventory-summary",
+  "status": "APPROVED_TYPED_TEMPLATE",
+  "owner": "hades-owner",
+  "runner": "n8n",
+  "trigger": {"kind": "weekly", "allowed_days": ["monday", "friday", "sunday"]},
+  "reads": ["grocy.household"],
+  "writes": [],
+  "notifications": "hades-local-bounded-summary",
+  "semantics": "Grocy current stock versus Grocy minimum-stock fields",
+  "failure_state": "SOURCE_UNAVAILABLE",
+  "deduplication": "bounded-summary-state",
+  "requires_confirmation": true
+}

@@ -1,6 +1,6 @@
 # Browser interaction evaluation
 
-Status: PASS / ANONYMOUS READ-ONLY.
+Status: PASS / ANONYMOUS, READ-ORIENTED.
 
 Microsoft Playwright MCP is selected for pages that require dynamic rendering,
 navigation, or an authorized form workflow. Direct HTTP and structured
@@ -77,8 +77,22 @@ The policy proxy's real MCP round trip is reproducible with
 scripts/test-browser-proxy-fixture.sh: it launches the pinned upstream
 package, filters the advertised tools, navigates to a disposable loopback
 fixture, reads its accessibility snapshot, rejects a click call, and blocks a
-redirect to an unapproved host at the network proxy. The loopback/private-
-target override exists only inside that test process.
+redirect to an unapproved host at the network proxy. The fixture also runs page
+JavaScript, verifies that rendered content is visible, and confirms that
+fetch/XHR POST attempts do not reach the fixture. A tracked init script blocks
+non-read JavaScript APIs; the HTTP proxy rejects methods other than GET/HEAD.
+All hostname answers are validated together and the outbound socket uses the
+same validated IP, so a later DNS answer cannot redirect a request to a
+private target. The loopback/private-target override exists only inside test
+processes.
+
+Public research can optionally fall back to one anonymous rendered page when
+static extraction fails or yields fewer than 80 non-whitespace characters. It emits `DYNAMIC_PAGE` evidence
+with the requested and final URLs, retrieval time, title, and an explicit
+untrusted-text warning. This fallback is disabled by default. Enable it only
+with `HADES_PUBLIC_RESEARCH_DYNAMIC_ENABLED=true` and an explicit reviewed
+`HADES_BROWSER_ALLOWED_HOSTS` list in the private Hermes environment. No
+browser credentials, cookies, forms, or authenticated profiles are used.
 
 Upstream reference:
 https://github.com/microsoft/playwright-mcp.

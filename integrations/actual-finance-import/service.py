@@ -5,10 +5,12 @@ from __future__ import annotations
 import base64
 import binascii
 import json
+import csv
+import io
 from typing import Any
 
 from file_boundary import MAX_FILE_BYTES, build_native_handoff
-from import_csv import ImportFormatError, build_apply_request, build_preview
+from import_csv import ImportFormatError, build_apply_request, build_preview, suggest_mapping
 
 
 MAX_BASE64_CHARS = ((MAX_FILE_BYTES + 2) // 3) * 4
@@ -77,6 +79,43 @@ def preview_file(
         preview["target_account_id"] = target_account_id
         return preview
     except (ImportFormatError, TypeError, ValueError) as exc:
+        return {"status": "FAILED", "error": str(exc), "writes_performed": False}
+
+
+def inspect_file(file_base64: str, filename: str) -> dict[str, Any]:
+    """Return a plain-language, write-free first look at a local statement."""
+    try:
+        data = _decode_file(file_base64)
+        handoff = build_native_handoff(data, filename)
+        if handoff["format"] != "CSV":
+            handoff.update({"status": "INSPECTED", "needs_account": True})
+            return handoff
+        text = data.decode("utf-8-sig")
+        reader = csv.DictReader(io.StringIO(text))
+        headers = [str(header) for header in (reader.fieldnames or []) if header]
+        rows = list(reader)
+        mapping = suggest_mapping(headers)
+        dates = [row.get(mapping["date"], "").strip() for row in rows if mapping.get("date") and row.get(mapping["date"], "").strip()]
+        complete_mapping = {key for key in ("date", "payee") if key in mapping}
+        has_amount = "amount" in mapping or {"inflow", "outflow"}.issubset(mapping)
+        return {
+            "status": "INSPECTED",
+            "source": "local-financial-file",
+            "format": "CSV",
+            "filename": handoff["filename"],
+            "file_sha256": handoff["file_sha256"],
+            "size_bytes": handoff["size_bytes"],
+            "row_count": len(rows),
+            "date_range": {"first": min(dates), "last": max(dates)} if dates else None,
+            "suggested_mapping": mapping,
+            "mapping_complete": complete_mapping == {"date", "payee"} and has_amount,
+            "needs_account": True,
+            "needs_mapping": not (complete_mapping == {"date", "payee"} and has_amount),
+            "requires_confirmation": True,
+            "writes_performed": False,
+            "canonical_target": "Actual Budget",
+        }
+    except (ImportFormatError, UnicodeDecodeError, csv.Error, TypeError, ValueError) as exc:
         return {"status": "FAILED", "error": str(exc), "writes_performed": False}
 
 

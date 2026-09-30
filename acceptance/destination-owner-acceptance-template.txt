@@ -1,0 +1,23 @@
+# HADES destination owner-acceptance record
+# Copy this file to a dated record during the real owner-visible session.
+# Do not put passwords or tokens here.
+schema=destination-owner-acceptance/v1
+environment=REAL_DESTINATION
+destination=hades-core
+destination_endpoint=hades.local:3000
+owner_login=NOT RUN
+existing_conversation_visible=NOT RUN
+new_conversation_model_response=NOT RUN
+private_memory_recall=NOT RUN
+private_memory_correction=NOT RUN
+grocy_read=NOT RUN
+grocy_mutation_and_canonical_readback=NOT RUN
+recipe_interaction=NOT RUN
+web_search=NOT RUN
+agent_zero_delegation=NOT RUN
+household_authorization_boundaries=NOT RUN
+restart_persistence=NOT RUN
+mobile_or_private_network_client=NOT RUN
+source_laptop_not_used=NOT RUN
+owner_accepted_cutover=NOT RUN
+operator_notes=REQUIRED

@@ -1,0 +1,25 @@
+Hermes 0.21.2 HADES qualification evidence
+Date: 2026-09-16
+
+Environment:
+- fresh clean detached candidate checkout on the root filesystem
+- declared Hindsight dependency environment restored
+- canonical scripts/test-hermes-core.sh wrapper
+- HERMES_TEST_WORKERS=8
+- TMPDIR isolated outside the full /tmp tmpfs
+
+Result:
+- 9 HADES-relevant test files
+- 525 tests passed
+- 0 failed
+- fast candidate wrapper: 7 files, 166 tests passed, 0 failed
+- clean candidate checkout after the run
+
+The initial disposable checkout attempted the same run on /tmp and hit the
+host's exhausted tmpfs while pytest wrote cache/duration data. That is
+HOST-SENSITIVE infrastructure noise; the clean root-filesystem rerun passed
+without changing candidate code or production HADES.
+
+Production remains on Hermes 0.14.0. This evidence qualifies the HADES core
+suite only; it does not authorize promotion or erase the documented optional,
+browser, update-shim, and owner-authenticated gates.

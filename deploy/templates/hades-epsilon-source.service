@@ -1,0 +1,25 @@
+[Unit]
+Description=HADES bounded Epsilon read-only source endpoint
+After=network-online.target
+
+[Service]
+Type=simple
+User=hades-runtime
+ExecStart=/usr/bin/python3 /etc/hades/epsilon-source/server.py
+EnvironmentFile=-/etc/hades/epsilon-source.env
+Environment=HADES_EPSILON_BACKUP_ROOT=/var/backups/hades/epsilon-phase2-custody
+Environment=HADES_EPSILON_BACKUP_MAX_AGE=604800
+Environment=HADES_EPSILON_VERIFY_REPO=/var/backups/hades/epsilon-phase2-custody/verification.git
+Environment=HADES_DEPLOYED_PROVENANCE_FILE=/etc/hades/epsilon-source/hades-live-provenance.json
+Environment=HADES_EPSILON_SOURCE_BIND=127.0.0.1
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=/var/backups/hades/epsilon-phase2-custody
+ReadOnlyPaths=/etc/hades/epsilon-source/hades-live-provenance.json
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

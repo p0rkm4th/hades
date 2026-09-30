@@ -1,0 +1,21 @@
+HADES owner dogfood: bounded LAN discovery
+Date: 2026-09-16
+
+Request
+- Authenticated owner-scope API request asked for a bounded read-only scan of
+  <current-lan-cidr>, transient evidence only, with no inventory or configuration
+  changes.
+
+Result
+- The deployed profile narrowed the catalog to the two discovery tools.
+- HADES invoked `mcp_homelab_readonly_homelab_discovery_scan`.
+- The scan completed and the owner response separated provisional candidates
+  from other observed devices.
+- The response explicitly stated that no inventory changes were made.
+
+Boundary
+- Scan output is transient evidence, not canonical identity or liveness.
+- Candidate labels require review against Proxmox, NetBox, and Kuma; a port
+  signature alone cannot classify a host or consumer device.
+- No write-capable tool, SSH control path, NetBox mutation, or configuration
+  mutation was exposed.

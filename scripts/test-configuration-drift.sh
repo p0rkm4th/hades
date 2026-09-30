@@ -28,7 +28,9 @@ done
 # legacy top-level Compose set. Keep that source set explicit so a new or
 # silently removed deployment definition cannot evade drift review.
 expected_templates=(
+  deploy/templates/agent-zero-operator-proxy.compose.yaml
   deploy/templates/hindsight.compose.yaml
+  deploy/templates/n8n-epsilon.compose.yaml
   deploy/templates/open-webui.compose.yaml
   deploy/templates/receipt-ocr.compose.yaml
   deploy/templates/searxng.compose.yaml
@@ -45,7 +47,7 @@ for template in "${expected_templates[@]}"; do
   }
 done
 
-for component in LLDAP 'Open WebUI' Hindsight Grocy 'Actual Budget / Finance MCP' 'Hermes 0.14 baseline' 'Agent Zero' SearXNG 'HADES policy/assets/adapters'; do
+for component in LLDAP 'Open WebUI' Hindsight Grocy 'Actual Budget / Finance MCP' Hermes 'Agent Zero' SearXNG 'HADES policy/assets/adapters'; do
   grep -Eq "\| ${component} \|" docs/component-manifest.md || {
     printf 'FAIL manifest component missing: %s\n' "$component" >&2
     exit 1

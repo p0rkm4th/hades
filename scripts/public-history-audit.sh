@@ -1,22 +1,48 @@
 #!/usr/bin/env bash
 set -u
 
-# Secret-free release guard for the public branch. It checks every commit
-# reachable from the selected branch, not only the current working tree.
-branch="${1:-HEAD}"
+# Secret-free release guard for public history. A single ref scans its full
+# reachable history. A BASE..HEAD range scans each newly introduced commit so
+# legacy findings on an already-published base do not hide new leaks.
+history_ref="${1:-HEAD}"
+commits=''
 fail=0
 
-if ! git rev-parse --verify "$branch^{commit}" >/dev/null 2>&1; then
-  printf 'FAIL unknown branch: %s\n' "$branch"
-  exit 2
+if [[ "$history_ref" == *..* ]]; then
+  if [[ "$history_ref" == *...* ]]; then
+    printf 'FAIL history range must use BASE..HEAD (details redacted)\n'
+    exit 2
+  fi
+  base_ref="${history_ref%%..*}"
+  head_ref="${history_ref#*..}"
+  if [[ -z "$base_ref" || -z "$head_ref" || "$head_ref" == *..* ]] ||
+    ! git rev-parse --verify "$base_ref^{commit}" >/dev/null 2>&1 ||
+    ! git rev-parse --verify "$head_ref^{commit}" >/dev/null 2>&1; then
+    printf 'FAIL invalid history range (details redacted)\n'
+    exit 2
+  fi
+  if ! commits="$(git rev-list "$history_ref")"; then
+    printf 'FAIL unable to enumerate history range (details redacted)\n'
+    exit 2
+  fi
+else
+  if ! git rev-parse --verify "$history_ref^{commit}" >/dev/null 2>&1; then
+    printf 'FAIL unknown history ref (details redacted)\n'
+    exit 2
+  fi
+  if ! commits="$(git rev-list "$history_ref")"; then
+    printf 'FAIL unable to enumerate history (details redacted)\n'
+    exit 2
+  fi
 fi
 
 check_history() {
   local pattern="$1"
   local label="$2"
   local safe_synthetic_address="${3:-}"
+  local second_safe_synthetic_address="${4:-}"
   local matches
-  matches="$(for commit in $(git rev-list "$branch"); do
+  matches="$(for commit in $commits; do
     # Do not match the literal detector pattern in this verifier itself.
     git grep -I -n -E "$pattern" "$commit" -- . \
       ':(exclude)scripts/public-history-audit.sh' \
@@ -27,30 +53,34 @@ check_history() {
     # fixture, not an owner network address. Keep the exception narrow.
     matches="$(printf '%s\n' "$matches" | grep -vF "$safe_synthetic_address" || true)"
   fi
+  if [ -n "$second_safe_synthetic_address" ]; then
+    matches="$(printf '%s\n' "$matches" | grep -vF "$second_safe_synthetic_address" || true)"
+  fi
   if [ -n "$matches" ]; then
-    printf 'FAIL %s\n' "$label"
-    printf '%s\n' "$matches" | head -20
+    local match_count
+    match_count="$(printf '%s\n' "$matches" | awk 'END { print NR }')"
+    printf 'FAIL %s (findings=%s; matched values and paths redacted)\n' "$label" "$match_count"
     fail=1
   else
     printf 'PASS %s\n' "$label"
   fi
 }
 
-# `/home/hindsight` is a container-internal service path, not an owner host
-# path. Keep the owner workstation path explicit so the audit does not reject
-# accurate container mount documentation.
-check_history '/home/scootz/|/Users/[[:alnum:]_.-]+/|(^|[^0-9])(192\.168|10|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)' \
-  'local paths and private-network addresses absent' '172.18.0.1'
+# Docker bridge addresses used by disposable synthetic fixtures are not owner
+# network addresses. Keep these exceptions narrow and explicit; all other
+# private addresses remain findings.
+check_history '/home/(scootz|scotty)/|/Users/[[:alnum:]_.-]+/|(^|[^0-9])(192\.168|10|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)' \
+  'local paths and private-network addresses absent' '172.17.0.1' '172.18.0.1'
 check_history 'tail[a-z0-9-]+\.ts\.net' 'tailnet hostnames absent'
 
-credential_paths="$(git rev-list --objects "$branch" | awk '$2 != "config/versions.env" && tolower($2) ~ /(\.env$|\.sqlite$|\.db$|\.pem$|\.p12$|\.key$|credentials|secrets)/ {print}')"
+credential_paths="$(git rev-list --objects "$history_ref" | awk '$2 != "config/versions.env" && tolower($2) ~ /(\.env$|\.sqlite$|\.db$|\.pem$|\.p12$|\.key$|credentials|secrets)/ {print}')"
 if [ -n "$credential_paths" ]; then
-  printf 'FAIL credential-like tracked artifact paths present\n'
-  printf '%s\n' "$credential_paths" | head -20
+  credential_path_count="$(printf '%s\n' "$credential_paths" | awk 'END { print NR }')"
+  printf 'FAIL credential-like tracked artifact paths present (findings=%s; paths redacted)\n' "$credential_path_count"
   fail=1
 else
   printf 'PASS credential-like tracked artifact paths absent\n'
 fi
 
-printf 'SUMMARY branch=%s fail=%d\n' "$branch" "$fail"
+printf 'SUMMARY ref=%s fail=%d\n' "$history_ref" "$fail"
 exit "$fail"

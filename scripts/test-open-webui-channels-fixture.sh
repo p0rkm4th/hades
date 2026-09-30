@@ -6,6 +6,7 @@ name=hades-channels-fixture
 volume=hades-channels-fixture-data
 port=${HADES_CHANNELS_WEBUI_PORT:-18769}
 image=${HADES_CHANNELS_WEBUI_IMAGE:-hades-open-webui:channel-stage}
+startup_attempts=${HADES_CHANNELS_STARTUP_ATTEMPTS:-120}
 
 docker rm -f "$name" >/dev/null 2>&1 || true
 docker volume rm "$volume" >/dev/null 2>&1 || true
@@ -25,12 +26,29 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for attempt in $(seq 1 60); do
+for attempt in $(seq 1 "$startup_attempts"); do
   if curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then
     break
   fi
-  if [[ "$attempt" == 60 ]]; then
+  if [[ "$attempt" == "$startup_attempts" ]]; then
     echo "FAIL Open WebUI fixture did not become healthy" >&2
+    docker logs --tail 80 "$name" >&2 || true
+    exit 1
+  fi
+  sleep 1
+done
+
+# Open WebUI can report /health while its migration/startup worker is still
+# draining the first request.  Wait for the public config route as well so a
+# disposable acceptance fixture does not mistake that short startup window
+# for a Channels failure.
+for attempt in $(seq 1 "$startup_attempts"); do
+  if curl -fsS "http://127.0.0.1:${port}/api/config" >/dev/null 2>&1; then
+    break
+  fi
+  if [[ "$attempt" == "$startup_attempts" ]]; then
+    echo "FAIL Open WebUI fixture config route did not become ready" >&2
+    docker logs --tail 80 "$name" >&2 || true
     exit 1
   fi
   sleep 1
@@ -102,12 +120,13 @@ messages=$(curl -fsS "http://127.0.0.1:${port}/api/v1/channels/${dogfood_id}/mes
 python3 -c 'import json,sys; x=json.load(sys.stdin); assert any("Synthetic Beta shared household message" in m.get("content","") for m in x)' <<<"$messages"
 
 docker restart "$name" >/dev/null
-for attempt in $(seq 1 60); do
+for attempt in $(seq 1 "$startup_attempts"); do
   if curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then
     break
   fi
-  if [[ "$attempt" == 60 ]]; then
+  if [[ "$attempt" == "$startup_attempts" ]]; then
     echo "FAIL Open WebUI fixture did not recover after restart" >&2
+    docker logs --tail 80 "$name" >&2 || true
     exit 1
   fi
   sleep 1

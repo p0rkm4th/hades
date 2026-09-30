@@ -13,6 +13,7 @@ if [[ -L "$ROOT" ]]; then
   printf 'FAIL recovery root must not be a symlink\n'
   exit 1
 fi
+command -v python3 >/dev/null 2>&1 || { printf 'FAIL python3 is required for SQLite recovery validation\n'; exit 1; }
 
 link=$(find "$ROOT" -type l -print -quit)
 if [[ -n "$link" ]]; then
@@ -27,7 +28,7 @@ case "$mode" in
 esac
 
 check_sqlite() {
-  local label=$1 path=$2 result file_mode
+  local label=$1 path=$2 file_mode
   if [[ ! -s "$path" ]]; then
     printf 'FAIL %s: missing or empty\n' "$label"
     exit 1
@@ -37,8 +38,18 @@ check_sqlite() {
     600|640|660) ;;
     *) printf 'FAIL %s permissions: %s\n' "$label" "$file_mode"; exit 1 ;;
   esac
-  result=$(sqlite3 "$path" 'pragma integrity_check;')
-  [[ "$result" == ok ]] || { printf 'FAIL %s integrity\n' "$label"; exit 1; }
+  python3 - "$path" <<'PY' || { printf 'FAIL %s integrity\n' "$label"; exit 1; }
+import sqlite3
+import sys
+
+connection = sqlite3.connect(f"file:{sys.argv[1]}?mode=ro&immutable=1", uri=True)
+try:
+    rows = connection.execute("PRAGMA integrity_check").fetchall()
+finally:
+    connection.close()
+if rows != [("ok",)]:
+    raise SystemExit(1)
+PY
   printf 'PASS %s SQLite integrity\n' "$label"
 }
 

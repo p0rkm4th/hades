@@ -1,0 +1,20 @@
+capture_schema: private-memory-hygiene/v1
+date: 2026-09-16
+
+Scope: dependency-free overlay policy and synthetic state only; no Hindsight
+owner bank, Grocy instance, web provider, finance service, Home Assistant,
+homelab, or Agent Zero endpoint was contacted.
+
+PASS live/canonical state suppression covers Grocy, weather/web, finance,
+Agent Zero, Proxmox, NetBox, Uptime Kuma, and Home Assistant result text.
+PASS transient error suppression covers outcome-unknown, timeout, invalid
+response, connection failure, and natural `service is unavailable` wording.
+PASS personal facts remain eligible for explicit/ordinary personal retain.
+PASS the automatic retain decision is exercised through a spy-backed policy
+gate; assistant/tool text cannot independently reclassify a personal user
+turn, while transient assistant errors suppress retain.
+PASS long-context tool payloads remain excluded from later routing context.
+
+Repair recorded: broadened the bounded transient-error matcher from only
+`service unavailable` to both `service unavailable` and `service is
+unavailable`. No authority or memory scope was expanded.

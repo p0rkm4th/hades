@@ -1,0 +1,19 @@
+HADES shell contract sweep
+Date: 2026-09-16
+
+scope: every scripts/test-*.sh invoked without mutating production state
+result: 107 scripts passed; 3 scripts exited with their documented invocation guard
+
+dispositions:
+- scripts/test-hermes-candidate.sh: ARGUMENT-REQUIRED; needs an explicit
+  disposable Hermes candidate directory and was not a candidate qualification
+  failure.
+- scripts/test-hermes-core.sh: ARGUMENT-REQUIRED; needs an explicit
+  disposable Hermes candidate directory and was not a candidate qualification
+  failure.
+- scripts/test-open-webui-candidate.sh: ARGUMENT-REQUIRED; needs an explicit
+  already-built candidate image and was not an Open WebUI acceptance failure.
+
+The explicit HADES qualification wrappers and migration/cutover contract tests
+were run separately with their required inputs. This zero-argument sweep does
+not claim Hermes 0.21.2 or Open WebUI candidate promotion.

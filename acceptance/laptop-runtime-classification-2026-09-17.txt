@@ -1,0 +1,28 @@
+# HADES laptop runtime classification — 2026-09-17
+
+Method: read-only Docker inventory; no stop, remove, prune, or volume/image
+mutation was performed.
+
+Container classification:
+- production allowlist: 6 containers (`hades-open-webui`, `hades-hindsight`,
+  `hades-grocy`, `hades-agent-zero`, `hades-searxng`,
+  `hades-lldap-production`)
+- HADES staging/review: 5 containers (`hades-grocy-alpha-beta-demo`,
+  `hades-grocy-alpha-beta-staging`, `hades-hindsight-alpha-staging`,
+  `hades-lldap`, `hades-open-webui-ldap-staging`)
+- total containers: 11
+
+Image and volume classification:
+- Docker image records: 614 total; 587 match HADES/provider/candidate naming
+  patterns and therefore require explicit review, not automatic deletion
+- Docker volumes: 387 total; 233 match HADES/legacy/provider naming patterns
+  and require explicit review
+- Docker system accounting remains the separate baseline recorded in
+  `laptop-decommission-inventory-2026-09-17.txt`
+
+Disposition:
+- preserve all production containers and their persistent state until cutover
+  acceptance and rollback verification
+- preserve all staging, candidate, Odysseus, Aegis, and provider artifacts until
+  provenance and ownership are individually resolved
+- no blanket Docker prune or broad image/volume deletion is authorized

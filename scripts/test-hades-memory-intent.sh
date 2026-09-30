@@ -17,6 +17,8 @@ required = (
     '_hades_nonpersonal_state_intent',
     '_hades_transient_error',
     '_hades_nonpersonal_state_turn',
+    '_hades_service_health_target',
+    '_hades_should_skip_automatic_memory',
     '_hades_explicit_memory_intent',
     'skipping automatic hindsight retain for non-personal or transient-error turn',
     '_hindsight.hindsightmemoryprovider.sync_turn = _hades_sync_turn',
@@ -27,10 +29,14 @@ required = (
     'delegat(?:e|ion|ed)',
     'transaction',
     'web_search',
+    'public[_\\s]+research',
+    'investigate',
+    'osint',
     'endswith',
     'grocry',
     'grocerys',
     'outta',
+    'hades_task_notification_feed_v1',
 )
 missing = [value for value in required if value not in source.lower()]
 if missing:
@@ -61,11 +67,36 @@ for live_state in (
     'Uptime Kuma reports the service is offline',
     'the living-room light is on',
     'Home Assistant says the air purifier is unavailable',
+    'HADES_TASK_NOTIFICATION_FEED_V1',
+    'Research the public launch date of Synthetic Product.',
+    'Investigate public claims about Synthetic Organization.',
+    'Use public_research for Synthetic Event.',
+    'Run an OSINT lookup for Synthetic Corporation.',
 ):
     if not overlay._hades_nonpersonal_state_turn(live_state):
         raise SystemExit(f'live/shared state was eligible for private memory: {live_state}')
 for personal in ('I prefer basil', 'I hate mushrooms', 'my favorite dinner is pasta'):
     if overlay._hades_nonpersonal_state_turn(personal):
         raise SystemExit(f'personal fact was suppressed as live state: {personal}')
+
+# Exercise the actual dependency-free retain decision used by the runtime
+# wrapper. Assistant/tool output must not promote or demote a personal user
+# turn except for the explicit transient-error suppression rule.
+assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The web result says rain.") is False
+assert overlay._hades_should_skip_automatic_memory("Grocy says there are 2 cartons of milk", "Current stock: 2 cartons.") is True
+assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The service is unavailable.") is True
+assert overlay._hades_should_skip_automatic_memory("HADES_TASK_NOTIFICATION_FEED_V1", '{"version":1,"tasks":[]}') is True
+assert overlay._hades_nonpersonal_state_turn("Is Minecraft healthy enough for tonight?") is True
+assert overlay._hades_should_skip_automatic_memory("Is Minecraft healthy enough for tonight?", "Uptime Kuma's configured check is up.") is True
+assert overlay._hades_should_skip_automatic_memory("Are all the computers okay?", "The live status is hades-core only.") is True
+assert overlay._hades_should_skip_automatic_memory("Why does the network feel slow?", "No current network telemetry is available.") is True
+for public_research_turn in (
+    'Research the public launch date of Synthetic Product.',
+    'Investigate public claims about Synthetic Organization.',
+    'Use public_research for Synthetic Event.',
+    'Run an OSINT lookup for Synthetic Corporation.',
+):
+    assert overlay._hades_should_skip_automatic_memory(public_research_turn, 'Synthetic public-source result.') is True
 print('PASS memory intent regression')
+print('PASS automatic Hindsight retain gate suppresses live/transient state')
 PY

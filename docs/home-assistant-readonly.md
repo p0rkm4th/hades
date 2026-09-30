@@ -76,10 +76,10 @@ invariant without contacting Home Assistant.
 [`scripts/test-home-assistant-fixture.sh`](../scripts/test-home-assistant-fixture.sh)
 adds a disposable loopback REST fixture for the first integration slice. It
 covers ordinary lights, temperature, and purifier reads; an unavailable and
-stale sensor; excluded lock and camera entities; and rejection of writes. The
-fixture proves that excluded entities are rejected before any request reaches
-the backend, and is exercised in public CI without a Home Assistant token or
-real endpoint.
+stale sensor; excluded lock, garage, alarm, and camera entities; and rejection
+of writes. The fixture proves that excluded entities are rejected before any
+request reaches the backend, and is exercised in public CI without a Home
+Assistant token or real endpoint.
 
 The adapter policy contract is exercised by
 [`scripts/test-home-assistant-readonly-adapter.sh`](../scripts/test-home-assistant-readonly-adapter.sh).

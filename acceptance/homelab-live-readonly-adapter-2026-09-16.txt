@@ -1,0 +1,35 @@
+Live HADES homelab read-only adapter acceptance
+Date: 2026-09-16
+
+The actual running HADES homelab MCP environment was exercised without
+printing protected token values or performing writes.
+
+Result:
+- adapter status: OK
+- Proxmox runtime resources: 7 rows; currently online names: Alexandra and
+  Erebus
+- NetBox inventory-only names: Hermes, Hypnos, Tartarus, Thanatos, and the
+  unresolved placeholder record for `.113`
+- Uptime Kuma: 11 monitor rows; all 11 observations were FRESH
+- observed composed resources: 18 (runtime, inventory, and availability are
+  kept as separate authorities)
+- capability matrix: OK, 7 records, read_only=true
+- authority mapping: Proxmox = runtime, NetBox = intended inventory, Uptime
+  Kuma = observed availability
+
+Repair included in this acceptance:
+- the adapter previously fetched Kuma's HTML `/status/<slug>` page while
+  expecting JSON, producing a partial result;
+- it now fetches Kuma's public JSON heartbeat endpoint and joins it with the
+  public status-page monitor metadata, normalizing heartbeats into bounded
+  `up`/`down`/`unknown` rows;
+- synthetic schema coverage and the live adapter invocation both pass.
+
+No Proxmox cluster, host, NetBox record, Kuma monitor, credential, or network
+configuration was changed.
+
+Deployment verification:
+- `hades-hermes.service` was restarted after the adapter repair.
+- The newly spawned live MCP process was invoked with its protected runtime
+  environment and reproduced `status=OK`, 11 fresh observations, the
+  seven-machine capability read, and the authority mapping above.

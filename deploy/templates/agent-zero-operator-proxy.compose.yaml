@@ -1,0 +1,21 @@
+name: hades-agent-zero-operator-proxy
+
+services:
+  agent-zero-operator-proxy:
+    image: ${HADES_NGINX_IMAGE:?set HADES_NGINX_IMAGE from config/versions.env}
+    container_name: hades-agent-zero-operator-proxy
+    restart: unless-stopped
+    # Nginx reaches only the loopback-bound WebUI, Agent Zero, and auth gate.
+    # Host networking avoids publishing a second unfiltered app path.
+    network_mode: host
+    user: "101:101"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    volumes:
+      - ${HADES_AGENT_ZERO_OPERATOR_NGINX_CONFIG:?set generated Nginx config path}:/tmp/nginx.conf:ro,Z
+    entrypoint: ["/usr/sbin/nginx", "-c", "/tmp/nginx.conf"]

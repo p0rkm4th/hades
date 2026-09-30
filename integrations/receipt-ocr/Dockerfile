@@ -1,11 +1,13 @@
 # Disposable/staging worker only. Keep OCR isolated from the HADES host.
-FROM python:3.11-slim-bookworm
+ARG HADES_RECEIPT_OCR_BASE_IMAGE
+FROM ${HADES_RECEIPT_OCR_BASE_IMAGE}
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libgomp1 libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m pip install --no-cache-dir \
+    "paddlepaddle==3.2.1" \
     "paddleocr-mcp[local-cpu]==0.8.5"
 
 COPY gateway.py input_boundary.py /opt/hades-receipt-ocr/

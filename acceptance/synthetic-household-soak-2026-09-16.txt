@@ -1,0 +1,16 @@
+HADES synthetic household soak acceptance
+Date: 2026-09-16
+
+Command:
+  bash scripts/test-synthetic-household-soak.sh
+
+Result:
+  PASS synthetic fresh-install household soak contract
+
+Coverage includes fresh-install and doctor validation, multi-user long-chat
+dogfood, cross-domain authority precedence, private-memory intent rules,
+source-of-truth contradictions, Grocy recipe boundaries and URL-ingest
+contracts, finance boundaries, homelab and Home Assistant read-only fixtures,
+local voice, performance attribution, capability boundaries, Agent Zero
+boundaries, and synthetic backup/restore. The run uses disposable fixtures and
+does not contact production providers or alter physical hosts.

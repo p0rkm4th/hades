@@ -15,6 +15,7 @@ fi
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # shellcheck disable=SC1090
 source "$repo_dir/config/versions.env"
+command -v python3 >/dev/null 2>&1 || { printf 'FAIL python3 is required for SQLite backup validation\n' >&2; exit 1; }
 
 mode=$(stat -Lc '%a' "$DESTINATION")
 case "$mode" in
@@ -87,8 +88,39 @@ backup_container_quiesced() {
   chmod 600 "$output/$name"
 }
 
+sqlite_backup() {
+  python3 - "$1" "$2" <<'PY'
+import sqlite3
+import sys
+
+source = sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True)
+destination = sqlite3.connect(sys.argv[2])
+try:
+    source.backup(destination)
+finally:
+    destination.close()
+    source.close()
+PY
+}
+
+sqlite_integrity() {
+  python3 - "$1" <<'PY'
+import sqlite3
+import sys
+
+connection = sqlite3.connect(f"file:{sys.argv[1]}?mode=ro&immutable=1", uri=True)
+try:
+    rows = connection.execute("PRAGMA integrity_check").fetchall()
+finally:
+    connection.close()
+if rows != [("ok",)]:
+    raise SystemExit("SQLite integrity check failed")
+PY
+}
+
 backup_container_python hades-open-webui /app/backend/data/webui.db open-webui.db
-backup_container_quiesced hades-lldap-production /data/users.db lldap-users.db
+lldap_container=${HADES_LLDAP_CONTAINER:-hades-lldap-production}
+backup_container_quiesced "$lldap_container" /data/users.db lldap-users.db
 backup_container_php hades-grocy /config/data/grocy.db grocy.db
 
 hermes_source=${HADES_HERMES_STATE_DB:-}
@@ -97,11 +129,31 @@ hermes_source=${HADES_HERMES_STATE_DB:-}
   exit 2
 }
 [[ -s "$hermes_source" ]] || { printf 'FAIL Hermes state database missing: %s\n' "$hermes_source" >&2; exit 1; }
-sqlite3 "$hermes_source" ".backup '$output/hermes-state.db'"
+sqlite_backup "$hermes_source" "$output/hermes-state.db"
+
+phase3_source=${HADES_EPSILON_PHASE3_STATE_FILE:-}
+if [[ -z "$phase3_source" ]]; then
+  epsilon_source=${HADES_EPSILON_STATE_FILE:-}
+  if [[ -z "$epsilon_source" ]]; then
+    hermes_home=${HERMES_HOME:-/var/lib/hades}
+    epsilon_source="$hermes_home/profiles/hades/state/epsilon-automation.sqlite"
+  fi
+  phase3_source="$(dirname "$epsilon_source")/phase3/automations.sqlite"
+fi
+phase3_state=absent
+if [[ -e "$phase3_source" || -L "$phase3_source" ]]; then
+  [[ -f "$phase3_source" && ! -L "$phase3_source" ]] || {
+    printf 'FAIL Phase 3 state database must be a regular non-symlink file\n' >&2
+    exit 1
+  }
+  sqlite_backup "$phase3_source" "$output/phase3-automation.db"
+  chmod 600 "$output/phase3-automation.db"
+  phase3_state=present
+fi
 
 for path in "$output"/*.db; do
   [[ -s "$path" ]] || { printf 'FAIL empty backup: %s\n' "$path" >&2; exit 1; }
-  sqlite3 "$path" 'pragma integrity_check;' | grep -qx ok || {
+  sqlite_integrity "$path" || {
     printf 'FAIL SQLite integrity: %s\n' "$path" >&2
     exit 1
   }
@@ -120,9 +172,11 @@ searxng_image_record=$HADES_SEARXNG_IMAGE_RECORD
 actual_version=$HADES_ACTUAL_VERSION
 grocy_adapter_revision=$HADES_GROCY_ADAPTER_REVISION
 agent_zero_adapter_revision=$HADES_AGENT_ZERO_ADAPTER_REVISION
+phase3_state=$phase3_state
 EOF
 chmod 600 "$output/MANIFEST"
 (cd "$output" && sha256sum ./*.db MANIFEST > SHA256SUMS)
 chmod 600 "$output/SHA256SUMS"
 printf 'PASS SQLite backup: %s\n' "$output"
-printf 'PASS artifacts=4 metadata=1 checksums=1\n'
+artifact_count=$(find "$output" -maxdepth 1 -type f -name '*.db' | wc -l)
+printf 'PASS artifacts=%s metadata=1 checksums=1 phase3_state=%s\n' "$artifact_count" "$phase3_state"

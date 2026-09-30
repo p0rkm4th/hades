@@ -15,6 +15,8 @@ assert '"HADES_GROCY_API_KEY_FILE", ""' in server
 assert 'or "http://127.0.0.1:7003"' in server
 assert "recipe_url_preview" in server and "recipe_url_apply" in server
 assert "recipe_paste_preview" in server and "extract_from_paste" in server
+assert "review_token" in server and "_cache_preview" in server
 print("PASS recipe URL MCP is registered through generated private paths")
 print("PASS recipe URL and paste MCP retain separate preview/apply boundaries")
+print("PASS recipe apply retains explicit confirmation and review-token boundary")
 PY

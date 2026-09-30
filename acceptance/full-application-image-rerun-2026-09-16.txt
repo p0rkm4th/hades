@@ -1,0 +1,22 @@
+HADES actual-image application composition rerun
+Date: 2026-09-16
+
+Command:
+  bash scripts/test-full-application-image-startup.sh
+
+Result:
+  PASS disposable actual-image reconstruction startup and health
+
+The isolated run started the six pinned application images—LLDAP, Grocy,
+Agent Zero, Hindsight, SearXNG, and Open WebUI—plus a disposable
+OpenAI-compatible model. All seven containers reached their bounded health
+checks. Authenticated synthetic Alpha and Beta users were created; Alpha's
+model-backed chat persisted by read-back, Beta could not retrieve Alpha's
+private chat, and both properties survived an Open WebUI restart. The run
+used no host ports, production state, or physical-host mutations and cleaned
+up its disposable containers and network.
+
+Boundary:
+  This is actual-image composition evidence on the current machine, not the
+  still-open independent fresh-guest full-application reconstruction and
+  household-soak milestone.

@@ -21,6 +21,30 @@ assert projection["candidates"][0]["netbox_match"]["name"] == "router-synthetic"
 assert projection["candidates"][0]["open_ports"][0]["port"] == 80
 assert projection["authority"]["inventory"] == "NetBox"
 
+# NetBox's standard primary_ip fields are nested assigned-IP objects with
+# CIDR addresses. Match by the canonical host address even if names differ.
+primary_ip_projection = propose_inventory_candidates(
+    result,
+    {"results": [{"name": "renamed-router", "primary_ip": {"address": "192.0.2.2/24"}}]},
+)
+assert primary_ip_projection["candidates"][0]["netbox_match"]["name"] == "renamed-router"
+assert primary_ip_projection["writes_performed"] is False
+
+# DNS comparison is case-insensitive and ignores only the optional terminal
+# root dot. It does not guess suffixes or equate distinct short/FQDN names.
+dns_evidence = {
+    **result,
+    "hosts": [{"ip": "192.0.2.2", "hostname": "Lab-Router.Example.Test.", "ports": []}],
+}
+dns_projection = propose_inventory_candidates(
+    dns_evidence, {"results": [{"name": "lab-router.example.test"}]}
+)
+assert dns_projection["candidates"][0]["netbox_match"]["name"] == "lab-router.example.test"
+nonmatching_dns_projection = propose_inventory_candidates(
+    dns_evidence, {"results": [{"name": "lab-router"}]}
+)
+assert nonmatching_dns_projection["candidates"][0]["netbox_match"] is None
+
 for target in ("198.51.100.0/24", "192.0.2.0/28"):
     try:
         parse_nmap_xml(xml, target=target, allowed_networks=["192.0.2.0/29"], retrieved_at="2026-09-15T12:00:00Z")
@@ -44,6 +68,36 @@ for bad in (b"not xml", b"", b"x" * (2 * 1024 * 1024 + 1)):
         pass
     else:
         raise AssertionError("invalid or oversized evidence accepted")
+
+for declaration in (
+    b'<!DOCTYPE nmaprun [<!ENTITY host "synthetic">]>',
+    b'<!DOCTYPE nmaprun SYSTEM "file:///etc/passwd">',
+    b'<!ENTITY host "synthetic">',
+):
+    try:
+        parse_nmap_xml(
+            declaration + b'<nmaprun><host><status state="up"/>'
+            b'<address addr="192.0.2.2" addrtype="ipv4"/></host></nmaprun>',
+            target="192.0.2.0/29", allowed_networks=["192.0.2.0/29"],
+            retrieved_at="2026-09-15T12:00:00Z",
+        )
+    except ValueError as exc:
+        assert "DTD or entity" in str(exc)
+    else:
+        raise AssertionError("DTD/entity declaration accepted in scanner evidence")
+
+try:
+    parse_nmap_xml(
+        ('<!DOCTYPE nmaprun [<!ENTITY host "synthetic">]>'
+         '<nmaprun><host><status state="up"/>'
+         '<address addr="192.0.2.2" addrtype="ipv4"/></host></nmaprun>').encode("utf-16"),
+        target="192.0.2.0/29", allowed_networks=["192.0.2.0/29"],
+        retrieved_at="2026-09-15T12:00:00Z",
+    )
+except ValueError as exc:
+    assert "UTF-8" in str(exc)
+else:
+    raise AssertionError("non-UTF-8 Nmap evidence accepted")
 
 for timestamp in ("", "not-a-timestamp"):
     try:

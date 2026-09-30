@@ -9,12 +9,16 @@ recorded here.
 
 Household Alpha is accepted as complete/ready. Real household onboarding is
 an owner-input gate only and is not a reason to pause independent engineering
-work. Hermes 0.21.2 promotion was attempted and rolled back after owner
-authentication could not be proven; production remains on the known-good
-Hermes 0.14.0 baseline.
+work. The earlier Hermes 0.21.2 rollback note is superseded: the current
+production runtime is Hermes 0.21.2, promoted with a rollback package and
+passing live model smoke. The bounded upstream SQLite repair-test failure and
+current deployment-provenance discrepancy remain recorded in
+[`docs/current-blockers.md`](docs/current-blockers.md).
 
-This checkpoint describes the current pushed `main`; verify its exact SHA with
-`git rev-parse origin/main`. Since the prior campaign note, the
+This checkpoint describes the current local campaign tree; its exact protected
+revision is recorded in the backup manifest. The
+remote `origin/main` is an older reference and is not treated as acceptance
+evidence. Since the prior campaign note, the
 Grocy serving companion has received explicit success, timeout, malformed-
 verification, pre-mutation HTTP, and post-mutation HTTP coverage; post-PUT
 verification failures are classified as `OUTCOME UNKNOWN` so uncertain writes
@@ -32,48 +36,71 @@ are the active campaign.
 
 ## CURRENT CONTINUATION CHECKPOINT
 
-- **Branches:** local `main` and `origin/main` are synchronized at the pushed
-  checkpoint; verify the exact SHA with `git rev-parse HEAD origin/main`.
-- **Last completed objective:** recovery coverage with component RPO/RTO
-  assumptions and the explicit `A2A DEFERRED FOR V1` decision.
-- **Active independent priority:** close staged capabilities. Reconstruction
-  is maintenance-only: the local six-image composition passes, while a fresh
-  Fedora 44 guest reached healthy LLDAP/Grocy before Agent Zero layers stalled.
+- **Branches:** local `main` is the protected local checkpoint; `origin/main`
+  remains an older reference. The protected complete-history bundle is the
+  reproducibility artifact for this local checkpoint. The infrastructure
+  repository's current protected bundle and complete checkpoint lineage are
+  recorded in its backup manifest.
+- **Last completed objective:** synthetic homelab authority coverage,
+  management-plane recovery runbook closure, memory-hygiene hardening, and
+  Proxmox quorum-decision rehearsal. The fixture covers runtime,
+  inventory-only records, IP assignments, fresh/stale availability,
+  contradictions, and write rejection; the recovery manifest records the
+  NetBox, Kuma, and Proxmox procedures exposed by disposable restore; the
+  quorum rehearsal remains mutation-free and rejects incomplete activation
+  evidence.
+- **Active independent priority:** finish the unblocked homelab acceptance
+  substrate and reconcile physical findings. The live read-only Proxmox,
+  NetBox, and Kuma path is exercised; exact DNS case/root-dot normalization
+  now passes source-level review-only matching tests. Physical host recovery,
+  GPU runtime qualification, live identity reconciliation, and the seventh-host
+  search remain open.
 - **Capability queue:** the web/search API and CLI follow-up contract is now
   classified `OWNER-GATED`; the next independent product work is recipe URL /
   paste owner acceptance, followed by receipt/OCR synthetic closure. Anonymous
   browser research and receipt OCR are now accepted at their bounded synthetic
   scopes; Channels require candidate promotion and voice is explicitly
   deferred.
-- **Open P0/P1/P2:** no newly demonstrated P0/P1/P2 defect is recorded; the
-  fresh-guest application path and subsequent household soak remain open.
+- **Open P0/P1/P2:** the historical production server-status response claimed
+  a personal-memory update without a recorded tool call. Deterministic source
+  containment passes exact and paraphrased synthetic Hermes runtime checks,
+  but any historical backend effect remains unknown; no production prompt was
+  replayed and no memory rows were inspected. Other current reliability and
+  deployment gates are listed in `docs/current-blockers.md`.
 - **Staged capabilities:** recipe URL/paste authoring, receipt OCR, finance
   import, homelab discovery/control planning, Home Assistant reads, voice,
   browser research, and broader Agent Zero operator work remain bounded or
   staged in the capability ledger.
 - **Homelab activation:** current connected-LAN discovery is authorized and
-  has passed as transient review evidence with zero writes. Proxmox, NetBox,
-  and Uptime Kuma are `AUTHORIZED / CREDENTIAL PROVISIONING`; no endpoint
-  credential has been added to this public repository.
+  remains transient review evidence with zero writes. Proxmox, NetBox, and
+  Uptime Kuma read paths are live through HADES; restored disposable NetBox
+  and Kuma endpoint reads also pass. No endpoint credential has been added to
+  this public repository.
 - **Owner gates:** unchanged gates are consolidated in
   [`docs/current-blockers.md`](docs/current-blockers.md); no authentication or
   credential gate is being re-polled here.
 - **Long operations:** none running; temporary Fedora guest artifacts were
   reclaimed after the environment-limited attempt.
-- **Next independent action:** preserve the repaired harness and attempt the
-  remaining guest evidence only with adequate guest/registry storage; if that
-  external condition cannot be met, retain the precise limitation and advance
-  the next bounded maintenance or capability contract.
+- **Next independent action:** continue the highest-value safe Owner Away
+  product/reliability lane from the current defect ledger. Physical GPU,
+  storage, and inventory changes remain maintenance/owner-gated. Keep
+  production read-only and preserve the accepted Task Beta state.
 
 ## CURRENT HEAD
 
-The local and remote `main` branches are synchronized at the current pushed
-checkpoint. Recent work added the reconciled Actual import contract and a
-pre-launch 4,096-address limit to the bounded Nmap worker. The current tree
-and public-history audit contain no owner identifiers, tailnet hostnames,
-private network literals, or credential-like tracked paths. Founding
-capabilities and current upstream decisions are reconciled; Actual remains
-selected for synthetic HADES integration and production finance is gated.
+The local `main` checkpoint is the protected local revision; the remote
+reference is older. The exact revision is recorded in the protected bundle
+manifest rather than duplicated here.
+Recent work added the reconciled Actual import contract, a pre-launch
+4,096-address limit to the bounded Nmap worker, and the expanded synthetic
+homelab authority fixture. The latest audit disproved the earlier clean-tree
+claim: the private local `main` snapshot and its unpublished range fail the
+private-topology guard. Do not push that branch or rewrite public history. A
+separate clean-base forward-guard branch now checks new commit ranges and
+passes the current-tree, browser-policy, redaction, and range tests. Hosted CI
+passes at `8744787`; PR review remains open. Founding capabilities and current upstream decisions are
+reconciled; Actual remains selected for synthetic HADES integration and
+production finance is gated.
 
 ## COMPLETED MILESTONES
 
@@ -166,9 +193,11 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
 - Authorize and provision each external integration independently.
 - Capture owner-UI plus canonical-system verification in private acceptance
   records before enabling writes.
-- Approve one concrete deterministic automation workflow, its actor/capability
-  mapping, canonical system, confirmation rule, and failure/rollback behavior;
-  the preparation contract is in `docs/automation-boundary.md`.
+- Implement and verify the already-authorized read-only Phase 3 templates
+  (Server Health Watch, Low Inventory Summary, Weekly Household Summary, and
+  Backup Verification) through the HADES-owned operation-time authority and
+  result boundary in `docs/automation-boundary.md`. Arbitrary workflows,
+  mutations, external notifications, and new grants remain unauthorized.
 
 ## INDEPENDENT PROGRESS
 
@@ -181,10 +210,13 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
   credential-free contract layer, and a disposable guest passes the synthetic
   full installer path; full private-record reconstruction remains unproven.
 
-- Deterministic automation preparation is complete without provisioning a
-  runner or granting new authority. The proposed boundary requires trusted
-  subject/capability resolution, explicit preview/apply semantics,
-  idempotency, canonical verification, and fail-closed unknown outcomes.
+- Deterministic automation has standing owner authorization for four named
+  read-only templates, but implementation and acceptance are incomplete. The
+  private n8n runner has one inactive canary and a live bounded metadata
+  projection. The required operation-time current-actor/resource check,
+  idempotent execution record, revocation, unknown-outcome handling, and
+  actor-scoped result boundary are not yet connected; keep schedules disabled
+  until `docs/automation-boundary.md` passes end-to-end acceptance.
 - First clean Fedora 44 KVM evidence is recorded for the tracked LLDAP, Grocy,
   and Agent Zero subset. The run exposed and repaired upstream secret
   ownership, Agent Zero startup-write/capability requirements, and installer
@@ -239,10 +271,13 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
   successfully. Hosted CI is a tripwire, not a substitute for private
   owner-UI, canonical-domain, or runtime acceptance.
 
-The current tree and reachable public history contain no private network
-literal; the smoke probe discovers the model gateway dynamically. The remote
-history rewrite is an explicit release action and does not alter the deployed
-runtime.
+The former claim that public CI verified all reachable history was incorrect:
+checkout used a shallow history. A clean-base candidate now fetches full
+history and audits only commits introduced by the push or pull request, while
+the current-tree guard checks the final snapshot. The clean-base branch
+`codex/public-safety-range-guard-20260927` passes hosted CI at `8744787`; no PR
+has been opened. The local private branch still fails both guards; public
+history has not been rewritten, and the local branch has not been pushed.
 
 ## CAPABILITY LEDGER
 
@@ -274,9 +309,10 @@ read, finance exclusion, revocation, and cross-account settings isolation;
   owner-gated.
 
 Continue independent roadmap work while production remains on the known-good
-Hermes 0.14.0 baseline. The next P1 is an independent fresh supported guest
-with the full application fixtures; the disposable six-image application
-composition now passes but is not a fresh-guest reconstruction claim.
+Hermes 0.14.0 baseline. The next highest-value independent lane is physical
+homelab acceptance and source-aware control-plane closure; the fresh-guest
+reconstruction evidence remains a separate partial lane, not a reason to
+pause infrastructure work.
 Public recipe URL preview, bounded Nmap evidence parsing, authenticated
 Channels membership/restart/authority fixtures, and the reconciled finance
 writer contract are independently evidenced; none changed production state.
@@ -553,7 +589,7 @@ onboarding is the only owner-input gate; it does not pause independent work.
   disposition and an owner-authenticated production rehearsal remain the
   Hermes promotion gates.
 
-## ACTIVE EXPANSION STATUS — 2026-09-15
+## ACTIVE EXPANSION STATUS — 2026-09-16
 
 The current independent campaign has added and tested unified recipe URL,
 paste, HTML, and JSON-LD preview ingestion; receipt OCR review/intake
@@ -562,7 +598,9 @@ discovery and Proxmox control planning; local push-to-talk voice dogfood;
 Agent Zero unsafe-task screening; expanded synthetic performance coverage; and
 an immutable Open WebUI 0.11.3 candidate. These changes are staged evidence,
 not production promotion. Production remains Hermes 0.14.0 and Open WebUI
-0.11.1. The readiness map and capability ledger carry the authoritative
+0.11.1. The synthetic homelab fixture now covers runtime/inventory/IP and
+freshness contradictions, and the infrastructure reconstruction manifest
+records the management restore runbook. The readiness map and capability ledger carry the authoritative
 remaining contracts and owner gates.
 
 The fresh Fedora 44 reconstruction attempt booted and installed Docker/Compose;
@@ -590,3 +628,102 @@ client contract and would add a second authority-bearing integration surface.
 Reevaluate only when Hermes and Agent Zero publish a mutually compatible,
 authenticated card/transport contract that passes the same bounded task,
 failure, and household-denial tests without broadening privileges.
+
+## Owner-Away OSINT continuation — 2026-09-28
+
+Exact bounded page-text lineage signal now reports possible republication for
+identical normalized full text, indeterminate for a matching truncated prefix,
+and no detected exact match otherwise. None of these outcomes establishes
+reporting independence or corroboration. Collector contract, pinned Hermes
+runtime, and authenticated synthetic Alpha/Beta/Gamma UI acceptance pass;
+real-page/model and owner acceptance remain open. See
+`docs/osint-research-sprint.md` and `OWNER_AWAY_CAMPAIGN_STATE.md` for scope and
+next action.
+
+## Owner-Away Minecraft continuation checkpoint — 2026-09-28
+
+The tracked authenticated HADES route now has browser-level acceptance for
+both lost pending-state recovery and context-free continuation in a separate
+chat. The latter asks the user to restate the workload instead of invoking a
+model; pending state stays tied to its original chat. Both cases produce zero
+model, Proxmox, VM, or firewall calls. Commit 6995878 records the test and
+readiness evidence. Read-only comparison shows the active overlay lacks the
+context-free refusal branch, consistent with but not proving the reported
+generic greeting. Exact active-artifact UI acceptance remains open because the
+local child runtime could not initialize its production dependencies. Keep
+production unchanged pending source/runtime reconciliation.
+
+## Guest C household acceptance follow-up — 2026-09-28
+
+Current-source Guest C doctor/validator pass. Authenticated Alpha private-memory
+retain/fresh recall and Gamma recall-only isolation pass. Alpha settings survived
+an Open WebUI container restart without appearing for Beta, then the temporary
+setting was removed. Household Agent Zero access returned the expected owner-only
+deny without sending a task. A negative-control harness bug that could retain a
+fact before checking expected absence is fixed and committed as `28c3969`; the
+single synthetic Beta fact created by that invalid attempt was removed from the
+Beta fixture bank. See `OWNER_AWAY_CAMPAIGN_STATE.md` for bounded evidence and
+remaining Guest C flows. Full Guest C soak and restore remain open.
+
+## Guest C public-research reconstruction fix — 2026-09-28
+
+Guest C exposed that the loaded private Hermes overlay could not resolve the
+public-research privacy module from the Hermes working directory, so explicit
+web requests failed closed before search. `74f206f` fixes runtime lookup, adds a
+doctor check, and tests the installed overlay layout. After canonical install,
+authenticated Alpha UI passed one SearXNG snippet query, an honest outage
+response, and a private-person refusal. Doctor/validator pass. The temporary
+synthetic backend now binds only to Docker gateway `<PRIVATE_LAN_ADDRESS>:18080`. Guest C
+remains build A; continue canonical Grocy mutation/recipe and then backup/
+destroy/restore before a separate clean Guest B.
+
+## Guest C Grocy MCP bootstrap defect — 2026-09-28
+
+Pinned Grocy MCP package/profile reconstruction and idempotent installation now
+pass on disposable Guest C. The stronger functional probe found an invalid
+assumption: Grocy API keys are issued inside Grocy, so a random key file from
+the generated fixture receives HTTP 401. The first `/` visit also performs
+Grocy's SQLite initialization. Doctor previously proved only MCP registration,
+not actual backend access; its source check is being strengthened to make a
+read-only stock call. Full pantry/recipe acceptance and Guest C reconstruction
+are not closed until key/bootstrap provisioning is encoded and rerun. See
+`OWNER_AWAY_CAMPAIGN_STATE.md` for exact repository, guest and resume details.
+
+## Guest C Grocy household flow — 2026-09-29
+
+The declared `HADES_GROCY_API_KEY_FILE`/`HADES_GROCY_URL` inputs now reach
+direct HADES Grocy routes (`b5f7a75`). A current shared-list read also now
+outranks stale recipe intent in the same conversation (`7323d86`). Focused
+Hermes runtime acceptance passes. On disposable Guest C, canonical install,
+doctor, and validation pass; authenticated Beta previewed a saved-recipe
+shortage, confirmed the missing-only add, read the list in the same chat, and
+read it again in a fresh chat after Grocy restart. Canonical API state matched
+the exact quantity and preserved the prior synthetic milk row. Test recipe,
+product, ingredient, shopping row, and uniquely titled chats were cleaned;
+the baseline is restored. Guest C is still contaminated discovery evidence;
+pristine Guest B, whole-guest restore, and representative household soak remain
+open. Production was unchanged.
+
+Next: audit Agent Zero and SearXNG backup/restore coverage, then continue
+toward independent pristine Guest B. See `docs/reconstruction.md` and
+`OWNER_AWAY_CAMPAIGN_STATE.md` for scope and limitations.
+
+## Guest C component restore and Agent Zero secret mode — 2026-09-29
+
+Agent Zero and SearXNG component restore drills now pass on synthetic Guest C.
+The actual reconstruction mounts were reconciled against the historical
+production mount table. The Agent Zero restore exposed `/a0/usr/.env` being
+created as mode `0644`. Commit `fef5a52` makes the canonical installer enforce
+`0600`, and doctor/validator fail if it drifts. Guest C was repaired through
+the canonical installer; doctor and validation pass. VM 802 was checked
+read-only and already has the file mode `0600`; no production change occurred.
+The isolated SearXNG restore returned JSON search HTTP 200 with two results;
+Agent Zero restore UI returned HTTP 200 without any published port. Full
+delegation after restore, whole-guest recovery, and clean Guest B remain open.
+
+Current HADES is `fef5a52` on `main`, 1092 commits ahead of fetched
+`origin/main=a654675`; inherited tracked and private campaign edits remain
+preserved, with no push. `hades-infra` is `5ddb4c0` with inherited dirty
+operations/inventory changes. Current next action: preserve the pre-existing
+unattached Guest B disk and create a separate pristine Fedora 44 Guest B from
+the verified base image for exact-current-HEAD acceptance.

@@ -8,9 +8,11 @@ import json
 import os
 import re
 import select
+import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
@@ -96,14 +98,17 @@ def filtered_tools(tools: Any) -> list[dict[str, Any]]:
     return [tool for tool in tools if isinstance(tool, dict) and tool.get("name") in ALLOWED_TOOLS]
 
 
-def build_command(hosts: tuple[str, ...]) -> list[str]:
+def build_command(hosts: tuple[str, ...], config_path: str | None = None) -> list[str]:
     if not re.fullmatch(r"@playwright/mcp@0\.0\.81", PACKAGE):
         raise ValueError("Playwright MCP package must remain pinned to @playwright/mcp@0.0.81")
-    return [
+    command = [
         "npx", "--yes", PACKAGE,
         "--isolated", "--headless", "--browser", "chromium",
         "--block-service-workers", "--allowed-hosts", ",".join(hosts),
     ]
+    if config_path:
+        command.extend(["--config", config_path])
+    return command
 
 
 def _child_environment() -> dict[str, str]:
@@ -118,37 +123,56 @@ def _child_environment() -> dict[str, str]:
     return environment
 
 
-def _target_allowed(url: str, patterns: tuple[str, ...]) -> bool:
+def _validated_target_addresses(url: str, patterns: tuple[str, ...]) -> tuple[str, ...] | None:
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
-        return False
+        return None
     host = parsed.hostname.lower().rstrip(".")
+    try:
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError:
+        return None
     try:
         address = ipaddress.ip_address(host)
     except ValueError:
         address = None
     if not _host_allowed(host, patterns):
-        return False
+        return None
     private_override = os.environ.get("HADES_BROWSER_ALLOW_PRIVATE_TARGETS") == "1"
     if address is not None:
         addresses = (address,)
     else:
         try:
-            port = parsed.port or (443 if parsed.scheme == "https" else 80)
             addresses = tuple(
                 ipaddress.ip_address(item[4][0])
                 for item in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
             )
         except (OSError, ValueError):
-            return False
+            return None
         if not addresses:
-            return False
+            return None
     if not private_override and any(
         item.is_private or item.is_loopback or item.is_link_local or item.is_reserved or item.is_unspecified
         for item in addresses
     ):
-        return False
-    return True
+        return None
+    return tuple(str(item) for item in addresses)
+
+
+def _target_allowed(url: str, patterns: tuple[str, ...]) -> bool:
+    return _validated_target_addresses(url, patterns) is not None
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    """Connect to a validated IP while retaining hostname certificate checks."""
+
+    def __init__(self, host: str, port: int, address: str, *, timeout: float):
+        super().__init__(host, port, timeout=timeout)
+        self._validated_address = address
+
+    def connect(self) -> None:
+        raw_socket = socket.create_connection((self._validated_address, self.port), self.timeout)
+        self.sock = self._context.wrap_socket(raw_socket, server_hostname=self.host)
 
 
 class _FilteringProxy:
@@ -166,12 +190,18 @@ class _FilteringProxy:
                 self.send_error(403, "browser target is outside HADES host policy")
 
             def _relay_http(self):
+                if self.command not in {"GET", "HEAD"}:
+                    self.send_error(403, "HADES anonymous browser permits only GET and HEAD")
+                    return
                 target = urlparse(self.path)
-                if not _target_allowed(self.path, patterns):
+                addresses = _validated_target_addresses(self.path, patterns)
+                if addresses is None:
                     self._deny()
                     return
                 port = target.port or (443 if target.scheme == "https" else 80)
-                connection = http.client.HTTPSConnection(target.hostname, port, timeout=30) if target.scheme == "https" else http.client.HTTPConnection(target.hostname, port, timeout=30)
+                connection = (_PinnedHTTPSConnection(target.hostname, port, addresses[0], timeout=30)
+                              if target.scheme == "https" else
+                              http.client.HTTPConnection(addresses[0], port, timeout=30))
                 try:
                     body = None
                     length = self.headers.get("Content-Length")
@@ -201,11 +231,12 @@ class _FilteringProxy:
                 host, separator, port_text = self.path.partition(":")
                 port = int(port_text or "443") if separator and port_text.isdigit() else 443
                 target_url = f"https://{host}:{port}"
-                if not _target_allowed(target_url, patterns):
+                addresses = _validated_target_addresses(target_url, patterns)
+                if addresses is None:
                     self._deny()
                     return
                 try:
-                    remote = socket.create_connection((host, port), timeout=30)
+                    remote = socket.create_connection((addresses[0], port), timeout=30)
                     self.send_response(200, "Connection Established")
                     self.end_headers()
                     sockets = [self.connection, remote]
@@ -247,9 +278,18 @@ class _FilteringProxy:
 class Upstream:
     def __init__(self, hosts: tuple[str, ...]):
         self.request_proxy = _FilteringProxy(hosts)
+        self.config_directory = tempfile.TemporaryDirectory(prefix="hades-browser-readonly-")
+        config_path = os.path.join(self.config_directory.name, "playwright.json")
+        init_script = os.path.join(os.path.dirname(__file__), "read-only-network.js")
+        with open(config_path, "w", encoding="utf-8") as config_file:
+            json.dump({"browser": {
+                "initScript": [init_script],
+                "contextOptions": {"serviceWorkers": "block"},
+            }}, config_file)
         self.process = subprocess.Popen(
-            build_command(hosts) + ["--proxy-server", f"http://127.0.0.1:{self.request_proxy.port}", "--proxy-bypass", "none"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            build_command(hosts, config_path) + ["--proxy-server", f"http://127.0.0.1:{self.request_proxy.port}", "--proxy-bypass", "none"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=sys.stderr, text=True, bufsize=1, env=_child_environment(),
+            start_new_session=True,
         )
 
     def request(self, message: dict[str, Any]) -> dict[str, Any] | None:
@@ -270,8 +310,19 @@ class Upstream:
         raise RuntimeError("browser upstream closed before responding")
 
     def close(self) -> None:
-        self.process.terminate()
+        try:
+            os.killpg(self.process.pid, signal.SIGTERM)
+            self.process.wait(timeout=3)
+        except ProcessLookupError:
+            pass
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(self.process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            self.process.wait(timeout=3)
         self.request_proxy.close()
+        self.config_directory.cleanup()
 
 
 def _error(message: dict[str, Any], error: Exception) -> dict[str, Any]:

@@ -1,0 +1,27 @@
+capture_schema: security-boundary-audit/v1
+date: 2026-09-16
+
+Scope: static and synthetic checks only. No credentials, production writes,
+host-control operation, Home Assistant endpoint, finance endpoint, or live
+homelab mutation was used.
+
+PASS scripts/test-security-boundary-audit.sh
+  - private-by-default Compose exposure
+  - no privileged/host-network/Docker-socket/broad-host mounts
+  - Agent Zero capability drop and no-new-privileges
+  - finance adapter mutation absence
+  - HADES subject fail-closed and household privileged-tool filtering
+  - homelab read-only/discovery boundaries
+PASS scripts/test-network-exposure.sh
+PASS scripts/test-capability-boundary.sh
+PASS scripts/test-homelab-control-boundary.sh
+  - exact target, canonical precondition, owner authorization, confirmation,
+    and no executor/shell/Docker/network authority
+PASS scripts/test-agent-zero-boundary.sh
+  - bounded task/response/context handling and uncertain outcome behavior
+PASS scripts/test-readonly-config-shapes.sh
+  - Home Assistant sensitive-entity rejection and homelab bounded-network
+    validation without network probes
+
+Result: SECURITY_BOUNDARY_PASS_STATIC_SYNTHETIC
+No authority was expanded by this audit.

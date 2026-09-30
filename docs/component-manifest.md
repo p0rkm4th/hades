@@ -5,15 +5,15 @@ runtime secrets and persistent volumes remain outside Git.
 
 | Component | Authority | Planned integration | Version / license / upgrade note |
 |---|---|---|---|
-| Hermes | intelligence and agent execution | supported upstream deployment/API | 0.14.0 from the verified upstream `v2026.5.16` source archive and SHA-256 in `config/versions.env`; install into a new environment, never copy the seasoned venv |
+| Hermes | intelligence and agent execution | supported upstream deployment/API | Current reconstruction pin is `HADES_HERMES_VERSION` from `config/versions.env` (0.21.2, upstream `v2026.9.11`); install the checksum-verified source into a new locked environment, never copy a seasoned venv |
 | Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | 0.11.1 compatibility baseline; `webui/Dockerfile` rebuilds the HADES asset layer from immutable `config/versions.env:HADES_OPEN_WEBUI_BASE_IMAGE` and applies the exact Channels stream-consumption compatibility patch; build output is software custody, not state |
 | Hindsight | durable semantic/personal memory | Hermes external memory provider over supported client API | `ghcr.io/vectorize-io/hindsight@sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`; embedded pg0 volume; upgrade by digest |
 | Agent Zero | bounded subordinate computer operator | isolated deployment with explicit objective/result boundary | pinned image digest; no shared unrestricted credentials; native A2A evaluated and retained MCP bridge is bounded |
 | Grocy | canonical pantry, groceries, consumption, inventory, recipes | maintained integration, then supported API or tiny adapter | select upstream release; Grocy remains source of truth |
 | Actual Budget / Finance MCP | canonical imported finance account and transaction truth | `integrations/actual-finance-readonly/` read adapter plus `integrations/actual-finance-import/` preview-only file MCP; synthetic staging only | Actual 26.9.0 server/client must be pinned together; owner authorization remains required for native import execution and no finance write authority is registered |
-| Proxmox / NetBox / Uptime Kuma | homelab and availability truth | read-only preparation documented in `docs/homelab-readonly.md`; runtime deferred | owner-approved endpoints and credentials required; no writes |
+| Proxmox / NetBox / Uptime Kuma | homelab and availability truth | registered read-only MCP profile in `hermes/config.yaml.example`, bounded LAN discovery, and `docs/homelab-readonly.md` | owner-approved endpoints and protected token files required for live reads; no writes |
 | Home Assistant | physical smart-home state/control | future selected-entity integration | deferred; least privilege required |
-| n8n | deterministic workflows | future configuration | preparation contract in [`automation-boundary.md`](automation-boundary.md); deferred until product-manager authorization of one concrete workflow |
+| n8n | deterministic workflows | existing fixed read-only templates; bounded Phase 3 canary implementation | Scotty has authorized Server Health Watch, Low Inventory Summary, Weekly Household Summary, and Backup Verification only; keep the runner inactive until HADES-owned operation-time identity/resource checks and recovery acceptance pass |
 
 ## Reconstruction manifest
 
@@ -35,12 +35,12 @@ record must carry the matching image/tag or digest rather than silently using
 | Component | Pinned/rebuild source | Persistent state | Required private inputs | Network dependency | Startup order | Health check | Restore check |
 |---|---|---|---|---|---|---|---|
 | LLDAP | Pinned image digest in `deploy/lldap.compose.yaml` | Directory database and key material | JWT/key seed, admin bootstrap | Private identity network | 1 | LDAP/HTTP health and login | Isolated database restore and identity record check |
-| Open WebUI | Pinned immutable base plus tracked `webui/Dockerfile` and HADES static assets | WebUI database, vector data, matching assets | Image build output and database/auth secrets | LLDAP and Hermes | 2 | WebUI health, login, chat reload | SQLite integrity, marker conversation reload, asset match |
-| Hindsight | Pinned image with embedded PostgreSQL | PostgreSQL cluster/export | Database credentials and subject-bank policy | Hermes to private memory API | 3 | PostgreSQL readiness and Hindsight health | Native export restore and subject-scoped marker recall |
-| Grocy | Pinned image digest in `deploy/grocy.compose.yaml` | Complete Grocy configuration/database | API key | Hermes to private Grocy API | 4 | Grocy HTTP health | SQLite integrity, stock/list/recipe canonical checks |
+| Open WebUI | Pinned immutable base plus tracked `webui/Dockerfile` and HADES static assets | WebUI database, vector data, matching assets | Image build output and database/auth secrets | LLDAP and Hermes over installer-owned `hades-identity-net`, `hades-application-net`, `hades-private`, and `hades-grocy-net` bridges | 2 | WebUI health, login, chat reload | SQLite integrity, marker conversation reload, asset match |
+| Hindsight | Pinned image with embedded PostgreSQL | PostgreSQL cluster/export | Database credentials and subject-bank policy | Hermes to private memory API over `hades-application-net` | 3 | PostgreSQL readiness and Hindsight health | Native export restore and subject-scoped marker recall |
+| Grocy | Pinned image digest plus `grocy-mcp==0.2.0` and `integrations/grocy-mcp/requirements.lock` | Complete Grocy configuration/database | API key file, read by the tracked MCP launcher | Hermes to private Grocy API over `hades-grocy-net`; MCP tool allowlist in `hermes/config.yaml.example` | 4 | Grocy HTTP health and registered scoped MCP catalog | SQLite integrity, stock/list/recipe canonical checks |
 | Actual Budget / Finance MCP | Pinned Actual 26.9.0 server/client plus tracked read and preview-only file adapters | Private synthetic or owner-authorized Actual state | Endpoint, budget identity, credentials, and explicit target account ID for imports | Hermes to private finance API; local file input remains inline-only | 4 | Read-only health plus finance-file preview contract | Synthetic ledger marker, preview/reconciliation contract, and read-only response; real restore is owner-gated |
-| Hermes 0.14 baseline | Pinned verified upstream `v2026.5.16` source archive plus generated unit and HADES overlay | Profile, sessions, skills, state | Provider, MCP, and service credentials | Open WebUI, Hindsight, Grocy, SearXNG, Agent Zero | 5 | Private API health and authenticated model contract | Profile parse, bounded tool call, reload/restart |
-| Agent Zero | Pinned image digest in `deploy/agent-zero.compose.yaml` | Dedicated operator volume/settings | Bounded API credential | Hermes to private operator API | 6 | Agent Zero health and authenticated card/API check | Isolated volume restore and harmless bounded delegation |
+| Hermes | Pinned verified upstream source archive selected by `config/versions.env:HADES_HERMES_SOURCE_URL` and checksum, plus generated unit and HADES overlay | Profile, sessions, skills, state | Provider, MCP, and service credentials | Open WebUI, Hindsight, Grocy, SearXNG, Agent Zero | 5 | Private API health and authenticated model contract | Profile parse, bounded tool call, reload/restart |
+| Agent Zero | Pinned image digest in `deploy/agent-zero.compose.yaml`; optional native-login env generated from explicit private input | Dedicated operator volume/settings | Optional native UI password; an external API credential only when externally managed | Hermes to private operator API; UI remains loopback/private | 6 | Agent Zero health and live-service token match when native auth is enabled | Isolated volume restore and harmless bounded delegation |
 | SearXNG | Pinned image plus tracked generated deployment and search configuration | Configuration; cache is reconstructable | Any private provider settings | Hermes to private search API | 7 | JSON search response | Config parse and provider search check |
 | HADES policy/assets/adapters | Repository at pushed `main` plus deployed overlay copy | No canonical domain state | Private deployment environment variables | Loaded by Hermes; no separate authority | With Hermes | Overlay syntax, boundary, and MCP registration checks | Source/runtime match, policy tests, and smoke contract |
 
@@ -93,3 +93,11 @@ LLDAP Compose contract uses read-only bind mounts with an SELinux `Z` relabel
 rather than embedding values in the repository; this preserves narrow service
 access on enforcing Fedora/Rocky hosts. Secret contents were not read or
 recorded.
+
+### Validator checkpoint — 2026-09-16
+
+The current tracked configuration passed the reconstruction-manifest,
+rollback-manifest, protected-bundle, protected-tree, capability-matrix,
+inventory-drift, and monitor-plan validators. The audit found no provably
+obsolete public deployment file to delete. Private runtime state and any
+ambiguous legacy artifacts remain review-gated and were not modified.

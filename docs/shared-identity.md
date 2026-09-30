@@ -93,4 +93,19 @@ access to the identity database. Household data remains canonical in Grocy.
 - A user-password cutover requires an explicit owner-controlled setup step.
 - A newly provisioned LDAP user may be created as `pending` by Open WebUI;
   promote it through the supported admin path only after verifying the
-  directory identity and intended group membership.
+  directory identity and intended group membership. Keep it at `pending`
+  until that check is complete; do not set every new LDAP account to `user`.
+- A promoted Open WebUI `user` may still have an empty model catalog. Grant
+  read access to the HADES model only after verifying that same account's
+  `hades-household` membership in LLDAP. This model grant enables chat; HADES
+  still derives owner-only tools from its trusted stable-subject policy.
+- After the user signs in again, verify that `hermes-agent` appears and a
+  harmless authenticated turn succeeds. During offboarding, remove the model
+  grant and application account before revoking the LLDAP identity with
+  `scripts/revoke-directory-user.sh`.
+
+The current HADES template does not automatically synchronize LLDAP groups
+into Open WebUI groups. Until that contract is deliberately enabled and
+validated, assign household model access to the verified individual user
+through Open WebUI's supported model-access controls; do not infer access from
+the display name or email suffix.

@@ -1,6 +1,6 @@
 # Recipe URL ingestion dogfood
 
-Status: **OWNER-GATED; synthetic actor/Grocy path passes**.
+Status: **OWNER-GATED; synthetic owner preview/apply/read-back passes**.
 
 The disposable contract test exercises the owner-equivalent flow against a
 fake canonical Grocy transport:
@@ -24,7 +24,8 @@ removed after the run; no live household state or credential is used.
 It also verifies:
 
 - JSON-LD graphs containing unrelated objects select the Recipe object;
-- raw ingredient lines and source URL remain in the preview evidence;
+- raw ingredient lines remain in preview evidence; source provenance is
+  validated before persistence and never retains URL query strings/fragments;
 - quantity/unit parsing is conservative and emits review warnings;
 - exact Grocy product and quantity-unit matches produce an apply plan;
 - missing or duplicate products prevent the plan from being applied;
@@ -38,19 +39,15 @@ It also verifies:
 - changing a reviewed quantity invalidates the preview, and current Grocy
   state is revalidated before an apply;
 
-Still required before this is a production capability:
+The private MCP profile is deployed on VM 802. An authenticated owner session
+has now completed preview → explicit confirmation → canonical Grocy read-back
+against a synthetic recipe, followed by compensating cleanup. The apply tool
+accepts either the exact signed preview object or its short-lived review token;
+an unreviewed preview still cannot write.
 
-- register the staged MCP server in the deployed Hermes profile;
-- test against a representative public structured-data site and verify URL
-  fetching in the owner-facing path (`scripts/test-recipe-public-url.sh`);
-- exercise a representative structured-data site, a messy page, a duplicate,
-  a changed re-import, serving resize, and shortage/add-missing composition;
-- perform owner-visible acceptance.
-
-The repository-side actor path and disposable canonical Grocy read-back are
-complete. The remaining gate is deployment of the private profile plus one
-owner-visible acceptance sequence; no recipe write is permitted from an
-unreviewed preview.
+Remaining hardening is representative public/messy-page coverage, duplicate
+and changed re-import behavior, serving resize, and shortage/add-missing
+composition. Those are expansion hardening, not a missing deployment gate.
 
 The opt-in public acceptance currently passes against King Arthur Baking's
 Banana Bread page, producing a title, 14 ingredients, and 8 instruction steps
@@ -67,3 +64,31 @@ text plus raw pasted HTML or JSON-LD through `recipe_paste_preview`. These
 inputs converge on the same ingredient, serving, instruction, review, Grocy
 resolution, and apply-plan path as URL ingestion. The contract test verifies
 that underspecified paste is rejected and that preview remains write-free.
+`bash scripts/test-recipe-paste-mcp-preview.sh` additionally invokes the
+registered MCP paste-preview handler against synthetic Grocy reads, confirms
+an exact product/unit plan remains review-required, and verifies malformed
+paste returns a failure without any Grocy request. Provenance metadata rejects
+embedded credentials, local/private hosts, and control characters; query and
+fragment components are stripped because they can contain credentials or
+tracking tokens. This metadata-only check does not resolve DNS or fetch the
+provided URL. `GrocyRecipeImporter.preview` repeats the validation at the
+canonical apply-plan boundary; the importer contract exercises a synthetic
+confirmed write and canonical read-back and verifies that the token sentinel
+does not reach Grocy's stored description. It also verifies that a local URL
+fails before the importer makes any Grocy request.
+
+The visible-text fallback now ignores document head, scripts/styles, navigation,
+footers, sidebars, forms, and explicitly hidden subtrees. A synthetic messy-page
+fixture puts publisher metadata, malformed JSON-LD, navigation, and hidden fake
+ingredients before/around a real article. The preview selects the recipe
+heading, preserves only visible ingredient/instruction text, and remains
+review-required. `scripts/test-recipe-ingest-contract.sh` covers this path; it
+is parser evidence, not a new live publisher acceptance.
+
+Imported recipes now store a SHA-256 fingerprint of normalized recipe content
+in their Grocy description. A repeat preview distinguishes an unchanged
+same-source import from changed content at the same URL. Changed content stays
+blocked from apply and tells the operator to review the canonical recipe; HADES
+does not replace existing recipe ingredients automatically. Legacy recipes
+without a fingerprint remain review-only. The contract test verifies unchanged
+retry, changed-source detection, and refusal to apply either duplicate.

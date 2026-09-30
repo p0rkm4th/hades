@@ -19,7 +19,21 @@ owner = policy.authorize({"X-Hades-Proxy-Secret": secret, "X-Hades-Authenticated
 assert owner == {"allowed": True, "user": "alpha"}
 assert policy.authorize({"X-Hades-Proxy-Secret": "wrong", "X-Hades-Authenticated-User": "alpha", "X-Hades-Authenticated-Groups": "hades-owner"}, proxy_secret=secret)["allowed"] is False
 assert policy.validate_path("/operator/") == "/operator/"
-for bad in ("//operator", "operator", "/operator\r\nX: bad"):
+assert policy.validate_path("/operator/chat/alpha%20notes?tab=1") == "/operator/chat/alpha%20notes?tab=1"
+for bad in (
+    "//operator",
+    "operator",
+    "/operator\r\nX: bad",
+    "/operator/../admin",
+    "/operator/%2e%2e/admin",
+    "/operator/%252e%252e/admin",
+    "/operator/%2f%2fevil",
+    "/operator/%5c..%5cadmin",
+    "/operator/%00",
+    "/operator/%ZZ",
+    "https://operator.example/",
+    "/operator/#fragment",
+):
     try:
         policy.validate_path(bad)
     except ValueError:
@@ -30,3 +44,4 @@ print("PASS Operator trusted-proxy and owner-group policy")
 print("PASS household direct-route denial policy")
 print("PASS Operator path validation")
 PY
+python3 "$repo_dir/scripts/test-operator-session-auth.py"

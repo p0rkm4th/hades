@@ -127,6 +127,16 @@ html[class*="hades-theme-"] {
   background: var(--hades-bg) !important;
 }
 html[class*="hades-theme-"] body { background: var(--hades-bg) !important; color: var(--hades-cyan) !important; }
+
+/* Open WebUI hides attachment removal controls with pointer-events:none until
+ * hover. That leaves them untappable on touch/mobile viewports and makes the
+ * attachment state harder to understand. Keep the native control visible and
+ * actionable; this is scoped to the native remove-file control only. */
+button[aria-label="Remove File" i].hover-reveal {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 html[class*="hades-theme-"] aside, html[class*="hades-theme-"] header {
   background: color-mix(in srgb, var(--hades-panel) 88%, transparent) !important;
   border-color: color-mix(in srgb, var(--hades-cyan) 30%, transparent) !important;

@@ -1,0 +1,19 @@
+HADES homelab GPU capability dogfood
+Date: 2026-09-16
+
+- Owner-scoped HADES API invoked the read-only compute capability tool.
+- Confirmed inventory returned six named GPU hosts:
+  Alexandra (GTX 660), Erebus (Quadro P4000), Hermes (2x RTX 2080),
+  Thanatos (RTX 2080), Hypnos (2x Quadro P4000), and Tartarus (4x Quadro
+  P4000).
+- HADES explicitly reported that inventory does not prove driver, VRAM, CUDA,
+  container access, or current workload availability.
+- Post-restart owner dogfood repeated the query successfully and returned all
+  six confirmed GPU-bearing hosts with `cuda_container_capability` explicitly
+  unverified.
+- Runtime/availability authority remains Proxmox and Uptime Kuma; the matrix
+  is supplemental observed hardware evidence only.
+- The compute capability map now records VRAM and current free capacity as
+  explicit `UNVERIFIED` fields for every GPU pool until host-side acceptance
+  supplies authoritative values; card count alone cannot drive placement.
+- No host control, GPU configuration, or inventory write occurred.

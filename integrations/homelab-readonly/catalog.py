@@ -12,6 +12,13 @@ from datetime import datetime
 from typing import Any
 
 
+def _dns_key(value: Any) -> str:
+    """Normalize DNS case and the optional terminal root dot for exact joins."""
+    if not isinstance(value, str):
+        return ""
+    return value.strip().rstrip(".").casefold()
+
+
 def _inventory_index(netbox: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
     if netbox is not None and not isinstance(netbox, dict):
         raise ValueError("NetBox context must be a JSON object")
@@ -22,7 +29,25 @@ def _inventory_index(netbox: dict[str, Any] | None) -> dict[str, dict[str, Any]]
     for row in rows:
         if not isinstance(row, dict):
             continue
-        keys = {str(row.get(key, "")).strip().casefold() for key in ("name", "hostname", "ip", "address")}
+        keys = {_dns_key(row.get(key)) for key in ("name", "hostname")}
+        for key in ("ip", "address", "primary_ip", "primary_ip4", "primary_ip6"):
+            value = row.get(key)
+            # NetBox commonly serializes primary_ip as an assigned-IP object,
+            # whose address is a CIDR string. Also accept flat strings used by
+            # older exports and local inventory fixtures.
+            if isinstance(value, dict):
+                value = value.get("address")
+            if not isinstance(value, str) or not value.strip():
+                continue
+            raw_address = value.strip()
+            try:
+                address = ipaddress.ip_interface(raw_address).ip
+            except ValueError:
+                # Some upstream projections use a hostname in address fields;
+                # retain that exact case-insensitive lookup as a fallback.
+                keys.add(raw_address.casefold())
+            else:
+                keys.add(str(address).casefold())
         for key in keys - {""}:
             index.setdefault(key, row)
     return index
@@ -63,7 +88,7 @@ def propose_inventory_candidates(
             if not isinstance(port, dict) or not isinstance(port.get("port"), int) or not 1 <= port["port"] <= 65535:
                 raise ValueError("discovery host contains an invalid port")
         hostname = host.get("hostname") if isinstance(host.get("hostname"), str) else None
-        match = index.get((hostname or "").casefold()) or index.get(ip.casefold())
+        match = index.get(_dns_key(hostname)) or index.get(ip.casefold())
         candidates.append({
             "status": "REVIEW_REQUIRED",
             "name": hostname or ip,

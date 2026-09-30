@@ -6,18 +6,18 @@ end-to-end clean-guest claim.
 
 | Component | Artifact provenance | Generated deployment | Real component fixture | Fresh full-app guest | Reboot | Portable artifact required |
 |---|---|---|---|---|---|---|
-| Open WebUI | PASS: immutable upstream base plus tracked `webui/Dockerfile` and theme layer | PASS: `deploy/templates/open-webui.compose.yaml` | PASS: rebuilt image started and `/health` returned `{"status":true}` with a new WebUI database | NOT YET PROVEN | NOT YET PROVEN | no, unless the pinned base disappears; then use an image archive contract |
-| Hindsight | PASS: immutable image digest in `config/versions.env` | PASS: `deploy/templates/hindsight.compose.yaml` | PASS: pinned image health returned `database=connected` with synthetic model credentials | NOT YET PROVEN | NOT YET PROVEN | no |
-| SearXNG | PASS: immutable image digest in `config/versions.env` | PASS: `deploy/templates/searxng.compose.yaml` | PASS: pinned image returned JSON search results using tracked settings and a synthetic secret | NOT YET PROVEN | NOT YET PROVEN | no |
-| Hermes 0.14.0 | PASS: upstream `v2026.5.16` source archive and SHA-256; installed into a new venv | PASS: `deploy/templates/hermes.service.in` | PASS: verified archive installed; real CLI surface and version `0.14.0` verified | NOT YET PROVEN | NOT YET PROVEN | no, while the upstream archive remains fetchable |
-| LLDAP | PASS: immutable image digest and tracked Compose | compatibility path PASS | accepted clean-guest evidence PASS | NOT YET PROVEN through v2 generated records | tracked subset PASS | no |
-| Grocy | PASS: immutable image digest and tracked Compose | compatibility path PASS | accepted clean-guest evidence PASS | NOT YET PROVEN through v2 generated records | tracked subset PASS | no |
-| Agent Zero | PASS: immutable image digest and tracked Compose | compatibility path PASS | accepted clean-guest evidence PASS | NOT YET PROVEN through v2 generated records | tracked subset PASS | no |
+| Open WebUI | PASS: immutable upstream base plus tracked `webui/Dockerfile` and theme layer | PASS: `deploy/templates/open-webui.compose.yaml` | PASS: rebuilt image started and `/health` returned `{"status":true}` with a new WebUI database | PASS: fresh Rocky generated-installer run and restart/isolation soak | PASS: generated-runtime reboot recovery and post-reboot isolation | no, unless the pinned base disappears; then use an image archive contract |
+| Hindsight | PASS: immutable image digest in `config/versions.env` | PASS: `deploy/templates/hindsight.compose.yaml` | PASS: pinned image health returned `database=connected` with synthetic model credentials | PASS: fresh Rocky generated-installer deployment | PASS: generated-runtime reboot recovery | no |
+| SearXNG | PASS: immutable image digest in `config/versions.env` | PASS: `deploy/templates/searxng.compose.yaml` | PASS: pinned image returned JSON search results using tracked settings and a synthetic secret | PASS: fresh Rocky generated-installer deployment | PASS: generated-runtime reboot recovery | no |
+| Hermes current pin 0.21.2 | PASS: current upstream `v2026.9.11` archive and SHA-256; real artifact installer created a new locked venv and verified the CLI/version on the development host | PASS: `deploy/templates/hermes.service.in` renders the configured executable and profile | PASS: current installer path verifies `0.21.2` on the development host | PASS: fresh Fedora 44 Guest B installed and ran the 0.21.2 systemd gateway; post-reboot doctor verified the pin | PASS: gateway active after reboot and doctor/validator passed | no, while the pinned source archive remains fetchable |
+| LLDAP | PASS: immutable image digest and tracked Compose | compatibility path PASS | accepted clean-guest evidence PASS | PASS: fresh Rocky generated-installer deployment | PASS: generated-runtime reboot recovery | no |
+| Grocy | PASS: immutable image digest and tracked Compose | compatibility path PASS | accepted clean-guest evidence PASS | PASS: fresh Rocky generated-installer deployment | PASS: generated-runtime reboot recovery | no |
+| Agent Zero | PASS: immutable image digest and tracked Compose | compatibility path PASS | accepted clean-guest evidence PASS | PASS: fresh Rocky generated-installer deployment | PASS: generated-runtime reboot recovery | no |
 
 ## Current boundary
 
 The generated records render and validate without secret contents, and the
-three real application images plus a clean Hermes venv have each been exercised
+the pinned application images plus a clean Hermes venv have each been exercised
 in isolation. `scripts/test-full-application-image-startup.sh` now also starts
 the six real pinned application images and a disposable OpenAI-compatible
 model together on an isolated Docker network. It verifies internal LLDAP,
@@ -27,36 +27,58 @@ persisted read-back, and rejects Beta access to Alpha's private chat, with
 bounded startup polling and automatic cleanup. The client then restarts
 Open WebUI, signs Alpha in again, confirms the same chat remains readable, and
 signs Beta in to verify the private-chat denial still holds.
-This is synthetic
-application-path evidence; the campaign does **not** yet claim:
+This is synthetic application-path evidence; the fresh generated-installer
+evidence below adds the installer and Hermes/WebUI boundary.
 
 The same six-image composition was rerun from the current pushed checkpoint on
 2026-09-15 and passed again, including Alpha/Beta authentication, model-route
 response persistence, private-chat denial, and Open WebUI restart persistence.
 This strengthens disposable application-composition evidence but does not
-change the fresh-guest boundary below.
+replace the fresh generated-installer evidence below.
 
-- a fresh guest installed with v2 generated records;
-- a real Hermes gateway connected to the real Open WebUI, Hindsight, Grocy,
-  SearXNG, and Agent Zero instances;
-- synthetic Alpha/Beta/Gamma authentication through a freshly reconstructed
-  guest application path; or
-- reboot persistence for the generated full application.
+On 2026-09-16, a fresh Rocky Linux 10.2 guest ran the complete v2 generated
+installer path from generated private inputs. Hermes was reachable from the
+containerized WebUI through a private Docker-bridge bind, API-key mismatch was
+rejected, and the synthetic Alpha/Beta response-persistence, private-chat
+denial, restart-persistence, and post-restart isolation checks all passed.
+The disposable signup/test state was removed and signup was restored to false.
+See [`acceptance/fresh-rocky-generated-installer-2026-09-16.txt`](../acceptance/fresh-rocky-generated-installer-2026-09-16.txt).
 
-The next independent action is a fresh supported Fedora guest using only the
-repository, v2 operator values, the verified Hermes archive, the built
-Open WebUI image, and synthetic state/secrets. Legacy whole-file deployment
-records must not be used for that acceptance run.
+On 2026-09-16, the same actual-image composition was completed on an
+independent fresh Rocky Linux 10.2 guest after the tracked Rocky Docker
+prerequisite path was repaired. All seven disposable containers reached health,
+Alpha/Beta model and privacy checks passed across an Open WebUI restart, and
+cleanup retained no reconstruction containers. This is complementary to the
+generated-installer evidence above; reboot persistence and the broader
+multi-domain household contract are covered by the generated-installer
+acceptance and synthetic household-soak evidence below.
 
-An attempt from the current checkpoint booted Fedora Cloud 44, installed
+The fresh-guest reboot and full household capability soak are now evidenced by
+the generated-installer and synthetic household-soak records. The remaining
+reconstruction gate is owner-visible authenticated composition on that
+reconstructed deployment; legacy whole-file deployment records must not be
+used for that acceptance.
+
+On 2026-09-28, a separate pristine Fedora 44 Guest B completed installation of
+the six pinned application containers and Hermes 0.21.2 from explicit
+machine-authorized synthetic inputs, then rebooted with all services returning.
+Post-reboot doctor and validator passed, with the expected synthetic-identity
+and functional-acceptance warnings. The guest install source was `dd17e37`, not
+current HADES HEAD `daa08e1`; intervening changes add the optional dynamic
+OSINT reader and its manifest/policy wiring, plus a synthetic-only login
+fixture helper. This closes the earlier current-pin
+fresh-guest installation/reboot gap for that source revision, but not exact-HEAD
+reconstruction. Authenticated household flows and guest-level
+backup/destroy/restore remain open. See [`reconstruction.md`](reconstruction.md).
+
+An earlier attempt from the current checkpoint booted Fedora Cloud 44, installed
 Docker/Compose, and built the pinned Open WebUI artifact, but stopped during
 remaining image acquisition when the temporary guest overlay consumed the
 host's `/tmp` tmpfs. The temporary guest and downloaded artifacts were
-reclaimed; the full-guest claim remains open.
+reclaimed; that historical attempt does not override the later successful
+fresh Rocky acceptance.
 
 The retry moved the overlay to the root filesystem and exposed a Fedora
 SELinux/UID-1000 secret-mount defect in the harness. The `:ro,Z` mounts and
-service-UID ownership are now fixed and the focused local composition passes;
-the independent guest reached healthy LLDAP/Grocy before Agent Zero registry
-layers stalled. Full-guest reconstruction therefore remains open pending a
-complete image pull and Hermes gateway/application-path run.
+service-UID ownership are now fixed; those stalled Fedora attempts remain
+historical evidence rather than current blockers.

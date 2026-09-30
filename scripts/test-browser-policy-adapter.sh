@@ -12,12 +12,15 @@ config = Path("hermes/config.yaml.example").read_text()
 assert "browser-research:" in config
 assert "integrations/browser-access/proxy.py" in config
 assert "HADES_BROWSER_ALLOWED_HOSTS" in config
+assert 'HADES_PUBLIC_RESEARCH_DYNAMIC_ENABLED' in config
+read_only_script = Path("integrations/browser-access/read-only-network.js").read_text()
+assert "XMLHttpRequest.prototype" in read_only_script and "sendBeacon" in read_only_script
 
 os.environ["HADES_BROWSER_ALLOWED_HOSTS"] = "recipes.example,*.public.example"
 assert validate_navigation("https://recipes.example/recipe")
 assert validate_navigation("https://blog.public.example/post")
 original_getaddrinfo = proxy.socket.getaddrinfo
-proxy.socket.getaddrinfo = lambda *args, **kwargs: [(2, 1, 6, '', ('192.168.1.9', 0))]
+proxy.socket.getaddrinfo = lambda *args, **kwargs: [(2, 1, 6, '', ('198.51.100.9', 0))]
 assert proxy._target_allowed("https://recipes.example/", ("recipes.example",)) is False
 proxy.socket.getaddrinfo = original_getaddrinfo
 for url in (
@@ -48,12 +51,14 @@ upstream = [
     {"name": "browser_click"}, {"name": "browser_run_code_unsafe"},
 ]
 assert [tool["name"] for tool in filtered_tools(upstream)] == ["browser_navigate", "browser_snapshot"]
-command = build_command(("recipes.example", "*.public.example"))
+command = build_command(("recipes.example", "*.public.example"), "/tmp/hades-playwright.json")
 assert "--isolated" in command and "--headless" in command and "--allowed-hosts" in command
+assert "--config" in command and "/tmp/hades-playwright.json" in command
 assert "--storage-state" not in command and "--user-data-dir" not in command
 assert "--proxy-server" not in command
 assert select_profile("household", "anonymous") == {"allowed": True, "profile": "anonymous"}
 print("PASS anonymous browser adapter filters submit, code, storage, and file tools")
 print("PASS browser adapter enforces HTTPS, explicit hosts, and public-target policy")
+print("PASS upstream browser loads the read-only network guard before page scripts")
 print("PASS browser adapter launches pinned isolated headless Playwright MCP")
 PY

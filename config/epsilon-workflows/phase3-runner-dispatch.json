@@ -1,0 +1,275 @@
+{
+  "name": "HADES Phase 3 Fixed Read Dispatcher",
+  "id": "hades-phase3-runner-dispatch",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "saveExecutionProgress": false
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "phase3-dispatch-schedule",
+      "name": "Every five minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const timestamp = Math.floor(Date.now() / 1000).toString();\nconst body = '{}';\nconst signing_message = `POST\\n/v1/epsilon/phase3/due\\n${timestamp}\\n${body}`;\nreturn [{ json: { timestamp, body, signing_message } }];"
+      },
+      "id": "phase3-build-due-request",
+      "name": "Build fixed due poll",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{$json.signing_message}}",
+        "dataPropertyName": "signature",
+        "encoding": "hex",
+        "binaryData": false
+      },
+      "id": "phase3-sign-due-request",
+      "name": "Sign due poll",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        640,
+        300
+      ],
+      "credentials": {
+        "crypto": {
+          "id": "CREDENTIAL_ID_REQUIRED",
+          "name": "HADES Phase3 Runner HMAC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8643/v1/epsilon/phase3/due",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-HADES-Timestamp",
+              "value": "={{$json.timestamp}}"
+            },
+            {
+              "name": "X-HADES-Signature",
+              "value": "={{$json.signature}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{$json.body}}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "phase3-get-due",
+      "name": "Read due fixed automations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const envelope = $input.first().json;\nconst due = envelope.due;\nif (!Array.isArray(due) || due.length > 25) throw new Error('HADES due response exceeded its fixed bound');\nconst timestamp = Math.floor(Date.now() / 1000).toString();\nreturn due.map((row) => {\n  if (!row || Object.keys(row).sort().join(',') !== 'automation_id,due_at,execution_key') throw new Error('HADES due response has an invalid record shape');\n  if (typeof row.automation_id !== 'string' || !/^p3-[A-Za-z0-9_-]{8,40}$/.test(row.automation_id)) throw new Error('HADES due record identity is invalid');\n  if (typeof row.execution_key !== 'string' || !/^schedule:[0-9]{10}$/.test(row.execution_key)) throw new Error('HADES due record key is invalid');\n  if (!Number.isInteger(row.due_at)) throw new Error('HADES due time is invalid');\n  const body = JSON.stringify({ automation_id: row.automation_id, execution_key: row.execution_key });\n  const signing_message = `POST\\n/v1/epsilon/phase3/run\\n${timestamp}\\n${body}`;\n  return { json: { timestamp, body, signing_message } };\n});"
+      },
+      "id": "phase3-build-run-requests",
+      "name": "Validate due batch and build runs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "action": "hmac",
+        "type": "SHA256",
+        "value": "={{$json.signing_message}}",
+        "dataPropertyName": "signature",
+        "encoding": "hex",
+        "binaryData": false
+      },
+      "id": "phase3-sign-run-request",
+      "name": "Sign fixed run requests",
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        300
+      ],
+      "credentials": {
+        "crypto": {
+          "id": "CREDENTIAL_ID_REQUIRED",
+          "name": "HADES Phase3 Runner HMAC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8643/v1/epsilon/phase3/run",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-HADES-Timestamp",
+              "value": "={{$json.timestamp}}"
+            },
+            {
+              "name": "X-HADES-Signature",
+              "value": "={{$json.signature}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{$json.body}}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "phase3-run-fixed-source",
+      "name": "Dispatch fixed HADES read",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Every five minutes": {
+      "main": [
+        [
+          {
+            "node": "Build fixed due poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build fixed due poll": {
+      "main": [
+        [
+          {
+            "node": "Sign due poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign due poll": {
+      "main": [
+        [
+          {
+            "node": "Read due fixed automations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read due fixed automations": {
+      "main": [
+        [
+          {
+            "node": "Validate due batch and build runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate due batch and build runs": {
+      "main": [
+        [
+          {
+            "node": "Sign fixed run requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign fixed run requests": {
+      "main": [
+        [
+          {
+            "node": "Dispatch fixed HADES read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch fixed HADES read": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "tags": [
+    {
+      "name": "hades-template:phase3-dispatch"
+    },
+    {
+      "name": "hades-owner:owner"
+    },
+    {
+      "name": "hades-approved:true"
+    },
+    {
+      "name": "hades-trigger:schedule"
+    },
+    {
+      "name": "hades-scope:fixed-read-only"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "reader_user_id": "REQUIRED_LLDAP_STRICT_READONLY_USER",
+  "subjects": {},
+  "groups": {
+    "REQUIRED_EXPLICIT_LLDAP_GROUP": {
+      "role": "household",
+      "resources": []
+    }
+  }
+}
