@@ -40,6 +40,30 @@ models. No currently qualified GPU target supports the required context, so
 the factual-synthesis latency comparison was not rerun. These endpoint and
 hardware observations do not change the open model-quality/latency gate.
 
+Provider-declared search-engine labels are now retained only when they match a
+short machine-identifier form. Instruction-shaped prose and malformed object
+values are dropped before entering the model evidence payload, while ordinary
+identifiers such as `google` and `duckduckgo_news` remain. The collector
+contract covers valid, duplicate, malformed, and instruction-shaped labels.
+This narrows one metadata injection surface; it does not close broad
+prompt-injection or real-model acceptance.
+
+### Search-engine metadata prose filtering — 2026-09-29
+
+The SearXNG `engines` result field contains engine identifiers, but the
+collector previously forwarded arbitrary provider strings unchanged. It now
+keeps only bounded machine-style identifiers, removes duplicates, and rejects
+instruction-shaped prose and identifiers containing prompt-control terms.
+Malformed object values remain excluded. Citation URLs, titles, excerpts, and
+the source's untrusted-evidence warnings are unchanged.
+
+PASS: `python3 scripts/test-public-research-contract.py`,
+`bash scripts/test-public-research-mcp-runtime.sh`, and the authenticated
+synthetic `engine_injection` UI scenario for Alpha, Beta, and Gamma through
+Open WebUI, Hermes, and the actual MCP. This closes the tested engine-label
+metadata case only; broad semantic injection coverage and real-model
+acceptance remain open.
+
 ### Page-reader title metadata injection — 2026-09-29
 
 The authenticated synthetic Alpha/Beta/Gamma UI now supplies a hostile

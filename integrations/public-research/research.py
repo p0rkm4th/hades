@@ -1169,6 +1169,29 @@ def _bounded_untrusted_text(value: Any, limit: int, fallback: str = "") -> str:
     return normalized or fallback
 
 
+def _search_engine_labels(value: Any) -> list[str]:
+    """Keep provider engine metadata to short machine identifiers, not prose."""
+    if not isinstance(value, list):
+        return []
+    instruction_terms = {
+        "credential", "credentials", "ignore", "instruction", "instructions",
+        "override", "policy", "private", "prompt", "reveal", "secret", "system",
+    }
+    labels = []
+    for item in value[:8]:
+        if not isinstance(item, str):
+            continue
+        label = item.strip()
+        words = re.split(r"[-_]", label.casefold())
+        if (
+            re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,31}", label)
+            and not instruction_terms.intersection(words)
+        ):
+            if label not in labels:
+                labels.append(label)
+    return labels
+
+
 def _source_id(url: str) -> str:
     return sha256(url.encode("utf-8")).hexdigest()[:16]
 
@@ -1453,9 +1476,6 @@ def research_public_sources(
         seen.add(canonical)
         title = _bounded_untrusted_text(item.get("title"), 300, "Untitled result")
         content = _bounded_untrusted_text(item.get("content"), MAX_EXCERPT_CHARS)
-        engines = item.get("engines")
-        if not isinstance(engines, list):
-            engines = []
         publisher = _bounded_untrusted_text(item.get("publisher"), 200) or None
         retrieved_at = clock()
         sources.append({
@@ -1466,11 +1486,7 @@ def research_public_sources(
             "host": _host(canonical),
             "title": title,
             "publisher": publisher,
-            "search_engines": [
-                " ".join(value.split())[:80]
-                for value in engines[:8]
-                if isinstance(value, str) and value.strip()
-            ],
+            "search_engines": _search_engine_labels(item.get("engines")),
             "publisher_date": _publisher_date(item.get("publishedDate")),
             "retrieved_at_utc": retrieved_at,
             "excerpt": content,
