@@ -136,7 +136,7 @@ with tempfile.TemporaryDirectory(prefix="hades-epsilon-phase3-") as tmp:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        body = json.dumps({"automation_id": item["automation_id"], "execution_key": "epsilon-execution-01"}, separators=(",", ":")).encode()
+        body = json.dumps({"automation_id": item["automation_id"], "execution_key": "test-execution-key-000000000001"}, separators=(",", ":")).encode()
         timestamp = str(int(__import__("time").time()))
         signature = sign_request(secret, timestamp, body)
         endpoint = f"http://127.0.0.1:{server.server_port}/v1/epsilon/phase3/run"
@@ -203,7 +203,7 @@ with tempfile.TemporaryDirectory(prefix="hades-epsilon-phase3-") as tmp:
             raise AssertionError("Epsilon endpoint accepted unknown path")
 
         DirectoryState.groups["directory-owner"].clear()
-        body2 = json.dumps({"automation_id": item["automation_id"], "execution_key": "epsilon-execution-revoked"}, separators=(",", ":")).encode()
+        body2 = json.dumps({"automation_id": item["automation_id"], "execution_key": "test-execution-key-000000000002"}, separators=(",", ":")).encode()
         try:
             post(sign_request(secret, timestamp, body2), body_value=body2)
         except HTTPError as exc:

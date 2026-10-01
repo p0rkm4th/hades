@@ -141,12 +141,12 @@ docker compose --env-file "$fixture/operator-no-agent-zero-auth.env" -f "$repo_d
 # the test user; vendor dependencies are sufficient for syntax validation.
 SYSTEMD_UNIT_PATH=/usr/lib/systemd/system:/lib/systemd/system \
   systemd-analyze verify "$fixture/records/hermes.service"
-printf '0123456789abcdef\n' > "$fixture/agent-zero-api-key"
+printf 'TEST-KEY-0000001\n' > "$fixture/agent-zero-api-key"
 chmod 600 "$fixture/agent-zero-api-key"
 sed "/^HADES_INPUTS_VERSION=/a HADES_AGENT_ZERO_CREDENTIAL_FILE=$fixture/agent-zero-api-key" "$fixture/operator-no-agent-zero-auth.env" > "$fixture/operator-external-agent-zero.env"
 chmod 600 "$fixture/operator-external-agent-zero.env"
 bash "$repo_dir/scripts/render-deployment-records.sh" "$fixture/operator-external-agent-zero.env" "$fixture/external-records" > "$fixture/external.log"
 test "$(stat -c '%a' "$fixture/external-records/agent-zero-client-auth.env")" = 600
-grep -qx 'AGENT_ZERO_API_KEY=0123456789abcdef' "$fixture/external-records/agent-zero-client-auth.env"
-! grep -q '0123456789abcdef' "$fixture/external.log"
+grep -qx 'AGENT_ZERO_API_KEY=TEST-KEY-0000001' "$fixture/external-records/agent-zero-client-auth.env"
+! grep -q 'TEST-KEY-0000001' "$fixture/external.log"
 echo 'PASS generated deployment records render, protect optional credentials, and validate'

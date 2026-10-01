@@ -7,19 +7,19 @@ mkdir -p "$work/bin" "$work/deployment"
 cat > "$work/bin/docker" <<'MOCK'
 #!/usr/bin/env bash
 [[ "$1" == exec && "$2" == hades-agent-zero ]] || exit 7
-printf '%s\n' "${MOCK_AGENT_ZERO_KEY:-0123456789abcdef}"
+printf '%s\n' "${MOCK_AGENT_ZERO_KEY:-TEST-KEY-0000001}"
 MOCK
 chmod 700 "$work/bin/docker"
-if ! PATH="$work/bin:$PATH" MOCK_AGENT_ZERO_KEY=0123456789abcdef \
+if ! PATH="$work/bin:$PATH" MOCK_AGENT_ZERO_KEY=TEST-KEY-0000001 \
   bash "$repo_dir/scripts/sync-agent-zero-client-auth.sh" "$work/deployment/client.env" > "$work/first.log"; then
   cat "$work/first.log" >&2
   exit 1
 fi
 test "$(stat -c '%a' "$work/deployment/client.env")" = 600
-grep -qx 'AGENT_ZERO_API_KEY=0123456789abcdef' "$work/deployment/client.env"
-! grep -q '0123456789abcdef' "$work/first.log"
+grep -qx 'AGENT_ZERO_API_KEY=TEST-KEY-0000001' "$work/deployment/client.env"
+! grep -q 'TEST-KEY-0000001' "$work/first.log"
 before=$(stat -c '%i:%Y' "$work/deployment/client.env")
-PATH="$work/bin:$PATH" MOCK_AGENT_ZERO_KEY=0123456789abcdef \
+PATH="$work/bin:$PATH" MOCK_AGENT_ZERO_KEY=TEST-KEY-0000001 \
   bash "$repo_dir/scripts/sync-agent-zero-client-auth.sh" "$work/deployment/client.env" >/dev/null
 test "$(stat -c '%i:%Y' "$work/deployment/client.env")" = "$before"
 if PATH="$work/bin:$PATH" MOCK_AGENT_ZERO_KEY=short \
@@ -27,6 +27,6 @@ if PATH="$work/bin:$PATH" MOCK_AGENT_ZERO_KEY=short \
   echo 'FAIL sync accepted malformed Agent Zero token' >&2
   exit 1
 fi
-! grep -q '0123456789abcdef' "$work/bad.log"
-grep -qx 'AGENT_ZERO_API_KEY=0123456789abcdef' "$work/deployment/client.env"
+! grep -q 'TEST-KEY-0000001' "$work/bad.log"
+grep -qx 'AGENT_ZERO_API_KEY=TEST-KEY-0000001' "$work/deployment/client.env"
 echo 'PASS Agent Zero client auth sync is protected, stable, and fail-safe'

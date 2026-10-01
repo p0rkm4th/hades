@@ -120,7 +120,7 @@ def main() -> int:
                 "--add-host", "host.docker.internal:host-gateway",
                 "-v", f"{data}:/home/node/.n8n:Z",
                 "-v", f"{workflow_file}:/tmp/weekly-workflow.json:ro,Z",
-                "-e", "N8N_ENCRYPTION_KEY=synthetic-weekly-n8n-encryption-key",
+                "-e", "N8N_ENCRYPTION_KEY=synthetic-n8n-encryption-key-not-for-production",
                 "-e", "N8N_USER_FOLDER=/home/node",
                 "-e", "N8N_DIAGNOSTICS_ENABLED=false",
                 image,
