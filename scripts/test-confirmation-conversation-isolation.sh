@@ -14,6 +14,47 @@ from pathlib import Path
 source_path = Path(os.environ.get("HADES_CONFIRMATION_OVERLAY_SOURCE", "hermes/sitecustomize.py"))
 source = source_path.read_text(encoding="utf-8")
 tree = ast.parse(source)
+provision_preview = next(
+    node for node in tree.body
+    if isinstance(node, ast.FunctionDef) and node.name == "_hades_pending_provision_preview"
+)
+preview_bound_fields = {
+    node.slice.value
+    for node in ast.walk(provision_preview)
+    if isinstance(node, ast.Subscript)
+    and isinstance(node.value, ast.Name)
+    and node.value.id == "pending"
+    and isinstance(node.ctx, ast.Store)
+    and isinstance(node.slice, ast.Constant)
+}
+assert {"operation", "target", "resources", "previewed"} <= preview_bound_fields, (
+    "provision preview does not persist its exact operation, placement, resource limits, and preview state"
+)
+assert any(
+    isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Attribute)
+    and node.func.attr == "pending_put"
+    and any(isinstance(arg, ast.Name) and arg.id == "pending" for arg in node.args)
+    for node in ast.walk(provision_preview)
+), "provision preview is not durably stored before asking for confirmation"
+confirmation_branch = next(
+    node for node in ast.walk(tree)
+    if isinstance(node, ast.If)
+    and isinstance(node.test, ast.Name)
+    and node.test.id == "_explicit_provision_confirmation"
+)
+confirmation_text = ast.unparse(confirmation_branch)
+for requirement in (
+    "_pending.get('operation') != 'provision_guest'",
+    "_spec != _expected_plan[1]",
+    "_target['node'] not in _nodes",
+    "_control_module.provision_guest(_template, _target",
+    "_provision_write_started = True",
+    "'OUTCOME_UNKNOWN' if _provision_write_started else 'FAILED'",
+):
+    assert requirement in confirmation_text, (
+        f"provision confirmation is not bound to required material parameters: {requirement}"
+    )
 function = next(
     node for node in tree.body
     if isinstance(node, ast.FunctionDef) and node.name == "_hades_turn_identity"
@@ -198,4 +239,5 @@ with tempfile.TemporaryDirectory() as root:
     assert "couldn't securely tie" in missing_chat_phase3.lower()
     assert phase3_service.store.get(phase3_record["automation_id"])["enabled"] is False
 print("PASS typed confirmations bind to server conversation IDs and remain recoverable across workers")
+print("PASS provisioning confirmations bind to the exact preview operation, target, resources, and write lifecycle")
 PY
