@@ -7,100 +7,61 @@ recorded here.
 
 ## CURRENT CAMPAIGN CHECKPOINT
 
-Household Alpha is accepted as complete/ready. Real household onboarding is
-an owner-input gate only and is not a reason to pause independent engineering
-work. The earlier Hermes 0.21.2 rollback note is superseded: the current
-production runtime is Hermes 0.21.2, promoted with a rollback package and
-passing live model smoke. The bounded upstream SQLite repair-test failure and
-current deployment-provenance discrepancy remain recorded in
-[`docs/current-blockers.md`](docs/current-blockers.md).
+As of 2026-10-01, release convergence is on
+`codex/hades-recruiter-sanitized-20260930`. Hosted Public CI run
+[`36894656814`](https://github.com/p0rkm4th/hades/actions/runs/36894656814)
+passed on the implementation checkpoint; all 110 reported steps completed,
+with no failures or skips. The Python 3.11 TLS test, confirmation isolation,
+preview-bound provisioning, current-tree safety, and introduced-history audit
+also pass. The authenticated synthetic cross-worker UI rehearsal also passes
+through Hermes workers A/B/A, with no model inference or live infrastructure
+writes. This evidence is not owner acceptance. The checkpoint is the input to
+document reconciliation; promotion still requires a green CI run on the final
+documentation tree.
 
-This checkpoint describes the current local campaign tree; its exact protected
-revision is recorded in the backup manifest. The
-remote `origin/main` is an older reference and is not treated as acceptance
-evidence. Since the prior campaign note, the
-Grocy serving companion has received explicit success, timeout, malformed-
-verification, pre-mutation HTTP, and post-mutation HTTP coverage; post-PUT
-verification failures are classified as `OUTCOME UNKNOWN` so uncertain writes
-are not blindly replayed. A disposable GPG recovery rehearsal also verified
-encryption, checksum validation, decryption, and cleanup. Public CI passed for
-each of these changes, and the production Hermes service remains healthy.
+The release work has made no production changes. The deployment and owner gates
+below are repository evidence with their own observation dates, not fresh live
+acceptance from this campaign. Older checkpoint material below this current
+summary is retained as historical evidence and should not override it.
 
 ## CURRENT OBJECTIVE
 
-Expand HADES into a useful whole-life personal and household AI by composing
-mature upstream capabilities while preserving identity, authority, memory,
-canonical-state, failure, recovery, and reproducibility boundaries. Clean-host
-reconstruction is now a maintenance lane; capability dogfood and composition
-are the active campaign.
+Finish release convergence: reconcile canonical status docs, rerun and inspect
+hosted Public CI on the resulting immutable SHA, promote that lineage to
+`origin/main` by fast-forward if qualification holds, then begin one
+responsibility-at-a-time Hermes overlay decomposition while keeping CI green.
 
 ## CURRENT CONTINUATION CHECKPOINT
 
-- **Branches:** local `main` is the protected local checkpoint; `origin/main`
-  remains an older reference. The protected complete-history bundle is the
-  reproducibility artifact for this local checkpoint. The infrastructure
-  repository's current protected bundle and complete checkpoint lineage are
-  recorded in its backup manifest.
-- **Last completed objective:** synthetic homelab authority coverage,
-  management-plane recovery runbook closure, memory-hygiene hardening, and
-  Proxmox quorum-decision rehearsal. The fixture covers runtime,
-  inventory-only records, IP assignments, fresh/stale availability,
-  contradictions, and write rejection; the recovery manifest records the
-  NetBox, Kuma, and Proxmox procedures exposed by disposable restore; the
-  quorum rehearsal remains mutation-free and rejects incomplete activation
-  evidence.
-- **Active independent priority:** finish the unblocked homelab acceptance
-  substrate and reconcile physical findings. The live read-only Proxmox,
-  NetBox, and Kuma path is exercised; exact DNS case/root-dot normalization
-  now passes source-level review-only matching tests. Physical host recovery,
-  GPU runtime qualification, live identity reconciliation, and the seventh-host
-  search remain open.
-- **Capability queue:** the web/search API and CLI follow-up contract is now
-  classified `OWNER-GATED`; the next independent product work is recipe URL /
-  paste owner acceptance, followed by receipt/OCR synthetic closure. Anonymous
-  browser research and receipt OCR are now accepted at their bounded synthetic
-  scopes; Channels require candidate promotion and voice is explicitly
-  deferred.
-- **Open P0/P1/P2:** the historical production server-status response claimed
-  a personal-memory update without a recorded tool call. Deterministic source
-  containment passes exact and paraphrased synthetic Hermes runtime checks,
-  but any historical backend effect remains unknown; no production prompt was
-  replayed and no memory rows were inspected. Other current reliability and
-  deployment gates are listed in `docs/current-blockers.md`.
-- **Staged capabilities:** recipe URL/paste authoring, receipt OCR, finance
-  import, homelab discovery/control planning, Home Assistant reads, voice,
-  browser research, and broader Agent Zero operator work remain bounded or
-  staged in the capability ledger.
-- **Homelab activation:** current connected-LAN discovery is authorized and
-  remains transient review evidence with zero writes. Proxmox, NetBox, and
-  Uptime Kuma read paths are live through HADES; restored disposable NetBox
-  and Kuma endpoint reads also pass. No endpoint credential has been added to
-  this public repository.
-- **Owner gates:** unchanged gates are consolidated in
-  [`docs/current-blockers.md`](docs/current-blockers.md); no authentication or
-  credential gate is being re-polled here.
-- **Long operations:** none running; temporary Fedora guest artifacts were
-  reclaimed after the environment-limited attempt.
-- **Next independent action:** continue the highest-value safe Owner Away
-  product/reliability lane from the current defect ledger. Physical GPU,
-  storage, and inventory changes remain maintenance/owner-gated. Keep
-  production read-only and preserve the accepted Task Beta state.
+- **Branch / HEAD:** `codex/hades-recruiter-sanitized-20260930` at
+  `7d9df1ef00fbafa50c61f17565bb26b8c4119667`, clean and equal to its remote.
+- **Public base:** `origin/main` is `a654675d5e7d3e9109e442094a169260b6027fa7`;
+  convergence is a direct descendant and remains fast-forward promotable.
+- **Hosted CI:** run `36894656814`, same implementation SHA, success; 110/110
+  steps completed, zero failed, zero skipped. Local workflow equivalent:
+  104/104 run steps pass with GitHub's `RUNNER_TEMP` and push-range inputs.
+  The authenticated synthetic cross-worker UI flow also passes on disposable
+  services using workers A/B/A and no model or Proxmox writes.
+- **Authority:** confirmation tests bind typed pending work to the authenticated
+  subject and server conversation; provisioning confirmation also checks the
+  exact operation, target, resource plan, expiry, and one-time consumption.
+  Cross-chat confirmations fail closed. The previewed Proxmox node must remain
+  approved at confirmation time.
+- **Public safety:** current convergence tree and `origin/main..HEAD` pass the
+  path/address/history guards; Gitleaks finds no current-tree leaks or findings
+  in the two latest commits. `origin/main` still has legacy public-tree/history
+  path/address findings; its already-published history is not rewritten.
+- **Promotion:** not done. Production remains unchanged. Existing owner gates
+  and dated deployment observations remain in `docs/current-blockers.md`.
+- **Promotion gate:** the documentation tree containing this reconciliation
+  must pass all hosted CI steps. Promote only that tested SHA by fast-forward;
+  then begin an incremental `sitecustomize.py` extraction.
 
 ## CURRENT HEAD
 
-The local `main` checkpoint is the protected local revision; the remote
-reference is older. The exact revision is recorded in the protected bundle
-manifest rather than duplicated here.
-Recent work added the reconciled Actual import contract, a pre-launch
-4,096-address limit to the bounded Nmap worker, and the expanded synthetic
-homelab authority fixture. The latest audit disproved the earlier clean-tree
-claim: the private local `main` snapshot and its unpublished range fail the
-private-topology guard. Do not push that branch or rewrite public history. A
-separate clean-base forward-guard branch now checks new commit ranges and
-passes the current-tree, browser-policy, redaction, and range tests. Hosted CI
-passes at `8744787`; PR review remains open. Founding capabilities and current upstream decisions are
-reconciled; Actual remains selected for synthetic HADES integration and
-production finance is gated.
+The implementation checkpoint and its Actions evidence are recorded above.
+For promotion, use the exact documentation-tree SHA whose hosted run completed
+successfully; do not infer qualification from a moving branch name.
 
 ## COMPLETED MILESTONES
 
@@ -263,21 +224,18 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
 
 ## PUBLIC CI STATUS
 
-- The minimal secret-free GitHub Actions tripwire compiles all public Python
-  adapters, checks the Actual JavaScript adapter, runs the memory,
-  capability-boundary, read-only configuration-shape, and public-history
-  checks, validates shell syntax, and validates compose shape.
-- The latest GitHub run for the pushed campaign checkpoint completed
-  successfully. Hosted CI is a tripwire, not a substitute for private
-  owner-UI, canonical-domain, or runtime acceptance.
+Hosted Public CI run `36894656814` completed successfully on the implementation
+checkpoint: all 110 reported steps completed, with zero failures or skips.
+The workflow includes confirmation isolation and audits commits introduced by
+the push or pull request against the corresponding base. A final documentation
+commit requires a new hosted run before release qualification and promotion.
 
-The former claim that public CI verified all reachable history was incorrect:
-checkout used a shallow history. A clean-base candidate now fetches full
-history and audits only commits introduced by the push or pull request, while
-the current-tree guard checks the final snapshot. The clean-base branch
-`codex/public-safety-range-guard-20260927` passes hosted CI at `8744787`; no PR
-has been opened. The local private branch still fails both guards; public
-history has not been rewritten, and the local branch has not been pushed.
+`origin/main` still fails the full-history and current-tree guards on legacy
+private path/address matches. The convergence tree passes current-tree safety,
+and all commits introduced since `origin/main` pass the range audit. These are
+not Gitleaks credential findings. Do not rewrite already-published history;
+keep new commits sanitized and include the inherited condition in promotion
+review.
 
 ## CAPABILITY LEDGER
 
@@ -285,37 +243,18 @@ See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 
 ## NEXT ACTION
 
-The historical checkpoint details below are retained as evidence. The current
-active roadmap and readiness source of truth are
-[`docs/stable-v1-readiness.md`](docs/stable-v1-readiness.md),
-[`docs/CAPABILITY_LEDGER.md`](docs/CAPABILITY_LEDGER.md), and
-[`docs/current-blockers.md`](docs/current-blockers.md).
+1. Reconcile the current readiness and blocker summaries while preserving
+dated historical evidence and owner-gated classifications.
+2. Push the documentation commit to this convergence branch and verify every
+required hosted CI step on that exact SHA.
+3. Freeze that SHA and promote it to `main` only by fast-forward after its
+release, authority, and safety checks pass.
+4. Reduce obsolete branches safely, then extract one low-risk responsibility
+from `hermes/sitecustomize.py` with focused and full regression coverage.
 
-Household Alpha is complete/ready in the current production checkpoint:
-identity mapping, conversation and memory isolation, shared Grocy,
-capability exclusion, per-user settings, revocation, restart, and recovery
-evidence are recorded in the private migration state. Real household
-onboarding remains an owner-input gate only.
-
-Keep production Hermes on its known-good baseline and local Open WebUI
-authentication fallback enabled. A private production migration checkpoint now
-has validated backups/rollback, a recovered dedicated admin, private LLDAP,
-exact owner mapping, and synthetic production identities. Mobile browser-DOM evidence now
-covers rendered login, private-chat sidebar isolation, household model
-visibility, memory retain/recall, shared Grocy read/mutation and cross-user
-read, finance exclusion, revocation, and cross-account settings isolation;
-  additional Grocy purchase/consume variations remain optional hardening. The
-  production Household Alpha is ready; real household onboarding is separately
-  owner-gated.
-
-Continue independent roadmap work while production remains on the known-good
-Hermes 0.14.0 baseline. The next highest-value independent lane is physical
-homelab acceptance and source-aware control-plane closure; the fresh-guest
-reconstruction evidence remains a separate partial lane, not a reason to
-pause infrastructure work.
-Public recipe URL preview, bounded Nmap evidence parsing, authenticated
-Channels membership/restart/authority fixtures, and the reconciled finance
-writer contract are independently evidenced; none changed production state.
+Production migration and owner-only gates are outside this campaign. The
+historical checkpoint details below remain evidence and do not replace the
+current summary above.
 
 Synthetic production dogfood found that Hermes' automatic Hindsight `sync_turn`
 path retained ordinary Grocy/shared-state turns in a user's private semantic

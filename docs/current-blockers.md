@@ -2,6 +2,14 @@
 
 This is a concise, public-safe handoff list. It distinguishes work that needs
 an owner decision or secret from defects that can be repaired independently.
+The operational statements below retain their own evidence dates; this file is
+not a live production probe.
+
+## Release convergence update (2026-10-01)
+
+Hosted Public CI run [36894656814](https://github.com/p0rkm4th/hades/actions/runs/36894656814) passed on implementation checkpoint `7d9df1ef00fbafa50c61f17565bb26b8c4119667` with 110/110 reported steps completed, zero failures, and zero skips. Confirmation isolation, exact provisioning-plan binding, and an authenticated synthetic cross-worker UI flow passed; the latter used workers A/B/A without model inference or live infrastructure writes. Current-tree safety and the introduced-history audit passed. This does not close the owner/runtime gates below or claim production acceptance. Promote only a documentation-tree SHA whose hosted run passes.
+
+The sanitized convergence tree passes the current-tree guard. The public base still has one private-path/address match in its tip tree and 90 in reachable history; current-tree and introduced-commit Gitleaks scans report no credential findings. Do not rewrite already-published history. Main promotion review must retain this inherited privacy finding as a known limitation.
 
 ## Requires owner or operator input
 

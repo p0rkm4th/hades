@@ -1,11 +1,23 @@
 # HADES stable-v1 readiness
 
-This is a readiness record for the current deployment, not an installer or a
-new runtime layer. The current live VM 802 service runs Hermes 0.21.2; the
-0.14.0 artifact is retained as the rollback path. This status was rechecked
-read-only on 2026-09-25; it does not change the V1 capability gates below.
+This is a readiness record for the deployment, not an installer or a new
+runtime layer. The operational observations below were last rechecked
+read-only on 2026-09-25; this release-convergence campaign did not recheck or
+change production. Treat those entries as dated evidence, not a fresh live
+probe.
 
-## Current component contract
+## Engineering release convergence (2026-10-01)
+
+The implementation checkpoint `7d9df1ef00fbafa50c61f17565bb26b8c4119667`
+passed hosted Public CI run [36894656814](https://github.com/p0rkm4th/hades/actions/runs/36894656814): 110/110 reported steps completed, with no failures or skips. The convergence tree and introduced history range pass public-safety checks. Focused and authenticated synthetic cross-worker tests bind confirmation to the subject, server conversation, operation, selected target, and resource plan. This is repository and synthetic verification only; production was not changed. The final documentation-tree SHA must pass its own hosted run before promotion.
+
+The public base has one current-tree private-path/address match and 90 such
+matches in reachable history. Current-tree Gitleaks and the introduced
+convergence commits have no credential findings. No old public history was
+rewritten. The convergence tree is sanitized and audits clean relative to that
+base.
+
+## Observed component contract (last read-only recheck: 2026-09-25)
 
 | Component | Production role | Current state | Canonical authority |
 |---|---|---|---|
@@ -96,7 +108,7 @@ not commit volume.
 | Automation | PARTIAL | The joined disposable Phase 3 path passes on two independent pristine Fedora 44 x86_64 guests with SELinux enforcing: immutable n8n and LLDAP pins, generated Epsilon package under strict transient systemd, Hermes 0.21.2 result route, authenticated Open WebUI Alpha/Beta/Gamma, shared/unshared isolation, live Beta grant revocation, and duplicate signed run replay after service restart. The second guest passed again after a real reboot with Docker automatically active. Synthetic contracts cover expired-lease UNKNOWN suppression, failure redaction, ten concurrent maximum-quota requests with replay, and post-poll schedule rollback. The resolver does not query Open WebUI-only account disable. Production Phase 3 keys, state, group mapping, endpoint, and scoped n8n credential remain unprovisioned; schedules stay inactive |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
 | Installation/rebuild | PARTIAL | Two independent fresh Fedora synthetic deployments/reboots, the fresh Rocky generated-installer seven-component path with authenticated Hermes/WebUI Alpha/Beta restart/isolation and post-reboot Hermes/container recovery, and the synthetic household-soak contract pass; prove owner-visible composition on a reconstructed deployment |
-| Security | PARTIAL | The sanitized `public-release-candidate` at `ccf569c` passes current-tree and reachable-history audits. Fetched public `main` still fails the history audit with 90 private path/address findings; its values and paths are now redacted in audit output and a synthetic regression protects both public safety checkers. Do not promote the private local `main` or rewrite public history; the existing public-main exposure remains unresolved. |
+| Security | PARTIAL | The convergence branch passes current-tree safety, its introduced-history range passes `scripts/public-history-audit.sh`, and Gitleaks reports no findings in the current tree or latest commits. `origin/main` at the current base has one current-tree private path/address match and 90 matches in reachable history; scanner output redacts values and paths. These are not credential findings, and this campaign does not rewrite already-published history. Promote only the sanitized current tree and disclose the inherited history condition. |
 | Performance | PARTIAL | Prior web/recipe capture is below the repeated ~30s threshold and the expanded synthetic daily-driver matrix now records model/tool/continuation attribution; a real model lane is still required for human-facing timing decisions |
 
 ## Source-of-truth adversarial contract
@@ -119,13 +131,6 @@ disabled; see
 
 ## Current next action
 
-Continue capability expansion from the highest-value unblocked lane. The next
-automation step is to prove the packaged live-LLDAP resolver, isolated state,
-signing key, and service-user permissions on a disposable systemd target, then
-connect one approved fixed graph using a scoped signed-route credential. Keep
-all Phase 3 schedules disabled until integrated synthetic and authenticated
-acceptance covers retries, unknown outcomes, restart, revocation, delivery,
-and isolation.
-Current infrastructure, owner-UI, recipe,
-voice, recovery-custody, and remaining homelab gates are tracked in
-[`current-blockers.md`](current-blockers.md).
+Complete the release-convergence sequence in [`../CAMPAIGN_STATE.md`](../CAMPAIGN_STATE.md): reconcile canonical status, rerun hosted CI on the resulting immutable SHA, and promote to `main` only after every required step passes. Capability expansion and Hermes overlay extraction follow that gate. Production migration, real household onboarding, encrypted off-host custody, and the owner/UI gates above remain separate.
+
+Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).
