@@ -8,14 +8,13 @@ probe.
 
 ## Engineering release convergence (2026-10-01)
 
-The implementation checkpoint `7d9df1ef00fbafa50c61f17565bb26b8c4119667`
-passed hosted Public CI run [36894656814](https://github.com/p0rkm4th/hades/actions/runs/36894656814): 110/110 reported steps completed, with no failures or skips. The convergence tree and introduced history range pass public-safety checks. Focused and authenticated synthetic cross-worker tests bind confirmation to the subject, server conversation, operation, selected target, and resource plan. This is repository and synthetic verification only; production was not changed. The final documentation-tree SHA must pass its own hosted run before promotion.
+The qualified release SHA `e7f4fa83e1970257ea522109828b4193827df28e` passed hosted Public CI runs [36896358861](https://github.com/p0rkm4th/hades/actions/runs/36896358861) and [36896801928](https://github.com/p0rkm4th/hades/actions/runs/36896801928), before and after fast-forward promotion. Both runs completed 110/110 reported steps with zero failures or skips. The implementation includes subject- and conversation-bound confirmation, exact provisioning-plan checks, and authenticated synthetic cross-worker acceptance. This is repository and synthetic verification only; production was not changed.
 
-The public base has one current-tree private-path/address match and 90 such
-matches in reachable history. Current-tree Gitleaks and the introduced
-convergence commits have no credential findings. No old public history was
-rewritten. The convergence tree is sanitized and audits clean relative to that
-base.
+Before promotion, the public base had one tip-tree private-path/address match
+and 90 matches in reachable history. The fast-forwarded release tree passes
+the current-tree guard; the 90 legacy history matches remain. Current-tree and
+introduced-release Gitleaks scans have no findings. No old public history was
+rewritten.
 
 ## Observed component contract (last read-only recheck: 2026-09-25)
 
@@ -108,7 +107,7 @@ not commit volume.
 | Automation | PARTIAL | The joined disposable Phase 3 path passes on two independent pristine Fedora 44 x86_64 guests with SELinux enforcing: immutable n8n and LLDAP pins, generated Epsilon package under strict transient systemd, Hermes 0.21.2 result route, authenticated Open WebUI Alpha/Beta/Gamma, shared/unshared isolation, live Beta grant revocation, and duplicate signed run replay after service restart. The second guest passed again after a real reboot with Docker automatically active. Synthetic contracts cover expired-lease UNKNOWN suppression, failure redaction, ten concurrent maximum-quota requests with replay, and post-poll schedule rollback. The resolver does not query Open WebUI-only account disable. Production Phase 3 keys, state, group mapping, endpoint, and scoped n8n credential remain unprovisioned; schedules stay inactive |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
 | Installation/rebuild | PARTIAL | Two independent fresh Fedora synthetic deployments/reboots, the fresh Rocky generated-installer seven-component path with authenticated Hermes/WebUI Alpha/Beta restart/isolation and post-reboot Hermes/container recovery, and the synthetic household-soak contract pass; prove owner-visible composition on a reconstructed deployment |
-| Security | PARTIAL | The convergence branch passes current-tree safety, its introduced-history range passes `scripts/public-history-audit.sh`, and Gitleaks reports no findings in the current tree or latest commits. `origin/main` at the current base has one current-tree private path/address match and 90 matches in reachable history; scanner output redacts values and paths. These are not credential findings, and this campaign does not rewrite already-published history. Promote only the sanitized current tree and disclose the inherited history condition. |
+| Security | PARTIAL | The promoted release tree passes current-tree safety, its introduced-history range passes `scripts/public-history-audit.sh`, and Gitleaks reports no findings in the current tree or introduced release commits. Before promotion, the public base had one tip-tree private path/address match and 90 matches in reachable history. The tip-tree finding was removed; 90 legacy matches remain in published history. No history rewrite was performed. |
 | Performance | PARTIAL | Prior web/recipe capture is below the repeated ~30s threshold and the expanded synthetic daily-driver matrix now records model/tool/continuation attribution; a real model lane is still required for human-facing timing decisions |
 
 ## Source-of-truth adversarial contract
@@ -131,6 +130,6 @@ disabled; see
 
 ## Current next action
 
-Complete the release-convergence sequence in [`../CAMPAIGN_STATE.md`](../CAMPAIGN_STATE.md): reconcile canonical status, rerun hosted CI on the resulting immutable SHA, and promote to `main` only after every required step passes. Capability expansion and Hermes overlay extraction follow that gate. Production migration, real household onboarding, encrypted off-host custody, and the owner/UI gates above remain separate.
+Begin one low-risk, independently testable extraction from `hermes/sitecustomize.py` after the qualified release promotion recorded in [`../CAMPAIGN_STATE.md`](../CAMPAIGN_STATE.md). Keep authority behavior covered by focused contracts and keep Public CI green. Production migration, real household onboarding, encrypted off-host custody, and the owner/UI gates above remain separate.
 
 Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).

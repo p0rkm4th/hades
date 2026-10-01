@@ -7,9 +7,9 @@ not a live production probe.
 
 ## Release convergence update (2026-10-01)
 
-Hosted Public CI run [36894656814](https://github.com/p0rkm4th/hades/actions/runs/36894656814) passed on implementation checkpoint `7d9df1ef00fbafa50c61f17565bb26b8c4119667` with 110/110 reported steps completed, zero failures, and zero skips. Confirmation isolation, exact provisioning-plan binding, and an authenticated synthetic cross-worker UI flow passed; the latter used workers A/B/A without model inference or live infrastructure writes. Current-tree safety and the introduced-history audit passed. This does not close the owner/runtime gates below or claim production acceptance. Promote only a documentation-tree SHA whose hosted run passes.
+Qualified release SHA `e7f4fa83e1970257ea522109828b4193827df28e` was promoted to `main` by fast-forward from `a654675d5e7d3e9109e442094a169260b6027fa7`. Hosted branch run [36896358861](https://github.com/p0rkm4th/hades/actions/runs/36896358861) and main run [36896801928](https://github.com/p0rkm4th/hades/actions/runs/36896801928) each completed 110/110 reported steps with zero failures or skips. The 104 local Public CI `run` steps also passed. Confirmation isolation, exact provisioning-plan binding, and authenticated synthetic cross-worker UI acceptance passed. No production change or owner acceptance is implied.
 
-The sanitized convergence tree passes the current-tree guard. The public base still has one private-path/address match in its tip tree and 90 in reachable history; current-tree and introduced-commit Gitleaks scans report no credential findings. Do not rewrite already-published history. Main promotion review must retain this inherited privacy finding as a known limitation.
+The promoted tree passes the current-tree guard and the introduced release range passes the history audit. The old base had one current-tip private path/address match and 90 in reachable history; the tip match was removed by promotion, while 90 already-published historical matches remain. Current-tree and introduced-release Gitleaks scans are clean. Public history was not rewritten. The next engineering action is a focused, low-risk `sitecustomize.py` extraction; owner/runtime gates below remain separate.
 
 ## Requires owner or operator input
 

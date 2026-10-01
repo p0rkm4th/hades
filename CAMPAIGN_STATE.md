@@ -7,61 +7,58 @@ recorded here.
 
 ## CURRENT CAMPAIGN CHECKPOINT
 
-As of 2026-10-01, release convergence is on
-`codex/hades-recruiter-sanitized-20260930`. Hosted Public CI run
-[`36894656814`](https://github.com/p0rkm4th/hades/actions/runs/36894656814)
-passed on the implementation checkpoint; all 110 reported steps completed,
-with no failures or skips. The Python 3.11 TLS test, confirmation isolation,
-preview-bound provisioning, current-tree safety, and introduced-history audit
-also pass. The authenticated synthetic cross-worker UI rehearsal also passes
-through Hermes workers A/B/A, with no model inference or live infrastructure
-writes. This evidence is not owner acceptance. The checkpoint is the input to
-document reconciliation; promotion still requires a green CI run on the final
-documentation tree.
+The HADES release lineage at `e7f4fa83e1970257ea522109828b4193827df28e`
+passed hosted Public CI and was fast-forwarded to `origin/main` on 2026-10-01.
+Branch run [`36896358861`](https://github.com/p0rkm4th/hades/actions/runs/36896358861)
+and main run [`36896801928`](https://github.com/p0rkm4th/hades/actions/runs/36896801928)
+both completed successfully on that SHA: 110/110 reported steps, zero
+failures, zero skips. The tree is a direct descendant of the former public base
+`a654675d5e7d3e9109e442094a169260b6027fa7`.
 
-The release work has made no production changes. The deployment and owner gates
-below are repository evidence with their own observation dates, not fresh live
-acceptance from this campaign. Older checkpoint material below this current
-summary is retained as historical evidence and should not override it.
+The test-14 TLS fixture, full Public CI, confirmation authority contracts,
+preview-bound provisioning, and authenticated synthetic cross-worker UI
+rehearsal pass. Current-tree safety and the introduced-history audit pass;
+Gitleaks reports no findings in the current tree or new convergence commits.
+The former public base had one private-path/address match in its tip tree and 90
+in reachable history. Promotion removed the tip-tree finding; those legacy
+history matches remain and were not rewritten. This is repository/synthetic
+evidence, not owner acceptance or a production migration.
 
 ## CURRENT OBJECTIVE
 
-Finish release convergence: reconcile canonical status docs, rerun and inspect
-hosted Public CI on the resulting immutable SHA, promote that lineage to
-`origin/main` by fast-forward if qualification holds, then begin one
-responsibility-at-a-time Hermes overlay decomposition while keeping CI green.
+After a qualified fast-forward release, begin incremental decomposition of
+`hermes/sitecustomize.py`, one low-risk responsibility at a time, while keeping
+main releasable and resuming owner-facing development only after the first
+extraction is proven.
 
 ## CURRENT CONTINUATION CHECKPOINT
 
-- **Branch / HEAD:** `codex/hades-recruiter-sanitized-20260930` at
-  `7d9df1ef00fbafa50c61f17565bb26b8c4119667`, clean and equal to its remote.
-- **Public base:** `origin/main` is `a654675d5e7d3e9109e442094a169260b6027fa7`;
-  convergence is a direct descendant and remains fast-forward promotable.
-- **Hosted CI:** run `36894656814`, same implementation SHA, success; 110/110
-  steps completed, zero failed, zero skipped. Local workflow equivalent:
-  104/104 run steps pass with GitHub's `RUNNER_TEMP` and push-range inputs.
-  The authenticated synthetic cross-worker UI flow also passes on disposable
-  services using workers A/B/A and no model or Proxmox writes.
-- **Authority:** confirmation tests bind typed pending work to the authenticated
-  subject and server conversation; provisioning confirmation also checks the
-  exact operation, target, resource plan, expiry, and one-time consumption.
-  Cross-chat confirmations fail closed. The previewed Proxmox node must remain
-  approved at confirmation time.
-- **Public safety:** current convergence tree and `origin/main..HEAD` pass the
-  path/address/history guards; Gitleaks finds no current-tree leaks or findings
-  in the two latest commits. `origin/main` still has legacy public-tree/history
-  path/address findings; its already-published history is not rewritten.
-- **Promotion:** not done. Production remains unchanged. Existing owner gates
-  and dated deployment observations remain in `docs/current-blockers.md`.
-- **Promotion gate:** the documentation tree containing this reconciliation
-  must pass all hosted CI steps. Promote only that tested SHA by fast-forward;
-  then begin an incremental `sitecustomize.py` extraction.
+- **Qualified release SHA:** `e7f4fa83e1970257ea522109828b4193827df28e`.
+- **Promotion:** `origin/main` was fast-forwarded from
+  `a654675d5e7d3e9109e442094a169260b6027fa7` to the qualified release SHA.
+- **Hosted CI:** branch run `36896358861` and main run `36896801928`; each
+  completed 110/110 steps with zero failures or skips. Local equivalent passed
+  104/104 workflow run steps with hosted `RUNNER_TEMP` and push-range inputs.
+- **Authority:** typed pending work is subject- and server-conversation-bound.
+  Provisioning also binds operation, selected node, resources, expiry, and
+  one-time consumption; the selected node must remain approved. Cross-chat
+  confirmations fail closed. Authenticated synthetic UI acceptance traversed
+  workers A/B/A without model inference or live infrastructure writes.
+- **Public safety:** promoted tree passes the current-tree guard; the release
+  range passes path/address/history scanning. Gitleaks reports no findings in
+  the current tree or new convergence commits. Ninety legacy path/address
+  matches remain in already-published history; no history rewrite was done.
+- **Production / owner gates:** no production changes. Owner/runtime gates and
+  dated deployment observations remain in `docs/current-blockers.md`.
+- **Next exact action:** inventory `hermes/sitecustomize.py`, choose one
+  independently testable low-risk responsibility, extract it with focused
+  contracts, then run the relevant suite and full Public CI before promotion.
 
 ## CURRENT HEAD
 
-The implementation checkpoint and its Actions evidence are recorded above.
-For promotion, use the exact documentation-tree SHA whose hosted run completed
-successfully; do not infer qualification from a moving branch name.
+The qualified release SHA and hosted evidence are recorded above. Use the Git
+ref and Actions run for the exact current main tip; do not infer qualification
+from a moving branch name.
 
 ## COMPLETED MILESTONES
 
@@ -224,18 +221,17 @@ The consolidated public-safe handoff is [`docs/current-blockers.md`](docs/curren
 
 ## PUBLIC CI STATUS
 
-Hosted Public CI run `36894656814` completed successfully on the implementation
-checkpoint: all 110 reported steps completed, with zero failures or skips.
-The workflow includes confirmation isolation and audits commits introduced by
-the push or pull request against the corresponding base. A final documentation
-commit requires a new hosted run before release qualification and promotion.
+The qualified release SHA `e7f4fa83e1970257ea522109828b4193827df28e` passed
+both convergence-branch run `36896358861` and post-promotion main run
+`36896801928`. Each run completed all 110 reported steps, with zero failures
+and zero skips. Local workflow execution passed all 104 `run` steps. The
+campaign has moved to the first incremental `sitecustomize.py` extraction.
 
-`origin/main` still fails the full-history and current-tree guards on legacy
-private path/address matches. The convergence tree passes current-tree safety,
-and all commits introduced since `origin/main` pass the range audit. These are
-not Gitleaks credential findings. Do not rewrite already-published history;
-keep new commits sanitized and include the inherited condition in promotion
-review.
+The promoted tip tree is sanitized and passes the current-tree guard. The
+introduced release range passes the path/address/history audit. Ninety legacy
+path/address matches remain reachable from already-published history; the
+campaign does not rewrite public history. These are not current-tree Gitleaks
+credential findings.
 
 ## CAPABILITY LEDGER
 
@@ -243,18 +239,17 @@ See `docs/CAPABILITY_LEDGER.md` for the sanitized verified capability state.
 
 ## NEXT ACTION
 
-1. Reconcile the current readiness and blocker summaries while preserving
-dated historical evidence and owner-gated classifications.
-2. Push the documentation commit to this convergence branch and verify every
-required hosted CI step on that exact SHA.
-3. Freeze that SHA and promote it to `main` only by fast-forward after its
-release, authority, and safety checks pass.
-4. Reduce obsolete branches safely, then extract one low-risk responsibility
-from `hermes/sitecustomize.py` with focused and full regression coverage.
+1. Inventory the responsibilities still implemented in
+   `hermes/sitecustomize.py` and their existing contract tests.
+2. Select one low-risk, independently testable responsibility and move it to
+   its owning HADES module without changing behavior.
+3. Run focused tests, authority regressions where relevant, and full Public CI.
+4. Promote only a tested SHA; leave production and owner-gated integrations
+   unchanged.
 
-Production migration and owner-only gates are outside this campaign. The
-historical checkpoint details below remain evidence and do not replace the
-current summary above.
+The detailed deployment and owner gates below remain historical, date-scoped
+acceptance evidence. They do not replace the current convergence checkpoint
+above.
 
 Synthetic production dogfood found that Hermes' automatic Hindsight `sync_turn`
 path retained ordinary Grocy/shared-state turns in a user's private semantic
