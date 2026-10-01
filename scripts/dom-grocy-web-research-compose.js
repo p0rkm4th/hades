@@ -32,7 +32,7 @@ async function main() {
         await option.waitFor({ state: 'visible', timeout: 10000 });
         await option.click();
       }
-      const prompt = 'Research an online recipe that uses the household pantry. Check what we actually have first, then use public_research for a source.';
+      const prompt = 'Find a quick recipe from a recipe website using milk and rice from our pantry. Prefer one with a stated cooking time under 30 minutes, and tell me if the page actually supports that.';
       await page.locator('#chat-input').fill(prompt);
       await page.locator('#send-message-button:visible').last().click({ force: true });
       const selector = '#response-content-container .markdown-prose';
@@ -44,10 +44,10 @@ async function main() {
         if (answer && !(await page.locator('#message-input-container button[aria-label="Stop"]').count())) break;
         await page.waitForTimeout(250);
       }
-      for (const value of ['milk', 'rice', 'Synthetic Milk and Rice Pudding', '2026-09-27T12:00:00Z', 'static-page']) {
+      for (const value of ['milk', 'rice', 'Quick Milk and Rice Pudding', '20 minutes', '2026-09-27T12:00:00Z', 'static-page']) {
         if (!answer.toLowerCase().includes(value.toLowerCase())) throw new Error(`composed answer omitted ${value}: ${answer}`);
       }
-      const citation = page.locator(`${selector} a[href="https://recipes.synthetic.example/milk-rice-pudding"]`).last();
+      const citation = page.locator(`${selector} a[href="https://recipes.synthetic.example/quick-milk-rice"]`).last();
       if (!(await citation.count())) throw new Error(`composed answer omitted exact source link: ${answer}`);
       if (!/did not change|didn't change|no pantry|no shopping-list change/i.test(answer)) throw new Error(`composed answer omitted its no-mutation statement: ${answer}`);
       const chatId = new URL(page.url()).pathname.split('/').filter(Boolean).pop();

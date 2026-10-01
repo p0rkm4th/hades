@@ -536,6 +536,46 @@ source records.
    returned source evidence, and leave Grocy state unchanged. This cross-domain
    workflow is in scope for the sprint; it is distinct from ordinary OSINT
    suite acceptance and must not broaden public research access or authority.
+   Build the search query from the user's requested meal, diet, time, and
+   serving constraints plus relevant pantry ingredients. Use search result
+   title and excerpt only to shortlist candidates; use a successful page-read
+   record and its excerpt to confirm requested ingredients and constraints
+   before recommending it. Shape the response from returned fields (exact page
+   title, `final_url`, evidence type, retrieval timestamp, and supported recipe
+   facts), explain why the candidate fits, and be explicit when evidence is
+   only a search snippet or does not establish a requested constraint. Compare
+   pantry contents only against canonical Grocy fields and recipe evidence; do
+   not infer unlisted ingredients, amounts, cooking times, servings, or steps.
+   Keep public-research evidence collection separate from recipe ingestion's
+   structured extraction and review workflow.
+
+### Recipe-site response-field shaping — 2026-09-30
+
+The authenticated pantry-aware composition fixture now asks for a quick
+milk-and-rice recipe with a stated time under 30 minutes. Its synthetic search
+response includes two plausible candidates: a title promising a 15-minute rice
+dinner whose page lists broth but no milk, and a milk-and-rice pudding page
+whose read excerpt states 20 minutes. The test selects from the page-read
+response fields, links the exact `title` and `final_url`, reports the returned
+time and `retrieved_at_utc`, compares ingredients with canonical Grocy stock,
+and confirms that pantry/list state was not changed. Search titles alone do
+not satisfy the requested ingredient or time constraints.
+
+The owner UI route initially classified “recipe website” as homelab because
+`website` is also an infrastructure keyword, while the general web detector
+did not count that phrasing as a search request. Current-turn recipe-plus-
+website/search wording now routes to the bounded public-research MCP and
+clears the homelab route only when explicit infrastructure terms are absent.
+The focused authenticated UI test passes the natural-language prompt, confirms
+Grocy-read → public-research → answer order, and verifies a read-only Grocy
+request trace. The test unwraps Hermes' untrusted-tool-result envelope before
+asserting that the selected page fields support the answer.
+
+This is a deterministic authenticated fixture, not real-model answer-quality
+or live recipe validation. `public_research` remains an untrusted evidence
+collector; recipe URL/paste ingestion remains the structured recipe preview
+and review path. Broader OSINT factual-synthesis, source-independence,
+privacy/injection, live-coverage, and owner-acceptance gates remain open.
 
 ## Implementation sequence
 

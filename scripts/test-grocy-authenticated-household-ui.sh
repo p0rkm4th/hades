@@ -76,7 +76,7 @@ step='starting deterministic Hermes auxiliary responder'
 cat >"$work/model.py" <<'PY'
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-import json, sys, threading, time
+import json, re, sys, threading, time
 import os
 port_file, calls_file = map(Path, sys.argv[1:])
 scope_probe = os.environ.get('HADES_GROCY_UI_RECIPE_SCOPE_PROBE') == '1'
@@ -112,7 +112,7 @@ class Handler(BaseHTTPRequestHandler):
         }
         authoring_step=next((step for marker,step in authoring_steps.items() if current_user.strip().startswith(marker)),None) if recipe_authoring else None
         tool_result=bool(payload.get('messages') and payload['messages'][-1].get('role')=='tool')
-        compose_prompt = recipe_web_compose and current_user.strip().startswith('Research an online recipe that uses the household pantry')
+        compose_prompt = recipe_web_compose and current_user.strip().startswith('Find a quick recipe from a recipe website using milk and rice')
         compose_calls = [call.get('function',{}).get('name','') for row in payload.get('messages',[]) for call in row.get('tool_calls',[])]
         compose_tools = [row.get('function',{}).get('name','') for row in payload.get('tools',[]) if isinstance(row,dict)]
         if 'Generate a concise title' in text: kind, reply='title', '{"title":"Household groceries"}'
@@ -144,11 +144,28 @@ class Handler(BaseHTTPRequestHandler):
             if not research_name:
                 raise AssertionError({'public_research_missing_after_stock_read':compose_tools})
             kind, reply='recipe_web_compose_research', ''
-            call={'id':'call-synthetic-compose-research','type':'function','function':{'name':research_name,'arguments':json.dumps({'query':'milk rice pudding recipe','subject_class':'public_topic'})}}
+            call={'id':'call-synthetic-compose-research','type':'function','function':{'name':research_name,'arguments':json.dumps({'query':'quick milk rice recipe under 30 minutes','subject_class':'public_topic','research_scope':'standard'})}}
         elif compose_prompt:
-            if not tool_messages or 'Synthetic Milk and Rice Pudding' not in str(tool_messages[-1].get('content','')):
+            if not tool_messages:
                 raise AssertionError({'public_recipe_evidence_missing':tool_messages})
-            kind, reply='recipe_web_compose_answer', ('Grocy shows milk and rice in the household pantry. I found [Synthetic Milk and Rice Pudding](https://recipes.synthetic.example/milk-rice-pudding), a static-page source retrieved 2026-09-27T12:00:00Z that lists both. This is a recipe suggestion based on the current pantry read; I did not change stock or the shopping list.')
+            evidence_text=str(tool_messages[-1].get('content',''))
+            if '\n\n' in evidence_text:
+                evidence_text=evidence_text.rsplit('\n\n',1)[1]
+            if '</untrusted_tool_result>' in evidence_text:
+                evidence_text=evidence_text.split('</untrusted_tool_result>',1)[0].strip()
+            evidence=json.loads(evidence_text)
+            while isinstance(evidence,dict) and isinstance(evidence.get('result'),str):
+                evidence=json.loads(evidence['result'])
+            if evidence.get('status')!='SUCCEEDED' or len(evidence.get('sources',[]))<2:
+                raise AssertionError({'multiple_api_candidates_missing':evidence})
+            pages=evidence.get('page_reads',[])
+            selected=next((row for row in pages if row.get('evidence_type')=='STATIC_PAGE' and 'milk' in row.get('excerpt','').lower() and 'rice' in row.get('excerpt','').lower() and '20 minutes' in row.get('excerpt','').lower()),None)
+            if not selected or selected.get('final_url')!='https://recipes.synthetic.example/quick-milk-rice':
+                raise AssertionError({'no_page_field_supported_requested_constraints':evidence})
+            cook_time=re.search(r'\b\d+\s+minutes\b',selected['excerpt'],re.IGNORECASE)
+            if not cook_time:
+                raise AssertionError({'page_does_not_state_requested_cook_time':selected})
+            kind, reply='recipe_web_compose_answer', (f"Grocy shows milk and rice in the household pantry. The page lists both and states {cook_time.group(0)}, so it fits your under-30-minute request: [{selected['title']}]({selected['final_url']}). This is a recipe suggestion based on the current pantry read; I did not change stock or the shopping list. Source evidence: static-page evidence retrieved {selected['retrieved_at_utc']}.")
         elif authoring_step and tool_result:
             kind='authoring_'+authoring_step
             tool_result_text=str(payload['messages'][-1].get('content',''))
@@ -331,7 +348,17 @@ async def call_tool(_context, params):
             for row in get('/api/stock') if row.get('amount_aggregated', 0) > 0
         ]}
     elif name == "public-research" and params.name == "public_research":
-        result = {"status": "SUCCEEDED", "sources": [{"title": "Synthetic Milk and Rice Pudding", "url": "https://recipes.synthetic.example/milk-rice-pudding", "evidence_type": "STATIC_PAGE", "retrieved_at_utc": "2026-09-27T12:00:00Z", "excerpt": "Uses milk, rice, sugar, and cinnamon."}], "page_reads": []}
+        result = {
+            "status": "SUCCEEDED", "query": params.arguments.get("query"),
+            "sources": [
+                {"source_id":"src-title-trap","title":"Quick Rice Recipe in 15 Minutes","url":"https://recipes.synthetic.example/quick-rice","evidence_type":"SEARCH_SNIPPET","retrieved_at_utc":"2026-09-27T11:59:00Z","excerpt":"A quick rice dinner made with broth, vegetables, and herbs."},
+                {"source_id":"src-quick-milk-rice","title":"Quick Milk and Rice Pudding","url":"https://recipes.synthetic.example/quick-milk-rice","evidence_type":"SEARCH_SNIPPET","retrieved_at_utc":"2026-09-27T11:58:00Z","excerpt":"A quick pudding with rice and milk; cooking time 20 minutes."},
+            ],
+            "page_reads": [
+                {"source_id":"page-title-trap","discovered_from_source_id":"src-title-trap","evidence_type":"STATIC_PAGE","title":"Quick Rice Recipe in 15 Minutes","url":"https://recipes.synthetic.example/quick-rice","final_url":"https://recipes.synthetic.example/quick-rice","retrieved_at_utc":"2026-09-27T12:01:00Z","excerpt":"Ingredients: rice, broth, carrots, and herbs. Cook for 15 minutes.","truncated":False},
+                {"source_id":"page-quick-milk-rice","discovered_from_source_id":"src-quick-milk-rice","evidence_type":"STATIC_PAGE","title":"Quick Milk and Rice Pudding","url":"https://recipes.synthetic.example/quick-milk-rice","final_url":"https://recipes.synthetic.example/quick-milk-rice","retrieved_at_utc":"2026-09-27T12:00:00Z","excerpt":"Ingredients: 1 cup milk, 1/2 cup rice, sugar, and cinnamon. Simmer for 20 minutes.","truncated":False},
+            ], "limitations": []
+        }
     else:
         result = {"fixture": True, "tool": params.name}
     record_path = os.environ.get("HADES_GROCY_UI_COMPOSITION_CALLS_FILE")
@@ -445,16 +472,21 @@ curl -fsS -X POST "http://127.0.0.1:${webui_port}/api/v1/models/model/access/upd
 
 step='authenticated household pantry/list acceptance'
 report="$work/acceptance.json"
-HADES_GROCY_UI_BASE_URL="http://127.0.0.1:${webui_port}" HADES_GROCY_UI_EMAIL=beta-grocy@example.invalid \
-  HADES_GROCY_UI_GAMMA_EMAIL=gamma-grocy@example.invalid \
-  HADES_GROCY_UI_OWNER_EMAIL=alpha-grocy@example.invalid \
-  HADES_GROCY_UI_INCLUDE_OWNER_SERVING="${HADES_GROCY_UI_INCLUDE_OWNER_SERVING:-0}" \
-  HADES_GROCY_UI_RECIPE_SCOPE_PROBE="${HADES_GROCY_UI_RECIPE_SCOPE_PROBE:-0}" \
-  HADES_GROCY_UI_RECIPE_SCOPE_ONLY="${HADES_GROCY_UI_RECIPE_SCOPE_ONLY:-0}" \
-  HADES_GROCY_UI_RECIPE_AUTHORING="${HADES_GROCY_UI_RECIPE_AUTHORING:-0}" \
-  HADES_GROCY_UI_PASSWORD='Synthetic-Only-123!' HADES_GROCY_UI_MODEL_ID="$model_id" \
-  HADES_GROCY_UI_FAILURE_FILE="$work/grocy-unavailable" HADES_GROCY_UI_REPORT="$report" \
-  node "$repo_dir/scripts/dom-grocy-authenticated-household.js"
+if [[ ${HADES_GROCY_UI_RECIPE_WEB_COMPOSE_ONLY:-0} == 1 ]]; then
+  printf '{"mode":"recipe_web_compose_only"}\n' >"$report"
+  chmod 600 "$report"
+else
+  HADES_GROCY_UI_BASE_URL="http://127.0.0.1:${webui_port}" HADES_GROCY_UI_EMAIL=beta-grocy@example.invalid \
+    HADES_GROCY_UI_GAMMA_EMAIL=gamma-grocy@example.invalid \
+    HADES_GROCY_UI_OWNER_EMAIL=alpha-grocy@example.invalid \
+    HADES_GROCY_UI_INCLUDE_OWNER_SERVING="${HADES_GROCY_UI_INCLUDE_OWNER_SERVING:-0}" \
+    HADES_GROCY_UI_RECIPE_SCOPE_PROBE="${HADES_GROCY_UI_RECIPE_SCOPE_PROBE:-0}" \
+    HADES_GROCY_UI_RECIPE_SCOPE_ONLY="${HADES_GROCY_UI_RECIPE_SCOPE_ONLY:-0}" \
+    HADES_GROCY_UI_RECIPE_AUTHORING="${HADES_GROCY_UI_RECIPE_AUTHORING:-0}" \
+    HADES_GROCY_UI_PASSWORD='Synthetic-Only-123!' HADES_GROCY_UI_MODEL_ID="$model_id" \
+    HADES_GROCY_UI_FAILURE_FILE="$work/grocy-unavailable" HADES_GROCY_UI_REPORT="$report" \
+    node "$repo_dir/scripts/dom-grocy-authenticated-household.js"
+fi
 
 if [[ ${HADES_GROCY_UI_RECIPE_WEB_COMPOSE:-0} == 1 ]]; then
   step='authenticated pantry and public-research composition'
@@ -474,6 +506,12 @@ compound=[row for row in model if row.get('kind','').startswith('recipe_web_comp
 assert [row['kind'] for row in compound]==['recipe_web_compose_stock','recipe_web_compose_research','recipe_web_compose_answer'], compound
 assert [(row['server'],row['tool']) for row in mcp]==[('grocy','stock_overview_tool'),('public-research','public_research')], mcp
 assert 'milk' in json.dumps(compound[1]).lower() and 'rice' in json.dumps(compound[1]).lower(), compound
+research_result=mcp[1]['result']
+assert research_result['query']=='quick milk rice recipe under 30 minutes', research_result
+assert len(research_result['sources'])==2 and len(research_result['page_reads'])==2, research_result
+title_trap=next(row for row in research_result['page_reads'] if row['source_id']=='page-title-trap')
+selected=next(row for row in research_result['page_reads'] if row['source_id']=='page-quick-milk-rice')
+assert 'milk' not in title_trap['excerpt'].lower() and '20 minutes' in selected['excerpt'].lower(), research_result
 assert not any(any(term in name.lower() for term in ('shopping_list_add','recipe_create','recipe_update','add_to_shopping')) for row in compound for name in row.get('available_tools',[])), compound
 assert composition_requests and all(row['method']=='GET' for row in composition_requests), composition_requests
 print('PASS sequential synthetic Grocy stock then public-research calls; compound tool catalog remained read-only')
@@ -507,6 +545,20 @@ scope_probe=sys.argv[7]=='1'
 scope_only=sys.argv[8]=='1'
 owner_only=__import__('os').environ.get('HADES_GROCY_UI_OWNER_SERVING_ONLY')=='1'
 authoring_only=sys.argv[9]=='1'
+compose_only=__import__('os').environ.get('HADES_GROCY_UI_RECIPE_WEB_COMPOSE_ONLY')=='1'
+if compose_only:
+    assert requests and all(row['method']=='GET' for row in requests), requests
+    assert not Path(sys.argv[2]).read_text().strip(), Path(sys.argv[2]).read_text()
+    logs=Path(sys.argv[4]).read_text(errors='replace')
+    assert 'API recipe/web compound turn narrowed to' in logs
+    assert 'API homelab intent narrowed' not in logs
+    assert 'HADES compatibility overlay initialization failed' not in logs
+    calls=[json.loads(row) for row in Path(sys.argv[5]).read_text().splitlines() if row.strip()]
+    kinds=[row.get('kind') for row in calls]
+    assert kinds.count('recipe_web_compose_stock')==1 and kinds.count('recipe_web_compose_research')==1 and kinds.count('recipe_web_compose_answer')==1, kinds
+    assert all(kind in {'title','suggestions','tags','recipe_web_compose_stock','recipe_web_compose_research','recipe_web_compose_answer'} for kind in kinds), kinds
+    print('PASS authenticated recipe website search routing, API-field answer shaping, and read-only pantry access')
+    sys.exit(0)
 assert (not requests if scope_only else bool(requests) and all(row['keyValid'] for row in requests)), requests
 serving_writes=[row for row in requests if row['method']=='PUT' and row['path']=='/api/objects/recipes/21']
 assert len(serving_writes)==(1 if owner_serving else 0), serving_writes
@@ -687,6 +739,8 @@ if [[ ${HADES_GROCY_UI_INCLUDE_OWNER_SERVING:-0} == 1 ]]; then
 else
   if [[ ${HADES_GROCY_UI_RECIPE_SCOPE_ONLY:-0} == 1 ]]; then
     echo 'PASS authenticated Open WebUI owner-versus-household recipe tool catalog boundary'
+  elif [[ ${HADES_GROCY_UI_RECIPE_WEB_COMPOSE_ONLY:-0} == 1 ]]; then
+    echo 'PASS focused authenticated public-recipe composition; broad household workflows were not rerun'
   else
     echo 'PASS authenticated household pantry, expiry-aware meal suggestions, recipe feasibility and shortage adds, refusal, retry idempotency, canonical read-back, and actor audit'
     [[ ${HADES_GROCY_UI_RECIPE_SCOPE_PROBE:-0} != 1 ]] || echo 'PASS authenticated Open WebUI owner-versus-household recipe tool catalog boundary'
