@@ -104,6 +104,12 @@ contain a production deployment, credentials, owner data, machine-specific
 paths, private network addresses, or legacy application state. Copy the
 examples into a private deployment configuration and substitute local values.
 
+Physical homelab inventories, node addresses, access procedures, deployment
+provenance, and operator-only acceptance records are maintained separately in
+the private `hades-infra` repository. This public repository describes the
+reusable HADES application and its sanitized reconstruction contract; it is
+not the operational record for a particular household or machine.
+
 Upstream Open WebUI branding and license requirements remain in force.
 
 Clean reconstruction is documented in [`docs/reconstruction.md`](docs/reconstruction.md).
