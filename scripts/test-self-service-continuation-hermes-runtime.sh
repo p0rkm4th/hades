@@ -109,6 +109,9 @@ assert catalog_calls == ["inspect", "inspect", "inspect"], "preflight and concre
 pending_key = hades._hades_pending_provision_keys(first)[0]
 pending_before_plan = LifecycleStore(os.environ["HADES_EPSILON_STATE_FILE"]).pending_get(pending_key, "synthetic-owner")
 assert pending_before_plan and pending_before_plan["template_id"] == "hades-self-service-provision" and pending_before_plan["previewed"] is True
+assert pending_before_plan["operation"] == "provision_guest"
+assert pending_before_plan["target"] == {"node": "SyntheticNode"}
+assert pending_before_plan["resources"] == {"cores": 4, "memory_mib": 8192, "disk_gib": 40}
 # Pending provisioning state is intentionally durable; no worker-local cache is
 # used by this route, so a fresh Hermes worker can recover the same chat plan.
 assert not hasattr(hades, "_HADES_PENDING_PROVISION")
@@ -166,6 +169,11 @@ for expected in (
 ):
     assert expected in created["final_response"], (expected, created)
 assert len(SyntheticControl.provision_calls) == 1, SyntheticControl.provision_calls
+assert SyntheticControl.provision_calls[0] == (
+    "minecraft", {"node": "SyntheticNode"},
+    {"name": "gamma-minecraft", "owner_confirmed": True,
+     "cores": 4, "memory_mib": 8192, "disk_gib": 40},
+), SyntheticControl.provision_calls
 from integrations.self_service.registry import WorkloadRegistry
 registered = WorkloadRegistry(os.environ["HADES_SELF_SERVICE_REGISTRY_FILE"]).list_for("synthetic-owner")
 assert len(registered) == 1 and registered[0]["vmid"] == 9901, registered
@@ -190,6 +198,40 @@ registry_failed_message = hades._hades_self_service_result_message(
 assert "ownership record" in registry_failed_message and "/private/synthetic/path" not in registry_failed_message
 assert "not Minecraft or its IP" in registry_failed_message
 assert "No firewall rule was changed" in registry_failed_message
+
+# The confirmation is bound to the exact placement from the plan. If that node
+# is removed from the approved list before confirmation, no write is allowed.
+placement_chat = "synthetic-minecraft-placement-chat"
+placement_first = run_agent.AIAgent(
+    gateway_session_key="hades-user-synthetic-owner", session_id=placement_chat,
+    stream_delta_callback=lambda _chunk: None, **common,
+)
+placement_request = placement_first.run_conversation(first_text, conversation_history=[])
+placement_history = [
+    {"role": "user", "content": first_text},
+    {"role": "assistant", "content": placement_request["final_response"]},
+    {"role": "user", "content": "Perfect, continue"},
+]
+placement_continue = run_agent.AIAgent(
+    gateway_session_key="hades-user-synthetic-owner", session_id=placement_chat,
+    stream_delta_callback=lambda _chunk: None, **common,
+)
+placement_plan = placement_continue.run_conversation("Perfect, continue", conversation_history=placement_history)
+assert "approved placement: SyntheticNode" in placement_plan["final_response"]
+catalog_value["approved_nodes"] = ["ReplacementNode"]
+placement_confirm = run_agent.AIAgent(
+    gateway_session_key="hades-user-synthetic-owner", session_id=placement_chat,
+    stream_delta_callback=lambda _chunk: None, **common,
+)
+placement_history += [
+    {"role": "assistant", "content": placement_plan["final_response"]},
+    {"role": "user", "content": "Create it"},
+]
+placement_result = placement_confirm.run_conversation("Create it", conversation_history=placement_history)
+assert "couldn't create the minecraft VM" in placement_result["final_response"], placement_result
+assert "No VM or firewall change was made" in placement_result["final_response"], placement_result
+assert len(SyntheticControl.provision_calls) == 1, SyntheticControl.provision_calls
+catalog_value["approved_nodes"] = ["SyntheticNode"]
 
 # An ambiguous result is surfaced through the same authenticated confirmation
 # route, consumes its confirmation once, and never registers a guessed guest.
@@ -338,6 +380,7 @@ print("PASS actual Hermes first-turn Minecraft request returns the exact no-writ
 print("PASS cross-worker acknowledgement repeats the plan without creating the VM")
 print("PASS owner confirmation reports VM readiness without claiming Minecraft or firewall readiness")
 print("PASS unknown and partial provision outcomes are non-retriable and hide backend details")
+print("PASS provisioning confirmation preserves the previewed placement and resource plan")
 print("PASS missing Minecraft template configuration fails before pending state or infrastructure writes")
 print("PASS missing pending state recovers the exact transcript request into a freshly validated no-write plan")
 print("PASS context-free continuation is an explicit no-write clarification, not a model fallback")

@@ -1312,6 +1312,7 @@ def _hades_pending_provision_preview(agent, user_text, conversation_history=None
         record = {
             "expires_at": time.time() + 600,
             "template_id": "hades-self-service-provision",
+            "operation": "provision_guest",
             "template": template,
             "name": "gamma-minecraft" if template == "minecraft" else (
                 "gamma-website" if template == "website" else "gamma-sandbox"
@@ -1356,7 +1357,14 @@ def _hades_pending_provision_preview(agent, user_text, conversation_history=None
         if not resources:
             return "That server template has no approved resource plan. Nothing was changed."
         cores, memory_mib, disk_gib = resources
-        nodes = ", ".join(approved_nodes)
+        target_node = str(approved_nodes[0])
+        pending["operation"] = "provision_guest"
+        pending["target"] = {"node": target_node}
+        pending["resources"] = {
+            "cores": cores,
+            "memory_mib": memory_mib,
+            "disk_gib": disk_gib,
+        }
         if template == "minecraft":
             service_note = (
                 "Minecraft Java normally uses TCP 25565. This adapter only clones and starts the "
@@ -1382,7 +1390,7 @@ def _hades_pending_provision_preview(agent, user_text, conversation_history=None
             f"Plan only — nothing has been created. Template: `{template}`; "
             f"name: `{pending.get('name', 'gamma-minecraft')}`; resources: "
             f"{cores} CPU cores, {memory_mib // 1024} GiB RAM, {disk_gib} GiB disk; "
-            f"approved placement: {nodes}; sharing: owner only until you request a specific "
+            f"approved placement: {target_node}; sharing: owner only until you request a specific "
             f"household share. {service_note} No firewall rule will be changed. "
             "If you still want the VM created with those limits, "
             "reply `Create it`."
@@ -8294,6 +8302,7 @@ try:
             _pending_record = {
                 "expires_at": time.time() + 600,
                 "template_id": "hades-self-service-provision",
+                "operation": "provision_guest",
                 "template": _pending_template,
                 "name": _pending_name,
                 "origin": str(user_message or ""),
@@ -9036,6 +9045,7 @@ try:
             and _provision_confirmation_state["record"].get("previewed") is True
         )
         if _explicit_provision_confirmation:
+            _provision_write_started = False
             try:
                 _control_module = _hades_load_control_module()
                 _catalog = _control_module.inspect_templates()
@@ -9048,32 +9058,38 @@ try:
                 )
                 if not _pending or _pending.get("previewed") is not True:
                     raise ValueError("the confirmed server plan has expired or was already used")
-                _prior = (_pending.get("origin") or _provision_origin_text).casefold()
-                if _pending.get("template"):
-                    _template = _pending["template"]
-                    _name = _pending.get("name", "gamma-sandbox")
-                    _spec = {
-                        "cores": 4 if _template == "minecraft" else (1 if _template == "website" else 2),
-                        "memory_mib": 8192 if _template == "minecraft" else (1024 if _template == "website" else 4096),
-                        "disk_gib": 40 if _template == "minecraft" else (10 if _template == "website" else 30),
-                    }
-                elif "minecraft" in _prior:
-                    _template, _name = "minecraft", "gamma-minecraft"
-                    _spec = {"cores": 4, "memory_mib": 8192, "disk_gib": 40}
-                elif "website" in _prior or "site" in _prior:
-                    _template, _name = "website", "gamma-website"
-                    _spec = {"cores": 1, "memory_mib": 1024, "disk_gib": 10}
-                else:
-                    _template, _name = "linux-sandbox", "gamma-sandbox"
-                    _spec = {"cores": 2, "memory_mib": 4096, "disk_gib": 30}
-                if _template not in _catalog.get("templates", ()):
-                    raise ValueError("requested template is not in the approved live catalog")
-                _nodes = _catalog.get("approved_nodes", ())
-                if not _nodes:
-                    raise ValueError("no approved self-service node is available")
+                _template = str(_pending.get("template", ""))
+                _name = str(_pending.get("name", ""))
+                _target = _pending.get("target")
+                _spec = _pending.get("resources")
+                _expected_plans = {
+                    "minecraft": ("gamma-minecraft", {"cores": 4, "memory_mib": 8192, "disk_gib": 40}),
+                    "website": ("gamma-website", {"cores": 1, "memory_mib": 1024, "disk_gib": 10}),
+                    "linux-sandbox": ("gamma-sandbox", {"cores": 2, "memory_mib": 4096, "disk_gib": 30}),
+                }
+                _expected_plan = _expected_plans.get(_template)
+                if (
+                    _pending.get("operation") != "provision_guest"
+                    or not _expected_plan
+                    or _name != _expected_plan[0]
+                    or _spec != _expected_plan[1]
+                    or not isinstance(_target, dict)
+                    or set(_target) != {"node"}
+                    or not isinstance(_target.get("node"), str)
+                ):
+                    raise ValueError("the confirmed server plan is incomplete or changed")
+                _nodes = _catalog.get("approved_nodes", ()) if isinstance(_catalog, dict) else ()
+                if (
+                    not isinstance(_catalog, dict)
+                    or _catalog.get("status") != "READY"
+                    or _template not in _catalog.get("templates", ())
+                    or _target["node"] not in _nodes
+                ):
+                    raise ValueError("the previewed template or placement is no longer approved")
+                _provision_write_started = True
                 _result = _control_module.provision_guest(
                     _template,
-                    {"node": _nodes[0]},
+                    _target,
                     name=_name,
                     owner_confirmed=True,
                     **_spec,
@@ -9109,7 +9125,10 @@ try:
                 _confirmation_response = _hades_self_service_result_message(
                     locals().get("_template", "server"),
                     locals().get("_name", "workload"),
-                    {"status": "OUTCOME_UNKNOWN", "writes_performed": True},
+                    {
+                        "status": "OUTCOME_UNKNOWN" if _provision_write_started else "FAILED",
+                        "writes_performed": _provision_write_started,
+                    },
                 )
             callback = getattr(self, "stream_delta_callback", None)
             if callback:
