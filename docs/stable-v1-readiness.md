@@ -130,6 +130,6 @@ disabled; see
 
 ## Current next action
 
-Begin one low-risk, independently testable extraction from `hermes/sitecustomize.py` after the qualified release promotion recorded in [`../CAMPAIGN_STATE.md`](../CAMPAIGN_STATE.md). Keep authority behavior covered by focused contracts and keep Public CI green. Production migration, real household onboarding, encrypted off-host custody, and the owner/UI gates above remain separate.
+The first low-risk extraction from `hermes/sitecustomize.py` is complete on `main`: read-only workflow-presence reconciliation now belongs to `integrations.automation.workflow_presence`. Its focused regression and both hosted Public CI runs passed; see [`../CAMPAIGN_STATE.md`](../CAMPAIGN_STATE.md). Keep future extraction incremental and contract-tested. Production migration, real household onboarding, encrypted off-host custody, and the owner/UI gates above remain separate.
 
 Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).

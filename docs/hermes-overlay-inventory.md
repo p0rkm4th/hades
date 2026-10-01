@@ -29,6 +29,19 @@ a healthy HADES deployment; production promotion and owner traffic require the
 overlay to initialize cleanly. The recovered production overlay predates this
 child-interpreter exception and logs initialization failures as errors.
 
+## Extraction record — 2026-10-01
+
+The read-only workflow-presence probe used only during uncertain Backup Check
+deletion recovery has moved from `hermes/sitecustomize.py` to
+`integrations.automation.workflow_presence`. It returns `True` or `False` only
+when the runner listing is available and returns `None` when listing fails, so
+an outage cannot be mistaken for proof of deletion. The overlay retains the
+recovery policy call; the domain contract owns the runner query. Regression
+coverage is in `scripts/test-automation-workflow-presence.sh`, included in
+Public CI. Hosted branch and main runs `36900909782` and `36901194602` passed
+all 105 workflow commands. The overlay is still large and requires further
+one-responsibility-at-a-time review.
+
 ## Review rule
 
 No behavior is removed solely because an upstream test suite passes. Its

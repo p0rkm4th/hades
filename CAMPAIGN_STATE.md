@@ -7,52 +7,51 @@ recorded here.
 
 ## CURRENT CAMPAIGN CHECKPOINT
 
-The HADES release lineage at `e7f4fa83e1970257ea522109828b4193827df28e`
-passed hosted Public CI and was fast-forwarded to `origin/main` on 2026-10-01.
-Branch run [`36896358861`](https://github.com/p0rkm4th/hades/actions/runs/36896358861)
-and main run [`36896801928`](https://github.com/p0rkm4th/hades/actions/runs/36896801928)
-both completed successfully on that SHA: 110/110 reported steps, zero
-failures, zero skips. The tree is a direct descendant of the former public base
-`a654675d5e7d3e9109e442094a169260b6027fa7`.
+The first low-risk Hermes overlay extraction is commit
+`e90b101a996ad52884d85ed7ae36cc65904f631b`, now included on `main` and the
+convergence branch. It fast-forwarded from the qualified release
+`55c04702b33246593c0e852ae00fb9947c46478b`. Hosted Public CI branch
+run [`36900909782`](https://github.com/p0rkm4th/hades/actions/runs/36900909782)
+and main run [`36901194602`](https://github.com/p0rkm4th/hades/actions/runs/36901194602)
+both passed: 105/105 workflow commands, 111/111 reported steps, zero failures
+and zero skips. The local workflow-equivalent run also passed all 105 commands.
 
-The test-14 TLS fixture, full Public CI, confirmation authority contracts,
-preview-bound provisioning, and authenticated synthetic cross-worker UI
-rehearsal pass. Current-tree safety and the introduced-history audit pass;
-Gitleaks reports no findings in the current tree or new convergence commits.
-The former public base had one private-path/address match in its tip tree and 90
-in reachable history. Promotion removed the tip-tree finding; those legacy
-history matches remain and were not rewritten. This is repository/synthetic
-evidence, not owner acceptance or a production migration.
+The extraction moved read-only workflow-presence reconciliation from
+`hermes/sitecustomize.py` to `integrations.automation.workflow_presence`.
+Focused reconciliation, backup recovery, and confirmation-isolation contracts
+pass. Current-tree and introduced-range safety checks pass, and Gitleaks found
+no leaks in the tree or the new commit. Ninety legacy path/address matches in
+earlier already-published history remain unchanged; no history rewrite
+occurred. All results above are repository or synthetic evidence, not owner
+acceptance or a production migration.
 
 ## CURRENT OBJECTIVE
 
-After a qualified fast-forward release, begin incremental decomposition of
-`hermes/sitecustomize.py`, one low-risk responsibility at a time, while keeping
-main releasable and resuming owner-facing development only after the first
-extraction is proven.
+The first low-risk `hermes/sitecustomize.py` extraction is proven on main.
+Keep future decomposition incremental and contract-tested; resume owner-facing
+development using the current priority list without broad overlay rewrites.
 
 ## CURRENT CONTINUATION CHECKPOINT
 
-- **Qualified release SHA:** `e7f4fa83e1970257ea522109828b4193827df28e`.
-- **Promotion:** `origin/main` was fast-forwarded from
-  `a654675d5e7d3e9109e442094a169260b6027fa7` to the qualified release SHA.
-- **Hosted CI:** branch run `36896358861` and main run `36896801928`; each
-  completed 110/110 steps with zero failures or skips. Local equivalent passed
-  104/104 workflow run steps with hosted `RUNNER_TEMP` and push-range inputs.
+- **First extraction commit:** `e90b101a996ad52884d85ed7ae36cc65904f631b`,
+  included on `origin/main` and the convergence branch.
+- **Promotion:** fast-forward from qualified release `55c04702b33246593c0e852ae00fb9947c46478b`.
+- **Hosted CI:** branch run `36900909782` and main run `36901194602`; each
+  completed 111/111 reported steps, including all 105 required workflow
+  commands, with zero failures or skips. Local equivalent passed 105/105.
 - **Authority:** typed pending work is subject- and server-conversation-bound.
   Provisioning also binds operation, selected node, resources, expiry, and
   one-time consumption; the selected node must remain approved. Cross-chat
   confirmations fail closed. Authenticated synthetic UI acceptance traversed
   workers A/B/A without model inference or live infrastructure writes.
-- **Public safety:** promoted tree passes the current-tree guard; the release
-  range passes path/address/history scanning. Gitleaks reports no findings in
-  the current tree or new convergence commits. Ninety legacy path/address
+- **Public safety:** current-tree and introduced-range path/address/history
+  checks pass. Gitleaks reports no findings in the tree or new commit. Legacy
   matches remain in already-published history; no history rewrite was done.
 - **Production / owner gates:** no production changes. Owner/runtime gates and
   dated deployment observations remain in `docs/current-blockers.md`.
-- **Next exact action:** inventory `hermes/sitecustomize.py`, choose one
-  independently testable low-risk responsibility, extract it with focused
-  contracts, then run the relevant suite and full Public CI before promotion.
+- **Next exact action:** resume the owner-facing priority list. Keep any further
+  `sitecustomize.py` extraction to one responsibility at a time, with focused
+  contracts and full Public CI before promotion.
 
 ## CURRENT HEAD
 
