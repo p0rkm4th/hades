@@ -197,6 +197,21 @@ class N8NControlGateway(N8NGateway, Protocol):
     def delete_workflow(self, workflow_id: str) -> Mapping[str, Any]: ...
 
 
+def workflow_presence(gateway: N8NGateway | None, workflow_id: str | None) -> bool | None:
+    """Return whether n8n lists a workflow, or ``None`` when reconciliation fails.
+
+    This read-only probe is used after an uncertain control request. A missing
+    runner or ID is a definite absence; a failed list call is unknown and must
+    not be treated as proof that a workflow was deleted.
+    """
+    if not gateway or not workflow_id:
+        return False
+    try:
+        return any(str(row.get("id", "")) == str(workflow_id) for row in gateway.list_workflows())
+    except Exception:
+        return None
+
+
 def _latest_execution(gateway: N8NGateway, workflow_id: str) -> Mapping[str, Any] | None:
     executions = list(gateway.list_executions(workflow_id, limit=1))
     return executions[0] if executions else None

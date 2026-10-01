@@ -111,6 +111,8 @@ jobs:
         run: bash scripts/test-phase3-result-client.sh
       - name: Check Phase 2 backup freshness routing
         run: bash scripts/test-phase2-backup-freshness.sh
+      - name: Check automation workflow presence reconciliation
+        run: bash scripts/test-automation-workflow-presence.sh
       - name: Check Phase 3 result key inputs
         run: bash scripts/test-phase3-result-key-inputs.sh
       - name: Check Phase 3 runner key input

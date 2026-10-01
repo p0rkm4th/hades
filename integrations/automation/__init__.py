@@ -11,6 +11,7 @@ from .contracts import (
     InMemoryN8NGateway,
     N8NControlGateway,
     TemplateCatalog,
+    workflow_presence,
 )
 from .n8n_http import N8NControlHttpGateway, N8NHttpError, N8NHttpGateway
 from .health_watch import (
@@ -52,6 +53,7 @@ __all__ = [
     "HealthWatchStore",
     "build_n8n_workflow",
     "TemplateCatalog",
+    "workflow_presence",
     "BACKUP_STATES", "BACKUP_TARGETS", "BackupObservation", "BackupTarget", "BackupVerificationService", "BackupVerificationSpec", "build_backup_n8n_workflow", "verify_all", "verify_target", "notification_transition",
     "GrocyReadUnavailable", "InventoryObservation", "InventorySummaryService", "build_inventory_n8n_workflow", "read_current_grocy_stock", "render_summary", "summarize_grocy", "SummaryHistory", "build_weekly_n8n_workflow", "compose_summary",
     "LifecycleError", "LifecycleStore", "PHASE2_TEMPLATES", "StagingAdapter", "TypedLifecycle", "TypedTemplate", "UnknownMutation",

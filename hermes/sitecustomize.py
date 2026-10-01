@@ -145,15 +145,6 @@ def _hades_pending_record_is_current(store, pending, actor):
     return actor in (payload.get("shared_subjects") or [])
 
 
-def _hades_runner_has_workflow(runner, workflow_id):
-    if not runner or not workflow_id:
-        return False
-    try:
-        return any(str(row.get("id", "")) == str(workflow_id) for row in runner.list_workflows())
-    except Exception:
-        return None
-
-
 def _hades_record_backup_execution(automation_id, owner, execution):
     from integrations.automation import BackupVerificationService, BackupVerificationSpec
     service = BackupVerificationService(
@@ -473,7 +464,8 @@ def _hades_phase2_backup_response(user_text, subject, scope, phase2_session_key=
             save_pending({"completed_response": response})
             return response
         except Exception:
-            exists = _hades_runner_has_workflow(runner, workflow_id)
+            from integrations.automation import workflow_presence
+            exists = workflow_presence(runner, workflow_id)
             if action == "delete" and exists is False:
                 result = {**record["result"], "status": "DELETED", "enabled": False, "production_schedule": False}
                 store.put(record["operation_key"], subject, record["template_id"], record["payload"], "DELETED", result)
