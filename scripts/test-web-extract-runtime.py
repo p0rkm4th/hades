@@ -3,6 +3,7 @@
 
 import gzip
 import importlib.util
+import ssl
 import sys
 import types
 import zlib
@@ -172,19 +173,25 @@ try:
             raise AssertionError(f"redirect to alternate loopback spelling was accepted: {alternate_loopback}")
     assert len(connect_calls) == validated_connection_count
 
-    class FakeTLSContext:
-        def wrap_socket(self, sock, *, server_hostname):
-            assert server_hostname == "secure.example"
-            return (sock, server_hostname)
-
+    tls_context = ssl.create_default_context()
+    assert tls_context.verify_mode == ssl.CERT_REQUIRED
+    assert tls_context.check_hostname is True
+    wrapped = []
+    def controlled_wrap_socket(sock, *, server_hostname):
+        assert server_hostname == "secure.example"
+        wrapped.append((sock, server_hostname))
+        return (sock, server_hostname)
+    tls_context.wrap_socket = controlled_wrap_socket
     tls_socket = object()
     reader.socket.getaddrinfo = lambda *_args, **_kwargs: [public_info]
     reader.socket.create_connection = lambda *args, **_kwargs: tls_socket
     secure = reader._PinnedHTTPSConnection(
-        "secure.example", timeout=1, context=FakeTLSContext(),
+        "secure.example", timeout=1, context=tls_context,
     )
     secure.connect()
     assert secure.sock == (tls_socket, "secure.example")
+    assert wrapped == [(tls_socket, "secure.example")]
+    assert secure._context is tls_context
 
     https_handler = reader._PinnedHTTPSHandler()
     https_handler.do_open = lambda connection, request, **kwargs: (connection, request, kwargs)
