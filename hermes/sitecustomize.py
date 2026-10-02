@@ -4936,7 +4936,7 @@ def _hades_positive_homelab_control_request(user_text):
     return False
 
 
-def _hades_direct_homelab_tool_result(tool_name):
+def _hades_direct_homelab_tool_result(tool_name, arguments=None):
     """Read through Hermes' registered MCP handler and preserve its config env.
 
     The homelab MCP environment belongs to its child process. Calling the
@@ -4955,6 +4955,10 @@ def _hades_direct_homelab_tool_result(tool_name):
         "homelab_backup_status": (
             "mcp__homelab_readonly__homelab_backup_status",
             "mcp_homelab_readonly_homelab_backup_status",
+        ),
+        "homelab_recent_activity": (
+            "mcp__homelab_readonly__homelab_recent_activity",
+            "mcp_homelab_readonly_homelab_recent_activity",
         ),
         "homelab_compute_capabilities": (
             "mcp__homelab_readonly__homelab_compute_capabilities",
@@ -5001,7 +5005,8 @@ def _hades_direct_homelab_tool_result(tool_name):
                 "errors": ["The configured read-only homelab tool is unavailable."],
             }
         else:
-            result = registry.dispatch(registered_name, {})
+            tool_arguments = arguments if isinstance(arguments, dict) else {}
+            result = registry.dispatch(registered_name, tool_arguments)
         # Hermes MCP handlers wrap adapter JSON in a JSON result envelope.
         for _ in range(2):
             if isinstance(result, str):
@@ -5183,10 +5188,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         )
     provenance_intent = _hades_homelab_provenance_followup(text, context_text)
     change_intent = bool(re.search(
-        r"^\s*what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time)\s*[?.!]*\s*$",
+        r"^\s*what\s+(?:has\s+)?changed(?:\s+since\s+(?:yesterday|last\s+week|last\s+time|last\s+check))?\s*[?.!]*\s*$",
         text,
         re.IGNORECASE,
     ))
+    if change_intent and scope != "owner":
+        return "I can't verify private infrastructure changes from this account."
     household_broad_status_intent = _hades_broad_homelab_status_intent(text)
     network_diagnostic_intent = bool(
         re.search(r"\b(?:network|internet|wi-?fi|dns)\b", text, re.IGNORECASE)
@@ -6081,10 +6088,46 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             if isinstance(unlinked_count, int) and not isinstance(unlinked_count, bool) and unlinked_count > 0:
                 response += f" {unlinked_count} observations have no verified cross-source identity link and remain separate."
         if change_intent:
-            response += (
-                " I can report the current state, but no historical homelab snapshot or change-event source is configured, "
-                "so I can't verify what changed since then."
+            history_window_hours = 168 if re.search(r"\blast\s+week\b", text, re.IGNORECASE) else 24
+            activity = _hades_direct_homelab_tool_result(
+                "homelab_recent_activity", {"window_hours": history_window_hours}
             )
+            activity_status = str(activity.get("status") or "UNKNOWN").upper() if isinstance(activity, dict) else "UNKNOWN"
+            if activity_status == "NOT_CONFIGURED":
+                response += " Proxmox task history isn't configured, so I can't verify recent hypervisor activity."
+            elif activity_status in {"SOURCE_UNAVAILABLE", "CONFIGURATION_ERROR", "UNKNOWN"}:
+                response += " I couldn't read recent Proxmox task history, so changes remain unverified."
+            else:
+                endpoints = activity.get("endpoints", []) if isinstance(activity, dict) else []
+                retrieved_at = str(activity.get("retrieved_at") or "") if isinstance(activity, dict) else ""
+                response += " I don't have a saved prior homelab snapshot for a before/after comparison."
+                if retrieved_at:
+                    response += f" Proxmox task history was read at {retrieved_at}."
+                events = [
+                    event for endpoint in endpoints if isinstance(endpoint, dict)
+                    for event in endpoint.get("events", []) if isinstance(event, dict)
+                ]
+                events.sort(key=lambda item: item.get("starttime", 0), reverse=True)
+                if events:
+                    summaries = []
+                    for event in events[:6]:
+                        node = str(event.get("node") or "Proxmox node")[:64]
+                        guest = str(event.get("guest_id") or "audited guest")[:20]
+                        task_type = str(event.get("task_type") or "unknown task")[:32]
+                        state = str(event.get("status") or "UNKNOWN").casefold()
+                        try:
+                            stamp = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(event["starttime"]))
+                        except (KeyError, TypeError, ValueError, OverflowError, OSError):
+                            stamp = "time unknown"
+                        summaries.append(f"{task_type} for guest {guest} on {node} ({state}, {stamp})")
+                    response += f" Archived Proxmox guest-task activity for the last {history_window_hours} hours: " + "; ".join(summaries) + "."
+                    if len(events) > 6:
+                        response += f" {len(events) - 6} additional in-scope tasks were omitted."
+                else:
+                    response += f" Proxmox returned no archived guest tasks in the audited scope for the last {history_window_hours} hours."
+                if activity_status != "READABLE":
+                    response += " Some task sources or guest scopes are partial or unavailable."
+                response += " This is bounded task activity, not a complete change log, and completed tasks don't prove the resulting guest configuration or application health."
         return response
     except Exception as exc:
         _hades_logger.warning("Direct homelab read failed (%s)", type(exc).__name__)
@@ -7948,6 +7991,7 @@ try:
                         "mcp_homelab_readonly_homelab_summary",
                         "mcp_homelab_readonly_homelab_owner_snapshot",
                         "mcp_homelab_readonly_homelab_backup_status",
+                        "mcp_homelab_readonly_homelab_recent_activity",
                         "mcp_homelab_readonly_homelab_compute_capabilities",
                         "mcp_homelab_readonly_homelab_inference_inventory",
                         "mcp_homelab_readonly_homelab_discovery_scan",
@@ -8083,6 +8127,11 @@ try:
                 "description": "For owner-only backup questions, read Proxmox vzdump job configuration and bounded archived task history. Reports partial and unavailable sources. This does not verify backup contents, application data, off-site custody, storage health, or restoreability; read-only.",
                 "parameters": {"type": "object", "properties": {}},
                 "call": lambda _args: module.homelab_backup_status(),
+            },
+            "mcp_homelab_readonly_homelab_recent_activity": {
+                "description": "For owner-only questions about recent changes, read up to 7 days of bounded Proxmox guest task history, filtered to guests covered by the token's effective VM.Audit scope. This is not a complete change log or proof of resulting configuration; read-only.",
+                "parameters": {"type": "object", "properties": {"window_hours": {"type": "integer", "minimum": 1, "maximum": 168}}},
+                "call": lambda args: module.homelab_recent_activity((args or {}).get("window_hours", 24)),
             },
             "mcp_homelab_readonly_homelab_compute_capabilities": {
                 "description": "Read confirmed observed CPU, RAM, and GPU hardware inventory. This tool does not provide liveness: never label a machine online from it; use Proxmox runtime for that. It does not claim CUDA, VRAM, or control authority.",

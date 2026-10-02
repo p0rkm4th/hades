@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import tempfile
+import time
 import types
 from datetime import datetime, timezone
 from pathlib import Path
@@ -47,6 +48,7 @@ functions = [
     if isinstance(node, ast.FunctionDef) and node.name in wanted
 ]
 assert {node.name for node in functions} == wanted
+debug_logs = []
 namespace = {
     'json': __import__('json'),
     're': re,
@@ -57,17 +59,21 @@ namespace = {
     '_HADES_EXPLICIT_PUBLIC_RESEARCH_INTENT': re.compile(r'(?!)'),
     'importlib': importlib,
     'sys': sys,
-    '_hades_logger': type('Log', (), {'warning': staticmethod(lambda *_args, **_kwargs: None)})(),
+    'time': time,
+    '_hades_logger': type('Log', (), {'warning': staticmethod(lambda *args, **_kwargs: debug_logs.append(args))})(),
     '_hades_phase2_backup_response': lambda *_args, **_kwargs: 'Configured HADES backup checks: current.',
 }
 
 
 class FakeHomelabRegistry:
+    def __init__(self):
+        self.calls = []
+
     def get_entry(self, name):
         return object() if name.startswith('mcp__homelab_readonly__') else None
 
     def dispatch(self, name, arguments):
-        assert arguments == {}
+        self.calls.append((name, arguments))
         adapter = (
             Path(os.environ['HADES_HERMES_WORKING_DIRECTORY'])
             / 'integrations' / 'homelab-readonly' / 'server.py'
@@ -76,6 +82,28 @@ class FakeHomelabRegistry:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         tool = name.rsplit('__', 1)[-1]
+        if tool == 'homelab_summary' and os.environ.get('HADES_TEST_PROXMOX_ACTIVITY') == '1':
+            summary = {
+                'status': 'PARTIAL', 'resources': [], 'sources': [],
+                'source_counts': {}, 'availability_summary': [], 'conflicts': [],
+                'online_names': [], 'inventory_names': [], 'errors': [],
+            }
+            return __import__('json').dumps({'result': __import__('json').dumps(summary)})
+        if tool == 'homelab_recent_activity' and os.environ.get('HADES_TEST_PROXMOX_ACTIVITY') == '1':
+            report = {
+                'status': 'READABLE',
+                'retrieved_at': '2026-10-02T12:00:00+00:00',
+                'window_hours': arguments.get('window_hours', 24),
+                'endpoints': [{
+                    'status': 'HEALTHY', 'scope': 'SELECTED_GUESTS',
+                    'events': [{
+                        'guest_id': '12802', 'node': 'synthetic-pve',
+                        'task_type': 'qmstart', 'status': 'OK', 'starttime': 1790942400,
+                    }],
+                }],
+            }
+            return __import__('json').dumps({'result': __import__('json').dumps(report)})
+        assert arguments == {}
         call = getattr(module, tool, None)
         if not callable(call):
             return __import__('json').dumps({'error': 'synthetic tool is unavailable'})
@@ -585,12 +613,31 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'do not prove generation or available GPU capacity' in my_homelab_ok, my_homelab_ok
         for prompt in (
             'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
-            'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
+            'Which computer is having trouble?', "Why's shit slow?", 'What changed?',
+            'What changed since yesterday?', 'What changed since last week?',
         ):
             answer_text = direct_read(prompt, 'synthetic-owner', 'owner')
             assert answer_text, f'direct owner homelab status route missed {prompt!r}'
-            if prompt == 'What changed since yesterday?':
-                assert 'no historical homelab snapshot or change-event source is configured' in answer_text
+            if prompt.startswith('What changed'):
+                assert 'Proxmox task history' in answer_text, answer_text
+        os.environ['HADES_TEST_PROXMOX_ACTIVITY'] = '1'
+        try:
+            recent_activity_answer = direct_read(
+                'What changed since last week?', 'synthetic-owner', 'owner'
+            )
+        finally:
+            os.environ.pop('HADES_TEST_PROXMOX_ACTIVITY', None)
+        assert 'qmstart for guest 12802 on synthetic-pve (ok' in recent_activity_answer, (recent_activity_answer, registry_module.registry.calls[-5:], debug_logs[-3:])
+        assert 'last 168 hours' in recent_activity_answer, recent_activity_answer
+        assert 'saved prior homelab snapshot' in recent_activity_answer, recent_activity_answer
+        assert 'not a complete change log' in recent_activity_answer, recent_activity_answer
+        calls_before_household_change = len(registry_module.registry.calls)
+        household_changes = direct_read(
+            'What changed since yesterday?', 'synthetic-household', 'household'
+        )
+        assert len(registry_module.registry.calls) == calls_before_household_change
+        assert household_changes == "I can't verify private infrastructure changes from this account."
+        assert 'Proxmox' not in household_changes and 'guest' not in household_changes
         household_overall = direct_read('What is down?', 'synthetic-household', 'household')
         assert "can't verify private infrastructure or computer status" in household_overall, household_overall
         assert 'Proxmox' not in household_overall and 'NetBox' not in household_overall, household_overall

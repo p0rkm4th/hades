@@ -53,7 +53,7 @@ class FakeRegistry:
         return self.response
 
 
-def invoke(response, *, tool_name="homelab_summary", registered=True, discovery_register=False):
+def invoke(response, *, tool_name="homelab_summary", arguments=None, registered=True, discovery_register=False):
     fake = FakeRegistry(response, tool_name=tool_name, registered=registered)
     discovery_calls = []
     tools = types.ModuleType("tools")
@@ -79,7 +79,7 @@ def invoke(response, *, tool_name="homelab_summary", registered=True, discovery_
     namespace = {"json": json, "_hades_logger": logging.getLogger("test.homelab")}
     try:
         exec(compile(ast.Module(body=[helper], type_ignores=[]), "sitecustomize.py", "exec"), namespace)
-        result = namespace[helper.name](tool_name)
+        result = namespace[helper.name](tool_name, arguments)
     finally:
         for name, value in previous.items():
             if value is None:
@@ -100,6 +100,18 @@ assert registry.calls == [("mcp__homelab_readonly__homelab_owner_snapshot", {})]
 result, registry, discovery_calls = invoke(json.dumps({"result": json.dumps(payload)}))
 assert result == payload, result
 assert registry.calls == [("mcp__homelab_readonly__homelab_summary", {})]
+assert discovery_calls == []
+
+activity_payload = {"status": "READABLE", "endpoints": [{"events": []}]}
+activity, registry, discovery_calls = invoke(
+    json.dumps({"result": json.dumps(activity_payload)}),
+    tool_name="homelab_recent_activity",
+    arguments={"window_hours": 168},
+)
+assert activity == activity_payload
+assert registry.calls == [(
+    "mcp__homelab_readonly__homelab_recent_activity", {"window_hours": 168}
+)]
 assert discovery_calls == []
 
 result, _, _ = invoke(json.dumps({"error": "permission denied: /private/token.path"}))

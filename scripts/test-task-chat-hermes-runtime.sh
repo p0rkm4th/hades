@@ -423,7 +423,7 @@ for index, prompt in enumerate((
     assert "Live Proxmox currently reports: hades-core." in variant["final_response"], (prompt, variant)
     assert "memory update" not in variant["final_response"].casefold(), (prompt, variant)
     if prompt == "What changed since yesterday?":
-        assert "no historical homelab snapshot or change-event source is configured" in variant["final_response"], variant
+        assert "Proxmox task history" in variant["final_response"], variant
         assert "homelab_inference_inventory" not in hermes_registry_module.registry.calls, hermes_registry_module.registry.calls
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 

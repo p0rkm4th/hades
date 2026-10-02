@@ -294,6 +294,16 @@ partially readable Proxmox source remains unknown/partial in the response.
 This is separate from HADES Backup Checks, which track their own configured
 coverage and must not be presented as a substitute for Proxmox backup evidence.
 
+The owner-only `homelab_recent_activity` read returns an explicitly selected
+window up to seven days of archived Proxmox guest tasks, bounded per node and
+per endpoint. It first reads each token's effective permissions and includes guest task metadata only
+for explicitly VM-audited guest IDs. Pool-scoped grants are non-enumerable and
+are reported as partial without including unverified guest tasks. Usernames,
+UPIDs, task logs, and raw upstream fields are omitted. This is task activity,
+not a complete homelab change log; successful tasks do not prove resulting
+configuration or application health. Household sessions are denied access to
+this owner-only history.
+
 Owner requests for a server IP, port, endpoint, or firewall destination first
 read the bounded NetBox application-service catalog. HADES reports an endpoint
 only when one matching service record provides a single address and validated

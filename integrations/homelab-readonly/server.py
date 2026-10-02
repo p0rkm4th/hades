@@ -83,6 +83,18 @@ TOOLS = [Tool(
     ),
     inputSchema={"type": "object", "properties": {}},
 ), Tool(
+    name="homelab_recent_activity",
+    description=(
+        "For owner questions about recent homelab changes, read the bounded "
+        "Proxmox guest task archive for up to the last 7 days. Return only task "
+        "metadata for guests covered by this endpoint's effective VM.Audit "
+        "scope. This is recent Proxmox task activity, not a complete change "
+        "log or proof of resulting guest configuration. Read-only."
+    ),
+    inputSchema={"type": "object", "properties": {
+        "window_hours": {"type": "integer", "minimum": 1, "maximum": 168},
+    }},
+), Tool(
     name="homelab_inference_inventory",
     description=(
         "Read configured read-only Ollama or OpenAI-compatible inference endpoints. "
@@ -300,6 +312,52 @@ def _proxmox_guest_visibility(payload: dict) -> dict:
         "status": "DEGRADED",
         "scope": "NO_GUEST_AUDIT",
         "scoped_guest_count": 0,
+    }
+
+
+def _proxmox_guest_task_scope(payload: dict) -> dict:
+    """Return the subset of guest IDs safe to include from a task listing."""
+    permissions = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(permissions, dict):
+        raise ValueError("Proxmox effective-permissions response has an invalid shape")
+    broad = False
+    denied: set[str] = set()
+    explicit: set[str] = set()
+    has_non_enumerable_scope = False
+    has_non_enumerable_exclusion = False
+    for path, grants in permissions.items():
+        if not isinstance(path, str) or not isinstance(grants, dict):
+            continue
+        vm_match = re.fullmatch(r"/vms/([1-9][0-9]{0,19})", path)
+        if vm_match and _permission_enabled(grants.get("NoAccess")):
+            denied.add(vm_match.group(1))
+        elif _permission_enabled(grants.get("NoAccess")) and (
+            path in {"/", "/vms"} or path.startswith(("/vms/", "/pool/"))
+        ):
+            has_non_enumerable_exclusion = True
+        if not _permission_enabled(grants.get("VM.Audit")):
+            continue
+        if path in {"/", "/vms"}:
+            broad = True
+        elif vm_match:
+            explicit.add(vm_match.group(1))
+        elif path.startswith(("/vms/", "/pool/")):
+            has_non_enumerable_scope = True
+    if broad and not has_non_enumerable_exclusion:
+        return {
+            "scope": "PARTIAL" if denied or has_non_enumerable_scope else "ALL_GUESTS",
+            "all_guests": True,
+            "guest_ids": [],
+            "excluded_guest_ids": sorted(denied),
+        }
+    allowed_explicit = sorted(explicit - denied)
+    return {
+        "scope": "PARTIAL" if broad or has_non_enumerable_scope or has_non_enumerable_exclusion else (
+            "SELECTED_GUESTS" if allowed_explicit else "NO_GUEST_AUDIT"
+        ),
+        "all_guests": False,
+        "guest_ids": allowed_explicit,
+        "excluded_guest_ids": sorted(denied),
     }
 
 
@@ -922,6 +980,230 @@ def homelab_backup_status() -> dict:
         ],
         "read_only": True,
     }
+
+
+def homelab_recent_activity(window_hours: int = 24) -> dict:
+    """Read bounded recent Proxmox guest tasks, filtered by effective VM ACLs."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    if type(window_hours) is not int or not 1 <= window_hours <= 168:
+        return {
+            "status": "INVALID_REQUEST", "source": "Proxmox guest task archive",
+            "coverage": "proxmox-guest-tasks-only", "endpoints": [],
+            "read_only": True,
+        }
+
+    try:
+        specs = proxmox_specs()
+        token_ids = proxmox_token_ids()
+        source_ids = proxmox_source_ids(specs)
+    except (OSError, ValueError):
+        return {
+            "status": "CONFIGURATION_ERROR", "source": "Proxmox task archive",
+            "coverage": "proxmox-guest-tasks-only", "endpoints": [],
+            "read_only": True,
+        }
+    if not specs:
+        return {
+            "status": "NOT_CONFIGURED", "source": "Proxmox task archive",
+            "coverage": "proxmox-guest-tasks-only", "endpoints": [],
+            "read_only": True,
+        }
+
+    ca_file = os.environ.get("HADES_PROXMOX_CA_FILE", "")
+    since = int(time.time()) - window_hours * 60 * 60
+    endpoints = []
+    for (resources_url, token_file), token_id, source_id in zip(
+        specs, token_ids, source_ids, strict=True
+    ):
+        started = time.monotonic()
+        parsed = urlsplit(resources_url)
+        path = parsed.path.rstrip("/")
+        suffix = "/cluster/resources"
+        if (
+            parsed.scheme not in {"http", "https"} or not parsed.hostname
+            or parsed.username or parsed.password or parsed.query or parsed.fragment
+            or not path.endswith(suffix)
+        ):
+            endpoints.append({
+                "source_id": source_id, "status": "UNAVAILABLE",
+                "scope": "UNKNOWN", "events": [],
+                "error_code": "INVALID_PROXMOX_RESOURCES_URL",
+            })
+            continue
+        api_base = urlunsplit((parsed.scheme, parsed.netloc, path[:-len(suffix)], "", ""))
+        try:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                runtime_future = pool.submit(
+                    _fetch, resources_url, token_file, ca_file, token_id,
+                )
+                permissions_future = pool.submit(
+                    _fetch, _proxmox_permissions_url(resources_url),
+                    token_file, ca_file, token_id,
+                )
+                runtime_payload = runtime_future.result()
+                permissions_payload = permissions_future.result()
+            runtime_rows = runtime_payload.get("data")
+            if not isinstance(runtime_rows, list):
+                raise ValueError("Proxmox runtime response has an unsupported shape")
+            task_scope = _proxmox_guest_task_scope(permissions_payload)
+            nodes = sorted({
+                row.get("node") for row in runtime_rows
+                if isinstance(row, dict) and row.get("type") == "node"
+                and isinstance(row.get("node"), str)
+                and re.fullmatch(r"[A-Za-z0-9._-]{1,128}", row["node"])
+            })
+            nodes_truncated = len(nodes) > 16
+            nodes = nodes[:16]
+
+            def read_node_tasks(node: str) -> tuple[str, list[dict], str | None, bool]:
+                task_url = urljoin(
+                    api_base.rstrip("/") + "/",
+                    f"nodes/{quote(node, safe='')}/tasks?source=archive&limit=100&since={since}",
+                )
+                try:
+                    payload = _fetch(task_url, token_file, ca_file, token_id)
+                    rows = payload.get("data")
+                    if not isinstance(rows, list):
+                        raise ValueError("Proxmox task response has an unsupported shape")
+                    normalized = []
+                    for row in rows[:100]:
+                        if not isinstance(row, dict):
+                            continue
+                        guest_id = row.get("id")
+                        if not isinstance(guest_id, (str, int)):
+                            continue
+                        guest_id = str(guest_id)
+                        if not re.fullmatch(r"[1-9][0-9]{0,19}", guest_id):
+                            continue
+                        if task_scope["all_guests"]:
+                            if guest_id in task_scope["excluded_guest_ids"]:
+                                continue
+                        elif guest_id not in task_scope["guest_ids"]:
+                            continue
+                        started_at = row.get("starttime")
+                        if (
+                            not isinstance(started_at, (int, float))
+                            or isinstance(started_at, bool) or started_at < since
+                        ):
+                            continue
+                        task_type = row.get("type")
+                        if not isinstance(task_type, str) or not re.fullmatch(
+                            r"[A-Za-z][A-Za-z0-9_-]{0,31}", task_type,
+                        ):
+                            continue
+                        task_type = task_type.casefold()
+                        if not task_type.startswith(("qm", "vz")) and task_type != "vzdump":
+                            continue
+                        raw_status = str(row.get("status") or "").strip().upper()
+                        status = "OK" if raw_status == "OK" else (
+                            "RUNNING" if raw_status == "RUNNING" else
+                            "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
+                        )
+                        event = {
+                            "source_id": source_id, "node": node,
+                            "guest_id": guest_id, "task_type": task_type,
+                            "status": status, "starttime": int(started_at),
+                        }
+                        ended_at = row.get("endtime")
+                        if isinstance(ended_at, (int, float)) and not isinstance(ended_at, bool) and ended_at >= 0:
+                            event["endtime"] = int(ended_at)
+                        normalized.append(event)
+                    return "HEALTHY", normalized, None, len(rows) >= 100
+                except (OSError, ValueError, UnicodeError) as exc:
+                    return "UNAVAILABLE", [], _source_error_code(exc), False
+
+            with ThreadPoolExecutor(max_workers=min(8, max(1, len(nodes)))) as pool:
+                task_results = list(pool.map(read_node_tasks, nodes))
+            events = [event for _, rows, _, _ in task_results for event in rows]
+            errors = sorted({error for _, _, error, _ in task_results if error})
+            truncated = nodes_truncated or any(capped for _, _, _, capped in task_results)
+            task_states = [state for state, _, _, _ in task_results]
+            status = "HEALTHY"
+            if not nodes or not task_states or all(state == "UNAVAILABLE" for state in task_states):
+                status = "UNAVAILABLE"
+            elif (
+                "UNAVAILABLE" in task_states or truncated
+                or task_scope["scope"] in {"PARTIAL", "NO_GUEST_AUDIT"}
+            ):
+                status = "PARTIAL"
+            events.sort(key=lambda row: row["starttime"], reverse=True)
+            endpoints.append({
+                "source_id": source_id, "status": status,
+                "scope": task_scope["scope"], "retrieved_at": _retrieved_at(),
+                "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                "events": events[:200], "truncated": truncated or len(events) > 200,
+                "error_codes": errors,
+            })
+        except (OSError, ValueError, UnicodeError, OverflowError) as exc:
+            endpoints.append({
+                "source_id": source_id, "status": "UNAVAILABLE",
+                "scope": "UNKNOWN", "retrieved_at": _retrieved_at(),
+                "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                "events": [], "error_codes": [_source_error_code(exc)],
+            })
+    states = [endpoint["status"] for endpoint in endpoints]
+    status = "READABLE" if states and all(state == "HEALTHY" for state in states) else (
+        "SOURCE_UNAVAILABLE" if states and all(state == "UNAVAILABLE" for state in states)
+        else "PARTIAL"
+    )
+    return {
+        "status": status, "source": "Proxmox guest task archive",
+        "retrieved_at": _retrieved_at(),
+        "window_start": datetime.fromtimestamp(since, timezone.utc).isoformat(),
+        "window_hours": window_hours,
+        "coverage": "proxmox-guest-tasks-only",
+        "limitations": [
+            "Shows bounded archived Proxmox task activity, not a complete homelab change log.",
+            "Task completion does not prove the resulting guest configuration or application health.",
+            "Only guest IDs covered by each endpoint's effective VM.Audit grants are included.",
+        ],
+        "endpoints": endpoints, "read_only": True,
+    }
+
+
+def format_homelab_recent_activity(report: dict) -> str:
+    """Format bounded Proxmox task activity without claiming complete history."""
+    if not isinstance(report, dict) or not isinstance(report.get("endpoints"), list):
+        return "I couldn't read recent Proxmox task activity."
+    status = str(report.get("status") or "UNKNOWN").upper()
+    if status == "NOT_CONFIGURED":
+        return "Proxmox task history isn't configured, so I can't verify recent hypervisor activity."
+    if status == "INVALID_REQUEST":
+        return "Choose a Proxmox activity window from 1 to 168 hours."
+    if status in {"SOURCE_UNAVAILABLE", "CONFIGURATION_ERROR", "UNKNOWN"}:
+        return "I couldn't read the configured Proxmox task history, so recent hypervisor activity is unknown."
+    events = [
+        event for endpoint in report["endpoints"]
+        if isinstance(endpoint, dict)
+        for event in endpoint.get("events", [])
+        if isinstance(event, dict)
+    ]
+    window_hours = report.get("window_hours")
+    window = f"the last {window_hours} hours" if type(window_hours) is int and 1 <= window_hours <= 168 else "the requested time window"
+    retrieved_at = _bounded_text(report.get("retrieved_at"), 40)
+    read_stamp = f" Read at {retrieved_at}." if retrieved_at else " Read time unavailable."
+    if not events:
+        answer = f"No archived Proxmox guest tasks were returned in {window}."
+    else:
+        summaries = []
+        for event in sorted(events, key=lambda row: row.get("starttime", 0), reverse=True)[:8]:
+            guest = _bounded_text(event.get("guest_id"), 24) or "an audited guest"
+            node = _bounded_text(event.get("node"), 64) or "a Proxmox node"
+            task = _bounded_text(event.get("task_type"), 32) or "unknown task"
+            state = str(event.get("status") or "UNKNOWN").casefold()
+            summaries.append(f"{task} for guest {guest} on {node} ({state})")
+        answer = "Recorded Proxmox guest task activity: " + "; ".join(summaries) + "."
+        if len(events) > 8:
+            answer += f" {len(events) - 8} additional in-scope tasks were omitted from this summary."
+    if status != "READABLE":
+        answer += " Some Proxmox task sources or guest scopes are partial or unavailable."
+    answer += read_stamp + (
+        " This is bounded Proxmox task activity, not a complete homelab change log. "
+        "HADES has no saved prior snapshot for a before/after comparison, and "
+        "completed tasks don't prove resulting guest configuration or application health."
+    )
+    return answer
 
 
 def format_homelab_backup_status(report: dict) -> str:
@@ -1727,6 +2009,9 @@ async def call_tool(name, arguments):
         result = homelab_owner_snapshot()
     elif name == "homelab_backup_status":
         result = homelab_backup_status()
+    elif name == "homelab_recent_activity":
+        args = arguments or {}
+        result = homelab_recent_activity(args.get("window_hours", 24))
     elif name == "homelab_discovery_scan":
         args = arguments or {}
         target = args.get("target")

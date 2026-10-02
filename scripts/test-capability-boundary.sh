@@ -83,6 +83,7 @@ tools = [
     {'function': {'name': 'mcp_homelab_readonly_homelab_summary'}},
     {'function': {'name': 'mcp_homelab_readonly_homelab_owner_snapshot'}},
     {'function': {'name': 'mcp_homelab_readonly_homelab_backup_status'}},
+    {'function': {'name': 'mcp_homelab_readonly_homelab_recent_activity'}},
     {'function': {'name': 'mcp_homelab_readonly_homelab_compute_capabilities'}},
     {'function': {'name': 'mcp_homelab_readonly_homelab_inference_inventory'}},
     {'function': {'name': 'mcp_homelab_readonly_homelab_discovery_scan'}},

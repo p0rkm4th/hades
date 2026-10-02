@@ -6,6 +6,7 @@ from pathlib import Path
 
 profile = Path("hermes/config.yaml.example").read_text(encoding="utf-8")
 env = Path("hermes/env.example").read_text(encoding="utf-8")
+adapter = Path("integrations/homelab-readonly/server.py").read_text(encoding="utf-8")
 for marker in (
     "homelab-readonly:",
     "integrations/homelab-readonly/server.py",
@@ -16,8 +17,9 @@ for marker in (
     'HADES_HOMELAB_IDENTITY_LINKS_FILE',
     'HADES_INFERENCE_ENDPOINTS_JSON',
     'HADES_DISCOVERY_ALLOWED_NETWORKS',
+    'homelab_recent_activity',
 ):
-    if marker not in profile and marker not in env:
+    if marker not in profile and marker not in env and marker not in adapter:
         raise SystemExit(f"FAIL homelab MCP registration missing {marker}")
 if "HADES_PROXMOX_TOKEN_SECRET" in profile or "HADES_NETBOX_TOKEN=\"" in profile:
     raise SystemExit("FAIL homelab profile embeds raw token inputs")

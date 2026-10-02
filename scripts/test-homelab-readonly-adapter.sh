@@ -438,6 +438,28 @@ assert server._proxmox_guest_visibility({"data": {
 assert server._proxmox_guest_visibility({"data": {
     "/vms/12802": {"VM.Audit": 1}, "/pool/compute": {"VM.Audit": 1},
 }}) == {"status": "DEGRADED", "scope": "SELECTED_GUESTS", "scoped_guest_count": None}
+assert server._proxmox_guest_task_scope({"data": {
+    "/": {"Sys.Audit": 1}, "/vms/802": {"VM.Audit": 1},
+}}) == {
+    "scope": "SELECTED_GUESTS", "all_guests": False,
+    "guest_ids": ["802"], "excluded_guest_ids": [],
+}
+pool_task_scope = server._proxmox_guest_task_scope({"data": {
+    "/pool/compute": {"VM.Audit": 1},
+}})
+assert pool_task_scope == {
+    "scope": "PARTIAL", "all_guests": False,
+    "guest_ids": [], "excluded_guest_ids": [],
+}, pool_task_scope
+assert server._proxmox_guest_task_scope({"data": {
+    "/vms/802": {"VM.Audit": 1, "NoAccess": 1},
+}})["scope"] == "NO_GUEST_AUDIT"
+assert server._proxmox_guest_task_scope({"data": {
+    "/vms": {"VM.Audit": 1}, "/vms/802": {"NoAccess": 1},
+}}) == {
+    "scope": "PARTIAL", "all_guests": True,
+    "guest_ids": [], "excluded_guest_ids": ["802"],
+}
 assert server._aggregate_proxmox_guest_visibility([
     {"status": "DEGRADED", "scope": "SELECTED_GUESTS"},
     {"status": "UNKNOWN", "scope": "UNKNOWN"},
@@ -511,6 +533,46 @@ assert any(row.get("status") == "DEGRADED" for row in summary["sources"] if row[
 assert summary["errors"] == ["Proxmox[2] unavailable"], summary["errors"]
 assert "sentinel-private-value" not in str(summary)
 assert all(isinstance(row.get("retrieved_at"), str) for row in summary["sources"] if row.get("duration_ms") is not None)
+
+activity_now = int(server.time.time())
+def activity_fixture_fetch(url, *_args, **_kwargs):
+    if url == "https://pve-a.example.test/cluster/resources":
+        return {"data": [{"type": "node", "node": "pve-main"}, runtime_fixture]}
+    if url == "https://pve-a.example.test/access/permissions":
+        return {"data": {"/": {"Sys.Audit": 1}, "/vms/12802": {"VM.Audit": 1}}}
+    if url.startswith("https://pve-a.example.test/nodes/pve-main/tasks?"):
+        return {"data": [
+            {"id": "12802", "type": "qmstart", "status": "OK", "starttime": activity_now,
+             "user": "private-user", "upid": "must-not-escape"},
+            {"id": "900", "type": "qmstop", "status": "OK", "starttime": activity_now},
+            {"id": "12802", "type": "aptupdate", "status": "OK", "starttime": activity_now},
+        ]}
+    if url == "https://pve-b.example.test/cluster/resources":
+        from urllib.error import URLError
+        raise URLError("synthetic Proxmox source unavailable")
+    if url == "https://pve-b.example.test/access/permissions":
+        from urllib.error import URLError
+        raise URLError("synthetic permissions source unavailable")
+    raise AssertionError(f"unexpected synthetic activity URL: {url}")
+
+server._fetch = activity_fixture_fetch
+try:
+    activity = server.homelab_recent_activity()
+    activity_week = server.homelab_recent_activity(168)
+finally:
+    server._fetch = fixture_fetch
+assert activity["status"] == "PARTIAL", activity
+assert activity["endpoints"][0]["scope"] == "SELECTED_GUESTS", activity
+assert [event["guest_id"] for event in activity["endpoints"][0]["events"]] == ["12802"], activity
+assert activity["endpoints"][0]["events"][0]["task_type"] == "qmstart", activity
+assert "private-user" not in str(activity) and "must-not-escape" not in str(activity), activity
+activity_answer = server.format_homelab_recent_activity(activity)
+assert "guest 12802" in activity_answer and "qmstart" in activity_answer, activity_answer
+assert "not a complete homelab change log" in activity_answer, activity_answer
+assert abs((activity_now - int(datetime.fromisoformat(activity["window_start"]).timestamp())) - 86400) <= 2, activity
+assert abs((activity_now - int(datetime.fromisoformat(activity_week["window_start"]).timestamp())) - 7 * 86400) <= 2, activity_week
+assert server.homelab_recent_activity(0)["status"] == "INVALID_REQUEST"
+
 runtime_row = next(row for row in summary["resources"] if row["name"] == "hades-core")
 assert runtime_row["runtime"] == {
     "name": "hades-core", "node": "pve-main", "type": "qemu", "vmid": 12802,
