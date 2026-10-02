@@ -540,9 +540,19 @@ unavailable_node_agent = agent_class(
 unavailable_node = unavailable_node_agent.run_conversation(
     "What is Hypnos running?", conversation_history=[]
 )
+unavailable_issue = unavailable_node_agent.run_conversation(
+    "What's wrong with Tartarus?", conversation_history=[]
+)
+unavailable_size = unavailable_node_agent.run_conversation(
+    "What about a 20 GB one?", conversation_history=[]
+)
 hades._hades_direct_homelab_read = actual_node_read
 assert unavailable_node.get("completed") is True and unavailable_node.get("api_calls") == 0, unavailable_node
 assert "couldn't verify current runtime or workload status for hypnos" in unavailable_node["final_response"], unavailable_node
+assert unavailable_issue.get("completed") is True and unavailable_issue.get("api_calls") == 0, unavailable_issue
+assert "couldn't verify current runtime or workload status for tartarus" in unavailable_issue["final_response"].casefold(), unavailable_issue
+assert unavailable_size.get("completed") is True and unavailable_size.get("api_calls") == 0, unavailable_size
+assert "can't confirm whether that model fits" in unavailable_size["final_response"], unavailable_size
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 # A fresh, similarly named Kuma check with no stable identity link is useful

@@ -10238,7 +10238,8 @@ try:
                     "completed": True,
                 }
             if self._hades_session_scope == "owner" and re.search(
-                r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+(?:doing|running)\b",
+                r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+(?:doing|running)\b|"
+                r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s*[?.!]*$",
                 str(user_message or ""), re.IGNORECASE,
             ):
                 target = _hades_homelab_target_from_question(user_message)
@@ -10251,6 +10252,24 @@ try:
                 if callback:
                     callback(unavailable_response)
                 _hades_logger.info("Owner node-activity read failed closed without model invocation")
+                return {
+                    "final_response": unavailable_response,
+                    "messages": [{"role": "assistant", "content": unavailable_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            if self._hades_session_scope == "owner" and re.fullmatch(
+                r"\s*what\s+about\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+(?:one|model)\s*[?.!]*\s*",
+                str(user_message or ""), re.IGNORECASE,
+            ):
+                unavailable_response = (
+                    "I can't confirm whether that model fits or recommend a host: current per-host "
+                    "GPU load and free VRAM are not connected, and runtime memory needs are unknown."
+                )
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(unavailable_response)
+                _hades_logger.info("Owner model-capacity follow-up failed closed without model invocation")
                 return {
                     "final_response": unavailable_response,
                     "messages": [{"role": "assistant", "content": unavailable_response}],
