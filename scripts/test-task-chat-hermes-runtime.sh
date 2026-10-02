@@ -247,11 +247,12 @@ actual_compound_status = actual_compound_agent.run_conversation(
 assert actual_compound_status.get("completed") is True and actual_compound_status.get("api_calls") == 0, actual_compound_status
 assert "Live Proxmox currently reports: hades-core." in actual_compound_status["final_response"], actual_compound_status
 assert "No Backup Check exists yet." in actual_compound_status["final_response"], actual_compound_status
+assert "can't verify host, VM, service, or household-data backup coverage" in actual_compound_status["final_response"], actual_compound_status
 hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
-# A speech-like named-node question must not be sent to inference or turn a
-# static hardware inventory row into a live online/runtime claim.
+# A speech-like named-node question composes linked inference state with the
+# observed hardware inventory without turning it into live load/health evidence.
 compute_node_a_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-compute-node-a-status",
     stream_delta_callback=lambda _chunk: None, **kwargs,
@@ -261,11 +262,12 @@ compute_node_a_status = compute_node_a_agent.run_conversation(
 )
 assert compute_node_a_status.get("completed") is True and compute_node_a_status.get("api_calls") == 0, compute_node_a_status
 compute_node_a_text = compute_node_a_status["final_response"]
-assert "I found Compute Node A in the hardware inventory." in compute_node_a_text, compute_node_a_text
-assert "The recorded address is 192.0.2.69." in compute_node_a_text, compute_node_a_text
-assert "It is listed as synthetic inference node." in compute_node_a_text, compute_node_a_text
-assert "I don't have a current runtime check for it" in compute_node_a_text, compute_node_a_text
-assert "I can't say whether it's online." in compute_node_a_text, compute_node_a_text
+assert "sample:small is listed at Compute Node A" in compute_node_a_text, compute_node_a_text
+assert "Observed hardware inventory lists Compute Node A." in compute_node_a_text, compute_node_a_text
+assert "Role: synthetic inference node." in compute_node_a_text, compute_node_a_text
+assert "Host CPU/GPU load and free VRAM are not connected." in compute_node_a_text, compute_node_a_text
+assert "I don't have a current host runtime check for it" in compute_node_a_text, compute_node_a_text
+assert "192.0.2.69" not in compute_node_a_text, compute_node_a_text
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 # A physical host may be visible to Kuma without a Proxmox runtime row. Its
@@ -281,7 +283,7 @@ compute_node_a_monitor_status = compute_node_a_monitor_agent.run_conversation(
 )
 assert compute_node_a_monitor_status.get("completed") is True and compute_node_a_monitor_status.get("api_calls") == 0, compute_node_a_monitor_status
 compute_node_a_monitor_text = compute_node_a_monitor_status["final_response"]
-assert "the Compute Node A SSH check is responding (fresh observation)" in compute_node_a_monitor_text, compute_node_a_monitor_text
+assert "the compute node a ssh check is responding (fresh observation)" in compute_node_a_monitor_text.casefold(), compute_node_a_monitor_text
 assert "current host workload or operating-system status" in compute_node_a_monitor_text, compute_node_a_monitor_text
 assert "Proxmox runtime status is NOT_OBSERVED" not in compute_node_a_monitor_text, compute_node_a_monitor_text
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
@@ -297,7 +299,7 @@ for status, freshness, expected in (
     )
     monitor_result = monitor_agent.run_conversation("whats compute-node-a doing rn", conversation_history=[])
     assert monitor_result.get("completed") is True and monitor_result.get("api_calls") == 0, monitor_result
-    assert expected in monitor_result["final_response"], monitor_result
+    assert expected.casefold() in monitor_result["final_response"].casefold(), monitor_result
     assert "Proxmox runtime status is NOT_OBSERVED" not in monitor_result["final_response"], monitor_result
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 del os.environ["HADES_TEST_NODE_A_MONITOR_STATUS"]

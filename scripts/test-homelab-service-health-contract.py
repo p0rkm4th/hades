@@ -282,6 +282,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'def homelab_summary():\n'
             '    return {"resources": [{"identity": {"canonical_id": "netbox:device:75"}, '
             '"inventory": {"name": "Compute Node A"}}]}\n'
+            'def homelab_compute_capabilities():\n'
+            '    return {"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
             'def format_inference_inventory_response(text, inventory, summary):\n'
             '    return "NODE_ACTIVITY:" + summary["resources"][0]["inventory"]["name"]\n',
             encoding='utf-8',
@@ -289,7 +291,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         node_activity = direct_read(
             "What's Compute Node A doing right now?", 'synthetic-owner', 'owner'
         )
-        assert node_activity == 'NODE_ACTIVITY:Compute Node A', node_activity
+        assert node_activity.startswith('NODE_ACTIVITY:Compute Node A Observed hardware inventory lists Compute Node A.'), node_activity
+        assert "Host CPU/GPU load and free VRAM are not connected." in node_activity
         assert 'owner session' in direct_read(
             "What's Compute Node A doing right now?", 'synthetic-household', 'household'
         )

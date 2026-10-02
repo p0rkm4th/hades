@@ -84,9 +84,11 @@ with tempfile.TemporaryDirectory() as root:
     freshness = namespace["_hades_phase2_backup_freshness_response"]
     answer = freshness("When were our backups last verified?", actor, "owner")
     assert "HADES repository backup: healthy" in answer, answer
+    assert "do not verify host, VM, service, or household-data backups" in answer, answer
     assert "last successful check 2026-09-25 12:34 UTC" in answer, answer
     natural_answer = freshness("When did we last check the backups?", actor, "owner")
     assert "HADES repository backup: healthy" in natural_answer, natural_answer
+    assert "independent off-site custody" in natural_answer, natural_answer
     exec(compile(ast.Module(body=[conversation], type_ignores=[]), "sitecustomize.py", "exec"), namespace)
     fake_agent_type = type("Agent", (), {
         "_hades_subject": actor,

@@ -284,7 +284,10 @@ def _hades_phase2_backup_freshness_response(user_text, subject, scope):
             if not enabled:
                 details.append("schedule paused")
             lines.append(f"- {label}: {'; '.join(details)}")
-        return "Backup Check status:\n" + "\n".join(lines) if lines else None
+        return (
+            "Backup Check status:\n" + "\n".join(lines)
+            + "\nThese checks cover configured repository artifacts only; they do not verify host, VM, service, or household-data backups, independent off-site custody, or restoreability."
+        ) if lines else None
     except Exception:
         return "Backup Check status is temporarily unavailable."
 
@@ -398,7 +401,10 @@ def _hades_phase2_backup_response(user_text, subject, scope, phase2_session_key=
         return "This shared Backup Check is view-only for this account; I have not changed it."
     if not pending and not target_hint and action in {"", "inspect", "status"}:
         if not records:
-            return "No Backup Check exists yet. The owner can create one for the approved HADES repository backup."
+            return (
+                "No Backup Check exists yet. The owner can create one for the approved HADES repository backup. "
+                "I can't verify host, VM, service, or household-data backup coverage, off-site custody, or restoreability from this check."
+            )
         entries = []
         for item in records:
             label = "Infrastructure repository" if item["payload"].get("target_id") == "infrastructure-repository" else "HADES repository"
@@ -411,6 +417,9 @@ def _hades_phase2_backup_response(user_text, subject, scope, phase2_session_key=
                 for item in records
             )
             response += f"\nVerified coverage currently exists only for: {covered}. Other important services have no verified Backup Check record in HADES."
+        response += (
+            "\nThese checks cover configured repository artifacts only; they do not verify host, VM, service, or household-data backups, independent off-site custody, or restoreability."
+        )
         return response
     if affirmative and pending and pending.get("action") == "run":
         record = pending["record"]
@@ -525,7 +534,10 @@ def _hades_phase2_backup_response(user_text, subject, scope, phase2_session_key=
     if create and scope != "owner":
         return "Only the owner can create a Backup Check. I have not created anything."
     if not target_records:
-        return "No Backup Check exists yet. The owner can create one for the approved HADES repository backup."
+        return (
+            "No Backup Check exists yet. The owner can create one for the approved HADES repository backup. "
+            "I can't verify host, VM, service, or household-data backup coverage, off-site custody, or restoreability from this check."
+        )
     record = target_records[0]
     result = record["result"]
     status = "enabled" if result.get("production_schedule") else "staged"
@@ -4811,9 +4823,83 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                     {"identity": {"canonical_id": identity}, "inventory": {"name": name}}
                     for identity, name in names.items()
                 ]}
-            return module.format_inference_inventory_response(
+            inference_response = module.format_inference_inventory_response(
                 text, inference, summary,
             )
+            if node_activity_intent:
+                target = _hades_homelab_target_from_question(text)
+                capability = module.homelab_compute_capabilities()
+                machines = capability.get("machines", []) if isinstance(capability, dict) else []
+                if not machines:
+                    matrix_path = os.environ.get("HADES_CAPABILITY_MATRIX_FILE", "").strip()
+                    if matrix_path:
+                        try:
+                            import yaml
+                            matrix_document = yaml.safe_load(Path(matrix_path).read_text(encoding="utf-8"))
+                            machines = matrix_document.get("machines", []) if isinstance(matrix_document, dict) else []
+                        except (OSError, ValueError, UnicodeError):
+                            machines = []
+                matching_machines = [
+                    machine for machine in machines if isinstance(machine, dict)
+                    and target and _hades_homelab_name_key(target) == _hades_homelab_name_key(machine.get("name"))
+                ]
+                if len(matching_machines) == 1:
+                    machine = matching_machines[0]
+                    details = [f"Observed hardware inventory lists {machine.get('name', target)}."]
+                    if machine.get("role"):
+                        details.append(f"Role: {machine['role']}.")
+                    if machine.get("cpu"):
+                        details.append(f"CPU inventory: {machine['cpu']}.")
+                    if machine.get("ram_gib") is not None:
+                        details.append(f"Installed RAM: {machine['ram_gib']} GiB.")
+                    if machine.get("gpus"):
+                        gpu_names = []
+                        for gpu in machine["gpus"] if isinstance(machine["gpus"], list) else []:
+                            if isinstance(gpu, str):
+                                gpu_names.append(gpu)
+                            elif isinstance(gpu, dict) and (gpu.get("model") or gpu.get("name")):
+                                gpu_names.append(str(gpu.get("model") or gpu.get("name")))
+                        if gpu_names:
+                            details.append("GPU inventory: " + ", ".join(gpu_names[:8]) + ".")
+                    details.append(
+                        "This hardware inventory is not live utilization. Host CPU/GPU load and free VRAM are not connected."
+                    )
+                    matched_resources = [
+                        row for row in summary.get("resources", []) if isinstance(row, dict)
+                        and _hades_homelab_name_key(row.get("name")) == _hades_homelab_name_key(target)
+                    ] if isinstance(summary, dict) else []
+                    monitor_resources = [
+                        row for row in summary.get("resources", []) if isinstance(row, dict)
+                        and _hades_homelab_name_key(target)
+                        in _hades_homelab_name_key(row.get("name"))
+                        and isinstance(row.get("availability"), dict)
+                        and row["availability"].get("status")
+                    ] if isinstance(summary, dict) else []
+                    if len(monitor_resources) == 1:
+                        monitored = monitor_resources[0]
+                        observation = monitored["availability"]
+                        monitor_name = " ".join(str(observation.get("name") or monitored.get("name")).split())[:100]
+                        monitor_status = str(observation.get("status") or "unknown").casefold()
+                        monitor_freshness = str(monitored.get("availability_freshness") or "UNKNOWN").upper()
+                        if monitor_freshness == "FRESH" and monitor_status in {"up", "online"}:
+                            details.append(
+                                f"The {monitor_name} check is responding (fresh observation); this confirms only that the configured probe responded, not the current host workload or operating-system status."
+                            )
+                        elif monitor_freshness == "FRESH" and monitor_status in {"down", "offline"}:
+                            details.append(
+                                f"The {monitor_name} check is failing (fresh observation); this does not establish why or whether the host is powered off."
+                            )
+                        else:
+                            details.append(
+                                f"The {monitor_name} check last reported {monitor_status}, but that observation is {monitor_freshness.casefold()}."
+                            )
+                    if not any(
+                        row.get("runtime_status") in {"online", "running"}
+                        for row in matched_resources
+                    ):
+                        details.append("I don't have a current host runtime check for it, so I can't say whether it's online.")
+                    inference_response += " " + " ".join(details)
+            return inference_response
         summary = module.homelab_summary()
         endpoint_response = _hades_service_endpoint_response(
             text,
