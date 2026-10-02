@@ -94,24 +94,63 @@ def referenced_globals(source: str, label: str, closure: set[str]) -> set[str]:
 
 
 def replace_call_sites(active_text: str, tree: ast.Module) -> str:
+    run_conversations = [
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and node.name == "_hades_run_conversation"
+    ]
+    run_conversation = run_conversations[0] if len(run_conversations) == 1 else None
+    if run_conversation is None:
+        raise ValueError("active overlay is missing _hades_run_conversation")
     lines = active_text.splitlines(keepends=True)
     replacements = []
-    for node in ast.walk(tree):
+    status_calls = 0
+    request_calls = 0
+    for node in ast.walk(run_conversation):
         if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name) or node.func.id != ROUTE:
             continue
         old = ast.get_source_segment(active_text, node)
-        if old == f'{ROUTE}("homelab status and blockers")':
-            new = f'{ROUTE}("homelab status and blockers", getattr(self, "_hades_subject", ""), "owner")'
-        elif old == f"{ROUTE}(user_message)":
-            new = f'{ROUTE}(user_message, getattr(self, "_hades_subject", ""), self._hades_session_scope, context_text=previous_user_text)'
+        first_arg = node.args[0] if node.args else None
+        if isinstance(first_arg, ast.Constant) and first_arg.value == "homelab status and blockers":
+            status_calls += 1
+            if old == f'{ROUTE}("homelab status and blockers")':
+                new = f'{ROUTE}("homelab status and blockers", getattr(self, "_hades_subject", ""), "owner")'
+                replacements.append((node, old, new))
+            elif (
+                len(node.args) >= 3
+                and isinstance(node.args[2], ast.Constant)
+                and node.args[2].value == "owner"
+            ):
+                continue
+            else:
+                raise ValueError(f"unrecognized active owner homelab status call at line {node.lineno}")
+        elif isinstance(first_arg, ast.Name) and first_arg.id == "user_message":
+            request_calls += 1
+            context = next((item.value for item in node.keywords if item.arg == "context_text"), None)
+            if len(node.args) == 1 and not node.keywords:
+                new = f'{ROUTE}(user_message, getattr(self, "_hades_subject", ""), self._hades_session_scope, context_text=_hades_intent_text)'
+                replacements.append((node, old, new))
+            elif isinstance(context, ast.Name) and context.id == "previous_user_text":
+                new = old.replace("context_text=previous_user_text", "context_text=_hades_intent_text")
+                if new == old:
+                    raise ValueError(f"could not normalize active homelab context at line {node.lineno}")
+                replacements.append((node, old, new))
+            elif isinstance(context, ast.Name) and context.id == "_hades_intent_text":
+                continue
+            else:
+                raise ValueError(f"unrecognized active homelab request call at line {node.lineno}")
         else:
             raise ValueError(f"unrecognized active homelab call at line {node.lineno}")
+    if status_calls != 1 or request_calls < 1:
+        raise ValueError(
+            f"expected one owner status call and at least one current request call; "
+            f"found status={status_calls}, request={request_calls}"
+        )
+    offsets = []
+    for node, old, new in replacements:
         offset = sum(map(len, lines[:node.lineno - 1])) + node.col_offset
-        replacements.append((offset, offset + len(old), old, new))
-    if len(replacements) != 2:
-        raise ValueError(f"expected exactly two legacy owner homelab calls; found {len(replacements)}")
+        offsets.append((offset, offset + len(old), old, new))
     result = active_text
-    for start, end, old, new in sorted(replacements, reverse=True):
+    for start, end, old, new in sorted(offsets, reverse=True):
         if result[start:end] != old:
             raise ValueError("active homelab call changed during composition")
         result = result[:start] + new + result[end:]
@@ -187,10 +226,13 @@ def add_household_route(source: str) -> str:
                     "api_calls": 0,
                     "completed": True,
                 }
-        if self._hades_session_scope == "owner" and re.search(
-            r"\\bwhat(?:['’]s|s|\\s+is)\\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\\s+(?:doing|running)\\b|"
-            r"\\bwhat(?:['’]s|\\s+is)\\s+wrong\\s+with\\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\\s*[?.!]*$",
-            str(user_message or ""), re.IGNORECASE,
+        if self._hades_session_scope == "owner" and (
+            _hades_homelab_named_check_target(user_message)
+            or re.search(
+                r"\\bwhat(?:['’]s|s|\\s+is)\\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\\s+(?:doing|running)\\b|"
+                r"\\bwhat(?:['’]s|\\s+is)\\s+wrong\\s+with\\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\\s*[?.!]*$",
+                str(user_message or ""), re.IGNORECASE,
+            )
         ):
             target = _hades_homelab_target_from_question(user_message)
             subject_name = f" for {target}" if target else ""
@@ -218,10 +260,6 @@ def add_household_route(source: str) -> str:
     lines = "".join(lines).splitlines(keepends=True)
     lines[owner.end_lineno + len(early_block.splitlines(keepends=True)):owner.end_lineno + len(early_block.splitlines(keepends=True))] = late_block.splitlines(keepends=True)
     composed = "".join(lines)
-    if "context_text=previous_user_text" in composed:
-        composed = composed.replace(
-            "context_text=previous_user_text", "context_text=_hades_intent_text", 1
-        )
     return composed
 
 
@@ -230,12 +268,29 @@ def add_media_clarification(source: str) -> str:
     definitions = functions(tree)
     if "_hades_ambiguous_media_device_clarification" not in definitions:
         raise ValueError("media clarification helper missing after composition")
-    if any(
-        isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    existing_call_nodes = [
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
         and node.func.id == "_hades_ambiguous_media_device_clarification"
-        for node in ast.walk(tree)
-    ):
-        raise ValueError("media clarification call already exists; refusing duplicate insertion")
+    ]
+    if len(existing_call_nodes) > 1:
+        raise ValueError("multiple media clarification calls already exist; refusing duplicate insertion")
+    if existing_call_nodes:
+        existing_call = existing_call_nodes[0]
+        run_conversation = next(
+            (node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+             and node.name == "_hades_run_conversation"),
+            None,
+        )
+        if run_conversation is None or existing_call not in ast.walk(run_conversation):
+            raise ValueError("existing media clarification call is outside _hades_run_conversation")
+        if (
+            len(existing_call.args) != 1
+            or not isinstance(existing_call.args[0], ast.Name)
+            or existing_call.args[0].id != "_preflight_text"
+        ):
+            raise ValueError("existing media clarification call has an unsupported input")
+        return source
     route = next(
         (node for node in ast.walk(tree)
         if isinstance(node, ast.If)

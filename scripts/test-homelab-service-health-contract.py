@@ -35,6 +35,7 @@ wanted = {
     '_hades_direct_proxmox_backup_read',
     '_hades_homelab_name_key',
     '_hades_homelab_target_from_question',
+    '_hades_homelab_named_check_target',
     '_hades_homelab_followup_prompt',
     '_hades_positive_homelab_control_request',
 }
@@ -321,22 +322,22 @@ degraded_sources = workloads_on_host('What is running on Runtime Node A?', [
 assert 'Configured source(s) degraded: Proxmox' in degraded_sources
 assert 'unavailable: Proxmox' not in degraded_sources
 core_vm_rows = [
-    {'name': 'Erebus', 'runtime_status': 'online',
-     'identity': {'source_identities': {'proxmox': ['proxmox:erebus:node:erebus']}},
-     'runtime': {'type': 'node', 'node': 'erebus', 'status': 'online'}},
+    {'name': 'Synthetic Virtualization Host', 'runtime_status': 'online',
+     'identity': {'source_identities': {'proxmox': ['proxmox:synthetic-virtualization-host:node:synthetic-virtualization-host']}},
+     'runtime': {'type': 'node', 'node': 'synthetic-virtualization-host', 'status': 'online'}},
     {'name': 'hades-core', 'runtime_status': 'stopped',
-     'identity': {'source_identities': {'proxmox': ['proxmox:erebus:qemu:800']}},
-     'runtime': {'type': 'qemu', 'node': 'erebus', 'vmid': 800, 'status': 'stopped'}},
+     'identity': {'source_identities': {'proxmox': ['proxmox:synthetic-virtualization-host:qemu:800']}},
+     'runtime': {'type': 'qemu', 'node': 'synthetic-virtualization-host', 'vmid': 800, 'status': 'stopped'}},
     {'name': 'hades-core', 'runtime_status': 'running',
-     'identity': {'source_identities': {'proxmox': ['proxmox:erebus:qemu:802']}},
-     'runtime': {'type': 'qemu', 'node': 'erebus', 'vmid': 802, 'status': 'running'}},
+     'identity': {'source_identities': {'proxmox': ['proxmox:synthetic-virtualization-host:qemu:2802']}},
+     'runtime': {'type': 'qemu', 'node': 'synthetic-virtualization-host', 'vmid': 2802, 'status': 'running'}},
     {'name': 'hades-core', 'runtime_status': 'running',
-     'identity': {'source_identities': {'proxmox': ['proxmox:site-b:qemu:802']}},
-     'runtime': {'type': 'qemu', 'node': 'erebus', 'vmid': 802, 'status': 'running'}},
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-b:qemu:2802']}},
+     'runtime': {'type': 'qemu', 'node': 'synthetic-virtualization-host', 'vmid': 2802, 'status': 'running'}},
 ]
 core_vm_answer = core_vm_placement('Which machine is running HADES?', core_vm_rows)
-assert '3 guests matching HADES Core' in core_vm_answer and 'VM 800) is stopped on Erebus' in core_vm_answer
-assert 'VM 802) is running on Erebus' in core_vm_answer and 'application health' in core_vm_answer
+assert '3 guests matching HADES Core' in core_vm_answer and 'VM 800) is stopped on Synthetic Virtualization Host' in core_vm_answer
+assert 'VM 2802) is running on Synthetic Virtualization Host' in core_vm_answer and 'application health' in core_vm_answer
 assert "host can't be uniquely linked through Proxmox source identity" in core_vm_answer
 assert core_vm_placement('What is HADES?', core_vm_rows) is None
 assert "can't verify HADES Core VM placement" in core_vm_placement('Where is HADES running?', [])
@@ -504,7 +505,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 'availability_summary': monitors,
                 'resources': [{
                     'name': 'HADES Core', 'runtime_status': 'running',
-                    'currently_online': True, 'runtime': {'vmid': 802},
+                    'currently_online': True, 'runtime': {'vmid': 2802},
                     'availability': None, 'availability_observations': [],
                     'availability_freshness': 'UNKNOWN', 'conflicts': [],
                 }],
@@ -551,10 +552,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert "can't verify private infrastructure or computer status" in household_overall, household_overall
         assert 'Proxmox' not in household_overall and 'NetBox' not in household_overall, household_overall
         assert direct_read('Is everything okay?', 'synthetic-household', 'household') == household_overall
-        for prompt in ('Is the homelab okay?', 'Are my computers okay?', 'Are all the computers okay?', 'Is Tartarus alive?', "What's Tartarus doing?"):
+        for prompt in ('Is the homelab okay?', 'Are my computers okay?', 'Are all the computers okay?', 'Is Synthetic Inference Node A alive?', "What's Synthetic Inference Node A doing?"):
             restricted = direct_read(prompt, 'synthetic-household', 'household')
             assert "can't verify private infrastructure or computer status" in restricted, restricted
-            assert 'Tartarus' not in restricted and 'Proxmox' not in restricted, restricted
+            assert 'Synthetic Inference Node A' not in restricted and 'Proxmox' not in restricted, restricted
         for prompt in ('Where is HADES running?', 'Where is Minecraft running?'):
             restricted_location = direct_read(prompt, 'synthetic-household', 'household')
             assert "can't provide internal host or address details" in restricted_location, restricted_location
@@ -592,12 +593,12 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 {'name': 'Lab Host', 'runtime_status': 'online', 'currently_online': True,
                  'runtime': {'status': 'online', 'mem': 8, 'maxmem': 16, 'disk': 20, 'maxdisk': 40}},
                 {'name': 'App Guest', 'runtime_status': 'running', 'currently_online': True,
-                 'runtime': {'name': 'ignored', 'vmid': 803, 'node': 'Lab Host', 'status': 'running',
+                 'runtime': {'name': 'ignored', 'vmid': 2803, 'node': 'Lab Host', 'status': 'running',
                              'mem': 4, 'maxmem': 8, 'disk': 10, 'maxdisk': 20}},
             ],
         )
         formatted = direct_read('Give me a detailed homelab status', 'synthetic-owner', 'owner')
-        assert 'Lab Host host' in formatted and 'App Guest VM 803 on Lab Host' in formatted, formatted
+        assert 'Lab Host host' in formatted and 'App Guest VM 2803 on Lab Host' in formatted, formatted
         assert 'None VM None' not in formatted, formatted
         assert 'no linked Proxmox runtime record is available' in formatted and 'does not mean they are offline' in formatted, formatted
         assert '3 source observations have no verified cross-source identity link' in formatted, formatted
@@ -676,12 +677,12 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         core_placement_route = direct_read(
             'Which machine is running HADES?', 'synthetic-owner', 'owner'
         )
-        assert 'VM 802) is running on Erebus' in core_placement_route, core_placement_route
+        assert 'VM 2802) is running on Synthetic Virtualization Host' in core_placement_route, core_placement_route
         household_placement = direct_read(
             'Which machine is running HADES?', 'synthetic-household', 'household'
         )
         assert 'private infrastructure or computer status' in household_placement, household_placement
-        assert 'Erebus' not in household_placement and 'VM 802' not in household_placement, household_placement
+        assert 'Synthetic Virtualization Host' not in household_placement and 'VM 2802' not in household_placement, household_placement
     finally:
         if old_workdir is None:
             os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
@@ -759,12 +760,12 @@ with tempfile.TemporaryDirectory(prefix='hades-failed-homelab-read-') as temp_ro
     os.environ['HADES_HERMES_WORKING_DIRECTORY'] = temp_root
     try:
         owner_unknown = direct_read(
-            "What's Tartarus doing right now?", 'synthetic-owner', 'owner'
+            "What's Synthetic Inference Node A doing right now?", 'synthetic-owner', 'owner'
         )
         assert 'couldn\'t verify the current homelab sources' in owner_unknown, owner_unknown
         provenance_unknown = direct_read(
             'When was that checked?', 'synthetic-owner', 'owner',
-            context_text='What is Tartarus doing right now?',
+            context_text='What is Synthetic Inference Node A doing right now?',
         )
         assert provenance_unknown.startswith(
             "I couldn't verify the current homelab sources"

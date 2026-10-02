@@ -86,6 +86,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "context_text=_hades_intent_text" in candidate
     assert "household_homelab_response" in candidate
     assert "Owner node-activity read failed closed without model invocation" in candidate
+    assert "_hades_homelab_named_check_target(user_message)" in candidate
     assert 'r"\\bwhat(?:' in candidate
     assert "Owner model-capacity follow-up failed closed without model invocation" in candidate
     run_start = candidate.index("def _hades_run_conversation")
@@ -114,7 +115,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     changed.write_text(ACTIVE.replace('_hades_direct_homelab_read(user_message)', '_hades_direct_homelab_read("changed")'), encoding="utf-8")
     refused = run("--active-overlay", str(changed), "--source", str(source), "--output", str(directory / "refused.py"))
     assert refused.returncode != 0
-    assert "unrecognized active homelab call" in refused.stderr
+    assert "unrecognized active homelab" in refused.stderr
     assert not (directory / "refused.py").exists()
 
 print("PASS synthetic focused overlay composition, permissions, preservation, idempotent refusal, and drift refusal")

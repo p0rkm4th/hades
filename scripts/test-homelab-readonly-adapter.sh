@@ -53,7 +53,7 @@ assert resource["identity"]["canonical_id"] == "netbox:device:75"
 assert result["identity_warnings"] == []
 assert result["authority"]["runtime"] == "Proxmox"
 vm_result = module.summarize(
-    {"data": [{"type": "qemu", "vmid": 1802, "name": "hades-core", "node": "pve-main", "status": "running"}]},
+    {"data": [{"type": "qemu", "vmid": 12802, "name": "hades-core", "node": "pve-main", "status": "running"}]},
     {"results": []},
     {"monitors": []},
 )
@@ -61,7 +61,7 @@ vm_resource = vm_result["resources"][0]
 assert vm_result["online_names"] == ["hades-core"]
 assert vm_result["inventory_only_names"] == []
 assert vm_resource["runtime"] == {
-    "name": "hades-core", "node": "pve-main", "type": "qemu", "vmid": 1802, "status": "running"
+    "name": "hades-core", "node": "pve-main", "type": "qemu", "vmid": 12802, "status": "running"
 }
 assert vm_resource["inventory"] is None
 assert vm_resource["currently_online"] is True
@@ -430,7 +430,7 @@ assert server._proxmox_guest_visibility({"data": {
     "/": {"Sys.Audit": 1}, "/vms": {"VM.Audit": 1},
 }}) == {"status": "HEALTHY", "scope": "ALL_GUESTS", "scoped_guest_count": None}
 assert server._proxmox_guest_visibility({"data": {
-    "/vms": {"VM.Audit": 1}, "/vms/1802": {"NoAccess": 1},
+    "/vms": {"VM.Audit": 1}, "/vms/12802": {"NoAccess": 1},
 }}) == {"status": "DEGRADED", "scope": "NO_GUEST_AUDIT", "scoped_guest_count": 0}
 assert server._aggregate_proxmox_guest_visibility([
     {"status": "DEGRADED", "scope": "SELECTED_GUESTS"},
@@ -443,7 +443,7 @@ except ValueError as exc:
 else:
     raise AssertionError("credential-bearing source URLs must be rejected")
 runtime_fixture = {
-    "type": "qemu", "vmid": 1802, "name": "hades-core", "node": "pve-main",
+    "type": "qemu", "vmid": 12802, "name": "hades-core", "node": "pve-main",
     "status": "running", "cpu": 0.25, "maxcpu": 16, "mem": 1073741824,
     "maxmem": 8589934592, "disk": 10737418240, "maxdisk": 53687091200,
     "uptime": 3600, "unrelated_secret_like_field": "must-not-escape",
@@ -469,7 +469,7 @@ def fixture_fetch(url, *_args, **_kwargs):
     if url == "https://pve-a.example.test/access/permissions":
         return {"data": {
             "/": {"Sys.Audit": 1}, "/vms": {"Sys.Audit": 1},
-            "/vms/1802": {"VM.Audit": 1},
+            "/vms/12802": {"VM.Audit": 1},
         }}
     if url == "https://pve-b.example.test/cluster/resources":
         proxmox_barrier.wait(timeout=1.0)
@@ -507,7 +507,7 @@ assert "sentinel-private-value" not in str(summary)
 assert all(isinstance(row.get("retrieved_at"), str) for row in summary["sources"] if row.get("duration_ms") is not None)
 runtime_row = next(row for row in summary["resources"] if row["name"] == "hades-core")
 assert runtime_row["runtime"] == {
-    "name": "hades-core", "node": "pve-main", "type": "qemu", "vmid": 1802,
+    "name": "hades-core", "node": "pve-main", "type": "qemu", "vmid": 12802,
     "status": "running", "cpu": 0.25, "maxcpu": 16,
     "mem": 1073741824, "maxmem": 8589934592,
     "disk": 10737418240, "maxdisk": 53687091200, "uptime": 3600,
@@ -688,7 +688,7 @@ assert "does not prove GPU execution" in where_answer, where_answer
 unlinked_inference = {
     "status": "READABLE",
     "endpoints": [{
-        "source_identity": "inference:tartarus", "node_identity": None,
+        "source_identity": "inference:synthetic-inference-node-a", "node_identity": None,
         "identity_status": "UNLINKED", "status": "READABLE",
         "loaded_status": "CURRENT", "models": [{"name": "qwen3.6:35b"}],
         "loaded_models": [],
@@ -697,84 +697,84 @@ unlinked_inference = {
 unlinked_model_answer = server.format_inference_inventory_response(
     "Where is qwen3.6:35b?", unlinked_inference, {"resources": []},
 )
-assert "qwen3.6:35b is listed by Tartarus inference endpoint" in unlinked_model_answer, unlinked_model_answer
+assert "qwen3.6:35b is listed by Synthetic Inference Node A inference endpoint" in unlinked_model_answer, unlinked_model_answer
 assert "can't verify which physical machine this endpoint belongs to" in unlinked_model_answer, unlinked_model_answer
-assert "inference:tartarus" not in unlinked_model_answer, unlinked_model_answer
-tartarus_activity = server.format_inference_inventory_response(
-    "What's Tartarus doing right now?", unlinked_inference, {
+assert "inference:synthetic-inference-node-a" not in unlinked_model_answer, unlinked_model_answer
+synthetic_inference_node_a_activity = server.format_inference_inventory_response(
+    "What's Synthetic Inference Node A doing right now?", unlinked_inference, {
         "availability_summary": [{
-            "name": "host-tartarus", "status": "up", "freshness": "FRESH",
+            "name": "host-synthetic-inference-node-a", "status": "up", "freshness": "FRESH",
             "source_identity": "kuma:monitor:12",
         }],
         "resources": [{
-        "name": "Tartarus", "runtime_status": "NOT_OBSERVED",
-        "inventory": {"name": "Tartarus", "role": "deep inference"},
+        "name": "Synthetic Inference Node A", "runtime_status": "NOT_OBSERVED",
+        "inventory": {"name": "Synthetic Inference Node A", "role": "deep inference"},
         }],
     },
 )
-assert "configured Tartarus inference endpoint responded to a live catalog read" in tartarus_activity, tartarus_activity
-assert "provider catalog lists qwen3.6:35b" in tartarus_activity, tartarus_activity
-assert "separate Uptime Kuma check named host-tartarus reports up (fresh observation)" in tartarus_activity, tartarus_activity
-assert "No stable identity link confirms that this check targets the physical host" in tartarus_activity, tartarus_activity
-assert "can't verify that this endpoint belongs to the physical host you named" in tartarus_activity, tartarus_activity
-assert "Proxmox currently reports Tartarus online" not in tartarus_activity, tartarus_activity
-stale_tartarus_activity = server.format_inference_inventory_response(
-    "What's Tartarus doing right now?", unlinked_inference, {
+assert "configured Synthetic Inference Node A inference endpoint responded to a live catalog read" in synthetic_inference_node_a_activity, synthetic_inference_node_a_activity
+assert "provider catalog lists qwen3.6:35b" in synthetic_inference_node_a_activity, synthetic_inference_node_a_activity
+assert "separate Uptime Kuma check named host-synthetic-inference-node-a reports up (fresh observation)" in synthetic_inference_node_a_activity, synthetic_inference_node_a_activity
+assert "No stable identity link confirms that this check targets the physical host" in synthetic_inference_node_a_activity, synthetic_inference_node_a_activity
+assert "can't verify that this endpoint belongs to the physical host you named" in synthetic_inference_node_a_activity, synthetic_inference_node_a_activity
+assert "Proxmox currently reports Synthetic Inference Node A online" not in synthetic_inference_node_a_activity, synthetic_inference_node_a_activity
+stale_synthetic_inference_node_a_activity = server.format_inference_inventory_response(
+    "What's Synthetic Inference Node A doing right now?", unlinked_inference, {
         "availability_summary": [{
-            "name": "host-tartarus", "status": "up", "freshness": "STALE",
+            "name": "host-synthetic-inference-node-a", "status": "up", "freshness": "STALE",
             "source_identity": "kuma:monitor:12",
         }],
         "resources": [{
-            "name": "Tartarus", "runtime_status": "NOT_OBSERVED",
-            "inventory": {"name": "Tartarus", "role": "deep inference"},
+            "name": "Synthetic Inference Node A", "runtime_status": "NOT_OBSERVED",
+            "inventory": {"name": "Synthetic Inference Node A", "role": "deep inference"},
         }],
     },
 )
-assert "host-tartarus reports up (stale observation)" in stale_tartarus_activity, stale_tartarus_activity
-assert "No stable identity link confirms that this check targets the physical host" in stale_tartarus_activity, stale_tartarus_activity
-assert "Tartarus is online" not in stale_tartarus_activity, stale_tartarus_activity
-ambiguous_tartarus_activity = server.format_inference_inventory_response(
-    "What's Tartarus doing right now?", unlinked_inference, {
+assert "host-synthetic-inference-node-a reports up (stale observation)" in stale_synthetic_inference_node_a_activity, stale_synthetic_inference_node_a_activity
+assert "No stable identity link confirms that this check targets the physical host" in stale_synthetic_inference_node_a_activity, stale_synthetic_inference_node_a_activity
+assert "Synthetic Inference Node A is online" not in stale_synthetic_inference_node_a_activity, stale_synthetic_inference_node_a_activity
+ambiguous_synthetic_inference_node_a_activity = server.format_inference_inventory_response(
+    "What's Synthetic Inference Node A doing right now?", unlinked_inference, {
         "availability_summary": [
-            {"name": "host-tartarus", "status": "up", "freshness": "FRESH"},
-            {"name": "tartarus ssh", "status": "down", "freshness": "FRESH"},
+            {"name": "host-synthetic-inference-node-a", "status": "up", "freshness": "FRESH"},
+            {"name": "synthetic-inference-node-a ssh", "status": "down", "freshness": "FRESH"},
         ],
         "resources": [{
-            "name": "Tartarus", "runtime_status": "NOT_OBSERVED",
-            "inventory": {"name": "Tartarus", "role": "deep inference"},
+            "name": "Synthetic Inference Node A", "runtime_status": "NOT_OBSERVED",
+            "inventory": {"name": "Synthetic Inference Node A", "role": "deep inference"},
         }],
     },
 )
-assert "Multiple similarly named Uptime Kuma checks exist" in ambiguous_tartarus_activity, ambiguous_tartarus_activity
-assert "reports up" not in ambiguous_tartarus_activity and "reports down" not in ambiguous_tartarus_activity, ambiguous_tartarus_activity
-assert "can't verify that this endpoint belongs to the physical host you named" in ambiguous_tartarus_activity, ambiguous_tartarus_activity
-linked_tartarus_activity = server.format_inference_inventory_response(
-    "What's Tartarus doing right now?", unlinked_inference, {
+assert "Multiple similarly named Uptime Kuma checks exist" in ambiguous_synthetic_inference_node_a_activity, ambiguous_synthetic_inference_node_a_activity
+assert "reports up" not in ambiguous_synthetic_inference_node_a_activity and "reports down" not in ambiguous_synthetic_inference_node_a_activity, ambiguous_synthetic_inference_node_a_activity
+assert "can't verify that this endpoint belongs to the physical host you named" in ambiguous_synthetic_inference_node_a_activity, ambiguous_synthetic_inference_node_a_activity
+linked_synthetic_inference_node_a_activity = server.format_inference_inventory_response(
+    "What's Synthetic Inference Node A doing right now?", unlinked_inference, {
         "availability_summary": [{
-            "name": "host-tartarus", "status": "down", "freshness": "FRESH",
+            "name": "host-synthetic-inference-node-a", "status": "down", "freshness": "FRESH",
             "source_identity": "kuma:monitor:12",
         }],
         "resources": [{
-            "name": "Tartarus", "runtime_status": "NOT_OBSERVED",
+            "name": "Synthetic Inference Node A", "runtime_status": "NOT_OBSERVED",
             "identity": {"canonical_id": "netbox:device:3",
                          "source_identities": {"kuma": ["kuma:monitor:12"]}},
-            "inventory": {"id": 3, "name": "Tartarus", "role": "deep inference"},
+            "inventory": {"id": 3, "name": "Synthetic Inference Node A", "role": "deep inference"},
         }],
     },
 )
-assert "Uptime Kuma check named host-tartarus reports down (fresh observation)" in linked_tartarus_activity, linked_tartarus_activity
-assert "Its record is linked to this machine in the current inventory" in linked_tartarus_activity, linked_tartarus_activity
-assert "can't verify that this endpoint belongs to the physical host you named" in linked_tartarus_activity, linked_tartarus_activity
-offline_tartarus_activity = server.format_inference_inventory_response(
-    "What's Tartarus doing right now?", {
+assert "Uptime Kuma check named host-synthetic-inference-node-a reports down (fresh observation)" in linked_synthetic_inference_node_a_activity, linked_synthetic_inference_node_a_activity
+assert "Its record is linked to this machine in the current inventory" in linked_synthetic_inference_node_a_activity, linked_synthetic_inference_node_a_activity
+assert "can't verify that this endpoint belongs to the physical host you named" in linked_synthetic_inference_node_a_activity, linked_synthetic_inference_node_a_activity
+offline_synthetic_inference_node_a_activity = server.format_inference_inventory_response(
+    "What's Synthetic Inference Node A doing right now?", {
         "status": "PARTIAL", "endpoints": [{
-            "source_identity": "inference:tartarus", "status": "SOURCE_UNAVAILABLE",
+            "source_identity": "inference:synthetic-inference-node-a", "status": "SOURCE_UNAVAILABLE",
             "models": [], "loaded_models": [], "loaded_status": "UNKNOWN",
         }],
     }, {"resources": []},
 )
-assert "Tartarus inference endpoint did not respond" in offline_tartarus_activity, offline_tartarus_activity
-assert "doesn't establish whether the physical host is down" in offline_tartarus_activity, offline_tartarus_activity
+assert "Synthetic Inference Node A inference endpoint did not respond" in offline_synthetic_inference_node_a_activity, offline_synthetic_inference_node_a_activity
+assert "doesn't establish whether the physical host is down" in offline_synthetic_inference_node_a_activity, offline_synthetic_inference_node_a_activity
 summary_names["capability_freshness"] = "FRESH"
 summary_names["capability_machines"] = [{
     "name": "GPU A", "role": "deep inference lane",
@@ -953,9 +953,9 @@ def backup_fetch(url, *_args, **_kwargs):
         return {"data": [{"type": "node", "node": "node-a"}]}
     if "/nodes/node-a/tasks?" in url:
         return {"data": [
-            {"id": "802", "status": "OK", "endtime": 1790900000,
+            {"id": "2802", "status": "OK", "endtime": 1790900000,
              "upid": "UPID:private-user:secret"},
-            {"id": "803", "status": "ERROR: private failure detail", "starttime": 1790800000,
+            {"id": "2803", "status": "ERROR: private failure detail", "starttime": 1790800000,
              "user": "private-user@pam"},
         ]}
     raise AssertionError("unexpected Proxmox backup URL")

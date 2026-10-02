@@ -86,6 +86,9 @@ assert hades._HADES_HOMELAB_INTENT.search("Which inference models are available 
 assert hades._HADES_HOMELAB_INTENT.search("Where's qwen3.6:35b?")
 assert hades._HADES_HOMELAB_INTENT.search("Which GPUs are free?")
 assert hades._HADES_HOMELAB_INTENT.search("Where should I run another model?")
+assert hades._HADES_HOMELAB_INTENT.search("Check Synthetic Node B.")
+assert hades._hades_homelab_target_from_question("Check Synthetic Node B.") == "synthetic node b"
+assert hades._hades_homelab_named_check_target("Check my shopping list") is None
 assert not hades._hades_positive_homelab_control_request(
     "Check the homelab and do not change anything."
 )
@@ -99,7 +102,7 @@ household_ai_availability = hades._hades_direct_homelab_read(
 )
 assert "AI service checks are responding" in household_ai_availability, household_ai_availability
 assert "haven't confirmed a prompt will work" in household_ai_availability, household_ai_availability
-assert "Tartarus" not in household_ai_availability and "qwen" not in household_ai_availability, household_ai_availability
+assert "Synthetic Inference Node A" not in household_ai_availability and "qwen" not in household_ai_availability, household_ai_availability
 household_gpu_denial = hades._hades_direct_homelab_read(
     "Which GPUs are free?", scope="household",
 )
@@ -108,6 +111,10 @@ household_computer_denial = hades._hades_direct_homelab_read(
     "Are all the computers okay?", scope="household",
 )
 assert "can't verify private infrastructure or computer status" in household_computer_denial, household_computer_denial
+household_named_node_denial = hades._hades_direct_homelab_read(
+    "Check Synthetic Node B.", "synthetic-beta", "household",
+)
+assert "private infrastructure" in household_named_node_denial, household_named_node_denial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from integrations.task import TaskStatus, TaskStore
 
@@ -405,7 +412,7 @@ household_ai_availability = household_game_agent.run_conversation(
 assert household_ai_availability.get("completed") is True and household_ai_availability.get("api_calls") == 0, household_ai_availability
 assert "AI service checks are responding" in household_ai_availability["final_response"], household_ai_availability
 assert "haven't confirmed a prompt will work" in household_ai_availability["final_response"], household_ai_availability
-assert "Tartarus" not in household_ai_availability["final_response"], household_ai_availability
+assert "Synthetic Inference Node A" not in household_ai_availability["final_response"], household_ai_availability
 household_game_status = household_game_agent.run_conversation(
     "Is Minecraft working?", conversation_history=[],
 )
@@ -507,6 +514,25 @@ assert "I don't have a current host runtime check for it" in compute_node_a_text
 assert "192.0.2.69" not in compute_node_a_text, compute_node_a_text
 registry = hermes_registry_module.registry
 registry.calls.clear()
+check_synthetic_node_b = hades._hades_direct_homelab_read(
+    "Check Synthetic Node B.", owner, "owner",
+)
+assert registry.calls == ["homelab_inference_inventory", "homelab_owner_snapshot"], registry.calls
+assert "Observed hardware inventory lists Synthetic Node B." in check_synthetic_node_b, check_synthetic_node_b
+assert "can't say whether it's online" in check_synthetic_node_b, check_synthetic_node_b
+assert "running normally" not in check_synthetic_node_b.casefold(), check_synthetic_node_b
+check_synthetic_node_b_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-named-check-current-source",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+check_synthetic_node_b_result = check_synthetic_node_b_agent.run_conversation(
+    "Check Synthetic Node B.", conversation_history=[]
+)
+assert check_synthetic_node_b_result.get("completed") is True and check_synthetic_node_b_result.get("api_calls") == 0, check_synthetic_node_b_result
+assert "Observed hardware inventory lists Synthetic Node B." in check_synthetic_node_b_result["final_response"], check_synthetic_node_b_result
+assert "running normally" not in check_synthetic_node_b_result["final_response"].casefold(), check_synthetic_node_b_result
+assert hades._hades_direct_homelab_read("Check my shopping list", owner, "owner") is None
+registry.calls.clear()
 direct_node_status = hades._hades_direct_homelab_read(
     "What's Compute Node A doing right now?", owner, "owner",
 )
@@ -550,10 +576,13 @@ unavailable_node_agent = agent_class(
     stream_delta_callback=lambda _chunk: None, **kwargs,
 )
 unavailable_node = unavailable_node_agent.run_conversation(
-    "What is Hypnos running?", conversation_history=[]
+    "What is Synthetic Node B running?", conversation_history=[]
+)
+unavailable_check_node = unavailable_node_agent.run_conversation(
+    "Check Synthetic Node B.", conversation_history=[]
 )
 unavailable_issue = unavailable_node_agent.run_conversation(
-    "What's wrong with Tartarus?", conversation_history=[]
+    "What's wrong with Synthetic Inference Node A?", conversation_history=[]
 )
 def unexpected_capacity_read(*_args, **_kwargs):
     raise AssertionError("owner capacity follow-up must fail closed before starting a slow live read")
@@ -564,9 +593,11 @@ unavailable_size = unavailable_node_agent.run_conversation(
 )
 hades._hades_direct_homelab_read = actual_node_read
 assert unavailable_node.get("completed") is True and unavailable_node.get("api_calls") == 0, unavailable_node
-assert "couldn't verify current runtime or workload status for hypnos" in unavailable_node["final_response"], unavailable_node
+assert "couldn't verify current runtime or workload status for synthetic node b" in unavailable_node["final_response"], unavailable_node
+assert unavailable_check_node.get("completed") is True and unavailable_check_node.get("api_calls") == 0, unavailable_check_node
+assert "couldn't verify current runtime or workload status for synthetic node b" in unavailable_check_node["final_response"].casefold(), unavailable_check_node
 assert unavailable_issue.get("completed") is True and unavailable_issue.get("api_calls") == 0, unavailable_issue
-assert "couldn't verify current runtime or workload status for tartarus" in unavailable_issue["final_response"].casefold(), unavailable_issue
+assert "couldn't verify current runtime or workload status for synthetic inference node a" in unavailable_issue["final_response"].casefold(), unavailable_issue
 assert unavailable_size.get("completed") is True and unavailable_size.get("api_calls") == 0, unavailable_size
 assert "can't confirm whether that model fits" in unavailable_size["final_response"], unavailable_size
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
@@ -787,6 +818,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         'def format_inference_inventory_response(question, _inventory, _summary):\n'
         '    if "20 gb model" in question.casefold():\n'
         '        return "I can\'t determine which GPU has room because live VRAM is unavailable."\n'
+        '    if "synthetic node b" in question.casefold():\n'
+        '        return "No provider-linked model is recorded for Synthetic Node B."\n'
         '    if "ai thing" in question.casefold() or "ai available" in question.casefold():\n'
         '        return "All 1 configured AI provider checks are responding to catalog reads. I haven\'t tested a generation, so I can\'t confirm the AI can answer a prompt right now."\n'
         '    if "gpu" in question.casefold() or "another model" in question.casefold():\n'
@@ -799,7 +832,9 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         "machines:\n"
         "  - name: Compute Node A\n"
         "    address: 192.0.2.69\n"
-        "    role: synthetic inference node\n",
+        "    role: synthetic inference node\n"
+        "  - name: Synthetic Node B\n"
+        "    role: synthetic specialized inference node\n",
         encoding="utf-8",
     )
     script = root / "probe.py"

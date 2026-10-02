@@ -5130,6 +5130,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     or provisioning requests.
     """
     text = str(user_text or "")
+    named_node_check_target = _hades_homelab_named_check_target(text)
     followup_prompt = _hades_homelab_followup_prompt(text, scope, context_text)
     if followup_prompt and followup_prompt.casefold() != text.casefold():
         return _hades_direct_homelab_read(
@@ -5237,7 +5238,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     )
     if _definition_question:
         return None
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -5270,7 +5271,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     ) or (
         _hades_homelab_target_from_question(text)
         and re.search(r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\b", text, re.IGNORECASE)
-    ))
+    ) or named_node_check_target)
     placement_intent = bool(re.search(
         r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
         r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
@@ -6375,6 +6376,8 @@ def _hades_homelab_target_from_question(value):
     """Extract a node-like name from a status-shaped question, without aliases."""
     text = str(value or "")
     patterns = (
+        r"\b(?:check|inspect)\s+(?:the\s+)?"
+        r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\s+"
         r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         r"\b(?:what(?:['’]s|s|\s+is)|how(?:['’]s|\s+is))\s+"
@@ -6385,7 +6388,11 @@ def _hades_homelab_target_from_question(value):
         r"\b(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
         r"(?:is|looks)\s+(?:online|offline|up|down|running|unreachable)\b",
     )
-    ignored = {"everything", "all", "the servers", "the homelab", "the network"}
+    ignored = {
+        "everything", "all", "the servers", "the homelab", "the network",
+        "shopping list", "grocery list", "recipe", "recipes", "settings",
+        "memory", "conversation", "task", "tasks", "email", "emails",
+    }
     for pattern in patterns:
         match = re.search(pattern, text, re.IGNORECASE)
         if not match:
@@ -6400,8 +6407,30 @@ def _hades_homelab_target_from_question(value):
     return None
 
 
+def _hades_homelab_named_check_target(value):
+    """Return an explicit short check target, excluding common non-host nouns."""
+    text = str(value or "")
+    if not re.fullmatch(
+        r"\s*(?:check|inspect)\s+(?:the\s+)?"
+        r"[a-z0-9][a-z0-9 ._'’-]{0,60}?\s*[?.!]*\s*",
+        text,
+        re.IGNORECASE,
+    ):
+        return None
+    target = _hades_homelab_target_from_question(text)
+    if not target or target in {
+        "shopping list", "grocery list", "recipe", "recipes", "settings",
+        "memory", "conversation", "task", "tasks", "email", "emails",
+    }:
+        return None
+    return target
+
+
 _HADES_HOMELAB_INTENT = re.compile(
-    r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)|what(?:['’]s|\s+is)\s+down|"
+    r"^\s*(?:(?:check|inspect)\s+(?:the\s+)?"
+    r"(?!(?:my|our|if|whether|shopping\s+list|grocery\s+list|recipes?|settings|memory|conversation|tasks?|emails?)\b)"
+    r"[a-z0-9][a-z0-9 ._'’-]{0,60}?|"
+    r"is\s+everything\s+(?:okay|ok|all\s+right|good)|what(?:['’]s|\s+is)\s+down|"
     r"anything\s+(?:down|dying|wrong|broken)|what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)|"
     r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
     r"why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
@@ -10263,10 +10292,13 @@ try:
                     "api_calls": 0,
                     "completed": True,
                 }
-            if self._hades_session_scope == "owner" and re.search(
-                r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+(?:doing|running)\b|"
-                r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s*[?.!]*$",
-                str(user_message or ""), re.IGNORECASE,
+            if self._hades_session_scope == "owner" and (
+                _hades_homelab_named_check_target(user_message)
+                or re.search(
+                    r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+(?:doing|running)\b|"
+                    r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s*[?.!]*$",
+                    str(user_message or ""), re.IGNORECASE,
+                )
             ):
                 target = _hades_homelab_target_from_question(user_message)
                 subject_name = f" for {target}" if target else ""
