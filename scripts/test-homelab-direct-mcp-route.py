@@ -26,6 +26,7 @@ direct_read = next(
 )
 direct_read_source = ast.unparse(direct_read)
 assert "module.resolve_inference_node_labels" not in direct_read_source
+assert "homelab_owner_snapshot" in ast.unparse(helper)
 assert any(
     isinstance(node, ast.Call)
     and isinstance(node.func, ast.Name)
@@ -38,21 +39,22 @@ assert any(
 
 
 class FakeRegistry:
-    def __init__(self, response, *, registered=True):
+    def __init__(self, response, *, tool_name="homelab_summary", registered=True):
         self.response = response
         self.registered = registered
+        self.registered_name = f"mcp__homelab_readonly__{tool_name}"
         self.calls = []
 
     def get_entry(self, name):
-        return object() if self.registered and name == "mcp__homelab_readonly__homelab_summary" else None
+        return object() if self.registered and name == self.registered_name else None
 
     def dispatch(self, name, arguments):
         self.calls.append((name, arguments))
         return self.response
 
 
-def invoke(response, *, registered=True, discovery_register=False):
-    fake = FakeRegistry(response, registered=registered)
+def invoke(response, *, tool_name="homelab_summary", registered=True, discovery_register=False):
+    fake = FakeRegistry(response, tool_name=tool_name, registered=registered)
     discovery_calls = []
     tools = types.ModuleType("tools")
     tools.__path__ = []
@@ -64,7 +66,7 @@ def invoke(response, *, registered=True, discovery_register=False):
         discovery_calls.append(list(allowed))
         if discovery_register:
             fake.registered = True
-        return ["mcp__homelab_readonly__homelab_summary"] if discovery_register else []
+        return [fake.registered_name] if discovery_register else []
 
     discovery_module.discover_mcp_tools = discover_mcp_tools
     previous = {
@@ -77,7 +79,7 @@ def invoke(response, *, registered=True, discovery_register=False):
     namespace = {"json": json, "_hades_logger": logging.getLogger("test.homelab")}
     try:
         exec(compile(ast.Module(body=[helper], type_ignores=[]), "sitecustomize.py", "exec"), namespace)
-        result = namespace[helper.name]("homelab_summary")
+        result = namespace[helper.name](tool_name)
     finally:
         for name, value in previous.items():
             if value is None:
@@ -88,6 +90,13 @@ def invoke(response, *, registered=True, discovery_register=False):
 
 
 payload = {"status": "OK", "source_counts": {"proxmox_runtime_rows": 2}, "resources": []}
+snapshot_payload = {"status": "PARTIAL", "summary": payload, "compute": {"status": "OK", "machines": []}}
+snapshot, registry, _ = invoke(
+    json.dumps({"result": json.dumps(snapshot_payload)}),
+    tool_name="homelab_owner_snapshot",
+)
+assert snapshot == snapshot_payload
+assert registry.calls == [("mcp__homelab_readonly__homelab_owner_snapshot", {})]
 result, registry, discovery_calls = invoke(json.dumps({"result": json.dumps(payload)}))
 assert result == payload, result
 assert registry.calls == [("mcp__homelab_readonly__homelab_summary", {})]

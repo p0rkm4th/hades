@@ -4948,6 +4948,10 @@ def _hades_direct_homelab_tool_result(tool_name):
             "mcp__homelab_readonly__homelab_summary",
             "mcp_homelab_readonly_homelab_summary",
         ),
+        "homelab_owner_snapshot": (
+            "mcp__homelab_readonly__homelab_owner_snapshot",
+            "mcp_homelab_readonly_homelab_owner_snapshot",
+        ),
         "homelab_backup_status": (
             "mcp__homelab_readonly__homelab_backup_status",
             "mcp_homelab_readonly_homelab_backup_status",
@@ -5334,26 +5338,30 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         spec.loader.exec_module(module)
         if inference_intent:
             inference = _hades_direct_homelab_tool_result("homelab_inference_inventory")
-            summary = _hades_direct_homelab_tool_result("homelab_summary") if node_activity_intent else {}
             model_location_intent = bool(re.search(
                 r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
                 text,
                 re.IGNORECASE,
             ))
-            if (placement_intent or model_location_intent) and not summary:
+            owner_snapshot = {}
+            if node_activity_intent or placement_intent or model_location_intent:
+                owner_snapshot = _hades_direct_homelab_tool_result("homelab_owner_snapshot")
+            snapshot_summary = owner_snapshot.get("summary") if isinstance(owner_snapshot, dict) else None
+            snapshot_compute = owner_snapshot.get("compute") if isinstance(owner_snapshot, dict) else None
+            has_owner_snapshot = isinstance(snapshot_summary, dict) and isinstance(snapshot_compute, dict)
+            summary = snapshot_summary if has_owner_snapshot else {}
+            capabilities = snapshot_compute if has_owner_snapshot else {}
+            if (node_activity_intent or placement_intent or model_location_intent) and not has_owner_snapshot:
                 summary = _hades_direct_homelab_tool_result("homelab_summary")
+                capabilities = _hades_direct_homelab_tool_result("homelab_compute_capabilities")
             if placement_intent:
-                try:
-                    capabilities = _hades_direct_homelab_tool_result("homelab_compute_capabilities")
-                    summary = {
-                        "resources": summary.get("resources", []) if isinstance(summary, dict) else [],
-                        "capability_machines": capabilities.get("machines", [])
-                        if isinstance(capabilities, dict) else [],
-                        "capability_freshness": capabilities.get("freshness", "UNKNOWN")
-                        if isinstance(capabilities, dict) else "UNKNOWN",
-                    }
-                except Exception:
-                    summary = {"resources": [], "capability_machines": []}
+                summary = {
+                    "resources": summary.get("resources", []) if isinstance(summary, dict) else [],
+                    "capability_machines": capabilities.get("machines", [])
+                    if isinstance(capabilities, dict) else [],
+                    "capability_freshness": capabilities.get("freshness", "UNKNOWN")
+                    if isinstance(capabilities, dict) else "UNKNOWN",
+                }
                 if not summary["capability_machines"]:
                     matrix_path = os.environ.get("HADES_CAPABILITY_MATRIX_FILE", "").strip()
                     if matrix_path:
@@ -5371,7 +5379,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             )
             if node_activity_intent:
                 target = _hades_homelab_target_from_question(text)
-                capability = _hades_direct_homelab_tool_result("homelab_compute_capabilities")
+                capability = capabilities
                 machines = capability.get("machines", []) if isinstance(capability, dict) else []
                 if not machines:
                     matrix_path = os.environ.get("HADES_CAPABILITY_MATRIX_FILE", "").strip()
