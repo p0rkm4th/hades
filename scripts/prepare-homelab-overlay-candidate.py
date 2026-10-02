@@ -176,7 +176,12 @@ def add_household_route(source: str) -> str:
 '''
     lines = source.splitlines(keepends=True)
     lines[owner.end_lineno:owner.end_lineno] = block.splitlines(keepends=True)
-    return "".join(lines)
+    composed = "".join(lines)
+    if "context_text=previous_user_text" in composed:
+        composed = composed.replace(
+            "context_text=previous_user_text", "context_text=_hades_intent_text", 1
+        )
+    return composed
 
 
 def add_media_clarification(source: str) -> str:

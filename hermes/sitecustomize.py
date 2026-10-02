@@ -5034,6 +5034,84 @@ def _hades_direct_homelab_tool_result(tool_name):
         return {"status": "SOURCE_UNAVAILABLE", "errors": ["The configured homelab source read failed."]}
 
 
+def _hades_homelab_followup_prompt(user_text, scope, context_text):
+    """Resolve a bounded owner homelab follow-up against current inventory."""
+    if scope != "owner":
+        return None
+    current = str(user_text or "").strip()
+    context = str(context_text or "").strip()
+    if not current or not context:
+        return None
+    history = context
+    if history.casefold().endswith(current.casefold()):
+        history = history[:-len(current)].rstrip()
+    explicit = re.fullmatch(
+        r"(?:what\s+about|sorry[, ]+|actually[, ]+|i\s+meant\s+)"
+        r"(?:check\s+)?\s*(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*",
+        current,
+        re.IGNORECASE,
+    )
+    placement_size = re.fullmatch(
+        r"what\s+about\s+(?:a\s+)?(?P<size>\d+(?:\.\d+)?)\s*(?:gb|gib)\s+(?:one|model)\s*[?.!]*",
+        current,
+        re.IGNORECASE,
+    )
+    if placement_size:
+        explicit = None
+    placement_followup = bool(re.search(
+        r"\bwhich\s+one\s+(?:has\s+)?(?:more\s+)?room\b|"
+        r"\b(?:can|could)\s+i\s+(?:put|run|host)\s+another\s+model\s+there\b",
+        current,
+        re.IGNORECASE,
+    ))
+    if not explicit and not placement_size and not placement_followup:
+        return None
+
+    summary = _hades_direct_homelab_tool_result("homelab_summary")
+    resources = summary.get("resources", []) if isinstance(summary, dict) else []
+    names = []
+    seen = set()
+    for row in resources if isinstance(resources, list) else []:
+        if not isinstance(row, dict):
+            continue
+        inventory = row.get("inventory") if isinstance(row.get("inventory"), dict) else {}
+        runtime = row.get("runtime") if isinstance(row.get("runtime"), dict) else {}
+        for value in (row.get("name"), inventory.get("name"), runtime.get("name")):
+            if not isinstance(value, str):
+                continue
+            label = " ".join(value.split()).strip()
+            key = re.sub(r"[^a-z0-9]+", "", label.casefold())
+            if len(key) < 3 or key in seen:
+                continue
+            seen.add(key)
+            names.append(label)
+
+    def last_occurrence(haystack, label):
+        pattern = re.compile(r"(?<![\w])" + re.escape(label) + r"(?![\w])", re.IGNORECASE)
+        matches = list(pattern.finditer(haystack))
+        return matches[-1].start() if matches else -1
+
+    target = None
+    if explicit:
+        requested = re.sub(r"^(?:what\s+about|sorry[, ]+|actually[, ]+|i\s+meant\s+)", "", explicit.group("target"), flags=re.IGNORECASE)
+        requested_key = re.sub(r"[^a-z0-9]+", "", requested.casefold())
+        matches = [name for name in names if re.sub(r"[^a-z0-9]+", "", name.casefold()) == requested_key]
+        if len(matches) == 1 and any(last_occurrence(history, name) >= 0 for name in names):
+            target = matches[0]
+    else:
+        mentioned = [(last_occurrence(history, name), name) for name in names]
+        mentioned = [(position, name) for position, name in mentioned if position >= 0]
+        if mentioned:
+            target = max(mentioned, key=lambda item: item[0])[1]
+    if not target:
+        return None
+    if explicit:
+        return f"What's {target} doing right now?"
+    if placement_size:
+        return f"Can {target} host a {placement_size.group('size')} GB model?"
+    return f"Can {target} host another model?"
+
+
 def _hades_direct_homelab_read(user_text, subject="", scope="", context_text=""):
     """Answer simple owner homelab-status questions from canonical read sources.
 
@@ -5044,6 +5122,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     or provisioning requests.
     """
     text = str(user_text or "")
+    followup_prompt = _hades_homelab_followup_prompt(text, scope, context_text)
+    if followup_prompt and followup_prompt.casefold() != text.casefold():
+        return _hades_direct_homelab_read(
+            followup_prompt, subject, scope, context_text=context_text
+        )
     provenance_intent = bool(
         re.search(
             r"\b(?:how\s+do\s+you\s+know|what(?:['’]s|\s+is)\s+the\s+source|"
@@ -10131,7 +10214,7 @@ try:
                 user_message,
                 getattr(self, "_hades_subject", ""),
                 self._hades_session_scope,
-                context_text=previous_user_text,
+                context_text=_hades_intent_text,
             )
             if direct_homelab_response:
                 callback = getattr(self, "stream_delta_callback", None)

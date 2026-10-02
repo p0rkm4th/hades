@@ -78,6 +78,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert len(calls) == 3, len(calls)
     assert "getattr(self, \"_hades_subject\", \"\")" in candidate
     assert "context_text=previous_user_text" in candidate
+    assert "context_text=_hades_intent_text" in candidate
     assert "household_homelab_response" in candidate
     assert "Owner node-activity read failed closed without model invocation" in candidate
     assert "_hades_homelab_target_from_question(user_message)" in candidate

@@ -35,6 +35,7 @@ wanted = {
     '_hades_direct_proxmox_backup_read',
     '_hades_homelab_name_key',
     '_hades_homelab_target_from_question',
+    '_hades_homelab_followup_prompt',
     '_hades_positive_homelab_control_request',
 }
 functions = [
@@ -390,14 +391,29 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '    import os\n'
         '    if os.environ.get("HADES_TEST_NO_GAME_MONITOR") == "1":\n'
         '        return {"resources": [], "service_catalog": {"status": "OK", "coverage": "EMPTY", "services": []}}\n'
-        '    return {"resources": [{"name": "Minecraft Server", '
+        '    resources = [{"name": "Minecraft Server", '
         '"runtime_status": "NOT_OBSERVED", "currently_online": False, '
         '"availability": {"name": "Minecraft Server", "status": "up", '
         '"last_updated": "2026-09-27T12:00:00Z"}, '
-        '"availability_freshness": "FRESH"}], '
+        '"availability_freshness": "FRESH"}]\n'
+        '    if os.environ.get("HADES_TEST_INFERENCE_NODE") == "1":\n'
+        '        resources.append({"name": "Compute Node A", "runtime_status": "NOT_OBSERVED", '
+        '                         "inventory": {"name": "Compute Node A"}, '
+        '                         "identity": {"canonical_id": "netbox:device:7"}})\n'
+        '    return {"resources": resources, '
         '"service_catalog": {"status": "OK", "coverage": "COMPLETE", "services": [{'
         '"name": "Minecraft Server", "parent_name": "Test Host", '
-        '"addresses": ["192.0.2.10"], "port_mappings": ["tcp/25565"]}]}}\n',
+        '"addresses": ["192.0.2.10"], "port_mappings": ["tcp/25565"]}]}}\n'
+        'def homelab_inference_inventory():\n'
+        '    return {"status": "READABLE", "endpoints": [{"status": "READABLE", '
+        '            "node_identity": "netbox:device:7", "models": [{"name": "sample:small"}], '
+        '            "loaded_models": [{"name": "sample:small"}]}]}\n'
+        'def homelab_compute_capabilities():\n'
+        '    return {"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
+        'def format_inference_inventory_response(user_text, inventory, summary):\n'
+        '    if "host another model" in user_text.casefold() or "host a 20 gb model" in user_text.casefold():\n'
+        '        return "I can\'t determine which GPU has room because current free-VRAM data is unavailable."\n'
+        '    return "sample:small is listed at Compute Node A based on provider-reported inventory."\n',
         encoding='utf-8',
     )
     old_workdir = os.environ.get('HADES_HERMES_WORKING_DIRECTORY')
@@ -423,6 +439,39 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'Where is Agent Zero?', 'synthetic-owner', 'owner'
         )
         assert direct_read('Where is Agent Zero?', 'synthetic-household', 'household') is None
+        os.environ['HADES_TEST_INFERENCE_NODE'] = '1'
+        try:
+            followup_context = (
+                "What's wrong with Compute Node A?\n"
+                "Compute Node A's host runtime could not be verified.\n"
+                "What about Compute Node A?\n"
+                "Compute Node A has one provider-reported model.\n"
+            )
+            named_followup = direct_read(
+                'What about Compute Node A?', 'synthetic-owner', 'owner',
+                context_text=followup_context + 'What about Compute Node A?',
+            )
+            assert 'sample:small is listed at Compute Node A' in named_followup, named_followup
+            room_followup = direct_read(
+                'Which one has more room?', 'synthetic-owner', 'owner',
+                context_text=followup_context + 'Which one has more room?',
+            )
+            assert "can't determine which GPU has room" in room_followup, room_followup
+            model_size_followup = direct_read(
+                'What about a 20 GB one?', 'synthetic-owner', 'owner',
+                context_text=followup_context + 'What about a 20 GB one?',
+            )
+            assert "can't determine which GPU has room" in model_size_followup, model_size_followup
+            correction = direct_read(
+                'Sorry, Compute Node A', 'synthetic-owner', 'owner',
+                context_text=followup_context + 'Sorry, Compute Node A',
+            )
+            assert 'sample:small is listed at Compute Node A' in correction, correction
+            assert namespace['_hades_homelab_followup_prompt'](
+                'Which one has more room?', 'owner', ''
+            ) is None
+        finally:
+            os.environ.pop('HADES_TEST_INFERENCE_NODE', None)
         assert "can't verify private infrastructure or computer status" in direct_read(
             'Is the homelab okay?', 'synthetic-household', 'household'
         )
