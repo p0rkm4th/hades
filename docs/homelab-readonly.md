@@ -95,6 +95,15 @@ The first live acceptance must inspect the returned resource types as well as
 HTTP success: `/cluster/resources` can return a node-only view while guest rows
 are still absent. Acceptance for guest coverage requires the intended VM rows
 and successful reads of only the explicitly approved guest-agent information.
+HADES separately reads `/access/permissions` to classify the token's effective
+guest-audit scope. `ALL_GUESTS` means broad VM audit is present without a
+reported guest exclusion; `SELECTED_GUESTS` means audit is scoped to guest or
+pool paths; `NO_GUEST_AUDIT` means no applicable grant was observed. The
+`scoped_guest_count` is an exact count only when every applicable grant names
+an individual `/vms/<id>` path. Pool or other non-enumerable scoped grants
+report `null`; HADES must not present that as zero. These permission results
+describe effective authorization, while returned resource rows show what the
+API actually exposed on that read. Neither alone proves every guest is healthy.
 
 Use protected token files containing only the token secret. Proxmox token IDs
 are separate non-secret identifiers. URL, token-ID, and token-file lists must

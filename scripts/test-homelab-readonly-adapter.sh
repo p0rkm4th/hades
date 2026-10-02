@@ -432,6 +432,12 @@ assert server._proxmox_guest_visibility({"data": {
 assert server._proxmox_guest_visibility({"data": {
     "/vms": {"VM.Audit": 1}, "/vms/12802": {"NoAccess": 1},
 }}) == {"status": "DEGRADED", "scope": "NO_GUEST_AUDIT", "scoped_guest_count": 0}
+assert server._proxmox_guest_visibility({"data": {
+    "/": {"Sys.Audit": 1}, "/pool/compute": {"VM.Audit": 1},
+}}) == {"status": "DEGRADED", "scope": "SELECTED_GUESTS", "scoped_guest_count": None}
+assert server._proxmox_guest_visibility({"data": {
+    "/vms/12802": {"VM.Audit": 1}, "/pool/compute": {"VM.Audit": 1},
+}}) == {"status": "DEGRADED", "scope": "SELECTED_GUESTS", "scoped_guest_count": None}
 assert server._aggregate_proxmox_guest_visibility([
     {"status": "DEGRADED", "scope": "SELECTED_GUESTS"},
     {"status": "UNKNOWN", "scope": "UNKNOWN"},

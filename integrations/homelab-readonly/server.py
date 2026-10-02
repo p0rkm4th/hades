@@ -284,10 +284,17 @@ def _proxmox_guest_visibility(payload: dict) -> dict:
             path for path in scoped_guest_audit
             if re.fullmatch(r"/vms/[1-9][0-9]{0,19}", path)
         ]
+        # Pool grants can cover an unknown number of guests. Do not expose the
+        # number of explicit VM paths as though it were the complete scope.
+        exact_count = (
+            len(explicit_vm_paths)
+            if len(explicit_vm_paths) == len(scoped_guest_audit)
+            else None
+        )
         return {
             "status": "DEGRADED",
             "scope": "SELECTED_GUESTS",
-            "scoped_guest_count": len(explicit_vm_paths),
+            "scoped_guest_count": exact_count,
         }
     return {
         "status": "DEGRADED",
