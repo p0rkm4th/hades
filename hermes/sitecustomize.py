@@ -190,6 +190,10 @@ def _hades_is_backup_freshness_intent(user_text):
 def _hades_phase2_backup_freshness_response(user_text, subject, scope):
     """Answer backup freshness from the visible Phase 2 checks, read-only."""
     text = str(user_text or "")
+    # Proxmox and host backup questions need infrastructure evidence, not only
+    # the narrower HADES repository Backup Check state.
+    if re.search(r"\b(?:proxmox|homelab|homlab|home\s+lab|servers?|nodes?|hosts?|vms?|virtual\s+machines?|guests?)\b", text, re.IGNORECASE):
+        return None
     if not _hades_is_backup_freshness_intent(text):
         return None
     if not subject or scope not in {"owner", "household"}:
@@ -5126,7 +5130,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
-        r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"
+        r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
         r"(?:which|what).{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|where\s+should\s+i\s+(?:run|host|put)|(?:what|which)\s+(?:machine|server|gpu).{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|(?:can|could).{0,60}\b(?:handle|fit|run|host).{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
         r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"
         r"where(?:['’]s|\s+is)\s+(?:the\s+)?(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\b|"
@@ -5142,7 +5146,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     ):
         return None
     inference_intent = bool(re.search(
-        r"\b(?:ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running))\b|"
+        r"\b(?:ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running))\b|"
         r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|\bwhere\s+should\s+i\s+(?:run|host|put)\b|\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
         r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
         text,
@@ -6267,7 +6271,7 @@ _HADES_HOMELAB_INTENT = re.compile(
     r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|server(?:s)?|computer(?:s)?|node(?:s)?|"
     r"virtual\s+machine(?:s)?|\bvm\b|container(?:s)?|sandbox(?:es)?|workload(?:s)?|"
     r"website(?:s)?|gpu(?:s)?|"
-    r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"
+    r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
     r"(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
     r"(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,35}\b(?:working|available|online|up|down|healthy|responding)\b|"
     r"\b(?:ai|artificial intelligence)\b.{0,30}\b(?:thing|system|service|server|model|models?)\b.{0,40}\b(?:working|available|online|up|down|healthy|responding)\b|"

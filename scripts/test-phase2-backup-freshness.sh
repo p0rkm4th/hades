@@ -82,6 +82,8 @@ with tempfile.TemporaryDirectory() as root:
     assert not intent("Run the Backup Check now")
     assert not intent("Check backups now")
     freshness = namespace["_hades_phase2_backup_freshness_response"]
+    assert freshness("Are my Proxmox backups current?", actor, "owner") is None
+    assert freshness("Are the server backups up to date?", actor, "owner") is None
     answer = freshness("When were our backups last verified?", actor, "owner")
     assert "HADES repository backup: healthy" in answer, answer
     assert "do not verify host, VM, service, or household-data backups" in answer, answer

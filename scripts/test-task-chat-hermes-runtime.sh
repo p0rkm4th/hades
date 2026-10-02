@@ -77,6 +77,7 @@ class SyntheticHomelabRegistry:
 
 hermes_registry_module.registry = SyntheticHomelabRegistry()
 assert hades._HADES_HOMELAB_INTENT.search("What models are available?")
+assert hades._HADES_HOMELAB_INTENT.search("Which inference models are available right now?")
 assert hades._HADES_HOMELAB_INTENT.search("Where's qwen3.6:35b?")
 assert hades._HADES_HOMELAB_INTENT.search("Which GPUs are free?")
 assert hades._HADES_HOMELAB_INTENT.search("Where should I run another model?")
@@ -196,6 +197,16 @@ model_location = model_location_agent.run_conversation(
 assert model_location.get("completed") is True and model_location.get("api_calls") == 0, model_location
 assert "sample:small is listed at Compute Node A" in model_location["final_response"], model_location
 assert "generation request was not made" in model_location["final_response"], model_location
+
+model_inventory_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-model-inventory",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+model_inventory = model_inventory_agent.run_conversation(
+    "Which inference models are available right now?", conversation_history=[]
+)
+assert model_inventory.get("completed") is True and model_inventory.get("api_calls") == 0, model_inventory
+assert "sample:small is listed at Compute Node A" in model_inventory["final_response"], model_inventory
 
 for index, prompt in enumerate(("Which GPUs are free?", "Where should I run another model?")):
     placement_agent = agent_class(
