@@ -5187,7 +5187,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         re.search(r"\b(?:network|internet|wi-?fi|dns)\b", text, re.IGNORECASE)
         and re.search(r"\b(?:slow|latency|bottleneck|performance|packet\s+loss|throughput)\b", text, re.IGNORECASE)
     )
-    broad_owner_status_intent = household_broad_status_intent and not network_diagnostic_intent
+    broad_owner_status_intent = (
+        household_broad_status_intent
+        and not network_diagnostic_intent
+        and not change_intent
+    )
     ai_availability_intent = bool(re.search(
         r"\b(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
         r"\b(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,35}"
@@ -5258,7 +5262,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     )
     if _definition_question:
         return None
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not change_intent and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"

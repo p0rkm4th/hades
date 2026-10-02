@@ -224,6 +224,15 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
+    household_change_status = household_agent.run_conversation(
+        "What changed since yesterday?", conversation_history=[]
+    )
+    assert household_change_status.get("completed") is True, household_change_status
+    assert household_change_status.get("api_calls") == 0, household_change_status
+    assert "can't verify private infrastructure or computer status" in household_change_status["final_response"].casefold(), household_change_status
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
     owner_network_status = owner_agent.run_conversation(
         "Why does the network feel slow?", conversation_history=[]
     )
@@ -364,7 +373,9 @@ for index, prompt in enumerate((
     "How are the servers doing?",
     "Are all the computers okay?",
     "Why does the network feel slow?",
+    "What changed since yesterday?",
 )):
+    hermes_registry_module.registry.calls.clear()
     variant_agent = agent_class(
         gateway_session_key=f"hades-user-{owner}",
         session_id=f"synthetic-server-overview-variant-{index}",
@@ -375,6 +386,9 @@ for index, prompt in enumerate((
     assert variant.get("completed") is True and variant.get("api_calls") == 0, (prompt, variant)
     assert "Live Proxmox currently reports: hades-core." in variant["final_response"], (prompt, variant)
     assert "memory update" not in variant["final_response"].casefold(), (prompt, variant)
+    if prompt == "What changed since yesterday?":
+        assert "no historical homelab snapshot or change-event source is configured" in variant["final_response"], variant
+        assert "homelab_inference_inventory" not in hermes_registry_module.registry.calls, hermes_registry_module.registry.calls
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 ai_availability_agent = agent_class(
