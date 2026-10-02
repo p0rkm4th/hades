@@ -613,10 +613,23 @@ summary_names["capability_machines"] = [{
 placement_answer = server.format_inference_inventory_response(
     "Where should I run another model?", inference, summary_names,
 )
-assert "GPU A is a candidate to evaluate" in placement_answer, placement_answer
-assert "recorded role is deep inference lane" in placement_answer, placement_answer
-assert "4 × synthetic accelerator (fresh observation)" in placement_answer, placement_answer
+assert "Responding inference endpoints: GPU A" in placement_answer, placement_answer
+assert "recorded role: deep inference lane" in placement_answer, placement_answer
+assert "4 × synthetic accelerator" in placement_answer, placement_answer
+assert "loaded: sample:small" in placement_answer, placement_answer
+assert "can't rank a host" in placement_answer, placement_answer
 assert "can't confirm capacity or fit" in placement_answer, placement_answer
+assert "candidate to evaluate" not in placement_answer, placement_answer
+stale_summary = {
+    **summary_names,
+    "capability_freshness": "STALE",
+}
+stale_placement_answer = server.format_inference_inventory_response(
+    "Where should I run another model?", inference, stale_summary,
+)
+assert "Hardware role/capability inventory is stale" in stale_placement_answer, stale_placement_answer
+assert "recorded role:" not in stale_placement_answer, stale_placement_answer
+assert "GPU A" in stale_placement_answer and "can't rank a host" in stale_placement_answer
 node_activity_answer = server.format_inference_inventory_response(
     "What's GPU A doing right now?", inference, summary_names,
 )

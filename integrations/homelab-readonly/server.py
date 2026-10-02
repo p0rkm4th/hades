@@ -1216,24 +1216,37 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
                 "I can't recommend an inference host from the current reads: no responding "
                 "provider endpoint is linked to a named inventory device."
             )
-        candidates.sort(key=lambda row: (not any(term in row[1].casefold() for term in ("deep", "large", "inference", "gpu")), row[0].casefold()))
-        label, role, gpu_names, hardware_freshness, loaded, loaded_state = candidates[0]
-        reason = f"{label} is a candidate to evaluate because its linked inference endpoint is responding"
-        if role:
-            reason += f" and its recorded role is {role}"
-        if gpu_names:
-            reason += "; hardware inventory lists " + ", ".join(gpu_names)
-            reason += f" ({hardware_freshness.casefold()} observation)"
-        if loaded_state == "CURRENT":
-            names = [str(model.get("name")) for model in loaded if isinstance(model, dict) and model.get("name")]
-            reason += "; provider reports " + ("no models currently loaded" if not names else "these models loaded: " + ", ".join(names[:5]))
-        reason += "."
-        if len(candidates) > 1:
-            reason += " Other responding linked endpoints may also be candidates depending on model size and workload."
+        endpoint_details = []
+        hardware_freshness = str(
+            summary.get("capability_freshness") or "UNKNOWN"
+        ).upper()
+        hardware_current = hardware_freshness in {"CURRENT", "FRESH"}
+        for label, role, gpu_names, _freshness, loaded, loaded_state in candidates:
+            detail = label
+            if hardware_current and role:
+                detail += f" (recorded role: {role}"
+                if gpu_names:
+                    detail += "; hardware inventory: " + ", ".join(gpu_names)
+                detail += ")"
+            if loaded_state == "CURRENT":
+                names = [
+                    str(model.get("name")) for model in loaded
+                    if isinstance(model, dict) and model.get("name")
+                ]
+                detail += "; provider reports " + (
+                    "no models loaded" if not names else "loaded: " + ", ".join(names[:5])
+                )
+            else:
+                detail += "; loaded-model state unavailable"
+            endpoint_details.append(detail)
+        response = "Responding inference endpoints: " + "; ".join(endpoint_details[:8]) + "."
+        if not hardware_current:
+            response += " Hardware role/capability inventory is " + hardware_freshness.casefold() + "."
         return (
-            reason + " This is a shortlist only: live GPU load/free VRAM and the model's "
-            "runtime memory needs, including quantization and context, are not available, "
-            "so I can't confirm capacity or fit."
+            response + " I can't rank a host for another model because live per-host "
+            "GPU load and free VRAM aren't connected, and the model's runtime memory "
+            "needs (including quantization and context) are unknown. I can't confirm "
+            "capacity or fit."
         )
 
     reachable = []
