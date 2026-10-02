@@ -93,6 +93,10 @@ household_gpu_denial = hades._hades_direct_homelab_read(
     "Which GPUs are free?", scope="household",
 )
 assert "available only in an owner session" in household_gpu_denial
+household_computer_denial = hades._hades_direct_homelab_read(
+    "Are all the computers okay?", scope="household",
+)
+assert "can't verify private infrastructure or computer status" in household_computer_denial, household_computer_denial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from integrations.task import TaskStatus, TaskStore
 

@@ -5043,7 +5043,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     broad_owner_status_intent = bool(re.search(
         r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
         r"is\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
-        r"are\s+(?:(?:all|the|my|our)\s+)?(?:computers?|machines?|servers?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
+        r"are\s+(?:(?:all\s+the|all|the|my|our)\s+)?(?:computers?|machines?|servers?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
         r"what(?:['’]s|\s+is)\s+down|anything\s+(?:down|dying|wrong|broken)|"
         r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)|"
         r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)\s+with\s+(?:my\s+|our\s+|the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)|"

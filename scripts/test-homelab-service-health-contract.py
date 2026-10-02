@@ -496,7 +496,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert "can't verify private infrastructure or computer status" in household_overall, household_overall
         assert 'Proxmox' not in household_overall and 'NetBox' not in household_overall, household_overall
         assert direct_read('Is everything okay?', 'synthetic-household', 'household') == household_overall
-        for prompt in ('Is the homelab okay?', 'Are my computers okay?', 'Is Tartarus alive?', "What's Tartarus doing?"):
+        for prompt in ('Is the homelab okay?', 'Are my computers okay?', 'Are all the computers okay?', 'Is Tartarus alive?', "What's Tartarus doing?"):
             restricted = direct_read(prompt, 'synthetic-household', 'household')
             assert "can't verify private infrastructure or computer status" in restricted, restricted
             assert 'Tartarus' not in restricted and 'Proxmox' not in restricted, restricted
