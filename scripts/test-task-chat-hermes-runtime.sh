@@ -40,10 +40,14 @@ class SyntheticHomelabRegistry:
     """Exercise the registered-MCP boundary without external sources."""
     _tools = {
         "homelab_summary",
+        "homelab_owner_snapshot",
         "homelab_backup_status",
         "homelab_compute_capabilities",
         "homelab_inference_inventory",
     }
+
+    def __init__(self):
+        self.calls = []
 
     def get_entry(self, name):
         canonical = "mcp__homelab_readonly__"
@@ -62,6 +66,7 @@ class SyntheticHomelabRegistry:
             tool = name.removeprefix("mcp__homelab_readonly__")
         else:
             tool = name.removeprefix("mcp_homelab_readonly_")
+        self.calls.append(tool)
         adapter = os.path.join(
             os.environ["HADES_HERMES_WORKING_DIRECTORY"],
             "integrations", "homelab-readonly", "server.py",
@@ -500,6 +505,13 @@ assert "Role: synthetic inference node." in compute_node_a_text, compute_node_a_
 assert "Host CPU/GPU load and free VRAM are not connected." in compute_node_a_text, compute_node_a_text
 assert "I don't have a current host runtime check for it" in compute_node_a_text, compute_node_a_text
 assert "192.0.2.69" not in compute_node_a_text, compute_node_a_text
+registry = hermes_registry_module.registry
+registry.calls.clear()
+direct_node_status = hades._hades_direct_homelab_read(
+    "What's Compute Node A doing right now?", owner, "owner",
+)
+assert registry.calls == ["homelab_inference_inventory", "homelab_owner_snapshot"], registry.calls
+assert "Observed hardware inventory lists Compute Node A." in direct_node_status, direct_node_status
 issue_status = compute_node_a_agent.run_conversation(
     "What's wrong with Compute Node A?", conversation_history=[],
 )
@@ -764,6 +776,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '    }\n'
         'def homelab_compute_capabilities():\n'
         '    return {"machines": []}\n'
+        'def homelab_owner_snapshot():\n'
+        '    return {"status": "OK", "summary": homelab_summary(), "compute": homelab_compute_capabilities()}\n'
         'def homelab_inference_inventory():\n'
         '    if __import__("os").environ.get("HADES_TEST_SOURCE_UNAVAILABLE") == "1":\n'
         '        raise RuntimeError("synthetic source unavailable")\n'
