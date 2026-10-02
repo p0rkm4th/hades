@@ -5151,6 +5151,20 @@ def _hades_household_game_health_intent(user_text, scope):
     ))
 
 
+def _hades_homelab_provenance_followup(user_text, context_text=""):
+    """Recognize source/freshness follow-ups tied to an earlier homelab read."""
+    return bool(
+        re.search(
+            r"\b(?:how\s+do\s+you\s+know|what(?:['’]s|\s+is)\s+the\s+source|"
+            r"when\s+was\s+that\s+checked|when\s+did\s+you\s+check|"
+            r"is\s+that\s+(?:netbox|live)|source\s+provenance)\b",
+            str(user_text or ""),
+            re.IGNORECASE,
+        )
+        and bool(_HADES_HOMELAB_INTENT.search(str(context_text or "")))
+    )
+
+
 def _hades_direct_homelab_read(user_text, subject="", scope="", context_text=""):
     """Answer simple owner homelab-status questions from canonical read sources.
 
@@ -5167,16 +5181,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         return _hades_direct_homelab_read(
             followup_prompt, subject, scope, context_text=context_text
         )
-    provenance_intent = bool(
-        re.search(
-            r"\b(?:how\s+do\s+you\s+know|what(?:['’]s|\s+is)\s+the\s+source|"
-            r"when\s+was\s+that\s+checked|when\s+did\s+you\s+check|"
-            r"is\s+that\s+(?:netbox|live)|source\s+provenance)\b",
-            text,
-            re.IGNORECASE,
-        )
-        and bool(_HADES_HOMELAB_INTENT.search(str(context_text or "")))
-    )
+    provenance_intent = _hades_homelab_provenance_followup(text, context_text)
     change_intent = bool(re.search(
         r"^\s*what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time)\s*[?.!]*\s*$",
         text,
@@ -5219,7 +5224,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     )
     if scope != "owner" and household_private_placement_intent:
         return "I can't provide internal host or address details from this account."
-    if scope != "owner" and (household_broad_status_intent or household_node_status_intent) and not household_game_health_intent:
+    if scope != "owner" and (
+        household_broad_status_intent or household_node_status_intent or provenance_intent
+    ) and not household_game_health_intent:
         return (
             "I can't verify private infrastructure or computer status from this account. "
             "I can check approved household services, such as the game server."
@@ -9962,6 +9969,7 @@ try:
             and (
                 _hades_broad_homelab_status_intent(user_message)
                 or _hades_household_game_health_intent(user_message, self._hades_session_scope)
+                or _hades_homelab_provenance_followup(user_message, _hades_intent_text)
                 or _hades_service_health_target(user_message)
                 or re.search(
                     r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|"
@@ -9979,6 +9987,7 @@ try:
                 user_message,
                 getattr(self, "_hades_subject", ""),
                 self._hades_session_scope,
+                context_text=_hades_intent_text,
             )
             if _household_homelab_response:
                 callback = getattr(self, "stream_delta_callback", None)

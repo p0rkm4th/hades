@@ -39,6 +39,7 @@ wanted = {
     '_hades_homelab_followup_prompt',
     '_hades_broad_homelab_status_intent',
     '_hades_household_game_health_intent',
+    '_hades_homelab_provenance_followup',
     '_hades_positive_homelab_control_request',
 }
 functions = [
@@ -130,6 +131,9 @@ for prompt in (
 assert game_health_intent('Is the game server working?', 'household')
 assert game_health_intent('Is Minecraft working?', 'household')
 assert not game_health_intent('Is the game server working?', 'owner')
+provenance_followup = namespace['_hades_homelab_provenance_followup']
+assert provenance_followup('How do you know that?', 'Is everything okay with the homelab?')
+assert not provenance_followup('How do you know that?', '')
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 groups = namespace['_hades_homelab_availability_groups']

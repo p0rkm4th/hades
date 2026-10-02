@@ -233,6 +233,20 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
+    household_provenance_status = household_agent.run_conversation(
+        "How do you know that?",
+        conversation_history=[
+            {"role": "user", "content": "Is everything okay with the homelab?"},
+            {"role": "assistant", "content": "I can't verify private infrastructure or computer status from this account."},
+        ],
+    )
+    assert household_provenance_status.get("completed") is True, household_provenance_status
+    assert household_provenance_status.get("api_calls") == 0, household_provenance_status
+    assert "can't verify private infrastructure or computer status" in household_provenance_status["final_response"].casefold(), household_provenance_status
+    assert "refrigeration" not in household_provenance_status["final_response"].casefold(), household_provenance_status
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
     owner_network_status = owner_agent.run_conversation(
         "Why does the network feel slow?", conversation_history=[]
     )
@@ -240,6 +254,19 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert owner_network_status.get("api_calls") == 0, owner_network_status
     assert "cannot identify a network bottleneck or trend from this evidence" in owner_network_status["final_response"], owner_network_status
     assert "homelab_inference_inventory" not in registry.calls, registry.calls
+
+    registry.calls.clear()
+    owner_provenance_status = owner_agent.run_conversation(
+        "How do you know that?",
+        conversation_history=[
+            {"role": "user", "content": "Is everything okay with the homelab?"},
+            {"role": "assistant", "content": "The live homelab view is partial."},
+        ],
+    )
+    assert owner_provenance_status.get("completed") is True, owner_provenance_status
+    assert owner_provenance_status.get("api_calls") == 0, owner_provenance_status
+    assert "source read at" in owner_provenance_status["final_response"], owner_provenance_status
+    assert "NetBox describes intended inventory" in owner_provenance_status["final_response"], owner_provenance_status
 
     registry.calls.clear()
     household_game_status = household_agent.run_conversation(
@@ -617,10 +644,11 @@ assert "Proxmox: healthy; source read at 2026-10-02T14:00:00+00:00" in provenanc
 assert "NetBox: healthy; source read at 2026-10-02T14:00:01+00:00" in provenance_result["final_response"], provenance_result
 assert "they are not interchangeable" in provenance_result["final_response"], provenance_result
 assert hades._hades_direct_homelab_read("When was that checked?", owner, "owner") is None
-assert hades._hades_direct_homelab_read(
+household_provenance_direct = hades._hades_direct_homelab_read(
     "When was that checked?", beta, "household",
     context_text="Is everything okay with the homelab?",
-) is None
+)
+assert "can't verify private infrastructure or computer status" in household_provenance_direct.casefold(), household_provenance_direct
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 # A speech-like named-node question composes linked inference state with the
