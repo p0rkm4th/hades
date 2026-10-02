@@ -438,7 +438,7 @@ runtime_fixture = {
 extra_runtime_fixtures = [
     {"type": "qemu", "vmid": 900 + index, "name": f"worker-{index}",
      "node": "synthetic-pve", "status": "running"}
-    for index in range(1, 6)
+    for index in range(1, 20)
 ]
 device_fixture = {
     "id": 75, "name": "test-game-host", "primary_ip4": {"address": "192.0.2.75/24"},
@@ -467,8 +467,9 @@ def fixture_fetch(url, *_args, **_kwargs):
 server._fetch = fixture_fetch
 summary = server.homelab_summary()
 assert summary["status"] == "PARTIAL", summary
-assert summary["source_counts"]["proxmox_runtime_rows"] == 6, summary
-assert len(summary["resources"]) >= 6 and "resources_truncated" not in summary, summary
+assert summary["source_counts"]["proxmox_runtime_rows"] == 20, summary
+assert len(summary["resources"]) >= 20 and "resources_truncated" not in summary, summary
+assert any(row.get("name") == "worker-19" for row in summary["resources"]), summary
 assert summary["sources"]
 assert {row["status"] for row in summary["sources"] if row["source"].startswith("Proxmox[")} == {"HEALTHY", "UNAVAILABLE"}
 assert all(row["observation_scope"] == "source_read" for row in summary["sources"] if row["source"].startswith("Proxmox["))
