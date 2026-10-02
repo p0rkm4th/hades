@@ -25,7 +25,10 @@ from pathlib import Path
 
 repo = Path(sys.argv[1]).resolve()
 interpreter = Path(sys.argv[2]).absolute()
-overlay_dir = Path(os.environ.get("HADES_HERMES_OVERLAY_DIR", str(repo / "hermes"))).resolve()
+overlay_setting = os.environ.get("HADES_HERMES_OVERLAY_DIR", "").strip()
+if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1" and not overlay_setting:
+    raise SystemExit("FAIL composed homelab runtime mode requires HADES_HERMES_OVERLAY_DIR pointing to the composed candidate")
+overlay_dir = Path(overlay_setting or str(repo / "hermes")).resolve()
 if not (overlay_dir / "sitecustomize.py").is_file():
     raise SystemExit(f"FAIL HADES overlay directory has no sitecustomize.py: {overlay_dir}")
 child = r'''import os
@@ -134,6 +137,9 @@ def fixture_source(label):
     return respond
 actual_homelab_read = hades._hades_direct_homelab_read
 actual_backup_read = hades._hades_phase2_backup_response
+actual_finance_read = hades._hades_direct_finance_guidance
+actual_household_grocy_read = hades._hades_direct_household_grocy_read
+actual_grocy_expiry_read = hades._hades_direct_grocy_expiry_read
 hades._hades_direct_homelab_read = fixture_source("infrastructure")
 hades._hades_phase2_backup_response = fixture_source("backup")
 hades._hades_direct_household_grocy_read = fixture_source("household stock")
@@ -146,6 +152,60 @@ kwargs = {
     "skip_context_files": True, "skip_memory": True,
     "skip_background_review": True, "load_soul_identity": False,
 }
+if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
+    hades._hades_direct_homelab_read = actual_homelab_read
+    hades._hades_phase2_backup_response = actual_backup_read
+    hades._hades_direct_finance_guidance = actual_finance_read
+    hades._hades_direct_household_grocy_read = actual_household_grocy_read
+    hades._hades_direct_grocy_expiry_read = actual_grocy_expiry_read
+    owner_agent = agent_class(
+        gateway_session_key=f"hades-user-{owner}",
+        session_id="synthetic-composed-named-node-owner",
+        stream_delta_callback=lambda _chunk: None,
+        **kwargs,
+    )
+    registry = hermes_registry_module.registry
+    registry.calls.clear()
+    owner_result = owner_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])
+    assert owner_result.get("completed") is True and owner_result.get("api_calls") == 0, owner_result
+    assert "Observed hardware inventory lists Synthetic Node B." in owner_result["final_response"], owner_result
+    assert "can't say whether it's online" in owner_result["final_response"], owner_result
+    assert "running normally" not in owner_result["final_response"].casefold(), owner_result
+    assert registry.calls[:2] == ["homelab_inference_inventory", "homelab_owner_snapshot"], registry.calls
+    assert set(registry.calls) <= {
+        "homelab_inference_inventory", "homelab_owner_snapshot",
+        "homelab_summary", "homelab_compute_capabilities",
+    }, registry.calls
+
+    registry.calls.clear()
+    household_agent = agent_class(
+        gateway_session_key=f"hades-user-{beta}",
+        session_id="synthetic-composed-named-node-household",
+        stream_delta_callback=lambda _chunk: None,
+        **kwargs,
+    )
+    household_result = household_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])
+    assert household_result.get("completed") is True and household_result.get("api_calls") == 0, household_result
+    assert "private infrastructure" in household_result["final_response"].casefold(), household_result
+    assert "Synthetic Node B" not in household_result["final_response"], household_result
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
+    os.environ["HADES_TEST_SOURCE_UNAVAILABLE"] = "1"
+    try:
+        outage_result = owner_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])
+    finally:
+        os.environ.pop("HADES_TEST_SOURCE_UNAVAILABLE", None)
+    assert outage_result.get("completed") is True and outage_result.get("api_calls") == 0, outage_result
+    assert "running normally" not in outage_result["final_response"].casefold(), outage_result
+    assert "can't say whether it's online" in outage_result["final_response"], outage_result
+    assert registry.calls[:2] == ["homelab_inference_inventory", "homelab_owner_snapshot"], registry.calls
+    assert set(registry.calls) <= {
+        "homelab_inference_inventory", "homelab_owner_snapshot",
+        "homelab_summary", "homelab_compute_capabilities",
+    }, registry.calls
+    print("PASS composed Hermes candidate routes named-node reads, preserves household redaction, and fails closed on source outage")
+    raise SystemExit(0)
 results = {}
 for subject in (owner, beta):
     chunks = []
@@ -870,6 +930,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         "HADES_OWNER_SUBJECT_IDS": "synthetic-owner,synthetic-owner-clean",
         "HADES_TEST_RESULT_KEY_FILE": str(root / "result-query.key"),
     })
+    if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
+        env["HADES_COMPOSED_HOMELAB_ONLY"] = "1"
     result = subprocess.run(
         [str(interpreter), str(script)],
         cwd=repo,
