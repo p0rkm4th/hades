@@ -528,9 +528,9 @@ try:
 finally:
     os.environ.pop("HADES_TEST_FOLLOWUP_NODE", None)
 assert capacity_followup.get("completed") is True and capacity_followup.get("api_calls") == 0, capacity_followup
-assert "can't determine which GPU has room" in capacity_followup["final_response"], capacity_followup
+assert "can't confirm whether that model fits" in capacity_followup["final_response"], capacity_followup
 assert unanchored_capacity_followup.get("completed") is True and unanchored_capacity_followup.get("api_calls") == 0, unanchored_capacity_followup
-assert "can't determine which GPU has room" in unanchored_capacity_followup["final_response"], unanchored_capacity_followup
+assert "can't confirm whether that model fits" in unanchored_capacity_followup["final_response"], unanchored_capacity_followup
 actual_node_read = hades._hades_direct_homelab_read
 hades._hades_direct_homelab_read = lambda *_args, **_kwargs: None
 unavailable_node_agent = agent_class(
@@ -543,6 +543,10 @@ unavailable_node = unavailable_node_agent.run_conversation(
 unavailable_issue = unavailable_node_agent.run_conversation(
     "What's wrong with Tartarus?", conversation_history=[]
 )
+def unexpected_capacity_read(*_args, **_kwargs):
+    raise AssertionError("owner capacity follow-up must fail closed before starting a slow live read")
+
+hades._hades_direct_homelab_read = unexpected_capacity_read
 unavailable_size = unavailable_node_agent.run_conversation(
     "What about a 20 GB one?", conversation_history=[]
 )
