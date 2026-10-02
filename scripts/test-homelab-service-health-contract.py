@@ -29,6 +29,7 @@ wanted = {
     '_hades_direct_proxmox_backup_read',
     '_hades_homelab_name_key',
     '_hades_homelab_target_from_question',
+    '_hades_positive_homelab_control_request',
 }
 functions = [
     node for node in tree.body
