@@ -124,6 +124,7 @@ for prompt in (
 for prompt in (
     'Is everything okay?', 'Is everything okay with the homelab?',
     'Are all the computers okay?', 'Anything dying?', "Why's everything slow?",
+    'Why does the network feel slow?', 'Why does Wi-Fi feel slow?',
 ):
     assert status_intent(prompt), f'broad homelab status intent missed {prompt!r}'
 assert game_health_intent('Is the game server working?', 'household')

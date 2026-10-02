@@ -5129,7 +5129,8 @@ def _hades_broad_homelab_status_intent(text):
         r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)|"
         r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)\s+with\s+(?:my\s+|our\s+|the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)|"
         r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
-        r"why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
+        r"(?:why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
+        r"why\s+does\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+(?:feel(?:s|ing)?\s+)?slow)|"
         r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$",
         str(text or ""),
         re.IGNORECASE,
@@ -6453,7 +6454,8 @@ _HADES_HOMELAB_INTENT = re.compile(
     r"is\s+everything\s+(?:okay|ok|all\s+right|good)|what(?:['’]s|\s+is)\s+down|"
     r"anything\s+(?:down|dying|wrong|broken)|what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)|"
     r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
-    r"why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
+    r"(?:why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
+    r"why\s+does\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+(?:feel(?:s|ing)?\s+)?slow)|"
     r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$|"
     r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|server(?:s)?|computer(?:s)?|node(?:s)?|"
     r"virtual\s+machine(?:s)?|\bvm\b|container(?:s)?|sandbox(?:es)?|workload(?:s)?|"

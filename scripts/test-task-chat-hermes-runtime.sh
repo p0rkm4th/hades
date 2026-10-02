@@ -214,6 +214,16 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
+    household_network_status = household_agent.run_conversation(
+        "Why does the network feel slow?", conversation_history=[]
+    )
+    assert household_network_status.get("completed") is True, household_network_status
+    assert household_network_status.get("api_calls") == 0, household_network_status
+    assert "can't verify private infrastructure or computer status" in household_network_status["final_response"].casefold(), household_network_status
+    assert "Synthetic Node B" not in household_network_status["final_response"], household_network_status
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
     household_game_status = household_agent.run_conversation(
         "Is the game server working?", conversation_history=[]
     )
@@ -344,6 +354,7 @@ for index, prompt in enumerate((
     "What's down?",
     "How are the servers doing?",
     "Are all the computers okay?",
+    "Why does the network feel slow?",
 )):
     variant_agent = agent_class(
         gateway_session_key=f"hades-user-{owner}",
