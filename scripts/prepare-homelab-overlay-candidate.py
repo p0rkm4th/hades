@@ -12,7 +12,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ROUTE = "_hades_direct_homelab_read"
-EXTRA = {"_hades_ambiguous_media_device_clarification"}
+EXTRA = {
+    "_hades_ambiguous_media_device_clarification",
+    "_hades_direct_proxmox_backup_read",
+    "_hades_direct_owner_location",
+    "_hades_endpoint_continuation_response",
+}
 
 
 def top_level(source: str, path: Path) -> ast.Module:
@@ -42,11 +47,9 @@ def assigned_names(tree: ast.Module) -> dict[str, ast.stmt]:
 
 def function_closure(source_tree: ast.Module) -> set[str]:
     available = functions(source_tree)
-    if ROUTE not in available or not any(
-        node.name == "_hades_ambiguous_media_device_clarification"
-        for node in source_tree.body if isinstance(node, ast.FunctionDef)
-    ):
-        raise ValueError("source is missing the homelab route or household clarification")
+    missing = {ROUTE, *EXTRA} - set(available)
+    if missing:
+        raise ValueError("source is missing required homelab functions: " + ", ".join(sorted(missing)))
     closure = {ROUTE, *EXTRA}
     while True:
         additions = {

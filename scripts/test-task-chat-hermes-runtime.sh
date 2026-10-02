@@ -138,7 +138,7 @@ for subject in (owner, beta):
     results[subject] = result
     assert result.get("completed") is True and result.get("api_calls") == 0, result
     assert chunks and chunks[-1] == result["final_response"]
-assert "Prepare Friday dinner is waiting for your approval." in results[owner]["final_response"]
+assert "Prepare Friday dinner is waiting for your approval." in results[owner]["final_response"], results[owner]
 assert "INFRASTRUCTURE: synthetic infrastructure status" in results[owner]["final_response"]
 assert "BACKUPS: synthetic backup status" in results[owner]["final_response"]
 assert "HOUSEHOLD: synthetic household stock status" in results[owner]["final_response"]

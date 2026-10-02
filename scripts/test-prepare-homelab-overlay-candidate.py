@@ -20,6 +20,12 @@ def _hades_homelab_helper(text):
     return text
 def _hades_ambiguous_media_device_clarification(text):
     return re.search("device", text)
+def _hades_direct_proxmox_backup_read(text, subject="", scope="owner"):
+    return text
+def _hades_direct_owner_location(text):
+    return ""
+def _hades_endpoint_continuation_response(text, subject="", scope="owner", context_text=""):
+    return text
 '''
 
 ACTIVE = '''

@@ -14,7 +14,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-source = Path('hermes/sitecustomize.py').read_text(encoding='utf-8')
+ROOT = Path(__file__).resolve().parents[1]
+source_path = Path(os.environ.get(
+    'HADES_SITE_CUSTOMIZE_SOURCE', 'hermes/sitecustomize.py',
+)).resolve()
+default_source_path = (ROOT / 'hermes/sitecustomize.py').resolve()
+source = source_path.read_text(encoding='utf-8')
 tree = ast.parse(source)
 wanted = {
     '_hades_service_health_target', '_hades_service_monitor_response',
@@ -134,10 +139,23 @@ assert endpoint_before_provision(dogfood_request) is False
 assert endpoint_before_provision('Can you spin up a Minecraft server?') is False
 assert endpoint_before_provision('What is the Minecraft server IP and port?') is True
 assert endpoint_before_provision('What is the IP address of Test Host?') is False
-assert 'first call the read-only homelab_summary' in source
-assert 'asks_to_provision' in source
-assert 'Owner service endpoint inventory read completed without model invocation' in source
-assert 'Owner endpoint-request follow-up closed without model invocation' in source
+if source_path == default_source_path:
+    # These assertions cover source-only handler wording and instrumentation.
+    # A deployment overlay composed from a newer source route retains its own
+    # separately reviewed bounded provisioning preflight.
+    assert 'first call the read-only homelab_summary' in source
+    assert 'asks_to_provision' in source
+    assert 'Owner service endpoint inventory read completed without model invocation' in source
+    assert 'Owner endpoint-request follow-up closed without model invocation' in source
+else:
+    # The deployed handler's control guidance is intentionally not replaced by
+    # the narrow composer. Require its owner-only, bounded path to remain in
+    # the composed artifact while the focused route contract tests its MCP
+    # reads independently.
+    assert 'mcp_homelab_readonly_homelab_summary' in source
+    assert 'provisioning_request = bool(' in source
+    assert 'inspect_templates()' in source
+    assert 'obtain an explicit confirmation immediately' in source
 
 request = 'Can you give me the Minecraft server IP and port for the firewall?'
 empty_catalog = endpoint_response(

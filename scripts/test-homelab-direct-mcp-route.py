@@ -5,12 +5,16 @@ from __future__ import annotations
 import ast
 import json
 import logging
+import os
 import sys
 import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-source = (ROOT / "hermes/sitecustomize.py").read_text(encoding="utf-8")
+source_path = Path(os.environ.get(
+    "HADES_SITE_CUSTOMIZE_SOURCE", str(ROOT / "hermes/sitecustomize.py"),
+)).resolve()
+source = source_path.read_text(encoding="utf-8")
 tree = ast.parse(source)
 helper = next(
     node for node in tree.body
