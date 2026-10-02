@@ -24,13 +24,11 @@ of truth.
   catalogs are supported without claiming loaded state. Synthetic contract
   coverage includes source identity, linked NetBox display names, partial
   failure, token transport requirements, and owner response shaping.
-- A direct development-runner probe against approved private APIs verified
-  configured provider endpoints and NetBox device-ID joins. This is adapter
-  evidence only; it is not deployed HADES or authenticated owner dogfood.
-- Current canonical inventory/availability gaps were observed: NetBox service
-  and address projections are empty, and the published monitoring page has no
-  monitor rows. Proxmox responds but the current runner is not authorized to
-  read guest state. No source was modified.
+- A direct development-runner probe exercised the provider adapter against
+  approved live inputs and verified stable NetBox device-ID joins. Detailed
+  topology and source observations remain in private infrastructure records.
+  This is adapter evidence only; it is not deployed HADES or authenticated
+  owner dogfood.
 - Model inventory questions use only configured inference sources and fetch a
   targeted NetBox record only when a model-location answer needs one; they do
   not call the broad Proxmox/Kuma summary.
@@ -43,9 +41,9 @@ of truth.
 - Configure the provider-native inference adapter in deployed HADES and add
   live GPU/resource telemetry; the capability matrix is not current runtime
   truth and free capacity/model fit remain unknown.
-- Repair canonical NetBox service/address inventory and monitoring coverage
-  through their owners, then exercise stale-data and source-conflict behavior
-  against current observations.
+- Reconcile incomplete canonical inventory/availability coverage through the
+  source owners, then exercise stale-data and source-conflict behavior against
+  current observations. Private details remain outside this public repository.
 - Complete authenticated owner dogfood for broad health, node status, service
   placement, backups, network diagnosis, and model placement.
 - Confirm owner/household response separation and measure representative query

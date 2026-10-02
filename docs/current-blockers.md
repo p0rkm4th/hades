@@ -23,11 +23,9 @@ Status: **PARTIAL**
   verified approved private endpoints, but deployed HADES and authenticated
   owner dogfood remain unverified. GPU utilization/free-memory telemetry and
   placement evidence remain open.
-- Current live source coverage is incomplete: NetBox device records are
-  reachable but its service and address projections are empty; the published
-  monitoring page has no monitor rows; Proxmox API reads require an authorized
-  token not available to this execution path. Do not infer broad health from
-  those incomplete sources.
+- Live source coverage is incomplete in the current private deployment.
+  Detailed endpoint observations, topology, and source conflicts remain in
+  private infrastructure records; do not infer broad health from partial data.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 
