@@ -297,6 +297,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         )
         assert node_activity.startswith('NODE_ACTIVITY:Compute Node A Observed hardware inventory lists Compute Node A.'), node_activity
         assert "Host CPU/GPU load and free VRAM are not connected." in node_activity
+        running_activity = direct_read(
+            'What is Compute Node A running?', 'synthetic-owner', 'owner'
+        )
+        assert running_activity.startswith('NODE_ACTIVITY:Compute Node A'), running_activity
         assert 'owner session' in direct_read(
             "What's Compute Node A doing right now?", 'synthetic-household', 'household'
         )

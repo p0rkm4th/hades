@@ -4756,6 +4756,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         r"where(?:['’]s|\s+is)\s+(?:the\s+)?(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\b|"
         r"where\s+does\s+(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\s+(?:run|live)\b|"
         r"minecraft|jellyfin)\b|"
+        r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+running\b|"
         r"\b(?:what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
         r"is\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+(?:alive|online|offline|up|down|running))\b",
         text,
@@ -5560,6 +5561,7 @@ _HADES_HOMELAB_INTENT = re.compile(
     r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"
     r"ram|free\s+memory|unhealthy|host(?:s)?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
     r"nmap|discov(?:er|y)|ip(?:s)?|mac(?:s)?|what(?:['’]?s| is)\s+running|"
+    r"what(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+running|"
     r"what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
     r"is\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+(?:alive|online|offline|up|down|running))\b",
     re.IGNORECASE,
