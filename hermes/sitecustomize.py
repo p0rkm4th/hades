@@ -4913,6 +4913,91 @@ def _hades_positive_homelab_control_request(user_text):
     return False
 
 
+def _hades_direct_homelab_tool_result(tool_name, module=None):
+    """Read through Hermes' registered MCP handler and preserve its config env.
+
+    The homelab MCP environment belongs to its child process. Calling the
+    adapter directly from the Hermes parent loses protected token-file inputs
+    and can turn live questions into stale or incomplete answers.
+    """
+    tool_names = {
+        "homelab_summary": (
+            "mcp__homelab_readonly__homelab_summary",
+            "mcp_homelab_readonly_homelab_summary",
+        ),
+        "homelab_backup_status": (
+            "mcp__homelab_readonly__homelab_backup_status",
+            "mcp_homelab_readonly_homelab_backup_status",
+        ),
+        "homelab_compute_capabilities": (
+            "mcp__homelab_readonly__homelab_compute_capabilities",
+            "mcp_homelab_readonly_homelab_compute_capabilities",
+        ),
+        "homelab_inference_inventory": (
+            "mcp__homelab_readonly__homelab_inference_inventory",
+            "mcp_homelab_readonly_homelab_inference_inventory",
+        ),
+    }
+    if tool_name not in tool_names:
+        return {"status": "UNKNOWN", "errors": ["Unsupported homelab read request."]}
+    try:
+        from tools.registry import registry
+        registered_name = next(
+            (name for name in tool_names[tool_name] if registry.get_entry(name)),
+            None,
+        )
+        if registered_name is None:
+            fallback = getattr(module, tool_name, None) if module is not None else None
+            if callable(fallback):
+                result = fallback()
+            else:
+                return {
+                    "status": "UNKNOWN",
+                    "sources": [{
+                        "source": "HADES read-only homelab MCP",
+                        "status": "NOT_CONFIGURED",
+                        "observation_scope": "source_read",
+                    }],
+                    "errors": ["The configured read-only homelab tool is unavailable."],
+                }
+        else:
+            result = registry.dispatch(registered_name, {})
+        # Hermes MCP handlers wrap adapter JSON in a JSON result envelope.
+        for _ in range(2):
+            if isinstance(result, str):
+                if len(result) > 2 * 1024 * 1024:
+                    raise ValueError("homelab result exceeded its bound")
+                try:
+                    result = json.loads(result)
+                except ValueError:
+                    return {"status": "SOURCE_UNAVAILABLE", "errors": ["The homelab tool returned an unreadable result."]}
+            if isinstance(result, dict) and "error" in result:
+                return {"status": "SOURCE_UNAVAILABLE", "errors": ["The configured homelab source read failed."]}
+            if isinstance(result, dict) and isinstance(result.get("result"), (str, dict)):
+                result = result["result"]
+                continue
+            break
+        if not isinstance(result, dict):
+            return {"status": "SOURCE_UNAVAILABLE", "errors": ["The homelab tool returned an unsupported result."]}
+        # Older adapters may include local paths in errors. Preserve failure
+        # visibility without returning credential paths to the user.
+        errors = result.get("errors")
+        if isinstance(errors, list):
+            result["errors"] = [
+                "A configured homelab source could not be read."
+                if isinstance(error, str) and ("/" in error or "token" in error.casefold())
+                else error
+                for error in errors
+            ]
+        return result
+    except Exception as exc:
+        _hades_logger.warning(
+            "Homelab MCP read failed: tool=%s error=%s",
+            tool_name, type(exc).__name__,
+        )
+        return {"status": "SOURCE_UNAVAILABLE", "errors": ["The configured homelab source read failed."]}
+
+
 def _hades_direct_homelab_read(user_text, subject="", scope="", context_text=""):
     """Answer simple owner homelab-status questions from canonical read sources.
 
@@ -5103,12 +5188,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         if inference_intent:
-            inference = module.homelab_inference_inventory()
-            summary = module.homelab_summary() if node_activity_intent else {}
+            inference = _hades_direct_homelab_tool_result("homelab_inference_inventory", module)
+            summary = _hades_direct_homelab_tool_result("homelab_summary", module) if node_activity_intent else {}
             if placement_intent:
                 try:
                     labels = module.resolve_inference_node_labels(inference)
-                    capabilities = module.homelab_compute_capabilities()
+                    capabilities = _hades_direct_homelab_tool_result("homelab_compute_capabilities", module)
                     summary = {
                         "resources": [
                             {"identity": {"canonical_id": identity}, "inventory": {"name": name}}
@@ -5148,7 +5233,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             )
             if node_activity_intent:
                 target = _hades_homelab_target_from_question(text)
-                capability = module.homelab_compute_capabilities()
+                capability = _hades_direct_homelab_tool_result("homelab_compute_capabilities", module)
                 machines = capability.get("machines", []) if isinstance(capability, dict) else []
                 if not machines:
                     matrix_path = os.environ.get("HADES_CAPABILITY_MATRIX_FILE", "").strip()
@@ -5236,7 +5321,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                         details.append("I don't have a current host runtime check for it, so I can't say whether it's online.")
                     inference_response += " " + " ".join(details)
             return inference_response
-        summary = module.homelab_summary()
+        summary = _hades_direct_homelab_tool_result("homelab_summary", module)
         def _unlinked_monitor_note(target_name):
             """Expose a name-matched Kuma observation without asserting identity."""
             target_key = _hades_homelab_name_key(target_name)
@@ -5278,6 +5363,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             source_rows = summary.get("sources", []) if isinstance(summary, dict) else []
             readable = [row for row in source_rows if isinstance(row, dict) and row.get("source")]
             if not readable:
+                if isinstance(summary, dict) and summary.get("status") in {"UNKNOWN", "UNAVAILABLE", "SOURCE_UNAVAILABLE"}:
+                    return "I couldn't verify the current homelab sources, so I can't confirm current status or when it was checked."
                 return "I refreshed the homelab view, but the sources did not provide provenance details."
             details = []
             for row in readable[:8]:
@@ -5295,7 +5382,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         broad_inference = None
         if scope == "owner" and broad_owner_status_intent:
             try:
-                broad_inference = module.homelab_inference_inventory()
+                broad_inference = _hades_direct_homelab_tool_result("homelab_inference_inventory", module)
             except Exception:
                 broad_inference = {"status": "SOURCE_UNAVAILABLE", "endpoints": []}
         endpoint_response = _hades_service_endpoint_response(
@@ -5447,7 +5534,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 if matrix_path:
                     os.environ["HADES_CAPABILITY_MATRIX_FILE"] = matrix_path
                 try:
-                    compute = module.homelab_compute_capabilities()
+                    compute = _hades_direct_homelab_tool_result("homelab_compute_capabilities", module)
                 finally:
                     if previous_matrix is None:
                         os.environ.pop("HADES_CAPABILITY_MATRIX_FILE", None)
@@ -5945,7 +6032,7 @@ def _hades_direct_proxmox_backup_read(
             return _compose("I can't read Proxmox backup status from this installation right now.")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        report = module.homelab_backup_status()
+        report = _hades_direct_homelab_tool_result("homelab_backup_status", module)
         proxmox_text = module.format_homelab_backup_status(report)
         return _compose(proxmox_text)
     except Exception as exc:

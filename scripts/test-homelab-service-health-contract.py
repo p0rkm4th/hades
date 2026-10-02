@@ -19,6 +19,7 @@ tree = ast.parse(source)
 wanted = {
     '_hades_service_health_target', '_hades_service_monitor_response',
     '_hades_homelab_availability_groups', '_hades_direct_homelab_read',
+    '_hades_direct_homelab_tool_result',
     '_hades_homelab_workloads_on_host_response',
     '_hades_homelab_core_vm_placement_response',
     '_hades_endpoint_intent_before_provision',
@@ -37,6 +38,7 @@ functions = [
 ]
 assert {node.name for node in functions} == wanted
 namespace = {
+    'json': __import__('json'),
     're': re,
     'os': os,
     'Path': Path,
@@ -48,6 +50,34 @@ namespace = {
     '_hades_logger': type('Log', (), {'warning': staticmethod(lambda *_args, **_kwargs: None)})(),
     '_hades_phase2_backup_response': lambda *_args, **_kwargs: 'Configured HADES backup checks: current.',
 }
+
+
+class FakeHomelabRegistry:
+    def get_entry(self, name):
+        return object() if name.startswith('mcp__homelab_readonly__') else None
+
+    def dispatch(self, name, arguments):
+        assert arguments == {}
+        adapter = (
+            Path(os.environ['HADES_HERMES_WORKING_DIRECTORY'])
+            / 'integrations' / 'homelab-readonly' / 'server.py'
+        )
+        spec = importlib.util.spec_from_file_location('synthetic_homelab_mcp', adapter)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        tool = name.rsplit('__', 1)[-1]
+        call = getattr(module, tool, None)
+        if not callable(call):
+            return __import__('json').dumps({'error': 'synthetic tool is unavailable'})
+        return __import__('json').dumps({'result': __import__('json').dumps(call())})
+
+
+tools_module = types.ModuleType('tools')
+tools_module.__path__ = []
+registry_module = types.ModuleType('tools.registry')
+registry_module.registry = FakeHomelabRegistry()
+sys.modules['tools'] = tools_module
+sys.modules['tools.registry'] = registry_module
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
 intent_assignment = next(
     node for node in tree.body
