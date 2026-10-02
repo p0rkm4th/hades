@@ -4921,6 +4921,16 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         text,
         re.IGNORECASE,
     ))
+    ai_availability_intent = bool(re.search(
+        r"\b(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
+        r"\b(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,35}"
+        r"\b(?:working|available|online|up|down|healthy|responding)\b|"
+        r"\b(?:ai|artificial intelligence)\b.{0,30}"
+        r"\b(?:thing|system|service|server|model|models?)\b.{0,40}"
+        r"\b(?:working|available|online|up|down|healthy|responding)\b",
+        text,
+        re.IGNORECASE,
+    ))
     household_game_health_intent = bool(
         scope == "household"
         and re.search(r"\bminecraft\b", text, re.IGNORECASE)
@@ -4985,7 +4995,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     )
     if _definition_question:
         return None
-    if not broad_owner_status_intent and not provenance_intent and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -5023,6 +5033,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         re.IGNORECASE,
     ))
     if node_activity_intent:
+        inference_intent = True
+    if ai_availability_intent:
         inference_intent = True
     if placement_intent:
         inference_intent = True
@@ -6100,6 +6112,9 @@ _HADES_HOMELAB_INTENT = re.compile(
     r"virtual\s+machine(?:s)?|\bvm\b|container(?:s)?|sandbox(?:es)?|workload(?:s)?|"
     r"website(?:s)?|gpu(?:s)?|"
     r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"
+    r"(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
+    r"(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,35}\b(?:working|available|online|up|down|healthy|responding)\b|"
+    r"\b(?:ai|artificial intelligence)\b.{0,30}\b(?:thing|system|service|server|model|models?)\b.{0,40}\b(?:working|available|online|up|down|healthy|responding)\b|"
     r"(?:which|what).{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|where\s+should\s+i\s+(?:run|host|put)|(?:what|which)\s+(?:machine|server|gpu).{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|(?:can|could).{0,60}\b(?:handle|fit|run|host).{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
     r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"
     r"ram|free\s+memory|unhealthy|host(?:s)?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
@@ -9901,7 +9916,20 @@ try:
             }
         # Broad homelab composition must win over the narrower Server Health
         # Watch inventory route for requests that name nodes/Core/blockers.
-        if self._hades_session_scope == "owner":
+        # A plain AI-availability question is also handled here for household
+        # users so the direct read helper can return its owner-only boundary
+        # without exposing provider or topology details.
+        _direct_ai_availability = bool(re.search(
+            r"\b(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
+            r"\b(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,35}"
+            r"\b(?:working|available|online|up|down|healthy|responding)\b|"
+            r"\b(?:ai|artificial intelligence)\b.{0,30}\b(?:thing|system|service|server|model|models?)\b.{0,40}"
+            r"\b(?:working|available|online|up|down|healthy|responding)\b",
+            str(user_message or ""), re.IGNORECASE,
+        ))
+        if self._hades_session_scope == "owner" or (
+            self._hades_session_scope == "household" and _direct_ai_availability
+        ):
             direct_homelab_response = _hades_direct_homelab_read(
                 user_message,
                 getattr(self, "_hades_subject", ""),

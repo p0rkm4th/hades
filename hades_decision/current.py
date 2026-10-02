@@ -54,6 +54,9 @@ def _fallback_patterns() -> dict[str, re.Pattern[str]]:
         "finance": re.compile(r"\b(?:finance|money|bank|budget|spend|spent|checking|savings|credit card)\b", re.I),
         "homelab": re.compile(
             r"\b(?:server|homelab|proxmox|netbox|kuma|ollama|inference endpoint|model inventory|model placement|available models|which models|is anything down)\b|"
+            r"\b(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
+            r"\b(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,35}\b(?:working|available|online|up|down|healthy|responding)\b|"
+            r"\b(?:ai|artificial intelligence)\b.{0,30}\b(?:thing|system|service|server|model|models?)\b.{0,40}\b(?:working|available|online|up|down|healthy|responding)\b|"
             r"\b(?:which|what)\s+(?:gpus?|graphics cards?).{0,40}\b(?:free|available|capacity|memory|room)\b|\bwhere\s+should\s+i\s+(?:run|host|put)\b|\b(?:what|which)\s+(?:machine|server|gpu).{0,50}\b(?:model|workload)\b|\b(?:can|could).{0,60}\b(?:handle|fit|run|host).{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
             r"\bwhat\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)\b|"
             r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"

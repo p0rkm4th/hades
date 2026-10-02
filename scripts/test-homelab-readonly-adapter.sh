@@ -665,6 +665,30 @@ summary_answer = server.format_inference_inventory_response(
 )
 assert "Installed: sample:small" in summary_answer, summary_answer
 assert "do not prove GPU execution" in summary_answer
+ai_available_answer = server.format_inference_inventory_response(
+    "Can we use the AI thing right now?", inference, summary_names,
+)
+assert "All 1 configured AI provider checks are responding to catalog reads" in ai_available_answer, ai_available_answer
+assert "I haven't tested a generation" in ai_available_answer, ai_available_answer
+partial_ai_inventory = {
+    "status": "PARTIAL",
+    "endpoints": [inference["endpoints"][0], {
+        "source_identity": "inference:offline-provider", "status": "SOURCE_UNAVAILABLE",
+    }],
+}
+partial_ai_answer = server.format_inference_inventory_response(
+    "Is the AI available?", partial_ai_inventory, summary_names,
+)
+assert "1 of 2 configured AI provider checks are responding" in partial_ai_answer, partial_ai_answer
+assert "1 could not be verified" in partial_ai_answer, partial_ai_answer
+assert "can't confirm the AI can answer a prompt right now" in partial_ai_answer, partial_ai_answer
+failed_ai_answer = server.format_inference_inventory_response(
+    "Can we use AI right now?", {
+        "status": "SOURCE_UNAVAILABLE",
+        "endpoints": [{"source_identity": "inference:offline-provider", "status": "SOURCE_UNAVAILABLE"}],
+    }, summary_names,
+)
+assert "none of the configured provider catalog checks succeeded" in failed_ai_answer, failed_ai_answer
 assert server._bounded_text("model-alpha\nInjected") == "model-alpha Injected"
 assert all(timeout == 4 for _, timeout in inference_calls)
 assert [url.endswith("/api/tags") for url, _ in inference_calls] == [True, False]

@@ -187,6 +187,16 @@ for index, prompt in enumerate((
     assert "memory update" not in variant["final_response"].casefold(), (prompt, variant)
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
+ai_availability_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-ai-availability",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+ai_availability = ai_availability_agent.run_conversation(
+    "Can we use the AI thing right now?", conversation_history=[]
+)
+assert ai_availability.get("completed") is True and ai_availability.get("api_calls") == 0, ai_availability
+assert "provider checks are responding to catalog reads" in ai_availability["final_response"], ai_availability
+assert "haven't tested a generation" in ai_availability["final_response"], ai_availability
 # A definition request should stay conversational instead of consulting the
 # managed guest inventory. Instrument the real Hermes shortcut loader.
 control_loader_calls = []
@@ -268,6 +278,11 @@ household_game_agent = agent_class(
     gateway_session_key=f"hades-user-{beta}", session_id="synthetic-household-game-status",
     stream_delta_callback=lambda _chunk: None, **kwargs,
 )
+household_ai_availability = household_game_agent.run_conversation(
+    "Can we use the AI thing right now?", conversation_history=[]
+)
+assert household_ai_availability.get("completed") is True and household_ai_availability.get("api_calls") == 0, household_ai_availability
+assert "available only in an owner session" in household_ai_availability["final_response"], household_ai_availability
 household_game_status = household_game_agent.run_conversation(
     "Is Minecraft working?", conversation_history=[],
 )
@@ -551,6 +566,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         'def resolve_inference_node_labels(_inventory):\n'
         '    return {"netbox:device:7": "Compute Node A"}\n'
         'def format_inference_inventory_response(question, _inventory, _summary):\n'
+        '    if "ai thing" in question.casefold() or "ai available" in question.casefold():\n'
+        '        return "All 1 configured AI provider checks are responding to catalog reads. I haven\'t tested a generation, so I can\'t confirm the AI can answer a prompt right now."\n'
         '    if "gpu" in question.casefold() or "another model" in question.casefold():\n'
         '        return "I can\'t determine which GPU has room or whether another model will fit. Live telemetry is not connected."\n'
         '    return "sample:small is listed at Compute Node A. Loaded now. A generation request was not made."\n',

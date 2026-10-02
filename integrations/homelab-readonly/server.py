@@ -1093,6 +1093,15 @@ def _format_node_activity_fallback(user_text: str, summary: dict | None) -> str:
 
 def format_inference_inventory_response(user_text: str, inventory: dict, summary: dict) -> str:
     """Present bounded current model inventory without overstating health or fit."""
+    ai_availability = bool(re.search(
+        r"\b(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
+        r"\b(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,35}"
+        r"\b(?:working|available|online|up|down|healthy|responding)\b|"
+        r"\b(?:ai|artificial intelligence)\b.{0,30}"
+        r"\b(?:thing|system|service|server|model|models?)\b.{0,40}"
+        r"\b(?:working|available|online|up|down|healthy|responding)\b",
+        str(user_text or ""), re.IGNORECASE,
+    ))
     node_activity = re.search(
         r"\bwhat(?:['’]s|s|\s+is)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
         r"(?:doing|running)\b",
@@ -1105,10 +1114,14 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
     status = str(inventory.get("status") or "UNKNOWN")
     endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
     if status == "NOT_CONFIGURED":
+        if ai_availability:
+            return "No provider-native AI endpoint is configured, so I can't check whether it is responding."
         if node_activity:
             return _format_node_activity_fallback(user_text, summary)
         return "Provider-native model inventory is not configured here, so I can't verify which models are installed or loaded."
     if not endpoints:
+        if ai_availability:
+            return "I couldn't check whether the configured AI endpoints are responding because no endpoint results were returned."
         if node_activity:
             return _format_node_activity_fallback(user_text, summary)
         return "I couldn't read any configured model endpoints, so I can't verify model availability right now."
@@ -1278,7 +1291,8 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
         endpoint_id = str(endpoint.get("source_identity") or "configured provider")
         machine = resource_names.get(endpoint.get("node_identity"))
         label = str(machine or endpoint_id)
-        if endpoint.get("status") == "SOURCE_UNAVAILABLE":
+        endpoint_status = str(endpoint.get("status") or "UNKNOWN").upper()
+        if endpoint_status not in {"READABLE", "PARTIAL"}:
             unavailable += 1
             continue
         reachable.append(label)
@@ -1289,6 +1303,24 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
             all_loaded.extend((label, model) for model in loaded if isinstance(model, dict))
         elif models:
             loaded_unknown_labels.add(label)
+
+    if ai_availability:
+        configured_count = len(endpoints[:16])
+        if not reachable:
+            return (
+                "I couldn't confirm the AI endpoints are responding; none of the configured "
+                "provider catalog checks succeeded. I haven't tested a generation."
+            )
+        if unavailable:
+            return (
+                f"{len(reachable)} of {configured_count} configured AI provider checks are responding; "
+                f"{unavailable} could not be verified. I haven't tested a generation, so I can't "
+                "confirm the AI can answer a prompt right now."
+            )
+        return (
+            f"All {len(reachable)} configured AI provider checks are responding to catalog reads. "
+            "I haven't tested a generation, so I can't confirm the AI can answer a prompt right now."
+        )
 
     where_match = re.search(
         r"\bwhere(?:['’]s|\s+is)\s+([a-z0-9._-]+(?::[a-z0-9._-]+)?(?:\s+\d+(?:\.\d+)?b)?)\b",

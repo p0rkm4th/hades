@@ -41,6 +41,8 @@ for request, intent, family, tool in [
     ("Which GPUs are free?", "homelab", "HOMELAB", "HOMELAB_READ"),
     ("Where should I run another model?", "homelab", "HOMELAB", "HOMELAB_READ"),
     ("Can this handle a 20 GB model?", "homelab", "HOMELAB", "HOMELAB_READ"),
+    ("Can we use the AI thing right now?", "homelab", "HOMELAB", "HOMELAB_READ"),
+    ("Is the AI available?", "homelab", "HOMELAB", "HOMELAB_READ"),
     ("What is a server?", "general_chat", "GENERAL", "NONE"),
     ("What does a server do?", "general_chat", "GENERAL", "NONE"),
     ("What is the server?", "general_chat", "GENERAL", "NONE"),
