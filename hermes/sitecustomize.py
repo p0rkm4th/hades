@@ -4710,6 +4710,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         r"\b(?:agent\s*zero|agent0|bounded\s+operator|delegate|delegation)\b",
         text,
         re.IGNORECASE,
+    ) and not re.search(
+        r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?agent\s*zero\b|"
+        r"\bwhere\s+does\s+agent\s*zero\s+(?:run|live)\b",
+        text,
+        re.IGNORECASE,
     ):
         return None
     if re.search(
@@ -4736,6 +4741,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"
         r"(?:which|what).{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|where\s+should\s+i\s+(?:run|host|put)|(?:what|which)\s+(?:machine|server|gpu).{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|(?:can|could).{0,60}\b(?:handle|fit|run|host).{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
         r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"
+        r"where(?:['’]s|\s+is)\s+(?:the\s+)?(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\b|"
+        r"where\s+does\s+(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\s+(?:run|live)\b|"
         r"minecraft|jellyfin)\b|"
         r"\b(?:what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
         r"is\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+(?:alive|online|offline|up|down|running))\b",
@@ -4808,6 +4815,13 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         )
         if endpoint_response:
             return endpoint_response
+        placement_response = _hades_service_placement_response(
+            text,
+            summary.get("service_catalog") if isinstance(summary, dict) else None,
+            scope,
+        )
+        if placement_response:
+            return placement_response
         resources = summary.get("resources", []) if isinstance(summary, dict) else []
         service_response = _hades_service_monitor_response(text, resources)
         if service_response:
@@ -5294,6 +5308,55 @@ def _hades_service_endpoint_response(user_text, service_catalog, scope=""):
     return (f"NetBox records `{row.get('name')}`{parent_text} at `{addresses[0]}` on "
             f"{', '.join(ports)}. This is inventory only; it doesn't verify that the service is running, reachable from your device, "
             "or forwarded from the internet. I haven't changed the firewall.")
+
+
+def _hades_service_placement_response(user_text, service_catalog, scope=""):
+    """Answer owner service-location questions from complete NetBox coverage."""
+    text = str(user_text or "")
+    if scope != "owner" or not re.search(
+        r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?(?:open\s+webui|hermes(?:\s+agent)?|"
+        r"grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|"
+        r"uptime\s+kuma|nextcloud|vaultwarden)\b|"
+        r"\bwhere\s+does\s+(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|"
+        r"n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|"
+        r"nextcloud|vaultwarden)\s+(?:run|live)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return None
+    if not isinstance(service_catalog, dict):
+        return "I couldn't check the service inventory, so I can't verify where that service is intended to run."
+    status = str(service_catalog.get("status") or "UNKNOWN").upper()
+    coverage = str(service_catalog.get("coverage") or "UNKNOWN").upper()
+    rows = service_catalog.get("services")
+    if status != "OK" or coverage not in {"COMPLETE", "EMPTY"} or not isinstance(rows, list):
+        return "The service inventory is unavailable or incomplete, so I can't verify where that service is intended to run."
+    if coverage == "EMPTY" or not rows:
+        return "The NetBox service inventory is empty, so I can't establish where that service is intended to run."
+    matches = [
+        row for row in rows
+        if isinstance(row, dict) and isinstance(row.get("name"), str)
+        and re.search(rf"(?<![a-z0-9]){re.escape(row['name'])}(?![a-z0-9])", text, re.IGNORECASE)
+    ]
+    if len(matches) > 1:
+        return "I found multiple matching service records, so I can't choose one placement safely."
+    if not matches:
+        return "I couldn't find a matching service record in NetBox, so I can't verify its intended placement."
+    row = matches[0]
+    name = " ".join(str(row.get("name") or "service").split())[:100]
+    parent = " ".join(str(row.get("parent_name") or "").split())[:100]
+    if not parent:
+        return f"NetBox records {name}, but its service entry has no parent device, so I can't verify the intended host."
+    address_values = row.get("addresses") if isinstance(row.get("addresses"), list) else []
+    port_values = row.get("port_mappings") if isinstance(row.get("port_mappings"), list) else []
+    addresses = [str(value) for value in address_values if isinstance(value, str) and value]
+    ports = [str(value) for value in port_values if isinstance(value, str) and value]
+    details = f"NetBox lists {name} on {parent}"
+    if len(addresses) == 1:
+        details += f" at {addresses[0]}"
+    if ports:
+        details += f" ({', '.join(ports[:8])})"
+    return details + ". This is intended inventory; it does not verify that the service is currently running or reachable."
 
 
 def _hades_endpoint_continuation_response(user_text, history, scope=""):

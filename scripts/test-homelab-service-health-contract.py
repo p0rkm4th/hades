@@ -18,6 +18,7 @@ wanted = {
     '_hades_homelab_availability_groups', '_hades_direct_homelab_read',
     '_hades_endpoint_intent_before_provision',
     '_hades_service_endpoint_response',
+    '_hades_service_placement_response',
     '_hades_endpoint_continuation_response',
     '_hades_direct_owner_location',
     '_hades_homelab_name_key',
@@ -43,6 +44,7 @@ groups = namespace['_hades_homelab_availability_groups']
 direct_read = namespace['_hades_direct_homelab_read']
 endpoint_before_provision = namespace['_hades_endpoint_intent_before_provision']
 endpoint_response = namespace['_hades_service_endpoint_response']
+placement_response = namespace['_hades_service_placement_response']
 endpoint_continuation = namespace['_hades_endpoint_continuation_response']
 direct_owner_location = namespace['_hades_direct_owner_location']
 
@@ -104,6 +106,22 @@ assert 'couldn\'t verify a server address or port' in endpoint_response(
     request, {'status': 'UNAVAILABLE', 'coverage': 'UNKNOWN', 'services': [], 'limitation': 'NetBox timed out.'}, 'owner'
 )
 assert endpoint_response(request, {'status': 'OK', 'services': []}, 'household') is None
+placement_catalog = {
+    'status': 'OK', 'coverage': 'COMPLETE', 'services': [{
+        'name': 'Agent Zero', 'parent_name': 'Compute Node A',
+        'addresses': ['192.0.2.30'], 'port_mappings': ['tcp/8080'],
+    }],
+}
+placement = placement_response('Where is Agent Zero?', placement_catalog, 'owner')
+assert 'Agent Zero on Compute Node A' in placement and '192.0.2.30' in placement, placement
+assert 'does not verify that the service is currently running or reachable' in placement
+assert placement_response('Where is Agent Zero?', placement_catalog, 'household') is None
+assert 'incomplete' in placement_response(
+    'Where is Agent Zero?', {'status': 'OK', 'coverage': 'PARTIAL', 'services': placement_catalog['services']}, 'owner'
+)
+assert 'empty' in placement_response(
+    'Where is Agent Zero?', {'status': 'OK', 'coverage': 'EMPTY', 'services': []}, 'owner'
+)
 assert 'multiple matching service records' in endpoint_response(
     'Can you give me the Minecraft IP and port for the firewall?', {
     'status': 'OK', 'coverage': 'COMPLETE', 'services': [
@@ -203,6 +221,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         )
         assert "Uptime Kuma's configured check for Minecraft Server is up." in household_game_status
         assert 'Test Host' not in household_game_status and '192.0.2.' not in household_game_status
+        assert 'couldn\'t find a matching service record' in direct_read(
+            'Where is Agent Zero?', 'synthetic-owner', 'owner'
+        )
+        assert direct_read('Where is Agent Zero?', 'synthetic-household', 'household') is None
         assert direct_read('Is the homelab okay?', 'synthetic-household', 'household') is None
         routed_endpoint = direct_read(
             request,
