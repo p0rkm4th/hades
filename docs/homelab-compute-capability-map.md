@@ -40,9 +40,10 @@ catalog, with source timestamps and bounded errors. Synthetic tests cover
 linked NetBox identity, partial provider failure, and unsupported residency.
 Catalog reads are not generation probes and do not report free GPU memory.
 A direct development-runner probe has exercised approved private provider APIs
-and NetBox identity joins; HADES runtime activation and authenticated owner
-acceptance remain open. The static capability matrix remains inventory
-evidence only.
+and NetBox identity joins. Deployment-specific runtime and owner-acceptance
+evidence is maintained in the private infrastructure repository; this static
+capability matrix remains inventory evidence only and does not establish
+current utilization, free memory, or model placement.
 
 ## Private deployment records
 

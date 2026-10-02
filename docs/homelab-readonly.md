@@ -186,6 +186,13 @@ HADES_UPTIME_KUMA_URL=https://status.example.invalid
 HADES_UPTIME_KUMA_STATUS_SLUG=<owner-approved-slug>
 ```
 
+A matching fresh monitor supports a statement about that configured probe only;
+it does not establish that the application is usable. If no stable identity link
+connects the monitor to the service named in the question, report the monitor
+observation and say its target is unverified. A successful NetBox inventory read
+does not prove that a particular Kuma monitor checks NetBox. A down observation
+does not establish its cause.
+
 ## Owner acceptance prompts
 
 Once credentials are explicitly supplied, verify through the HADES owner path:
