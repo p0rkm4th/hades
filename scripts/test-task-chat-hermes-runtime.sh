@@ -170,6 +170,8 @@ os.environ.pop("HADES_TEST_INFERENCE_ONLY", None)
 # The configured model endpoint is deliberately unavailable, so any fallthrough
 # to inference fails this contract instead of returning a fabricated answer.
 for index, prompt in enumerate((
+    "Is everything okay?",
+    "What's down?",
     "How are the servers doing?",
     "Are all the computers okay?",
 )):
