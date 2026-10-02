@@ -136,23 +136,7 @@ def add_household_route(source: str) -> str:
     owner = candidates[0]
     if owner.end_lineno > len(source.splitlines()):
         raise ValueError("invalid owner route boundary")
-    block = '''
-        if self._hades_session_scope == "household":
-            household_homelab_response = _hades_direct_homelab_read(
-                user_message, getattr(self, "_hades_subject", ""),
-                self._hades_session_scope, context_text=previous_user_text,
-            )
-            if household_homelab_response:
-                callback = getattr(self, "stream_delta_callback", None)
-                if callback:
-                    callback(household_homelab_response)
-                _hades_logger.info("Household direct homelab read completed without model invocation")
-                return {
-                    "final_response": household_homelab_response,
-                    "messages": [{"role": "assistant", "content": household_homelab_response}],
-                    "api_calls": 0,
-                    "completed": True,
-                }
+    early_block = '''
         if self._hades_session_scope == "owner" and re.fullmatch(
             r"\\s*what\\s+about\\s+(?:a\\s+)?\\d+(?:\\.\\d+)?\\s*(?:gb|gib)\\s+(?:one|model)\\s*[?.!]*\\s*",
             str(user_message or ""), re.IGNORECASE,
@@ -171,6 +155,24 @@ def add_household_route(source: str) -> str:
                 "api_calls": 0,
                 "completed": True,
             }
+'''
+    late_block = '''
+        if self._hades_session_scope == "household":
+            household_homelab_response = _hades_direct_homelab_read(
+                user_message, getattr(self, "_hades_subject", ""),
+                self._hades_session_scope, context_text=previous_user_text,
+            )
+            if household_homelab_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(household_homelab_response)
+                _hades_logger.info("Household direct homelab read completed without model invocation")
+                return {
+                    "final_response": household_homelab_response,
+                    "messages": [{"role": "assistant", "content": household_homelab_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         if self._hades_session_scope == "owner" and re.search(
             r"\\bwhat(?:['’]s|s|\\s+is)\\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\\s+(?:doing|running)\\b|"
             r"\\bwhat(?:['’]s|\\s+is)\\s+wrong\\s+with\\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\\s*[?.!]*$",
@@ -194,11 +196,13 @@ def add_household_route(source: str) -> str:
             }
 '''
     lines = source.splitlines(keepends=True)
-    # These owner routes must run before the generic owner live-read branch.
-    # Some read tools have long upstream timeouts; known-unknown and
-    # fail-closed intents need to return before starting those calls.
+    # This known-unknown capacity route must run before the generic owner
+    # live-read branch. The named-node fallback stays after that route so it
+    # can use available evidence before failing closed.
     insertion = owner.lineno - 1
-    lines[insertion:insertion] = block.splitlines(keepends=True)
+    lines[insertion:insertion] = early_block.splitlines(keepends=True)
+    lines = "".join(lines).splitlines(keepends=True)
+    lines[owner.end_lineno + len(early_block.splitlines(keepends=True)):owner.end_lineno + len(early_block.splitlines(keepends=True))] = late_block.splitlines(keepends=True)
     composed = "".join(lines)
     if "context_text=previous_user_text" in composed:
         composed = composed.replace(
