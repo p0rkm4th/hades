@@ -757,6 +757,23 @@ backup_text = server.format_homelab_backup_status(backup_report)
 assert "doesn't verify backup contents" in backup_text
 assert "private" not in backup_text
 
+def empty_backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/cluster/backup"):
+        return {"data": []}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "node-a"}]}
+    if "/nodes/node-a/tasks?" in url:
+        return {"data": []}
+    raise AssertionError("unexpected Proxmox empty-backup URL")
+server._fetch = empty_backup_fetch
+empty_backup = server.homelab_backup_status()
+assert empty_backup["status"] == "READABLE"
+empty_text = server.format_homelab_backup_status(empty_backup)
+assert "no configured vzdump jobs" in empty_text
+assert "No archived vzdump task" in empty_text
+assert "backup contents" in empty_text
+assert "everything is backed up" not in empty_text.casefold()
+
 def partial_backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/cluster/backup"):
         raise PermissionError("synthetic-token-secret-must-not-escape")
