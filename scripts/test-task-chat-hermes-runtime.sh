@@ -266,6 +266,10 @@ assert "Proxmox: healthy; source read at 2026-10-02T14:00:00+00:00" in provenanc
 assert "NetBox: healthy; source read at 2026-10-02T14:00:01+00:00" in provenance_result["final_response"], provenance_result
 assert "they are not interchangeable" in provenance_result["final_response"], provenance_result
 assert hades._hades_direct_homelab_read("When was that checked?", owner, "owner") is None
+assert hades._hades_direct_homelab_read(
+    "When was that checked?", beta, "household",
+    context_text="Is everything okay with the homelab?",
+) is None
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 # A speech-like named-node question composes linked inference state with the
