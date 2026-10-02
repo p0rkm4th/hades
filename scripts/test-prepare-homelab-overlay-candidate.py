@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PREPARER = ROOT / "scripts/prepare-homelab-overlay-candidate.py"
 
 SOURCE = '''
-import re
+import re, time
 def _hades_direct_homelab_read(text, subject="", scope="owner", context_text=""):
     return _hades_homelab_helper(text)
 def _hades_homelab_helper(text):
@@ -28,6 +28,8 @@ def _hades_direct_owner_location(text):
     return ""
 def _hades_endpoint_continuation_response(text, subject="", scope="owner", context_text=""):
     return text
+def _hades_is_hermes_auxiliary_prompt(text):
+    return False
 '''
 
 ACTIVE = '''
@@ -39,7 +41,10 @@ def _hades_direct_homelab_read(text):
     return text
 def _hades_ambiguous_media_device_clarification(text):
     return None
-def handler(self, user_message, previous_user_text, _preflight_text):
+def _hades_run_conversation(self, user_message, previous_user_text, _preflight_text):
+    if _hades_is_hermes_auxiliary_prompt(user_message):
+        return "auxiliary"
+    turn_started = time.perf_counter()
     if self._hades_session_scope == "owner" and _compound_briefing:
         return _hades_direct_homelab_read("homelab status and blockers")
     if self._hades_session_scope == "owner":
@@ -83,9 +88,10 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "Owner node-activity read failed closed without model invocation" in candidate
     assert 'r"\\bwhat(?:' in candidate
     assert "Owner model-capacity follow-up failed closed without model invocation" in candidate
-    assert candidate.index("Owner model-capacity follow-up failed closed without model invocation") < candidate.index(
-        "response = _hades_direct_homelab_read(user_message"
-    )
+    run_start = candidate.index("def _hades_run_conversation")
+    capacity_guard = candidate.index("Owner model-capacity follow-up failed closed without model invocation", run_start)
+    assert capacity_guard < candidate.index("turn_started = time.perf_counter()", run_start)
+    assert capacity_guard < candidate.index("response = _hades_direct_homelab_read(user_message", run_start)
     assert candidate.index("response = _hades_direct_homelab_read(user_message") < candidate.index(
         "Owner node-activity read failed closed without model invocation"
     )

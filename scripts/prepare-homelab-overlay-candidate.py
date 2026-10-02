@@ -136,6 +136,20 @@ def add_household_route(source: str) -> str:
     owner = candidates[0]
     if owner.end_lineno > len(source.splitlines()):
         raise ValueError("invalid owner route boundary")
+    run_conversation = next(
+        (node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+         and node.name == "_hades_run_conversation"),
+        None,
+    )
+    auxiliary_guards = [
+        node for node in ast.walk(run_conversation) if isinstance(node, ast.If)
+        and any(isinstance(child, ast.Call) and isinstance(child.func, ast.Name)
+                and child.func.id == "_hades_is_hermes_auxiliary_prompt"
+                for child in ast.walk(node.test))
+    ] if run_conversation else []
+    if len(auxiliary_guards) != 1:
+        raise ValueError("could not uniquely locate the auxiliary-prompt guard")
+    auxiliary_guard = auxiliary_guards[0]
     early_block = '''
         if self._hades_session_scope == "owner" and re.fullmatch(
             r"\\s*what\\s+about\\s+(?:a\\s+)?\\d+(?:\\.\\d+)?\\s*(?:gb|gib)\\s+(?:one|model)\\s*[?.!]*\\s*",
@@ -196,10 +210,10 @@ def add_household_route(source: str) -> str:
             }
 '''
     lines = source.splitlines(keepends=True)
-    # This known-unknown capacity route must run before the generic owner
-    # live-read branch. The named-node fallback stays after that route so it
-    # can use available evidence before failing closed.
-    insertion = owner.lineno - 1
+    # Capacity is known to lack live VRAM evidence, so stop it before any
+    # request classification or live-read work. Named-node fallback stays
+    # after the owner source read so it can use available evidence first.
+    insertion = auxiliary_guard.end_lineno
     lines[insertion:insertion] = early_block.splitlines(keepends=True)
     lines = "".join(lines).splitlines(keepends=True)
     lines[owner.end_lineno + len(early_block.splitlines(keepends=True)):owner.end_lineno + len(early_block.splitlines(keepends=True))] = late_block.splitlines(keepends=True)

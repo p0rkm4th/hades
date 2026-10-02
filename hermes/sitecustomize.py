@@ -8868,6 +8868,24 @@ try:
             return _hades_original_run_conversation(
                 self, user_message, *args, **kwargs
             )
+        if getattr(self, "_hades_session_scope", "") == "owner" and re.fullmatch(
+            r"\s*what\s+about\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+(?:one|model)\s*[?.!]*\s*",
+            str(user_message or ""), re.IGNORECASE,
+        ):
+            unavailable_response = (
+                "I can't confirm whether that model fits or recommend a host: current per-host "
+                "GPU load and free VRAM are not connected, and runtime memory needs are unknown."
+            )
+            callback = getattr(self, "stream_delta_callback", None)
+            if callback:
+                callback(unavailable_response)
+            _hades_logger.info("Owner model-capacity follow-up failed closed without model invocation")
+            return {
+                "final_response": unavailable_response,
+                "messages": [{"role": "assistant", "content": unavailable_response}],
+                "api_calls": 0,
+                "completed": True,
+            }
         turn_started = time.perf_counter()
         # Privacy policy must run before deterministic owner-only readers too.
         # Otherwise a personal-finance question can be intercepted by the
@@ -10217,24 +10235,6 @@ try:
             r"\b(?:working|available|online|up|down|healthy|responding)\b",
             str(user_message or ""), re.IGNORECASE,
         ))
-        if self._hades_session_scope == "owner" and re.fullmatch(
-            r"\s*what\s+about\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+(?:one|model)\s*[?.!]*\s*",
-            str(user_message or ""), re.IGNORECASE,
-        ):
-            unavailable_response = (
-                "I can't confirm whether that model fits or recommend a host: current per-host "
-                "GPU load and free VRAM are not connected, and runtime memory needs are unknown."
-            )
-            callback = getattr(self, "stream_delta_callback", None)
-            if callback:
-                callback(unavailable_response)
-            _hades_logger.info("Owner model-capacity follow-up failed closed without model invocation")
-            return {
-                "final_response": unavailable_response,
-                "messages": [{"role": "assistant", "content": unavailable_response}],
-                "api_calls": 0,
-                "completed": True,
-            }
         if self._hades_session_scope == "owner" or (
             self._hades_session_scope == "household" and _direct_ai_availability
         ):
