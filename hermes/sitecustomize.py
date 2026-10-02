@@ -4696,6 +4696,77 @@ def _hades_homelab_availability_groups(availability):
     return groups
 
 
+def _hades_homelab_core_vm_placement_response(user_text, resources):
+    """Report Proxmox placement for HADES Core guests without conflating clones."""
+    if not re.search(
+        r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?hades(?:\s+core)?(?:\s+vm)?\s+(?:running|hosted|located|live)\b|"
+        r"\bwhere\s+does\s+hades(?:\s+core)?\s+run\b|"
+        r"\b(?:which|what)\s+(?:machine|server|host)\s+(?:is\s+)?(?:running|hosting)\s+(?:the\s+)?hades(?:\s+core)?\b",
+        str(user_text or ""), re.IGNORECASE,
+    ):
+        return None
+    rows = resources if isinstance(resources, list) else []
+    guests = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        runtime = row.get("runtime") or row.get("runtime_detail") or {}
+        if not isinstance(runtime, dict) or runtime.get("type") not in {"qemu", "lxc"}:
+            continue
+        name = _hades_homelab_name_key(row.get("name"))
+        if name not in {"hades", "hadescore", "hadesvm", "hadescorevm"}:
+            continue
+        identity = row.get("identity") if isinstance(row.get("identity"), dict) else {}
+        source_identities = identity.get("source_identities") if isinstance(identity.get("source_identities"), dict) else {}
+        source_ids = source_identities.get("proxmox", [])
+        guest_prefix = (
+            source_ids[0].rsplit(":", 2)[0]
+            if isinstance(source_ids, list) and len(source_ids) == 1
+            and isinstance(source_ids[0], str) and source_ids[0].startswith("proxmox:")
+            else None
+        )
+        node = runtime.get("node")
+        hosts = []
+        if guest_prefix and node:
+            for candidate in rows:
+                if not isinstance(candidate, dict):
+                    continue
+                host_runtime = candidate.get("runtime") or candidate.get("runtime_detail") or {}
+                if not isinstance(host_runtime, dict) or host_runtime.get("type") != "node" or host_runtime.get("node") != node:
+                    continue
+                host_identity = candidate.get("identity") if isinstance(candidate.get("identity"), dict) else {}
+                host_sources = host_identity.get("source_identities") if isinstance(host_identity.get("source_identities"), dict) else {}
+                host_ids = host_sources.get("proxmox", [])
+                host_prefix = (
+                    host_ids[0].rsplit(":", 2)[0]
+                    if isinstance(host_ids, list) and len(host_ids) == 1
+                    and isinstance(host_ids[0], str) and host_ids[0].startswith("proxmox:")
+                    else None
+                )
+                if host_prefix == guest_prefix:
+                    hosts.append(candidate)
+        guests.append((row, runtime, hosts))
+    if not guests:
+        return "I can't verify HADES Core VM placement in the current Proxmox runtime records."
+    placements = []
+    for row, runtime, hosts in guests[:8]:
+        guest_name = str(row.get("name") or "HADES Core guest")
+        vmid = runtime.get("vmid")
+        guest_type = str(runtime.get("type") or "guest")
+        guest_kind = "VM" if guest_type == "qemu" else "CT" if guest_type == "lxc" else guest_type
+        state = str(runtime.get("status") or row.get("runtime_status") or "UNKNOWN").casefold()
+        guest_label = f"{guest_name} ({guest_kind} {vmid})" if vmid is not None else f"{guest_name} ({guest_kind})"
+        if len(hosts) == 1:
+            host_name = str(hosts[0].get("name") or (hosts[0].get("runtime") or hosts[0].get("runtime_detail") or {}).get("node") or "unknown host")
+            placements.append(f"{guest_label} is {state} on {host_name}")
+        else:
+            placements.append(f"{guest_label} is {state}; its host can't be uniquely linked through Proxmox source identity")
+    if len(guests) > 8:
+        placements.append(f"{len(guests) - 8} more matching guests were omitted")
+    prefix = "Proxmox reports " if len(guests) == 1 else f"Proxmox reports {len(guests)} guests matching HADES Core: "
+    return prefix + "; ".join(placements) + ". This is VM placement and power state only; it doesn't verify HADES application health."
+
+
 def _hades_homelab_workloads_on_host_response(
     user_text, resources, summary_status="UNKNOWN", source_results=None,
 ):
@@ -4856,6 +4927,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"
         r"where(?:['’]s|\s+is)\s+(?:the\s+)?(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\b|"
         r"where\s+does\s+(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\s+(?:run|live)\b|"
+        r"where(?:['’]s|\s+is)\s+(?:the\s+)?hades(?:\s+core)?(?:\s+vm)?\s+(?:running|hosted|located|live)\b|where\s+does\s+hades(?:\s+core)?\s+run\b|"
+        r"(?:which|what)\s+(?:machine|server|host)\s+(?:is\s+)?(?:running|hosting)\s+(?:the\s+)?hades(?:\s+core)?\b|"
         r"minecraft|jellyfin)\b|"
         r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+running\b|"
         r"\b(?:what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
@@ -5048,6 +5121,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         if endpoint_response:
             return endpoint_response
         if scope == "owner":
+            core_vm_response = _hades_homelab_core_vm_placement_response(
+                text,
+                summary.get("resources", []) if isinstance(summary, dict) else [],
+            )
+            if core_vm_response:
+                return core_vm_response
             host_workload_response = _hades_homelab_workloads_on_host_response(
                 text,
                 summary.get("resources", []) if isinstance(summary, dict) else [],

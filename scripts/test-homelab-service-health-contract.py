@@ -17,6 +17,7 @@ wanted = {
     '_hades_service_health_target', '_hades_service_monitor_response',
     '_hades_homelab_availability_groups', '_hades_direct_homelab_read',
     '_hades_homelab_workloads_on_host_response',
+    '_hades_homelab_core_vm_placement_response',
     '_hades_endpoint_intent_before_provision',
     '_hades_service_endpoint_response',
     '_hades_service_placement_response',
@@ -43,6 +44,7 @@ target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 groups = namespace['_hades_homelab_availability_groups']
 workloads_on_host = namespace['_hades_homelab_workloads_on_host_response']
+core_vm_placement = namespace['_hades_homelab_core_vm_placement_response']
 direct_read = namespace['_hades_direct_homelab_read']
 endpoint_before_provision = namespace['_hades_endpoint_intent_before_provision']
 endpoint_response = namespace['_hades_service_endpoint_response']
@@ -206,6 +208,26 @@ degraded_sources = workloads_on_host('What is running on Runtime Node A?', [
 ])
 assert 'Configured source(s) degraded: Proxmox' in degraded_sources
 assert 'unavailable: Proxmox' not in degraded_sources
+core_vm_rows = [
+    {'name': 'Erebus', 'runtime_status': 'online',
+     'identity': {'source_identities': {'proxmox': ['proxmox:erebus:node:erebus']}},
+     'runtime': {'type': 'node', 'node': 'erebus', 'status': 'online'}},
+    {'name': 'hades-core', 'runtime_status': 'stopped',
+     'identity': {'source_identities': {'proxmox': ['proxmox:erebus:qemu:800']}},
+     'runtime': {'type': 'qemu', 'node': 'erebus', 'vmid': 800, 'status': 'stopped'}},
+    {'name': 'hades-core', 'runtime_status': 'running',
+     'identity': {'source_identities': {'proxmox': ['proxmox:erebus:qemu:802']}},
+     'runtime': {'type': 'qemu', 'node': 'erebus', 'vmid': 802, 'status': 'running'}},
+    {'name': 'hades-core', 'runtime_status': 'running',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-b:qemu:802']}},
+     'runtime': {'type': 'qemu', 'node': 'erebus', 'vmid': 802, 'status': 'running'}},
+]
+core_vm_answer = core_vm_placement('Which machine is running HADES?', core_vm_rows)
+assert '3 guests matching HADES Core' in core_vm_answer and 'VM 800) is stopped on Erebus' in core_vm_answer
+assert 'VM 802) is running on Erebus' in core_vm_answer and 'application health' in core_vm_answer
+assert "host can't be uniquely linked through Proxmox source identity" in core_vm_answer
+assert core_vm_placement('What is HADES?', core_vm_rows) is None
+assert "can't verify HADES Core VM placement" in core_vm_placement('Where is HADES running?', [])
 assert 'couldn\'t verify' in workloads_on_host('What is running on Unknown Host?', [])
 unlinked_host_workloads = workloads_on_host('What is running on Runtime Node B?', [
     {'name': 'Runtime Node B', 'runtime_status': 'online',
@@ -392,6 +414,20 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             private_detail in household_host_query
             for private_detail in ('Private Runtime Host', 'Private Admin VM', 'pve-a', 'VM 101')
         ), household_host_query
+        (adapter_dir / 'server.py').write_text(
+            'def homelab_summary():\n'
+            '    return {"status": "OK", "resources": ' + repr(core_vm_rows) + ', '
+            '"sources": [{"source": "Proxmox", "status": "HEALTHY"}], '
+            '"service_catalog": {"status": "OK", "services": []}}\n',
+            encoding='utf-8',
+        )
+        core_placement_route = direct_read(
+            'Which machine is running HADES?', 'synthetic-owner', 'owner'
+        )
+        assert 'VM 802) is running on Erebus' in core_placement_route, core_placement_route
+        assert direct_read(
+            'Which machine is running HADES?', 'synthetic-household', 'household'
+        ) is None
     finally:
         if old_workdir is None:
             os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
