@@ -5741,7 +5741,17 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             )
         return response
     except Exception as exc:
-        _hades_logger.warning("Direct homelab read failed: %s", exc)
+        _hades_logger.warning("Direct homelab read failed (%s)", type(exc).__name__)
+        if household_game_health_intent:
+            return (
+                "I can't confirm whether the game server is working because the "
+                "current check could not be read."
+            )
+        if scope == "owner":
+            return (
+                "I couldn't verify the current homelab sources for this request, "
+                "so I can't confirm live status."
+            )
         return None
 
 

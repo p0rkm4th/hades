@@ -600,3 +600,42 @@ finally:
     import shutil
     shutil.rmtree(backup_root, ignore_errors=True)
 print('PASS owner backup questions compose bounded Proxmox evidence with HADES coverage; household and write requests remain gated')
+
+# A source exception must be a terminal unknown for recognized operational
+# requests. Returning None here would let the model answer from stale chat or
+# remembered inventory after the live read failed.
+with tempfile.TemporaryDirectory(prefix='hades-failed-homelab-read-') as temp_root:
+    adapter_dir = Path(temp_root) / 'integrations' / 'homelab-readonly'
+    adapter_dir.mkdir(parents=True)
+    (adapter_dir / 'server.py').write_text(
+        'def homelab_summary():\n'
+        '    raise RuntimeError("synthetic source unavailable")\n'
+        'def homelab_inference_inventory():\n'
+        '    raise RuntimeError("synthetic source unavailable")\n',
+        encoding='utf-8',
+    )
+    old_workdir = os.environ.get('HADES_HERMES_WORKING_DIRECTORY')
+    os.environ['HADES_HERMES_WORKING_DIRECTORY'] = temp_root
+    try:
+        owner_unknown = direct_read(
+            "What's Tartarus doing right now?", 'synthetic-owner', 'owner'
+        )
+        assert 'couldn\'t verify the current homelab sources' in owner_unknown, owner_unknown
+        provenance_unknown = direct_read(
+            'When was that checked?', 'synthetic-owner', 'owner',
+            context_text='What is Tartarus doing right now?',
+        )
+        assert provenance_unknown.startswith(
+            "I couldn't verify the current homelab sources"
+        ), provenance_unknown
+        household_unknown = direct_read(
+            'Is Minecraft working?', 'synthetic-household', 'household'
+        )
+        assert "can't confirm whether the game server is working" in household_unknown
+        assert 'synthetic source unavailable' not in household_unknown
+    finally:
+        if old_workdir is None:
+            os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
+        else:
+            os.environ['HADES_HERMES_WORKING_DIRECTORY'] = old_workdir
+print('PASS failed source reads remain explicit unknowns and cannot fall back to remembered live status')

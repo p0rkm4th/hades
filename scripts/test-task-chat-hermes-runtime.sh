@@ -278,6 +278,26 @@ household_game_location = household_game_agent.run_conversation(
 assert household_game_location.get("completed") is True and household_game_location.get("api_calls") == 0, household_game_location
 assert "can't provide internal host or address details" in household_game_location["final_response"], household_game_location
 assert "192.0.2." not in household_game_location["final_response"], household_game_location
+os.environ["HADES_TEST_SOURCE_UNAVAILABLE"] = "1"
+try:
+    failed_owner_read_agent = agent_class(
+        gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-source-outage",
+        stream_delta_callback=lambda _chunk: None, **kwargs,
+    )
+    failed_owner_read = failed_owner_read_agent.run_conversation(
+        "Is everything okay with the homelab?", conversation_history=[]
+    )
+    assert failed_owner_read.get("completed") is True and failed_owner_read.get("api_calls") == 0, failed_owner_read
+    assert "couldn't verify the current homelab sources" in failed_owner_read["final_response"], failed_owner_read
+    failed_household_read = household_game_agent.run_conversation(
+        "Is Minecraft working?", conversation_history=[]
+    )
+    assert failed_household_read.get("completed") is True and failed_household_read.get("api_calls") == 0, failed_household_read
+    assert "because the current check could not be read" in failed_household_read["final_response"], failed_household_read
+    assert "synthetic source unavailable" not in failed_household_read["final_response"], failed_household_read
+finally:
+    os.environ.pop("HADES_TEST_SOURCE_UNAVAILABLE", None)
+print("PASS homelab source outages return explicit unknown owner/household answers without model fallback")
 hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
 provenance_history = [
     {"role": "user", "content": "Is everything okay with the homelab?"},
@@ -487,6 +507,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
     adapter.mkdir(parents=True, mode=0o700)
     (adapter / "server.py").write_text(
         'def homelab_summary():\n'
+        '    if __import__("os").environ.get("HADES_TEST_SOURCE_UNAVAILABLE") == "1":\n'
+        '        raise RuntimeError("synthetic source unavailable")\n'
         '    if __import__("os").environ.get("HADES_TEST_INFERENCE_ONLY") == "1":\n'
         '        raise AssertionError("inference-only query must not read broad homelab summary")\n'
         '    resources = [{"name": "hades-core", "runtime_status": "running",\n'
@@ -521,6 +543,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         'def homelab_compute_capabilities():\n'
         '    return {"machines": []}\n'
         'def homelab_inference_inventory():\n'
+        '    if __import__("os").environ.get("HADES_TEST_SOURCE_UNAVAILABLE") == "1":\n'
+        '        raise RuntimeError("synthetic source unavailable")\n'
         '    return {"status": "READABLE", "endpoints": [{"source_identity": "inference:provider-a", "node_identity": "netbox:device:7", "status": "READABLE", "loaded_status": "CURRENT", "models": [{"name": "sample:small"}], "loaded_models": [{"name": "sample:small"}]}]}\n'
         'def resolve_inference_node_labels(_inventory):\n'
         '    return {"netbox:device:7": "Compute Node A"}\n'
