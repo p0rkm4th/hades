@@ -5022,13 +5022,14 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         )
         if endpoint_response:
             return endpoint_response
-        host_workload_response = _hades_homelab_workloads_on_host_response(
-            text,
-            summary.get("resources", []) if isinstance(summary, dict) else [],
-            summary.get("status", "UNKNOWN") if isinstance(summary, dict) else "UNKNOWN",
-        )
-        if host_workload_response:
-            return host_workload_response
+        if scope == "owner":
+            host_workload_response = _hades_homelab_workloads_on_host_response(
+                text,
+                summary.get("resources", []) if isinstance(summary, dict) else [],
+                summary.get("status", "UNKNOWN") if isinstance(summary, dict) else "UNKNOWN",
+            )
+            if host_workload_response:
+                return host_workload_response
         placement_response = _hades_service_placement_response(
             text,
             summary.get("service_catalog") if isinstance(summary, dict) else None,

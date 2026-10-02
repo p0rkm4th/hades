@@ -340,6 +340,29 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             "What's running on Compute Node A?", 'synthetic-owner', 'owner'
         )
         assert 'couldn\'t verify Compute Node A as a current Proxmox host' in host_workload_route
+        private_host_summary = {
+            'status': 'OK',
+            'resources': [
+                {'name': 'Private Runtime Host', 'runtime_status': 'online',
+                 'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+                 'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+                {'name': 'Private Admin VM', 'runtime_status': 'running',
+                 'identity': {'source_identities': {'proxmox': ['proxmox:site-a:qemu:101']}},
+                 'runtime': {'type': 'qemu', 'node': 'pve-a', 'vmid': 101, 'status': 'running'}},
+            ],
+            'service_catalog': {'status': 'OK', 'services': []},
+        }
+        (adapter_dir / 'server.py').write_text(
+            'def homelab_summary():\n    return ' + repr(private_host_summary) + '\n',
+            encoding='utf-8',
+        )
+        household_host_query = direct_read(
+            'What is running on Private Runtime Host?', 'synthetic-household', 'household'
+        )
+        assert household_host_query is None or not any(
+            private_detail in household_host_query
+            for private_detail in ('Private Runtime Host', 'Private Admin VM', 'pve-a', 'VM 101')
+        ), household_host_query
     finally:
         if old_workdir is None:
             os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
