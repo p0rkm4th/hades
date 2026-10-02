@@ -374,6 +374,30 @@ try:
 finally:
     os.environ.pop("HADES_TEST_SOURCE_UNAVAILABLE", None)
 print("PASS registered homelab MCP source outages return explicit unknown owner/household answers without model fallback")
+registered_homelab_registry = hermes_registry_module.registry
+class MissingHomelabRegistry:
+    def get_entry(self, _name):
+        return None
+
+    def dispatch(self, *_args, **_kwargs):
+        raise AssertionError("unregistered homelab tool must not dispatch or use a parent adapter")
+
+hermes_registry_module.registry = MissingHomelabRegistry()
+try:
+    unconfigured_owner = agent_class(
+        gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-not-registered",
+        stream_delta_callback=lambda _chunk: None, **kwargs,
+    ).run_conversation("Is everything okay with the homelab?", conversation_history=[])
+    assert unconfigured_owner.get("completed") is True and unconfigured_owner.get("api_calls") == 0, unconfigured_owner
+    assert "couldn't verify the current homelab sources" in unconfigured_owner["final_response"], unconfigured_owner
+    unconfigured_household = household_game_agent.run_conversation(
+        "Is Minecraft working?", conversation_history=[],
+    )
+    assert unconfigured_household.get("completed") is True and unconfigured_household.get("api_calls") == 0, unconfigured_household
+    assert "because the current check could not be read" in unconfigured_household["final_response"], unconfigured_household
+finally:
+    hermes_registry_module.registry = registered_homelab_registry
+print("PASS missing homelab MCP registration fails closed for owner and household")
 hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
 provenance_history = [
     {"role": "user", "content": "Is everything okay with the homelab?"},
