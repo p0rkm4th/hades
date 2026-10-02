@@ -83,6 +83,9 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "Owner node-activity read failed closed without model invocation" in candidate
     assert 'r"\\bwhat(?:' in candidate
     assert "Owner model-capacity follow-up failed closed without model invocation" in candidate
+    assert candidate.index("Owner model-capacity follow-up failed closed without model invocation") < candidate.index(
+        "response = _hades_direct_homelab_read(user_message"
+    )
     assert "_hades_homelab_target_from_question(user_message)" in candidate
     assert "_hades_ambiguous_media_device_clarification(_preflight_text)" in candidate
     assert "_hades_direct_homelab_backup_compound" in candidate

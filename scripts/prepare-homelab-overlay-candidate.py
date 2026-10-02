@@ -194,7 +194,11 @@ def add_household_route(source: str) -> str:
             }
 '''
     lines = source.splitlines(keepends=True)
-    lines[owner.end_lineno:owner.end_lineno] = block.splitlines(keepends=True)
+    # These owner routes must run before the generic owner live-read branch.
+    # Some read tools have long upstream timeouts; known-unknown and
+    # fail-closed intents need to return before starting those calls.
+    insertion = owner.lineno - 1
+    lines[insertion:insertion] = block.splitlines(keepends=True)
     composed = "".join(lines)
     if "context_text=previous_user_text" in composed:
         composed = composed.replace(
