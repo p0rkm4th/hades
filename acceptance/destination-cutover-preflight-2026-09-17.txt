@@ -1,26 +1,5 @@
-capture_schema: destination-cutover-preflight/v1
-captured_at_utc: 2026-09-17T02:37:00Z
-change_scope: read-only preflight after source/runtime staging
+# Private deployment acceptance record
 
-passed:
-  - destination identity and active Hermes source
-  - clean candidate revision b102dfd
-  - six migrated application containers
-  - VM onboot persistence
-  - destination WebUI LAN health
-  - simulated hades.local destination path
-  - protected Alexandra rollback package
-  - protected Hindsight export and checksum
-  - required rollback component coverage (LLDAP and Agent Zero remain
-    protected but encryption-pending)
-  - laptop source runtime preservation
+This detailed record contains deployment-specific topology, identities, or operational results. Its pre-sanitization copy is retained in private `hades-infra`.
 
-remaining_failures:
-  - authoritative hades.local does not yet resolve to the destination
-
-summary: pass=10 fail=1
-separate_owner_gate: encrypted custody for LLDAP and Agent Zero remains
-  pending and is not claimed complete by this cutover preflight
-mutations_performed: false
-owner_acceptance: NOT RUN
-laptop_cutover_or_cleanup: NOT RUN
+Public HADES acceptance is represented by generic contract tests and synthetic fixtures. This file is not current live evidence.

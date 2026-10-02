@@ -1,35 +1,5 @@
-HADES fresh-guest actual-image composition acceptance
-Date: 2026-09-16
+# Private deployment acceptance record
 
-Guest:
-  name: hades-fresh-reconstruction
-  Proxmox node: Erebus VMID 802
-  address: <destination-ip> (DHCP)
-  OS: Rocky Linux 10.2 Red Quartz
-  kernel: 6.12.0-211.54.1.el10_2.x86_64
-  Docker: 29.8.1
-  Compose: 5.5.1
-  HADES revision: 75b788f
+This detailed record contains deployment-specific topology, identities, or operational results. Its pre-sanitization copy is retained in private `hades-infra`.
 
-Preparation:
-  PASS tracked Rocky host-preparation path, including Docker's official
-  CentOS-compatible RPM repository; rebooted once so the installed kernel
-  modules were active; built the pinned Open WebUI artifact from the tracked
-  Dockerfile.
-
-Command:
-  ./scripts/test-full-application-image-startup.sh
-
-Result:
-  PASS actual-image application composition on an independent fresh guest.
-  Seven disposable containers reached health: LLDAP, Grocy, Agent Zero,
-  Hindsight, SearXNG, Open WebUI, and the synthetic model. Authenticated
-  synthetic Alpha and Beta users were exercised; Alpha's model-backed chat
-  persisted by read-back, Beta could not retrieve Alpha's private chat, and
-  both properties survived an Open WebUI restart. Cleanup left zero
-  reconstruction containers.
-
-Boundary:
-  This proves fresh-guest actual-image composition. It does not yet prove the
-  installer-generated full application records, real Hermes gateway wiring,
-  or the fresh-guest household soak; those remain separate acceptance steps.
+Public HADES acceptance is represented by generic contract tests and synthetic fixtures. This file is not current live evidence.

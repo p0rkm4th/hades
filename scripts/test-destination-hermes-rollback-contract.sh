@@ -12,9 +12,9 @@ for marker in \
   'systemctl daemon-reload' \
   'systemctl restart hades-hermes.service' \
   'docker' \
-  'hades.local'; do
+  'hades.example.test'; do
   case "$marker" in
-    docker|hades.local)
+    docker|hades.example.test)
       if grep -Fq "$marker" "$script"; then
         echo "FAIL rollback script must not reference $marker" >&2
         exit 1

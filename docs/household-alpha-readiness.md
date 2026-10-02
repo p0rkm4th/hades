@@ -16,8 +16,8 @@ excluded.
 
 **HADES HOUSEHOLD ALPHA — READY FOR CONTROLLED ONBOARDING**
 
-Production LLDAP is persistent, Scotty's existing identity and local fallback
-are preserved, directory-authenticated Scotty maps to the existing Open WebUI
+The directory-backed identity and local fallback
+are preserved, and an authenticated directory subject maps to the existing Open WebUI
 and Hindsight state, and synthetic production users have passed conversation
 and personal-memory isolation, shared Grocy, finance exclusion, Agent Zero
 exclusion, settings persistence, revocation, and restart acceptance. The
@@ -42,7 +42,7 @@ administrator and independent recovery path were verified.
 ## Remaining gates
 
 - No additional implementation gate remains for synthetic Household Alpha.
-  Real household onboarding still requires Scotty's explicit
+  Real household onboarding still requires the owner's explicit
   identity/invitation choice and the corresponding controlled acceptance.
 - Browser DOM acceptance is substantially covered: mobile rendered login,
   private-chat sidebar isolation, household model visibility, memory

@@ -1,9 +1,9 @@
-"""Ensure the owner-visible Fast model uses the direct Hermes Compute route.
+"""Ensure the owner-visible Fast model uses its configured direct route.
 
-This is an idempotent Open WebUI database migration. Hermes Compute is an
-OpenAI-compatible completion endpoint, not an Ollama endpoint, and it is
-intentionally marked completion-only because its context/tool contract is not
-qualified for Hermes Agent.
+This is an idempotent Open WebUI database migration. The endpoint is supplied
+through private deployment configuration and is intentionally marked
+completion-only because its context/tool contract is not qualified for Hermes
+Agent.
 """
 
 import json
@@ -57,9 +57,9 @@ def configure() -> None:
         updated = db.execute(
             "update model set base_model_id = NULL, name = ?, meta = ? where id = ?",
             (
-                "Hades Fast (Hermes Compute)",
+                "Hades Fast",
                 json.dumps({
-                    "description": "Direct conversational model on Hermes Compute; completion-only, HADES tools unavailable.",
+                    "description": "Configured direct completion endpoint; completion-only, HADES tools unavailable.",
                     "capabilities": {"builtin_tools": False},
                 }, separators=(",", ":")),
                 MODEL_ID,

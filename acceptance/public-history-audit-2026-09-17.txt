@@ -1,20 +1,5 @@
-capture_schema: public-history-audit/v1
-audited_at_utc: 2026-09-17
-branch: HEAD
+# Private deployment acceptance record
 
-current_tree:
-  public_tree_safety: PASS
-  private_topology_in_current_files: absent
-  credential_like_tracked_paths: absent
+This record contains deployment-specific host identities, topology, credentials-path assumptions, or recovery-custody details. Its complete pre-sanitization copy is retained in the private `hades-infra` repository under `docs/private-public-hades-source-archive-20261001/`.
 
-history:
-  synthetic_docker_bridge_exceptions: <PRIVATE_LAN_ADDRESS>, <PRIVATE_LAN_ADDRESS>
-  result: FAIL_REACHABLE_PRE_REDACTION_COMMITS
-  reachable_commit_count: 898
-  affected_commit_count: 284
-  finding: earlier reachable commits contain private destination addresses and workstation-specific paths in historical acceptance/scripts
-  current_remediation: current files are redacted or derive paths; no new private values are introduced
-  remaining_action: history rewrite or branch retirement requires explicit release/owner authorization
-  safety_disposition: no history rewrite, reset, force-push, or deletion performed
-
-result: CURRENT_TREE_SAFE_HISTORY_REMEDIATION_REQUIRES_EXPLICIT_AUTHORIZATION
+Public HADES acceptance is represented by generic contract tests and synthetic fixtures. Do not restore private deployment details to this file.

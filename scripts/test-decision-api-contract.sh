@@ -34,6 +34,8 @@ for request, intent, family, tool in [
     ("read the first result", "page_read", "WEB", "PAGE_READ"),
     ("remember my test color is cobalt", "memory", "MEMORY", "MEMORY"),
     ("restart the other server", "homelab", "HOMELAB", "HOMELAB_READ"),
+    ("whats compute-node-a doing rn", "homelab", "HOMELAB", "HOMELAB_READ"),
+    ("Is Compute Node B alive?", "homelab", "HOMELAB", "HOMELAB_READ"),
     ("What is a server?", "general_chat", "GENERAL", "NONE"),
     ("What does a server do?", "general_chat", "GENERAL", "NONE"),
     ("What is the server?", "general_chat", "GENERAL", "NONE"),

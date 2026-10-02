@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 import os
+import json
+import re
+from pathlib import Path
 from urllib.parse import urljoin
+
+
+MAX_IDENTITY_LINK_BYTES = 65536
+MAX_IDENTITY_LINKS = 1024
 
 
 def _split(name: str) -> list[str]:
@@ -40,6 +47,75 @@ def proxmox_token_ids() -> tuple[str, ...]:
     if len(ids) == 1:
         ids *= count
     return tuple(ids)
+
+
+def proxmox_source_ids(
+    specs: tuple[tuple[str, str], ...] | None = None,
+) -> tuple[str, ...]:
+    """Return stable configured identities for independent Proxmox APIs."""
+    specs = specs if specs is not None else proxmox_specs()
+    configured = _split("HADES_PROXMOX_SOURCE_IDS")
+    if configured:
+        if len(configured) != len(specs):
+            raise ValueError("Proxmox source-ID count must match endpoint count")
+        ids = configured
+    else:
+        # Ordinals are source-local labels only. Cross-source links involving
+        # Proxmox require explicit stable IDs in HADES_PROXMOX_SOURCE_IDS.
+        ids = tuple(f"endpoint-{index + 1}" for index in range(len(specs)))
+    if any(not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", value) for value in ids):
+        raise ValueError("Proxmox source IDs contain an invalid identifier")
+    if len(set(ids)) != len(ids):
+        raise ValueError("Proxmox source IDs must be unique")
+    return tuple(ids)
+
+
+def identity_links_file() -> str:
+    """Return the optional protected source-identity link file path."""
+    return os.environ.get("HADES_HOMELAB_IDENTITY_LINKS_FILE", "").strip()
+
+
+def load_identity_links() -> dict[str, str]:
+    """Load source-to-NetBox ID links without introducing inventory fields.
+
+    The file contains only stable source identifiers and canonical NetBox
+    device IDs. It cannot override names, addresses, roles, health, or state.
+    """
+    path_value = identity_links_file()
+    if not path_value:
+        return {}
+    path = Path(path_value)
+    if not path.is_file() or path.is_symlink():
+        raise ValueError("homelab identity-link file must be a regular non-symlink file")
+    if path.stat().st_mode & 0o777 not in {0o600, 0o640}:
+        raise ValueError("homelab identity-link file must be mode 0600 or 0640")
+    if path.stat().st_size > MAX_IDENTITY_LINK_BYTES:
+        raise ValueError("homelab identity-link file exceeds the bounded size")
+    document = json.loads(path.read_text(encoding="utf-8"))
+    entries = document.get("links") if isinstance(document, dict) else None
+    if not isinstance(entries, list) or len(entries) > MAX_IDENTITY_LINKS:
+        raise ValueError("homelab identity-link file must contain a bounded links list")
+    result: dict[str, str] = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError("homelab identity-link entry must be an object")
+        source = entry.get("source_identity")
+        device_id = entry.get("netbox_device_id")
+        if not isinstance(source, str) or not source or len(source) > 256:
+            raise ValueError("homelab source identity is invalid")
+        if not source.startswith(("proxmox:", "kuma:monitor:")):
+            raise ValueError("homelab identity links may only bind Proxmox or Kuma sources")
+        if not re.fullmatch(
+            r"(?:proxmox:[A-Za-z0-9._-]{1,128}:[A-Za-z0-9._-]{1,32}:[A-Za-z0-9._-]{1,128}|kuma:monitor:[1-9][0-9]{0,19})",
+            source,
+        ):
+            raise ValueError("homelab source identity has an invalid format")
+        if isinstance(device_id, bool) or not str(device_id).isdigit() or int(device_id) < 1:
+            raise ValueError("homelab identity link requires a positive NetBox device ID")
+        if source in result:
+            raise ValueError("homelab source identity is linked more than once")
+        result[source] = f"netbox:device:{int(device_id)}"
+    return result
 
 
 def source_specs() -> tuple[tuple[str, str], ...]:

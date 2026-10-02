@@ -13,7 +13,7 @@ runtime secrets and persistent volumes remain outside Git.
 | Actual Budget / Finance MCP | canonical imported finance account and transaction truth | `integrations/actual-finance-readonly/` read adapter plus `integrations/actual-finance-import/` preview-only file MCP; synthetic staging only | Actual 26.9.0 server/client must be pinned together; owner authorization remains required for native import execution and no finance write authority is registered |
 | Proxmox / NetBox / Uptime Kuma | homelab and availability truth | registered read-only MCP profile in `hermes/config.yaml.example`, bounded LAN discovery, and `docs/homelab-readonly.md` | owner-approved endpoints and protected token files required for live reads; no writes |
 | Home Assistant | physical smart-home state/control | future selected-entity integration | deferred; least privilege required |
-| n8n | deterministic workflows | existing fixed read-only templates; bounded Phase 3 canary implementation | Scotty has authorized Server Health Watch, Low Inventory Summary, Weekly Household Summary, and Backup Verification only; keep the runner inactive until HADES-owned operation-time identity/resource checks and recovery acceptance pass |
+| n8n | deterministic workflows | existing fixed read-only templates; bounded Phase 3 canary implementation | Owner-approved scope covers Server Health Watch, Low Inventory Summary, Weekly Household Summary, and Backup Verification only; keep the runner inactive until HADES-owned operation-time identity/resource checks and recovery acceptance pass |
 
 ## Reconstruction manifest
 

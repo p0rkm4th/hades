@@ -10,7 +10,7 @@ integrity:
   agent_zero_state_archive: PASS
   all_archives_nonempty_and_tar_readable: PASS
   all_archives_root_owned_mode_0600: PASS
-  Alexandra_package_checksum: PASS
+  private_storage_host_package_checksum: PASS
 
 encryption:
   owner_key: NOT_SELECTED

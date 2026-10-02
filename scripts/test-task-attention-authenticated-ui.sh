@@ -171,9 +171,9 @@ def homelab_summary():
             {"name": "Search", "status": "down", "freshness": "FRESH"},
             {"name": "Router ping", "status": "up", "freshness": "FRESH", "ping_ms": 84},
             {"name": "Jellyfin", "status": "down", "freshness": "STALE"},
-            {"name": "Hypnos", "status": "up", "freshness": "FRESH"},
-            {"name": "Thanatos", "status": "down", "freshness": "FRESH"},
-            {"name": "Hermes", "status": "up", "freshness": "STALE"},
+            {"name": "Compute Node B", "status": "up", "freshness": "FRESH"},
+            {"name": "Management Node", "status": "down", "freshness": "FRESH"},
+            {"name": "Fast Inference Node", "status": "up", "freshness": "STALE"},
         ],
         "conflicts": [],
         "errors": [],
@@ -181,7 +181,7 @@ def homelab_summary():
             "name": "hades-core",
             "runtime_status": "running",
             "currently_online": True,
-            "runtime": {"name": "hades-core", "vmid": 802, "status": "running"},
+            "runtime": {"name": "hades-core", "vmid": 1802, "status": "running"},
         }, {
             "name": "Minecraft Server",
             "runtime_status": "NOT_OBSERVED",
@@ -189,22 +189,22 @@ def homelab_summary():
             "availability": {"name": "Minecraft Server", "status": "up", "last_updated": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()},
             "availability_freshness": "FRESH",
         }, {
-            "name": "Hypnos",
+            "name": "Compute Node B",
             "runtime_status": "NOT_OBSERVED",
             "currently_online": False,
-            "availability": {"name": "Hypnos", "status": "up", "last_updated": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()},
+            "availability": {"name": "Compute Node B", "status": "up", "last_updated": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()},
             "availability_freshness": "FRESH",
         }, {
-            "name": "Thanatos",
+            "name": "Management Node",
             "runtime_status": "NOT_OBSERVED",
             "currently_online": False,
-            "availability": {"name": "Thanatos", "status": "down", "last_updated": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()},
+            "availability": {"name": "Management Node", "status": "down", "last_updated": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()},
             "availability_freshness": "FRESH",
         }, {
-            "name": "Hermes",
+            "name": "Fast Inference Node",
             "runtime_status": "NOT_OBSERVED",
             "currently_online": False,
-            "availability": {"name": "Hermes", "status": "up", "last_updated": "2000-01-01T00:00:00+00:00"},
+            "availability": {"name": "Fast Inference Node", "status": "up", "last_updated": "2000-01-01T00:00:00+00:00"},
             "availability_freshness": "STALE",
         }],
     }
@@ -216,16 +216,16 @@ chmod -R go-rwx "$homelab_root"
 capability_matrix="$work/capability-matrix.yaml"
 cat >"$capability_matrix" <<'YAML'
 machines:
-  - name: Tartarus
+  - name: Compute Node A
     address: 192.0.2.69
     role: synthetic inference node
-  - name: Hypnos
+  - name: Compute Node B
     address: 192.0.2.73
     role: synthetic inference node
-  - name: Thanatos
+  - name: Management Node
     address: 192.0.2.75
     role: synthetic management node
-  - name: Hermes
+  - name: Fast Inference Node
     address: 192.0.2.152
     role: synthetic inference node
 YAML

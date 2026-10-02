@@ -24,18 +24,19 @@ spec.loader.exec_module(reconcile)
 now = datetime.now(timezone.utc)
 state = {
     "/proxmox/api2/json/cluster/resources": {"data": [
-        {"type": "node", "node": "Alexandra", "status": "online"},
-        {"type": "node", "node": "Beta", "status": "degraded"},
-        {"type": "qemu", "vmid": 101, "name": "dinner-app", "node": "Alexandra", "status": "running"},
-        {"type": "lxc", "vmid": 102, "name": "archive", "node": "Beta", "status": "stopped"},
+        {"_hades_identity": "proxmox:pve-a:node:pve-a", "type": "node", "node": "pve-a", "status": "online"},
+        {"_hades_identity": "proxmox:pve-a:node:pve-b", "type": "node", "node": "pve-b", "status": "degraded"},
+        {"_hades_identity": "proxmox:pve-a:qemu:101", "type": "qemu", "vmid": 101, "name": "dinner-app", "node": "pve-a", "status": "running"},
+        {"_hades_identity": "proxmox:pve-a:lxc:102", "type": "lxc", "vmid": 102, "name": "archive", "node": "pve-b", "status": "stopped"},
     ]},
     "/netbox/api/dcim/devices/?name=dinner-app": {"results": [
-        {"name": "dinner-app", "status": "active", "site": "Kitchen Lab", "planned_node": "Beta", "primary_ip": "192.0.2.44"},
-        {"name": "inventory-only", "status": "active", "site": "Kitchen Lab", "planned_node": "Beta", "primary_ip": "192.0.2.45"},
+        {"id": 75, "name": "dinner-app", "status": "active", "site": "Kitchen Lab", "planned_node": "pve-b", "primary_ip": "192.0.2.44"},
+        {"id": 76, "name": "archive", "status": "active", "site": "Kitchen Lab", "planned_node": "pve-b"},
+        {"id": 77, "name": "inventory-only", "status": "active", "site": "Kitchen Lab", "planned_node": "pve-b", "primary_ip": "192.0.2.45"},
     ]},
     "/kuma/api/status-page/lab": {"monitors": [
-        {"name": "dinner-app", "status": "down", "last_updated": (now - timedelta(minutes=10)).isoformat()},
-        {"name": "archive", "status": "up", "last_updated": (now - timedelta(minutes=1)).isoformat()},
+        {"id": 7, "name": "dinner-app", "status": "down", "last_updated": (now - timedelta(minutes=10)).isoformat()},
+        {"id": 8, "name": "archive", "status": "up", "last_updated": (now - timedelta(minutes=1)).isoformat()},
     ]},
 }
 
@@ -68,7 +69,13 @@ resources = get("/proxmox/api2/json/cluster/resources")["data"]
 devices = get("/netbox/api/dcim/devices/?name=dinner-app")["results"]
 monitors = get("/kuma/api/status-page/lab")["monitors"]
 summary = reconcile.summarize(
-    {"data": resources}, {"results": devices}, {"monitors": monitors}, now=now
+    {"data": resources}, {"results": devices}, {"monitors": monitors}, now=now,
+    identity_links={
+        "proxmox:pve-a:qemu:101": "netbox:device:75",
+        "kuma:monitor:7": "netbox:device:75",
+        "proxmox:pve-a:lxc:102": "netbox:device:76",
+        "kuma:monitor:8": "netbox:device:76",
+    },
 )
 resource = next(row for row in summary["resources"] if row["name"] == "dinner-app")
 assert summary["authority"] == {
@@ -76,17 +83,17 @@ assert summary["authority"] == {
     "inventory": "NetBox",
     "availability": "Uptime Kuma",
 }
-assert resource["runtime"]["node"] == "Alexandra"
+assert resource["runtime"]["node"] == "pve-a"
 assert resource["runtime_status"] == "running"
 assert resource["currently_online"] is True
-assert resource["inventory"]["planned_node"] == "Beta"
+assert resource["inventory"]["planned_node"] == "pve-b"
 assert resource["inventory"]["primary_ip"] == "192.0.2.44"
 assert resource["availability"]["status"] == "down"
 assert resource["availability_freshness"] == "STALE"
 assert resource["conflicts"]
 inventory_only = next(row for row in summary["resources"] if row["name"] == "inventory-only")
 assert inventory_only["runtime_status"] == "NOT_OBSERVED"
-assert inventory_only["currently_online"] is False
+assert inventory_only["currently_online"] is None
 assert inventory_only["inventory"]["primary_ip"] == "192.0.2.45"
 assert "inventory-only" in summary["inventory_only_names"]
 archive = next(row for row in summary["resources"] if row["name"] == "archive")
@@ -97,13 +104,13 @@ assert archive["currently_online"] is False
 nodes = {row["node"]: row for row in resources if row["type"] == "node"}
 guests = {row["name"]: row for row in resources if row["type"] in {"qemu", "lxc"}}
 
-assert nodes["Alexandra"]["status"] == "online"
-assert nodes["Beta"]["status"] == "degraded"
-assert next(row for row in summary["resources"] if row["name"] == "Beta")["currently_online"] is False
-assert guests["dinner-app"]["node"] == "Alexandra"
+assert nodes["pve-a"]["status"] == "online"
+assert nodes["pve-b"]["status"] == "degraded"
+assert next(row for row in summary["resources"] if row["name"] == "pve-b")["currently_online"] is None
+assert guests["dinner-app"]["node"] == "pve-a"
 assert guests["dinner-app"]["status"] == "running"
 assert guests["archive"]["status"] == "stopped"
-assert devices[0]["planned_node"] == "Beta"
+assert devices[0]["planned_node"] == "pve-b"
 assert guests["dinner-app"]["node"] != devices[0]["planned_node"]
 monitor = monitors[0]
 assert monitor["status"] == "down"

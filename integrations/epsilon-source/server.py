@@ -42,7 +42,14 @@ def verify(name: str) -> dict[str, object]:
     filename, expected, label = TARGETS[name]
     observed = time.time()
     path = ROOT / filename
-    base = {"hades_template": "backup-verification", "target": name, "label": label, "custody": "Alexandra temporary protected landing zone; verification copy on HADES Core", "observed_at": observed}
+    custody = os.environ.get(
+        "HADES_BACKUP_CUSTODY_DESCRIPTION",
+        "owner-managed protected location",
+    ).strip() or "owner-managed protected location"
+    base = {
+        "hades_template": "backup-verification", "target": name,
+        "label": label, "custody": custody, "observed_at": observed,
+    }
     try:
         stat = path.stat()
         if not path.is_file() or stat.st_size <= 0:

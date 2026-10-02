@@ -124,10 +124,10 @@ with tempfile.TemporaryDirectory(prefix="hades-phase3-joined-runtime-", dir=cach
     for filename, group in (("owner.json", "hades-owner"), ("household.json", "hades-household"), ("reader.json", "lldap_strict_readonly")):
         (groups_dir / filename).write_text(json.dumps({"name": group}) + "\n", encoding="utf-8")
     for filename, user in (
-        ("reader.json", {"id": "phase3-reader", "email": "reader@hades.local", "password": reader_password, "displayName": "Phase3 Read Only Reader", "groups": ["lldap_strict_readonly"]}),
-        ("owner.json", {"id": "synthetic-owner-directory-id", "email": "owner@hades.local", "password": "synthetic-owner-password", "displayName": "Synthetic Owner", "groups": ["hades-owner"]}),
-        ("beta.json", {"id": "synthetic-beta-directory-id", "email": "beta@hades.local", "password": "synthetic-beta-password", "displayName": "Synthetic Beta", "groups": ["hades-household"]}),
-        ("gamma.json", {"id": "synthetic-gamma-directory-id", "email": "gamma@hades.local", "password": "synthetic-gamma-password", "displayName": "Synthetic Gamma", "groups": ["hades-household"]}),
+        ("reader.json", {"id": "phase3-reader", "email": "reader@hades.example.test", "password": reader_password, "displayName": "Phase3 Read Only Reader", "groups": ["lldap_strict_readonly"]}),
+        ("owner.json", {"id": "synthetic-owner-directory-id", "email": "owner@hades.example.test", "password": "synthetic-owner-password", "displayName": "Synthetic Owner", "groups": ["hades-owner"]}),
+        ("beta.json", {"id": "synthetic-beta-directory-id", "email": "beta@hades.example.test", "password": "synthetic-beta-password", "displayName": "Synthetic Beta", "groups": ["hades-household"]}),
+        ("gamma.json", {"id": "synthetic-gamma-directory-id", "email": "gamma@hades.example.test", "password": "synthetic-gamma-password", "displayName": "Synthetic Gamma", "groups": ["hades-household"]}),
     ):
         (users_dir / filename).write_text(json.dumps(user) + "\n", encoding="utf-8")
     if os.geteuid() == 0:
@@ -139,7 +139,7 @@ with tempfile.TemporaryDirectory(prefix="hades-phase3-joined-runtime-", dir=cach
         "docker", "run", "-d", "--rm", "--name", container_name,
         "-p", "127.0.0.1::17170", "-e", "UID=1000", "-e", "GID=1000", "-e", "TZ=UTC",
         "-e", "LLDAP_LDAP_BASE_DN=dc=hades,dc=local", "-e", "LLDAP_LDAP_USER_DN=admin",
-        "-e", "LLDAP_LDAP_USER_EMAIL=admin@hades.local",
+        "-e", "LLDAP_LDAP_USER_EMAIL=admin@hades.example.test",
         "-e", "LLDAP_JWT_SECRET_FILE=/run/secrets/jwt", "-e", "LLDAP_KEY_SEED_FILE=/run/secrets/seed",
         "-e", "LLDAP_LDAP_USER_PASS_FILE=/run/secrets/pass",
         "-v", f"{identity_dir / 'jwt_secret'}:/run/secrets/jwt:ro,Z",

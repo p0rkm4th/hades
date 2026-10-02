@@ -1,47 +1,5 @@
-HADES owner dogfood: live homelab read-only route
-Date: 2026-09-16
+# Private deployment acceptance record
 
-Scope
-- Authenticated local HADES API request using the owner session subject.
-- No memory authority was requested and no write-capable tool was exposed.
+This detailed record contains deployment-specific topology, identities, or operational results. Its pre-sanitization copy is retained in private `hades-infra`.
 
-Result
-- HADES registered the homelab-readonly MCP server with four tools.
-- The owner request “What servers are online?” invoked
-  mcp_homelab_readonly_homelab_summary.
-- The response correctly identified Alexandra and Erebus as the only
-  Proxmox runtime hosts with runtime_status=online.
-- It explicitly treated Hypnos and Tartarus as not observed by Proxmox rather
-  than claiming they were online from inventory or memory.
-- The adapter remained read-only.
-
-Compound owner retest after runtime overlay synchronization
-- A combined “online servers plus known GPU hosts” request used the deployed
-  owner catalog and live summary path.
-- It reported Alexandra and Erebus as the only Proxmox-online servers.
-- It listed GPU-equipped hosts separately as observed inventory, including
-  Tartarus (4× Quadro P4000) and Hypnos (2× Quadro P4000), without treating
-  those records as current liveness or CUDA availability.
-
-Bounded robustness finding
-- A more complex combined request (online hosts plus GPU hosts) did not select
-  the tool with the installed weak model. The tool contract now explicitly
-  marks homelab_summary as mandatory for owner infrastructure questions.
-  The simple canonical request was retested successfully after that change.
-- GPU inventory remains available through the separate compute-capabilities
-  tool; this finding does not grant authority or change the source-of-truth
-  boundary.
-
-Shorthand routing regression
-- The owner request `whats running on Alexandra?` invoked
-  `mcp_homelab_readonly_homelab_summary` after homelab intent and
-  memory-prefetch routing repairs.
-- The answer used current Proxmox runtime and Kuma status; stale private
-  memory did not substitute for the live source and no write occurred.
-
-Hardware availability query
-- The owner request `what GPUs do I have available?` invoked both the live
-  summary and compute-capabilities tools.
-- HADES reported only Alexandra (GTX 660) and Erebus (Quadro P4000) as GPUs
-  on currently online hosts, while keeping Hermes, Thanatos, Hypnos, and
-  Tartarus as inventory facts requiring current liveness/driver validation.
+Public HADES acceptance is represented by generic contract tests and synthetic fixtures. This file is not current live evidence.

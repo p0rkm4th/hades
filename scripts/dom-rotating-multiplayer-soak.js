@@ -4,7 +4,7 @@ const { chromium } = require(process.env.HADES_PLAYWRIGHT_MODULE || 'playwright'
 
 const base = process.env.HADES_DOM_BASE_URL || 'http://127.0.0.1:3000/';
 const users = [
-  ['owner', 'HADES_DOM_OWNER_EMAIL', 'HADES_DOM_OWNER_PASSWORD', process.env.HADES_DOM_OWNER_PROMPT || 'check tartarus status'],
+  ['owner', 'HADES_DOM_OWNER_EMAIL', 'HADES_DOM_OWNER_PASSWORD', process.env.HADES_DOM_OWNER_PROMPT || 'check compute-node-a status'],
   ['owner-tab-b', 'HADES_DOM_OWNER_EMAIL', 'HADES_DOM_OWNER_PASSWORD', process.env.HADES_DOM_OWNER_TAB_B_PROMPT || 'do we have milk'],
   ['household-a', 'HADES_DOM_HOUSEHOLD_A_EMAIL', 'HADES_DOM_HOUSEHOLD_A_PASSWORD', process.env.HADES_DOM_MUTATION_PROMPT || 'add HADES beta test oat milk to the grocery list'],
   ['household-b', 'HADES_DOM_HOUSEHOLD_B_EMAIL', 'HADES_DOM_HOUSEHOLD_B_PASSWORD', process.env.HADES_DOM_HOUSEHOLD_B_PROMPT || 'ask Agent Zero to inspect the server'],

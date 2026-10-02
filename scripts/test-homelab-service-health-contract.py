@@ -20,6 +20,8 @@ wanted = {
     '_hades_service_endpoint_response',
     '_hades_endpoint_continuation_response',
     '_hades_direct_owner_location',
+    '_hades_homelab_name_key',
+    '_hades_homelab_target_from_question',
 }
 functions = [
     node for node in tree.body
@@ -70,7 +72,7 @@ dogfood_request = (
 assert endpoint_before_provision(dogfood_request) is False
 assert endpoint_before_provision('Can you spin up a Minecraft server?') is False
 assert endpoint_before_provision('What is the Minecraft server IP and port?') is True
-assert endpoint_before_provision('What is the IP address of Thanatos?') is False
+assert endpoint_before_provision('What is the IP address of Test Host?') is False
 assert 'first call the read-only homelab_summary' in source
 assert 'asks_to_provision' in source
 assert 'Owner service endpoint inventory read completed without model invocation' in source
@@ -100,7 +102,7 @@ assert 'doesn\'t give one clear address and port' in endpoint_response(request, 
 }, 'owner')
 recorded = endpoint_response(request, {
     'status': 'OK', 'services': [{
-        'name': 'Minecraft Server', 'parent_name': 'Thanatos',
+        'name': 'Minecraft Server', 'parent_name': 'Test Host',
         'addresses': ['192.0.2.10'], 'port_mappings': ['tcp/25565'],
     }],
 }, 'owner')
@@ -123,6 +125,9 @@ assert endpoint_continuation(
 
 assert target('Is Minecraft healthy enough for tonight?') == (['minecraft'], 'minecraft')
 assert target('Are all the computers okay?') is None
+assert namespace['_hades_homelab_target_from_question']('whats Compute Node A doing rn') == 'compute node a'
+assert namespace['_hades_homelab_target_from_question']('Is Compute Node B alive?') == 'compute node b'
+assert namespace['_hades_homelab_target_from_question']('Is everything okay?') is None
 
 fresh_minecraft = [{
     'name': 'Minecraft Server',
@@ -178,6 +183,12 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
     try:
         routed_up = direct_read('Is Minecraft healthy enough for tonight?', 'synthetic-owner', 'owner')
         assert "Uptime Kuma's configured check for Minecraft Server is up." in routed_up, routed_up
+        household_game_status = direct_read(
+            'Is Minecraft working?', 'synthetic-household', 'household'
+        )
+        assert "Uptime Kuma's configured check for Minecraft Server is up." in household_game_status
+        assert 'Test Host' not in household_game_status and '192.0.2.' not in household_game_status
+        assert direct_read('Is the homelab okay?', 'synthetic-household', 'household') is None
         routed_endpoint = direct_read(
             request,
             'synthetic-owner', 'owner',

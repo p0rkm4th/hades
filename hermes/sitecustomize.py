@@ -513,7 +513,15 @@ def _hades_phase2_backup_response(user_text, subject, scope, phase2_session_key=
         preview_id = secrets.token_urlsafe(18)
         store.preview_put(preview_id, subject, {**preview, "display_name": "Backup Check"}, int(time.time()) + 600)
         save_pending({"preview_id": preview_id, "operation_key": automation_id, "template_id": "hades-backup-verification"})
-        return f"Backup Check\n\nTarget: {target_label}\nSchedule: every morning\nNotifications: HADES-local, only when verification state changes\nCustody: Alexandra temporary protected landing zone\n\nCreate it?"
+        custody = os.environ.get(
+            "HADES_BACKUP_CUSTODY_DESCRIPTION",
+            "owner-managed protected location",
+        ).strip() or "owner-managed protected location"
+        return (
+            f"Backup Check\n\nTarget: {target_label}\nSchedule: every morning\n"
+            "Notifications: HADES-local, only when verification state changes\n"
+            f"Custody: {custody}\n\nCreate it?"
+        )
     if create and scope != "owner":
         return "Only the owner can create a Backup Check. I have not created anything."
     if not target_records:
@@ -4724,8 +4732,10 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         return None
     if not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
-        r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|tartarus|hypnos|thanatos|erebus|alexandra|hermes|"
-        r"minecraft|jellyfin)\b",
+        r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
+        r"minecraft|jellyfin)\b|"
+        r"\b(?:what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
+        r"is\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+(?:alive|online|offline|up|down|running))\b",
         text,
         re.IGNORECASE,
     ):
@@ -4773,7 +4783,15 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         resources = summary.get("resources", []) if isinstance(summary, dict) else []
         service_response = _hades_service_monitor_response(text, resources)
         if service_response:
-            return service_response
+            if scope == "owner":
+                return service_response
+            if scope == "household" and re.search(r"\bminecraft\b", text, re.IGNORECASE):
+                # Household status is limited to the approved game-service
+                # check. Never return host, address, role, or infrastructure
+                # detail through this route.
+                return service_response
+        if scope != "owner":
+            return None
         supplemental_runtime = []
         has_guest_runtime = any(
             isinstance(item, dict)
@@ -4802,17 +4820,31 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                 summary["online_names"] = list(dict.fromkeys(
                     [*summary.get("online_names", []), *[item["name"] for item in guest_resources if item["currently_online"]]]
                 ))
-        target_match = re.search(
-            r"\b(?:tartarus|hypnos|thanatos|erebus|alexandra|hermes)\b",
-            text,
-            re.IGNORECASE,
-        )
-        if target_match:
-            target = target_match.group(0).casefold()
+        target_name = _hades_homelab_target_from_question(text)
+        if target_name:
+            target = target_name
+            target_key = _hades_homelab_name_key(target)
             matching = [
                 resource for resource in resources
-                if target in str(resource.get("name", "")).casefold()
+                if target_key in _hades_homelab_name_key(resource.get("name"))
             ]
+            if len(matching) > 1:
+                identities = [
+                    item.get("identity") for item in matching
+                    if isinstance(item.get("identity"), dict)
+                ]
+                if identities:
+                    return (
+                        f"I found multiple homelab records matching {target}, "
+                        "but the available sources do not establish one unambiguous machine identity. "
+                        "I won't choose a host by display name alone."
+                    )
+                # Older adapters have no identity metadata. Preserve their
+                # existing behavior only when the name match is unique.
+                return (
+                    f"I found multiple homelab records matching {target}. "
+                    "I can't safely choose one from the available evidence."
+                )
             if not matching:
                 # A physical inference node may be present in the observed
                 # hardware matrix without being represented as a Proxmox
@@ -4872,12 +4904,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                         machines = []
                 observed = [
                     machine for machine in machines
-                    if target in str(machine.get("name", "")).casefold()
+                    if target_key in _hades_homelab_name_key(machine.get("name"))
                 ]
-                if observed:
+                if len(observed) == 1:
                     machine = observed[0]
                     details = [
-                        f"I found {machine.get('name', target_match.group(0))} in the hardware inventory.",
+                        f"I found {machine.get('name', target)} in the hardware inventory.",
                     ]
                     if machine.get("address"):
                         details.append(f"The recorded address is {machine['address']}.")
@@ -4887,12 +4919,17 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                         "I don't have a current runtime check for it, so I can't say whether it's online."
                     )
                     return " ".join(details)
+                if len(observed) > 1:
+                    return (
+                        f"I found multiple inventory records matching {target}, "
+                        "so I can't identify which machine you mean."
+                    )
                 return (
-                    f"I couldn't verify {target_match.group(0)} in the live homelab sources. "
+                    f"I couldn't verify {target} in the live homelab sources. "
                     "I did not assume it was running."
                 )
             resource = matching[0]
-            name = resource.get("name") or target_match.group(0)
+            name = resource.get("name") or target
             runtime_status = resource.get("runtime_status") or "UNKNOWN"
             inventory = resource.get("inventory") or {}
             availability = resource.get("availability") or {}
@@ -4951,6 +4988,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
             str(item.get("name")): item for item in (summary.get("resources", []) if isinstance(summary, dict) else [])
             if isinstance(item, dict) and item.get("name")
         }
+        resource_name_counts = {}
+        for item in summary.get("resources", []) if isinstance(summary, dict) else []:
+            if isinstance(item, dict) and item.get("name"):
+                key = str(item["name"]).casefold()
+                resource_name_counts[key] = resource_name_counts.get(key, 0) + 1
         detailed_request = bool(re.search(
             r"\b(?:node(?:s)?|blocker(?:s)?|concise|detailed|comprehensive|full|everything|all\s+(?:the\s+)?(?:servers|services|workloads|computers)|core|major|inference|worker(?:s)?|issue(?:s)?|problem(?:s)?)\b",
             text,
@@ -4998,6 +5040,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         down = monitor_groups["down"]
         if down:
             response += " Uptime Kuma's configured probes failed: " + ", ".join(down) + "."
+        if isinstance(summary, dict) and summary.get("identity_warnings"):
+            response += (
+                " Some display names map to multiple resource identities, "
+                "so I kept those records separate instead of merging their state."
+            )
         if detailed_request:
             runtime_details = [
                 (item.get("runtime_detail") or item.get("runtime")) for item in resources
@@ -5044,7 +5091,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                 response += " Some sources are unavailable, so unreported nodes remain unknown."
             elif not down and not conflicts and not unknown and not errors:
                 response += " No blocker was reported by the configured live sources."
-            core = resources_by_name.get("hades-core") or resources_by_name.get("HADES Core")
+            core = None
+            for core_name in ("hades-core", "hades core"):
+                if resource_name_counts.get(core_name) == 1:
+                    core = resources_by_name.get("hades-core") or resources_by_name.get("HADES Core")
+                    break
             if core:
                 response += f" HADES Core runtime is {core.get('runtime_status', 'UNKNOWN')}."
             response += " Inference-worker health was not independently verified by this read."
@@ -5229,13 +5280,48 @@ _HADES_MEMORY_NEGATION = re.compile(
     r"\b(?:do\s+not|don't|without|never|not)\b[^.!?]{0,32}\bmemory\b",
     re.IGNORECASE,
 )
+
+
+def _hades_homelab_name_key(value):
+    """Normalize punctuation for lookup against a configured display alias."""
+    return re.sub(r"[^a-z0-9]+", "", str(value or "").casefold())
+
+
+def _hades_homelab_target_from_question(value):
+    """Extract a node-like name from a status-shaped question, without aliases."""
+    text = str(value or "")
+    patterns = (
+        r"\b(?:what(?:['’]s|s|\s+is)|how(?:['’]s|\s+is))\s+"
+        r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+        r"(?:doing|running|responding|reachable|working)\b",
+        r"\bis\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+        r"(?:alive|online|offline|up|down|running|responding)\b",
+        r"\b(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+        r"(?:is|looks)\s+(?:online|offline|up|down|running|unreachable)\b",
+    )
+    ignored = {"everything", "all", "the servers", "the homelab", "the network"}
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if not match:
+            continue
+        target = " ".join(match.group("target").split()).strip(" .?!'’").casefold()
+        target = re.sub(r"^(?:the|my|our)\s+", "", target)
+        if target and target not in ignored and not re.search(
+            r"\b(?:server|servers|computer|computers|homelab|network|everything|all)\b",
+            target,
+        ):
+            return target
+    return None
+
+
 _HADES_HOMELAB_INTENT = re.compile(
     r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|server(?:s)?|node(?:s)?|"
     r"virtual\s+machine(?:s)?|\bvm\b|container(?:s)?|sandbox(?:es)?|workload(?:s)?|"
     r"website(?:s)?|gpu(?:s)?|"
     r"ram|free\s+memory|unhealthy|host(?:s)?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
     r"nmap|discov(?:er|y)|ip(?:s)?|mac(?:s)?|what(?:['’]?s| is)\s+running|"
-    r"alexandra|erebus|tartarus|hypnos|thanatos|hermes)\b",
+    r"what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
+    r"is\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+(?:alive|online|offline|up|down|running))\b",
     re.IGNORECASE,
 )
 _HADES_NONPERSONAL_STATE_INTENT = re.compile(
@@ -6591,14 +6677,10 @@ def _hades_contextual_followup_clarification(user_text, previous_user_text):
         re.IGNORECASE,
     ):
         return None
-    if re.search(
-        r"\b(?:server|homelab|proxmox|node|tartarus|hypnos|thanatos|erebus|alexandra|hermes)\b",
-        previous,
-        re.IGNORECASE,
-    ):
+    if re.search(r"\b(?:server|homelab|proxmox|node)\b", previous, re.IGNORECASE) or _hades_homelab_target_from_question(previous):
         return (
-            "Which server or node do you mean? You can name it, such as Tartarus, Hypnos, "
-            "Hermes Compute, or Alexandra. I haven't changed anything."
+            "Which server or node do you mean? You can use a name from the live inventory. "
+            "I haven't changed anything."
         )
     if re.search(r"\b(?:pantry|grocery|grocry|food|milk|eggs?|shopping list|recipe)\b", previous, re.IGNORECASE):
         return (
@@ -8477,7 +8559,7 @@ try:
             )
         ):
             denial = (
-                "I can help with shared household tasks, but I can't access Scotty's "
+                "I can help with shared household tasks, but I can't access the owner's "
                 "finances. That information is owner-only, and nothing was changed."
             )
             callback = getattr(self, "stream_delta_callback", None)
@@ -8492,7 +8574,7 @@ try:
             }
         if (
             getattr(self, "_hades_session_scope", "") == "household"
-            and re.search(r"\b(?:scotty|owner|private|personal)\b", str(user_message or ""), re.IGNORECASE)
+            and re.search(r"\b(?:owner|private|personal)\b", str(user_message or ""), re.IGNORECASE)
             and re.search(r"\b(?:memory|remember|recall|hindsight|fact|marker)\b", str(user_message or ""), re.IGNORECASE)
         ):
             denial = (
@@ -8544,7 +8626,7 @@ try:
         )) and not _hades_is_meal_budget_intent(user_message)
         if _early_finance_request and self._hades_session_scope == "household":
             _early_finance_denial = (
-                "I can help with shared household tasks, but I can't access Scotty's "
+                "I can help with shared household tasks, but I can't access the owner's "
                 "finances. That information is owner-only, and nothing was changed."
             )
             callback = getattr(self, "stream_delta_callback", None)
@@ -8622,12 +8704,6 @@ try:
                     if callback:
                         callback(_spaghetti_response)
                     return {"final_response": _spaghetti_response, "messages": [{"role": "assistant", "content": _spaghetti_response}], "api_calls": 0, "completed": True}
-            if self._hades_session_scope == "owner" and re.search(r"\b(?:where|which)\b.*\b(?:deploy|place|put)\b.*\b(?:model|ai)\b|\bdeploy\s+another\s+(?:local\s+)?ai\s+model\b", _preflight_text, re.IGNORECASE):
-                _placement_response = "Observed hardware candidates include Hypnos (2× Quadro P4000, CUDA-capable in the tracked matrix) and Tartarus (4× Quadro P4000, CUDA-capable in the tracked matrix). Current per-host GPU load/VRAM and interference budget are not exposed by the approved live telemetry, so I cannot safely choose a placement. I did not deploy or change anything."
-                callback = getattr(self, "stream_delta_callback", None)
-                if callback:
-                    callback(_placement_response)
-                return {"final_response": _placement_response, "messages": [{"role": "assistant", "content": _placement_response}], "api_calls": 0, "completed": True}
         if self._hades_session_scope == "owner" and _compound_briefing:
             _brief_title = (
                 "HADES morning briefing refresh (bounded live sources):"
@@ -8648,7 +8724,11 @@ try:
                 _brief_parts.append(
                     "TASKS: " + (_brief_tasks or "Task status could not be read.")
                 )
-            _brief_homelab = _hades_direct_homelab_read("homelab status and blockers")
+            _brief_homelab = _hades_direct_homelab_read(
+                "homelab status and blockers",
+                getattr(self, "_hades_subject", ""),
+                "owner",
+            )
             _brief_backup = _hades_phase2_backup_response("what backup checks do I have?", getattr(self, "_hades_subject", ""), "owner", _phase2_session_key)
             _brief_food = _hades_direct_household_grocy_read("what is in stock")
             _brief_expiry = _hades_direct_grocy_expiry_read("what food is going to expire")
@@ -9179,8 +9259,8 @@ try:
         original_tools = getattr(self, "tools", None)
         original_valid_tool_names = getattr(self, "valid_tool_names", None)
         completion_only_model = bool(re.search(
-            # Hermes Compute's qwen3:8b lane is qualified for direct completion
-            # only.  It is also used as a degradation route when Tartarus is
+            # The configured qwen3:8b lane is qualified for direct completion
+            # only. It is also a degradation route when the primary lane is
             # unavailable, so never let fallback provenance accidentally grant
             # it HADES tools.
             r"\b(?:qwen3:8b|dolphin(?:-llama3|3)?|heretic|uncensored|abliterated)\b",
@@ -9370,7 +9450,7 @@ try:
             and not _hades_is_meal_budget_intent(current_text)
         ):
             denial = (
-                "I can help with shared household tasks, but I can't access Scotty's "
+                "I can help with shared household tasks, but I can't access the owner's "
                 "finances. That information is owner-only, and nothing was changed."
             )
             callback = getattr(self, "stream_delta_callback", None)
@@ -10482,9 +10562,9 @@ try:
     _AIAgent.run_conversation = _hades_run_conversation
 
     def _hades_apply_fast_completion_route(self, route, user_message: str):
-        # Keep ordinary no-tool conversation independent from the Deep lane.
+        # Keep ordinary no-tool conversation independent from the deep lane.
         # The fast endpoint is completion-only: tool-bearing/domain turns stay
-        # on the qualified Tartarus route until a narrow fast-tool contract is
+        # on the qualified primary route until a narrow fast-tool contract is
         # proven.  This is deliberately an explicit route, not a silent
         # provider fallback, so the selected model remains observable in the
         # persisted turn metadata.
@@ -10496,7 +10576,7 @@ try:
         deep_model = str(route.get("model") or "").lower()
         if (
             provider == "custom"
-            and ("11437" in base_url or "qwen3.6:35b" in deep_model)
+            and "qwen3.6:35b" in deep_model
             and fast_base_url
             and fast_model
             and not _HADES_TOOL_INTENT.search(str(user_message or ""))
@@ -10548,7 +10628,7 @@ try:
 
     # Open WebUI production requests use Hermes' gateway runner rather than
     # HermesCLI. Patch the gateway mixin too; otherwise the UI silently keeps
-    # constructing the Tartarus agent even though the CLI resolver is routed.
+    # constructing the primary inference agent even though the CLI resolver is routed.
     def _hades_install_gateway_route_patch():
         """Patch the gateway after Hermes finishes its circular imports."""
         import sys

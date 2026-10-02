@@ -217,57 +217,57 @@ assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITIN
 
 # A speech-like named-node question must not be sent to inference or turn a
 # static hardware inventory row into a live online/runtime claim.
-tartarus_agent = agent_class(
-    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-tartarus-status",
+compute_node_a_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-compute-node-a-status",
     stream_delta_callback=lambda _chunk: None, **kwargs,
 )
-tartarus_status = tartarus_agent.run_conversation(
-    "whats tartarus doing rn", conversation_history=[]
+compute_node_a_status = compute_node_a_agent.run_conversation(
+    "whats compute-node-a doing rn", conversation_history=[]
 )
-assert tartarus_status.get("completed") is True and tartarus_status.get("api_calls") == 0, tartarus_status
-tartarus_text = tartarus_status["final_response"]
-assert "I found Tartarus in the hardware inventory." in tartarus_text, tartarus_text
-assert "The recorded address is 192.0.2.69." in tartarus_text, tartarus_text
-assert "It is listed as synthetic inference node." in tartarus_text, tartarus_text
-assert "I don't have a current runtime check for it" in tartarus_text, tartarus_text
-assert "I can't say whether it's online." in tartarus_text, tartarus_text
+assert compute_node_a_status.get("completed") is True and compute_node_a_status.get("api_calls") == 0, compute_node_a_status
+compute_node_a_text = compute_node_a_status["final_response"]
+assert "I found Compute Node A in the hardware inventory." in compute_node_a_text, compute_node_a_text
+assert "The recorded address is 192.0.2.69." in compute_node_a_text, compute_node_a_text
+assert "It is listed as synthetic inference node." in compute_node_a_text, compute_node_a_text
+assert "I don't have a current runtime check for it" in compute_node_a_text, compute_node_a_text
+assert "I can't say whether it's online." in compute_node_a_text, compute_node_a_text
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 # A physical host may be visible to Kuma without a Proxmox runtime row. Its
 # fresh probe is useful reachability evidence, but must not be relabeled as a
 # Proxmox status or as proof of workload health.
-os.environ["HADES_TEST_HOMELAB_TARTARUS_MONITOR"] = "1"
-tartarus_monitor_agent = agent_class(
-    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-tartarus-monitor-status",
+os.environ["HADES_TEST_HOMELAB_NODE_A_MONITOR"] = "1"
+compute_node_a_monitor_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-compute-node-a-monitor-status",
     stream_delta_callback=lambda _chunk: None, **kwargs,
 )
-tartarus_monitor_status = tartarus_monitor_agent.run_conversation(
-    "whats tartarus doing rn", conversation_history=[]
+compute_node_a_monitor_status = compute_node_a_monitor_agent.run_conversation(
+    "whats compute-node-a doing rn", conversation_history=[]
 )
-assert tartarus_monitor_status.get("completed") is True and tartarus_monitor_status.get("api_calls") == 0, tartarus_monitor_status
-tartarus_monitor_text = tartarus_monitor_status["final_response"]
-assert "the Tartarus SSH check is responding (fresh observation)" in tartarus_monitor_text, tartarus_monitor_text
-assert "current host workload or operating-system status" in tartarus_monitor_text, tartarus_monitor_text
-assert "Proxmox runtime status is NOT_OBSERVED" not in tartarus_monitor_text, tartarus_monitor_text
+assert compute_node_a_monitor_status.get("completed") is True and compute_node_a_monitor_status.get("api_calls") == 0, compute_node_a_monitor_status
+compute_node_a_monitor_text = compute_node_a_monitor_status["final_response"]
+assert "the Compute Node A SSH check is responding (fresh observation)" in compute_node_a_monitor_text, compute_node_a_monitor_text
+assert "current host workload or operating-system status" in compute_node_a_monitor_text, compute_node_a_monitor_text
+assert "Proxmox runtime status is NOT_OBSERVED" not in compute_node_a_monitor_text, compute_node_a_monitor_text
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 for status, freshness, expected in (
-    ("down", "FRESH", "the Tartarus SSH check is failing (fresh observation)"),
-    ("up", "STALE", "the Tartarus SSH check last reported up, but that observation is stale"),
+    ("down", "FRESH", "the Compute Node A SSH check is failing (fresh observation)"),
+    ("up", "STALE", "the Compute Node A SSH check last reported up, but that observation is stale"),
 ):
-    os.environ["HADES_TEST_TARTARUS_MONITOR_STATUS"] = status
-    os.environ["HADES_TEST_TARTARUS_MONITOR_FRESHNESS"] = freshness
+    os.environ["HADES_TEST_NODE_A_MONITOR_STATUS"] = status
+    os.environ["HADES_TEST_NODE_A_MONITOR_FRESHNESS"] = freshness
     monitor_agent = agent_class(
-        gateway_session_key=f"hades-user-{owner}", session_id=f"synthetic-tartarus-monitor-{status}-{freshness}",
+        gateway_session_key=f"hades-user-{owner}", session_id=f"synthetic-compute-node-a-monitor-{status}-{freshness}",
         stream_delta_callback=lambda _chunk: None, **kwargs,
     )
-    monitor_result = monitor_agent.run_conversation("whats tartarus doing rn", conversation_history=[])
+    monitor_result = monitor_agent.run_conversation("whats compute-node-a doing rn", conversation_history=[])
     assert monitor_result.get("completed") is True and monitor_result.get("api_calls") == 0, monitor_result
     assert expected in monitor_result["final_response"], monitor_result
     assert "Proxmox runtime status is NOT_OBSERVED" not in monitor_result["final_response"], monitor_result
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
-del os.environ["HADES_TEST_TARTARUS_MONITOR_STATUS"]
-del os.environ["HADES_TEST_TARTARUS_MONITOR_FRESHNESS"]
-del os.environ["HADES_TEST_HOMELAB_TARTARUS_MONITOR"]
+del os.environ["HADES_TEST_NODE_A_MONITOR_STATUS"]
+del os.environ["HADES_TEST_NODE_A_MONITOR_FRESHNESS"]
+del os.environ["HADES_TEST_HOMELAB_NODE_A_MONITOR"]
 
 blockers_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-blockers",
@@ -366,7 +366,7 @@ finally:
 print("PASS Hermes 0.21.2 HADES runtime: owner attention briefing combines live-source and private Task summaries; household Task attention and authenticated-subject result summaries remain scoped, zero model calls")
 print("PASS plural owner server-status question bypasses non-confirming task approval language and uses the deterministic read-only homelab route with no model call")
 print("PASS one read-only owner turn composes live homelab status and Backup Check coverage, while household and action requests stay outside the shortcut")
-print("PASS speech-like named-node status separates Tartarus's hardware listing from missing live runtime evidence")
+print("PASS speech-like named-node status separates Compute Node A's hardware listing from missing live runtime evidence")
 print("PASS physical-node wording uses a fresh monitor as reachability evidence without relabeling it as Proxmox runtime or workload health")
 print("PASS detailed homelab blocker summary remains deterministic when optional availability has no rows")
 print("PASS network-slowness question combines synthetic Proxmox and Kuma evidence, states missing network trends, and makes zero model calls")
@@ -386,16 +386,16 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         'def homelab_summary():\n'
         '    resources = [{"name": "hades-core", "runtime_status": "running",\n'
         '                  "currently_online": True,\n'
-        '                  "runtime": {"name": "hades-core", "vmid": 802, "status": "running",\n'
+        '                  "runtime": {"name": "hades-core", "vmid": 1802, "status": "running",\n'
         '                              "cpu": 0.94, "mem": 32212254720, "maxmem": 34359738368,\n'
         '                              "disk": 85899345920, "maxdisk": 96636764160}}]\n'
-        '    if __import__("os").environ.get("HADES_TEST_HOMELAB_TARTARUS_MONITOR") == "1":\n'
-        '        resources.append({"name": "Tartarus SSH", "runtime_status": "NOT_OBSERVED",\n'
+        '    if __import__("os").environ.get("HADES_TEST_HOMELAB_NODE_A_MONITOR") == "1":\n'
+        '        resources.append({"name": "Compute Node A SSH", "runtime_status": "NOT_OBSERVED",\n'
         '                          "currently_online": False, "inventory": None,\n'
-        '                          "availability": {"name": "Tartarus SSH",\n'
-        '                                           "status": __import__("os").environ.get("HADES_TEST_TARTARUS_MONITOR_STATUS", "up"),\n'
+        '                          "availability": {"name": "Compute Node A SSH",\n'
+        '                                           "status": __import__("os").environ.get("HADES_TEST_NODE_A_MONITOR_STATUS", "up"),\n'
         '                                           "last_updated": "2026-09-27T00:00:00Z"},\n'
-        '                          "availability_freshness": __import__("os").environ.get("HADES_TEST_TARTARUS_MONITOR_FRESHNESS", "FRESH"),\n'
+        '                          "availability_freshness": __import__("os").environ.get("HADES_TEST_NODE_A_MONITOR_FRESHNESS", "FRESH"),\n'
         '                          "conflicts": []})\n'
         '    return {\n'
         '        "status": "OK",\n'
@@ -415,7 +415,7 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
     capability_matrix = root / "capability-matrix.yaml"
     capability_matrix.write_text(
         "machines:\n"
-        "  - name: Tartarus\n"
+        "  - name: Compute Node A\n"
         "    address: 192.0.2.69\n"
         "    role: synthetic inference node\n",
         encoding="utf-8",

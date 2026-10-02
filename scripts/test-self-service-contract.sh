@@ -36,15 +36,15 @@ def fake_executor(template, **kwargs):
     calls.append((template, kwargs))
     return {"status": "SUCCEEDED", "reconciled": True, "canonical_source": "synthetic-proxmox", "writes_performed": True}
 
-executor = ConstrainedProvisioner(policy, fake_executor, {"minecraft": {"node": "Erebus", "vmid": 9201}})
+executor = ConstrainedProvisioner(policy, fake_executor, {"minecraft": {"node": "Virtualization Node", "vmid": 9201}})
 assert executor.provision(household_a, "minecraft-1")["status"] == "DENIED"
 result = executor.provision(owner, "minecraft-1")
 assert result["status"] == "SUCCEEDED" and result["reconciled"]
-assert calls[0][0] == "minecraft" and calls[0][1]["target"] == {"node": "Erebus", "vmid": 9201}
+assert calls[0][0] == "minecraft" and calls[0][1]["target"] == {"node": "Virtualization Node", "vmid": 9201}
 assert executor.provision(owner, "minecraft-1")["status"] == "SUCCEEDED"
 assert len(calls) == 1
 
-unknown = ConstrainedProvisioner(policy, lambda *_args, **_kwargs: {"status": "OUTCOME UNKNOWN", "writes_performed": True}, {"minecraft": {"node": "Erebus", "vmid": 9202}})
+unknown = ConstrainedProvisioner(policy, lambda *_args, **_kwargs: {"status": "OUTCOME UNKNOWN", "writes_performed": True}, {"minecraft": {"node": "Virtualization Node", "vmid": 9202}})
 assert unknown.provision(owner, "minecraft-1")["status"] == "OUTCOME UNKNOWN"
 assert unknown.provision(owner, "minecraft-1")["status"] == "OUTCOME UNKNOWN"  # unknown is not retried blindly
 assert unknown.provision(owner, "missing")["status"] == "FAILED"

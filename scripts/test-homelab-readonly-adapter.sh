@@ -4,6 +4,9 @@ set -euo pipefail
 python - <<'PY'
 import importlib.util
 import sys
+import os
+import tempfile
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -15,32 +18,42 @@ spec.loader.exec_module(module)
 
 now = datetime(2026, 9, 14, 12, 0, tzinfo=timezone.utc)
 result = module.summarize(
-    {"data": [{"type": "qemu", "name": "dinner-app", "node": "Alexandra", "status": "running"}]},
-    {"results": [{"name": "dinner-app", "planned_node": "Beta", "status": "active"}]},
-    {"monitors": [{"name": "dinner-app", "status": "down", "last_updated": "2026-09-14T11:40:00+00:00"}]},
+    {"data": [{"_hades_identity": "proxmox:pve-a:qemu:101", "type": "qemu", "vmid": 101, "name": "dinner-app", "node": "pve-a", "status": "running"}]},
+    {"results": [{"id": 75, "name": "dinner-app", "planned_node": "Beta", "status": "active"}]},
+    {"monitors": [{"id": 7, "name": "dinner-app", "status": "down", "last_updated": "2026-09-14T11:40:00+00:00"}]},
     now=now,
+    identity_links={
+        "proxmox:pve-a:qemu:101": "netbox:device:75",
+        "kuma:monitor:7": "netbox:device:75",
+    },
 )
 resource = result["resources"][0]
-assert result["status"] == "OK"
+assert result["status"] == "PARTIAL"
 assert result["online_names"] == ["dinner-app"]
 assert result["source_counts"] == {
     "proxmox_runtime_rows": 1,
     "netbox_inventory_rows": 1,
     "kuma_monitor_rows": 1,
     "composed_resources": 1,
+    "identity_unlinked_resources": 0,
 }
-assert result["availability_summary"] == [{"name": "dinner-app", "status": "down", "freshness": "STALE"}]
+assert result["availability_summary"][0]["name"] == "dinner-app"
+assert result["availability_summary"][0]["status"] == "down"
+assert result["availability_summary"][0]["freshness"] == "STALE"
 assert result["answer_contract"]["writes_performed"] is False
-assert resource["runtime"]["node"] == "Alexandra"
+assert resource["runtime"]["node"] == "pve-a"
 assert resource["runtime_status"] == "running"
 assert resource["currently_online"] is True
 assert resource["inventory"]["planned_node"] == "Beta"
 assert resource["availability"]["status"] == "down"
 assert resource["availability_freshness"] == "STALE"
 assert resource["conflicts"]
+assert resource["identity"]["status"] == "LINKED"
+assert resource["identity"]["canonical_id"] == "netbox:device:75"
+assert result["identity_warnings"] == []
 assert result["authority"]["runtime"] == "Proxmox"
 vm_result = module.summarize(
-    {"data": [{"type": "qemu", "vmid": 802, "name": "hades-core", "node": "Erebus", "status": "running"}]},
+    {"data": [{"type": "qemu", "vmid": 1802, "name": "hades-core", "node": "pve-main", "status": "running"}]},
     {"results": []},
     {"monitors": []},
 )
@@ -48,26 +61,74 @@ vm_resource = vm_result["resources"][0]
 assert vm_result["online_names"] == ["hades-core"]
 assert vm_result["inventory_only_names"] == []
 assert vm_resource["runtime"] == {
-    "name": "hades-core", "node": "Erebus", "type": "qemu", "vmid": 802, "status": "running"
+    "name": "hades-core", "node": "pve-main", "type": "qemu", "vmid": 1802, "status": "running"
 }
 assert vm_resource["inventory"] is None
 assert vm_resource["currently_online"] is True
 future = module.summarize(
-    {"data": [{"type": "qemu", "name": "clock-skewed", "node": "Alexandra", "status": "running"}]},
+    {"data": [{"_hades_identity": "proxmox:pve-a:qemu:102", "type": "qemu", "vmid": 102, "name": "clock-skewed", "node": "pve-a", "status": "running"}]},
     {"results": []},
-    {"monitors": [{"name": "clock-skewed", "status": "up", "last_updated": "2026-09-14T12:05:00+00:00"}]},
+    {"monitors": [{"id": 8, "name": "clock-skewed", "status": "up", "last_updated": "2026-09-14T12:05:00+00:00"}]},
     now=now,
 )
-assert future["resources"][0]["availability_freshness"] == "UNKNOWN"
+assert future["status"] == "PARTIAL"
+assert len(future["resources"]) == 2
+assert any(row["availability_freshness"] == "UNKNOWN" for row in future["resources"])
+assert future["identity_warnings"][0]["type"] == "SAME_NAME_NOT_LINKED"
+contradictory = module.summarize(
+    {"data": [{"_hades_identity": "proxmox:pve-a:qemu:103", "type": "qemu", "vmid": 103, "name": "worker", "node": "pve-a", "status": "running"}]},
+    {"results": [{"id": 100, "name": "worker", "planned_node": "pve-b"}]},
+    {"monitors": []},
+    now=now,
+    identity_links={"proxmox:pve-a:qemu:103": "netbox:device:100"},
+)
+assert len(contradictory["resources"]) == 1
+assert contradictory["resources"][0]["identity"]["status"] == "LINKED"
+assert contradictory["resources"][0]["conflicts"]
+assert contradictory["status"] == "PARTIAL"
 inventory_only = module.summarize(
     {"data": []},
-    {"results": [{"name": "tartarus"}]},
+    {"results": [{"id": 99, "name": "gpu-a"}]},
     None,
 )
 assert inventory_only["online_names"] == []
-assert inventory_only["inventory_only_names"] == ["tartarus"]
+assert inventory_only["inventory_only_names"] == ["gpu-a"]
 assert inventory_only["resources"][0]["runtime_status"] == "NOT_OBSERVED"
-assert inventory_only["resources"][0]["currently_online"] is False
+assert inventory_only["resources"][0]["currently_online"] is None
+sys.path.insert(0, str(root.resolve()))
+import config as homelab_config
+with tempfile.TemporaryDirectory() as temp_dir:
+    link_file = Path(temp_dir) / "links.json"
+    link_file.write_text(json.dumps({"links": [
+        {"source_identity": "proxmox:pve-a:qemu:101", "netbox_device_id": 75},
+        {"source_identity": "kuma:monitor:7", "netbox_device_id": 75},
+    ]}), encoding="utf-8")
+    link_file.chmod(0o600)
+    os.environ["HADES_HOMELAB_IDENTITY_LINKS_FILE"] = str(link_file)
+    assert homelab_config.load_identity_links() == {
+        "proxmox:pve-a:qemu:101": "netbox:device:75",
+        "kuma:monitor:7": "netbox:device:75",
+    }
+    link_file.chmod(0o644)
+    try:
+        homelab_config.load_identity_links()
+    except ValueError as exc:
+        assert "mode 0600 or 0640" in str(exc)
+    else:
+        raise AssertionError("unsafe identity-link permissions were accepted")
+    link_file.unlink()
+    link_file.symlink_to(Path(temp_dir) / "target.json")
+    try:
+        homelab_config.load_identity_links()
+    except ValueError as exc:
+        assert "non-symlink" in str(exc)
+    else:
+        raise AssertionError("symlinked identity-link file was accepted")
+    os.environ.pop("HADES_HOMELAB_IDENTITY_LINKS_FILE", None)
+assert homelab_config.proxmox_source_ids((
+    ("https://one.example.test/cluster/resources", "/token-a"),
+    ("https://two.example.test/cluster/resources", "/token-b"),
+)) == ("endpoint-1", "endpoint-2")
 server_source = (Path(root) / "server.py").read_text()
 assert "token_path.is_symlink()" in server_source
 assert "MAX_TOKEN_BYTES" in server_source
@@ -123,7 +184,7 @@ assert config.proxmox_token_ids() == (
 )
 print("PASS homelab adapter preserves runtime/inventory/availability authority")
 print("PASS homelab adapter discloses node conflict and stale Kuma observation")
-print("PASS Proxmox runtime exposes VM 802 without inventing a NetBox record")
+print("PASS Proxmox runtime exposes a synthetic guest without inventing a NetBox record")
 print("PASS future monitoring observations fail closed as unknown")
 print("PASS homelab MCP exposes review-only discovery candidates")
 print("PASS documented homelab bases resolve to bounded read endpoints")
@@ -141,21 +202,27 @@ spec.loader.exec_module(module)
 result = module.project_netbox_services(
     {"results": [{
         "name": "Minecraft Java",
-        "device": {"id": 7, "name": "Thanatos"},
+        "device": {"id": 7, "name": "test-game-host"},
         "port_mappings": ["TCP/25565", "udp/25565", "tcp/99999", "tcp/any"],
         "ipaddresses": [],
         "untrusted_secret_like_field": "must-not-escape",
     }]},
-    {"results": [{"id": 7, "name": "Thanatos", "primary_ip4": {"address": "192.0.2.75/24"}}]},
+    {"results": [{"id": 7, "name": "test-game-host", "primary_ip4": {"address": "192.0.2.75/24"}}]},
 )
 assert result["status"] == "OK" and result["writes_performed"] is False
 assert result["inventory_is_not_liveness"] is True
 assert result["services"] == [{
-    "name": "Minecraft Java", "parent_type": "device", "parent_name": "Thanatos",
+    "name": "Minecraft Java", "parent_type": "device", "parent_name": "test-game-host",
     "addresses": ["192.0.2.75"], "address_source": "NetBox parent primary IP",
     "port_mappings": ["tcp/25565", "udp/25565"], "runtime_status": "UNKNOWN",
 }]
 assert "untrusted_secret_like_field" not in str(result)
+unmatched_parent = module.project_netbox_services(
+    {"results": [{"name": "Minecraft Java", "device": {"id": 8, "name": "test-game-host"}}]},
+    {"results": [{"id": 7, "name": "test-game-host", "primary_ip4": {"address": "192.0.2.75/24"}}]},
+)
+assert unmatched_parent["services"][0]["addresses"] == []
+assert unmatched_parent["services"][0]["address_source"] is None
 print("PASS NetBox service projection joins parent address, validates protocol/ports, and never claims liveness")
 PY
 
@@ -212,12 +279,12 @@ matrix_dir = Path(tempfile.mkdtemp(prefix="hades-homelab-matrix-"))
 atexit.register(shutil.rmtree, matrix_dir, ignore_errors=True)
 matrix_path = matrix_dir / "capability-matrix.json"
 matrix_path.write_text(json.dumps({"observed_at": datetime.now(timezone.utc).isoformat(), "machines": [
-    {"name": "tartarus", "address": "192.0.2.69", "os": "Fedora",
-     "cpu": "synthetic", "ram_gib": 64, "gpus": ["4x Quadro P4000"],
+    {"name": "gpu-a", "address": "192.0.2.69", "os": "Fedora",
+     "cpu": "synthetic", "ram_gib": 64, "gpus": ["4x Synthetic GPU A"],
      "nvidia_driver": "synthetic", "cuda_container_capability": "unknown",
      "runtime_status": "observed-only", "ssh": "synthetic", "role": "inference"},
-    {"name": "hypnos", "address": "192.0.2.73", "os": "Fedora",
-     "cpu": "synthetic", "ram_gib": 64, "gpus": ["2x Quadro P4000"],
+    {"name": "gpu-b", "address": "192.0.2.73", "os": "Fedora",
+     "cpu": "synthetic", "ram_gib": 64, "gpus": ["2x Synthetic GPU B"],
      "nvidia_driver": "synthetic", "cuda_container_capability": "unknown",
      "runtime_status": "observed-only", "ssh": "synthetic", "role": "inference"},
     {"name": "hermes", "address": "192.0.2.152", "os": "Linux",
@@ -246,8 +313,8 @@ kuma = server._normalize_kuma_status({
     },
 })
 assert kuma["monitors"] == [
-    {"name": "host-alpha", "status": "up", "last_updated": "2026-09-16 09:00:00.000", "monitor_type": "ping", "ping_ms": 84},
-    {"name": "host-beta", "status": "down", "last_updated": "2026-09-16 09:00:01.000", "monitor_type": "ping"},
+    {"id": 7, "name": "host-alpha", "status": "up", "last_updated": "2026-09-16 09:00:00.000", "monitor_type": "ping", "ping_ms": 84},
+    {"id": 8, "name": "host-beta", "status": "down", "last_updated": "2026-09-16 09:00:01.000", "monitor_type": "ping"},
 ]
 assert server._kuma_config_url() == "https://status.example.test/api/status-page/hades-status"
 
@@ -259,9 +326,10 @@ latency_result = server.summarize(
     {"monitors": [{"name": "Router ping", "status": "up", "last_updated": fresh_time, "ping_ms": 84}]},
     now=now,
 )
-assert latency_result["availability_summary"] == [
-    {"name": "Router ping", "status": "up", "freshness": "FRESH", "ping_ms": 84}
-]
+assert latency_result["availability_summary"][0] == {
+    "name": "Router ping", "status": "up", "freshness": "FRESH",
+    "source_identity": "kuma:unidentified:0", "ping_ms": 84,
+}
 for unsafe_ping in (-1, 60001, True, float("nan"), float("inf"), "84"):
     normalized = server.summarize(
         {"data": []}, {"results": []},
@@ -289,22 +357,27 @@ except ValueError as exc:
 else:
     raise AssertionError("credential-bearing source URLs must be rejected")
 runtime_fixture = {
-    "type": "qemu", "vmid": 802, "name": "hades-core", "node": "Erebus",
+    "type": "qemu", "vmid": 1802, "name": "hades-core", "node": "pve-main",
     "status": "running", "cpu": 0.25, "maxcpu": 16, "mem": 1073741824,
     "maxmem": 8589934592, "disk": 10737418240, "maxdisk": 53687091200,
     "uptime": 3600, "unrelated_secret_like_field": "must-not-escape",
 }
+extra_runtime_fixtures = [
+    {"type": "qemu", "vmid": 900 + index, "name": f"worker-{index}",
+     "node": "synthetic-pve", "status": "running"}
+    for index in range(1, 6)
+]
 device_fixture = {
-    "id": 75, "name": "Thanatos", "primary_ip4": {"address": "192.0.2.75/24"},
+    "id": 75, "name": "test-game-host", "primary_ip4": {"address": "192.0.2.75/24"},
 }
 service_fixture = {
-    "name": "Minecraft Java", "device": {"id": 75, "name": "Thanatos"},
+    "name": "Minecraft Java", "device": {"id": 75, "name": "test-game-host"},
     "port_mappings": ["tcp/25565"], "ipaddresses": [],
     "secret_like_field": "must-not-escape",
 }
 def fixture_fetch(url, *_args, **_kwargs):
     if url == "https://pve-a.example.test/cluster/resources":
-        return {"data": [runtime_fixture]}
+        return {"data": [runtime_fixture, *extra_runtime_fixtures]}
     if url == "https://pve-b.example.test/cluster/resources":
         from urllib.error import URLError
         raise URLError("https://reader:sentinel-private-value@example.test/api token=sentinel-private-value")
@@ -318,7 +391,8 @@ def fixture_fetch(url, *_args, **_kwargs):
 server._fetch = fixture_fetch
 summary = server.homelab_summary()
 assert summary["status"] == "PARTIAL", summary
-assert summary["source_counts"]["proxmox_runtime_rows"] == 1, summary
+assert summary["source_counts"]["proxmox_runtime_rows"] == 6, summary
+assert len(summary["resources"]) >= 6 and "resources_truncated" not in summary, summary
 assert summary["sources"]
 assert {row["status"] for row in summary["sources"] if row["source"].startswith("Proxmox[")} == {"HEALTHY", "UNAVAILABLE"}
 assert all(row["observation_scope"] == "source_read" for row in summary["sources"] if row["source"].startswith("Proxmox["))
@@ -328,7 +402,7 @@ assert "sentinel-private-value" not in str(summary)
 assert all(isinstance(row.get("retrieved_at"), str) for row in summary["sources"] if row.get("duration_ms") is not None)
 runtime_row = next(row for row in summary["resources"] if row["name"] == "hades-core")
 assert runtime_row["runtime"] == {
-    "name": "hades-core", "node": "Erebus", "type": "qemu", "vmid": 802,
+    "name": "hades-core", "node": "pve-main", "type": "qemu", "vmid": 1802,
     "status": "running", "cpu": 0.25, "maxcpu": 16,
     "mem": 1073741824, "maxmem": 8589934592,
     "disk": 10737418240, "maxdisk": 53687091200, "uptime": 3600,
@@ -336,7 +410,7 @@ assert runtime_row["runtime"] == {
 assert runtime_row["currently_online"] is True
 assert summary["source_counts"]["netbox_service_rows"] == 1
 assert summary["service_catalog"]["services"] == [{
-    "name": "Minecraft Java", "parent_type": "device", "parent_name": "Thanatos",
+    "name": "Minecraft Java", "parent_type": "device", "parent_name": "test-game-host",
     "addresses": ["192.0.2.75"], "address_source": "NetBox parent primary IP",
     "port_mappings": ["tcp/25565"], "runtime_status": "UNKNOWN",
 }]
@@ -354,8 +428,8 @@ assert result["availability_not_provided"] is True
 assert "Never label a machine online" in result["liveness_rule"]
 assert all("runtime_status" not in row for row in result["machines"])
 rows = {row["name"]: row for row in result["machines"]}
-assert rows["tartarus"]["gpus"] == ["4x Quadro P4000"]
-assert rows["hypnos"]["gpus"] == ["2x Quadro P4000"]
+assert rows["gpu-a"]["gpus"] == ["4x Synthetic GPU A"]
+assert rows["gpu-b"]["gpus"] == ["2x Synthetic GPU B"]
 assert rows["hermes"]["gpus"] == ["2x RTX 2080"]
 assert "does not imply current availability" in result["placement_rule"]
 matrix_doc = json.loads(matrix_path.read_text())
@@ -383,20 +457,20 @@ original_summary = server.homelab_summary
 original_compute = server.homelab_compute_capabilities
 server.homelab_summary = lambda: {
     "status": "PARTIAL",
-    "online_names": ["Alexandra"],
+    "online_names": ["pve-a"],
     "errors": ["Uptime Kuma source unavailable"],
     "answer_contract": {"currently_online_source": "Proxmox runtime only"},
 }
 server.homelab_compute_capabilities = lambda: {
     "status": "OK",
-    "machines": [{"name": "Tartarus", "gpus": ["4x Quadro P4000"]}],
+    "machines": [{"name": "GPU A", "gpus": ["4x Synthetic GPU A"]}],
     "availability_not_provided": True,
 }
 partial = server.homelab_owner_snapshot()
 assert partial["status"] == "PARTIAL"
-assert partial["summary"]["online_names"] == ["Alexandra"]
+assert partial["summary"]["online_names"] == ["pve-a"]
 assert partial["summary"]["errors"] == ["Uptime Kuma source unavailable"]
-assert partial["compute"]["machines"][0]["name"] == "Tartarus"
+assert partial["compute"]["machines"][0]["name"] == "GPU A"
 assert partial["answer_contract"]["inventory_is_not_liveness"] is True
 assert partial["read_only"] is True
 server.homelab_summary = original_summary

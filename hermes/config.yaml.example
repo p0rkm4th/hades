@@ -2,7 +2,7 @@
 # and profile location are established. This file contains no credentials.
 # Hermes documents local Ollama as a custom OpenAI-compatible endpoint.
 model:
-  # Hermes Agent's production tool backend is the qualified Tartarus lane.
+  # Select the configured primary inference endpoint for this deployment.
   # Fast completion-only models remain selectable in Open WebUI, but must not
   # be used as the agent's default when their native context is insufficient.
   default: qwen3.6:35b
@@ -24,7 +24,7 @@ memory:
   bank_id_template: hades-user-{user}
 providers:
   custom:
-    # Tartarus Deep is GPU-backed but intentionally slower than Fast; allow
+    # The primary inference lane may be slower than a fast completion route; allow
     # legitimate long generations to finish while keeping the bound finite.
     request_timeout_seconds: 180
     stale_timeout_seconds: 180

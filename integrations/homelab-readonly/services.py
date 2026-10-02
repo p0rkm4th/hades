@@ -72,13 +72,9 @@ def project_netbox_services(
     services = _rows(services_payload, "services")
     devices = _rows(devices_payload, "devices")
     by_id: dict[str, dict[str, Any]] = {}
-    by_name: dict[str, dict[str, Any]] = {}
     for device in devices:
         if device.get("id") is not None:
             by_id[str(device["id"])] = device
-        name = _short_text(device.get("name"))
-        if name:
-            by_name[name.casefold()] = device
 
     projected = []
     for row in services[:MAX_SERVICES]:
@@ -99,9 +95,9 @@ def project_netbox_services(
 
         parent_id = str(parent.get("id")) if parent and parent.get("id") is not None else None
         parent_name = _short_text(parent.get("name")) if parent else None
-        inventory_parent = (
-            by_id.get(parent_id) if parent_id else None
-        ) or (by_name.get(parent_name.casefold()) if parent_name else None)
+        # A parent carrying an ID must resolve by that stable ID only. A
+        # same-name device is not proof that it is the service's parent.
+        inventory_parent = by_id.get(parent_id) if parent_id else None
 
         bound_addresses = row.get("ipaddresses", row.get("ip_addresses", []))
         addresses = []

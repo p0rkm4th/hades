@@ -34,10 +34,10 @@ cat > "$work/groups/owner.json" <<'EOF'
 {"name":"hades-owner"}
 EOF
 cat > "$work/users/reader.json" <<'EOF'
-{"id":"hades-phase3-reader","email":"reader@hades.local","password":"synthetic-reader-password","displayName":"Synthetic Phase3 Reader","groups":["lldap_strict_readonly"]}
+{"id":"hades-phase3-reader","email":"reader@hades.example.test","password":"synthetic-reader-password","displayName":"Synthetic Phase3 Reader","groups":["lldap_strict_readonly"]}
 EOF
 cat > "$work/users/owner.json" <<'EOF'
-{"id":"synthetic-owner","email":"owner@hades.local","password":"synthetic-owner-password","displayName":"Synthetic Owner","groups":["hades-owner"]}
+{"id":"synthetic-owner","email":"owner@hades.example.test","password":"synthetic-owner-password","displayName":"Synthetic Owner","groups":["hades-owner"]}
 EOF
 if [[ "$(id -u)" == 0 ]]; then
   chown -R 1000:1000 "$work/identity" "$work/users" "$work/groups"
@@ -46,7 +46,7 @@ fi
 "${docker_cmd[@]}" run -d --rm --name "$name" -p "127.0.0.1:$port:17170" \
   -e UID=1000 -e GID=1000 -e TZ=UTC \
   -e LLDAP_LDAP_BASE_DN=dc=hades,dc=local -e LLDAP_LDAP_USER_DN=admin \
-  -e LLDAP_LDAP_USER_EMAIL=admin@hades.local \
+  -e LLDAP_LDAP_USER_EMAIL=admin@hades.example.test \
   -e LLDAP_JWT_SECRET_FILE=/run/secrets/jwt -e LLDAP_KEY_SEED_FILE=/run/secrets/seed \
   -e LLDAP_LDAP_USER_PASS_FILE=/run/secrets/pass \
   -v "$work/identity/jwt_secret:/run/secrets/jwt:ro,Z" \

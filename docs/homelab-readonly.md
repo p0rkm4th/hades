@@ -44,12 +44,13 @@ per independent Proxmox installation; substitute the approved guest IDs and
 token name):
 
 ```bash
+APPROVED_GUEST_ID=${APPROVED_GUEST_ID:?set the explicitly approved guest ID}
 pveum role add HADESNodeAudit --privs Sys.Audit
 pveum role add HADESVmAudit --privs VM.Audit
 pveum acl modify / --user svc-hades-ro@pve --role HADESNodeAudit
 pveum acl modify / --token 'svc-hades-ro@pve!readonly' --role HADESNodeAudit
-pveum acl modify /vms/802 --user svc-hades-ro@pve --role HADESVmAudit
-pveum acl modify /vms/802 --token 'svc-hades-ro@pve!readonly' --role HADESVmAudit
+pveum acl modify "/vms/${APPROVED_GUEST_ID}" --user svc-hades-ro@pve --role HADESVmAudit
+pveum acl modify "/vms/${APPROVED_GUEST_ID}" --token 'svc-hades-ro@pve!readonly' --role HADESVmAudit
 ```
 
 Verify both views with `pveum user permissions <userid>` and
@@ -201,18 +202,12 @@ canonical inventory update. Proxmox and NetBox are
 `hades-infrastructure` status path. Real failure, freshness, conflict, and
 write-surface acceptance remains required for every live source.
 
-**Proxmox credential correction (2026-09-27):** the privilege-separated
-Alexandra/Erebus tokens originally lacked token-side ACLs, so the approved
-`/cluster/resources` reads returned node-only rows. Restored the existing
-read-only contract with `Sys.Audit` at `/` and `VM.Audit` only at the explicitly
-approved CT 803 (`/vms/803`) and HADES VM 802 (`/vms/802`) paths. The active
-protected token inputs now return exactly one node and one approved guest row
-per PVE instance, including point-in-time CPU/memory/disk allocation/network
-counters/uptime; historical VM 800/801 and other Erebus guest rows remain
-inaccessible to these tokens. No VM write privileges or user ACLs changed.
-QEMU guest-agent OS/filesystem calls are still outside the configured contract;
-no `VM.GuestAgent.Audit` privilege was granted. The audit and exact scopes are
-recorded in [`docs/current-blockers.md`](current-blockers.md).
+Deployment-specific token identities, ACL paths, guest IDs, and live resource
+rows belong in the private infrastructure repository. The public adapter
+contract requires bounded read-only Proxmox access and does not encode any
+deployment's hostnames, resource IDs, or permission assignments. Guest-agent
+OS and filesystem reads remain outside the adapter contract unless separately
+configured and authorized.
 
 The owner API uses the read-only `homelab_owner_snapshot` for combined
 status-and-hardware questions. It composes the live summary with the observed
@@ -251,6 +246,41 @@ Diagnostics use stable error categories and never include raw upstream
 exception text or URLs, which can contain private endpoint details. A malformed
 Proxmox endpoint list likewise does not prevent independent NetBox and Kuma
 reads.
+
+The read model sets `currently_online` to `true` only for Proxmox `online` or
+`running` states and to `false` only for explicit `offline` or `stopped`
+states. A missing Proxmox row or unfamiliar state leaves it `null`; absence
+from one runtime source is not evidence that a physical host is down. The
+bounded summary retains up to 64 compact source records so alphabetical
+truncation cannot silently hide most configured hosts or monitors.
+
+Cross-source records are joined only through stable source identities and an
+explicit private mapping to a NetBox device ID. Display-name agreement and IP
+agreement alone never merge Proxmox, NetBox, and Kuma rows. Set
+`HADES_PROXMOX_SOURCE_IDS` to one unique identifier per configured Proxmox
+endpoint when its records need cross-source links; otherwise generic
+`endpoint-N` labels are local to the configured endpoint order and cannot be
+used for durable links. An optional
+`HADES_HOMELAB_IDENTITY_LINKS_FILE` may point to a protected JSON file with
+this shape:
+
+```json
+{
+  "links": [
+    {"source_identity": "proxmox:pve-a:qemu:101", "netbox_device_id": 75},
+    {"source_identity": "kuma:monitor:7", "netbox_device_id": 75}
+  ]
+}
+```
+
+The file must be a regular non-symlink file with mode `0600` or `0640`. It
+contains identifiers only; NetBox continues to own inventory fields, Proxmox
+runtime fields, and Kuma probe results. Missing mappings remain separate and
+are surfaced as unlinked or same-name warnings. Multiple source records
+mapping to one NetBox ID or an intended-node/runtime mismatch are reported as
+conflicts. A linked ID absent from the current NetBox response is also a
+conflict. Invalid link configuration fails closed for the composition and
+does not trigger a display-name fallback.
 
 References: [Proxmox API-token monitoring example](https://pve.proxmox.com/pve-docs/pve-admin-guide.pdf),
 [Proxmox token permission separation and ACL rules](https://github.com/proxmox/pve-docs/blob/master/pveum.adoc),

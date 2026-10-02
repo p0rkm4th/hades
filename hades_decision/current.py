@@ -52,7 +52,12 @@ def _fallback_patterns() -> dict[str, re.Pattern[str]]:
         "grocy": re.compile(r"\b(?:grocy|grocery|groceries|pantry|food|recipe|cook|snacks?|missing|eggs?|milks?|bread|shopping list)\b", re.I),
         "grocy_write": re.compile(r"\b(?:add|remove|buy|bought|consume|used|put|throw|toss|mark|take)\b", re.I),
         "finance": re.compile(r"\b(?:finance|money|bank|budget|spend|spent|checking|savings|credit card)\b", re.I),
-        "homelab": re.compile(r"\b(?:server|tartarus|hypnos|erebus|proxmox|netbox|kuma|is anything down)\b", re.I),
+        "homelab": re.compile(
+            r"\b(?:server|homelab|proxmox|netbox|kuma|is anything down)\b|"
+            r"\b(?:what(?:'s|s|\s+is)|how(?:'s|\s+is))\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing\b|"
+            r"\bis\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+(?:alive|online|offline|up|down|running)\b",
+            re.I,
+        ),
         "agent_zero": re.compile(r"\b(?:agent\s*(?:zero|0)|operator|inspect the server|ask the operator)\b", re.I),
         "ha": re.compile(r"\b(?:home assistant|temperature inside|living room|air quality|lights? on|front door|garage door|alarm)\b", re.I),
         "ambiguous": re.compile(r"\b(?:that|it|the other one|bags|thing|do it again|same thing again|restart it|share it|remove that|what about)\b", re.I),
@@ -240,7 +245,9 @@ class CurrentRulesBackend:
         )
         if not homelab_definition:
             add_domain(
-                r"\b(?:server|minecraft|proxmox|tartarus|hypnos|erebus|homelab)\b",
+                r"\b(?:server|minecraft|proxmox|homelab)\b|"
+                r"\b(?:what(?:'s|s|\s+is)|how(?:'s|\s+is))\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing\b|"
+                r"\bis\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+(?:alive|online|offline|up|down|running)\b",
                 "SELF_SERVICE" if (server_create or server_delete) else "HOMELAB" if not server_status else "SELF_SERVICE",
                 "SELF_SERVICE" if (server_create or server_delete) else "HOMELAB_READ" if server_status else "HOMELAB_READ",
             )

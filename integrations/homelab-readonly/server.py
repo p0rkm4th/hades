@@ -20,7 +20,15 @@ from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 from reconcile import _freshness, summarize
 from catalog import propose_inventory_candidates
 from scan import DEFAULT_PORTS, run_bounded_scan
-from config import netbox_services_spec, proxmox_specs, proxmox_token_ids, source_specs
+from config import (
+    identity_links_file,
+    load_identity_links,
+    netbox_services_spec,
+    proxmox_source_ids,
+    proxmox_specs,
+    proxmox_token_ids,
+    source_specs,
+)
 
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
@@ -174,6 +182,19 @@ def _source_result(
     return result
 
 
+def _proxmox_identity(row: dict, endpoint_id: str, index: int) -> str:
+    kind = str(row.get("type") or "resource")
+    if kind == "node" and row.get("node"):
+        object_id = str(row["node"])
+    elif kind in {"qemu", "lxc"} and row.get("vmid") is not None:
+        object_id = str(row["vmid"])
+    elif row.get("id") is not None:
+        object_id = str(row["id"])
+    else:
+        object_id = f"row-{index}"
+    return f"proxmox:{endpoint_id}:{kind}:{object_id}"
+
+
 def _normalize_kuma_status(payload: dict) -> dict:
     """Convert Kuma's public heartbeat payload into bounded monitor rows."""
     if isinstance(payload.get("monitors"), list):
@@ -197,6 +218,7 @@ def _normalize_kuma_status(payload: dict) -> dict:
             raw_status = latest.get("status")
             status = "up" if raw_status == 1 else "down" if raw_status == 0 else "unknown"
             row = {
+                "id": monitor.get("id"),
                 "name": monitor["name"],
                 "status": status,
                 "last_updated": latest.get("time"),
@@ -232,6 +254,8 @@ def homelab_summary() -> dict:
     rows: list[dict] = []
     proxmox_specs_value = ()
     token_ids: tuple[str, ...] = ()
+    source_ids: tuple[str, ...] = ()
+    source_id_error: str | None = None
     try:
         proxmox_specs_value = proxmox_specs()
         token_ids = proxmox_token_ids()
@@ -243,6 +267,14 @@ def homelab_summary() -> dict:
             error_code=_source_error_code(exc),
         ))
         errors.append("Proxmox configuration unavailable")
+    try:
+        source_ids = proxmox_source_ids(proxmox_specs_value)
+    except ValueError:
+        # An invalid display/identity alias must not suppress otherwise valid
+        # read-only Proxmox data. Ordinal labels stay local and cannot be
+        # cross-source linked without configured stable IDs.
+        source_ids = tuple(f"endpoint-{index + 1}" for index in range(len(proxmox_specs_value)))
+        source_id_error = "Proxmox source identity configuration unavailable"
     ca_file = os.environ.get("HADES_PROXMOX_CA_FILE", "")
     successful_proxmox_sources = 0
     failed_proxmox_sources = 0
@@ -254,7 +286,15 @@ def homelab_summary() -> dict:
             continue
         try:
             result = _fetch(url, token_file, ca_file, token_ids[index])
-            source_rows = [row for row in result.get("data", []) if isinstance(row, dict)]
+            source_rows = []
+            for row_index, row in enumerate(result.get("data", [])):
+                if not isinstance(row, dict):
+                    continue
+                source_row = dict(row)
+                source_row["_hades_identity"] = _proxmox_identity(
+                    source_row, source_ids[index], row_index,
+                )
+                source_rows.append(source_row)
             rows.extend(source_rows)
             successful_proxmox_sources += 1
             source_results.append(_source_result(
@@ -322,7 +362,40 @@ def homelab_summary() -> dict:
                 error_code=_source_error_code(exc),
             ))
             errors.append(f"{label} unavailable")
-    result = summarize(*values)
+    identity_links: dict[str, str] = {}
+    identity_links_configured = bool(identity_links_file())
+    try:
+        identity_links = load_identity_links()
+        has_proxmox_links = any(key.startswith("proxmox:") for key in identity_links)
+        if has_proxmox_links and (source_id_error or (
+            len(proxmox_specs_value) > 1
+            and not os.environ.get("HADES_PROXMOX_SOURCE_IDS", "").strip()
+        )):
+            identity_links = {
+                key: value for key, value in identity_links.items()
+                if not key.startswith("proxmox:")
+            }
+            source_id_error = "Stable Proxmox source IDs are required for configured identity links"
+        source_results.append({
+            "source": "Homelab identity links",
+            "status": "HEALTHY" if identity_links_configured else "NOT_CONFIGURED",
+            "observation_scope": "source_read",
+            "rows": len(identity_links),
+        })
+    except (OSError, ValueError, UnicodeError) as exc:
+        source_results.append(_source_result(
+            "Homelab identity links", "UNAVAILABLE", time.monotonic(),
+            error_code=_source_error_code(exc),
+        ))
+        errors.append("Homelab identity links unavailable")
+    if source_id_error:
+        errors.append(source_id_error)
+        source_results.append({
+            "source": "Proxmox source identities",
+            "status": "UNAVAILABLE",
+            "observation_scope": "source_configuration",
+        })
+    result = summarize(*values, identity_links=identity_links)
     from services import project_netbox_services
 
     service_url, service_token_file = netbox_services_spec()
@@ -378,11 +451,15 @@ def homelab_summary() -> dict:
         availability = resource.get("availability") or {}
         compact_resources.append({
             "name": resource.get("name"),
+            "identity": resource.get("identity"),
             "runtime_status": resource.get("runtime_status"),
             "currently_online": resource.get("currently_online"),
             "runtime": resource.get("runtime"),
+            "inventory": resource.get("inventory"),
             "primary_ip": inventory.get("primary_ip"),
             "role": inventory.get("role"),
+            "availability": resource.get("availability"),
+            "availability_observations": resource.get("availability_observations", []),
             "availability_status": availability.get("status"),
             "availability_freshness": resource.get("availability_freshness"),
             "conflicts": resource.get("conflicts", []),
@@ -391,7 +468,10 @@ def homelab_summary() -> dict:
     # large inventory to dominate the model context. The complete online and
     # inventory-only name lists above remain authoritative; this is only the
     # optional per-resource detail view.
-    resource_limit = 4
+    # A broad homelab snapshot is currently bounded by the source row caps
+    # above (32 total records). Returning four alphabetically first entries
+    # silently omitted most hosts and monitor results from owner follow-ups.
+    resource_limit = 64
     if len(compact_resources) > resource_limit:
         result["resources_truncated"] = {
             "returned": resource_limit,

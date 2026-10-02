@@ -1,7 +1,8 @@
 # Hermes upstream staging evaluation
 
 Status: historical staging evidence. Hermes 0.21.2 was later promoted on VM
-802; see `stable-v1-readiness.md` for current deployment state. The findings
+the intended destination guest; see `stable-v1-readiness.md` for current
+deployment-neutral readiness. The findings
 below record the original candidate qualification and remain useful for future
 upgrade decisions.
 

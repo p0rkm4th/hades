@@ -11,7 +11,7 @@ The local listener binds to 127.0.0.1 only; this script never publishes it to
 the LAN. Press Ctrl-C to close the tunnel.
 
 Example:
-  scripts/open-agent-zero-operator.sh codex@hades-core
+  scripts/open-agent-zero-operator.sh user@operator-host
   scripts/open-agent-zero-operator.sh hades-ssh 17004
 EOF
 }

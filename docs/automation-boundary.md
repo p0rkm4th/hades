@@ -3,7 +3,7 @@
 Status: **TYPED READ-ONLY CANARY AUTHORIZED / IMPLEMENTATION AND ACCEPTANCE INCOMPLETE**.
 
 HADES does not own a scheduler or run an enabled deterministic automation in
-production. A private n8n runner hosts an inactive read-only canary. Scotty's
+production. A private n8n runner hosts an inactive read-only canary. The owner's
 Owner Away policy authorizes a bounded canary only for Server Health Watch,
 Low Inventory Summary, Weekly Household Summary, and Backup Verification.
 That policy removes the prior request for a separate Manny/Orc product approval;
@@ -196,10 +196,11 @@ service-owned copies of one random key in already-protected parent directories:
 ```sh
 sudo install -d -o root -g root -m 0711 /etc/hades/phase3
 sudo install -d -o root -g hades-runtime -m 0750 /etc/hades/phase3/hermes
-sudo install -d -o root -g scotty -m 0750 /etc/hades/phase3/epsilon
+HADES_OPERATOR_USER=${HADES_OPERATOR_USER:?set the service owner account}
+sudo install -d -o root -g "$HADES_OPERATOR_USER" -m 0750 /etc/hades/phase3/epsilon
 sudo python3 scripts/create-phase3-result-query-keys.py \
   /etc/hades/phase3/hermes/result-query.key hades-runtime hades-runtime \
-  /etc/hades/phase3/epsilon/result-query.key scotty scotty
+  /etc/hades/phase3/epsilon/result-query.key "$HADES_OPERATOR_USER" "$HADES_OPERATOR_USER"
 ```
 
 The helper refuses existing destinations and prints paths only. Set
@@ -216,9 +217,9 @@ credential named
 `HADES Phase3 Runner HMAC`:
 
 ```sh
-sudo install -d -o scotty -g scotty -m 0700 /etc/hades/phase3/runner
+sudo install -d -o "$HADES_OPERATOR_USER" -g "$HADES_OPERATOR_USER" -m 0700 /etc/hades/phase3/runner
 python3 scripts/create-phase3-runner-key.py \
-  /etc/hades/phase3/runner/runner.key scotty scotty
+  /etc/hades/phase3/runner/runner.key "$HADES_OPERATOR_USER" "$HADES_OPERATOR_USER"
 ```
 
 Keep the value in the encrypted n8n credential and the Epsilon mode-0600 key

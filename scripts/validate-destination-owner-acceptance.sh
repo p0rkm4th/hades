@@ -43,7 +43,7 @@ for key in "${required_keys[@]}"; do
       [[ "$value" == hades-core ]] || { echo 'FAIL destination'; exit 1; }
       ;;
     destination_endpoint)
-      [[ "$value" == hades.local:3000 ]] || { echo 'FAIL destination endpoint'; exit 1; }
+      [[ "$value" == hades.example.test:3000 ]] || { echo 'FAIL destination endpoint'; exit 1; }
       ;;
     *)
       [[ "$value" == PASS ]] || { echo "FAIL $key is not PASS"; exit 1; }

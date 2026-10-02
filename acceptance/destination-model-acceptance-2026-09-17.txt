@@ -1,14 +1,5 @@
-capture_schema: destination-model-acceptance/v1
-captured_at_utc: 2026-09-17T02:40:00Z
-destination: Erebus VM 802 / <LAN-IP> / hades-core
-path: Hermes authenticated private Docker-bridge API
+# Private deployment acceptance record
 
-checks:
-  model_catalog: PASS (hermes-agent advertised)
-  non_streaming_chat_completion: PASS
-  response_content: non-empty (65 characters; content not retained)
-  service_key_handling: protected environment input; not printed
+This detailed record contains deployment-specific identities, resource IDs, source endpoints, or state/recovery information. Its complete pre-sanitization copy is retained in private `hades-infra/docs/private-public-hades-source-archive-20261001/`.
 
-owner_login: NOT RUN
-normal_endpoint_cutover: NOT RUN
-result: PRIVATE_MODEL_EXECUTION_ACCEPTED
+Public HADES keeps generic contracts and synthetic fixtures only. This file is not current live evidence.

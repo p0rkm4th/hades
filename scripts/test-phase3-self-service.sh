@@ -153,23 +153,23 @@ else:
 
 quota_service = Phase3Service(
     Phase3Store(tempfile.mktemp(prefix="hades-phase3-quota-")),
-    catalog=Phase3Catalog({"hades-core": "HADES Core", "minecraft-night": "Minecraft Night", "tartarus": "Tartarus"}),
+    catalog=Phase3Catalog({"hades-core": "HADES Core", "minecraft-night": "Minecraft Night", "compute-node-a": "Compute Node A"}),
     quotas=Phase3Quotas(household_active=2),
 )
-quota_actor = Phase3Authority("quota-user", "household", frozenset({"hades-core.health", "minecraft-night.health", "tartarus.health"}))
+quota_actor = Phase3Authority("quota-user", "household", frozenset({"hades-core.health", "minecraft-night.health", "compute-node-a.health"}))
 quota_records = []
 for resource in ("hades-core", "minecraft-night"):
     preview = quota_service.preview(quota_actor, "server-health-watch", {"resource_id": resource, "interval_minutes": 10})
     quota_records.append(quota_service.confirm(quota_actor, preview["preview_id"], preview["preview_hash"], "q-" + resource))
 try:
-    preview = quota_service.preview(quota_actor, "server-health-watch", {"resource_id": "tartarus", "interval_minutes": 10})
+    preview = quota_service.preview(quota_actor, "server-health-watch", {"resource_id": "compute-node-a", "interval_minutes": 10})
     quota_service.confirm(quota_actor, preview["preview_id"], preview["preview_hash"], "over-quota")
 except Phase3QuotaError:
     pass
 else:
     raise AssertionError("household quota was bypassed")
 quota_service.control(quota_actor, quota_records[0]["automation_id"], "pause")
-replacement_preview = quota_service.preview(quota_actor, "server-health-watch", {"resource_id": "tartarus", "interval_minutes": 10})
+replacement_preview = quota_service.preview(quota_actor, "server-health-watch", {"resource_id": "compute-node-a", "interval_minutes": 10})
 replacement = quota_service.confirm(quota_actor, replacement_preview["preview_id"], replacement_preview["preview_hash"], "q-replacement")
 assert replacement["enabled"] is True
 try:
