@@ -494,8 +494,56 @@ assert summary["service_catalog"]["services"] == [{
 }]
 assert "secret_like_field" not in str(summary)
 assert "unrelated_secret_like_field" not in str(summary)
+
+# A successful set of upstream reads must not yield aggregate OK after the
+# bounded response intentionally drops part of a larger current inventory.
+trunc_rows = [
+    {"type": "qemu", "vmid": 3000 + index, "name": f"capacity-node-{index}",
+     "node": "synthetic-pve", "status": "running"}
+    for index in range(70)
+]
+trunc_devices = [
+    {"id": 4000 + index, "name": f"capacity-node-{index}", "status": "active"}
+    for index in range(70)
+]
+link_path = matrix_dir / "truncation-links.json"
+link_path.write_text(json.dumps({"links": [
+    {"source_identity": f"proxmox:pve-many:qemu:{3000 + index}",
+     "netbox_device_id": 4000 + index}
+    for index in range(70)
+]}), encoding="utf-8")
+link_path.chmod(0o600)
+os.environ.update({
+    "HADES_PROXMOX_RESOURCES_URLS": "https://pve-many.example.test/cluster/resources",
+    "HADES_PROXMOX_TOKEN_FILES": "/run/synthetic-proxmox-many",
+    "HADES_PROXMOX_TOKEN_IDS": "svc-hades-ro@pve!synthetic-many",
+    "HADES_PROXMOX_SOURCE_IDS": "pve-many",
+    "HADES_HOMELAB_IDENTITY_LINKS_FILE": str(link_path),
+})
+def truncation_fetch(url, *_args, **_kwargs):
+    if url == "https://pve-many.example.test/cluster/resources":
+        return {"data": trunc_rows}
+    if url == "https://netbox.example.test/api/dcim/devices/":
+        return {"results": trunc_devices}
+    if url == "https://netbox.example.test/api/ipam/services/":
+        return {"count": 0, "next": None, "results": []}
+    if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
+        return {"monitors": []}
+    raise AssertionError(f"unexpected truncation fixture URL: {url}")
+server._fetch = truncation_fetch
+truncated_summary = server.homelab_summary()
+assert truncated_summary["status"] == "PARTIAL", truncated_summary
+assert {row["status"] for row in truncated_summary["sources"]} == {"HEALTHY"}, truncated_summary["sources"]
+assert truncated_summary["resources_truncated"] == {
+    "returned": 64, "total": 70,
+    "reason": "use homelab_compute_capabilities or a targeted follow-up for more detail",
+}, truncated_summary
+assert truncated_summary["online_names_truncated"] == {"returned": 24, "total": 70}
+assert len(truncated_summary["resources"]) == 64
+assert any(row.get("name") == "capacity-node-63" for row in truncated_summary["resources"])
+assert not any(row.get("name") == "capacity-node-69" for row in truncated_summary["resources"])
 server._fetch = original_fetch
-print("PASS homelab MCP summary retains bounded runtime telemetry without unrelated upstream fields")
+print("PASS homelab MCP summary preserves bounded telemetry and marks omitted records partial")
 
 result = server.homelab_compute_capabilities()
 assert result["status"] == "OK"

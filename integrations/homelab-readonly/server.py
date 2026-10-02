@@ -543,6 +543,7 @@ def homelab_summary() -> dict:
     # above (32 total records). Returning four alphabetically first entries
     # silently omitted most hosts and monitor results from owner follow-ups.
     resource_limit = 64
+    snapshot_truncated = False
     if len(compact_resources) > resource_limit:
         result["resources_truncated"] = {
             "returned": resource_limit,
@@ -550,6 +551,7 @@ def homelab_summary() -> dict:
             "reason": "use homelab_compute_capabilities or a targeted follow-up for more detail",
         }
         compact_resources = compact_resources[:resource_limit]
+        snapshot_truncated = True
     result["resources"] = compact_resources
     for field, limit in (
         ("online_names", 24),
@@ -563,6 +565,13 @@ def homelab_summary() -> dict:
                 "total": len(values),
             }
             result[field] = values[:limit]
+            snapshot_truncated = True
+    if snapshot_truncated and result.get("status") == "OK":
+        # A successful source read is not a complete owner view when some of
+        # its composed records or observations were omitted at the response
+        # boundary. Keep the source details, but make the aggregate status
+        # reflect the reduced coverage.
+        result["status"] = "PARTIAL"
     result["supplemental_hardware"] = {
         "status": "AVAILABLE",
         "source": "observed capability matrix",
