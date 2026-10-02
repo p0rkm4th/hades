@@ -276,6 +276,23 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         )
         assert 'No blocker was reported by the configured live sources.' in covered, covered
         assert 'A responding probe does not prove application login' in covered, covered
+        (adapter_dir / 'server.py').write_text(
+            'def homelab_inference_inventory():\n'
+            '    return {"status": "READABLE", "endpoints": []}\n'
+            'def homelab_summary():\n'
+            '    return {"resources": [{"identity": {"canonical_id": "netbox:device:75"}, '
+            '"inventory": {"name": "Compute Node A"}}]}\n'
+            'def format_inference_inventory_response(text, inventory, summary):\n'
+            '    return "NODE_ACTIVITY:" + summary["resources"][0]["inventory"]["name"]\n',
+            encoding='utf-8',
+        )
+        node_activity = direct_read(
+            "What's Compute Node A doing right now?", 'synthetic-owner', 'owner'
+        )
+        assert node_activity == 'NODE_ACTIVITY:Compute Node A', node_activity
+        assert 'owner session' in direct_read(
+            "What's Compute Node A doing right now?", 'synthetic-household', 'household'
+        )
     finally:
         if old_workdir is None:
             os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)

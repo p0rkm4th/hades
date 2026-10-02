@@ -605,6 +605,12 @@ where_answer = server.format_inference_inventory_response(
 )
 assert "sample:small is listed by GPU A" in where_answer, where_answer
 assert "Loaded now on GPU A" in where_answer, where_answer
+node_activity_answer = server.format_inference_inventory_response(
+    "What's GPU A doing right now?", inference, summary_names,
+)
+assert "inference endpoint linked to GPU A is responding" in node_activity_answer, node_activity_answer
+assert "Currently loaded: sample:small" in node_activity_answer, node_activity_answer
+assert "does not establish host CPU/GPU utilization" in node_activity_answer, node_activity_answer
 summary_answer = server.format_inference_inventory_response(
     "What models are available?", inference, summary_names,
 )

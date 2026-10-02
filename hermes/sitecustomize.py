@@ -4757,6 +4757,13 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         text,
         re.IGNORECASE,
     ))
+    node_activity_intent = bool(re.search(
+        r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+(?:doing|running)\b",
+        text,
+        re.IGNORECASE,
+    ))
+    if node_activity_intent:
+        inference_intent = True
     if inference_intent and scope != "owner":
         return "Detailed model and infrastructure information is available only in an owner session."
     workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
@@ -4793,7 +4800,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         spec.loader.exec_module(module)
         if inference_intent:
             inference = module.homelab_inference_inventory()
-            summary = {}
+            summary = module.homelab_summary() if node_activity_intent else {}
             if re.search(
                 r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
                 text,

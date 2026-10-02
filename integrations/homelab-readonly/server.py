@@ -829,6 +829,48 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
             if canonical:
                 resource_names[canonical] = inventory_record.get("name") or resource.get("name")
 
+    node_activity = re.search(
+        r"\bwhat(?:['’]s|s|\s+is)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+        r"(?:doing|running)\b",
+        str(user_text or ""), re.IGNORECASE,
+    )
+    if node_activity:
+        requested_node = re.sub(r"[^a-z0-9]+", "", node_activity.group("target").casefold())
+        matching_nodes = [
+            (identity, label) for identity, label in resource_names.items()
+            if isinstance(label, str)
+            and re.sub(r"[^a-z0-9]+", "", label.casefold()) == requested_node
+        ]
+        if len(matching_nodes) != 1:
+            return "I can't match that machine to one configured inference endpoint, so I can't verify its current model activity."
+        node_identity, label = matching_nodes[0]
+        linked = [
+            endpoint for endpoint in endpoints[:16]
+            if isinstance(endpoint, dict) and endpoint.get("node_identity") == node_identity
+        ]
+        if len(linked) != 1:
+            return f"I can't verify current model activity for {label}: its inventory record does not link to exactly one configured inference endpoint."
+        endpoint = linked[0]
+        if endpoint.get("status") != "READABLE":
+            return f"The inference endpoint linked to {label} is not responding to its catalog read, so I can't verify its model activity."
+        models = endpoint.get("models") if isinstance(endpoint.get("models"), list) else []
+        loaded = endpoint.get("loaded_models") if isinstance(endpoint.get("loaded_models"), list) else []
+        names = list(dict.fromkeys(
+            str(model.get("name")) for model in models
+            if isinstance(model, dict) and model.get("name")
+        ))[:10]
+        result = f"The inference endpoint linked to {label} is responding."
+        result += " Provider catalog lists " + (", ".join(names) if names else "no installed models") + "."
+        if endpoint.get("loaded_status") == "CURRENT":
+            loaded_names = list(dict.fromkeys(
+                str(model.get("name")) for model in loaded
+                if isinstance(model, dict) and model.get("name")
+            ))[:8]
+            result += " Currently loaded: " + (", ".join(loaded_names) if loaded_names else "none reported") + "."
+        else:
+            result += " Current loaded-model state is unavailable."
+        return result + " This does not establish host CPU/GPU utilization or prove a generation request works."
+
     reachable = []
     all_models = []
     all_loaded = []
