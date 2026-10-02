@@ -5122,7 +5122,7 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
 
 def _hades_broad_homelab_status_intent(text):
     return bool(re.search(
-        r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
+        r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
         r"is\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
         r"are\s+(?:(?:all\s+the|all|the|my|our)\s+)?(?:computers?|machines?|servers?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
         r"what(?:['’]s|\s+is)\s+down|anything\s+(?:down|dying|wrong|broken)|"

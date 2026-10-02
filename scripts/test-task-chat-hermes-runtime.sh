@@ -166,6 +166,15 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     registry = hermes_registry_module.registry
     registry.calls.clear()
+    broad_owner_status = owner_agent.run_conversation(
+        "Is everything okay with my homelab?", conversation_history=[]
+    )
+    assert broad_owner_status.get("completed") is True and broad_owner_status.get("api_calls") == 0, broad_owner_status
+    assert "Live inference reads:" in broad_owner_status["final_response"], broad_owner_status
+    assert "do not prove generation or available GPU capacity" in broad_owner_status["final_response"], broad_owner_status
+    assert registry.calls[:2] == ["homelab_summary", "homelab_inference_inventory"], registry.calls
+
+    registry.calls.clear()
     owner_result = owner_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])
     assert owner_result.get("completed") is True and owner_result.get("api_calls") == 0, owner_result
     assert "Observed hardware inventory lists Synthetic Node B." in owner_result["final_response"], owner_result

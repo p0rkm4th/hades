@@ -124,6 +124,7 @@ for prompt in (
     assert homelab_intent.search(prompt), f'owner homelab health intent missed {prompt!r}'
 for prompt in (
     'Is everything okay?', 'Is everything okay with the homelab?',
+    'Is everything okay with my homelab?', 'Is everything okay with our homelab?',
     'Are all the computers okay?', 'Anything dying?', "Why's everything slow?",
     'Why does the network feel slow?', 'Why does Wi-Fi feel slow?',
 ):
@@ -579,6 +580,9 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         everything_ok = direct_read('Is everything okay?', 'synthetic-owner', 'owner')
         assert 'Live inference reads: Test Fast API responding (1 catalog models; 0 reported loaded)' in everything_ok, everything_ok
         assert 'Inference-worker health was not independently verified' not in everything_ok, everything_ok
+        my_homelab_ok = direct_read('Is everything okay with my homelab?', 'synthetic-owner', 'owner')
+        assert 'Live inference reads: Test Fast API responding (1 catalog models; 0 reported loaded)' in my_homelab_ok, my_homelab_ok
+        assert 'do not prove generation or available GPU capacity' in my_homelab_ok, my_homelab_ok
         for prompt in (
             'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
             'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
