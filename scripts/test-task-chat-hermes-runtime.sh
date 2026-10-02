@@ -531,6 +531,15 @@ check_synthetic_node_b_result = check_synthetic_node_b_agent.run_conversation(
 assert check_synthetic_node_b_result.get("completed") is True and check_synthetic_node_b_result.get("api_calls") == 0, check_synthetic_node_b_result
 assert "Observed hardware inventory lists Synthetic Node B." in check_synthetic_node_b_result["final_response"], check_synthetic_node_b_result
 assert "running normally" not in check_synthetic_node_b_result["final_response"].casefold(), check_synthetic_node_b_result
+os.environ["HADES_TEST_SOURCE_UNAVAILABLE"] = "1"
+try:
+    unavailable_source_check = hades._hades_direct_homelab_read(
+        "Check Synthetic Node B.", owner, "owner",
+    )
+finally:
+    os.environ.pop("HADES_TEST_SOURCE_UNAVAILABLE", None)
+assert "can't say whether it's online" in unavailable_source_check, unavailable_source_check
+assert "running normally" not in unavailable_source_check.casefold(), unavailable_source_check
 assert hades._hades_direct_homelab_read("Check my shopping list", owner, "owner") is None
 registry.calls.clear()
 direct_node_status = hades._hades_direct_homelab_read(
