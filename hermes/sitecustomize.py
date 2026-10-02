@@ -5076,6 +5076,13 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                     details = [f"Observed hardware inventory lists {machine.get('name', target)}."]
                     if machine.get("role"):
                         details.append(f"Role: {machine['role']}.")
+                    hardware_freshness = str(capability.get("freshness") or capability.get("status") or "UNKNOWN").upper()
+                    hardware_observed_at = capability.get("observed_at")
+                    if hardware_freshness != "FRESH":
+                        observed_label = f"; last observed {hardware_observed_at}" if hardware_observed_at else ""
+                        details.append(
+                            f"That hardware inventory is {hardware_freshness.casefold()}{observed_label}; treat those specifications as historical."
+                        )
                     if machine.get("cpu"):
                         details.append(f"CPU inventory: {machine['cpu']}.")
                     if machine.get("ram_gib") is not None:
@@ -5129,6 +5136,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                     inference_response += " " + " ".join(details)
             return inference_response
         summary = module.homelab_summary()
+        broad_inference = None
+        if scope == "owner" and broad_owner_status_intent:
+            try:
+                broad_inference = module.homelab_inference_inventory()
+            except Exception:
+                broad_inference = {"status": "SOURCE_UNAVAILABLE", "endpoints": []}
         endpoint_response = _hades_service_endpoint_response(
             text,
             summary.get("service_catalog") if isinstance(summary, dict) else None,
@@ -5372,14 +5385,27 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                 key = str(item["name"]).casefold()
                 resource_name_counts[key] = resource_name_counts.get(key, 0) + 1
         detailed_request = bool(re.search(
-            r"\b(?:node(?:s)?|blocker(?:s)?|concise|detailed|comprehensive|full|everything|all\s+(?:the\s+)?(?:servers|services|workloads|computers)|core|major|inference|worker(?:s)?|issue(?:s)?|problem(?:s)?)\b",
+            r"\b(?:node(?:s)?|blocker(?:s)?|concise|detailed|comprehensive|full|all\s+(?:the\s+)?(?:servers|services|workloads|computers)|core|major|inference|worker(?:s)?|issue(?:s)?|problem(?:s)?)\b",
             text,
             re.IGNORECASE,
         ))
         partial = isinstance(summary, dict) and summary.get("status") != "OK"
         if partial:
-            response = "I couldn't get a complete live homelab status. "
-            response += "HADES Core gateway is responding to this request; inference-worker health was not independently verified. "
+            response = "The live homelab view is partial. "
+            source_rows = summary.get("sources", []) if isinstance(summary, dict) else []
+            responsive = list(dict.fromkeys(
+                str(item.get("source")) for item in source_rows
+                if isinstance(item, dict) and item.get("status") == "HEALTHY" and item.get("source")
+                and not re.fullmatch(r"Proxmox\[\d+\]", str(item.get("source")))
+            ))
+            unavailable = list(dict.fromkeys(
+                str(item.get("source")) for item in source_rows
+                if isinstance(item, dict) and item.get("status") in {"UNAVAILABLE", "DEGRADED"} and item.get("source")
+            ))
+            if responsive:
+                response += "Current source reads responding: " + ", ".join(responsive[:6]) + ". "
+            if unavailable:
+                response += "Current source reads unavailable or degraded: " + ", ".join(unavailable[:6]) + ". "
             if online:
                 response += "The available Proxmox data reports: " + ", ".join(str(name) for name in online) + ". "
             response += "I did not assume any unreported machine was running."
@@ -5418,6 +5444,35 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         down = monitor_groups["down"]
         if down:
             response += " Uptime Kuma's configured probes failed: " + ", ".join(down) + "."
+            netbox_api_responded = any(
+                isinstance(item, dict) and item.get("source") == "NetBox" and item.get("status") == "HEALTHY"
+                for item in (summary.get("sources", []) if isinstance(summary, dict) else [])
+            )
+            netbox_named_down = [name for name in down if "netbox" in name.casefold()]
+            if netbox_api_responded and netbox_named_down:
+                monitor_linkage = None
+                for resource in resources:
+                    if not isinstance(resource, dict):
+                        continue
+                    observation = resource.get("availability")
+                    observed_name = observation.get("name") if isinstance(observation, dict) else None
+                    if not any(
+                        str(candidate).casefold() in {
+                            str(resource.get("name") or "").casefold(),
+                            str(observed_name or "").casefold(),
+                        }
+                        for candidate in netbox_named_down
+                    ):
+                        continue
+                    identity = resource.get("identity")
+                    if isinstance(identity, dict):
+                        monitor_linkage = "linked" if identity.get("canonical_id") else "unlinked"
+                    break
+                response += (
+                    " The NetBox inventory API responded to this read, while the monitor name suggests a NetBox check is failing; "
+                    + ("its target has no verified identity link" if monitor_linkage == "unlinked" else "its target identity is not established by this read")
+                    + ", so I can't tell whether that probe checks the inventory API itself."
+                )
         elif not availability:
             response += " No service availability observations are available, so I can't confirm service health."
         if isinstance(summary, dict) and summary.get("identity_warnings"):
@@ -5491,7 +5546,6 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                     break
             if core:
                 response += f" HADES Core runtime is {core.get('runtime_status', 'UNKNOWN')}."
-            response += " Inference-worker health was not independently verified by this read."
             if subject and scope == "owner":
                 backup_status = _hades_phase2_backup_freshness_response(
                     "Are my backups up to date?", subject, scope
@@ -5503,6 +5557,36 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                     response += " I couldn't verify repository backup freshness: " + backup_status
                 else:
                     response += " I couldn't verify repository backup freshness from a current check."
+        if scope == "owner" and isinstance(broad_inference, dict):
+            endpoints = broad_inference.get("endpoints", [])
+            endpoint_summary = []
+            for endpoint in endpoints if isinstance(endpoints, list) else []:
+                if not isinstance(endpoint, dict):
+                    continue
+                identity = str(endpoint.get("source_identity") or "").removeprefix("inference:")
+                label = re.sub(r"[-_.]+", " ", identity).strip().title() or "Inference endpoint"
+                status = str(endpoint.get("status") or "UNKNOWN").upper()
+                if status != "READABLE":
+                    endpoint_summary.append(f"{label} could not be verified")
+                    continue
+                models = endpoint.get("models", [])
+                loaded = endpoint.get("loaded_models", [])
+                model_count = len(models) if isinstance(models, list) else 0
+                loaded_count = len(loaded) if isinstance(loaded, list) else 0
+                loaded_text = f"{loaded_count} reported loaded" if endpoint.get("loaded_status") == "CURRENT" else "loaded state unavailable"
+                endpoint_summary.append(f"{label} API responding ({model_count} catalog models; {loaded_text})")
+            if endpoint_summary:
+                response += " Live inference reads: " + "; ".join(endpoint_summary[:8]) + "."
+                response += " These provider catalog/residency reads do not prove generation or available GPU capacity."
+            elif str(broad_inference.get("status") or "").upper() == "NOT_CONFIGURED":
+                response += " Provider-native inference endpoints are not configured, so model-server health is unknown."
+            else:
+                response += " I couldn't verify provider-native inference endpoint status in this read."
+        if scope == "owner" and partial and not detailed_request:
+            source_counts = summary.get("source_counts") if isinstance(summary, dict) else None
+            unlinked_count = source_counts.get("identity_unlinked_resources", 0) if isinstance(source_counts, dict) else 0
+            if isinstance(unlinked_count, int) and not isinstance(unlinked_count, bool) and unlinked_count > 0:
+                response += f" {unlinked_count} observations have no verified cross-source identity link and remain separate."
         if change_intent:
             response += (
                 " I can report the current state, but no historical homelab snapshot or change-event source is configured, "

@@ -356,7 +356,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             }
             summary.update(overrides)
             (adapter_dir / 'server.py').write_text(
-                'def homelab_summary():\n    return ' + repr(summary) + '\n',
+                'def homelab_summary():\n    return ' + repr(summary) + '\n'
+                'def homelab_inference_inventory():\n'
+                '    return {"status": "READABLE", "endpoints": [{"source_identity": "inference:test-fast", '
+                '"status": "READABLE", "models": [{"name": "synthetic-model"}], '
+                '"loaded_status": "CURRENT", "loaded_models": []}]}\n',
                 encoding='utf-8',
             )
 
@@ -375,6 +379,9 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         )
         assert 'No blocker was reported by the configured live sources.' in covered, covered
         assert 'A responding probe does not prove application login' in covered, covered
+        everything_ok = direct_read('Is everything okay?', 'synthetic-owner', 'owner')
+        assert 'Live inference reads: Test Fast API responding (1 catalog models; 0 reported loaded)' in everything_ok, everything_ok
+        assert 'Inference-worker health was not independently verified' not in everything_ok, everything_ok
         for prompt in (
             'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
             'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
@@ -384,6 +391,16 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             if prompt == 'What changed since yesterday?':
                 assert 'no historical homelab snapshot or change-event source is configured' in answer_text
         assert direct_read('What is down?', 'synthetic-household', 'household') is None
+        write_broad_summary(
+            [{'name': 'service-netbox', 'status': 'down', 'freshness': 'FRESH'}],
+            sources=[{'source': 'NetBox', 'status': 'HEALTHY'}],
+            resources=[{'name': 'service-netbox', 'identity': {'canonical_id': None},
+                        'availability': {'name': 'service-netbox', 'status': 'down'}}],
+        )
+        disagreement = direct_read('What is down?', 'synthetic-owner', 'owner')
+        assert 'The NetBox inventory API responded to this read' in disagreement, disagreement
+        assert 'target has no verified identity link' in disagreement, disagreement
+        assert 'Live inference reads: Test Fast API responding' in disagreement, disagreement
         write_broad_summary(
             [],
             inventory_only_names=['GPU Node'],
@@ -409,7 +426,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             '    return {"resources": [{"identity": {"canonical_id": "netbox:device:75"}, '
             '"inventory": {"name": "Compute Node A"}}]}\n'
             'def homelab_compute_capabilities():\n'
-            '    return {"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
+            '    return {"status": "STALE", "freshness": "STALE", "observed_at": "2026-09-01", '
+            '"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
             'def resolve_inference_node_labels(_inventory):\n'
             '    return {"netbox:device:75": "Compute Node A"}\n'
             'def format_inference_inventory_response(text, inventory, summary):\n'
@@ -422,6 +440,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             "What's Compute Node A doing right now?", 'synthetic-owner', 'owner'
         )
         assert node_activity.startswith('NODE_ACTIVITY:Compute Node A Observed hardware inventory lists Compute Node A.'), node_activity
+        assert 'hardware inventory is stale; last observed 2026-09-01' in node_activity
         assert "Host CPU/GPU load and free VRAM are not connected." in node_activity
         running_activity = direct_read(
             'What is Compute Node A running?', 'synthetic-owner', 'owner'
