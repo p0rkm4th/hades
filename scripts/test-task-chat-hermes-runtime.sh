@@ -214,6 +214,17 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
+    household_game_status = household_agent.run_conversation(
+        "Is the game server working?", conversation_history=[]
+    )
+    assert household_game_status.get("completed") is True, household_game_status
+    assert household_game_status.get("api_calls") == 0, household_game_status
+    assert "game-server check" in household_game_status["final_response"].casefold() or "current check" in household_game_status["final_response"].casefold(), household_game_status
+    assert "Test Host" not in household_game_status["final_response"]
+    assert "192.0.2." not in household_game_status["final_response"]
+    assert set(registry.calls) <= {"homelab_summary"}, registry.calls
+
+    registry.calls.clear()
     os.environ["HADES_TEST_SOURCE_UNAVAILABLE"] = "1"
     try:
         outage_result = owner_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])

@@ -38,6 +38,7 @@ wanted = {
     '_hades_homelab_named_check_target',
     '_hades_homelab_followup_prompt',
     '_hades_broad_homelab_status_intent',
+    '_hades_household_game_health_intent',
     '_hades_positive_homelab_control_request',
 }
 functions = [
@@ -101,6 +102,7 @@ household_intent_assignment = next(
 )
 household_boundary_expression = ast.unparse(household_intent_assignment.value)
 assert '_hades_broad_homelab_status_intent(user_message)' in household_boundary_expression
+assert '_hades_household_game_health_intent(user_message, self._hades_session_scope)' in household_boundary_expression
 assert 'self._hades_session_scope' in household_boundary_expression
 assert 'household' in household_boundary_expression
 intent_assignment = next(
@@ -111,6 +113,7 @@ intent_assignment = next(
 exec(compile(ast.Module(body=[intent_assignment], type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
 homelab_intent = namespace['_HADES_HOMELAB_INTENT']
 status_intent = namespace['_hades_broad_homelab_status_intent']
+game_health_intent = namespace['_hades_household_game_health_intent']
 for prompt in (
     'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
     'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
@@ -123,6 +126,9 @@ for prompt in (
     'Are all the computers okay?', 'Anything dying?', "Why's everything slow?",
 ):
     assert status_intent(prompt), f'broad homelab status intent missed {prompt!r}'
+assert game_health_intent('Is the game server working?', 'household')
+assert game_health_intent('Is Minecraft working?', 'household')
+assert not game_health_intent('Is the game server working?', 'owner')
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 groups = namespace['_hades_homelab_availability_groups']
@@ -451,6 +457,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         )
         assert 'configured game-server check is responding' in household_game_status
         assert 'Test Host' not in household_game_status and '192.0.2.' not in household_game_status
+        generic_household_game_status = direct_read(
+            'Is the game server working?', 'synthetic-household', 'household'
+        )
+        assert 'configured game-server check is responding' in generic_household_game_status
+        assert 'Test Host' not in generic_household_game_status and '192.0.2.' not in generic_household_game_status
         os.environ['HADES_TEST_NO_GAME_MONITOR'] = '1'
         try:
             missing_game_check = direct_read(

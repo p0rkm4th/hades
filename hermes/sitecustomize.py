@@ -5136,6 +5136,20 @@ def _hades_broad_homelab_status_intent(text):
     ))
 
 
+def _hades_household_game_health_intent(user_text, scope):
+    if scope != "household":
+        return False
+    text = str(user_text or "")
+    if re.search(r"\bminecraft\b", text, re.IGNORECASE) and _hades_service_health_target(text):
+        return True
+    return bool(re.search(
+        r"\b(?:is|are)\s+(?:(?:the|my|our)\s+)?game\s+server\s+"
+        r"(?:healthy|health|up|online|running|working|okay|ok|available|down|offline)\b",
+        text,
+        re.IGNORECASE,
+    ))
+
+
 def _hades_direct_homelab_read(user_text, subject="", scope="", context_text=""):
     """Answer simple owner homelab-status questions from canonical read sources.
 
@@ -5178,11 +5192,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         text,
         re.IGNORECASE,
     ))
-    household_game_health_intent = bool(
-        scope == "household"
-        and re.search(r"\bminecraft\b", text, re.IGNORECASE)
-        and _hades_service_health_target(text)
-    )
+    household_game_health_intent = _hades_household_game_health_intent(text, scope)
     household_node_status_intent = bool(
         scope != "owner" and _hades_homelab_target_from_question(text)
     )
@@ -5581,7 +5591,13 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         if placement_response:
             return placement_response
         resources = summary.get("resources", []) if isinstance(summary, dict) else []
-        service_response = _hades_service_monitor_response(text, resources)
+        service_health_text = (
+            "Is Minecraft working?"
+            if household_game_health_intent
+            and not re.search(r"\bminecraft\b", text, re.IGNORECASE)
+            else text
+        )
+        service_response = _hades_service_monitor_response(service_health_text, resources)
         if household_game_health_intent:
             if not service_response:
                 return "I don't have a current check for the game server, so I can't confirm whether it's working."
@@ -9211,6 +9227,27 @@ try:
                 "api_calls": 0,
                 "completed": True,
             }
+        if _hades_household_game_health_intent(
+            _server_text, getattr(self, "_hades_session_scope", "")
+        ):
+            _game_health_response = _hades_direct_homelab_read(
+                _server_text,
+                getattr(self, "_hades_subject", ""),
+                getattr(self, "_hades_session_scope", ""),
+            )
+            if _game_health_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(_game_health_response)
+                _hades_logger.info(
+                    "Household game-server health read completed before managed-server routing"
+                )
+                return {
+                    "final_response": _game_health_response,
+                    "messages": [{"role": "assistant", "content": _game_health_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         # Typed household automation lifecycle language must reach the Phase 3
         # policy route before the separate managed-server control adapter. In
         # particular, "delete my weekly household summary" contains "delete"
@@ -9913,6 +9950,7 @@ try:
             self._hades_session_scope == "household"
             and (
                 _hades_broad_homelab_status_intent(user_message)
+                or _hades_household_game_health_intent(user_message, self._hades_session_scope)
                 or _hades_service_health_target(user_message)
                 or re.search(
                     r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|"

@@ -30,6 +30,8 @@ def _hades_endpoint_continuation_response(text, subject="", scope="owner", conte
     return text
 def _hades_is_hermes_auxiliary_prompt(text):
     return False
+def _hades_household_game_health_intent(text, scope):
+    return False
 '''
 
 ACTIVE = '''
@@ -80,7 +82,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     compile(candidate, str(output), "exec")
     tree = ast.parse(candidate)
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "_hades_direct_homelab_read"]
-    assert len(calls) == 3, len(calls)
+    assert len(calls) == 4, len(calls)
     assert "getattr(self, \"_hades_subject\", \"\")" in candidate
     assert "context_text=previous_user_text" in candidate
     assert "context_text=_hades_intent_text" in candidate
@@ -89,8 +91,12 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "_hades_homelab_named_check_target(user_message)" in candidate
     assert 'r"\\bwhat(?:' in candidate
     assert "Owner model-capacity follow-up failed closed without model invocation" in candidate
+    assert "Household game-server health read completed before managed-server routing" in candidate
     run_start = candidate.index("def _hades_run_conversation")
     capacity_guard = candidate.index("Owner model-capacity follow-up failed closed without model invocation", run_start)
+    game_guard = candidate.index("Household game-server health read completed before managed-server routing", run_start)
+    assert game_guard < candidate.index("turn_started = time.perf_counter()", run_start)
+    assert game_guard < capacity_guard
     assert capacity_guard < candidate.index("turn_started = time.perf_counter()", run_start)
     assert capacity_guard < candidate.index("response = _hades_direct_homelab_read(user_message", run_start)
     assert candidate.index("response = _hades_direct_homelab_read(user_message") < candidate.index(

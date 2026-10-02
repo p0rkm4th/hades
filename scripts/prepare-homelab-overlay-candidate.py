@@ -190,6 +190,27 @@ def add_household_route(source: str) -> str:
         raise ValueError("could not uniquely locate the auxiliary-prompt guard")
     auxiliary_guard = auxiliary_guards[0]
     early_block = '''
+        if _hades_household_game_health_intent(
+            user_message, getattr(self, "_hades_session_scope", "")
+        ):
+            game_health_response = _hades_direct_homelab_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                getattr(self, "_hades_session_scope", ""),
+            )
+            if game_health_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(game_health_response)
+                _hades_logger.info(
+                    "Household game-server health read completed before managed-server routing"
+                )
+                return {
+                    "final_response": game_health_response,
+                    "messages": [{"role": "assistant", "content": game_health_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         if self._hades_session_scope == "owner" and re.fullmatch(
             r"\\s*what\\s+about\\s+(?:a\\s+)?\\d+(?:\\.\\d+)?\\s*(?:gb|gib)\\s+(?:one|model)\\s*[?.!]*\\s*",
             str(user_message or ""), re.IGNORECASE,
