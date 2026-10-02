@@ -76,7 +76,7 @@ assert "homelab_discovery_scan" in server_source
 assert "homelab_compute_capabilities" in server_source
 assert 'unknown tool: {name}' in server_source
 assert "call_tool(params.name, params.arguments)" in server_source
-assert 'errors.append(f"{label} source is not configured")' in server_source
+assert '_source_result(label, "NOT_CONFIGURED", started)' in server_source
 assert "HADES_DISCOVERY_ALLOWED_NETWORKS" in server_source
 assert "run_bounded_scan" in server_source
 assert "propose_inventory_candidates" in server_source
@@ -100,6 +100,16 @@ assert config.source_specs() == (
 assert config.netbox_services_spec() == (
     "https://netbox.example.test/api/ipam/services/", "",
 )
+os.environ["HADES_PROXMOX_RESOURCES_URLS"] = "https://a.example.test/r,https://b.example.test/r"
+os.environ["HADES_PROXMOX_TOKEN_FILES"] = "/run/one,/run/two,/run/extra"
+try:
+    config.proxmox_specs()
+except ValueError:
+    pass
+else:
+    raise AssertionError("mismatched Proxmox source configuration must fail")
+assert config.source_specs()[1][0] == "https://netbox.example.test/api/dcim/devices/"
+assert config.source_specs()[2][0] == "https://status.example.test/api/status-page/heartbeat/hades-status"
 os.environ["HADES_PROXMOX_RESOURCES_URLS"] = "https://a.example.test/r,https://b.example.test/r"
 os.environ["HADES_PROXMOX_TOKEN_FILES"] = "/run/a,/run/b"
 os.environ["HADES_PROXMOX_TOKEN_IDS"] = "svc-hades-ro@pve!a,svc-hades-ro@pve!b"
@@ -157,6 +167,7 @@ import shutil
 import sys
 import tempfile
 import types
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Keep this public acceptance test independent of Hermes, MCP, PyYAML, and the
@@ -200,7 +211,7 @@ sys.modules.update({
 matrix_dir = Path(tempfile.mkdtemp(prefix="hades-homelab-matrix-"))
 atexit.register(shutil.rmtree, matrix_dir, ignore_errors=True)
 matrix_path = matrix_dir / "capability-matrix.json"
-matrix_path.write_text(json.dumps({"machines": [
+matrix_path.write_text(json.dumps({"observed_at": datetime.now(timezone.utc).isoformat(), "machines": [
     {"name": "tartarus", "address": "192.0.2.69", "os": "Fedora",
      "cpu": "synthetic", "ram_gib": 64, "gpus": ["4x Quadro P4000"],
      "nvidia_driver": "synthetic", "cuda_container_capability": "unknown",
@@ -263,14 +274,20 @@ for unsafe_ping in (-1, 60001, True, float("nan"), float("inf"), "84"):
 # reconciliation helper. Runtime telemetry is useful for owner status answers,
 # but raw/unrecognized upstream fields must remain excluded.
 os.environ.update({
-    "HADES_PROXMOX_RESOURCES_URLS": "https://pve.example.test/cluster/resources",
-    "HADES_PROXMOX_TOKEN_FILES": "/run/synthetic-proxmox-token",
-    "HADES_PROXMOX_TOKEN_IDS": "svc-hades-ro@pve!synthetic",
+    "HADES_PROXMOX_RESOURCES_URLS": "https://pve-a.example.test/cluster/resources,https://pve-b.example.test/cluster/resources",
+    "HADES_PROXMOX_TOKEN_FILES": "/run/synthetic-proxmox-a,/run/synthetic-proxmox-b",
+    "HADES_PROXMOX_TOKEN_IDS": "svc-hades-ro@pve!synthetic-a,svc-hades-ro@pve!synthetic-b",
     "HADES_NETBOX_DEVICES_URL": "https://netbox.example.test/api/dcim/devices/",
     "HADES_NETBOX_SERVICES_URL": "https://netbox.example.test/api/ipam/services/",
     "HADES_KUMA_STATUS_URL": "https://status.example.test/api/status-page/heartbeat/hades-status",
 })
 original_fetch = server._fetch
+try:
+    original_fetch("https://reader:sentinel-private-value@example.test/api")
+except ValueError as exc:
+    assert "sentinel-private-value" not in str(exc)
+else:
+    raise AssertionError("credential-bearing source URLs must be rejected")
 runtime_fixture = {
     "type": "qemu", "vmid": 802, "name": "hades-core", "node": "Erebus",
     "status": "running", "cpu": 0.25, "maxcpu": 16, "mem": 1073741824,
@@ -286,8 +303,11 @@ service_fixture = {
     "secret_like_field": "must-not-escape",
 }
 def fixture_fetch(url, *_args, **_kwargs):
-    if url == "https://pve.example.test/cluster/resources":
+    if url == "https://pve-a.example.test/cluster/resources":
         return {"data": [runtime_fixture]}
+    if url == "https://pve-b.example.test/cluster/resources":
+        from urllib.error import URLError
+        raise URLError("https://reader:sentinel-private-value@example.test/api token=sentinel-private-value")
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": [device_fixture]}
     if url == "https://netbox.example.test/api/ipam/services/":
@@ -297,8 +317,15 @@ def fixture_fetch(url, *_args, **_kwargs):
     raise AssertionError(f"unexpected synthetic adapter URL: {url}")
 server._fetch = fixture_fetch
 summary = server.homelab_summary()
-assert summary["status"] == "OK", summary
+assert summary["status"] == "PARTIAL", summary
 assert summary["source_counts"]["proxmox_runtime_rows"] == 1, summary
+assert summary["sources"]
+assert {row["status"] for row in summary["sources"] if row["source"].startswith("Proxmox[")} == {"HEALTHY", "UNAVAILABLE"}
+assert all(row["observation_scope"] == "source_read" for row in summary["sources"] if row["source"].startswith("Proxmox["))
+assert any(row.get("status") == "DEGRADED" for row in summary["sources"] if row["source"] == "Proxmox")
+assert summary["errors"] == ["Proxmox[2] unavailable"], summary["errors"]
+assert "sentinel-private-value" not in str(summary)
+assert all(isinstance(row.get("retrieved_at"), str) for row in summary["sources"] if row.get("duration_ms") is not None)
 runtime_row = next(row for row in summary["resources"] if row["name"] == "hades-core")
 assert runtime_row["runtime"] == {
     "name": "hades-core", "node": "Erebus", "type": "qemu", "vmid": 802,
@@ -320,6 +347,7 @@ print("PASS homelab MCP summary retains bounded runtime telemetry without unrela
 
 result = server.homelab_compute_capabilities()
 assert result["status"] == "OK"
+assert result["freshness"] == "FRESH"
 assert result["read_only"] is True
 assert result["authority"]["runtime"] == "Proxmox"
 assert result["availability_not_provided"] is True
@@ -330,6 +358,21 @@ assert rows["tartarus"]["gpus"] == ["4x Quadro P4000"]
 assert rows["hypnos"]["gpus"] == ["2x Quadro P4000"]
 assert rows["hermes"]["gpus"] == ["2x RTX 2080"]
 assert "does not imply current availability" in result["placement_rule"]
+matrix_doc = json.loads(matrix_path.read_text())
+matrix_doc["observed_at"] = (datetime.now(timezone.utc) - timedelta(days=8)).isoformat()
+matrix_path.write_text(json.dumps(matrix_doc), encoding="utf-8")
+stale_matrix = server.homelab_compute_capabilities()
+assert stale_matrix["status"] == "STALE"
+assert stale_matrix["freshness"] == "STALE"
+assert stale_matrix["machines"] and stale_matrix["availability_not_provided"] is True
+fresh_summary = server.homelab_summary
+server.homelab_summary = lambda: {"status": "OK"}
+assert server.homelab_owner_snapshot()["status"] == "PARTIAL"
+server.homelab_summary = fresh_summary
+unknown_matrix = dict(matrix_doc)
+unknown_matrix.pop("observed_at")
+matrix_path.write_text(json.dumps(unknown_matrix), encoding="utf-8")
+assert server.homelab_compute_capabilities()["status"] == "UNKNOWN"
 os.environ.pop("HADES_CAPABILITY_MATRIX_FILE", None)
 assert server.homelab_compute_capabilities()["status"] == "UNAVAILABLE"
 

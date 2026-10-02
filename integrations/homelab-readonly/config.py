@@ -48,11 +48,15 @@ def source_specs() -> tuple[tuple[str, str], ...]:
     netbox_base = os.environ.get("HADES_NETBOX_URL", "").rstrip("/")
     kuma_base = os.environ.get("HADES_UPTIME_KUMA_URL", "").rstrip("/")
     kuma_slug = os.environ.get("HADES_UPTIME_KUMA_STATUS_SLUG", "").strip("/")
+    try:
+        proxmox = proxmox_specs()
+    except ValueError:
+        # A bad Proxmox endpoint list must not prevent independent NetBox or
+        # Kuma reads. homelab_summary reports the Proxmox configuration error
+        # separately while continuing with these sources.
+        proxmox = ()
     return (
-        (
-            proxmox_specs()[0][0] if proxmox_specs() else "",
-            proxmox_specs()[0][1] if proxmox_specs() else "",
-        ),
+        proxmox[0] if proxmox else ("", ""),
         (
             os.environ.get("HADES_NETBOX_DEVICES_URL", "")
             or (urljoin(f"{netbox_base}/", "api/dcim/devices/") if netbox_base else ""),

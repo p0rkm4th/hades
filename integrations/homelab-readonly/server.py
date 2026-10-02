@@ -5,8 +5,11 @@ from __future__ import annotations
 import json
 import os
 import ssl
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
+from urllib.parse import urlsplit
 
 import anyio
 import yaml
@@ -14,7 +17,7 @@ from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 
-from reconcile import summarize
+from reconcile import _freshness, summarize
 from catalog import propose_inventory_candidates
 from scan import DEFAULT_PORTS, run_bounded_scan
 from config import netbox_services_spec, proxmox_specs, proxmox_token_ids, source_specs
@@ -99,8 +102,11 @@ def _read_token(path: str) -> str:
 def _fetch(url: str, token_file: str = "", ca_file: str = "", proxmox_token_id: str = "") -> dict:
     if not url:
         raise ValueError("homelab source is not configured")
-    if not url.startswith(("http://", "https://")):
+    parsed = urlsplit(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise ValueError("homelab source must use HTTP(S)")
+    if parsed.username or parsed.password or parsed.fragment:
+        raise ValueError("homelab source URL must not contain credentials or a fragment")
     headers = {"Accept": "application/json"}
     if token_file:
         token = _read_token(token_file)
@@ -118,6 +124,53 @@ def _fetch(url: str, token_file: str = "", ca_file: str = "", proxmox_token_id: 
     result = json.loads(body)
     if not isinstance(result, dict):
         raise ValueError("homelab response must be a JSON object")
+    return result
+
+
+def _source_error_code(exc: BaseException) -> str:
+    """Return useful failure classes without exposing exception text or URLs."""
+    from urllib.error import HTTPError, URLError
+
+    if isinstance(exc, HTTPError):
+        return f"HTTP_{exc.code}"
+    if isinstance(exc, URLError) and isinstance(exc.reason, TimeoutError):
+        return "TIMEOUT"
+    if isinstance(exc, (TimeoutError,)):
+        return "TIMEOUT"
+    if isinstance(exc, URLError):
+        return "SOURCE_UNREACHABLE"
+    if isinstance(exc, json.JSONDecodeError):
+        return "INVALID_JSON"
+    if isinstance(exc, ValueError):
+        return "INVALID_RESPONSE_OR_CONFIGURATION"
+    if isinstance(exc, OSError):
+        return "SOURCE_IO_ERROR"
+    return "SOURCE_ERROR"
+
+
+def _retrieved_at() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _source_result(
+    name: str,
+    status: str,
+    started: float,
+    *,
+    rows: int | None = None,
+    error_code: str | None = None,
+) -> dict:
+    result = {
+        "source": name,
+        "status": status,
+        "observation_scope": "source_read",
+        "retrieved_at": _retrieved_at(),
+        "duration_ms": round((time.monotonic() - started) * 1000, 1),
+    }
+    if rows is not None:
+        result["rows"] = rows
+    if error_code:
+        result["error_code"] = error_code
     return result
 
 
@@ -173,26 +226,78 @@ def _kuma_config_url() -> str:
 def homelab_summary() -> dict:
     values: list[dict | None] = []
     errors: list[str] = []
+    source_results: list[dict] = []
     proxmox_value: dict | None = None
     netbox_value: dict | None = None
+    rows: list[dict] = []
+    proxmox_specs_value = ()
+    token_ids: tuple[str, ...] = ()
     try:
-        rows: list[dict] = []
-        ca_file = os.environ.get("HADES_PROXMOX_CA_FILE", "")
+        proxmox_specs_value = proxmox_specs()
         token_ids = proxmox_token_ids()
-        for index, (url, token_file) in enumerate(proxmox_specs()):
-            if not url:
-                continue
+    except (OSError, ValueError) as exc:
+        proxmox_specs_value = ()
+        started = time.monotonic()
+        source_results.append(_source_result(
+            "Proxmox configuration", "UNAVAILABLE", started,
+            error_code=_source_error_code(exc),
+        ))
+        errors.append("Proxmox configuration unavailable")
+    ca_file = os.environ.get("HADES_PROXMOX_CA_FILE", "")
+    successful_proxmox_sources = 0
+    failed_proxmox_sources = 0
+    for index, (url, token_file) in enumerate(proxmox_specs_value):
+        source_name = f"Proxmox[{index + 1}]"
+        started = time.monotonic()
+        if not url:
+            source_results.append(_source_result(source_name, "NOT_CONFIGURED", started))
+            continue
+        try:
             result = _fetch(url, token_file, ca_file, token_ids[index])
-            rows.extend(row for row in result.get("data", []) if isinstance(row, dict))
-        if rows or proxmox_specs():
-            proxmox_value = {"data": rows}
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
-        errors.append(str(exc))
+            source_rows = [row for row in result.get("data", []) if isinstance(row, dict)]
+            rows.extend(source_rows)
+            successful_proxmox_sources += 1
+            source_results.append(_source_result(
+                source_name, "HEALTHY", started, rows=len(source_rows),
+            ))
+        except (OSError, ValueError, UnicodeError) as exc:
+            failed_proxmox_sources += 1
+            source_results.append(_source_result(
+                source_name, "UNAVAILABLE", started,
+                error_code=_source_error_code(exc),
+            ))
+            errors.append(f"{source_name} unavailable")
+    if successful_proxmox_sources:
+        proxmox_value = {"data": rows}
+    if failed_proxmox_sources and successful_proxmox_sources:
+        source_results.append({
+            "source": "Proxmox",
+            "status": "DEGRADED",
+            "observation_scope": "source_read_aggregate",
+            "available_endpoints": successful_proxmox_sources,
+            "unavailable_endpoints": failed_proxmox_sources,
+        })
+    elif successful_proxmox_sources and not failed_proxmox_sources:
+        source_results.append({
+            "source": "Proxmox",
+            "status": "HEALTHY",
+            "observation_scope": "source_read_aggregate",
+            "available_endpoints": successful_proxmox_sources,
+            "unavailable_endpoints": 0,
+        })
+    elif not proxmox_specs_value and not any(
+        row.get("source") == "Proxmox configuration" for row in source_results
+    ):
+        source_results.append({
+            "source": "Proxmox", "status": "NOT_CONFIGURED",
+            "observation_scope": "source_read_aggregate",
+        })
     values.append(proxmox_value)
     for label, (url, token_file) in zip(("NetBox", "Uptime Kuma"), source_specs()[1:], strict=True):
+        started = time.monotonic()
         if not url:
             values.append(None)
-            errors.append(f"{label} source is not configured")
+            source_results.append(_source_result(label, "NOT_CONFIGURED", started))
             continue
         try:
             value = _fetch(url, token_file)
@@ -204,23 +309,35 @@ def homelab_summary() -> dict:
                 merged = dict(config_value)
                 merged.update(value)
                 value = merged
-            values.append(_normalize_kuma_status(value) if label == "Uptime Kuma" else value)
+            normalized = _normalize_kuma_status(value) if label == "Uptime Kuma" else value
+            values.append(normalized)
+            count = len(normalized.get("monitors", [])) if label == "Uptime Kuma" else len(normalized.get("results", []))
+            source_results.append(_source_result(label, "HEALTHY", started, rows=count))
             if label == "NetBox":
                 netbox_value = value
-        except (OSError, ValueError, json.JSONDecodeError) as exc:
+        except (OSError, ValueError, UnicodeError) as exc:
             values.append(None)
-            errors.append(str(exc))
+            source_results.append(_source_result(
+                label, "UNAVAILABLE", started,
+                error_code=_source_error_code(exc),
+            ))
+            errors.append(f"{label} unavailable")
     result = summarize(*values)
     from services import project_netbox_services
 
     service_url, service_token_file = netbox_services_spec()
     if service_url:
+        started = time.monotonic()
         try:
             service_payload = _fetch(service_url, service_token_file)
             result["service_catalog"] = project_netbox_services(
                 service_payload, netbox_value
             )
-        except (OSError, ValueError, json.JSONDecodeError):
+            source_results.append(_source_result(
+                "NetBox application services", "HEALTHY", started,
+                rows=len(result["service_catalog"].get("services", [])),
+            ))
+        except (OSError, ValueError, UnicodeError) as exc:
             result["service_catalog"] = {
                 "status": "UNAVAILABLE",
                 "source": "NetBox application services",
@@ -229,6 +346,11 @@ def homelab_summary() -> dict:
                 "writes_performed": False,
                 "limitation": "NetBox application-service inventory could not be read.",
             }
+            source_results.append(_source_result(
+                "NetBox application services", "UNAVAILABLE", started,
+                error_code=_source_error_code(exc),
+            ))
+            errors.append("NetBox application services unavailable")
     else:
         result["service_catalog"] = {
             "status": "NOT_CONFIGURED",
@@ -238,6 +360,10 @@ def homelab_summary() -> dict:
             "writes_performed": False,
             "limitation": "NetBox application-service endpoint is not configured.",
         }
+        source_results.append({
+            "source": "NetBox application services", "status": "NOT_CONFIGURED",
+            "observation_scope": "source_read",
+        })
     result["source_counts"]["netbox_service_rows"] = len(
         result["service_catalog"].get("services", [])
     )
@@ -294,6 +420,8 @@ def homelab_summary() -> dict:
     }
     if errors:
         result["errors"] = errors
+        result["status"] = "PARTIAL"
+    result["sources"] = source_results
     return result
 
 
@@ -331,6 +459,12 @@ def homelab_compute_capabilities() -> dict:
     machines = document.get("machines") if isinstance(document, dict) else None
     if not isinstance(machines, list):
         raise ValueError("capability matrix machines must be a list")
+    observed_at = document.get("observed_at")
+    freshness = _freshness(
+        observed_at,
+        now=datetime.now(timezone.utc),
+        max_age=timedelta(days=7),
+    )
     rows = []
     for machine in machines:
         if not isinstance(machine, dict) or not isinstance(machine.get("name"), str):
@@ -348,10 +482,11 @@ def homelab_compute_capabilities() -> dict:
         row["matrix_status"] = machine.get("runtime_status")
         rows.append(row)
     return {
-        "status": "OK",
+        "status": "OK" if freshness == "FRESH" else freshness,
         "source": "tracked observed capability matrix",
         "availability_not_provided": True,
-        "observed_at": document.get("observed_at"),
+        "observed_at": observed_at,
+        "freshness": freshness,
         "authority": {
             "hardware": "observed capability matrix",
             "runtime": "Proxmox",

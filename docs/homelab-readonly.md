@@ -220,7 +220,11 @@ capability matrix while preserving source authority: Proxmox supplies current
 runtime, NetBox intended inventory, Kuma observed availability, and the matrix
 only supplies supplemental hardware evidence. A GPU cannot be treated as
 available, CUDA-capable, or placeable without current runtime and acceptance
-evidence. The deployed owner profile retains separate bounded discovery tools;
+evidence. Hardware-matrix observations older than seven days are returned as
+`STALE`; a missing, malformed, or future observation time is `UNKNOWN`. The
+bounded hardware facts remain available as historical inventory, but an owner
+snapshot containing stale or unknown hardware evidence is `PARTIAL`. The
+deployed owner profile retains separate bounded discovery tools;
 it does not expose a broad shell or homelab control plane.
 
 Owner requests for a server IP, port, endpoint, or firewall destination first
@@ -233,6 +237,20 @@ provisioning, and the response states that no server or firewall change was
 made. A follow-up such as “Perfect, continue” closes against that same
 no-action result instead of falling through to a generic response. Household
 sessions cannot use this owner endpoint shortcut.
+
+Each `homelab_summary` response includes per-source read provenance:
+`retrieved_at` in UTC, request duration, row count, and a bounded source-read
+status. `HEALTHY` at this level means the API read succeeded; it does not mean
+that the monitored hosts or services are healthy. Uptime Kuma's `last_updated`
+remains the time of its health observation and is kept distinct from the time
+HADES retrieved the status page. With multiple
+independent Proxmox endpoints, each endpoint is read separately; a failed
+endpoint does not discard rows from the others. The Proxmox aggregate and the
+whole summary become `DEGRADED` / `PARTIAL` when any configured endpoint fails.
+Diagnostics use stable error categories and never include raw upstream
+exception text or URLs, which can contain private endpoint details. A malformed
+Proxmox endpoint list likewise does not prevent independent NetBox and Kuma
+reads.
 
 References: [Proxmox API-token monitoring example](https://pve.proxmox.com/pve-docs/pve-admin-guide.pdf),
 [Proxmox token permission separation and ACL rules](https://github.com/proxmox/pve-docs/blob/master/pveum.adoc),
