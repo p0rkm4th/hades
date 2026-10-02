@@ -4884,20 +4884,30 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         re.IGNORECASE,
     ))
     broad_owner_status_intent = bool(re.search(
-        r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)|"
-        r"are\s+all\s+(?:the\s+)?computers?\s+(?:okay|ok|all\s+right|good)|"
+        r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
+        r"is\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
+        r"are\s+(?:(?:all|the|my|our)\s+)?(?:computers?|machines?|servers?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
         r"what(?:['’]s|\s+is)\s+down|anything\s+(?:down|dying|wrong|broken)|"
         r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)|"
+        r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)\s+with\s+(?:my\s+|our\s+|the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)|"
         r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
         r"why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
         r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$",
         text,
         re.IGNORECASE,
     ))
-    if broad_owner_status_intent and scope != "owner":
+    household_game_health_intent = bool(
+        scope == "household"
+        and re.search(r"\bminecraft\b", text, re.IGNORECASE)
+        and _hades_service_health_target(text)
+    )
+    household_node_status_intent = bool(
+        scope != "owner" and _hades_homelab_target_from_question(text)
+    )
+    if scope != "owner" and (broad_owner_status_intent or household_node_status_intent) and not household_game_health_intent:
         return (
-            "I can't provide the overall homelab status from this account. "
-            "I can check an approved household service by name."
+            "I can't verify private infrastructure or computer status from this account. "
+            "I can check approved household services, such as the game server."
         )
     # Explicit public research has a separate, privacy-checked route. Source
     # vocabulary such as "hosts" or "servers" must not turn that request into
@@ -5178,12 +5188,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
             return placement_response
         resources = summary.get("resources", []) if isinstance(summary, dict) else []
         service_response = _hades_service_monitor_response(text, resources)
-        household_game_health = bool(
-            scope == "household"
-            and re.search(r"\bminecraft\b", text, re.IGNORECASE)
-            and _hades_service_health_target(text)
-        )
-        if household_game_health:
+        if household_game_health_intent:
             if not service_response:
                 return "I don't have a current check for the game server, so I can't confirm whether it's working."
             lowered_service_response = service_response.casefold()

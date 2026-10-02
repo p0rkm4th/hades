@@ -58,7 +58,8 @@ homelab_intent = namespace['_HADES_HOMELAB_INTENT']
 for prompt in (
     'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
     'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
-    'Are all the computers okay?', 'Is Minecraft working?',
+    'Are all the computers okay?', 'Is the homelab okay?', 'Are my computers okay?',
+    'Is Minecraft working?',
 ):
     assert homelab_intent.search(prompt), f'owner homelab health intent missed {prompt!r}'
 target = namespace['_hades_service_health_target']
@@ -335,7 +336,9 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'Where is Agent Zero?', 'synthetic-owner', 'owner'
         )
         assert direct_read('Where is Agent Zero?', 'synthetic-household', 'household') is None
-        assert direct_read('Is the homelab okay?', 'synthetic-household', 'household') is None
+        assert "can't verify private infrastructure or computer status" in direct_read(
+            'Is the homelab okay?', 'synthetic-household', 'household'
+        )
         routed_endpoint = direct_read(
             request,
             'synthetic-owner', 'owner',
@@ -403,9 +406,13 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             if prompt == 'What changed since yesterday?':
                 assert 'no historical homelab snapshot or change-event source is configured' in answer_text
         household_overall = direct_read('What is down?', 'synthetic-household', 'household')
-        assert "can't provide the overall homelab status from this account" in household_overall, household_overall
+        assert "can't verify private infrastructure or computer status" in household_overall, household_overall
         assert 'Proxmox' not in household_overall and 'NetBox' not in household_overall, household_overall
         assert direct_read('Is everything okay?', 'synthetic-household', 'household') == household_overall
+        for prompt in ('Is the homelab okay?', 'Are my computers okay?', 'Is Tartarus alive?', "What's Tartarus doing?"):
+            restricted = direct_read(prompt, 'synthetic-household', 'household')
+            assert "can't verify private infrastructure or computer status" in restricted, restricted
+            assert 'Tartarus' not in restricted and 'Proxmox' not in restricted, restricted
         write_broad_summary(
             [{'name': 'service-netbox', 'status': 'down', 'freshness': 'FRESH'}],
             sources=[{'source': 'NetBox', 'status': 'HEALTHY'}],
@@ -477,7 +484,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'What is Compute Node A running?', 'synthetic-owner', 'owner'
         )
         assert running_activity.startswith('NODE_ACTIVITY:Compute Node A'), running_activity
-        assert 'owner session' in direct_read(
+        assert "can't verify private infrastructure or computer status" in direct_read(
             "What's Compute Node A doing right now?", 'synthetic-household', 'household'
         )
         placement_route = direct_read(
@@ -525,9 +532,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'Which machine is running HADES?', 'synthetic-owner', 'owner'
         )
         assert 'VM 802) is running on Erebus' in core_placement_route, core_placement_route
-        assert direct_read(
+        household_placement = direct_read(
             'Which machine is running HADES?', 'synthetic-household', 'household'
-        ) is None
+        )
+        assert 'private infrastructure or computer status' in household_placement, household_placement
+        assert 'Erebus' not in household_placement and 'VM 802' not in household_placement, household_placement
     finally:
         if old_workdir is None:
             os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
