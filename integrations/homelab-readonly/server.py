@@ -1173,10 +1173,16 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
                 str(model.get("name")) for model in loaded
                 if isinstance(model, dict) and model.get("name")
             ))[:8]
-            result += " Currently loaded: " + (", ".join(loaded_names) if loaded_names else "none reported") + "."
+            result += " Provider-reported residency: " + (
+                ", ".join(loaded_names) if loaded_names else "no loaded models reported"
+            ) + "."
         else:
             result += " Current loaded-model state is unavailable."
-        return result + " This does not establish host CPU/GPU utilization or prove a generation request works."
+        return (
+            result
+            + " Provider-reported residency does not prove GPU execution or a successful generation, "
+            "and this read does not measure host CPU/GPU utilization."
+        )
 
     if placement_intent:
         candidates = []
@@ -1304,12 +1310,16 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
             })
             result = f"{', '.join(names[:3])} is listed by {', '.join(locations[:4])}."
             if loaded_locations:
-                result += f" Loaded now on {', '.join(loaded_locations[:4])}."
+                result += f" Provider reports it resident on {', '.join(loaded_locations[:4])}."
             elif any(label in loaded_unknown_labels for label in locations):
                 result += " Current loaded-model state is unavailable for at least one matching provider."
             else:
                 result += " It is not currently reported as loaded."
-            return result + " This checks the provider catalog and residency APIs, not a generation request."
+            return (
+                result
+                + " This checks provider catalog and residency APIs; it does not prove GPU execution "
+                "or that a generation request succeeds."
+            )
         if not reachable:
             return "I can't verify that model right now because no configured provider catalog responded."
         result = f"I couldn't find {requested} in the model catalogs that responded."
@@ -1331,14 +1341,18 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
     else:
         result += " No installed models were reported."
     if loaded_names:
-        result += " Loaded now: " + ", ".join(loaded_names) + "."
+        result += " Provider-reported residency: " + ", ".join(loaded_names) + "."
     elif all(endpoint.get("loaded_status") == "CURRENT" for endpoint in endpoints if isinstance(endpoint, dict)):
         result += " No models are currently reported as loaded."
     else:
         result += " Current loaded-model state is partly unavailable."
     if unavailable:
         result += f" I couldn't check {unavailable} other configured provider(s)."
-    return result + " Catalog access does not prove a generation request works or establish free GPU capacity."
+    return (
+        result
+        + " Catalog and residency reads do not prove GPU execution or a successful generation, "
+        "and they do not establish free GPU capacity."
+    )
 
 
 def resolve_inference_node_labels(inventory: dict) -> dict[str, str]:

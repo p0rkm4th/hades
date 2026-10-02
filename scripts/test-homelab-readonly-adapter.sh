@@ -604,7 +604,8 @@ where_answer = server.format_inference_inventory_response(
     "Where's sample:small?", inference, summary_names,
 )
 assert "sample:small is listed by GPU A" in where_answer, where_answer
-assert "Loaded now on GPU A" in where_answer, where_answer
+assert "Provider reports it resident on GPU A" in where_answer, where_answer
+assert "does not prove GPU execution" in where_answer, where_answer
 summary_names["capability_freshness"] = "FRESH"
 summary_names["capability_machines"] = [{
     "name": "GPU A", "role": "deep inference lane",
@@ -634,8 +635,9 @@ node_activity_answer = server.format_inference_inventory_response(
     "What's GPU A doing right now?", inference, summary_names,
 )
 assert "inference endpoint linked to GPU A is responding" in node_activity_answer, node_activity_answer
-assert "Currently loaded: sample:small" in node_activity_answer, node_activity_answer
-assert "does not establish host CPU/GPU utilization" in node_activity_answer, node_activity_answer
+assert "Provider-reported residency: sample:small" in node_activity_answer, node_activity_answer
+assert "does not prove GPU execution" in node_activity_answer, node_activity_answer
+assert "does not measure host CPU/GPU utilization" in node_activity_answer, node_activity_answer
 proxmox_node_summary = {"resources": [{
     "name": "Runtime Node B", "runtime_status": "online",
     "inventory": {"name": "Runtime Node B", "role": "virtualization host"},
@@ -662,7 +664,7 @@ summary_answer = server.format_inference_inventory_response(
     "What models are available?", inference, summary_names,
 )
 assert "Installed: sample:small" in summary_answer, summary_answer
-assert "does not prove a generation request works" in summary_answer
+assert "do not prove GPU execution" in summary_answer
 assert server._bounded_text("model-alpha\nInjected") == "model-alpha Injected"
 assert all(timeout == 4 for _, timeout in inference_calls)
 assert [url.endswith("/api/tags") for url, _ in inference_calls] == [True, False]
