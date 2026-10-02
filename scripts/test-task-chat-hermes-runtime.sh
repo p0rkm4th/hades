@@ -178,6 +178,19 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     }, registry.calls
 
     registry.calls.clear()
+    natural_owner_result = owner_agent.run_conversation(
+        "What's Synthetic Node B doing right now?", conversation_history=[]
+    )
+    assert natural_owner_result.get("completed") is True and natural_owner_result.get("api_calls") == 0, natural_owner_result
+    assert "Observed hardware inventory lists Synthetic Node B." in natural_owner_result["final_response"], natural_owner_result
+    assert "can't say whether it's online" in natural_owner_result["final_response"], natural_owner_result
+    assert registry.calls[:2] == ["homelab_inference_inventory", "homelab_owner_snapshot"], registry.calls
+    assert set(registry.calls) <= {
+        "homelab_inference_inventory", "homelab_owner_snapshot",
+        "homelab_summary", "homelab_compute_capabilities",
+    }, registry.calls
+
+    registry.calls.clear()
     household_agent = agent_class(
         gateway_session_key=f"hades-user-{beta}",
         session_id="synthetic-composed-named-node-household",
