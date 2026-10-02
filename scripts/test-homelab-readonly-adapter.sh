@@ -102,12 +102,14 @@ with tempfile.TemporaryDirectory() as temp_dir:
     link_file.write_text(json.dumps({"links": [
         {"source_identity": "proxmox:pve-a:qemu:101", "netbox_device_id": 75},
         {"source_identity": "kuma:monitor:7", "netbox_device_id": 75},
+        {"source_identity": "inference:gpu-lane-a", "netbox_device_id": 75},
     ]}), encoding="utf-8")
     link_file.chmod(0o600)
     os.environ["HADES_HOMELAB_IDENTITY_LINKS_FILE"] = str(link_file)
     assert homelab_config.load_identity_links() == {
         "proxmox:pve-a:qemu:101": "netbox:device:75",
         "kuma:monitor:7": "netbox:device:75",
+        "inference:gpu-lane-a": "netbox:device:75",
     }
     link_file.chmod(0o644)
     try:
@@ -161,6 +163,43 @@ assert config.source_specs() == (
 assert config.netbox_services_spec() == (
     "https://netbox.example.test/api/ipam/services/", "",
 )
+os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([{
+    "id": "fast-lane-a", "url": "https://inference.example.test",
+    "token_file": "/run/hades/inference.token",
+}])
+assert config.inference_endpoint_specs() == ({
+    "id": "fast-lane-a", "provider": "ollama", "url": "https://inference.example.test",
+    "token_file": "/run/hades/inference.token", "ca_file": "",
+},)
+os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([{
+    "id": "fast-lane-a", "url": "http://inference.example.test",
+    "token_file": "/run/hades/inference.token",
+}])
+try:
+    config.inference_endpoint_specs()
+except ValueError as exc:
+    assert "require HTTPS" in str(exc)
+else:
+    raise AssertionError("inference credentials over HTTP were accepted")
+os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([{
+    "id": "fast-lane-a", "provider": [], "url": "https://inference.example.test",
+}])
+try:
+    config.inference_endpoint_specs()
+except ValueError as exc:
+    assert "provider must be" in str(exc)
+else:
+    raise AssertionError("invalid inference provider kind was accepted")
+os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([{
+    "id": "fast-lane-a", "url": "https://user:password@inference.example.test",
+}])
+try:
+    config.inference_endpoint_specs()
+except ValueError as exc:
+    assert "without credentials" in str(exc)
+else:
+    raise AssertionError("credential-bearing inference endpoint URL was accepted")
+os.environ.pop("HADES_INFERENCE_ENDPOINTS_JSON", None)
 os.environ["HADES_PROXMOX_RESOURCES_URLS"] = "https://a.example.test/r,https://b.example.test/r"
 os.environ["HADES_PROXMOX_TOKEN_FILES"] = "/run/one,/run/two,/run/extra"
 try:
@@ -287,8 +326,8 @@ matrix_path.write_text(json.dumps({"observed_at": datetime.now(timezone.utc).iso
      "cpu": "synthetic", "ram_gib": 64, "gpus": ["2x Synthetic GPU B"],
      "nvidia_driver": "synthetic", "cuda_container_capability": "unknown",
      "runtime_status": "observed-only", "ssh": "synthetic", "role": "inference"},
-    {"name": "hermes", "address": "192.0.2.152", "os": "Linux",
-     "cpu": "synthetic", "ram_gib": 64, "gpus": ["2x RTX 2080"],
+    {"name": "gpu-c", "address": "192.0.2.152", "os": "Linux",
+     "cpu": "synthetic", "ram_gib": 64, "gpus": ["2x Synthetic GPU C"],
      "nvidia_driver": "synthetic", "cuda_container_capability": "unknown",
      "runtime_status": "observed-only", "ssh": "synthetic", "role": "inference"},
 ]}), encoding="utf-8")
@@ -297,6 +336,7 @@ os.environ["HADES_CAPABILITY_MATRIX_FILE"] = str(matrix_path)
 root = Path("integrations/homelab-readonly").resolve()
 sys.path.insert(0, str(root))
 import server
+assert "homelab_inference_inventory" in {tool.name for tool in server.TOOLS}
 
 os.environ.update({
     "HADES_UPTIME_KUMA_URL": "https://status.example.test",
@@ -430,7 +470,7 @@ assert all("runtime_status" not in row for row in result["machines"])
 rows = {row["name"]: row for row in result["machines"]}
 assert rows["gpu-a"]["gpus"] == ["4x Synthetic GPU A"]
 assert rows["gpu-b"]["gpus"] == ["2x Synthetic GPU B"]
-assert rows["hermes"]["gpus"] == ["2x RTX 2080"]
+assert rows["gpu-c"]["gpus"] == ["2x Synthetic GPU C"]
 assert "does not imply current availability" in result["placement_rule"]
 matrix_doc = json.loads(matrix_path.read_text())
 matrix_doc["observed_at"] = (datetime.now(timezone.utc) - timedelta(days=8)).isoformat()
@@ -475,6 +515,124 @@ assert partial["answer_contract"]["inventory_is_not_liveness"] is True
 assert partial["read_only"] is True
 server.homelab_summary = original_summary
 server.homelab_compute_capabilities = original_compute
+
+# Provider-native inference reads must retain current loaded-model state and
+# source identity without treating catalog size as free GPU capacity.
+identity_file = matrix_dir / "identity-links.json"
+identity_file.write_text(json.dumps({"links": [
+    {"source_identity": "inference:gpu-lane-a", "netbox_device_id": 75},
+]}), encoding="utf-8")
+identity_file.chmod(0o600)
+os.environ["HADES_HOMELAB_IDENTITY_LINKS_FILE"] = str(identity_file)
+os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([{
+    "id": "gpu-lane-a", "url": "http://inference.example.test",
+}])
+inference_calls = []
+def inference_fetch(url, token_file="", ca_file="", proxmox_token_id="", timeout_seconds=10):
+    inference_calls.append((url, timeout_seconds))
+    if url.endswith("/api/tags"):
+        return {"models": [{
+            "name": "sample:small", "modified_at": "2026-10-01T00:00:00Z",
+            "size": 1024, "digest": "synthetic-digest",
+            "details": {"family": "sample", "parameter_size": "8B", "quantization_level": "Q4"},
+        }]}
+    if url.endswith("/api/ps"):
+        return {"models": [{
+            "name": "sample:small", "size": 1024, "size_vram": 768,
+            "expires_at": "2026-10-01T00:10:00Z",
+        }]}
+    raise AssertionError("unexpected inference API path")
+server._fetch = inference_fetch
+inference = server.homelab_inference_inventory()
+assert inference["status"] == "READABLE", (inference, inference_calls)
+endpoint = inference["endpoints"][0]
+assert endpoint["source_identity"] == "inference:gpu-lane-a"
+assert endpoint["node_identity"] == "netbox:device:75"
+assert endpoint["identity_status"] == "LINKED"
+assert endpoint["catalog_freshness"] == "LIVE"
+assert endpoint["models"][0]["name"] == "sample:small"
+assert endpoint["loaded_models"][0]["size_vram_bytes"] == 768, inference
+os.environ["HADES_NETBOX_URL"] = "https://netbox.example.test"
+def netbox_device_fetch(url, *args, **kwargs):
+    assert url.endswith("/api/dcim/devices/75/")
+    return {"id": 75, "name": "GPU A"}
+server._fetch = netbox_device_fetch
+device_labels = server.resolve_inference_node_labels(inference)
+assert device_labels == {"netbox:device:75": "GPU A"}
+summary_names = {"resources": [{
+    "identity": {"canonical_id": "netbox:device:75"},
+    "inventory": {"name": "GPU A"},
+}]}
+where_answer = server.format_inference_inventory_response(
+    "Where's sample:small?", inference, summary_names,
+)
+assert "sample:small is listed by GPU A" in where_answer, where_answer
+assert "Loaded now on GPU A" in where_answer, where_answer
+summary_answer = server.format_inference_inventory_response(
+    "What models are available?", inference, summary_names,
+)
+assert "Installed: sample:small" in summary_answer, summary_answer
+assert "does not prove a generation request works" in summary_answer
+assert server._bounded_text("model-alpha\nInjected") == "model-alpha Injected"
+assert all(timeout == 4 for _, timeout in inference_calls)
+assert [url.endswith("/api/tags") for url, _ in inference_calls] == [True, False]
+
+# OpenAI-compatible endpoints expose a configured model catalog but do not
+# define a standard current-residency API. Never present the catalog as loaded.
+os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([{
+    "id": "fast-lane-b", "provider": "openai-compatible",
+    "url": "http://inference.example.test",
+}])
+def compatible_fetch(url, *args, **kwargs):
+    assert url.endswith("/v1/models")
+    return {"data": [{"id": "sample:fast"}]}
+server._fetch = compatible_fetch
+compatible = server.homelab_inference_inventory()
+assert compatible["status"] == "READABLE"
+compatible_endpoint = compatible["endpoints"][0]
+assert compatible_endpoint["provider"] == "openai-compatible"
+assert compatible_endpoint["models"][0]["name"] == "sample:fast"
+assert compatible_endpoint["loaded_status"] == "UNSUPPORTED"
+assert compatible_endpoint["loaded_models"] == []
+compatible_answer = server.format_inference_inventory_response(
+    "What models are available?", compatible, {},
+)
+assert "sample:fast" in compatible_answer
+assert "partly unavailable" in compatible_answer
+assert "No models are currently reported as loaded" not in compatible_answer
+for question in ("Which GPUs are free?", "Where should I run another model?", "Can this handle a 20 GB model?"):
+    answer = server.format_inference_inventory_response(question, compatible, {})
+    assert "can't determine which GPU has room" in answer, (question, answer)
+    assert "free-capacity evidence" in answer
+
+os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([{
+    "id": "gpu-lane-a", "url": "http://inference.example.test",
+}])
+def partial_inference_fetch(url, *args, **kwargs):
+    if url.endswith("/api/tags"):
+        return {"models": [{"name": "sample:small", "size": 1024}]}
+    raise TimeoutError("synthetic source timeout")
+server._fetch = partial_inference_fetch
+partial_inference = server.homelab_inference_inventory()
+assert partial_inference["status"] == "PARTIAL", partial_inference
+assert partial_inference["endpoints"][0]["status"] == "PARTIAL"
+assert partial_inference["endpoints"][0]["loaded_status"] == "TIMEOUT"
+assert partial_inference["endpoints"][0]["models"]
+
+def unavailable_inference_fetch(_url, *args, **kwargs):
+    raise OSError("synthetic private-value-must-not-escape")
+server._fetch = unavailable_inference_fetch
+unavailable_inference = server.homelab_inference_inventory()
+assert unavailable_inference["status"] == "SOURCE_UNAVAILABLE"
+assert unavailable_inference["endpoints"][0]["error"] == "SOURCE_IO_ERROR"
+assert "private-value-must-not-escape" not in json.dumps(unavailable_inference)
+
+os.environ.pop("HADES_HOMELAB_IDENTITY_LINKS_FILE", None)
+os.environ.pop("HADES_INFERENCE_ENDPOINTS_JSON", None)
+os.environ.pop("HADES_NETBOX_URL", None)
+assert server.homelab_inference_inventory()["status"] == "NOT_CONFIGURED"
+print("PASS provider-native model catalog and residency reads preserve identity and freshness")
+print("PASS inference endpoint partial failure preserves catalog with explicit loaded-state uncertainty")
 print("PASS observed compute capability read is bounded, explicit, and read-only")
 print("PASS owner snapshot preserves partial-source errors and authority boundaries")
 PY

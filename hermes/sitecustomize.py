@@ -4733,6 +4733,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
     if not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
+        r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"
+        r"(?:which|what).{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|where\s+should\s+i\s+(?:run|host|put)|(?:what|which)\s+(?:machine|server|gpu).{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|(?:can|could).{0,60}\b(?:handle|fit|run|host).{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
+        r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"
         r"minecraft|jellyfin)\b|"
         r"\b(?:what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
         r"is\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+(?:alive|online|offline|up|down|running))\b",
@@ -4740,6 +4743,15 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         re.IGNORECASE,
     ):
         return None
+    inference_intent = bool(re.search(
+        r"\b(?:ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running))\b|"
+        r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|\bwhere\s+should\s+i\s+(?:run|host|put)\b|\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
+        r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
+        text,
+        re.IGNORECASE,
+    ))
+    if inference_intent and scope != "owner":
+        return "Detailed model and infrastructure information is available only in an owner session."
     workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
     if not workdir:
         # The generated service already runs from the reconciled repository;
@@ -4772,6 +4784,22 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
             return None
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        if inference_intent:
+            inference = module.homelab_inference_inventory()
+            summary = {}
+            if re.search(
+                r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
+                text,
+                re.IGNORECASE,
+            ):
+                names = module.resolve_inference_node_labels(inference)
+                summary = {"resources": [
+                    {"identity": {"canonical_id": identity}, "inventory": {"name": name}}
+                    for identity, name in names.items()
+                ]}
+            return module.format_inference_inventory_response(
+                text, inference, summary,
+            )
         summary = module.homelab_summary()
         endpoint_response = _hades_service_endpoint_response(
             text,
@@ -5318,6 +5346,9 @@ _HADES_HOMELAB_INTENT = re.compile(
     r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|server(?:s)?|node(?:s)?|"
     r"virtual\s+machine(?:s)?|\bvm\b|container(?:s)?|sandbox(?:es)?|workload(?:s)?|"
     r"website(?:s)?|gpu(?:s)?|"
+    r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"
+    r"(?:which|what).{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|where\s+should\s+i\s+(?:run|host|put)|(?:what|which)\s+(?:machine|server|gpu).{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|(?:can|could).{0,60}\b(?:handle|fit|run|host).{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
+    r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"
     r"ram|free\s+memory|unhealthy|host(?:s)?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
     r"nmap|discov(?:er|y)|ip(?:s)?|mac(?:s)?|what(?:['’]?s| is)\s+running|"
     r"what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
@@ -6779,6 +6810,7 @@ try:
                         "mcp_homelab_readonly_homelab_summary",
                         "mcp_homelab_readonly_homelab_owner_snapshot",
                         "mcp_homelab_readonly_homelab_compute_capabilities",
+                        "mcp_homelab_readonly_homelab_inference_inventory",
                         "mcp_homelab_readonly_homelab_discovery_scan",
                         "mcp_homelab_readonly_homelab_discovery_candidates",
                     },
@@ -6912,6 +6944,11 @@ try:
                 "description": "Read confirmed observed CPU, RAM, and GPU hardware inventory. This tool does not provide liveness: never label a machine online from it; use Proxmox runtime for that. It does not claim CUDA, VRAM, or control authority.",
                 "parameters": {"type": "object", "properties": {}},
                 "call": lambda _args: module.homelab_compute_capabilities(),
+            },
+            "mcp_homelab_readonly_homelab_inference_inventory": {
+                "description": "Read configured provider-native model catalogs from Ollama or OpenAI-compatible endpoints, and loaded-model state from Ollama. Keep endpoint identity, timestamp, and partial failures explicit. Does not infer free GPU capacity or model fit; read-only.",
+                "parameters": {"type": "object", "properties": {}},
+                "call": lambda _args: module.homelab_inference_inventory(),
             },
             "mcp_homelab_readonly_homelab_discovery_scan": {
                 "description": "Run bounded, review-only TCP discovery inside the configured authorized LAN scope.",
@@ -9990,7 +10027,11 @@ try:
                 "inventory, and Uptime Kuma only for observed availability. "
                 "If the request also asks about GPUs or hardware capability, "
                 "call mcp_homelab_readonly_homelab_compute_capabilities after "
-                "the summary. Do not answer from memory and do not claim a "
+                "the summary. If it asks which models are installed, loaded, "
+                "or available from configured inference providers, also call "
+                "mcp_homelab_readonly_homelab_inference_inventory. Provider "
+                "model residency is not free capacity or a model-fit estimate. "
+                "Do not answer from memory and do not claim a "
                 "write or control operation."
             )
             self.ephemeral_system_prompt = "\n\n".join(

@@ -1,10 +1,8 @@
 # Homelab read-only integration plan
 
-The owner has authorized read-only activation for the current connected LAN.
-Dedicated Proxmox, NetBox, and Uptime Kuma read-only inputs are provisioned and
-their live read paths are accepted through the owner-scoped HADES route. Kuma
-is exposed to HADES through its LAN-scoped published status page only.
-The current upstream MCP candidate evaluation is recorded in
+This document describes optional read-only integrations. Each deployment
+must explicitly approve its own sources and credentials. The current upstream
+MCP candidate evaluation is recorded in
 [`docs/homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
 ## Authority boundaries
@@ -15,11 +13,41 @@ The current upstream MCP candidate evaluation is recorded in
 | Inventory/topology | NetBox | REST `GET` reads for approved objects | None |
 | Availability | Uptime Kuma | Published status-page data or metrics, where intentionally exposed | None |
 | Hardware capability | Tracked observed capability matrix | Confirmed CPU/RAM/GPU inventory, explicitly separate from live availability | None |
+| Inference catalog and residency | Provider-native APIs | Ollama `GET /api/tags` and `GET /api/ps`, or OpenAI-compatible `GET /v1/models`; bounded reads only | None |
 | Host operations | Dedicated restricted SSH account, only if later approved | Explicitly scoped read commands | None |
 
 Hindsight may supply remembered labels or locations, but live status always
 comes from the relevant canonical system. HADES must report stale, unavailable,
 or partial data rather than infer health.
+
+The capability matrix is an observed inventory snapshot, not current model
+availability, GPU load, or runtime health. Provider-native inference reads are
+disabled unless `HADES_INFERENCE_ENDPOINTS_JSON` is explicitly configured.
+Each entry has a stable ID, provider kind (`ollama` or `openai-compatible`),
+and base URL; optional token and CA paths are protected operator inputs.
+Tokens require HTTPS. The owner-only inventory reports provider catalog
+entries, plus Ollama active models and provider-reported VRAM residency when
+available, with a live check time and per-endpoint status. OpenAI-compatible
+catalogs do not establish current residency. `READABLE` means only the
+configured catalog (and, for Ollama, residency) APIs responded. It never
+equates model artifact size with required memory or mutates a provider.
+Catalog and residency responses do not prove that a generation request works.
+
+Use the protected identity-link file to join `inference:<endpoint-id>` to a
+canonical numeric NetBox device ID. Unlinked inference endpoints remain
+separate source observations; display names and addresses are not join keys.
+Missing or stale links do not make an endpoint healthy or identify its host.
+
+For example, a private deployment may configure a JSON array like:
+
+```dotenv
+HADES_INFERENCE_ENDPOINTS_JSON='[{"id":"provider-a","provider":"ollama","url":"https://inference.example.invalid"}]'
+```
+
+For Ollama, the endpoint must expose its read-only API. For an
+OpenAI-compatible provider, it must expose `GET /v1/models`. Never place a
+token value in this setting; provide only a protected token-file path when
+bearer authentication is required.
 
 ## Credential-independent preparation
 

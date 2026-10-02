@@ -32,6 +32,18 @@ context/KV-cache overhead, quantization, and multi-GPU behavior. If any required
 input is unavailable, report the candidate evidence and the uncertainty. The
 read model grants no placement or infrastructure mutation authority.
 
+## Current repository evidence
+
+The optional read-only provider adapter queries Ollama installed model
+metadata and current residency, or an OpenAI-compatible endpoint's model
+catalog, with source timestamps and bounded errors. Synthetic tests cover
+linked NetBox identity, partial provider failure, and unsupported residency.
+Catalog reads are not generation probes and do not report free GPU memory.
+A direct development-runner probe has exercised approved private provider APIs
+and NetBox identity joins; HADES runtime activation and authenticated owner
+acceptance remain open. The static capability matrix remains inventory
+evidence only.
+
 ## Private deployment records
 
 Use the private infrastructure repository for physical inventory, source URLs,

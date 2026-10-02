@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import ssl
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import anyio
 import yaml
@@ -34,6 +35,17 @@ from config import (
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 MAX_TOKEN_BYTES = 8192
 TIMEOUT_SECONDS = 10
+
+
+def _nonnegative_int(value: object) -> int | None:
+    return value if type(value) is int and value >= 0 else None
+
+
+def _bounded_text(value: object, limit: int = 256) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = " ".join("".join(char if char.isprintable() else " " for char in value).split())
+    return normalized[:limit] or None
 TOOLS = [Tool(
     name="homelab_summary",
     description=(
@@ -57,6 +69,16 @@ TOOLS = [Tool(
         "with the observed compute capability matrix. Proxmox remains the "
         "only liveness authority; hardware inventory never implies online "
         "status. This is read-only and performs no writes."
+    ),
+    inputSchema={"type": "object", "properties": {}},
+), Tool(
+    name="homelab_inference_inventory",
+    description=(
+        "Read configured read-only Ollama or OpenAI-compatible inference endpoints. "
+        "Query provider model catalogs and Ollama loaded-model state; keep endpoint "
+        "identity, freshness, and partial failures explicit. This does not infer free "
+        "GPU capacity or model fit; catalog checks do not prove generation "
+        "works, and this tool cannot mutate providers."
     ),
     inputSchema={"type": "object", "properties": {}},
 ), Tool(
@@ -107,7 +129,13 @@ def _read_token(path: str) -> str:
     return token.decode("utf-8").strip()
 
 
-def _fetch(url: str, token_file: str = "", ca_file: str = "", proxmox_token_id: str = "") -> dict:
+def _fetch(
+    url: str,
+    token_file: str = "",
+    ca_file: str = "",
+    proxmox_token_id: str = "",
+    timeout_seconds: int = TIMEOUT_SECONDS,
+) -> dict:
     if not url:
         raise ValueError("homelab source is not configured")
     parsed = urlsplit(url)
@@ -125,7 +153,7 @@ def _fetch(url: str, token_file: str = "", ca_file: str = "", proxmox_token_id: 
         )
     request = Request(url, headers=headers, method="GET")
     context = ssl.create_default_context(cafile=ca_file) if ca_file else None
-    with urlopen(request, timeout=TIMEOUT_SECONDS, context=context) as response:
+    with urlopen(request, timeout=timeout_seconds, context=context) as response:
         body = response.read(MAX_RESPONSE_BYTES + 1)
     if len(body) > MAX_RESPONSE_BYTES:
         raise ValueError("homelab response exceeds bounded size")
@@ -588,6 +616,309 @@ def homelab_compute_capabilities() -> dict:
     }
 
 
+def _inference_endpoint_read(endpoint: dict[str, str], links: dict[str, str]) -> dict:
+    source_id = endpoint["id"]
+    provider = endpoint.get("provider", "ollama")
+    source_identity = f"inference:{source_id}"
+    node_identity = links.get(source_identity)
+    base = endpoint["url"].rstrip("/") + "/"
+    started = time.monotonic()
+    checked_at = _retrieved_at()
+    try:
+        if provider == "openai-compatible":
+            catalog = _fetch(
+                urljoin(base, "v1/models"), endpoint["token_file"], endpoint["ca_file"],
+                timeout_seconds=4,
+            ).get("data")
+            if not isinstance(catalog, list) or len(catalog) > 512:
+                raise ValueError("inference model catalog has an invalid shape")
+            tags = [{"name": item.get("id")} for item in catalog if isinstance(item, dict)]
+        else:
+            tags = _fetch(
+                urljoin(base, "api/tags"), endpoint["token_file"], endpoint["ca_file"],
+                timeout_seconds=4,
+            ).get("models")
+            if not isinstance(tags, list) or len(tags) > 512:
+                raise ValueError("inference model catalog has an invalid shape")
+    except Exception as exc:
+        return {
+            "source_identity": source_identity,
+            "provider": provider,
+            "node_identity": node_identity,
+            "identity_status": "LINKED" if node_identity else "UNLINKED",
+            "status": "SOURCE_UNAVAILABLE",
+            "loaded_status": "UNKNOWN",
+            "checked_at": checked_at,
+            "health_scope": "provider catalog request unavailable; no generation request was made",
+            "duration_ms": round((time.monotonic() - started) * 1000, 2),
+            "error": _source_error_code(exc),
+            "models": [],
+            "read_only": True,
+        }
+    models = []
+    for item in tags:
+        if not isinstance(item, dict) or not isinstance(item.get("name"), str):
+            continue
+        model_name = _bounded_text(item["name"])
+        if not model_name:
+            continue
+        details = item.get("details") if isinstance(item.get("details"), dict) else {}
+        model = {
+            "name": model_name,
+            "modified_at": _bounded_text(item.get("modified_at"), 64),
+            "size_bytes": _nonnegative_int(item.get("size")),
+            "digest": _bounded_text(item.get("digest"), 128),
+            "family": _bounded_text(details.get("family"), 128),
+            "parameter_size": _bounded_text(details.get("parameter_size"), 64),
+            "quantization_level": _bounded_text(details.get("quantization_level"), 64),
+        }
+        models.append(model)
+    loaded = []
+    if provider == "ollama":
+        try:
+            running = _fetch(
+                urljoin(base, "api/ps"), endpoint["token_file"], endpoint["ca_file"],
+                timeout_seconds=4,
+            ).get("models")
+            if not isinstance(running, list) or len(running) > 512:
+                raise ValueError("inference loaded-model response has an invalid shape")
+            for item in running:
+                if not isinstance(item, dict) or not isinstance(item.get("name"), str):
+                    continue
+                model_name = _bounded_text(item["name"])
+                if not model_name:
+                    continue
+                loaded.append({
+                    "name": model_name,
+                    "size_bytes": _nonnegative_int(item.get("size")),
+                    "size_vram_bytes": _nonnegative_int(item.get("size_vram")),
+                    "expires_at": _bounded_text(item.get("expires_at"), 64),
+                })
+            loaded_status = "CURRENT"
+        except Exception as exc:
+            loaded_status = _source_error_code(exc)
+    else:
+        # OpenAI-compatible model catalogs do not standardize residency.
+        loaded_status = "UNSUPPORTED"
+    return {
+        "source_identity": source_identity,
+        "provider": provider,
+        "node_identity": node_identity,
+        "identity_status": "LINKED" if node_identity else "UNLINKED",
+        "status": "READABLE" if loaded_status in {"CURRENT", "UNSUPPORTED"} else "PARTIAL",
+        "checked_at": checked_at,
+        "duration_ms": round((time.monotonic() - started) * 1000, 2),
+        "health_scope": (
+            "provider model catalog and residency APIs only; no generation request was made"
+            if provider == "ollama" else
+            "OpenAI-compatible model catalog only; residency and generation were not checked"
+        ),
+        "catalog_freshness": "LIVE",
+        "loaded_status": loaded_status,
+        "loaded_models": loaded,
+        "models": models,
+        "read_only": True,
+    }
+
+
+def homelab_inference_inventory() -> dict:
+    """Query supported provider model catalogs and available residency read-only."""
+    from concurrent.futures import ThreadPoolExecutor
+    from config import inference_endpoint_specs, load_identity_links
+
+    try:
+        endpoints = inference_endpoint_specs()
+        links = load_identity_links()
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {
+            "status": "CONFIGURATION_ERROR",
+            "endpoints": [],
+            "error": "inference source configuration is invalid",
+            "read_only": True,
+        }
+    if not endpoints:
+        return {
+            "status": "NOT_CONFIGURED",
+            "source": "configured provider-native inference APIs",
+            "endpoints": [],
+            "read_only": True,
+        }
+    with ThreadPoolExecutor(max_workers=min(8, len(endpoints))) as pool:
+        results = list(pool.map(lambda endpoint: _inference_endpoint_read(endpoint, links), endpoints))
+    states = [row["status"] for row in results]
+    status = "READABLE" if all(value == "READABLE" for value in states) else (
+        "SOURCE_UNAVAILABLE" if all(value == "SOURCE_UNAVAILABLE" for value in states)
+        else "PARTIAL"
+    )
+    return {
+        "status": status,
+        "source": "configured provider-native inference APIs",
+        "retrieved_at": _retrieved_at(),
+        "endpoints": results,
+        "read_only": True,
+    }
+
+
+def format_inference_inventory_response(user_text: str, inventory: dict, summary: dict) -> str:
+    """Present bounded current model inventory without overstating health or fit."""
+    if not isinstance(inventory, dict):
+        return "I couldn't read the configured inference inventory, so I can't verify model availability right now."
+    status = str(inventory.get("status") or "UNKNOWN")
+    endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
+    if status == "NOT_CONFIGURED":
+        return "Provider-native model inventory is not configured here, so I can't verify which models are installed or loaded."
+    if not endpoints:
+        return "I couldn't read any configured model endpoints, so I can't verify model availability right now."
+
+    placement_intent = bool(re.search(
+        r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|"
+        r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
+        r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
+        r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",
+        str(user_text or ""), re.IGNORECASE,
+    ))
+    if placement_intent:
+        return (
+            "I can't determine which GPU has room or whether another model will fit. "
+            "Live GPU utilization/free-VRAM telemetry and the model's runtime memory "
+            "requirements are not connected. Ollama loaded-model data is useful context, "
+            "but it is not free-capacity evidence; the OpenAI-compatible catalog does "
+            "not report residency."
+        )
+
+    resource_names = {}
+    for resource in (summary.get("resources", []) if isinstance(summary, dict) else []):
+        if not isinstance(resource, dict):
+            continue
+        identity = resource.get("identity")
+        inventory_record = resource.get("inventory")
+        if isinstance(identity, dict) and isinstance(inventory_record, dict):
+            canonical = identity.get("canonical_id")
+            if canonical:
+                resource_names[canonical] = inventory_record.get("name") or resource.get("name")
+
+    reachable = []
+    all_models = []
+    all_loaded = []
+    loaded_unknown_labels = set()
+    unavailable = 0
+    for endpoint in endpoints[:16]:
+        if not isinstance(endpoint, dict):
+            continue
+        endpoint_id = str(endpoint.get("source_identity") or "configured provider")
+        machine = resource_names.get(endpoint.get("node_identity"))
+        label = str(machine or endpoint_id)
+        if endpoint.get("status") == "SOURCE_UNAVAILABLE":
+            unavailable += 1
+            continue
+        reachable.append(label)
+        models = endpoint.get("models") if isinstance(endpoint.get("models"), list) else []
+        loaded = endpoint.get("loaded_models") if isinstance(endpoint.get("loaded_models"), list) else []
+        all_models.extend((label, model) for model in models if isinstance(model, dict))
+        if endpoint.get("loaded_status") == "CURRENT":
+            all_loaded.extend((label, model) for model in loaded if isinstance(model, dict))
+        elif models:
+            loaded_unknown_labels.add(label)
+
+    where_match = re.search(
+        r"\bwhere(?:['’]s|\s+is)\s+([a-z0-9._-]+(?::[a-z0-9._-]+)?(?:\s+\d+(?:\.\d+)?b)?)\b",
+        str(user_text or ""), re.IGNORECASE,
+    )
+    if where_match:
+        requested = where_match.group(1).strip()[:128].casefold()
+        matches = [
+            (label, model) for label, model in all_models
+            if requested in str(model.get("name") or "").casefold()
+        ]
+        if matches:
+            locations = sorted({label for label, _model in matches})
+            names = sorted({str(model.get("name")) for _label, model in matches})
+            target_names = {name.casefold() for name in names}
+            loaded_locations = sorted({
+                label for label, model in all_loaded
+                if str(model.get("name") or "").casefold() in target_names
+            })
+            result = f"{', '.join(names[:3])} is listed by {', '.join(locations[:4])}."
+            if loaded_locations:
+                result += f" Loaded now on {', '.join(loaded_locations[:4])}."
+            elif any(label in loaded_unknown_labels for label in locations):
+                result += " Current loaded-model state is unavailable for at least one matching provider."
+            else:
+                result += " It is not currently reported as loaded."
+            return result + " This checks the provider catalog and residency APIs, not a generation request."
+        if not reachable:
+            return "I can't verify that model right now because no configured provider catalog responded."
+        result = f"I couldn't find {requested} in the model catalogs that responded."
+        if unavailable:
+            result += f" {unavailable} configured provider(s) could not be checked."
+        return result
+
+    if not reachable:
+        return "I couldn't verify installed or loaded models because no configured provider catalog responded."
+    names = list(dict.fromkeys(
+        str(model.get("name")) for _label, model in all_models if model.get("name")
+    ))[:12]
+    loaded_names = list(dict.fromkeys(
+        f"{model.get('name')} on {label}" for label, model in all_loaded if model.get("name")
+    ))[:8]
+    result = f"I checked {len(reachable)} configured model provider(s) just now."
+    if names:
+        result += " Installed: " + ", ".join(names) + "."
+    else:
+        result += " No installed models were reported."
+    if loaded_names:
+        result += " Loaded now: " + ", ".join(loaded_names) + "."
+    elif all(endpoint.get("loaded_status") == "CURRENT" for endpoint in endpoints if isinstance(endpoint, dict)):
+        result += " No models are currently reported as loaded."
+    else:
+        result += " Current loaded-model state is partly unavailable."
+    if unavailable:
+        result += f" I couldn't check {unavailable} other configured provider(s)."
+    return result + " Catalog access does not prove a generation request works or establish free GPU capacity."
+
+
+def resolve_inference_node_labels(inventory: dict) -> dict[str, str]:
+    """Resolve only linked NetBox device IDs needed to answer model-location queries."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    base = os.environ.get("HADES_NETBOX_URL", "").rstrip("/")
+    if not base or not isinstance(inventory, dict):
+        return {}
+    endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
+    identities = sorted({
+        endpoint.get("node_identity")
+        for endpoint in endpoints
+        if isinstance(endpoint, dict)
+        and isinstance(endpoint.get("node_identity"), str)
+        and re.fullmatch(r"netbox:device:[1-9][0-9]{0,19}", endpoint["node_identity"])
+    })
+    if not identities:
+        return {}
+    token_file = os.environ.get("HADES_NETBOX_TOKEN_FILE", "")
+
+    def read(identity: str) -> tuple[str, str | None]:
+        device_id = identity.rsplit(":", 1)[-1]
+        try:
+            document = _fetch(
+                urljoin(f"{base}/", f"api/dcim/devices/{device_id}/"),
+                token_file,
+                timeout_seconds=4,
+            )
+        except Exception:
+            return identity, None
+        if (
+            isinstance(document, dict)
+            and str(document.get("id")) == device_id
+            and isinstance(document.get("name"), str)
+            and document["name"].strip()
+        ):
+            return identity, _bounded_text(document["name"], 100)
+        return identity, None
+
+    with ThreadPoolExecutor(max_workers=min(8, len(identities))) as pool:
+        return {identity: name for identity, name in pool.map(read, identities) if name}
+
+
 def homelab_owner_snapshot() -> dict:
     """Compose the two read-only owner views without cross-authority inference."""
     summary = homelab_summary()
@@ -637,6 +968,8 @@ async def call_tool(name, arguments):
         result = propose_inventory_candidates(evidence, netbox)
     elif name == "homelab_compute_capabilities":
         result = homelab_compute_capabilities()
+    elif name == "homelab_inference_inventory":
+        result = homelab_inference_inventory()
     elif name == "homelab_summary":
         result = homelab_summary()
     else:

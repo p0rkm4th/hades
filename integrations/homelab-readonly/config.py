@@ -6,7 +6,7 @@ import os
 import json
 import re
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 
 MAX_IDENTITY_LINK_BYTES = 65536
@@ -103,10 +103,10 @@ def load_identity_links() -> dict[str, str]:
         device_id = entry.get("netbox_device_id")
         if not isinstance(source, str) or not source or len(source) > 256:
             raise ValueError("homelab source identity is invalid")
-        if not source.startswith(("proxmox:", "kuma:monitor:")):
-            raise ValueError("homelab identity links may only bind Proxmox or Kuma sources")
+        if not source.startswith(("proxmox:", "kuma:monitor:", "inference:")):
+            raise ValueError("homelab identity links may only bind approved runtime or observation sources")
         if not re.fullmatch(
-            r"(?:proxmox:[A-Za-z0-9._-]{1,128}:[A-Za-z0-9._-]{1,32}:[A-Za-z0-9._-]{1,128}|kuma:monitor:[1-9][0-9]{0,19})",
+            r"(?:proxmox:[A-Za-z0-9._-]{1,128}:[A-Za-z0-9._-]{1,32}:[A-Za-z0-9._-]{1,128}|kuma:monitor:[1-9][0-9]{0,19}|inference:[A-Za-z0-9._-]{1,128})",
             source,
         ):
             raise ValueError("homelab source identity has an invalid format")
@@ -116,6 +116,69 @@ def load_identity_links() -> dict[str, str]:
             raise ValueError("homelab source identity is linked more than once")
         result[source] = f"netbox:device:{int(device_id)}"
     return result
+
+
+def inference_endpoint_specs() -> tuple[dict[str, str], ...]:
+    """Read explicitly configured provider-native inference descriptors."""
+    raw = os.environ.get("HADES_INFERENCE_ENDPOINTS_JSON", "").strip()
+    if not raw:
+        return ()
+    if len(raw) > 32768:
+        raise ValueError("inference endpoint configuration exceeds bounded size")
+    try:
+        entries = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError("inference endpoint configuration is invalid JSON") from exc
+    if not isinstance(entries, list) or len(entries) > 16:
+        raise ValueError("inference endpoint configuration must be a list of at most 16 entries")
+    result: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) - {"id", "provider", "url", "token_file", "ca_file"}:
+            raise ValueError("inference endpoint entry has unsupported fields")
+        source_id = entry.get("id")
+        provider = entry.get("provider", "ollama")
+        endpoint = entry.get("url")
+        if not isinstance(source_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", source_id):
+            raise ValueError("inference endpoint ID is invalid")
+        if not isinstance(provider, str) or provider not in {"ollama", "openai-compatible"}:
+            raise ValueError("inference endpoint provider must be ollama or openai-compatible")
+        if source_id in seen:
+            raise ValueError("inference endpoint IDs must be unique")
+        seen.add(source_id)
+        if not isinstance(endpoint, str) or len(endpoint) > 2048:
+            raise ValueError("inference endpoint URL is invalid")
+        token_file = entry.get("token_file", "")
+        ca_file = entry.get("ca_file", "")
+        if (
+            not isinstance(token_file, str) or len(token_file) > 4096
+            or not isinstance(ca_file, str) or len(ca_file) > 4096
+        ):
+            raise ValueError("inference endpoint credential or CA path is invalid")
+        parsed = urlsplit(endpoint)
+        try:
+            parsed.port
+        except ValueError as exc:
+            raise ValueError("inference endpoint URL port is invalid") from exc
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError("inference endpoint URL must be HTTP(S) without credentials, query, or fragment")
+        if token_file and parsed.scheme != "https":
+            raise ValueError("inference endpoint credentials require HTTPS")
+        result.append({
+            "id": source_id,
+            "provider": provider,
+            "url": endpoint.rstrip("/"),
+            "token_file": token_file,
+            "ca_file": ca_file,
+        })
+    return tuple(result)
 
 
 def source_specs() -> tuple[tuple[str, str], ...]:

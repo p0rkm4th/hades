@@ -13,7 +13,7 @@ recovery custody details.
 | Core chat and memory | Product behavior accepted in synthetic tests | Preserve stable identity mapping across restore |
 | Shared household services | Synthetic UI coverage | Owner-gated production acceptance |
 | Read-only homelab view | PARTIAL | Stable source links, freshness/conflict handling, authenticated owner dogfood, and partial-source acceptance |
-| Inference awareness | PARTIAL | Provider-native model catalog/residency, live health, resource telemetry, and evidence-based fit estimates |
+| Inference awareness | PARTIAL | Configure and verify provider-native reads against live endpoints; add current GPU telemetry and evidence-based fit estimates |
 | Backup and restore | PARTIAL | Complete synthetic restore proof plus separately managed off-host custody |
 | Installation and upgrades | Contract documented | Independent clean-host reproduction and operator acceptance |
 | Optional integrations | GATED | Require explicit private inputs and remain disabled when absent |
@@ -50,7 +50,7 @@ deployment status remain in the private infrastructure records.
 | Web/search | OWNER-GATED | Confirm fresh search behavior in authenticated owner use. |
 | Bounded operator | PASS | Keep unsafe delegation rejected before upstream dispatch. |
 | Finance | OWNER-GATED | Approve canonical environment, credentials, and production scope before writes. |
-| Homelab | PARTIAL | Complete live source linking, freshness/conflict handling, and owner dogfood. |
+| Homelab | PARTIAL | Synthetic identity, freshness, conflict, partial-source, and Ollama catalog/residency contracts pass; live source links and authenticated owner dogfood remain. |
 | Home Assistant | PARTIAL | Connect only an approved read-only endpoint and entity allowlist. |
 | Automation | PARTIAL | Complete owner-approved production authority and recovery acceptance. |
 | Recovery | PARTIAL | Complete full synthetic restore and document separate custody policy. |

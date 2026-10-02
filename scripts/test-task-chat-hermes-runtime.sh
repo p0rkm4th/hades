@@ -33,6 +33,18 @@ import json
 import run_agent
 import sitecustomize as hades
 import threading
+assert hades._HADES_HOMELAB_INTENT.search("What models are available?")
+assert hades._HADES_HOMELAB_INTENT.search("Where's qwen3.6:35b?")
+assert hades._HADES_HOMELAB_INTENT.search("Which GPUs are free?")
+assert hades._HADES_HOMELAB_INTENT.search("Where should I run another model?")
+household_model_denial = hades._hades_direct_homelab_read(
+    "What models are available?", scope="household",
+)
+assert "available only in an owner session" in household_model_denial
+household_gpu_denial = hades._hades_direct_homelab_read(
+    "Which GPUs are free?", scope="household",
+)
+assert "available only in an owner session" in household_gpu_denial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from integrations.task import TaskStatus, TaskStore
 
@@ -125,6 +137,29 @@ assert server_overview.get("completed") is True and server_overview.get("api_cal
 assert "Live Proxmox currently reports: hades-core." in server_overview["final_response"], server_overview
 assert "memory update" not in server_overview["final_response"].casefold(), server_overview
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
+
+os.environ["HADES_TEST_INFERENCE_ONLY"] = "1"
+model_location_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-model-location",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+model_location = model_location_agent.run_conversation(
+    "Where's sample:small?", conversation_history=[]
+)
+assert model_location.get("completed") is True and model_location.get("api_calls") == 0, model_location
+assert "sample:small is listed at Compute Node A" in model_location["final_response"], model_location
+assert "generation request was not made" in model_location["final_response"], model_location
+
+for index, prompt in enumerate(("Which GPUs are free?", "Where should I run another model?")):
+    placement_agent = agent_class(
+        gateway_session_key=f"hades-user-{owner}",
+        session_id=f"synthetic-model-placement-{index}",
+        stream_delta_callback=lambda _chunk: None, **kwargs,
+    )
+    placement = placement_agent.run_conversation(prompt, conversation_history=[])
+    assert placement.get("completed") is True and placement.get("api_calls") == 0, (prompt, placement)
+    assert "can't determine which GPU has room" in placement["final_response"], (prompt, placement)
+os.environ.pop("HADES_TEST_INFERENCE_ONLY", None)
 
 # Ordinary status wording should stay on the same deterministic, read-only
 # route even when it says "doing" or "computers" instead of "server status".
@@ -384,6 +419,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
     adapter.mkdir(parents=True, mode=0o700)
     (adapter / "server.py").write_text(
         'def homelab_summary():\n'
+        '    if __import__("os").environ.get("HADES_TEST_INFERENCE_ONLY") == "1":\n'
+        '        raise AssertionError("inference-only query must not read broad homelab summary")\n'
         '    resources = [{"name": "hades-core", "runtime_status": "running",\n'
         '                  "currently_online": True,\n'
         '                  "runtime": {"name": "hades-core", "vmid": 1802, "status": "running",\n'
@@ -409,7 +446,15 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '        "resources": resources,\n'
         '    }\n'
         'def homelab_compute_capabilities():\n'
-        '    return {"machines": []}\n',
+        '    return {"machines": []}\n'
+        'def homelab_inference_inventory():\n'
+        '    return {"status": "READABLE", "endpoints": [{"source_identity": "inference:provider-a", "node_identity": "netbox:device:7", "status": "READABLE", "loaded_status": "CURRENT", "models": [{"name": "sample:small"}], "loaded_models": [{"name": "sample:small"}]}]}\n'
+        'def resolve_inference_node_labels(_inventory):\n'
+        '    return {"netbox:device:7": "Compute Node A"}\n'
+        'def format_inference_inventory_response(question, _inventory, _summary):\n'
+        '    if "gpu" in question.casefold() or "another model" in question.casefold():\n'
+        '        return "I can\'t determine which GPU has room or whether another model will fit. Live telemetry is not connected."\n'
+        '    return "sample:small is listed at Compute Node A. Loaded now. A generation request was not made."\n',
         encoding="utf-8",
     )
     capability_matrix = root / "capability-matrix.yaml"
