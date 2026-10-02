@@ -131,14 +131,17 @@ run_conversation = next((
     if isinstance(node, ast.FunctionDef) and node.name == '_hades_run_conversation'
 ), None)
 if run_conversation is not None:
-    household_intent_assignment = next(
+    household_intent_assignment = next((
         node for node in run_conversation.body
         if isinstance(node, ast.Assign)
         and any(
             isinstance(target, ast.Name) and target.id == '_household_homelab_boundary_intent'
             for target in node.targets
         )
-    )
+    ), None)
+else:
+    household_intent_assignment = None
+if household_intent_assignment is not None:
     household_boundary_expression = ast.unparse(household_intent_assignment.value)
     assert '_hades_broad_homelab_status_intent(user_message)' in household_boundary_expression
     assert '_hades_household_game_health_intent(user_message, self._hades_session_scope)' in household_boundary_expression
