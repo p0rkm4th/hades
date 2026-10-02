@@ -16,6 +16,23 @@ helper = next(
     node for node in tree.body
     if isinstance(node, ast.FunctionDef) and node.name == "_hades_direct_homelab_tool_result"
 )
+direct_read = next(
+    node for node in tree.body
+    if isinstance(node, ast.FunctionDef) and node.name == "_hades_direct_homelab_read"
+)
+direct_read_source = ast.unparse(direct_read)
+assert "module.resolve_inference_node_labels" not in direct_read_source
+assert any(
+    isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == "_hades_direct_homelab_tool_result"
+    and len(node.args) >= 2
+    and isinstance(node.args[0], ast.Constant)
+    and node.args[0].value == "homelab_summary"
+    and isinstance(node.args[1], ast.Name)
+    and node.args[1].id == "module"
+    for node in ast.walk(direct_read)
+)
 
 
 class FakeRegistry:

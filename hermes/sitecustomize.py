@@ -5190,15 +5190,18 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         if inference_intent:
             inference = _hades_direct_homelab_tool_result("homelab_inference_inventory", module)
             summary = _hades_direct_homelab_tool_result("homelab_summary", module) if node_activity_intent else {}
+            model_location_intent = bool(re.search(
+                r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
+                text,
+                re.IGNORECASE,
+            ))
+            if (placement_intent or model_location_intent) and not summary:
+                summary = _hades_direct_homelab_tool_result("homelab_summary", module)
             if placement_intent:
                 try:
-                    labels = module.resolve_inference_node_labels(inference)
                     capabilities = _hades_direct_homelab_tool_result("homelab_compute_capabilities", module)
                     summary = {
-                        "resources": [
-                            {"identity": {"canonical_id": identity}, "inventory": {"name": name}}
-                            for identity, name in labels.items()
-                        ] if isinstance(labels, dict) else [],
+                        "resources": summary.get("resources", []) if isinstance(summary, dict) else [],
                         "capability_machines": capabilities.get("machines", [])
                         if isinstance(capabilities, dict) else [],
                         "capability_freshness": capabilities.get("freshness", "UNKNOWN")
@@ -5218,16 +5221,6 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                             )
                         except (OSError, ValueError, UnicodeError):
                             pass
-            if re.search(
-                r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
-                text,
-                re.IGNORECASE,
-            ):
-                names = module.resolve_inference_node_labels(inference)
-                summary = {"resources": [
-                    {"identity": {"canonical_id": identity}, "inventory": {"name": name}}
-                    for identity, name in names.items()
-                ]}
             inference_response = module.format_inference_inventory_response(
                 text, inference, summary,
             )
