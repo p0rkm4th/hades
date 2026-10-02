@@ -80,29 +80,43 @@ assert 'Owner service endpoint inventory read completed without model invocation
 assert 'Owner endpoint-request follow-up closed without model invocation' in source
 
 request = 'Can you give me the Minecraft server IP and port for the firewall?'
+empty_catalog = endpoint_response(
+    request, {'status': 'OK', 'coverage': 'EMPTY', 'services': []}, 'owner'
+)
+assert 'service inventory is empty' in empty_catalog
+assert 'doesn\'t establish whether an unlisted server exists' in empty_catalog
 assert 'couldn\'t find a matching service record' in endpoint_response(
-    request, {'status': 'OK', 'services': []}, 'owner'
+    request, {'status': 'OK', 'coverage': 'COMPLETE', 'services': []}, 'owner'
 )
 assert 'service inventory is incomplete' in endpoint_response(
-    request, {'status': 'PARTIAL', 'services': []}, 'owner'
+    request, {'status': 'PARTIAL', 'coverage': 'UNKNOWN', 'services': []}, 'owner'
 )
+partial_with_candidate = endpoint_response(request, {
+    'status': 'OK', 'coverage': 'PARTIAL', 'services': [{
+        'name': 'Minecraft Server', 'addresses': ['192.0.2.10'],
+        'port_mappings': ['tcp/25565'],
+    }],
+}, 'owner')
+assert 'coverage is incomplete or unknown' in partial_with_candidate
+unknown_coverage = endpoint_response(request, {'status': 'OK', 'services': []}, 'owner')
+assert 'coverage is incomplete or unknown' in unknown_coverage
 assert 'couldn\'t verify a server address or port' in endpoint_response(
-    request, {'status': 'UNAVAILABLE', 'services': [], 'limitation': 'NetBox timed out.'}, 'owner'
+    request, {'status': 'UNAVAILABLE', 'coverage': 'UNKNOWN', 'services': [], 'limitation': 'NetBox timed out.'}, 'owner'
 )
 assert endpoint_response(request, {'status': 'OK', 'services': []}, 'household') is None
 assert 'multiple matching service records' in endpoint_response(
     'Can you give me the Minecraft IP and port for the firewall?', {
-    'status': 'OK', 'services': [
+    'status': 'OK', 'coverage': 'COMPLETE', 'services': [
         {'name': 'Minecraft Server'}, {'name': 'Minecraft RCON'},
     ],
 }, 'owner')
 assert 'doesn\'t give one clear address and port' in endpoint_response(request, {
-    'status': 'OK', 'services': [{
+    'status': 'OK', 'coverage': 'COMPLETE', 'services': [{
         'name': 'Minecraft Server', 'addresses': [], 'port_mappings': ['tcp/25565'],
     }],
 }, 'owner')
 recorded = endpoint_response(request, {
-    'status': 'OK', 'services': [{
+    'status': 'OK', 'coverage': 'COMPLETE', 'services': [{
         'name': 'Minecraft Server', 'parent_name': 'Test Host',
         'addresses': ['192.0.2.10'], 'port_mappings': ['tcp/25565'],
     }],
@@ -113,7 +127,7 @@ assert 'haven\'t changed the firewall' in recorded, recorded
 dogfood_history = [
     {'role': 'user', 'content': request},
     {'role': 'assistant', 'content': endpoint_response(
-        request, {'status': 'OK', 'services': []}, 'owner'
+        request, {'status': 'OK', 'coverage': 'EMPTY', 'services': []}, 'owner'
     )},
     {'role': 'user', 'content': 'Perfect, continue'},
 ]
@@ -174,7 +188,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '"availability": {"name": "Minecraft Server", "status": "up", '
         '"last_updated": "2026-09-27T12:00:00Z"}, '
         '"availability_freshness": "FRESH"}], '
-        '"service_catalog": {"status": "OK", "services": [{'
+        '"service_catalog": {"status": "OK", "coverage": "COMPLETE", "services": [{'
         '"name": "Minecraft Server", "parent_name": "Test Host", '
         '"addresses": ["192.0.2.10"], "port_mappings": ["tcp/25565"]}]}}\n',
         encoding='utf-8',

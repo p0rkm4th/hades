@@ -5243,9 +5243,23 @@ def _hades_service_endpoint_response(user_text, service_catalog, scope=""):
     if status in {"UNAVAILABLE", "NOT_CONFIGURED"}:
         detail = limitation or "The service inventory is unavailable."
         return f"I couldn't verify a server address or port because {detail} I haven't created a server or changed the firewall."
+    if status != "OK":
+        return ("The service inventory is incomplete, so I can't verify a single matching server "
+                "address or port. No server was created, and I haven't changed the firewall.")
+    coverage = str(service_catalog.get("coverage") or "UNKNOWN").upper()
     rows = service_catalog.get("services")
     if not isinstance(rows, list):
         return "The service inventory returned an unreadable result, so I can't verify an address or port. I haven't created a server or changed the firewall."
+    if coverage == "EMPTY":
+        if rows:
+            return "The service inventory response is inconsistent, so I can't verify an address or port. I haven't created a server or changed the firewall."
+        return ("The NetBox service inventory is empty, so I can't verify an IP address or port. "
+                "No server was created, and I haven't changed the firewall. An empty inventory "
+                "doesn't establish whether an unlisted server exists.")
+    if coverage != "COMPLETE":
+        return ("The service inventory coverage is incomplete or unknown, so I can't verify a "
+                "single matching server address or port. No server was created, and I haven't "
+                "changed the firewall.")
     text = str(user_text or "").casefold()
     named = [row for row in rows if isinstance(row, dict) and row.get("name") and
              str(row["name"]).casefold() in text]
