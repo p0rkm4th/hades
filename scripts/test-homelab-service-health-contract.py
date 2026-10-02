@@ -58,7 +58,7 @@ homelab_intent = namespace['_HADES_HOMELAB_INTENT']
 for prompt in (
     'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
     'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
-    'Are all the computers okay?',
+    'Are all the computers okay?', 'Is Minecraft working?',
 ):
     assert homelab_intent.search(prompt), f'owner homelab health intent missed {prompt!r}'
 target = namespace['_hades_service_health_target']
@@ -299,6 +299,9 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
     adapter_dir.mkdir(parents=True)
     (adapter_dir / 'server.py').write_text(
         'def homelab_summary():\n'
+        '    import os\n'
+        '    if os.environ.get("HADES_TEST_NO_GAME_MONITOR") == "1":\n'
+        '        return {"resources": [], "service_catalog": {"status": "OK", "coverage": "EMPTY", "services": []}}\n'
         '    return {"resources": [{"name": "Minecraft Server", '
         '"runtime_status": "NOT_OBSERVED", "currently_online": False, '
         '"availability": {"name": "Minecraft Server", "status": "up", '
@@ -317,8 +320,17 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         household_game_status = direct_read(
             'Is Minecraft working?', 'synthetic-household', 'household'
         )
-        assert "Uptime Kuma's configured check for Minecraft Server is up." in household_game_status
+        assert 'configured game-server check is responding' in household_game_status
         assert 'Test Host' not in household_game_status and '192.0.2.' not in household_game_status
+        os.environ['HADES_TEST_NO_GAME_MONITOR'] = '1'
+        try:
+            missing_game_check = direct_read(
+                'Is Minecraft working?', 'synthetic-household', 'household'
+            )
+        finally:
+            os.environ.pop('HADES_TEST_NO_GAME_MONITOR', None)
+        assert "can't confirm whether the game server is working from the current check" in missing_game_check, missing_game_check
+        assert 'Proxmox' not in missing_game_check and 'Test Host' not in missing_game_check, missing_game_check
         assert 'couldn\'t find a matching service record' in direct_read(
             'Where is Agent Zero?', 'synthetic-owner', 'owner'
         )
@@ -390,7 +402,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert answer_text, f'direct owner homelab status route missed {prompt!r}'
             if prompt == 'What changed since yesterday?':
                 assert 'no historical homelab snapshot or change-event source is configured' in answer_text
-        assert direct_read('What is down?', 'synthetic-household', 'household') is None
+        household_overall = direct_read('What is down?', 'synthetic-household', 'household')
+        assert "can't provide the overall homelab status from this account" in household_overall, household_overall
+        assert 'Proxmox' not in household_overall and 'NetBox' not in household_overall, household_overall
+        assert direct_read('Is everything okay?', 'synthetic-household', 'household') == household_overall
         write_broad_summary(
             [{'name': 'service-netbox', 'status': 'down', 'freshness': 'FRESH'}],
             sources=[{'source': 'NetBox', 'status': 'HEALTHY'}],

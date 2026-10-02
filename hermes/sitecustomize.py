@@ -4894,6 +4894,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         text,
         re.IGNORECASE,
     ))
+    if broad_owner_status_intent and scope != "owner":
+        return (
+            "I can't provide the overall homelab status from this account. "
+            "I can check an approved household service by name."
+        )
     # Explicit public research has a separate, privacy-checked route. Source
     # vocabulary such as "hosts" or "servers" must not turn that request into
     # an internal homelab status read.
@@ -5173,6 +5178,20 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
             return placement_response
         resources = summary.get("resources", []) if isinstance(summary, dict) else []
         service_response = _hades_service_monitor_response(text, resources)
+        household_game_health = bool(
+            scope == "household"
+            and re.search(r"\bminecraft\b", text, re.IGNORECASE)
+            and _hades_service_health_target(text)
+        )
+        if household_game_health:
+            if not service_response:
+                return "I don't have a current check for the game server, so I can't confirm whether it's working."
+            lowered_service_response = service_response.casefold()
+            if " is up." in lowered_service_response:
+                return "The configured game-server check is responding. That doesn't guarantee the game is joinable."
+            if " is down." in lowered_service_response:
+                return "The configured game-server check is failing. I can't verify why or say the game is available."
+            return "I can't confirm whether the game server is working from the current check."
         if service_response:
             if scope == "owner":
                 return service_response
@@ -5946,6 +5965,8 @@ _HADES_HOMELAB_INTENT = re.compile(
     r"(?:which|what).{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|where\s+should\s+i\s+(?:run|host|put)|(?:what|which)\s+(?:machine|server|gpu).{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|(?:can|could).{0,60}\b(?:handle|fit|run|host).{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
     r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"
     r"ram|free\s+memory|unhealthy|host(?:s)?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
+    r"\bminecraft\b.{0,40}\b(?:healthy|health|up|online|running|working|okay|ok|available|down|offline|unavailable)\b|"
+    r"\b(?:healthy|health|up|online|running|working|okay|ok|available|down|offline|unavailable)\b.{0,40}\bminecraft\b|"
     r"nmap|discov(?:er|y)|ip(?:s)?|mac(?:s)?|what(?:['’]?s| is)\s+running|"
     r"what(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+running|"
     r"what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
