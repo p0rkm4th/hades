@@ -500,6 +500,32 @@ assert "Role: synthetic inference node." in compute_node_a_text, compute_node_a_
 assert "Host CPU/GPU load and free VRAM are not connected." in compute_node_a_text, compute_node_a_text
 assert "I don't have a current host runtime check for it" in compute_node_a_text, compute_node_a_text
 assert "192.0.2.69" not in compute_node_a_text, compute_node_a_text
+issue_status = compute_node_a_agent.run_conversation(
+    "What's wrong with Compute Node A?", conversation_history=[],
+)
+assert issue_status.get("completed") is True and issue_status.get("api_calls") == 0, issue_status
+assert "sample:small is listed at Compute Node A" in issue_status["final_response"], issue_status
+assert "I don't have a current host runtime check for it" in issue_status["final_response"], issue_status
+capacity_history = [
+    {"role": "user", "content": "What's wrong with Compute Node A?"},
+    {"role": "assistant", "content": "Compute Node A has one provider-reported model."},
+    {"role": "user", "content": "Could I put another model there?"},
+    {"role": "assistant", "content": "Current free VRAM is unknown for Compute Node A."},
+]
+capacity_context = "\n".join(item["content"] for item in capacity_history) + "\nWhat about a 20 GB one?"
+os.environ["HADES_TEST_FOLLOWUP_NODE"] = "1"
+try:
+    resolved_capacity_prompt = hades._hades_homelab_followup_prompt(
+        "What about a 20 GB one?", "owner", capacity_context,
+    )
+    assert resolved_capacity_prompt == "Can Compute Node A host a 20 GB model?", resolved_capacity_prompt
+    capacity_followup = compute_node_a_agent.run_conversation(
+        "What about a 20 GB one?", conversation_history=capacity_history,
+    )
+finally:
+    os.environ.pop("HADES_TEST_FOLLOWUP_NODE", None)
+assert capacity_followup.get("completed") is True and capacity_followup.get("api_calls") == 0, capacity_followup
+assert "can't determine which GPU has room" in capacity_followup["final_response"], capacity_followup
 actual_node_read = hades._hades_direct_homelab_read
 hades._hades_direct_homelab_read = lambda *_args, **_kwargs: None
 unavailable_node_agent = agent_class(
@@ -689,6 +715,9 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '                  "runtime": {"name": "hades-core", "vmid": 1802, "status": "running",\n'
         '                              "cpu": 0.94, "mem": 32212254720, "maxmem": 34359738368,\n'
         '                              "disk": 85899345920, "maxdisk": 96636764160}}]\n'
+        '    if __import__("os").environ.get("HADES_TEST_FOLLOWUP_NODE") == "1":\n'
+        '        resources.append({"name": "Compute Node A", "inventory": {"name": "Compute Node A"},\n'
+        '                          "identity": {"canonical_id": "netbox:device:7"}})\n'
         '    if __import__("os").environ.get("HADES_TEST_HOMELAB_NODE_A_MONITOR") == "1":\n'
         '        resources.append({"name": "Compute Node A SSH", "runtime_status": "NOT_OBSERVED",\n'
         '                          "currently_online": False, "inventory": None,\n'
@@ -723,6 +752,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         'def resolve_inference_node_labels(_inventory):\n'
         '    return {"netbox:device:7": "Compute Node A"}\n'
         'def format_inference_inventory_response(question, _inventory, _summary):\n'
+        '    if "20 gb model" in question.casefold():\n'
+        '        return "I can\'t determine which GPU has room because live VRAM is unavailable."\n'
         '    if "ai thing" in question.casefold() or "ai available" in question.casefold():\n'
         '        return "All 1 configured AI provider checks are responding to catalog reads. I haven\'t tested a generation, so I can\'t confirm the AI can answer a prompt right now."\n'
         '    if "gpu" in question.casefold() or "another model" in question.casefold():\n'

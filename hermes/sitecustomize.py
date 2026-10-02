@@ -5240,6 +5240,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         r"where(?:['’]s|\s+is)\s+(?:the\s+)?hades(?:\s+core)?(?:\s+vm)?\s+(?:running|hosted|located|live)\b|where\s+does\s+hades(?:\s+core)?\s+run\b|"
         r"(?:which|what)\s+(?:machine|server|host)\s+(?:is\s+)?(?:running|hosting)\s+(?:the\s+)?hades(?:\s+core)?\b|"
         r"minecraft|jellyfin)\b|"
+        r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s*[?.!]*$|"
         r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+running\b|"
         r"\b(?:what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
         r"is\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+(?:alive|online|offline|up|down|running))\b",
