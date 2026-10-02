@@ -271,6 +271,7 @@ import json
 import os
 import shutil
 import sys
+import threading
 import tempfile
 import types
 from datetime import datetime, timedelta, timezone
@@ -415,10 +416,13 @@ service_fixture = {
     "port_mappings": ["tcp/25565"], "ipaddresses": [],
     "secret_like_field": "must-not-escape",
 }
+proxmox_barrier = threading.Barrier(2)
 def fixture_fetch(url, *_args, **_kwargs):
     if url == "https://pve-a.example.test/cluster/resources":
+        proxmox_barrier.wait(timeout=1.0)
         return {"data": [runtime_fixture, *extra_runtime_fixtures]}
     if url == "https://pve-b.example.test/cluster/resources":
+        proxmox_barrier.wait(timeout=1.0)
         from urllib.error import URLError
         raise URLError("https://reader:sentinel-private-value@example.test/api token=sentinel-private-value")
     if url == "https://netbox.example.test/api/dcim/devices/":

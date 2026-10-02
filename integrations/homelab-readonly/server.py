@@ -223,6 +223,42 @@ def _proxmox_identity(row: dict, endpoint_id: str, index: int) -> str:
     return f"proxmox:{endpoint_id}:{kind}:{object_id}"
 
 
+def _read_proxmox_endpoint(args: tuple[int, str, str, str, str, str]) -> dict:
+    """Read one independent Proxmox endpoint without serializing the cluster."""
+    index, url, token_file, token_id, source_id, ca_file = args
+    source_name = f"Proxmox[{index + 1}]"
+    started = time.monotonic()
+    if not url:
+        return {
+            "rows": [],
+            "source": _source_result(source_name, "NOT_CONFIGURED", started),
+        }
+    try:
+        result = _fetch(url, token_file, ca_file, token_id)
+        rows = []
+        for row_index, row in enumerate(result.get("data", [])):
+            if not isinstance(row, dict):
+                continue
+            source_row = dict(row)
+            source_row["_hades_identity"] = _proxmox_identity(
+                source_row, source_id, row_index,
+            )
+            rows.append(source_row)
+        return {
+            "rows": rows,
+            "source": _source_result(source_name, "HEALTHY", started, rows=len(rows)),
+        }
+    except (OSError, ValueError, UnicodeError) as exc:
+        return {
+            "rows": [],
+            "source": _source_result(
+                source_name, "UNAVAILABLE", started,
+                error_code=_source_error_code(exc),
+            ),
+            "error": f"{source_name} unavailable",
+        }
+
+
 def _normalize_kuma_status(payload: dict) -> dict:
     """Convert Kuma's public heartbeat payload into bounded monitor rows."""
     if isinstance(payload.get("monitors"), list):
@@ -306,35 +342,25 @@ def homelab_summary() -> dict:
     ca_file = os.environ.get("HADES_PROXMOX_CA_FILE", "")
     successful_proxmox_sources = 0
     failed_proxmox_sources = 0
-    for index, (url, token_file) in enumerate(proxmox_specs_value):
-        source_name = f"Proxmox[{index + 1}]"
-        started = time.monotonic()
-        if not url:
-            source_results.append(_source_result(source_name, "NOT_CONFIGURED", started))
-            continue
-        try:
-            result = _fetch(url, token_file, ca_file, token_ids[index])
-            source_rows = []
-            for row_index, row in enumerate(result.get("data", [])):
-                if not isinstance(row, dict):
-                    continue
-                source_row = dict(row)
-                source_row["_hades_identity"] = _proxmox_identity(
-                    source_row, source_ids[index], row_index,
-                )
-                source_rows.append(source_row)
-            rows.extend(source_rows)
+    from concurrent.futures import ThreadPoolExecutor
+
+    proxmox_requests = [
+        (index, url, token_file, token_ids[index], source_ids[index], ca_file)
+        for index, (url, token_file) in enumerate(proxmox_specs_value)
+    ]
+    if len(proxmox_requests) > 1:
+        with ThreadPoolExecutor(max_workers=min(8, len(proxmox_requests))) as pool:
+            proxmox_results = list(pool.map(_read_proxmox_endpoint, proxmox_requests))
+    else:
+        proxmox_results = [_read_proxmox_endpoint(args) for args in proxmox_requests]
+    for item in proxmox_results:
+        rows.extend(item["rows"])
+        source_results.append(item["source"])
+        if item["source"]["status"] == "HEALTHY":
             successful_proxmox_sources += 1
-            source_results.append(_source_result(
-                source_name, "HEALTHY", started, rows=len(source_rows),
-            ))
-        except (OSError, ValueError, UnicodeError) as exc:
+        elif item["source"]["status"] == "UNAVAILABLE":
             failed_proxmox_sources += 1
-            source_results.append(_source_result(
-                source_name, "UNAVAILABLE", started,
-                error_code=_source_error_code(exc),
-            ))
-            errors.append(f"{source_name} unavailable")
+            errors.append(item["error"])
     if successful_proxmox_sources:
         proxmox_value = {"data": rows}
     if failed_proxmox_sources and successful_proxmox_sources:
