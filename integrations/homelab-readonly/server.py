@@ -1247,6 +1247,35 @@ def _format_node_activity_fallback(
             ) + "."
         else:
             response += " Current provider-reported residency is unavailable."
+        observations = summary.get("availability_summary", []) if isinstance(summary, dict) else []
+        target_observations = []
+        for observation in observations if isinstance(observations, list) else []:
+            if not isinstance(observation, dict):
+                continue
+            monitor_name = " ".join(str(observation.get("name") or "").split())[:100]
+            monitor_key = re.sub(r"[^a-z0-9]+", "", monitor_name.casefold())
+            if target and (target in monitor_key or monitor_key in target):
+                target_observations.append((monitor_name, observation))
+        if len(target_observations) == 1:
+            monitor_name, observation = target_observations[0]
+            monitor_status = str(observation.get("status") or "unknown").casefold()
+            if monitor_status not in {"up", "down", "online", "offline", "unknown"}:
+                monitor_status = "unknown"
+            freshness = str(observation.get("freshness") or "UNKNOWN").upper()
+            response += (
+                f" A separate Uptime Kuma check named {monitor_name} reports "
+                f"{monitor_status} ({freshness.casefold()} observation)."
+            )
+            response += (
+                " Its record is linked to this machine in the current inventory."
+                if _inference_monitor_is_linked_to_target(summary, target, observation)
+                else " No stable identity link confirms that this check targets the physical host."
+            )
+        elif len(target_observations) > 1:
+            response += (
+                " Multiple similarly named Uptime Kuma checks exist, but none can be "
+                "used to establish this machine's reachability without a stable identity link."
+            )
         response += (
             " I can't verify that this endpoint belongs to the physical host you named, "
             "or that generation or GPU execution works."
@@ -1282,6 +1311,35 @@ def _format_node_activity_fallback(
         if details:
             response += " Source disagreement: " + "; ".join(details) + "."
     return response + " No linked inference endpoint provides current model activity for this machine."
+
+
+def _inference_monitor_is_linked_to_target(
+    summary: dict, target: str, observation: dict,
+) -> bool:
+    source_identity = observation.get("source_identity")
+    if not isinstance(source_identity, str) or not source_identity:
+        return False
+    resources = summary.get("resources", []) if isinstance(summary, dict) else []
+    target_canonical_ids = set()
+    monitor_canonical_ids = set()
+    for resource in resources if isinstance(resources, list) else []:
+        if not isinstance(resource, dict):
+            continue
+        identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
+        canonical_id = identity.get("canonical_id")
+        if not isinstance(canonical_id, str) or not canonical_id:
+            continue
+        source_ids = identity.get("source_identities") if isinstance(identity.get("source_identities"), dict) else {}
+        kuma_ids = source_ids.get("kuma", [])
+        if source_identity in kuma_ids:
+            monitor_canonical_ids.add(canonical_id)
+        inventory = resource.get("inventory") if isinstance(resource.get("inventory"), dict) else {}
+        resource_name = inventory.get("name") or resource.get("name")
+        if isinstance(resource_name, str) and re.sub(
+            r"[^a-z0-9]+", "", resource_name.casefold(),
+        ) == target:
+            target_canonical_ids.add(canonical_id)
+    return bool(target_canonical_ids & monitor_canonical_ids)
 
 
 def format_inference_inventory_response(user_text: str, inventory: dict, summary: dict) -> str:

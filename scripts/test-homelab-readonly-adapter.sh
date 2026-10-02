@@ -701,15 +701,40 @@ assert "qwen3.6:35b is listed by Tartarus inference endpoint" in unlinked_model_
 assert "can't verify which physical machine this endpoint belongs to" in unlinked_model_answer, unlinked_model_answer
 assert "inference:tartarus" not in unlinked_model_answer, unlinked_model_answer
 tartarus_activity = server.format_inference_inventory_response(
-    "What's Tartarus doing right now?", unlinked_inference, {"resources": [{
+    "What's Tartarus doing right now?", unlinked_inference, {
+        "availability_summary": [{
+            "name": "host-tartarus", "status": "up", "freshness": "FRESH",
+            "source_identity": "kuma:monitor:12",
+        }],
+        "resources": [{
         "name": "Tartarus", "runtime_status": "NOT_OBSERVED",
         "inventory": {"name": "Tartarus", "role": "deep inference"},
-    }]},
+        }],
+    },
 )
 assert "configured Tartarus inference endpoint responded to a live catalog read" in tartarus_activity, tartarus_activity
 assert "provider catalog lists qwen3.6:35b" in tartarus_activity, tartarus_activity
+assert "separate Uptime Kuma check named host-tartarus reports up (fresh observation)" in tartarus_activity, tartarus_activity
+assert "No stable identity link confirms that this check targets the physical host" in tartarus_activity, tartarus_activity
 assert "can't verify that this endpoint belongs to the physical host you named" in tartarus_activity, tartarus_activity
 assert "Proxmox currently reports Tartarus online" not in tartarus_activity, tartarus_activity
+linked_tartarus_activity = server.format_inference_inventory_response(
+    "What's Tartarus doing right now?", unlinked_inference, {
+        "availability_summary": [{
+            "name": "host-tartarus", "status": "down", "freshness": "FRESH",
+            "source_identity": "kuma:monitor:12",
+        }],
+        "resources": [{
+            "name": "Tartarus", "runtime_status": "NOT_OBSERVED",
+            "identity": {"canonical_id": "netbox:device:3",
+                         "source_identities": {"kuma": ["kuma:monitor:12"]}},
+            "inventory": {"id": 3, "name": "Tartarus", "role": "deep inference"},
+        }],
+    },
+)
+assert "Uptime Kuma check named host-tartarus reports down (fresh observation)" in linked_tartarus_activity, linked_tartarus_activity
+assert "Its record is linked to this machine in the current inventory" in linked_tartarus_activity, linked_tartarus_activity
+assert "can't verify that this endpoint belongs to the physical host you named" in linked_tartarus_activity, linked_tartarus_activity
 offline_tartarus_activity = server.format_inference_inventory_response(
     "What's Tartarus doing right now?", {
         "status": "PARTIAL", "endpoints": [{
