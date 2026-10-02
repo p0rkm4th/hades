@@ -89,6 +89,12 @@ household_model_denial = hades._hades_direct_homelab_read(
     "What models are available?", scope="household",
 )
 assert "available only in an owner session" in household_model_denial
+household_ai_availability = hades._hades_direct_homelab_read(
+    "Can we use the AI thing right now?", "synthetic-beta", "household",
+)
+assert "AI service checks are responding" in household_ai_availability, household_ai_availability
+assert "haven't confirmed a prompt will work" in household_ai_availability, household_ai_availability
+assert "Tartarus" not in household_ai_availability and "qwen" not in household_ai_availability, household_ai_availability
 household_gpu_denial = hades._hades_direct_homelab_read(
     "Which GPUs are free?", scope="household",
 )
@@ -376,7 +382,9 @@ household_ai_availability = household_game_agent.run_conversation(
     "Can we use the AI thing right now?", conversation_history=[]
 )
 assert household_ai_availability.get("completed") is True and household_ai_availability.get("api_calls") == 0, household_ai_availability
-assert "available only in an owner session" in household_ai_availability["final_response"], household_ai_availability
+assert "AI service checks are responding" in household_ai_availability["final_response"], household_ai_availability
+assert "haven't confirmed a prompt will work" in household_ai_availability["final_response"], household_ai_availability
+assert "Tartarus" not in household_ai_availability["final_response"], household_ai_availability
 household_game_status = household_game_agent.run_conversation(
     "Is Minecraft working?", conversation_history=[],
 )

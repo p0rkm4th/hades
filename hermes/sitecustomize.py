@@ -5171,6 +5171,24 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     if placement_intent:
         inference_intent = True
     if inference_intent and scope != "owner":
+        if ai_availability_intent:
+            inventory = _hades_direct_homelab_tool_result("homelab_inference_inventory")
+            endpoints = inventory.get("endpoints", []) if isinstance(inventory, dict) else []
+            statuses = [
+                str(endpoint.get("status") or "UNKNOWN").upper()
+                for endpoint in endpoints if isinstance(endpoint, dict)
+            ] if isinstance(endpoints, list) else []
+            responding = sum(status in {"READABLE", "HEALTHY", "OK"} for status in statuses)
+            if responding and responding == len(statuses) and str(inventory.get("status", "")).upper() in {"READABLE", "HEALTHY", "OK"}:
+                return (
+                    "The AI service checks are responding, but I haven't confirmed a prompt will work right now. "
+                    "The latest check only verified availability."
+                )
+            if responding:
+                return (
+                    "Some AI service checks are responding, but I can't confirm the service is ready for a prompt right now."
+                )
+            return "I couldn't verify whether the AI service is available right now."
         return "Detailed model and infrastructure information is available only in an owner session."
     workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
     if not workdir:
