@@ -224,6 +224,15 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
+    owner_network_status = owner_agent.run_conversation(
+        "Why does the network feel slow?", conversation_history=[]
+    )
+    assert owner_network_status.get("completed") is True, owner_network_status
+    assert owner_network_status.get("api_calls") == 0, owner_network_status
+    assert "cannot identify a network bottleneck or trend from this evidence" in owner_network_status["final_response"], owner_network_status
+    assert "homelab_inference_inventory" not in registry.calls, registry.calls
+
+    registry.calls.clear()
     household_game_status = household_agent.run_conversation(
         "Is the game server working?", conversation_history=[]
     )
@@ -787,6 +796,7 @@ network_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-network-diagnosis",
     stream_delta_callback=lambda _chunk: None, **kwargs,
 )
+registry.calls.clear()
 network_diagnosis = network_agent.run_conversation(
     "Something feels slow on the network; check node status, network health, recent resource usage, and services, then tell me what looks abnormal.",
     conversation_history=[],
@@ -799,7 +809,20 @@ assert "Uptime Kuma's configured probes failed: Search latency check." in networ
 assert "Fresh configured-probe response-time samples: Router ping: 84 ms." in network_text, network_text
 assert "Packet-loss, throughput, and historical comparison data are unavailable" in network_text, network_text
 assert "cannot identify a network bottleneck or trend from this evidence" in network_text, network_text
+assert "homelab_inference_inventory" not in registry.calls, registry.calls
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
+registry.calls.clear()
+natural_network_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-natural-network-diagnosis",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+natural_network = natural_network_agent.run_conversation(
+    "Why does the network feel slow?", conversation_history=[],
+)
+assert natural_network.get("completed") is True and natural_network.get("api_calls") == 0, natural_network
+assert "Fresh configured-probe response-time samples:" in natural_network["final_response"], natural_network
+assert "cannot identify a network bottleneck or trend from this evidence" in natural_network["final_response"], natural_network
+assert "homelab_inference_inventory" not in registry.calls, registry.calls
 del os.environ["HADES_TEST_HOMELAB_BOTTLENECK"]
 
 # A nontechnical household user who cannot name the TV device gets a focused

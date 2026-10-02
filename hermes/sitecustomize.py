@@ -5182,7 +5182,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         text,
         re.IGNORECASE,
     ))
-    broad_owner_status_intent = _hades_broad_homelab_status_intent(text)
+    household_broad_status_intent = _hades_broad_homelab_status_intent(text)
+    network_diagnostic_intent = bool(
+        re.search(r"\b(?:network|internet|wi-?fi|dns)\b", text, re.IGNORECASE)
+        and re.search(r"\b(?:slow|latency|bottleneck|performance|packet\s+loss|throughput)\b", text, re.IGNORECASE)
+    )
+    broad_owner_status_intent = household_broad_status_intent and not network_diagnostic_intent
     ai_availability_intent = bool(re.search(
         r"\b(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
         r"\b(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,35}"
@@ -5210,7 +5215,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     )
     if scope != "owner" and household_private_placement_intent:
         return "I can't provide internal host or address details from this account."
-    if scope != "owner" and (broad_owner_status_intent or household_node_status_intent) and not household_game_health_intent:
+    if scope != "owner" and (household_broad_status_intent or household_node_status_intent) and not household_game_health_intent:
         return (
             "I can't verify private infrastructure or computer status from this account. "
             "I can check approved household services, such as the game server."
