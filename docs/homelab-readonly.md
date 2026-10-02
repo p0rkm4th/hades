@@ -359,13 +359,13 @@ catalog/residency reads do not establish generation health, host runtime health,
 CPU/GPU utilization, or free VRAM. Those fields stay unknown unless a separate
 current source supports them. Stable NetBox device identity is required to
 associate a provider endpoint with a named machine. Placement questions may
-receive a shortlist based on a linked, responding endpoint and its recorded
-role, but that is only a candidate for evaluation; HADES cannot claim spare
-capacity or model fit without current GPU telemetry and workload memory
-requirements. A free-GPU question stays unknown without live utilization and
-free-VRAM evidence. If a machine has no linked inference endpoint, HADES falls
-back to Proxmox runtime and NetBox role when present; a NetBox record alone
-never becomes an online claim.
+list linked, responding endpoints and their current loaded models. HADES must
+not rank or recommend a host unless current per-host capacity evidence and the
+model's runtime memory requirements are available. A stale hardware role or
+responding endpoint alone is not placement evidence. A free-GPU question stays
+unknown without live utilization and free-VRAM evidence. If a machine has no
+linked inference endpoint, HADES falls back to Proxmox runtime and NetBox role
+when present; a NetBox record alone never becomes an online claim.
 
 Owner service-location questions use only the NetBox application-service
 catalog. HADES answers placement only when catalog coverage is complete and a
