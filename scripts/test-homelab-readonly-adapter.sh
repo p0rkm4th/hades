@@ -212,6 +212,13 @@ assert config.source_specs()[1][0] == "https://netbox.example.test/api/dcim/devi
 assert config.source_specs()[2][0] == "https://status.example.test/api/status-page/heartbeat/hades-status"
 os.environ["HADES_PROXMOX_RESOURCES_URLS"] = "https://a.example.test/r,https://b.example.test/r"
 os.environ["HADES_PROXMOX_TOKEN_FILES"] = "/run/a,/run/b"
+os.environ.pop("HADES_PROXMOX_TOKEN_IDS", None)
+try:
+    config.proxmox_token_ids()
+except ValueError as exc:
+    assert "required when token files are configured" in str(exc)
+else:
+    raise AssertionError("Proxmox token files without token IDs must fail closed")
 os.environ["HADES_PROXMOX_TOKEN_IDS"] = "svc-hades-ro@pve!a,svc-hades-ro@pve!b"
 assert config.proxmox_specs() == (
     ("https://a.example.test/r", "/run/a"),

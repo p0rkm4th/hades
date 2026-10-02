@@ -95,13 +95,25 @@ HTTP success: `/cluster/resources` can return a node-only view while guest rows
 are still absent. Acceptance for guest coverage requires the intended VM rows
 and successful reads of only the explicitly approved guest-agent information.
 
-Required private placeholders:
+Use protected token files containing only the token secret. Proxmox token IDs
+are separate non-secret identifiers. URL, token-ID, and token-file lists must
+have matching counts, except that one token ID or token file may be shared
+across the configured Proxmox URLs. Token files must be regular, non-symlink
+files with mode `0600` or `0640`.
 
 ```dotenv
-HADES_PROXMOX_URL=https://proxmox.example.invalid:8006/api2/json
-HADES_PROXMOX_TOKEN_ID=svc-hades-ro@pve!readonly
-HADES_PROXMOX_TOKEN_SECRET=<private>
+HADES_PROXMOX_RESOURCES_URLS=https://pve-a.example.invalid:8006/api2/json/cluster/resources,https://pve-b.example.invalid:8006/api2/json/cluster/resources
+HADES_PROXMOX_TOKEN_IDS=svc-hades-ro@pve!readonly-a,svc-hades-ro@pve!readonly-b
+HADES_PROXMOX_TOKEN_FILES=/run/hades/pve-a.token,/run/hades/pve-b.token
+HADES_PROXMOX_CA_FILE=/run/hades/proxmox-ca-bundle.pem
 ```
+
+For a single standalone endpoint, `HADES_PROXMOX_URL` may provide the API base
+and `HADES_PROXMOX_TOKEN_FILE` the one protected secret file. The adapter
+derives `/cluster/resources`; `HADES_PROXMOX_TOKEN_IDS` is still required for
+the Proxmox API-token header. Inline `HADES_PROXMOX_TOKEN_SECRET` and singular
+`HADES_PROXMOX_TOKEN_ID` are not consumed by the adapter and are rejected by
+preflight.
 
 ### NetBox
 
@@ -112,8 +124,15 @@ IP prefixes only if those are the owner-approved inventory domains.
 
 ```dotenv
 HADES_NETBOX_URL=https://netbox.example.invalid
-HADES_NETBOX_TOKEN=<private-v2-token>
+HADES_NETBOX_TOKEN_FILE=/run/hades/netbox.token
 ```
+
+The token file contains the read-only bearer token and must be a regular,
+non-symlink file with mode `0600` or `0640`. Inline `HADES_NETBOX_TOKEN` is not
+consumed by this adapter and is rejected by preflight. Uptime Kuma uses
+`HADES_UPTIME_KUMA_URL` plus `HADES_UPTIME_KUMA_STATUS_SLUG` and, when its
+published page requires authentication, an optional protected
+`HADES_KUMA_TOKEN_FILE`.
 
 ### Network discovery
 

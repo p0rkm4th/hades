@@ -41,6 +41,8 @@ def proxmox_token_ids() -> tuple[str, ...]:
     ids = _split("HADES_PROXMOX_TOKEN_IDS")
     count = len(proxmox_specs())
     if not ids:
+        if any(token_file for _, token_file in proxmox_specs()):
+            raise ValueError("Proxmox token IDs are required when token files are configured")
         return tuple("" for _ in range(count))
     if len(ids) not in {1, count}:
         raise ValueError("Proxmox token-ID count must match URL count or use one shared token ID")

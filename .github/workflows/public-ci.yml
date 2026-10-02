@@ -44,6 +44,8 @@ jobs:
         run: bash scripts/test-homelab-readonly-adapter.sh
       - name: Check homelab MCP registration and private input wiring
         run: bash scripts/test-homelab-mcp-registration.sh
+      - name: Check homelab read-only config preflight shapes
+        run: bash scripts/test-readonly-config-shapes.sh
       - name: Check natural-language homelab routing
         run: bash scripts/test-decision-api-contract.sh
 
