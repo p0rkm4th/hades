@@ -1430,13 +1430,24 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
     all_models = []
     all_loaded = []
     loaded_unknown_labels = set()
+    unlinked_labels = set()
     unavailable = 0
     for endpoint in endpoints[:16]:
         if not isinstance(endpoint, dict):
             continue
         endpoint_id = str(endpoint.get("source_identity") or "configured provider")
         machine = resource_names.get(endpoint.get("node_identity"))
-        label = str(machine or endpoint_id)
+        if machine:
+            label = str(machine)
+        else:
+            endpoint_name = endpoint_id.removeprefix("inference:")
+            endpoint_name = " ".join(re.sub(r"[._-]+", " ", endpoint_name).split())
+            label = (
+                f"{endpoint_name.title()} inference endpoint"
+                if endpoint_name and endpoint_name != "configured provider"
+                else "Configured inference endpoint"
+            )
+            unlinked_labels.add(label)
         endpoint_status = str(endpoint.get("status") or "UNKNOWN").upper()
         if endpoint_status not in {"READABLE", "PARTIAL"}:
             unavailable += 1
@@ -1493,6 +1504,8 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
                 result += " Current loaded-model state is unavailable for at least one matching provider."
             else:
                 result += " It is not currently reported as loaded."
+            if any(label in unlinked_labels for label in locations):
+                result += " I can't verify which physical machine this endpoint belongs to."
             return (
                 result
                 + " This checks provider catalog and residency APIs; it does not prove GPU execution "

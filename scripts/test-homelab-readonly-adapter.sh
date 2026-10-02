@@ -685,6 +685,21 @@ where_answer = server.format_inference_inventory_response(
 assert "sample:small is listed by GPU A" in where_answer, where_answer
 assert "Provider reports it resident on GPU A" in where_answer, where_answer
 assert "does not prove GPU execution" in where_answer, where_answer
+unlinked_inference = {
+    "status": "READABLE",
+    "endpoints": [{
+        "source_identity": "inference:tartarus", "node_identity": None,
+        "identity_status": "UNLINKED", "status": "READABLE",
+        "loaded_status": "CURRENT", "models": [{"name": "qwen3.6:35b"}],
+        "loaded_models": [],
+    }],
+}
+unlinked_model_answer = server.format_inference_inventory_response(
+    "Where is qwen3.6:35b?", unlinked_inference, {"resources": []},
+)
+assert "qwen3.6:35b is listed by Tartarus inference endpoint" in unlinked_model_answer, unlinked_model_answer
+assert "can't verify which physical machine this endpoint belongs to" in unlinked_model_answer, unlinked_model_answer
+assert "inference:tartarus" not in unlinked_model_answer, unlinked_model_answer
 summary_names["capability_freshness"] = "FRESH"
 summary_names["capability_machines"] = [{
     "name": "GPU A", "role": "deep inference lane",
