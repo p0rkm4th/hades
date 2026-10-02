@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""Exercise safe, fail-closed homelab overlay composition on synthetic files."""
+from __future__ import annotations
+
+import ast
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+PREPARER = ROOT / "scripts/prepare-homelab-overlay-candidate.py"
+
+SOURCE = '''
+import re
+def _hades_direct_homelab_read(text, subject="", scope="owner", context_text=""):
+    return _hades_homelab_helper(text)
+def _hades_homelab_helper(text):
+    return text
+def _hades_ambiguous_media_device_clarification(text):
+    return re.search("device", text)
+'''
+
+ACTIVE = '''
+import re
+_compound_briefing = False
+_expiry_response = "expired"
+_hades_logger = None
+def _hades_direct_homelab_read(text):
+    return text
+def _hades_ambiguous_media_device_clarification(text):
+    return None
+def handler(self, user_message, previous_user_text, _preflight_text):
+    if self._hades_session_scope == "owner" and _compound_briefing:
+        return _hades_direct_homelab_read("homelab status and blockers")
+    if self._hades_session_scope == "owner":
+        response = _hades_direct_homelab_read(user_message)
+    if self._hades_session_scope in {"owner", "household"} and not _compound_briefing:
+        if _expiry_response:
+            return _hades_direct_grocy_expiry_read()
+        if self._hades_session_scope == "owner":
+            return "owner"
+'''
+
+
+def run(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([sys.executable, str(PREPARER), *args], text=True, capture_output=True)
+
+
+with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
+    directory = Path(raw)
+    os.chmod(directory, 0o700)
+    active = directory / "active.py"
+    source = directory / "source.py"
+    output = directory / "candidate.py"
+    active.write_text(ACTIVE, encoding="utf-8")
+    source.write_text(SOURCE, encoding="utf-8")
+    result = run("--active-overlay", str(active), "--source", str(source), "--output", str(output))
+    assert result.returncode == 0, result.stderr
+    candidate = output.read_text(encoding="utf-8")
+    compile(candidate, str(output), "exec")
+    tree = ast.parse(candidate)
+    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "_hades_direct_homelab_read"]
+    assert len(calls) == 3, len(calls)
+    assert "getattr(self, \"_hades_subject\", \"\")" in candidate
+    assert "context_text=previous_user_text" in candidate
+    assert "household_homelab_response" in candidate
+    assert "_hades_ambiguous_media_device_clarification(_preflight_text)" in candidate
+    assert output.stat().st_mode & 0o777 == 0o600
+    assert active.read_text(encoding="utf-8") == ACTIVE
+
+    # A second run must not overwrite an existing candidate.
+    second = run("--active-overlay", str(active), "--source", str(source), "--output", str(output))
+    assert second.returncode != 0
+    assert "new path" in second.stderr
+
+    # Unknown legacy call shapes fail without creating output.
+    changed = directory / "changed.py"
+    changed.write_text(ACTIVE.replace('_hades_direct_homelab_read(user_message)', '_hades_direct_homelab_read("changed")'), encoding="utf-8")
+    refused = run("--active-overlay", str(changed), "--source", str(source), "--output", str(directory / "refused.py"))
+    assert refused.returncode != 0
+    assert "unrecognized active homelab call" in refused.stderr
+    assert not (directory / "refused.py").exists()
+
+print("PASS synthetic focused overlay composition, permissions, preservation, idempotent refusal, and drift refusal")
