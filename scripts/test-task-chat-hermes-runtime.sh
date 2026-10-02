@@ -522,10 +522,15 @@ try:
     capacity_followup = compute_node_a_agent.run_conversation(
         "What about a 20 GB one?", conversation_history=capacity_history,
     )
+    unanchored_capacity_followup = compute_node_a_agent.run_conversation(
+        "What about a 20 GB one?", conversation_history=[],
+    )
 finally:
     os.environ.pop("HADES_TEST_FOLLOWUP_NODE", None)
 assert capacity_followup.get("completed") is True and capacity_followup.get("api_calls") == 0, capacity_followup
 assert "can't determine which GPU has room" in capacity_followup["final_response"], capacity_followup
+assert unanchored_capacity_followup.get("completed") is True and unanchored_capacity_followup.get("api_calls") == 0, unanchored_capacity_followup
+assert "can't determine which GPU has room" in unanchored_capacity_followup["final_response"], unanchored_capacity_followup
 actual_node_read = hades._hades_direct_homelab_read
 hades._hades_direct_homelab_read = lambda *_args, **_kwargs: None
 unavailable_node_agent = agent_class(

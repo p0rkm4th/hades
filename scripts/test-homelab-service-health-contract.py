@@ -475,7 +475,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert 'sample:small is listed at Compute Node A' in correction, correction
             assert namespace['_hades_homelab_followup_prompt'](
                 'Which one has more room?', 'owner', ''
-            ) is None
+            ) == 'Where should I run another model?'
         finally:
             os.environ.pop('HADES_TEST_INFERENCE_NODE', None)
         assert "can't verify private infrastructure or computer status" in direct_read(

@@ -5040,7 +5040,7 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
         return None
     current = str(user_text or "").strip()
     context = str(context_text or "").strip()
-    if not current or not context:
+    if not current:
         return None
     history = context
     if history.casefold().endswith(current.casefold()):
@@ -5104,6 +5104,10 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
         if mentioned:
             target = max(mentioned, key=lambda item: item[0])[1]
     if not target:
+        if placement_size:
+            return f"Where should I run a {placement_size.group('size')} GB model?"
+        if placement_followup:
+            return "Where should I run another model?"
         return None
     if explicit:
         return f"What's {target} doing right now?"
