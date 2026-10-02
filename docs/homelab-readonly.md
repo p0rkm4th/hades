@@ -341,7 +341,12 @@ observed capability inventory and any matching fresh Kuma check. Provider
 catalog/residency reads do not establish generation health, host runtime health,
 CPU/GPU utilization, or free VRAM. Those fields stay unknown unless a separate
 current source supports them. Stable NetBox device identity is required to
-associate a provider endpoint with a named machine.
+associate a provider endpoint with a named machine. Placement questions may
+receive a shortlist based on a linked, responding endpoint and its recorded
+role, but that is only a candidate for evaluation; HADES cannot claim spare
+capacity or model fit without current GPU telemetry and workload memory
+requirements. A free-GPU question stays unknown without live utilization and
+free-VRAM evidence.
 
 Owner service-location questions use only the NetBox application-service
 catalog. HADES answers placement only when catalog coverage is complete and a

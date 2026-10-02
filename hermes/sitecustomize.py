@@ -4774,7 +4774,16 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         text,
         re.IGNORECASE,
     ))
+    placement_intent = bool(re.search(
+        r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
+        r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
+        r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",
+        text,
+        re.IGNORECASE,
+    ))
     if node_activity_intent:
+        inference_intent = True
+    if placement_intent:
         inference_intent = True
     if inference_intent and scope != "owner":
         return "Detailed model and infrastructure information is available only in an owner session."
@@ -4813,6 +4822,34 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         if inference_intent:
             inference = module.homelab_inference_inventory()
             summary = module.homelab_summary() if node_activity_intent else {}
+            if placement_intent:
+                try:
+                    labels = module.resolve_inference_node_labels(inference)
+                    capabilities = module.homelab_compute_capabilities()
+                    summary = {
+                        "resources": [
+                            {"identity": {"canonical_id": identity}, "inventory": {"name": name}}
+                            for identity, name in labels.items()
+                        ] if isinstance(labels, dict) else [],
+                        "capability_machines": capabilities.get("machines", [])
+                        if isinstance(capabilities, dict) else [],
+                        "capability_freshness": capabilities.get("freshness", "UNKNOWN")
+                        if isinstance(capabilities, dict) else "UNKNOWN",
+                    }
+                except Exception:
+                    summary = {"resources": [], "capability_machines": []}
+                if not summary["capability_machines"]:
+                    matrix_path = os.environ.get("HADES_CAPABILITY_MATRIX_FILE", "").strip()
+                    if matrix_path:
+                        try:
+                            import yaml
+                            matrix_document = yaml.safe_load(Path(matrix_path).read_text(encoding="utf-8"))
+                            summary["capability_machines"] = (
+                                matrix_document.get("machines", [])
+                                if isinstance(matrix_document, dict) else []
+                            )
+                        except (OSError, ValueError, UnicodeError):
+                            pass
             if re.search(
                 r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
                 text,

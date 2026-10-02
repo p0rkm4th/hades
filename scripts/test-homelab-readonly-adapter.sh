@@ -605,6 +605,18 @@ where_answer = server.format_inference_inventory_response(
 )
 assert "sample:small is listed by GPU A" in where_answer, where_answer
 assert "Loaded now on GPU A" in where_answer, where_answer
+summary_names["capability_freshness"] = "FRESH"
+summary_names["capability_machines"] = [{
+    "name": "GPU A", "role": "deep inference lane",
+    "gpus": [{"model": "synthetic accelerator", "count": 4}],
+}]
+placement_answer = server.format_inference_inventory_response(
+    "Where should I run another model?", inference, summary_names,
+)
+assert "GPU A is a candidate to evaluate" in placement_answer, placement_answer
+assert "recorded role is deep inference lane" in placement_answer, placement_answer
+assert "4 × synthetic accelerator (fresh observation)" in placement_answer, placement_answer
+assert "can't confirm capacity or fit" in placement_answer, placement_answer
 node_activity_answer = server.format_inference_inventory_response(
     "What's GPU A doing right now?", inference, summary_names,
 )
@@ -643,10 +655,14 @@ compatible_answer = server.format_inference_inventory_response(
 assert "sample:fast" in compatible_answer
 assert "partly unavailable" in compatible_answer
 assert "No models are currently reported as loaded" not in compatible_answer
-for question in ("Which GPUs are free?", "Where should I run another model?", "Can this handle a 20 GB model?"):
+gpu_answer = server.format_inference_inventory_response(
+    "Which GPUs are free?", compatible, {},
+)
+assert "can't verify which GPUs are free right now" in gpu_answer, gpu_answer
+assert "empty model-residency report does not establish available capacity" in gpu_answer
+for question in ("Where should I run another model?", "Can this handle a 20 GB model?"):
     answer = server.format_inference_inventory_response(question, compatible, {})
-    assert "can't determine which GPU has room" in answer, (question, answer)
-    assert "free-capacity evidence" in answer
+    assert "can't recommend an inference host" in answer, (question, answer)
 
 os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([{
     "id": "gpu-lane-a", "url": "http://inference.example.test",

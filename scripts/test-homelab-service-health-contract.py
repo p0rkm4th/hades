@@ -284,7 +284,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             '"inventory": {"name": "Compute Node A"}}]}\n'
             'def homelab_compute_capabilities():\n'
             '    return {"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
+            'def resolve_inference_node_labels(_inventory):\n'
+            '    return {"netbox:device:75": "Compute Node A"}\n'
             'def format_inference_inventory_response(text, inventory, summary):\n'
+            '    if "where should" in text.casefold():\n'
+            '        return "PLACEMENT:" + str(summary.get("capability_machines", [{}])[0].get("role"))\n'
             '    return "NODE_ACTIVITY:" + summary["resources"][0]["inventory"]["name"]\n',
             encoding='utf-8',
         )
@@ -295,6 +299,13 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert "Host CPU/GPU load and free VRAM are not connected." in node_activity
         assert 'owner session' in direct_read(
             "What's Compute Node A doing right now?", 'synthetic-household', 'household'
+        )
+        placement_route = direct_read(
+            'Where should I run another model?', 'synthetic-owner', 'owner'
+        )
+        assert placement_route == 'PLACEMENT:synthetic inference node', placement_route
+        assert 'owner session' in direct_read(
+            'Where should I run another model?', 'synthetic-household', 'household'
         )
     finally:
         if old_workdir is None:

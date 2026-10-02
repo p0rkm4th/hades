@@ -802,20 +802,21 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
     if not endpoints:
         return "I couldn't read any configured model endpoints, so I can't verify model availability right now."
 
+    gpu_availability_intent = bool(re.search(
+        r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b",
+        str(user_text or ""), re.IGNORECASE,
+    ))
     placement_intent = bool(re.search(
-        r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|"
         r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
         r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
         r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",
         str(user_text or ""), re.IGNORECASE,
     ))
-    if placement_intent:
+    if gpu_availability_intent:
         return (
-            "I can't determine which GPU has room or whether another model will fit. "
-            "Live GPU utilization/free-VRAM telemetry and the model's runtime memory "
-            "requirements are not connected. Ollama loaded-model data is useful context, "
-            "but it is not free-capacity evidence; the OpenAI-compatible catalog does "
-            "not report residency."
+            "I can't verify which GPUs are free right now. Live GPU utilization and free-VRAM "
+            "telemetry are not connected. A hardware inventory or empty model-residency "
+            "report does not establish available capacity."
         )
 
     resource_names = {}
@@ -870,6 +871,64 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
         else:
             result += " Current loaded-model state is unavailable."
         return result + " This does not establish host CPU/GPU utilization or prove a generation request works."
+
+    if placement_intent:
+        candidates = []
+        capability_machines = (
+            summary.get("capability_machines", []) if isinstance(summary, dict) else []
+        )
+        capabilities = {
+            re.sub(r"[^a-z0-9]+", "", str(machine.get("name") or "").casefold()): machine
+            for machine in capability_machines if isinstance(machine, dict)
+        }
+        for endpoint in endpoints[:16]:
+            if not isinstance(endpoint, dict) or endpoint.get("status") != "READABLE":
+                continue
+            label = resource_names.get(endpoint.get("node_identity"))
+            if not isinstance(label, str) or not label:
+                continue
+            key = re.sub(r"[^a-z0-9]+", "", label.casefold())
+            machine = capabilities.get(key, {})
+            role = " ".join(str(machine.get("role") or "").split())[:120]
+            loaded = endpoint.get("loaded_models") if isinstance(endpoint.get("loaded_models"), list) else []
+            loaded_state = endpoint.get("loaded_status")
+            gpu_rows = machine.get("gpus") if isinstance(machine.get("gpus"), list) else []
+            gpu_names = []
+            for gpu in gpu_rows:
+                if isinstance(gpu, str):
+                    gpu_names.append(gpu)
+                elif isinstance(gpu, dict) and (gpu.get("model") or gpu.get("name")):
+                    count = gpu.get("count")
+                    prefix = f"{count} × " if isinstance(count, int) and 1 < count < 129 else ""
+                    gpu_names.append(prefix + str(gpu.get("model") or gpu.get("name")))
+            candidates.append((
+                label, role, gpu_names[:5], str(summary.get("capability_freshness") or "UNKNOWN").upper(),
+                loaded, loaded_state,
+            ))
+        if not candidates:
+            return (
+                "I can't recommend an inference host from the current reads: no responding "
+                "provider endpoint is linked to a named inventory device."
+            )
+        candidates.sort(key=lambda row: (not any(term in row[1].casefold() for term in ("deep", "large", "inference", "gpu")), row[0].casefold()))
+        label, role, gpu_names, hardware_freshness, loaded, loaded_state = candidates[0]
+        reason = f"{label} is a candidate to evaluate because its linked inference endpoint is responding"
+        if role:
+            reason += f" and its recorded role is {role}"
+        if gpu_names:
+            reason += "; hardware inventory lists " + ", ".join(gpu_names)
+            reason += f" ({hardware_freshness.casefold()} observation)"
+        if loaded_state == "CURRENT":
+            names = [str(model.get("name")) for model in loaded if isinstance(model, dict) and model.get("name")]
+            reason += "; provider reports " + ("no models currently loaded" if not names else "these models loaded: " + ", ".join(names[:5]))
+        reason += "."
+        if len(candidates) > 1:
+            reason += " Other responding linked endpoints may also be candidates depending on model size and workload."
+        return (
+            reason + " This is a shortlist only: live GPU load/free VRAM and the model's "
+            "runtime memory needs, including quantization and context, are not available, "
+            "so I can't confirm capacity or fit."
+        )
 
     reachable = []
     all_models = []
