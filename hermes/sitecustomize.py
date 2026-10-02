@@ -4878,6 +4878,22 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
     or provisioning requests.
     """
     text = str(user_text or "")
+    change_intent = bool(re.search(
+        r"^\s*what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time)\s*[?.!]*\s*$",
+        text,
+        re.IGNORECASE,
+    ))
+    broad_owner_status_intent = bool(re.search(
+        r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)|"
+        r"are\s+all\s+(?:the\s+)?computers?\s+(?:okay|ok|all\s+right|good)|"
+        r"what(?:['’]s|\s+is)\s+down|anything\s+(?:down|dying|wrong|broken)|"
+        r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)|"
+        r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
+        r"why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
+        r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$",
+        text,
+        re.IGNORECASE,
+    ))
     # Explicit public research has a separate, privacy-checked route. Source
     # vocabulary such as "hosts" or "servers" must not turn that request into
     # an internal homelab status read.
@@ -4913,13 +4929,13 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         or re.fullmatch(r"\s*what\s+does\s+.+?\s+(?:do|mean)\s*[?.!]*\s*", text, re.IGNORECASE)
     ) and not re.search(
         r"\b(?:status|state|health|healthy|running|working|online|offline|up|down|doing|"
-        r"responding|reachable|performance|slow|broken|failing|wrong|unavailable)\b",
+        r"responding|reachable|performance|slow|broken|failing|wrong|fucked|dying|trouble|okay|ok|good|changed|unavailable)\b",
         text,
         re.IGNORECASE,
     )
     if _definition_question:
         return None
-    if not re.search(
+    if not broad_owner_status_intent and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -5182,7 +5198,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                 summary["online_names"] = list(dict.fromkeys(
                     [*summary.get("online_names", []), *[item["name"] for item in guest_resources if item["currently_online"]]]
                 ))
-        target_name = _hades_homelab_target_from_question(text)
+        target_name = None if broad_owner_status_intent else _hades_homelab_target_from_question(text)
         if target_name:
             target = target_name
             target_key = _hades_homelab_name_key(target)
@@ -5411,7 +5427,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
             )
         if detailed_request:
             runtime_details = [
-                (item.get("runtime_detail") or item.get("runtime")) for item in resources
+                (item.get("name") or "Unnamed resource", item.get("runtime_detail") or item.get("runtime")) for item in resources
                 if isinstance(item, dict) and isinstance(item.get("runtime_detail") or item.get("runtime"), dict)
                 and item.get("currently_online")
             ]
@@ -5421,21 +5437,34 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                         return f"{float(value) / (1024 ** 3):.1f} GiB"
                     except (TypeError, ValueError):
                         return "unknown"
-                def _runtime_line(row):
+                def _runtime_line(resource_name, row):
                     cpu = f", CPU {float(row.get('cpu')) * 100:.1f}%" if row.get('cpu') is not None else ""
                     location = f" on {row['node']}" if row.get("node") else ""
+                    vmid = row.get("vmid")
+                    kind = "VM" if vmid is not None else "host"
+                    identity = f"{resource_name} {kind}" + (f" {vmid}" if vmid is not None else "")
                     return (
-                        f"{row.get('name')} VM {row.get('vmid')}{location}, "
+                        f"{identity}{location}, "
                         f"status {row.get('status')}{cpu}, "
                         f"memory {_memory(row.get('mem'))} / {_memory(row.get('maxmem'))}, "
-                        f"storage {_memory(row.get('disk'))} / {_memory(row.get('maxdisk'))}"
+                        f"Proxmox-reported disk fields {_memory(row.get('disk'))} / {_memory(row.get('maxdisk'))}"
                     )
                 response += " Runtime telemetry available from Proxmox: " + "; ".join(
-                    _runtime_line(row) for row in runtime_details
+                    _runtime_line(resource_name, row) for resource_name, row in runtime_details
                 ) + "."
-                response += " Proxmox did not provide guest OS, major-service, storage-utilization, GPU, or network-trend data in this read, so those fields remain unknown."
+                response += " These disk fields are Proxmox runtime values, not guest filesystem utilization. Proxmox did not provide guest OS, major-service, filesystem-utilization, GPU, or network-trend data in this read, so those fields remain unknown."
             if inventory_only:
-                response += " NetBox lists but Proxmox did not observe running: " + ", ".join(str(name) for name in inventory_only) + "."
+                response += " NetBox lists these devices, but no linked Proxmox runtime record is available: " + ", ".join(str(name) for name in inventory_only) + "; that does not mean they are offline."
+            unlinked_count = 0
+            if isinstance(summary, dict):
+                source_counts = summary.get("source_counts") or {}
+                if isinstance(source_counts, dict):
+                    try:
+                        unlinked_count = max(0, int(source_counts.get("identity_unlinked_resources") or 0))
+                    except (TypeError, ValueError):
+                        unlinked_count = 0
+            if unlinked_count:
+                response += f" {unlinked_count} source observations have no verified cross-source identity link, so I kept them separate."
             unknown = monitor_groups["unknown"]
             if unknown:
                 labels = [
@@ -5474,6 +5503,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                     response += " I couldn't verify repository backup freshness: " + backup_status
                 else:
                     response += " I couldn't verify repository backup freshness from a current check."
+        if change_intent:
+            response += (
+                " I can report the current state, but no historical homelab snapshot or change-event source is configured, "
+                "so I can't verify what changed since then."
+            )
         return response
     except Exception as exc:
         _hades_logger.warning("Direct homelab read failed: %s", exc)
@@ -5816,7 +5850,12 @@ def _hades_homelab_target_from_question(value):
 
 
 _HADES_HOMELAB_INTENT = re.compile(
-    r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|server(?:s)?|node(?:s)?|"
+    r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)|what(?:['’]s|\s+is)\s+down|"
+    r"anything\s+(?:down|dying|wrong|broken)|what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)|"
+    r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
+    r"why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
+    r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$|"
+    r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|server(?:s)?|computer(?:s)?|node(?:s)?|"
     r"virtual\s+machine(?:s)?|\bvm\b|container(?:s)?|sandbox(?:es)?|workload(?:s)?|"
     r"website(?:s)?|gpu(?:s)?|"
     r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"

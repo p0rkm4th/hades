@@ -48,6 +48,19 @@ namespace = {
     '_hades_phase2_backup_response': lambda *_args, **_kwargs: 'Configured HADES backup checks: current.',
 }
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
+intent_assignment = next(
+    node for node in tree.body
+    if isinstance(node, ast.Assign)
+    and any(isinstance(target, ast.Name) and target.id == '_HADES_HOMELAB_INTENT' for target in node.targets)
+)
+exec(compile(ast.Module(body=[intent_assignment], type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
+homelab_intent = namespace['_HADES_HOMELAB_INTENT']
+for prompt in (
+    'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
+    'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
+    'Are all the computers okay?',
+):
+    assert homelab_intent.search(prompt), f'owner homelab health intent missed {prompt!r}'
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 groups = namespace['_hades_homelab_availability_groups']
@@ -326,7 +339,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Packet-loss, throughput, and historical comparison data are unavailable' in routed_network, routed_network
         assert 'cannot identify a network bottleneck or trend from this evidence' in routed_network, routed_network
 
-        def write_broad_summary(monitors):
+        def write_broad_summary(monitors, **overrides):
             summary = {
                 'status': 'OK',
                 'online_names': ['HADES Core'],
@@ -341,6 +354,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 'conflicts': [], 'identity_warnings': [], 'errors': [],
                 'service_catalog': {'status': 'OK', 'services': []},
             }
+            summary.update(overrides)
             (adapter_dir / 'server.py').write_text(
                 'def homelab_summary():\n    return ' + repr(summary) + '\n',
                 encoding='utf-8',
@@ -361,6 +375,33 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         )
         assert 'No blocker was reported by the configured live sources.' in covered, covered
         assert 'A responding probe does not prove application login' in covered, covered
+        for prompt in (
+            'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
+            'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
+        ):
+            answer_text = direct_read(prompt, 'synthetic-owner', 'owner')
+            assert answer_text, f'direct owner homelab status route missed {prompt!r}'
+            if prompt == 'What changed since yesterday?':
+                assert 'no historical homelab snapshot or change-event source is configured' in answer_text
+        assert direct_read('What is down?', 'synthetic-household', 'household') is None
+        write_broad_summary(
+            [],
+            inventory_only_names=['GPU Node'],
+            source_counts={'identity_unlinked_resources': 3},
+            resources=[
+                {'name': 'Lab Host', 'runtime_status': 'online', 'currently_online': True,
+                 'runtime': {'status': 'online', 'mem': 8, 'maxmem': 16, 'disk': 20, 'maxdisk': 40}},
+                {'name': 'App Guest', 'runtime_status': 'running', 'currently_online': True,
+                 'runtime': {'name': 'ignored', 'vmid': 803, 'node': 'Lab Host', 'status': 'running',
+                             'mem': 4, 'maxmem': 8, 'disk': 10, 'maxdisk': 20}},
+            ],
+        )
+        formatted = direct_read('Give me a detailed homelab status', 'synthetic-owner', 'owner')
+        assert 'Lab Host host' in formatted and 'App Guest VM 803 on Lab Host' in formatted, formatted
+        assert 'None VM None' not in formatted, formatted
+        assert 'no linked Proxmox runtime record is available' in formatted and 'does not mean they are offline' in formatted, formatted
+        assert '3 source observations have no verified cross-source identity link' in formatted, formatted
+        assert 'Proxmox-reported disk fields' in formatted and 'not guest filesystem utilization' in formatted, formatted
         (adapter_dir / 'server.py').write_text(
             'def homelab_inference_inventory():\n'
             '    return {"status": "READABLE", "endpoints": []}\n'
