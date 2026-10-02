@@ -44,7 +44,7 @@ conversation = next(
 route = source.index("_hades_phase2_backup_freshness_response(", source.index("def _hades_run_conversation"))
 phase3_route = source.index("# Recent Phase 3 results are read", route)
 assert route < phase3_route, "Phase 3 result history can intercept Phase 2 backup freshness"
-assert "if not records:\n            return None" in ast.get_source_segment(source, helper)
+assert "if not records:\n            return proxmox_evidence()" in ast.get_source_segment(source, helper)
 assert r"when\s+did\s+" in source[source.index("# Recent Phase 3 results are read"):], "outer result-route prefilter blocks ordinary last-check wording"
 
 with tempfile.TemporaryDirectory() as root:
@@ -72,6 +72,11 @@ with tempfile.TemporaryDirectory() as root:
         "_HADES_PRIVATE_RESEARCH_FOLLOWUP": re.compile(r"(?!)"),
         "_hades_health_watch_state_path": lambda: state,
         "_hades_phase2_resource_shares": lambda _subject: set(),
+        "_hades_direct_proxmox_backup_read": lambda text, *_args, **_kwargs: (
+            "PROXMOX VZDUMP: synthetic current evidence."
+            if text in {"When were our backups last verified?", "When did we last check the backups?", "Are my backups current?"}
+            else None
+        ),
     }
     exec(compile(ast.Module(body=[aux_guard, aux_helper, intent_helper, helper], type_ignores=[]), "sitecustomize.py", "exec"), namespace)
     intent = namespace["_hades_is_backup_freshness_intent"]
@@ -86,10 +91,15 @@ with tempfile.TemporaryDirectory() as root:
     assert freshness("Are the server backups up to date?", actor, "owner") is None
     answer = freshness("When were our backups last verified?", actor, "owner")
     assert "HADES repository backup: healthy" in answer, answer
+    assert "PROXMOX VZDUMP: synthetic current evidence." in answer, answer
     assert "do not verify host, VM, service, or household-data backups" in answer, answer
     assert "last successful check 2026-09-25 12:34 UTC" in answer, answer
     natural_answer = freshness("When did we last check the backups?", actor, "owner")
     assert "HADES repository backup: healthy" in natural_answer, natural_answer
+    assert "PROXMOX VZDUMP: synthetic current evidence." in natural_answer, natural_answer
+    repository_only = freshness("Is my HADES repository backup current?", actor, "owner")
+    assert "HADES repository backup: healthy" in repository_only, repository_only
+    assert "PROXMOX VZDUMP" not in repository_only, repository_only
     assert "independent off-site custody" in natural_answer, natural_answer
     exec(compile(ast.Module(body=[conversation], type_ignores=[]), "sitecustomize.py", "exec"), namespace)
     fake_agent_type = type("Agent", (), {
@@ -113,6 +123,7 @@ with tempfile.TemporaryDirectory() as root:
     assert freshness("Show backup setup", actor, "owner") is None
     assert hashlib.sha256(Path(state).read_bytes()).hexdigest() == db_before, "freshness lookup modified canonical lifecycle state"
     namespace["_hades_health_watch_state_path"] = lambda: str(Path(root) / "not-configured.sqlite")
+    assert freshness("Are my backups current?", actor, "owner") == "PROXMOX VZDUMP: synthetic current evidence."
     assert freshness("Are my backups up to date?", actor, "owner") is None
 
     household_state = str(Path(root) / "shared.sqlite")

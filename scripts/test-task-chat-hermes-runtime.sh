@@ -350,6 +350,22 @@ assert proxmox_backup_calls == [
     ("Are my Proxmox backups current?", owner, "owner", False),
     ("Are my backups okay?", owner, "owner", True),
 ], proxmox_backup_calls
+generic_backup_calls = []
+def synthetic_generic_backup(text, subject, scope, session_key, *, allow_homelab_context=False, **_kwargs):
+    generic_backup_calls.append((text, subject, scope, allow_homelab_context))
+    return "PROXMOX VZDUMP: bounded evidence. HADES BACKUP CHECKS: repository status."
+hades._hades_direct_proxmox_backup_read = synthetic_generic_backup
+generic_backup_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-generic-backup-read",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+generic_backup_status = generic_backup_agent.run_conversation(
+    "Are my backups current?", conversation_history=[]
+)
+hades._hades_direct_proxmox_backup_read = actual_proxmox_backup_read
+assert generic_backup_status.get("completed") is True and generic_backup_status.get("api_calls") == 0, generic_backup_status
+assert "PROXMOX VZDUMP: bounded evidence." in generic_backup_status["final_response"], generic_backup_status
+assert generic_backup_calls == [("Are my backups current?", owner, "owner", True)], generic_backup_calls
 read_only_summary_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-explicit-read-only",
     stream_delta_callback=lambda _chunk: None, **kwargs,

@@ -198,13 +198,29 @@ def _hades_phase2_backup_freshness_response(user_text, subject, scope):
         return None
     if not subject or scope not in {"owner", "household"}:
         return "I couldn't verify this HADES session, so I couldn't read backup status."
+    target_hint = bool(re.search(r"\b(?:infrastructure|infra|hades)\b", text, re.IGNORECASE))
+
+    def proxmox_evidence():
+        if scope != "owner" or target_hint:
+            return None
+        reader = globals().get("_hades_direct_proxmox_backup_read")
+        if not callable(reader):
+            return None
+        try:
+            return reader(
+                text, subject, scope, "",
+                allow_homelab_context=True, include_hades_checks=False,
+            )
+        except Exception:
+            return None
+
     try:
         import json
         import sqlite3
 
         state_path = Path(_hades_health_watch_state_path())
         if not state_path.is_file():
-            return None
+            return proxmox_evidence()
         db_uri = state_path.resolve().as_uri() + "?mode=ro"
         with sqlite3.connect(db_uri, uri=True) as db:
             if scope == "owner":
@@ -228,13 +244,12 @@ def _hades_phase2_backup_freshness_response(user_text, subject, scope):
                 records = [row for row in records if subject in row["payload"].get("shared_subjects", [])]
             records = [row for row in records if row["status"] != "DELETED" and row["result"].get("status") != "DELETED"]
         if not records:
-            return None
-        target_hint = bool(re.search(r"\b(?:infrastructure|infra|hades)\b", text, re.IGNORECASE))
+            return proxmox_evidence()
         requested = "infrastructure-repository" if re.search(r"\b(?:infrastructure|infra)\b", text, re.IGNORECASE) else "hades-repository"
         if target_hint:
             records = [row for row in records if row["payload"].get("target_id") == requested]
         if not records:
-            return None
+            return proxmox_evidence()
 
         labels = {
             "hades-repository": "HADES repository backup",
@@ -288,10 +303,14 @@ def _hades_phase2_backup_freshness_response(user_text, subject, scope):
             if not enabled:
                 details.append("schedule paused")
             lines.append(f"- {label}: {'; '.join(details)}")
-        return (
+        response = (
             "Backup Check status:\n" + "\n".join(lines)
             + "\nThese checks cover configured repository artifacts only; they do not verify host, VM, service, or household-data backups, independent off-site custody, or restoreability."
         ) if lines else None
+        proxmox_status = proxmox_evidence()
+        if response and proxmox_status:
+            return response + "\n\n" + proxmox_status
+        return response or proxmox_status
     except Exception:
         return "Backup Check status is temporarily unavailable."
 
