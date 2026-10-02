@@ -423,6 +423,19 @@ os.environ.update({
     "HADES_KUMA_STATUS_URL": "https://status.example.test/api/status-page/heartbeat/hades-status",
 })
 original_fetch = server._fetch
+assert server._proxmox_permissions_url(
+    "https://pve.example.test/api2/json/cluster/resources?type=vm"
+) == "https://pve.example.test/api2/json/access/permissions"
+assert server._proxmox_guest_visibility({"data": {
+    "/": {"Sys.Audit": 1}, "/vms": {"VM.Audit": 1},
+}}) == {"status": "HEALTHY", "scope": "ALL_GUESTS", "scoped_guest_count": None}
+assert server._proxmox_guest_visibility({"data": {
+    "/vms": {"VM.Audit": 1}, "/vms/1802": {"NoAccess": 1},
+}}) == {"status": "DEGRADED", "scope": "NO_GUEST_AUDIT", "scoped_guest_count": 0}
+assert server._aggregate_proxmox_guest_visibility([
+    {"status": "DEGRADED", "scope": "SELECTED_GUESTS"},
+    {"status": "UNKNOWN", "scope": "UNKNOWN"},
+]) == {"status": "PARTIAL", "scope": "MIXED"}
 try:
     original_fetch("https://reader:sentinel-private-value@example.test/api")
 except ValueError as exc:
@@ -453,10 +466,18 @@ def fixture_fetch(url, *_args, **_kwargs):
     if url == "https://pve-a.example.test/cluster/resources":
         proxmox_barrier.wait(timeout=1.0)
         return {"data": [runtime_fixture, *extra_runtime_fixtures]}
+    if url == "https://pve-a.example.test/access/permissions":
+        return {"data": {
+            "/": {"Sys.Audit": 1}, "/vms": {"Sys.Audit": 1},
+            "/vms/1802": {"VM.Audit": 1},
+        }}
     if url == "https://pve-b.example.test/cluster/resources":
         proxmox_barrier.wait(timeout=1.0)
         from urllib.error import URLError
         raise URLError("https://reader:sentinel-private-value@example.test/api token=sentinel-private-value")
+    if url == "https://pve-b.example.test/access/permissions":
+        from urllib.error import URLError
+        raise URLError("synthetic permissions source unavailable")
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": [device_fixture]}
     if url == "https://netbox.example.test/api/ipam/services/":
@@ -470,6 +491,13 @@ assert summary["status"] == "PARTIAL", summary
 assert summary["source_counts"]["proxmox_runtime_rows"] == 20, summary
 assert len(summary["resources"]) >= 20 and "resources_truncated" not in summary, summary
 assert any(row.get("name") == "worker-19" for row in summary["resources"]), summary
+assert summary["proxmox_guest_visibility"]["status"] == "PARTIAL", summary["proxmox_guest_visibility"]
+assert summary["proxmox_guest_visibility"]["endpoints"] == [
+    {"source_identity": "proxmox:endpoint-1", "status": "DEGRADED",
+     "scope": "SELECTED_GUESTS", "scoped_guest_count": 1},
+    {"source_identity": "proxmox:endpoint-2", "status": "UNKNOWN",
+     "scope": "UNKNOWN", "scoped_guest_count": None},
+], summary["proxmox_guest_visibility"]
 assert summary["sources"]
 assert {row["status"] for row in summary["sources"] if row["source"].startswith("Proxmox[")} == {"HEALTHY", "UNAVAILABLE"}
 assert all(row["observation_scope"] == "source_read" for row in summary["sources"] if row["source"].startswith("Proxmox["))
@@ -523,6 +551,8 @@ os.environ.update({
 def truncation_fetch(url, *_args, **_kwargs):
     if url == "https://pve-many.example.test/cluster/resources":
         return {"data": trunc_rows}
+    if url == "https://pve-many.example.test/access/permissions":
+        return {"data": {"/": {"Sys.Audit": 1}, "/vms": {"VM.Audit": 1}}}
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": trunc_devices}
     if url == "https://netbox.example.test/api/ipam/services/":

@@ -4769,6 +4769,7 @@ def _hades_homelab_core_vm_placement_response(user_text, resources):
 
 def _hades_homelab_workloads_on_host_response(
     user_text, resources, summary_status="UNKNOWN", source_results=None,
+    guest_visibility=None,
 ):
     """List only current Proxmox guests for a specifically named Proxmox host."""
     match = re.search(
@@ -4810,6 +4811,23 @@ def _hades_homelab_workloads_on_host_response(
         and isinstance(host_source_ids[0], str) and host_source_ids[0].startswith("proxmox:")
         else None
     )
+    visibility_rows = (
+        guest_visibility.get("endpoints", [])
+        if isinstance(guest_visibility, dict) else []
+    )
+    endpoint_visibility = next((
+        row for row in visibility_rows if isinstance(row, dict)
+        and row.get("source_identity") == host_source_prefix
+    ), None)
+    visibility_scope = (
+        str(endpoint_visibility.get("scope") or "UNKNOWN").upper()
+        if endpoint_visibility else "UNKNOWN"
+    )
+    visibility_complete = bool(
+        endpoint_visibility
+        and endpoint_visibility.get("status") == "HEALTHY"
+        and visibility_scope == "ALL_GUESTS"
+    )
     for row in rows:
         if not isinstance(row, dict):
             continue
@@ -4836,9 +4854,20 @@ def _hades_homelab_workloads_on_host_response(
             f"{(row.get('runtime') or row.get('runtime_detail') or {}).get('status')})"
             for row in guests[:12]
         ]
-        response += ". Guests reported there: " + "; ".join(guest_lines)
+        response += (
+            ". Guests reported there: " if visibility_complete else
+            ". Guests visible to this Proxmox read: "
+        ) + "; ".join(guest_lines)
     else:
-        response += ". Proxmox reports no VM or container guests on this host"
+        response += (
+            ". Proxmox reports no VM or container guests on this host"
+            if visibility_complete else
+            ". This read returned no visible VM or container guests for this host; I can't conclude that it has none"
+        )
+    if visibility_scope == "SELECTED_GUESTS":
+        response += ". The read-only token can inspect only selected guests, so this list may be incomplete"
+    elif not visibility_complete:
+        response += ". Proxmox guest-visibility scope is unknown, so this list may be incomplete"
     response += ". This is virtualization inventory; it doesn't enumerate application services or establish their health."
     if str(summary_status).upper() in {"PARTIAL", "DEGRADED"}:
         sources = source_results if isinstance(source_results, list) else []
@@ -4851,6 +4880,7 @@ def _hades_homelab_workloads_on_host_response(
             str(item.get("source") or "A configured source")
             for item in sources if isinstance(item, dict)
             and str(item.get("status") or "").upper() == "DEGRADED"
+            and not str(item.get("source") or "").startswith("Proxmox guest visibility")
         ]
         unconfigured = [
             str(item.get("source") or "An optional source")
@@ -5287,6 +5317,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 summary.get("resources", []) if isinstance(summary, dict) else [],
                 summary.get("status", "UNKNOWN") if isinstance(summary, dict) else "UNKNOWN",
                 summary.get("sources", []) if isinstance(summary, dict) else [],
+                summary.get("proxmox_guest_visibility") if isinstance(summary, dict) else None,
             )
             if host_workload_response:
                 return host_workload_response
@@ -5548,7 +5579,15 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             text,
             re.IGNORECASE,
         ))
-        partial = isinstance(summary, dict) and summary.get("status") != "OK"
+        guest_visibility = summary.get("proxmox_guest_visibility") if isinstance(summary, dict) else None
+        guest_visibility_status = (
+            str(guest_visibility.get("status") or "UNKNOWN").upper()
+            if isinstance(guest_visibility, dict) else "UNKNOWN"
+        )
+        partial = bool(
+            isinstance(summary, dict) and summary.get("status") != "OK"
+            or guest_visibility_status not in {"COMPLETE", "NOT_CONFIGURED"}
+        )
         if partial:
             response = "The live homelab view is partial. "
             source_rows = summary.get("sources", []) if isinstance(summary, dict) else []
@@ -5567,6 +5606,16 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 response += "Current source reads unavailable or degraded: " + ", ".join(unavailable[:6]) + ". "
             if online:
                 response += "The available Proxmox data reports: " + ", ".join(str(name) for name in online) + ". "
+            if guest_visibility_status == "PARTIAL":
+                visibility_scope = str(guest_visibility.get("scope") or "UNKNOWN").upper()
+                if visibility_scope == "SELECTED_GUESTS":
+                    response += "The Proxmox read-only token can see only selected guests, so other guest state remains unknown. "
+                elif visibility_scope == "NO_GUEST_AUDIT":
+                    response += "The configured Proxmox token has no guest-audit visibility, so guest state remains unknown. "
+                else:
+                    response += "Proxmox guest visibility is mixed across configured endpoints, so some guest state remains unknown. "
+            elif guest_visibility_status == "UNKNOWN":
+                response += "I couldn't verify the Proxmox guest-visibility scope, so unreported guests may be missing. "
             response += "I did not assume any unreported machine was running."
         elif online:
             response = "Live Proxmox currently reports: " + ", ".join(str(name) for name in online) + "."

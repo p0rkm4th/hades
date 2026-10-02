@@ -274,6 +274,20 @@ read_only_summary = read_only_summary_agent.run_conversation(
 )
 assert read_only_summary.get("completed") is True and read_only_summary.get("api_calls") == 0, read_only_summary
 assert "Live Proxmox currently reports: hades-core." in read_only_summary["final_response"], read_only_summary
+os.environ["HADES_TEST_LEGACY_GUEST_VISIBILITY"] = "1"
+try:
+    legacy_summary_agent = agent_class(
+        gateway_session_key=f"hades-user-{owner}", session_id="synthetic-legacy-proxmox-scope",
+        stream_delta_callback=lambda _chunk: None, **kwargs,
+    )
+    legacy_summary = legacy_summary_agent.run_conversation(
+        "Is everything okay?", conversation_history=[]
+    )
+finally:
+    os.environ.pop("HADES_TEST_LEGACY_GUEST_VISIBILITY", None)
+assert legacy_summary.get("completed") is True and legacy_summary.get("api_calls") == 0, legacy_summary
+assert "couldn't verify the Proxmox guest-visibility scope" in legacy_summary["final_response"], legacy_summary
+assert "unreported guests may be missing" in legacy_summary["final_response"], legacy_summary
 household_game_agent = agent_class(
     gateway_session_key=f"hades-user-{beta}", session_id="synthetic-household-game-status",
     stream_delta_callback=lambda _chunk: None, **kwargs,
@@ -545,6 +559,7 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '        "status": "OK",\n'
         '        "online_names": ["hades-core"],\n'
         '        "inventory_only_names": [],\n'
+        '        "proxmox_guest_visibility": (None if __import__("os").environ.get("HADES_TEST_LEGACY_GUEST_VISIBILITY") == "1" else {"status": "COMPLETE", "scope": "ALL_GUESTS", "endpoints": [{"source_identity": "proxmox:pve-main", "status": "HEALTHY", "scope": "ALL_GUESTS", "scoped_guest_count": None}]}),\n'
         '        "availability_summary": ([{"name": "Search latency check", "status": "down", "freshness": "FRESH"},\n'
         '                                  {"name": "Router ping", "status": "up", "freshness": "FRESH", "ping_ms": 84}]\n'
         '                                if __import__("os").environ.get("HADES_TEST_HOMELAB_BOTTLENECK") == "1" else []) +\n'

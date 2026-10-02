@@ -234,6 +234,119 @@ def _proxmox_identity(row: dict, endpoint_id: str, index: int) -> str:
     return f"proxmox:{endpoint_id}:{kind}:{object_id}"
 
 
+def _proxmox_permissions_url(resources_url: str) -> str:
+    """Return the matching read-only effective-permissions API endpoint."""
+    parsed = urlsplit(resources_url)
+    suffix = "/cluster/resources"
+    path = parsed.path.rstrip("/")
+    if not path.endswith(suffix):
+        raise ValueError("Proxmox resource URL has no recognized API path")
+    return urlunsplit((
+        parsed.scheme, parsed.netloc,
+        path[:-len(suffix)] + "/access/permissions", "", "",
+    ))
+
+
+def _permission_enabled(value: object) -> bool:
+    return value is True or (type(value) is int and value > 0) or value == "1"
+
+
+def _proxmox_guest_visibility(payload: dict) -> dict:
+    """Classify whether effective token ACLs cover all or selected guests."""
+    permissions = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(permissions, dict):
+        raise ValueError("Proxmox effective-permissions response has an invalid shape")
+    broad_guest_audit = False
+    scoped_guest_audit = []
+    has_guest_exclusion = False
+    for path, grants in permissions.items():
+        if not isinstance(path, str) or not isinstance(grants, dict):
+            continue
+        if (
+            path == "/vms" or path.startswith("/vms/")
+        ) and _permission_enabled(grants.get("NoAccess")):
+            has_guest_exclusion = True
+        if not _permission_enabled(grants.get("VM.Audit")):
+            continue
+        if path in {"/", "/vms"}:
+            broad_guest_audit = True
+        elif path.startswith(("/vms/", "/pool/")):
+            scoped_guest_audit.append(path)
+    scoped_guest_audit = sorted(set(scoped_guest_audit))
+    if broad_guest_audit and not has_guest_exclusion:
+        return {
+            "status": "HEALTHY",
+            "scope": "ALL_GUESTS",
+            "scoped_guest_count": None,
+        }
+    if scoped_guest_audit:
+        explicit_vm_paths = [
+            path for path in scoped_guest_audit
+            if re.fullmatch(r"/vms/[1-9][0-9]{0,19}", path)
+        ]
+        return {
+            "status": "DEGRADED",
+            "scope": "SELECTED_GUESTS",
+            "scoped_guest_count": len(explicit_vm_paths),
+        }
+    return {
+        "status": "DEGRADED",
+        "scope": "NO_GUEST_AUDIT",
+        "scoped_guest_count": 0,
+    }
+
+
+def _aggregate_proxmox_guest_visibility(rows: list[dict]) -> dict:
+    states = [row.get("status", "UNKNOWN") for row in rows]
+    scopes = {row.get("scope", "UNKNOWN") for row in rows}
+    if not rows:
+        status = "NOT_CONFIGURED"
+    elif all(state == "HEALTHY" for state in states):
+        status = "COMPLETE"
+    elif any(state == "DEGRADED" for state in states):
+        status = "PARTIAL"
+    else:
+        status = "UNKNOWN"
+    scope = (
+        next(iter(scopes)) if len(scopes) == 1 else
+        "MIXED" if scopes else "UNKNOWN"
+    )
+    return {"status": status, "scope": scope}
+
+
+def _read_proxmox_guest_visibility(args: tuple[int, str, str, str, str, str]) -> dict:
+    index, url, token_file, token_id, source_id, ca_file = args
+    source = f"Proxmox guest visibility[{index + 1}]"
+    started = time.monotonic()
+    if not url:
+        return {
+            "source_identity": f"proxmox:{source_id}",
+            "coverage": {"status": "UNKNOWN", "scope": "UNKNOWN"},
+            "source": _source_result(source, "NOT_CONFIGURED", started),
+        }
+    try:
+        permission_url = _proxmox_permissions_url(url)
+        payload = _fetch(permission_url, token_file, ca_file, token_id)
+        coverage = _proxmox_guest_visibility(payload)
+        return {
+            "source_identity": f"proxmox:{source_id}",
+            "coverage": coverage,
+            "source": _source_result(
+                source, coverage["status"], started,
+                rows=coverage.get("scoped_guest_count"),
+            ),
+        }
+    except (OSError, ValueError, UnicodeError) as exc:
+        return {
+            "source_identity": f"proxmox:{source_id}",
+            "coverage": {"status": "UNKNOWN", "scope": "UNKNOWN"},
+            "source": _source_result(
+                source, "UNKNOWN", started,
+                error_code=_source_error_code(exc),
+            ),
+        }
+
+
 def _read_proxmox_endpoint(args: tuple[int, str, str, str, str, str]) -> dict:
     """Read one independent Proxmox endpoint without serializing the cluster."""
     index, url, token_file, token_id, source_id, ca_file = args
@@ -359,14 +472,19 @@ def homelab_summary() -> dict:
         (index, url, token_file, token_ids[index], source_ids[index], ca_file)
         for index, (url, token_file) in enumerate(proxmox_specs_value)
     ]
-    if len(proxmox_requests) > 1:
-        with ThreadPoolExecutor(max_workers=min(8, len(proxmox_requests))) as pool:
-            proxmox_results = list(pool.map(_read_proxmox_endpoint, proxmox_requests))
+    if proxmox_requests:
+        with ThreadPoolExecutor(max_workers=min(16, len(proxmox_requests) * 2)) as pool:
+            runtime_futures = [pool.submit(_read_proxmox_endpoint, args) for args in proxmox_requests]
+            visibility_futures = [pool.submit(_read_proxmox_guest_visibility, args) for args in proxmox_requests]
+            proxmox_results = [future.result() for future in runtime_futures]
+            visibility_results = [future.result() for future in visibility_futures]
     else:
-        proxmox_results = [_read_proxmox_endpoint(args) for args in proxmox_requests]
-    for item in proxmox_results:
+        proxmox_results = []
+        visibility_results = []
+    for item, visibility in zip(proxmox_results, visibility_results, strict=True):
         rows.extend(item["rows"])
         source_results.append(item["source"])
+        source_results.append(visibility["source"])
         if item["source"]["status"] == "HEALTHY":
             successful_proxmox_sources += 1
         elif item["source"]["status"] == "UNAVAILABLE":
@@ -461,6 +579,25 @@ def homelab_summary() -> dict:
             "observation_scope": "source_configuration",
         })
     result = summarize(*values, identity_links=identity_links)
+    guest_visibility_rows = []
+    for visibility in visibility_results:
+        coverage = visibility.get("coverage", {})
+        guest_visibility_rows.append({
+            "source_identity": visibility.get("source_identity"),
+            "status": coverage.get("status", "UNKNOWN"),
+            "scope": coverage.get("scope", "UNKNOWN"),
+            "scoped_guest_count": coverage.get("scoped_guest_count"),
+        })
+    guest_visibility_aggregate = _aggregate_proxmox_guest_visibility(guest_visibility_rows)
+    guest_visibility_status = guest_visibility_aggregate["status"]
+    result["proxmox_guest_visibility"] = {
+        "status": guest_visibility_status,
+        "scope": guest_visibility_aggregate["scope"],
+        "endpoints": guest_visibility_rows,
+        "writes_performed": False,
+    }
+    if guest_visibility_status in {"PARTIAL", "UNKNOWN"} and result.get("status") == "OK":
+        result["status"] = "PARTIAL"
     from services import project_netbox_services
 
     service_url, service_token_file = netbox_services_spec()

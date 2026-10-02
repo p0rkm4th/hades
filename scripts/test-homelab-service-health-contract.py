@@ -203,6 +203,44 @@ host_workloads = workloads_on_host('What is running on Runtime Node A?', [
 ], 'PARTIAL')
 assert 'Runtime Node A online' in host_workloads and 'Dinner VM (qemu, running)' in host_workloads
 assert 'Unrelated CT' not in host_workloads and "Other source state is partial or unknown" in host_workloads
+selected_guest_coverage = {
+    'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
+    'endpoints': [{
+        'source_identity': 'proxmox:site-a', 'status': 'DEGRADED',
+        'scope': 'SELECTED_GUESTS', 'scoped_guest_count': 1,
+    }],
+}
+selected_host_workloads = workloads_on_host(
+    'What is running on Runtime Node A?', [
+        {'name': 'Runtime Node A', 'runtime_status': 'online',
+         'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+         'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+        {'name': 'Dinner VM', 'runtime_status': 'running',
+         'identity': {'source_identities': {'proxmox': ['proxmox:site-a:qemu:101']}},
+         'runtime': {'type': 'qemu', 'node': 'pve-a', 'vmid': 101, 'status': 'running'}},
+    ], 'PARTIAL', [], selected_guest_coverage,
+)
+assert 'Guests visible to this Proxmox read: Dinner VM' in selected_host_workloads
+assert 'only selected guests' in selected_host_workloads and 'may be incomplete' in selected_host_workloads
+selected_no_guest_workloads = workloads_on_host(
+    'What is running on Runtime Node A?', [
+        {'name': 'Runtime Node A', 'runtime_status': 'online',
+         'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+         'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+    ], 'PARTIAL', [], selected_guest_coverage,
+)
+assert "can't conclude that it has none" in selected_no_guest_workloads
+complete_no_guest_workloads = workloads_on_host(
+    'What is running on Runtime Node A?', [
+        {'name': 'Runtime Node A', 'runtime_status': 'online',
+         'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+         'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+    ], 'OK', [], {
+        'status': 'COMPLETE', 'scope': 'ALL_GUESTS',
+        'endpoints': [{'source_identity': 'proxmox:site-a', 'status': 'HEALTHY', 'scope': 'ALL_GUESTS'}],
+    },
+)
+assert 'Proxmox reports no VM or container guests on this host' in complete_no_guest_workloads
 unconfigured_sources = workloads_on_host('What is running on Runtime Node A?', [
     {'name': 'Runtime Node A', 'runtime_status': 'online',
      'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
