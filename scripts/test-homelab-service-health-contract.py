@@ -237,6 +237,7 @@ assert target('Is Minecraft healthy enough for tonight?') == (['minecraft'], 'mi
 assert target('Are all the computers okay?') is None
 assert namespace['_hades_homelab_target_from_question']('whats Compute Node A doing rn') == 'compute node a'
 assert namespace['_hades_homelab_target_from_question']('Is Compute Node B alive?') == 'compute node b'
+assert namespace['_hades_homelab_target_from_question']("What's wrong with Compute Node A?") == 'compute node a'
 assert namespace['_hades_homelab_target_from_question']('Is everything okay?') is None
 
 host_workloads = workloads_on_host('What is running on Runtime Node A?', [
@@ -452,6 +453,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 context_text=followup_context + 'What about Compute Node A?',
             )
             assert 'sample:small is listed at Compute Node A' in named_followup, named_followup
+            issue_question = direct_read(
+                "What's wrong with Compute Node A?", 'synthetic-owner', 'owner'
+            )
+            assert 'sample:small is listed at Compute Node A' in issue_question, issue_question
+            assert "can't say whether it's online" in issue_question, issue_question
             room_followup = direct_read(
                 'Which one has more room?', 'synthetic-owner', 'owner',
                 context_text=followup_context + 'Which one has more room?',

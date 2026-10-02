@@ -5258,6 +5258,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+(?:doing|running)\b",
         text,
         re.IGNORECASE,
+    ) or (
+        _hades_homelab_target_from_question(text)
+        and re.search(r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\b", text, re.IGNORECASE)
     ))
     placement_intent = bool(re.search(
         r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
@@ -6359,6 +6362,8 @@ def _hades_homelab_target_from_question(value):
     """Extract a node-like name from a status-shaped question, without aliases."""
     text = str(value or "")
     patterns = (
+        r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\s+"
+        r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         r"\b(?:what(?:['’]s|s|\s+is)|how(?:['’]s|\s+is))\s+"
         r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
         r"(?:doing|running|responding|reachable|working)\b",
