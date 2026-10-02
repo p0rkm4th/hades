@@ -402,6 +402,22 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'target has no verified identity link' in disagreement, disagreement
         assert 'Live inference reads: Test Fast API responding' in disagreement, disagreement
         write_broad_summary(
+            [], status='PARTIAL',
+            sources=[
+                {'source': 'Proxmox', 'status': 'HEALTHY'},
+                {'source': 'NetBox', 'status': 'UNAVAILABLE'},
+                {'source': 'Uptime Kuma', 'status': 'HEALTHY'},
+                {'source': 'Optional Source', 'status': 'NOT_CONFIGURED'},
+            ],
+            errors=['NetBox unavailable'],
+        )
+        source_outage = direct_read('Is everything okay?', 'synthetic-owner', 'owner')
+        assert 'The live homelab view is partial.' in source_outage, source_outage
+        assert 'Current source reads unavailable or degraded: NetBox.' in source_outage, source_outage
+        assert 'Proxmox' in source_outage and 'Uptime Kuma' in source_outage, source_outage
+        assert 'unreported nodes remain unknown' in source_outage, source_outage
+        assert 'Optional Source' not in source_outage, source_outage
+        write_broad_summary(
             [],
             inventory_only_names=['GPU Node'],
             source_counts={'identity_unlinked_resources': 3},

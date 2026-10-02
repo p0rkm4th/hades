@@ -5413,6 +5413,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
             response = "Live Proxmox currently reports: " + ", ".join(str(name) for name in online) + "."
         else:
             response = "Proxmox did not report any currently running homelab resources."
+        source_errors = summary.get("errors", []) if isinstance(summary, dict) else []
+        if source_errors:
+            response += " Some sources are unavailable, so unreported nodes remain unknown."
         network_diagnostic = bool(re.search(
             r"\b(?:network|dns|slow|latency|bottleneck|resource\s+usage|performance)\b",
             text,
@@ -5534,10 +5537,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
             conflicts = summary.get("conflicts", []) if isinstance(summary, dict) else []
             if conflicts:
                 response += " Source conflicts require attention for: " + ", ".join(str(item.get("name")) for item in conflicts if isinstance(item, dict)) + "."
-            errors = summary.get("errors", []) if isinstance(summary, dict) else []
-            if errors:
-                response += " Some sources are unavailable, so unreported nodes remain unknown."
-            elif availability and not down and not conflicts and not unknown and not errors:
+            if availability and not down and not conflicts and not unknown and not source_errors:
                 response += " No blocker was reported by the configured live sources."
             core = None
             for core_name in ("hades-core", "hades core"):
