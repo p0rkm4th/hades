@@ -718,6 +718,36 @@ assert "separate Uptime Kuma check named host-tartarus reports up (fresh observa
 assert "No stable identity link confirms that this check targets the physical host" in tartarus_activity, tartarus_activity
 assert "can't verify that this endpoint belongs to the physical host you named" in tartarus_activity, tartarus_activity
 assert "Proxmox currently reports Tartarus online" not in tartarus_activity, tartarus_activity
+stale_tartarus_activity = server.format_inference_inventory_response(
+    "What's Tartarus doing right now?", unlinked_inference, {
+        "availability_summary": [{
+            "name": "host-tartarus", "status": "up", "freshness": "STALE",
+            "source_identity": "kuma:monitor:12",
+        }],
+        "resources": [{
+            "name": "Tartarus", "runtime_status": "NOT_OBSERVED",
+            "inventory": {"name": "Tartarus", "role": "deep inference"},
+        }],
+    },
+)
+assert "host-tartarus reports up (stale observation)" in stale_tartarus_activity, stale_tartarus_activity
+assert "No stable identity link confirms that this check targets the physical host" in stale_tartarus_activity, stale_tartarus_activity
+assert "Tartarus is online" not in stale_tartarus_activity, stale_tartarus_activity
+ambiguous_tartarus_activity = server.format_inference_inventory_response(
+    "What's Tartarus doing right now?", unlinked_inference, {
+        "availability_summary": [
+            {"name": "host-tartarus", "status": "up", "freshness": "FRESH"},
+            {"name": "tartarus ssh", "status": "down", "freshness": "FRESH"},
+        ],
+        "resources": [{
+            "name": "Tartarus", "runtime_status": "NOT_OBSERVED",
+            "inventory": {"name": "Tartarus", "role": "deep inference"},
+        }],
+    },
+)
+assert "Multiple similarly named Uptime Kuma checks exist" in ambiguous_tartarus_activity, ambiguous_tartarus_activity
+assert "reports up" not in ambiguous_tartarus_activity and "reports down" not in ambiguous_tartarus_activity, ambiguous_tartarus_activity
+assert "can't verify that this endpoint belongs to the physical host you named" in ambiguous_tartarus_activity, ambiguous_tartarus_activity
 linked_tartarus_activity = server.format_inference_inventory_response(
     "What's Tartarus doing right now?", unlinked_inference, {
         "availability_summary": [{
