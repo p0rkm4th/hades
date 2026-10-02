@@ -1188,7 +1188,10 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
             for machine in capability_machines if isinstance(machine, dict)
         }
         for endpoint in endpoints[:16]:
-            if not isinstance(endpoint, dict) or endpoint.get("status") != "READABLE":
+            if (
+                not isinstance(endpoint, dict)
+                or endpoint.get("status") not in {"READABLE", "PARTIAL"}
+            ):
                 continue
             label = resource_names.get(endpoint.get("node_identity"))
             if not isinstance(label, str) or not label:
@@ -1198,6 +1201,7 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
             role = " ".join(str(machine.get("role") or "").split())[:120]
             loaded = endpoint.get("loaded_models") if isinstance(endpoint.get("loaded_models"), list) else []
             loaded_state = endpoint.get("loaded_status")
+            models = endpoint.get("models") if isinstance(endpoint.get("models"), list) else []
             gpu_rows = machine.get("gpus") if isinstance(machine.get("gpus"), list) else []
             gpu_names = []
             for gpu in gpu_rows:
@@ -1209,7 +1213,7 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
                     gpu_names.append(prefix + str(gpu.get("model") or gpu.get("name")))
             candidates.append((
                 label, role, gpu_names[:5], str(summary.get("capability_freshness") or "UNKNOWN").upper(),
-                loaded, loaded_state,
+                loaded, loaded_state, models, str(endpoint.get("status") or "UNKNOWN").upper(),
             ))
         if not candidates:
             return (
@@ -1221,8 +1225,16 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
             summary.get("capability_freshness") or "UNKNOWN"
         ).upper()
         hardware_current = hardware_freshness in {"CURRENT", "FRESH"}
-        for label, role, gpu_names, _freshness, loaded, loaded_state in candidates:
+        for label, role, gpu_names, _freshness, loaded, loaded_state, models, endpoint_status in candidates:
             detail = label
+            if endpoint_status == "PARTIAL":
+                detail += "; provider read is partial"
+            catalog_names = list(dict.fromkeys(
+                str(model.get("name")) for model in models
+                if isinstance(model, dict) and model.get("name")
+            ))[:5]
+            if catalog_names:
+                detail += "; catalog lists: " + ", ".join(catalog_names)
             if hardware_current and role:
                 detail += f" (recorded role: {role}"
                 if gpu_names:

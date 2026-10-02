@@ -712,6 +712,15 @@ assert partial_inference["status"] == "PARTIAL", partial_inference
 assert partial_inference["endpoints"][0]["status"] == "PARTIAL"
 assert partial_inference["endpoints"][0]["loaded_status"] == "TIMEOUT"
 assert partial_inference["endpoints"][0]["models"]
+partial_placement_answer = server.format_inference_inventory_response(
+    "Where should I run another model?", partial_inference, summary_names,
+)
+assert "GPU A" in partial_placement_answer, partial_placement_answer
+assert "provider read is partial" in partial_placement_answer, partial_placement_answer
+assert "catalog lists: sample:small" in partial_placement_answer, partial_placement_answer
+assert "loaded-model state unavailable" in partial_placement_answer, partial_placement_answer
+assert "can't rank a host" in partial_placement_answer, partial_placement_answer
+assert "loaded: sample:small" not in partial_placement_answer, partial_placement_answer
 
 def unavailable_inference_fetch(_url, *args, **kwargs):
     raise OSError("synthetic private-value-must-not-escape")
