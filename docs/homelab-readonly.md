@@ -335,6 +335,27 @@ conflicts. A linked ID absent from the current NetBox response is also a
 conflict. Invalid link configuration fails closed for the composition and
 does not trigger a display-name fallback.
 
+Owner questions such as “What is `<node>` running?” compose the node's
+explicitly linked provider catalog and current loaded-model report with the
+observed capability inventory and any matching fresh Kuma check. Provider
+catalog/residency reads do not establish generation health, host runtime health,
+CPU/GPU utilization, or free VRAM. Those fields stay unknown unless a separate
+current source supports them. Stable NetBox device identity is required to
+associate a provider endpoint with a named machine.
+
+Owner service-location questions use only the NetBox application-service
+catalog. HADES answers placement only when catalog coverage is complete and a
+single matching record identifies a parent device; an empty, partial, or
+unavailable catalog is reported as insufficient evidence. Intended placement
+is not current liveness. Household sessions do not receive host, address, or
+port details through this path.
+
+The HADES `Backup Check` reports the configured repository check state.
+It does not establish host, VM, service, or household-data backup coverage,
+independent off-site custody, or restoreability. HADES must keep those
+infrastructure backup claims unknown until their own read-only sources provide
+verified coverage and freshness.
+
 References: [Proxmox API-token monitoring example](https://pve.proxmox.com/pve-docs/pve-admin-guide.pdf),
 [Proxmox token permission separation and ACL rules](https://github.com/proxmox/pve-docs/blob/master/pveum.adoc),
 [NetBox REST API authentication and read-only tokens](https://netbox.readthedocs.io/en/stable/integrations/rest-api/),
