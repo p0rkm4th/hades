@@ -4868,6 +4868,21 @@ def _hades_homelab_workloads_on_host_response(
     return response
 
 
+def _hades_positive_homelab_control_request(user_text):
+    """Return true only when a homelab action verb is requested affirmatively."""
+    text = str(user_text or "")
+    verbs = re.compile(
+        r"\b(?:restart|reboot|stop|start|shutdown|shut\s+down|turn\s+off|fix|update|change|"
+        r"spin\s+up|provision|deploy|create)\b",
+        re.IGNORECASE,
+    )
+    negation = re.compile(r"\b(?:do\s+not|don't|dont|never|without|won't|wont)\s*$", re.IGNORECASE)
+    for match in verbs.finditer(text):
+        if not negation.search(text[max(0, match.start() - 32):match.start()]):
+            return True
+    return False
+
+
 def _hades_direct_homelab_read(user_text, subject="", scope="", context_text=""):
     """Answer simple owner homelab-status questions from canonical read sources.
 
@@ -4955,12 +4970,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         re.IGNORECASE,
     ):
         return None
-    if re.search(
-        r"\b(?:restart|reboot|stop|start|shutdown|shut\s+down|turn\s+off|fix|update|change|"
-        r"spin\s+up|provision|deploy|create)\b",
-        text,
-        re.IGNORECASE,
-    ) and not (scope == "owner" and _hades_endpoint_intent_before_provision(text)):
+    if _hades_positive_homelab_control_request(text) and not (
+        scope == "owner" and _hades_endpoint_intent_before_provision(text)
+    ):
         return None
     _definition_question = bool(
         re.fullmatch(r"\s*what(?:'s|\s+(?:is|are))\s+.+?[?.!]*\s*", text, re.IGNORECASE)
@@ -5154,17 +5166,26 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                         monitor_name = " ".join(str(observation.get("name") or monitored.get("name")).split())[:100]
                         monitor_status = str(observation.get("status") or "unknown").casefold()
                         monitor_freshness = str(monitored.get("availability_freshness") or "UNKNOWN").upper()
+                        monitor_identity = monitored.get("identity")
+                        monitor_identity_caveat = (
+                            " No stable identity link confirms that this monitor targets the named host."
+                            if not isinstance(monitor_identity, dict) or not monitor_identity.get("canonical_id")
+                            else ""
+                        )
                         if monitor_freshness == "FRESH" and monitor_status in {"up", "online"}:
                             details.append(
                                 f"The {monitor_name} check is responding (fresh observation); this confirms only that the configured probe responded, not the current host workload or operating-system status."
+                                + monitor_identity_caveat
                             )
                         elif monitor_freshness == "FRESH" and monitor_status in {"down", "offline"}:
                             details.append(
                                 f"The {monitor_name} check is failing (fresh observation); this does not establish why or whether the host is powered off."
+                                + monitor_identity_caveat
                             )
                         else:
                             details.append(
                                 f"The {monitor_name} check last reported {monitor_status}, but that observation is {monitor_freshness.casefold()}."
+                                + monitor_identity_caveat
                             )
                     if not any(
                         row.get("runtime_status") in {"online", "running"}
@@ -5174,6 +5195,43 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                     inference_response += " " + " ".join(details)
             return inference_response
         summary = module.homelab_summary()
+        def _unlinked_monitor_note(target_name):
+            """Expose a name-matched Kuma observation without asserting identity."""
+            target_key = _hades_homelab_name_key(target_name)
+            if len(target_key) < 3:
+                return ""
+            observations = summary.get("availability_summary", []) if isinstance(summary, dict) else []
+            matching_observations = []
+            for observation in observations if isinstance(observations, list) else []:
+                if not isinstance(observation, dict):
+                    continue
+                monitor_name = " ".join(str(observation.get("name") or "").split())[:100]
+                monitor_key = _hades_homelab_name_key(monitor_name)
+                if not monitor_key or not (target_key in monitor_key or monitor_key in target_key):
+                    continue
+                status = str(observation.get("status") or "unknown").casefold()
+                if status not in {"up", "down", "online", "offline", "unknown"}:
+                    status = "unknown"
+                freshness = str(observation.get("freshness") or "UNKNOWN").upper()
+                matching_observations.append((monitor_name, status, freshness))
+            if not matching_observations:
+                return ""
+            if len(matching_observations) > 1:
+                names = ", ".join(item[0] for item in matching_observations[:3])
+                return (
+                    f"I also found multiple similarly named Uptime Kuma observations ({names}); "
+                    "they are not linked to this machine by a stable identity, so I can't use them to establish its current status."
+                )
+            monitor_name, status, freshness = matching_observations[0]
+            observation = (
+                f"Uptime Kuma's separate monitor named {monitor_name} reports {status} ({freshness.lower()} observation)."
+            )
+            if freshness != "FRESH":
+                observation += " That observation is stale or has unknown freshness."
+            return (
+                observation
+                + f" I can't confirm that this monitor targets {target_name}, because no stable identity link is configured."
+            )
         if provenance_intent and scope == "owner":
             source_rows = summary.get("sources", []) if isinstance(summary, dict) else []
             readable = [row for row in source_rows if isinstance(row, dict) and row.get("source")]
@@ -5290,10 +5348,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                     if isinstance(item.get("identity"), dict)
                 ]
                 if identities:
+                    monitor_note = _unlinked_monitor_note(target)
                     return (
                         f"I found multiple homelab records matching {target}, "
                         "but the available sources do not establish one unambiguous machine identity. "
-                        "I won't choose a host by display name alone."
+                        + (monitor_note + " " if monitor_note else "")
+                        + "I won't choose a host by display name alone."
                     )
                 # Older adapters have no identity metadata. Preserve their
                 # existing behavior only when the name match is unique.
@@ -5371,8 +5431,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                         details.append(f"The recorded address is {machine['address']}.")
                     if machine.get("role"):
                         details.append(f"It is listed as {machine['role']}.")
+                    monitor_note = _unlinked_monitor_note(target)
+                    if monitor_note:
+                        details.append(monitor_note)
                     details.append(
-                        "I don't have a current runtime check for it, so I can't say whether it's online."
+                        "I don't have a Proxmox runtime record for it, so I can't verify its workload or operating-system health."
                     )
                     return " ".join(details)
                 if len(observed) > 1:
@@ -5380,9 +5443,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                         f"I found multiple inventory records matching {target}, "
                         "so I can't identify which machine you mean."
                     )
+                monitor_note = _unlinked_monitor_note(target)
                 return (
                     f"I couldn't verify {target} in the live homelab sources. "
-                    "I did not assume it was running."
+                    + (monitor_note + " " if monitor_note else "")
+                    + "I did not assume it was running."
                 )
             resource = matching[0]
             name = resource.get("name") or target
@@ -5394,21 +5459,34 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 monitor_name = " ".join(str(availability.get("name") or name).split())[:80]
                 freshness = str(resource.get("availability_freshness") or "UNKNOWN").upper()
                 observed_status = str(availability.get("status") or "unknown").casefold()
+                identity = resource.get("identity")
+                has_stable_link = (
+                    isinstance(identity, dict)
+                    and isinstance(identity.get("canonical_id"), str)
+                    and bool(identity.get("canonical_id"))
+                )
+                identity_caveat = (
+                    " I don't have a stable identity link proving this monitor checks the machine you asked about."
+                    if not has_stable_link else ""
+                )
                 monitor_label = f"the {monitor_name} check"
                 if freshness == "FRESH" and observed_status in {"up", "online"}:
                     return (
                         f"{monitor_label} is responding (fresh observation). "
                         "That confirms only that this check responded; I don't have a current host workload or operating-system status."
+                        + identity_caveat
                     )
                 if freshness == "FRESH" and observed_status in {"down", "offline"}:
                     return (
                         f"{monitor_label} is failing (fresh observation). "
                         "That confirms the check failed, but not why or whether the host is powered off."
+                        + identity_caveat
                     )
                 safe_status = observed_status if observed_status in {"up", "down", "offline", "unknown"} else "unknown"
                 return (
                     f"{monitor_label} last reported {safe_status}, but that observation is {freshness.casefold()}. "
                     "I can't verify current reachability or workload status."
+                    + identity_caveat
                 )
             parts = [f"{name}: Proxmox runtime status is {runtime_status}."]
             if inventory.get("primary_ip"):
@@ -5418,6 +5496,10 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             if availability.get("status"):
                 freshness = resource.get("availability_freshness", "UNKNOWN")
                 parts.append(f"Uptime Kuma reports {availability['status']} ({freshness.lower()} observation).")
+            else:
+                monitor_note = _unlinked_monitor_note(target)
+                if monitor_note:
+                    parts.append(monitor_note)
             if runtime:
                 def _size(value):
                     try:
@@ -9453,6 +9535,38 @@ try:
             if callback:
                 callback(_brief_response)
             return {"final_response": _brief_response, "messages": [{"role": "assistant", "content": _brief_response}], "api_calls": 0, "completed": True}
+        _household_homelab_boundary_intent = bool(
+            self._hades_session_scope == "household"
+            and (
+                _hades_service_health_target(user_message)
+                or re.search(
+                    r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|"
+                    r"grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|jellyfin|netbox|uptime\s+kuma|nextcloud|vaultwarden)\b.{0,40}"
+                    r"\b(?:run|running|hosted|located|live|on)\b|"
+                    r"\bwhere\s+does\s+(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|"
+                    r"searxng|agent\s*zero|minecraft|jellyfin|netbox|uptime\s+kuma|nextcloud|vaultwarden)\s+(?:run|live)\b",
+                    str(user_message or ""),
+                    re.IGNORECASE,
+                )
+            )
+        )
+        if _household_homelab_boundary_intent:
+            _household_homelab_response = _hades_direct_homelab_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if _household_homelab_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(_household_homelab_response)
+                _hades_logger.info("Household homelab boundary read completed without model invocation")
+                return {
+                    "final_response": _household_homelab_response,
+                    "messages": [{"role": "assistant", "content": _household_homelab_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         _task_notification_feed = _hades_task_notification_feed(
             user_message,
             getattr(self, "_hades_subject", ""),
@@ -10074,12 +10188,7 @@ try:
                 "completed": True,
             }
         control_intent = bool(
-            re.search(
-                r"\b(?:spin\s+up|provision|deploy|create|start|restart|stop|reboot|shutdown|"
-                r"update|change|fix)\b",
-                current_text,
-                re.IGNORECASE,
-            )
+            _hades_positive_homelab_control_request(current_text)
             and re.search(
                 r"\b(?:server|palworld|minecraft|factorio|proxmox|vm|virtual\s+machine|"
                 r"sandbox(?:es)?|workload(?:s)?|website(?:s)?|homelab|homlab|home\s+lab|"

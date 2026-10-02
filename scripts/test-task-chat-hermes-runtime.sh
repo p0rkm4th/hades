@@ -37,6 +37,10 @@ assert hades._HADES_HOMELAB_INTENT.search("What models are available?")
 assert hades._HADES_HOMELAB_INTENT.search("Where's qwen3.6:35b?")
 assert hades._HADES_HOMELAB_INTENT.search("Which GPUs are free?")
 assert hades._HADES_HOMELAB_INTENT.search("Where should I run another model?")
+assert not hades._hades_positive_homelab_control_request(
+    "Check the homelab and do not change anything."
+)
+assert hades._hades_positive_homelab_control_request("Restart the synthetic server.")
 household_model_denial = hades._hades_direct_homelab_read(
     "What models are available?", scope="household",
 )
@@ -248,6 +252,32 @@ assert actual_compound_status.get("completed") is True and actual_compound_statu
 assert "Live Proxmox currently reports: hades-core." in actual_compound_status["final_response"], actual_compound_status
 assert "No Backup Check exists yet." in actual_compound_status["final_response"], actual_compound_status
 assert "can't verify host, VM, service, or household-data backup coverage" in actual_compound_status["final_response"], actual_compound_status
+read_only_summary_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-explicit-read-only",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+read_only_summary = read_only_summary_agent.run_conversation(
+    "Is everything okay with the homelab? Please only check and report; do not change anything.",
+    conversation_history=[],
+)
+assert read_only_summary.get("completed") is True and read_only_summary.get("api_calls") == 0, read_only_summary
+assert "Live Proxmox currently reports: hades-core." in read_only_summary["final_response"], read_only_summary
+household_game_agent = agent_class(
+    gateway_session_key=f"hades-user-{beta}", session_id="synthetic-household-game-status",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+household_game_status = household_game_agent.run_conversation(
+    "Is Minecraft working?", conversation_history=[],
+)
+assert household_game_status.get("completed") is True and household_game_status.get("api_calls") == 0, household_game_status
+assert "can't confirm whether the game server is working" in household_game_status["final_response"], household_game_status
+assert "192.0.2." not in household_game_status["final_response"], household_game_status
+household_game_location = household_game_agent.run_conversation(
+    "Where does Minecraft run?", conversation_history=[],
+)
+assert household_game_location.get("completed") is True and household_game_location.get("api_calls") == 0, household_game_location
+assert "can't provide internal host or address details" in household_game_location["final_response"], household_game_location
+assert "192.0.2." not in household_game_location["final_response"], household_game_location
 hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
 provenance_history = [
     {"role": "user", "content": "Is everything okay with the homelab?"},
@@ -291,6 +321,18 @@ assert "I don't have a current host runtime check for it" in compute_node_a_text
 assert "192.0.2.69" not in compute_node_a_text, compute_node_a_text
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
+# A fresh, similarly named Kuma check with no stable identity link is useful
+# evidence, but must not be collapsed into proof that the physical host is up.
+os.environ["HADES_TEST_HOMELAB_UNLINKED_NODE_B"] = "1"
+unlinked_monitor = hades._hades_direct_homelab_read(
+    "Is Inference Node B alive?", owner, "owner",
+)
+assert "Uptime Kuma's separate monitor named host-inference-node-b reports up (fresh observation)." in unlinked_monitor, unlinked_monitor
+assert "can't confirm that this monitor targets inference node b" in unlinked_monitor.casefold(), unlinked_monitor
+assert "couldn't verify inference node b" in unlinked_monitor.casefold(), unlinked_monitor
+assert "inference node b is online" not in unlinked_monitor.casefold(), unlinked_monitor
+del os.environ["HADES_TEST_HOMELAB_UNLINKED_NODE_B"]
+
 # A physical host may be visible to Kuma without a Proxmox runtime row. Its
 # fresh probe is useful reachability evidence, but must not be relabeled as a
 # Proxmox status or as proof of workload health.
@@ -306,6 +348,7 @@ assert compute_node_a_monitor_status.get("completed") is True and compute_node_a
 compute_node_a_monitor_text = compute_node_a_monitor_status["final_response"]
 assert "the compute node a ssh check is responding (fresh observation)" in compute_node_a_monitor_text.casefold(), compute_node_a_monitor_text
 assert "current host workload or operating-system status" in compute_node_a_monitor_text, compute_node_a_monitor_text
+assert "No stable identity link confirms that this monitor targets the named host." in compute_node_a_monitor_text, compute_node_a_monitor_text
 assert "Proxmox runtime status is NOT_OBSERVED" not in compute_node_a_monitor_text, compute_node_a_monitor_text
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 for status, freshness, expected in (
@@ -321,6 +364,7 @@ for status, freshness, expected in (
     monitor_result = monitor_agent.run_conversation("whats compute-node-a doing rn", conversation_history=[])
     assert monitor_result.get("completed") is True and monitor_result.get("api_calls") == 0, monitor_result
     assert expected.casefold() in monitor_result["final_response"].casefold(), monitor_result
+    assert "No stable identity link confirms that this monitor targets the named host." in monitor_result["final_response"], monitor_result
     assert "Proxmox runtime status is NOT_OBSERVED" not in monitor_result["final_response"], monitor_result
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 del os.environ["HADES_TEST_NODE_A_MONITOR_STATUS"]
@@ -464,7 +508,10 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '        "inventory_only_names": [],\n'
         '        "availability_summary": ([{"name": "Search latency check", "status": "down", "freshness": "FRESH"},\n'
         '                                  {"name": "Router ping", "status": "up", "freshness": "FRESH", "ping_ms": 84}]\n'
-        '                                if __import__("os").environ.get("HADES_TEST_HOMELAB_BOTTLENECK") == "1" else []),\n'
+        '                                if __import__("os").environ.get("HADES_TEST_HOMELAB_BOTTLENECK") == "1" else []) +\n'
+        '                               ([{"name": "host-inference-node-b", "status": "up", "freshness": "FRESH",\n'
+        '                                  "source_identity": "kuma:monitor:17"}]\n'
+        '                                if __import__("os").environ.get("HADES_TEST_HOMELAB_UNLINKED_NODE_B") == "1" else []),\n'
         '        "conflicts": [],\n'
         '        "errors": [],\n'
         '        "sources": [{"source": "Proxmox", "status": "HEALTHY", "retrieved_at": "2026-10-02T14:00:00+00:00"},\n'
