@@ -249,6 +249,23 @@ assert "Live Proxmox currently reports: hades-core." in actual_compound_status["
 assert "No Backup Check exists yet." in actual_compound_status["final_response"], actual_compound_status
 assert "can't verify host, VM, service, or household-data backup coverage" in actual_compound_status["final_response"], actual_compound_status
 hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
+provenance_history = [
+    {"role": "user", "content": "Is everything okay with the homelab?"},
+    {"role": "assistant", "content": "The live homelab view is partial."},
+]
+provenance_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-provenance",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+provenance_result = provenance_agent.run_conversation(
+    "When was that checked?", conversation_history=provenance_history,
+)
+assert provenance_result.get("completed") is True and provenance_result.get("api_calls") == 0, provenance_result
+assert "refreshed the configured homelab sources" in provenance_result["final_response"], provenance_result
+assert "Proxmox: healthy; source read at 2026-10-02T14:00:00+00:00" in provenance_result["final_response"], provenance_result
+assert "NetBox: healthy; source read at 2026-10-02T14:00:01+00:00" in provenance_result["final_response"], provenance_result
+assert "they are not interchangeable" in provenance_result["final_response"], provenance_result
+assert hades._hades_direct_homelab_read("When was that checked?", owner, "owner") is None
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 # A speech-like named-node question composes linked inference state with the
@@ -446,6 +463,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '                                if __import__("os").environ.get("HADES_TEST_HOMELAB_BOTTLENECK") == "1" else []),\n'
         '        "conflicts": [],\n'
         '        "errors": [],\n'
+        '        "sources": [{"source": "Proxmox", "status": "HEALTHY", "retrieved_at": "2026-10-02T14:00:00+00:00"},\n'
+        '                    {"source": "NetBox", "status": "HEALTHY", "retrieved_at": "2026-10-02T14:00:01+00:00"}],\n'
         '        "resources": resources,\n'
         '    }\n'
         'def homelab_compute_capabilities():\n'

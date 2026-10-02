@@ -4868,7 +4868,7 @@ def _hades_homelab_workloads_on_host_response(
     return response
 
 
-def _hades_direct_homelab_read(user_text, subject="", scope=""):
+def _hades_direct_homelab_read(user_text, subject="", scope="", context_text=""):
     """Answer simple owner homelab-status questions from canonical read sources.
 
     These questions are safe to answer without a model round trip.  That matters
@@ -4878,6 +4878,16 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
     or provisioning requests.
     """
     text = str(user_text or "")
+    provenance_intent = bool(
+        re.search(
+            r"\b(?:how\s+do\s+you\s+know|what(?:['’]s|\s+is)\s+the\s+source|"
+            r"when\s+was\s+that\s+checked|when\s+did\s+you\s+check|"
+            r"is\s+that\s+(?:netbox|live)|source\s+provenance)\b",
+            text,
+            re.IGNORECASE,
+        )
+        and bool(_HADES_HOMELAB_INTENT.search(str(context_text or "")))
+    )
     change_intent = bool(re.search(
         r"^\s*what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time)\s*[?.!]*\s*$",
         text,
@@ -4963,7 +4973,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
     )
     if _definition_question:
         return None
-    if not broad_owner_status_intent and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoint|server|model)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+models|what\s+models\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -5164,6 +5174,24 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                     inference_response += " " + " ".join(details)
             return inference_response
         summary = module.homelab_summary()
+        if provenance_intent and scope == "owner":
+            source_rows = summary.get("sources", []) if isinstance(summary, dict) else []
+            readable = [row for row in source_rows if isinstance(row, dict) and row.get("source")]
+            if not readable:
+                return "I refreshed the homelab view, but the sources did not provide provenance details."
+            details = []
+            for row in readable[:8]:
+                source = str(row.get("source"))
+                status = str(row.get("status") or "UNKNOWN").replace("_", " ").lower()
+                retrieved = str(row.get("retrieved_at") or "")
+                stamp = f"; source read at {retrieved}" if retrieved else "; source read time unavailable"
+                details.append(f"{source}: {status}{stamp}")
+            return (
+                "I refreshed the configured homelab sources for this answer. "
+                + "; ".join(details)
+                + ". These timestamps are when each source read completed; they do not make an older source observation live. "
+                "NetBox describes intended inventory, Proxmox reports runtime state, and Uptime Kuma reports configured probe results; they are not interchangeable."
+            )
         broad_inference = None
         if scope == "owner" and broad_owner_status_intent:
             try:
@@ -9754,6 +9782,7 @@ try:
                 user_message,
                 getattr(self, "_hades_subject", ""),
                 self._hades_session_scope,
+                context_text=previous_user_text,
             )
             if direct_homelab_response:
                 callback = getattr(self, "stream_delta_callback", None)
