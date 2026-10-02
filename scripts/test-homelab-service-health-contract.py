@@ -54,6 +54,7 @@ namespace = {
     're': re,
     'os': os,
     'Path': Path,
+    'datetime': datetime,
     '_hades_live_proxmox_vm_rows': lambda: [],
     '_hades_phase2_backup_freshness_response': lambda *_args, **_kwargs: None,
     '_HADES_EXPLICIT_PUBLIC_RESEARCH_INTENT': re.compile(r'(?!)'),
@@ -91,16 +92,24 @@ class FakeHomelabRegistry:
             return __import__('json').dumps({'result': __import__('json').dumps(summary)})
         if tool == 'homelab_recent_activity' and os.environ.get('HADES_TEST_PROXMOX_ACTIVITY') == '1':
             report = {
-                'status': 'READABLE',
+                'status': 'PARTIAL',
+                'source_status': {'proxmox': 'PARTIAL', 'netbox': 'READABLE'},
                 'retrieved_at': '2026-10-02T12:00:00+00:00',
                 'window_hours': arguments.get('window_hours', 24),
                 'endpoints': [{
-                    'status': 'HEALTHY', 'scope': 'SELECTED_GUESTS',
+                    'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
                     'events': [{
                         'guest_id': '12802', 'node': 'synthetic-pve',
                         'task_type': 'qmstart', 'status': 'OK', 'starttime': 1790942400,
                     }],
                 }],
+                'netbox': {
+                    'status': 'READABLE', 'retrieved_at': '2026-10-02T12:00:01+00:00',
+                    'objects': [{
+                        'object_type': 'device', 'object_id': '17',
+                        'name': 'synthetic-router', 'last_updated': '2026-10-02T11:50:00+00:00',
+                    }],
+                },
             }
             return __import__('json').dumps({'result': __import__('json').dumps(report)})
         assert arguments == {}
@@ -619,7 +628,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             answer_text = direct_read(prompt, 'synthetic-owner', 'owner')
             assert answer_text, f'direct owner homelab status route missed {prompt!r}'
             if prompt.startswith('What changed'):
-                assert 'Proxmox task history' in answer_text, answer_text
+                assert 'recent changes remain unverified' in answer_text, answer_text
         os.environ['HADES_TEST_PROXMOX_ACTIVITY'] = '1'
         try:
             recent_activity_answer = direct_read(
@@ -631,6 +640,9 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'last 168 hours' in recent_activity_answer, recent_activity_answer
         assert 'saved prior homelab snapshot' in recent_activity_answer, recent_activity_answer
         assert 'not a complete change log' in recent_activity_answer, recent_activity_answer
+        assert 'NetBox device synthetic-router was last updated' in recent_activity_answer, recent_activity_answer
+        assert 'Proxmox task coverage is partial' in recent_activity_answer, recent_activity_answer
+        assert 'deletions are not included' in recent_activity_answer, recent_activity_answer
         calls_before_household_change = len(registry_module.registry.calls)
         household_changes = direct_read(
             'What changed since yesterday?', 'synthetic-household', 'household'

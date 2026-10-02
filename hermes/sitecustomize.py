@@ -14,6 +14,7 @@ import secrets
 import time
 import hashlib
 import importlib.util
+from datetime import datetime
 from contextlib import contextmanager
 from pathlib import Path
 import sys
@@ -6093,24 +6094,51 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 "homelab_recent_activity", {"window_hours": history_window_hours}
             )
             activity_status = str(activity.get("status") or "UNKNOWN").upper() if isinstance(activity, dict) else "UNKNOWN"
+            source_status = activity.get("source_status", {}) if isinstance(activity, dict) else {}
+            if not isinstance(source_status, dict):
+                source_status = {}
+            activity_endpoints = activity.get("endpoints", []) if isinstance(activity, dict) else []
+            proxmox_status = str(source_status.get("proxmox") or ("READABLE" if activity_endpoints else "NOT_CONFIGURED"))
+            netbox = activity.get("netbox", {}) if isinstance(activity, dict) else {}
+            if not isinstance(netbox, dict):
+                netbox = {}
+            netbox_status = str(source_status.get("netbox") or netbox.get("status") or "NOT_CONFIGURED")
             if activity_status == "NOT_CONFIGURED":
-                response += " Proxmox task history isn't configured, so I can't verify recent hypervisor activity."
+                response += " No recent Proxmox or NetBox activity source is configured, so I can't verify recent homelab changes."
             elif activity_status in {"SOURCE_UNAVAILABLE", "CONFIGURATION_ERROR", "UNKNOWN"}:
-                response += " I couldn't read recent Proxmox task history, so changes remain unverified."
+                response += " I couldn't read the configured Proxmox or NetBox activity sources, so recent changes remain unverified."
             else:
-                endpoints = activity.get("endpoints", []) if isinstance(activity, dict) else []
+                endpoints = activity_endpoints
                 retrieved_at = str(activity.get("retrieved_at") or "") if isinstance(activity, dict) else ""
                 response += " I don't have a saved prior homelab snapshot for a before/after comparison."
                 if retrieved_at:
-                    response += f" Proxmox task history was read at {retrieved_at}."
+                    response += f" Proxmox and NetBox activity sources were read at {retrieved_at}."
                 events = [
                     event for endpoint in endpoints if isinstance(endpoint, dict)
                     for event in endpoint.get("events", []) if isinstance(event, dict)
                 ]
-                events.sort(key=lambda item: item.get("starttime", 0), reverse=True)
-                if events:
+                timeline = [(event.get("starttime", 0), "proxmox", event) for event in events]
+                netbox_objects = netbox.get("objects", []) if isinstance(netbox.get("objects"), list) else []
+                for item in netbox_objects:
+                    if not isinstance(item, dict):
+                        continue
+                    try:
+                        changed_at = datetime.fromisoformat(str(item.get("last_updated", "")).replace("Z", "+00:00"))
+                        changed_epoch = changed_at.timestamp()
+                    except (ValueError, OverflowError):
+                        changed_epoch = 0
+                    timeline.append((changed_epoch, "netbox", item))
+                timeline.sort(key=lambda row: row[0], reverse=True)
+                if timeline:
                     summaries = []
-                    for event in events[:6]:
+                    for _, source, item in timeline[:6]:
+                        if source == "netbox":
+                            object_type = str(item.get("object_type") or "inventory record")[:24]
+                            name = str(item.get("name") or "unnamed record")[:100]
+                            changed_at = str(item.get("last_updated") or "time unknown")[:40]
+                            summaries.append(f"NetBox {object_type} {name} was last updated at {changed_at}")
+                            continue
+                        event = item
                         node = str(event.get("node") or "Proxmox node")[:64]
                         guest = str(event.get("guest_id") or "audited guest")[:20]
                         task_type = str(event.get("task_type") or "unknown task")[:32]
@@ -6120,14 +6148,25 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                         except (KeyError, TypeError, ValueError, OverflowError, OSError):
                             stamp = "time unknown"
                         summaries.append(f"{task_type} for guest {guest} on {node} ({state}, {stamp})")
-                    response += f" Archived Proxmox guest-task activity for the last {history_window_hours} hours: " + "; ".join(summaries) + "."
-                    if len(events) > 6:
-                        response += f" {len(events) - 6} additional in-scope tasks were omitted."
+                    response += f" Recent recorded activity for the last {history_window_hours} hours: " + "; ".join(summaries) + "."
+                    if len(timeline) > 6:
+                        response += f" {len(timeline) - 6} additional records were omitted."
                 else:
-                    response += f" Proxmox returned no archived guest tasks in the audited scope for the last {history_window_hours} hours."
-                if activity_status != "READABLE":
-                    response += " Some task sources or guest scopes are partial or unavailable."
-                response += " This is bounded task activity, not a complete change log, and completed tasks don't prove the resulting guest configuration or application health."
+                    if proxmox_status == "READABLE":
+                        response += f" Proxmox returned no archived guest tasks in the audited scope for the last {history_window_hours} hours."
+                    elif proxmox_status == "PARTIAL":
+                        response += f" No archived tasks were returned in the readable Proxmox scope for the last {history_window_hours} hours."
+                    elif proxmox_status == "SOURCE_UNAVAILABLE":
+                        response += " Proxmox task history is unavailable."
+                    if netbox_status == "READABLE":
+                        response += f" No recently updated NetBox device/service records were returned for the last {history_window_hours} hours."
+                if proxmox_status in {"PARTIAL", "SOURCE_UNAVAILABLE", "NOT_CONFIGURED"}:
+                    response += " Proxmox task coverage is " + ("not configured" if proxmox_status == "NOT_CONFIGURED" else "partial" if proxmox_status == "PARTIAL" else "unavailable") + "."
+                if netbox_status in {"PARTIAL", "SOURCE_UNAVAILABLE"}:
+                    response += " NetBox inventory-update coverage is " + ("partial" if netbox_status == "PARTIAL" else "unavailable") + "."
+                elif netbox_status == "NOT_CONFIGURED":
+                    response += " NetBox inventory-update reads are not configured."
+                response += " This is bounded activity evidence, not a complete change log. NetBox field differences and deletions are not included, and completed Proxmox tasks don't prove the resulting guest configuration or application health."
         return response
     except Exception as exc:
         _hades_logger.warning("Direct homelab read failed (%s)", type(exc).__name__)
@@ -8129,7 +8168,7 @@ try:
                 "call": lambda _args: module.homelab_backup_status(),
             },
             "mcp_homelab_readonly_homelab_recent_activity": {
-                "description": "For owner-only questions about recent changes, read up to 7 days of bounded Proxmox guest task history, filtered to guests covered by the token's effective VM.Audit scope. This is not a complete change log or proof of resulting configuration; read-only.",
+                "description": "For owner-only recent-change questions, read up to 7 days of bounded Proxmox guest tasks within VM.Audit scope and NetBox device/service record last_updated values. No field diffs or deletes; not a complete change log. Read-only.",
                 "parameters": {"type": "object", "properties": {"window_hours": {"type": "integer", "minimum": 1, "maximum": 168}}},
                 "call": lambda args: module.homelab_recent_activity((args or {}).get("window_hours", 24)),
             },

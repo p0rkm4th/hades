@@ -509,10 +509,23 @@ def main() -> int:
             active_bindings.update(alias.asname or alias.name.split(".")[0] for alias in node.names)
         elif isinstance(node, ast.ImportFrom):
             active_bindings.update(alias.asname or alias.name for alias in node.names)
+    missing_import_bindings = set()
+    imports_to_add = []
+    for node in source_tree.body:
+        if isinstance(node, ast.Import):
+            bound = {alias.asname or alias.name.split(".")[0] for alias in node.names}
+        elif isinstance(node, ast.ImportFrom):
+            bound = {alias.asname or alias.name for alias in node.names}
+        else:
+            continue
+        needed = (refs & bound) - active_bindings
+        if needed:
+            imports_to_add.extend(source_lines[node.lineno - 1:node.end_lineno])
+            missing_import_bindings.update(needed)
     runtime_globals = set(dir(builtins)) | {
         "__builtins__", "__file__", "__loader__", "__name__", "__package__", "__spec__"
     }
-    missing = refs - active_bindings - closure - set(source_assignments) - runtime_globals
+    missing = refs - active_bindings - closure - set(source_assignments) - missing_import_bindings - runtime_globals
     if missing:
         raise SystemExit("FAIL required overlay globals are absent: " + ", ".join(sorted(missing)))
     text = replace_call_sites(active_text, active_tree)
@@ -525,6 +538,13 @@ def main() -> int:
         direct = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == ROUTE)
         lines = text.splitlines(keepends=True)
         lines[direct.lineno - 1:direct.lineno - 1] = ["\n"] + additions + ["\n"]
+        text = "".join(lines)
+    if imports_to_add:
+        tree = ast.parse(text)
+        import_nodes = [node for node in tree.body if isinstance(node, (ast.Import, ast.ImportFrom))]
+        insert_at = max((node.end_lineno for node in import_nodes), default=1)
+        lines = text.splitlines(keepends=True)
+        lines[insert_at:insert_at] = imports_to_add
         text = "".join(lines)
     text = add_household_route(text)
     text = add_media_clarification(text)

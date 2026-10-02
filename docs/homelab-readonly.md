@@ -295,11 +295,13 @@ This is separate from HADES Backup Checks, which track their own configured
 coverage and must not be presented as a substitute for Proxmox backup evidence.
 
 The owner-only `homelab_recent_activity` read returns an explicitly selected
-window up to seven days of archived Proxmox guest tasks, bounded per node and
-per endpoint. It first reads each token's effective permissions and includes guest task metadata only
-for explicitly VM-audited guest IDs. Pool-scoped grants are non-enumerable and
-are reported as partial without including unverified guest tasks. Usernames,
-UPIDs, task logs, and raw upstream fields are omitted. This is task activity,
+window up to seven days of archived Proxmox guest tasks and NetBox device/service
+records whose `last_updated` falls within that window. Proxmox task metadata is
+filtered against each token's effective permissions; selected-guest and
+pool-scoped grants are reported as partial. NetBox values are reduced to object
+type, stable record ID, name, and timestamp. Field diffs, deletions, and prior
+state are not available from this read. Usernames, UPIDs, task logs, custom
+fields, and raw upstream values are omitted. This is bounded activity evidence,
 not a complete homelab change log; successful tasks do not prove resulting
 configuration or application health. Household sessions are denied access to
 this owner-only history.

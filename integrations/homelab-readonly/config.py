@@ -196,13 +196,10 @@ def source_specs() -> tuple[tuple[str, str], ...]:
         # Kuma reads. homelab_summary reports the Proxmox configuration error
         # separately while continuing with these sources.
         proxmox = ()
+    netbox_devices = netbox_devices_spec()
     return (
         proxmox[0] if proxmox else ("", ""),
-        (
-            os.environ.get("HADES_NETBOX_DEVICES_URL", "")
-            or (urljoin(f"{netbox_base}/", "api/dcim/devices/") if netbox_base else ""),
-            os.environ.get("HADES_NETBOX_TOKEN_FILE", ""),
-        ),
+        netbox_devices,
         (
             os.environ.get("HADES_KUMA_STATUS_URL", "")
             or (f"{kuma_base}/api/status-page/heartbeat/{kuma_slug}" if kuma_base and kuma_slug else ""),
@@ -217,6 +214,15 @@ def netbox_services_spec() -> tuple[str, str]:
     url = os.environ.get("HADES_NETBOX_SERVICES_URL", "")
     if not url and base:
         url = urljoin(f"{base}/", "api/ipam/services/")
+    return url, os.environ.get("HADES_NETBOX_TOKEN_FILE", "")
+
+
+def netbox_devices_spec() -> tuple[str, str]:
+    """Resolve the configured read-only NetBox device inventory endpoint."""
+    base = os.environ.get("HADES_NETBOX_URL", "").rstrip("/")
+    url = os.environ.get("HADES_NETBOX_DEVICES_URL", "")
+    if not url and base:
+        url = urljoin(f"{base}/", "api/dcim/devices/")
     return url, os.environ.get("HADES_NETBOX_TOKEN_FILE", "")
 
 

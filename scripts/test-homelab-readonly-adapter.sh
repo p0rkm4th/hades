@@ -536,6 +536,20 @@ assert all(isinstance(row.get("retrieved_at"), str) for row in summary["sources"
 
 activity_now = int(server.time.time())
 def activity_fixture_fetch(url, *_args, **_kwargs):
+    if url.startswith("https://netbox.example.test/api/dcim/devices/?"):
+        assert "limit=100" in url and "last_updated__gte=" in url, url
+        return {"count": 1, "results": [{
+            "id": 75, "name": "test-game-host",
+            "last_updated": datetime.fromtimestamp(activity_now, timezone.utc).isoformat(),
+            "custom_fields": {"private_token": "must-not-escape"},
+        }]}
+    if url.startswith("https://netbox.example.test/api/ipam/services/?"):
+        assert "limit=100" in url and "last_updated__gte=" in url, url
+        return {"count": 1, "results": [{
+            "id": 91, "name": "Minecraft Java",
+            "last_updated": datetime.fromtimestamp(activity_now - 1800, timezone.utc).isoformat(),
+            "secret_like_field": "must-not-escape",
+        }]}
     if url == "https://pve-a.example.test/cluster/resources":
         return {"data": [{"type": "node", "node": "pve-main"}, runtime_fixture]}
     if url == "https://pve-a.example.test/access/permissions":
@@ -563,15 +577,57 @@ finally:
     server._fetch = fixture_fetch
 assert activity["status"] == "PARTIAL", activity
 assert activity["endpoints"][0]["scope"] == "SELECTED_GUESTS", activity
+assert activity["endpoints"][0]["status"] == "PARTIAL", activity
 assert [event["guest_id"] for event in activity["endpoints"][0]["events"]] == ["12802"], activity
 assert activity["endpoints"][0]["events"][0]["task_type"] == "qmstart", activity
 assert "private-user" not in str(activity) and "must-not-escape" not in str(activity), activity
+assert activity["source_status"] == {"proxmox": "PARTIAL", "netbox": "READABLE"}, activity
+assert [(row["object_type"], row["name"]) for row in activity["netbox"]["objects"]] == [
+    ("device", "test-game-host"), ("service", "Minecraft Java"),
+], activity
 activity_answer = server.format_homelab_recent_activity(activity)
 assert "guest 12802" in activity_answer and "qmstart" in activity_answer, activity_answer
+assert "NetBox device test-game-host" in activity_answer, activity_answer
+assert "NetBox service Minecraft Java" in activity_answer, activity_answer
 assert "not a complete homelab change log" in activity_answer, activity_answer
+assert "deletions are not included" in activity_answer, activity_answer
 assert abs((activity_now - int(datetime.fromisoformat(activity["window_start"]).timestamp())) - 86400) <= 2, activity
 assert abs((activity_now - int(datetime.fromisoformat(activity_week["window_start"]).timestamp())) - 7 * 86400) <= 2, activity_week
 assert server.homelab_recent_activity(0)["status"] == "INVALID_REQUEST"
+
+from urllib.error import URLError
+def activity_netbox_outage_fetch(url, *args, **kwargs):
+    if url.startswith((
+        "https://netbox.example.test/api/dcim/devices/?",
+        "https://netbox.example.test/api/ipam/services/?",
+    )):
+        raise URLError("synthetic NetBox outage with private detail")
+    return activity_fixture_fetch(url, *args, **kwargs)
+server._fetch = activity_netbox_outage_fetch
+try:
+    activity_netbox_down = server.homelab_recent_activity()
+finally:
+    server._fetch = fixture_fetch
+assert activity_netbox_down["source_status"]["netbox"] == "SOURCE_UNAVAILABLE", activity_netbox_down
+assert activity_netbox_down["netbox"]["objects"] == [], activity_netbox_down
+assert "NetBox inventory-update coverage is unavailable" in server.format_homelab_recent_activity(activity_netbox_down)
+
+def activity_netbox_truncated_fetch(url, *args, **kwargs):
+    if url.startswith("https://netbox.example.test/api/dcim/devices/?"):
+        updated = datetime.fromtimestamp(activity_now, timezone.utc).isoformat()
+        return {"count": 101, "results": [
+            {"id": index + 1, "name": f"synthetic-device-{index}", "last_updated": updated}
+            for index in range(100)
+        ]}
+    return activity_fixture_fetch(url, *args, **kwargs)
+server._fetch = activity_netbox_truncated_fetch
+try:
+    activity_netbox_truncated = server.homelab_recent_activity()
+finally:
+    server._fetch = fixture_fetch
+assert activity_netbox_truncated["netbox"]["status"] == "PARTIAL", activity_netbox_truncated
+assert activity_netbox_truncated["netbox"]["truncated"] is True, activity_netbox_truncated
+assert len(activity_netbox_truncated["netbox"]["objects"]) == 101, activity_netbox_truncated
 
 runtime_row = next(row for row in summary["resources"] if row["name"] == "hades-core")
 assert runtime_row["runtime"] == {

@@ -14,9 +14,11 @@ PREPARER = ROOT / "scripts/prepare-homelab-overlay-candidate.py"
 
 SOURCE = '''
 import re, time
+from datetime import datetime
 def _hades_direct_homelab_read(text, subject="", scope="owner", context_text=""):
     return _hades_homelab_helper(text)
 def _hades_homelab_helper(text):
+    datetime.fromisoformat(text)
     return text
 def _hades_ambiguous_media_device_clarification(text):
     return re.search("device", text)
@@ -115,6 +117,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "_hades_homelab_target_from_question(user_message)" in candidate
     assert "_hades_ambiguous_media_device_clarification(_preflight_text)" in candidate
     assert "_hades_direct_homelab_backup_compound" in candidate
+    assert "from datetime import datetime" in candidate
     assert candidate.index("proxmox_backup_response = _hades_direct_proxmox_backup_read") < candidate.index(
         "compound_status_response = _hades_direct_homelab_backup_compound"
     ) < candidate.index("direct_backup_response = _hades_phase2_backup_response")

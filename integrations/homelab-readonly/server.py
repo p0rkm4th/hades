@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
-from urllib.parse import quote, urljoin, urlsplit, urlunsplit
+from urllib.parse import quote, urlencode, urljoin, urlsplit, urlunsplit
 
 import anyio
 import yaml
@@ -24,6 +24,7 @@ from scan import DEFAULT_PORTS, run_bounded_scan
 from config import (
     identity_links_file,
     load_identity_links,
+    netbox_devices_spec,
     netbox_services_spec,
     proxmox_source_ids,
     proxmox_specs,
@@ -85,11 +86,13 @@ TOOLS = [Tool(
 ), Tool(
     name="homelab_recent_activity",
     description=(
-        "For owner questions about recent homelab changes, read the bounded "
-        "Proxmox guest task archive for up to the last 7 days. Return only task "
-        "metadata for guests covered by this endpoint's effective VM.Audit "
-        "scope. This is recent Proxmox task activity, not a complete change "
-        "log or proof of resulting guest configuration. Read-only."
+        "For owner questions about recent homelab changes, read bounded "
+        "Proxmox guest task history and NetBox device/service inventory "
+        "updates for up to the last 7 days. Proxmox task metadata is limited "
+        "to guests covered by effective VM.Audit scope; NetBox returns only "
+        "current records' last_updated timestamps, not field diffs or deletes. "
+        "This is not a complete change log or proof of resulting guest "
+        "configuration. Read-only."
     ),
     inputSchema={"type": "object", "properties": {
         "window_hours": {"type": "integer", "minimum": 1, "maximum": 168},
@@ -982,37 +985,148 @@ def homelab_backup_status() -> dict:
     }
 
 
+def _netbox_recent_inventory_updates(since: int) -> dict:
+    """Read recent NetBox device/service timestamps without exposing change payloads."""
+    configured = [
+        ("device", *netbox_devices_spec()),
+        ("service", *netbox_services_spec()),
+    ]
+    configured = [(kind, url, token) for kind, url, token in configured if url]
+    if not configured:
+        return {
+            "status": "NOT_CONFIGURED", "retrieved_at": None,
+            "coverage": [], "objects": [], "truncated": False,
+            "error_codes": [], "read_only": True,
+        }
+
+    since_text = datetime.fromtimestamp(since, timezone.utc).isoformat()
+    objects = []
+    endpoints = []
+    for kind, endpoint, token_file in configured:
+        started = time.monotonic()
+        try:
+            parsed = urlsplit(endpoint)
+            if (
+                parsed.scheme not in {"http", "https"} or not parsed.hostname
+                or parsed.username or parsed.password or parsed.query or parsed.fragment
+            ):
+                raise ValueError("invalid NetBox inventory endpoint")
+            query = urlencode({"limit": 100, "last_updated__gte": since_text})
+            url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, query, ""))
+            payload = _fetch(url, token_file, timeout_seconds=8)
+            rows = payload.get("results")
+            count = payload.get("count")
+            if (
+                not isinstance(rows, list)
+                or type(count) is not int or count < 0
+            ):
+                raise ValueError("NetBox inventory update response has an unsupported shape")
+            invalid_rows = False
+            for row in rows[:100]:
+                if not isinstance(row, dict):
+                    invalid_rows = True
+                    continue
+                raw_id = row.get("id")
+                raw_name = row.get("name")
+                raw_updated = row.get("last_updated")
+                if (
+                    isinstance(raw_id, bool)
+                    or not isinstance(raw_id, (str, int))
+                    or not re.fullmatch(r"[1-9][0-9]{0,19}", str(raw_id))
+                    or not isinstance(raw_name, str)
+                    or not isinstance(raw_updated, str)
+                ):
+                    invalid_rows = True
+                    continue
+                try:
+                    updated = datetime.fromisoformat(raw_updated.replace("Z", "+00:00"))
+                    if updated.tzinfo is None:
+                        raise ValueError("NetBox update timestamp is not timezone-aware")
+                    updated = updated.astimezone(timezone.utc)
+                except (ValueError, OverflowError):
+                    invalid_rows = True
+                    continue
+                if int(updated.timestamp()) < since:
+                    continue
+                name = _bounded_text(raw_name, 100)
+                if not name:
+                    invalid_rows = True
+                    continue
+                objects.append({
+                    "object_type": kind,
+                    "object_id": str(raw_id),
+                    "name": name,
+                    "last_updated": updated.isoformat(),
+                })
+            truncated = count > len(rows) or len(rows) > 100
+            status = "PARTIAL" if truncated or invalid_rows else "HEALTHY"
+            endpoints.append({
+                "object_type": kind, "status": status,
+                "retrieved_at": _retrieved_at(),
+                "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                "returned": min(len(rows), 100), "total": count,
+                "truncated": truncated,
+                "error_codes": [],
+            })
+        except (OSError, ValueError, UnicodeError, OverflowError) as exc:
+            endpoints.append({
+                "object_type": kind, "status": "UNAVAILABLE",
+                "retrieved_at": _retrieved_at(),
+                "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                "returned": 0, "total": None, "truncated": False,
+                "error_codes": [_source_error_code(exc)],
+            })
+
+    states = [row["status"] for row in endpoints]
+    status = "READABLE" if all(state == "HEALTHY" for state in states) else (
+        "SOURCE_UNAVAILABLE" if all(state == "UNAVAILABLE" for state in states)
+        else "PARTIAL"
+    )
+    objects.sort(key=lambda row: row["last_updated"], reverse=True)
+    truncated = any(row["truncated"] for row in endpoints) or len(objects) > 200
+    return {
+        "status": status,
+        "retrieved_at": _retrieved_at(),
+        "coverage": [row["object_type"] for row in endpoints],
+        "endpoints": endpoints,
+        "objects": objects[:200],
+        "truncated": truncated,
+        "error_codes": sorted({
+            code for row in endpoints for code in row.get("error_codes", [])
+        }),
+        "read_only": True,
+    }
+
+
 def homelab_recent_activity(window_hours: int = 24) -> dict:
-    """Read bounded recent Proxmox guest tasks, filtered by effective VM ACLs."""
+    """Read bounded Proxmox guest tasks and NetBox inventory timestamps."""
     from concurrent.futures import ThreadPoolExecutor
 
     if type(window_hours) is not int or not 1 <= window_hours <= 168:
         return {
-            "status": "INVALID_REQUEST", "source": "Proxmox guest task archive",
-            "coverage": "proxmox-guest-tasks-only", "endpoints": [],
+            "status": "INVALID_REQUEST", "source": "homelab recent activity",
+            "coverage": [], "endpoints": [], "netbox": {"status": "NOT_READ"},
             "read_only": True,
         }
 
+    proxmox_configuration_error = False
     try:
         specs = proxmox_specs()
-        token_ids = proxmox_token_ids()
-        source_ids = proxmox_source_ids(specs)
+        token_ids = proxmox_token_ids() if specs else ()
+        source_ids = proxmox_source_ids(specs) if specs else ()
     except (OSError, ValueError):
-        return {
-            "status": "CONFIGURATION_ERROR", "source": "Proxmox task archive",
-            "coverage": "proxmox-guest-tasks-only", "endpoints": [],
-            "read_only": True,
-        }
-    if not specs:
-        return {
-            "status": "NOT_CONFIGURED", "source": "Proxmox task archive",
-            "coverage": "proxmox-guest-tasks-only", "endpoints": [],
-            "read_only": True,
-        }
+        specs, token_ids, source_ids = (), (), ()
+        proxmox_configuration_error = True
 
     ca_file = os.environ.get("HADES_PROXMOX_CA_FILE", "")
     since = int(time.time()) - window_hours * 60 * 60
     endpoints = []
+    if proxmox_configuration_error:
+        endpoints.append({
+            "source_id": "proxmox", "status": "UNAVAILABLE",
+            "scope": "UNKNOWN", "events": [],
+            "error_codes": ["INVALID_PROXMOX_CONFIGURATION"],
+        })
     for (resources_url, token_file), token_id, source_id in zip(
         specs, token_ids, source_ids, strict=True
     ):
@@ -1124,7 +1238,7 @@ def homelab_recent_activity(window_hours: int = 24) -> dict:
                 status = "UNAVAILABLE"
             elif (
                 "UNAVAILABLE" in task_states or truncated
-                or task_scope["scope"] in {"PARTIAL", "NO_GUEST_AUDIT"}
+                or task_scope["scope"] in {"PARTIAL", "SELECTED_GUESTS", "NO_GUEST_AUDIT"}
             ):
                 status = "PARTIAL"
             events.sort(key=lambda row: row["starttime"], reverse=True)
@@ -1142,66 +1256,120 @@ def homelab_recent_activity(window_hours: int = 24) -> dict:
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
                 "events": [], "error_codes": [_source_error_code(exc)],
             })
-    states = [endpoint["status"] for endpoint in endpoints]
-    status = "READABLE" if states and all(state == "HEALTHY" for state in states) else (
-        "SOURCE_UNAVAILABLE" if states and all(state == "UNAVAILABLE" for state in states)
+    netbox = _netbox_recent_inventory_updates(since)
+    proxmox_states = [endpoint["status"] for endpoint in endpoints]
+    proxmox_status = "NOT_CONFIGURED" if not specs and not proxmox_configuration_error else (
+        "READABLE" if proxmox_states and all(state == "HEALTHY" for state in proxmox_states)
+        else "SOURCE_UNAVAILABLE" if proxmox_states and all(state == "UNAVAILABLE" for state in proxmox_states)
         else "PARTIAL"
     )
+    source_statuses = [state for state in (proxmox_status, netbox["status"]) if state != "NOT_CONFIGURED"]
+    if not source_statuses:
+        status = "NOT_CONFIGURED"
+    elif all(state == "READABLE" for state in source_statuses):
+        status = "READABLE"
+    elif all(state == "SOURCE_UNAVAILABLE" for state in source_statuses):
+        status = "SOURCE_UNAVAILABLE"
+    else:
+        status = "PARTIAL"
+    coverage = []
+    if proxmox_status != "NOT_CONFIGURED":
+        coverage.append("Proxmox archived guest tasks")
+    if netbox["status"] != "NOT_CONFIGURED":
+        coverage.extend(f"NetBox {kind} last_updated" for kind in netbox["coverage"])
     return {
-        "status": status, "source": "Proxmox guest task archive",
+        "status": status, "source": "Proxmox tasks and NetBox inventory updates",
+        "source_status": {"proxmox": proxmox_status, "netbox": netbox["status"]},
         "retrieved_at": _retrieved_at(),
         "window_start": datetime.fromtimestamp(since, timezone.utc).isoformat(),
         "window_hours": window_hours,
-        "coverage": "proxmox-guest-tasks-only",
+        "coverage": coverage,
         "limitations": [
-            "Shows bounded archived Proxmox task activity, not a complete homelab change log.",
+            "Proxmox activity is bounded to archived tasks for guests covered by each token's effective VM.Audit grants.",
+            "NetBox updates show only current device/service records' last_updated timestamps; field diffs and deletions are not available.",
+            "This is bounded activity evidence, not a complete homelab change log or a saved before/after snapshot.",
             "Task completion does not prove the resulting guest configuration or application health.",
-            "Only guest IDs covered by each endpoint's effective VM.Audit grants are included.",
         ],
-        "endpoints": endpoints, "read_only": True,
+        "endpoints": endpoints, "netbox": netbox, "read_only": True,
     }
 
 
 def format_homelab_recent_activity(report: dict) -> str:
-    """Format bounded Proxmox task activity without claiming complete history."""
+    """Format bounded Proxmox and NetBox evidence without claiming complete history."""
     if not isinstance(report, dict) or not isinstance(report.get("endpoints"), list):
-        return "I couldn't read recent Proxmox task activity."
+        return "I couldn't read recent homelab activity."
     status = str(report.get("status") or "UNKNOWN").upper()
     if status == "NOT_CONFIGURED":
-        return "Proxmox task history isn't configured, so I can't verify recent hypervisor activity."
+        return "No recent Proxmox or NetBox activity source is configured, so I can't verify recent homelab changes."
     if status == "INVALID_REQUEST":
-        return "Choose a Proxmox activity window from 1 to 168 hours."
+        return "Choose a recent activity window from 1 to 168 hours."
     if status in {"SOURCE_UNAVAILABLE", "CONFIGURATION_ERROR", "UNKNOWN"}:
-        return "I couldn't read the configured Proxmox task history, so recent hypervisor activity is unknown."
+        return "I couldn't read the configured Proxmox or NetBox activity sources, so recent homelab changes are unknown."
     events = [
         event for endpoint in report["endpoints"]
         if isinstance(endpoint, dict)
         for event in endpoint.get("events", [])
         if isinstance(event, dict)
     ]
+    source_status = report.get("source_status") if isinstance(report.get("source_status"), dict) else {}
+    proxmox_status = str(source_status.get("proxmox") or ("READABLE" if report.get("endpoints") else "NOT_CONFIGURED"))
+    netbox = report.get("netbox") if isinstance(report.get("netbox"), dict) else {}
+    netbox_status = str(source_status.get("netbox") or netbox.get("status") or "NOT_CONFIGURED")
+    netbox_objects = netbox.get("objects") if isinstance(netbox.get("objects"), list) else []
     window_hours = report.get("window_hours")
     window = f"the last {window_hours} hours" if type(window_hours) is int and 1 <= window_hours <= 168 else "the requested time window"
     retrieved_at = _bounded_text(report.get("retrieved_at"), 40)
     read_stamp = f" Read at {retrieved_at}." if retrieved_at else " Read time unavailable."
-    if not events:
-        answer = f"No archived Proxmox guest tasks were returned in {window}."
-    else:
+    timeline = [(event.get("starttime", 0), "proxmox", event) for event in events]
+    for obj in netbox_objects:
+        if not isinstance(obj, dict):
+            continue
+        try:
+            updated = datetime.fromisoformat(str(obj.get("last_updated", "")).replace("Z", "+00:00"))
+            timestamp = updated.timestamp()
+        except (ValueError, OverflowError):
+            timestamp = 0
+        timeline.append((timestamp, "netbox", obj))
+    if timeline:
         summaries = []
-        for event in sorted(events, key=lambda row: row.get("starttime", 0), reverse=True)[:8]:
+        for _, source, item in sorted(timeline, key=lambda row: row[0], reverse=True)[:8]:
+            if source == "netbox":
+                kind = _bounded_text(item.get("object_type"), 24) or "inventory record"
+                name = _bounded_text(item.get("name"), 100) or "an unnamed record"
+                updated_at = _bounded_text(item.get("last_updated"), 40) or "time unavailable"
+                summaries.append(f"NetBox {kind} {name} was last updated at {updated_at}")
+                continue
+            event = item
             guest = _bounded_text(event.get("guest_id"), 24) or "an audited guest"
             node = _bounded_text(event.get("node"), 64) or "a Proxmox node"
             task = _bounded_text(event.get("task_type"), 32) or "unknown task"
             state = str(event.get("status") or "UNKNOWN").casefold()
             summaries.append(f"{task} for guest {guest} on {node} ({state})")
-        answer = "Recorded Proxmox guest task activity: " + "; ".join(summaries) + "."
-        if len(events) > 8:
-            answer += f" {len(events) - 8} additional in-scope tasks were omitted from this summary."
-    if status != "READABLE":
-        answer += " Some Proxmox task sources or guest scopes are partial or unavailable."
+        answer = "Recent recorded activity: " + "; ".join(summaries) + "."
+        if len(timeline) > 8:
+            answer += f" {len(timeline) - 8} additional records were omitted from this summary."
+    else:
+        empty = []
+        if proxmox_status == "READABLE":
+            empty.append("no archived Proxmox guest tasks were returned")
+        elif proxmox_status == "PARTIAL":
+            empty.append("no archived guest tasks were returned in the readable Proxmox scope")
+        if netbox_status == "READABLE":
+            empty.append("no recently updated NetBox device/service records were returned")
+        answer = f"In {window}, " + " and ".join(empty) + "." if empty else "No configured activity source returned usable recent-change data."
+    if proxmox_status in {"PARTIAL", "SOURCE_UNAVAILABLE", "NOT_CONFIGURED"}:
+        detail = "not configured" if proxmox_status == "NOT_CONFIGURED" else "partial" if proxmox_status == "PARTIAL" else "unavailable"
+        answer += f" Proxmox task coverage is {detail}."
+    if netbox_status in {"PARTIAL", "SOURCE_UNAVAILABLE"}:
+        detail = "partial" if netbox_status == "PARTIAL" else "unavailable"
+        answer += f" NetBox inventory-update coverage is {detail}."
+    elif netbox_status == "NOT_CONFIGURED":
+        answer += " NetBox inventory-update reads are not configured."
     answer += read_stamp + (
-        " This is bounded Proxmox task activity, not a complete homelab change log. "
-        "HADES has no saved prior snapshot for a before/after comparison, and "
-        "completed tasks don't prove resulting guest configuration or application health."
+        " This is bounded activity evidence, not a complete homelab change log. "
+        "HADES has no saved prior snapshot for a before/after comparison; NetBox "
+        "field differences and deletions are not included, and completed Proxmox "
+        "tasks don't prove resulting guest configuration or application health."
     )
     return answer
 
