@@ -4651,7 +4651,7 @@ def _hades_service_health_target(user_text):
     return target_words, target
 
 
-def _hades_service_monitor_response(user_text, resources):
+def _hades_service_monitor_response(user_text, resources, summary=None):
     """Answer named application-health questions only from a matching fresh monitor."""
     target_query = _hades_service_health_target(user_text)
     if not target_query:
@@ -4667,37 +4667,50 @@ def _hades_service_monitor_response(user_text, resources):
         monitor_name = str(availability.get("name") or resource.get("name") or "")
         name_words = {word.casefold() for word in re.findall(r"[a-z0-9]+", monitor_name.casefold())}
         if all(word in name_words for word in target_words):
-            matches.append((monitor_name, availability, str(resource.get("availability_freshness") or "UNKNOWN").upper()))
+            matches.append((monitor_name, availability, str(resource.get("availability_freshness") or "UNKNOWN").upper(), resource))
     if not matches:
         return (
             f"I couldn't verify a current Uptime Kuma service monitor matching {target}. "
             "A Proxmox host or VM being online does not show whether its application accepts connections or is usable, so I can't call it healthy."
         )
     if len(matches) > 1:
-        names = ", ".join(" ".join(name.split())[:80] for name, _availability, _freshness in matches[:5])
+        names = ", ".join(" ".join(name.split())[:80] for name, _availability, _freshness, _resource in matches[:5])
         return f"I found more than one Uptime Kuma check matching {target}: {names}. Which check did you mean?"
-    monitor_name, availability, freshness = matches[0]
+    monitor_name, availability, freshness, resource = matches[0]
     observed_status = str(availability.get("status") or "unknown").casefold()
     timestamp = " ".join(str(availability.get("last_updated") or "").split())[:64]
     checked = f" The last observation is timestamped {timestamp}." if timestamp else ""
     label = " ".join(monitor_name.split())[:80] or target
+    identity = resource.get("identity") if isinstance(resource, dict) else None
+    linked = isinstance(identity, dict) and bool(identity.get("canonical_id"))
+    sources = summary.get("sources", []) if isinstance(summary, dict) else []
+    netbox_responded = any(
+        isinstance(row, dict) and row.get("source") == "NetBox"
+        and str(row.get("status") or "").upper() in {"HEALTHY", "READABLE"}
+        for row in sources
+    )
+    identity_caveat = ""
+    if not linked:
+        identity_caveat = " This monitor has no verified identity link, so I can't tell which endpoint it checks."
+        if netbox_responded:
+            identity_caveat += " NetBox inventory responded, but I can't confirm that this probe targets NetBox."
     if freshness != "FRESH":
         state = observed_status if observed_status in {"up", "down", "offline", "unknown"} else "unknown"
         return (
             f"Uptime Kuma's {label} check last reported {state}, but that observation is {freshness.casefold()}."
-            f"{checked} I can't verify current service health from stale or unknown data."
+            f"{checked}{identity_caveat} I can't verify current service health from stale or unknown data."
         )
     if observed_status in {"up", "online"}:
         return (
             f"Uptime Kuma's configured check for {label} is up.{checked} "
-            "That confirms only that the configured probe responded; it does not verify an application login, usable session, or workload state, so I can't guarantee it is ready for use."
+            f"That confirms only that the configured probe responded; it does not verify an application login, usable session, or workload state.{identity_caveat} I can't guarantee it is ready for use."
         )
     if observed_status in {"down", "offline"}:
         return (
             f"Uptime Kuma's configured check for {label} is down.{checked} "
-            "That shows the probe failed, but not why; I can't call the service healthy."
+            f"That shows the probe failed, but not why.{identity_caveat} I can't call the service healthy."
         )
-    return f"Uptime Kuma reports the status of {label} as unknown.{checked} I can't verify current service health."
+    return f"Uptime Kuma reports the status of {label} as unknown.{checked}{identity_caveat} I can't verify current service health."
 
 
 def _hades_homelab_availability_groups(availability):
@@ -5622,7 +5635,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             and not re.search(r"\bminecraft\b", text, re.IGNORECASE)
             else text
         )
-        service_response = _hades_service_monitor_response(service_health_text, resources)
+        service_response = _hades_service_monitor_response(service_health_text, resources, summary)
         if household_game_health_intent:
             if not service_response:
                 return "I don't have a current check for the game server, so I can't confirm whether it's working."

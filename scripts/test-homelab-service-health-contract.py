@@ -126,23 +126,28 @@ registry_module.registry = FakeHomelabRegistry()
 sys.modules['tools'] = tools_module
 sys.modules['tools.registry'] = registry_module
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
-run_conversation = next(
+run_conversation = next((
     node for node in ast.walk(tree)
     if isinstance(node, ast.FunctionDef) and node.name == '_hades_run_conversation'
-)
-household_intent_assignment = next(
-    node for node in run_conversation.body
-    if isinstance(node, ast.Assign)
-    and any(
-        isinstance(target, ast.Name) and target.id == '_household_homelab_boundary_intent'
-        for target in node.targets
+), None)
+if run_conversation is not None:
+    household_intent_assignment = next(
+        node for node in run_conversation.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == '_household_homelab_boundary_intent'
+            for target in node.targets
+        )
     )
-)
-household_boundary_expression = ast.unparse(household_intent_assignment.value)
-assert '_hades_broad_homelab_status_intent(user_message)' in household_boundary_expression
-assert '_hades_household_game_health_intent(user_message, self._hades_session_scope)' in household_boundary_expression
-assert 'self._hades_session_scope' in household_boundary_expression
-assert 'household' in household_boundary_expression
+    household_boundary_expression = ast.unparse(household_intent_assignment.value)
+    assert '_hades_broad_homelab_status_intent(user_message)' in household_boundary_expression
+    assert '_hades_household_game_health_intent(user_message, self._hades_session_scope)' in household_boundary_expression
+    assert 'self._hades_session_scope' in household_boundary_expression
+    assert 'household' in household_boundary_expression
+else:
+    # Focused composed overlays omit upstream conversation internals. Their
+    # household routing and redaction are exercised by the Hermes runtime test.
+    assert os.environ.get('HADES_SITE_CUSTOMIZE_SOURCE')
 intent_assignment = next(
     node for node in tree.body
     if isinstance(node, ast.Assign)
@@ -435,6 +440,24 @@ assert "Uptime Kuma's configured check for Minecraft Server is up." in up, up
 assert 'does not verify an application login, usable session, or workload state' in up, up
 assert 'guarantee it is ready for use' in up, up
 
+unlinked_netbox_check = [{
+    'name': 'service-netbox',
+    'identity': {'canonical_id': None},
+    'availability': {
+        'name': 'service-netbox', 'status': 'down',
+        'last_updated': datetime.now(timezone.utc).isoformat(),
+    },
+    'availability_freshness': 'FRESH',
+}]
+netbox_diagnosis = answer(
+    'Why is service-netbox down?', unlinked_netbox_check,
+    {'sources': [{'source': 'NetBox', 'status': 'HEALTHY'}]},
+)
+assert "Uptime Kuma's configured check for service-netbox is down." in netbox_diagnosis, netbox_diagnosis
+assert 'no verified identity link' in netbox_diagnosis, netbox_diagnosis
+assert 'NetBox inventory responded' in netbox_diagnosis, netbox_diagnosis
+assert "can't confirm that this probe targets NetBox" in netbox_diagnosis, netbox_diagnosis
+
 unmonitored = answer('Is Jellyfin healthy enough for tonight?', fresh_minecraft)
 assert 'couldn\'t verify a current Uptime Kuma service monitor matching jellyfin' in unmonitored, unmonitored
 assert 'Proxmox host or VM being online does not show' in unmonitored, unmonitored
@@ -665,12 +688,26 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             [{'name': 'service-netbox', 'status': 'down', 'freshness': 'FRESH'}],
             sources=[{'source': 'NetBox', 'status': 'HEALTHY'}],
             resources=[{'name': 'service-netbox', 'identity': {'canonical_id': None},
-                        'availability': {'name': 'service-netbox', 'status': 'down'}}],
+                        'availability': {'name': 'service-netbox', 'status': 'down'},
+                        'availability_freshness': 'FRESH'}],
         )
         disagreement = direct_read('What is down?', 'synthetic-owner', 'owner')
         assert 'The NetBox inventory API responded to this read' in disagreement, disagreement
         assert 'target has no verified identity link' in disagreement, disagreement
         assert 'Live inference reads: Test Fast API responding' in disagreement, disagreement
+        named_netbox_diagnosis = direct_read(
+            'Why is service-netbox down?', 'synthetic-owner', 'owner'
+        )
+        assert 'NetBox inventory responded' in named_netbox_diagnosis, named_netbox_diagnosis
+        assert 'monitor has no verified identity link' in named_netbox_diagnosis, named_netbox_diagnosis
+        assert "can't confirm that this probe targets NetBox" in named_netbox_diagnosis, named_netbox_diagnosis
+        calls_before_private_monitor = len(registry_module.registry.calls)
+        private_monitor_diagnosis = direct_read(
+            'Why is service-netbox down?', 'synthetic-household', 'household'
+        )
+        assert len(registry_module.registry.calls) == calls_before_private_monitor
+        assert "can't verify private infrastructure or computer status" in private_monitor_diagnosis, private_monitor_diagnosis
+        assert 'NetBox' not in private_monitor_diagnosis and 'service-netbox' not in private_monitor_diagnosis
         write_broad_summary(
             [], status='PARTIAL',
             sources=[
