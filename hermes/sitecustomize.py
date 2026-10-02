@@ -4696,6 +4696,82 @@ def _hades_homelab_availability_groups(availability):
     return groups
 
 
+def _hades_homelab_workloads_on_host_response(user_text, resources, summary_status="UNKNOWN"):
+    """List only current Proxmox guests for a specifically named Proxmox host."""
+    match = re.search(
+        r"\bwhat(?:['’]s|\s+is)\s+running\s+on\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
+        str(user_text or ""), re.IGNORECASE,
+    )
+    if not match:
+        return None
+    target = _hades_homelab_name_key(match.group("target").strip())
+    rows = resources if isinstance(resources, list) else []
+    hosts = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        runtime = row.get("runtime") or row.get("runtime_detail") or {}
+        inventory = row.get("inventory") or {}
+        if not isinstance(runtime, dict) or not isinstance(inventory, dict):
+            continue
+        if runtime.get("type") != "node":
+            continue
+        aliases = {row.get("name"), inventory.get("name"), runtime.get("node")}
+        if any(_hades_homelab_name_key(alias) == target for alias in aliases if alias):
+            hosts.append((row, runtime))
+    if len(hosts) != 1:
+        if len(hosts) > 1:
+            return f"I found multiple Proxmox host records matching {match.group('target')}; I can't safely choose one."
+        return f"I couldn't verify {match.group('target')} as a current Proxmox host, so I can't say what guests are running there."
+    host, host_runtime = hosts[0]
+    host_name = str(host.get("name") or match.group("target"))
+    host_state = str(host.get("runtime_status") or "UNKNOWN")
+    guests = []
+    host_key = str(host_runtime.get("node") or "")
+    identity = host.get("identity") if isinstance(host.get("identity"), dict) else {}
+    host_sources = identity.get("source_identities") if isinstance(identity.get("source_identities"), dict) else {}
+    host_source_ids = host_sources.get("proxmox", [])
+    host_source_prefix = (
+        host_source_ids[0].rsplit(":", 2)[0]
+        if isinstance(host_source_ids, list) and len(host_source_ids) == 1
+        and isinstance(host_source_ids[0], str) and host_source_ids[0].startswith("proxmox:")
+        else None
+    )
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        runtime = row.get("runtime") or row.get("runtime_detail") or {}
+        if not isinstance(runtime, dict) or runtime.get("type") not in {"qemu", "lxc"}:
+            continue
+        guest_identity = row.get("identity") if isinstance(row.get("identity"), dict) else {}
+        guest_sources = guest_identity.get("source_identities") if isinstance(guest_identity.get("source_identities"), dict) else {}
+        guest_source_ids = guest_sources.get("proxmox", [])
+        guest_source_prefix = (
+            guest_source_ids[0].rsplit(":", 2)[0]
+            if isinstance(guest_source_ids, list) and len(guest_source_ids) == 1
+            and isinstance(guest_source_ids[0], str) and guest_source_ids[0].startswith("proxmox:")
+            else None
+        )
+        if host_source_prefix and guest_source_prefix == host_source_prefix and host_key and runtime.get("node") == host_key:
+            guests.append(row)
+    response = f"Proxmox currently reports {host_name} {host_state.casefold()}"
+    if not host_source_prefix:
+        response += ". I can't correlate guests to this Proxmox source with one stable endpoint identity."
+    elif guests:
+        guest_lines = [
+            f"{row.get('name') or 'Unnamed guest'} ({(row.get('runtime') or row.get('runtime_detail') or {}).get('type')}, "
+            f"{(row.get('runtime') or row.get('runtime_detail') or {}).get('status')})"
+            for row in guests[:12]
+        ]
+        response += ". Guests reported there: " + "; ".join(guest_lines)
+    else:
+        response += ". Proxmox reports no VM or container guests on this host"
+    response += ". This is virtualization inventory; it doesn't enumerate application services or establish their health."
+    if str(summary_status).upper() in {"PARTIAL", "DEGRADED"}:
+        response += " Some homelab sources were unavailable, so other service state remains unknown."
+    return response
+
+
 def _hades_direct_homelab_read(user_text, subject="", scope=""):
     """Answer simple owner homelab-status questions from canonical read sources.
 
@@ -4946,6 +5022,13 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         )
         if endpoint_response:
             return endpoint_response
+        host_workload_response = _hades_homelab_workloads_on_host_response(
+            text,
+            summary.get("resources", []) if isinstance(summary, dict) else [],
+            summary.get("status", "UNKNOWN") if isinstance(summary, dict) else "UNKNOWN",
+        )
+        if host_workload_response:
+            return host_workload_response
         placement_response = _hades_service_placement_response(
             text,
             summary.get("service_catalog") if isinstance(summary, dict) else None,

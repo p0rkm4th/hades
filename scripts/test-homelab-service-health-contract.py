@@ -16,6 +16,7 @@ tree = ast.parse(source)
 wanted = {
     '_hades_service_health_target', '_hades_service_monitor_response',
     '_hades_homelab_availability_groups', '_hades_direct_homelab_read',
+    '_hades_homelab_workloads_on_host_response',
     '_hades_endpoint_intent_before_provision',
     '_hades_service_endpoint_response',
     '_hades_service_placement_response',
@@ -41,6 +42,7 @@ exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'e
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 groups = namespace['_hades_homelab_availability_groups']
+workloads_on_host = namespace['_hades_homelab_workloads_on_host_response']
 direct_read = namespace['_hades_direct_homelab_read']
 endpoint_before_provision = namespace['_hades_endpoint_intent_before_provision']
 endpoint_response = namespace['_hades_service_endpoint_response']
@@ -161,6 +163,29 @@ assert target('Are all the computers okay?') is None
 assert namespace['_hades_homelab_target_from_question']('whats Compute Node A doing rn') == 'compute node a'
 assert namespace['_hades_homelab_target_from_question']('Is Compute Node B alive?') == 'compute node b'
 assert namespace['_hades_homelab_target_from_question']('Is everything okay?') is None
+
+host_workloads = workloads_on_host('What is running on Runtime Node A?', [
+    {'name': 'Runtime Node A', 'runtime_status': 'online',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+     'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+    {'name': 'Dinner VM', 'runtime_status': 'running',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-a:qemu:101']}},
+     'runtime': {'type': 'qemu', 'node': 'pve-a', 'vmid': 101, 'status': 'running'}},
+    {'name': 'Unrelated CT', 'runtime_status': 'running',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-b:lxc:202']}},
+     'runtime': {'type': 'lxc', 'node': 'pve-a', 'vmid': 202, 'status': 'running'}},
+], 'PARTIAL')
+assert 'Runtime Node A online' in host_workloads and 'Dinner VM (qemu, running)' in host_workloads
+assert 'Unrelated CT' not in host_workloads and 'other service state remains unknown' in host_workloads
+assert 'couldn\'t verify' in workloads_on_host('What is running on Unknown Host?', [])
+unlinked_host_workloads = workloads_on_host('What is running on Runtime Node B?', [
+    {'name': 'Runtime Node B', 'runtime_status': 'online',
+     'runtime': {'type': 'node', 'node': 'pve-b', 'status': 'online'}},
+    {'name': 'Potential Cross-Cluster Guest', 'runtime_status': 'running',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-a:qemu:303']}},
+     'runtime': {'type': 'qemu', 'node': 'pve-b', 'vmid': 303, 'status': 'running'}},
+])
+assert "can't correlate guests" in unlinked_host_workloads and 'Potential Cross-Cluster Guest' not in unlinked_host_workloads
 
 fresh_minecraft = [{
     'name': 'Minecraft Server',
@@ -311,6 +336,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'owner session' in direct_read(
             'Where should I run another model?', 'synthetic-household', 'household'
         )
+        host_workload_route = direct_read(
+            "What's running on Compute Node A?", 'synthetic-owner', 'owner'
+        )
+        assert 'couldn\'t verify Compute Node A as a current Proxmox host' in host_workload_route
     finally:
         if old_workdir is None:
             os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
