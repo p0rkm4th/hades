@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ROUTE = "_hades_direct_homelab_read"
 EXTRA = {
     "_hades_ambiguous_media_device_clarification",
+    "_hades_direct_homelab_backup_compound",
     "_hades_direct_proxmox_backup_read",
     "_hades_direct_owner_location",
     "_hades_endpoint_continuation_response",
@@ -206,6 +207,75 @@ def add_media_clarification(source: str) -> str:
     return "".join(lines)
 
 
+def add_backup_routes(source: str) -> str:
+    """Keep current owner backup composition ahead of the legacy Backup Check path."""
+    tree = ast.parse(source)
+    definitions = functions(tree)
+    if "_hades_direct_homelab_backup_compound" not in definitions:
+        raise ValueError("owner homelab backup composition helper is missing")
+    existing = [
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id in {"_hades_direct_homelab_backup_compound", "_hades_direct_proxmox_backup_read"}
+        and any(isinstance(arg, ast.Name) and arg.id == "user_message" for arg in node.args)
+    ]
+    if existing:
+        has_compound = any(isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "_hades_direct_homelab_backup_compound" for n in existing)
+        has_proxmox = any(isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "_hades_direct_proxmox_backup_read" for n in existing)
+        if not (has_compound and has_proxmox):
+            raise ValueError("active backup route is only partially composed")
+        return source
+
+    candidates = [
+        node for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "direct_backup_response" for target in node.targets)
+        and isinstance(node.value, ast.Call)
+        and isinstance(node.value.func, ast.Name)
+        and node.value.func.id == "_hades_phase2_backup_response"
+    ]
+    if len(candidates) != 1:
+        raise ValueError("could not uniquely locate the legacy direct Backup Check route")
+    anchor = candidates[0]
+    indent = " " * anchor.col_offset
+    block = f'''{indent}proxmox_backup_response = _hades_direct_proxmox_backup_read(
+{indent}    user_message, getattr(self, "_hades_subject", ""),
+{indent}    self._hades_session_scope, _phase2_session_key,
+{indent})
+{indent}if proxmox_backup_response:
+{indent}    callback = getattr(self, "stream_delta_callback", None)
+{indent}    if callback:
+{indent}        callback(proxmox_backup_response)
+{indent}    _hades_logger.info("Owner Proxmox backup read completed without model invocation")
+{indent}    return {{
+{indent}        "final_response": proxmox_backup_response,
+{indent}        "messages": [{{"role": "assistant", "content": proxmox_backup_response}}],
+{indent}        "api_calls": 0,
+{indent}        "completed": True,
+{indent}    }}
+{indent}compound_status_response = _hades_direct_homelab_backup_compound(
+{indent}    user_message,
+{indent}    getattr(self, "_hades_subject", ""),
+{indent}    self._hades_session_scope,
+{indent}    _phase2_session_key,
+{indent})
+{indent}if compound_status_response:
+{indent}    callback = getattr(self, "stream_delta_callback", None)
+{indent}    if callback:
+{indent}        callback(compound_status_response)
+{indent}    _hades_logger.info("Owner compound homelab and backup read completed without model invocation")
+{indent}    return {{
+{indent}        "final_response": compound_status_response,
+{indent}        "messages": [{{"role": "assistant", "content": compound_status_response}}],
+{indent}        "api_calls": 0,
+{indent}        "completed": True,
+{indent}    }}
+'''
+    lines = source.splitlines(keepends=True)
+    lines[anchor.lineno - 1:anchor.lineno - 1] = block.splitlines(keepends=True)
+    return "".join(lines)
+
 def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -292,6 +362,7 @@ def main() -> int:
         text = "".join(lines)
     text = add_household_route(text)
     text = add_media_clarification(text)
+    text = add_backup_routes(text)
     candidate_bytes = text.encode("utf-8")
     compile(text, str(output), "exec")
     fd = os.open(output, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)

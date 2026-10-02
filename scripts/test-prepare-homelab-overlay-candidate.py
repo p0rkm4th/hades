@@ -22,6 +22,8 @@ def _hades_ambiguous_media_device_clarification(text):
     return re.search("device", text)
 def _hades_direct_proxmox_backup_read(text, subject="", scope="owner"):
     return text
+def _hades_direct_homelab_backup_compound(text, subject="", scope="owner", phase2_session_key=""):
+    return text
 def _hades_direct_owner_location(text):
     return ""
 def _hades_endpoint_continuation_response(text, subject="", scope="owner", context_text=""):
@@ -47,6 +49,11 @@ def handler(self, user_message, previous_user_text, _preflight_text):
             return _hades_direct_grocy_expiry_read()
         if self._hades_session_scope == "owner":
             return "owner"
+    if self._hades_session_scope in {"owner", "household"}:
+        direct_backup_response = _hades_phase2_backup_response(
+            user_message, getattr(self, "_hades_subject", ""),
+            self._hades_session_scope, _phase2_session_key,
+        )
 '''
 
 
@@ -73,6 +80,10 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "context_text=previous_user_text" in candidate
     assert "household_homelab_response" in candidate
     assert "_hades_ambiguous_media_device_clarification(_preflight_text)" in candidate
+    assert "_hades_direct_homelab_backup_compound" in candidate
+    assert candidate.index("proxmox_backup_response = _hades_direct_proxmox_backup_read") < candidate.index(
+        "compound_status_response = _hades_direct_homelab_backup_compound"
+    ) < candidate.index("direct_backup_response = _hades_phase2_backup_response")
     assert output.stat().st_mode & 0o777 == 0o600
     assert active.read_text(encoding="utf-8") == ACTIVE
 

@@ -307,6 +307,28 @@ assert actual_compound_status.get("completed") is True and actual_compound_statu
 assert "Live Proxmox currently reports: hades-core." in actual_compound_status["final_response"], actual_compound_status
 assert "No Backup Check exists yet." in actual_compound_status["final_response"], actual_compound_status
 assert "can't verify host, VM, service, or household-data backup coverage" in actual_compound_status["final_response"], actual_compound_status
+actual_proxmox_backup_read = hades._hades_direct_proxmox_backup_read
+proxmox_backup_calls = []
+def synthetic_proxmox_backup(text, subject, scope, session_key, *, allow_homelab_context=False, **_kwargs):
+    proxmox_backup_calls.append((text, subject, scope, allow_homelab_context))
+    if "proxmox" in text.lower() and not allow_homelab_context:
+        return None
+    return "PROXMOX VZDUMP: no configured jobs or recent archived tasks."
+hades._hades_direct_proxmox_backup_read = synthetic_proxmox_backup
+proxmox_backup_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-proxmox-backup-read",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+proxmox_backup_status = proxmox_backup_agent.run_conversation(
+    "Are my Proxmox backups current?", conversation_history=[]
+)
+hades._hades_direct_proxmox_backup_read = actual_proxmox_backup_read
+assert proxmox_backup_status.get("completed") is True and proxmox_backup_status.get("api_calls") == 0, proxmox_backup_status
+assert "PROXMOX VZDUMP: no configured jobs" in proxmox_backup_status["final_response"], proxmox_backup_status
+assert proxmox_backup_calls == [
+    ("Are my Proxmox backups current?", owner, "owner", False),
+    ("Are my backups okay?", owner, "owner", True),
+], proxmox_backup_calls
 read_only_summary_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-explicit-read-only",
     stream_delta_callback=lambda _chunk: None, **kwargs,
