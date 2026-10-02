@@ -374,6 +374,14 @@ unavailable catalog is reported as insufficient evidence. Intended placement
 is not current liveness. Household sessions do not receive host, address, or
 port details through this path.
 
+Household health questions about the approved game server, including “Is the
+game server working?”, use the same bounded service-monitor evidence as an
+explicit Minecraft health question. HADES returns only a high-level result;
+if no current matching check is available, it says it cannot verify the game
+server. This route runs before managed-server lifecycle handling and grants no
+host visibility or mutation authority. Broad questions about computer or
+homelab health remain owner-only.
+
 The HADES `Backup Check` reports the configured repository check state.
 It does not establish host, VM, service, or household-data backup coverage,
 independent off-site custody, or restoreability. HADES must keep those
