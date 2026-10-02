@@ -4696,7 +4696,9 @@ def _hades_homelab_availability_groups(availability):
     return groups
 
 
-def _hades_homelab_workloads_on_host_response(user_text, resources, summary_status="UNKNOWN"):
+def _hades_homelab_workloads_on_host_response(
+    user_text, resources, summary_status="UNKNOWN", source_results=None,
+):
     """List only current Proxmox guests for a specifically named Proxmox host."""
     match = re.search(
         r"\bwhat(?:['’]s|\s+is)\s+running\s+on\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
@@ -4768,7 +4770,30 @@ def _hades_homelab_workloads_on_host_response(user_text, resources, summary_stat
         response += ". Proxmox reports no VM or container guests on this host"
     response += ". This is virtualization inventory; it doesn't enumerate application services or establish their health."
     if str(summary_status).upper() in {"PARTIAL", "DEGRADED"}:
-        response += " Some homelab sources were unavailable, so other service state remains unknown."
+        sources = source_results if isinstance(source_results, list) else []
+        unavailable = [
+            str(item.get("source") or "A configured source")
+            for item in sources if isinstance(item, dict)
+            and str(item.get("status") or "").upper() == "UNAVAILABLE"
+        ]
+        degraded = [
+            str(item.get("source") or "A configured source")
+            for item in sources if isinstance(item, dict)
+            and str(item.get("status") or "").upper() == "DEGRADED"
+        ]
+        unconfigured = [
+            str(item.get("source") or "An optional source")
+            for item in sources if isinstance(item, dict)
+            and str(item.get("status") or "").upper() == "NOT_CONFIGURED"
+        ]
+        if unavailable:
+            response += " Configured source(s) unavailable: " + ", ".join(unavailable[:4]) + "; related inventory or service state remains unknown."
+        if degraded:
+            response += " Configured source(s) degraded: " + ", ".join(degraded[:4]) + "; some related data may be missing."
+        if unconfigured:
+            response += " Not configured: " + ", ".join(unconfigured[:4]) + "; those inventory or availability views remain unknown."
+        if not unavailable and not degraded and not unconfigured:
+            response += " Other source state is partial or unknown, so I can't verify related inventory or services."
     return response
 
 
@@ -5027,6 +5052,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                 text,
                 summary.get("resources", []) if isinstance(summary, dict) else [],
                 summary.get("status", "UNKNOWN") if isinstance(summary, dict) else "UNKNOWN",
+                summary.get("sources", []) if isinstance(summary, dict) else [],
             )
             if host_workload_response:
                 return host_workload_response

@@ -176,7 +176,36 @@ host_workloads = workloads_on_host('What is running on Runtime Node A?', [
      'runtime': {'type': 'lxc', 'node': 'pve-a', 'vmid': 202, 'status': 'running'}},
 ], 'PARTIAL')
 assert 'Runtime Node A online' in host_workloads and 'Dinner VM (qemu, running)' in host_workloads
-assert 'Unrelated CT' not in host_workloads and 'other service state remains unknown' in host_workloads
+assert 'Unrelated CT' not in host_workloads and "Other source state is partial or unknown" in host_workloads
+unconfigured_sources = workloads_on_host('What is running on Runtime Node A?', [
+    {'name': 'Runtime Node A', 'runtime_status': 'online',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+     'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+], 'PARTIAL', [
+    {'source': 'Proxmox', 'status': 'HEALTHY'},
+    {'source': 'NetBox', 'status': 'NOT_CONFIGURED'},
+    {'source': 'Uptime Kuma', 'status': 'NOT_CONFIGURED'},
+])
+assert 'Not configured: NetBox, Uptime Kuma' in unconfigured_sources
+assert 'unavailable' not in unconfigured_sources
+unavailable_sources = workloads_on_host('What is running on Runtime Node A?', [
+    {'name': 'Runtime Node A', 'runtime_status': 'online',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+     'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+], 'PARTIAL', [
+    {'source': 'Proxmox', 'status': 'HEALTHY'},
+    {'source': 'NetBox', 'status': 'UNAVAILABLE'},
+])
+assert 'Configured source(s) unavailable: NetBox' in unavailable_sources
+degraded_sources = workloads_on_host('What is running on Runtime Node A?', [
+    {'name': 'Runtime Node A', 'runtime_status': 'online',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+     'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+], 'PARTIAL', [
+    {'source': 'Proxmox', 'status': 'DEGRADED'},
+])
+assert 'Configured source(s) degraded: Proxmox' in degraded_sources
+assert 'unavailable: Proxmox' not in degraded_sources
 assert 'couldn\'t verify' in workloads_on_host('What is running on Unknown Host?', [])
 unlinked_host_workloads = workloads_on_host('What is running on Runtime Node B?', [
     {'name': 'Runtime Node B', 'runtime_status': 'online',
