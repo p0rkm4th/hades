@@ -623,6 +623,28 @@ node_activity_answer = server.format_inference_inventory_response(
 assert "inference endpoint linked to GPU A is responding" in node_activity_answer, node_activity_answer
 assert "Currently loaded: sample:small" in node_activity_answer, node_activity_answer
 assert "does not establish host CPU/GPU utilization" in node_activity_answer, node_activity_answer
+proxmox_node_summary = {"resources": [{
+    "name": "Runtime Node B", "runtime_status": "online",
+    "inventory": {"name": "Runtime Node B", "role": "virtualization host"},
+    "conflicts": ["NetBox intended node differs from Proxmox runtime node"],
+}]}
+node_without_inference = server.format_inference_inventory_response(
+    "What's Runtime Node B doing?",
+    {"status": "NOT_CONFIGURED", "endpoints": []}, proxmox_node_summary,
+)
+assert "Proxmox currently reports Runtime Node B online" in node_without_inference, node_without_inference
+assert "No linked inference endpoint" in node_without_inference
+assert "Source disagreement" in node_without_inference, node_without_inference
+physical_node_summary = {"resources": [{
+    "name": "Physical Node C", "runtime_status": "NOT_OBSERVED",
+    "inventory": {"name": "Physical Node C", "role": "compute"},
+}]}
+unknown_physical_node = server.format_inference_inventory_response(
+    "What's Physical Node C doing?",
+    {"status": "NOT_CONFIGURED", "endpoints": []}, physical_node_summary,
+)
+assert "can't say whether it's online" in unknown_physical_node, unknown_physical_node
+assert "NetBox lists its role as compute" in unknown_physical_node, unknown_physical_node
 summary_answer = server.format_inference_inventory_response(
     "What models are available?", inference, summary_names,
 )

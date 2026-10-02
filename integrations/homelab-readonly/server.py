@@ -791,15 +791,66 @@ def homelab_inference_inventory() -> dict:
     }
 
 
+def _format_node_activity_fallback(user_text: str, summary: dict | None) -> str:
+    """Use runtime/inventory evidence when the named machine has no provider link."""
+    match = re.search(
+        r"\bwhat(?:['’]s|s|\s+is)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+        r"(?:doing|running)\b",
+        str(user_text or ""), re.IGNORECASE,
+    )
+    target = re.sub(r"[^a-z0-9]+", "", match.group("target").casefold()) if match else ""
+    resources = summary.get("resources", []) if isinstance(summary, dict) else []
+    matches = []
+    for resource in resources if isinstance(resources, list) else []:
+        if not isinstance(resource, dict):
+            continue
+        inventory = resource.get("inventory") if isinstance(resource.get("inventory"), dict) else {}
+        label = inventory.get("name") or resource.get("name")
+        if target and re.sub(r"[^a-z0-9]+", "", str(label or "").casefold()) == target:
+            matches.append((resource, inventory, str(label)))
+    if len(matches) > 1:
+        return "I found multiple inventory records matching that machine, so I can't choose one current status safely."
+    if not matches:
+        return "I can't match that machine to a current runtime record or linked inference endpoint, so its activity is unknown."
+    resource, inventory, label = matches[0]
+    runtime_status = str(resource.get("runtime_status") or "UNKNOWN").casefold()
+    if runtime_status in {"online", "running"}:
+        response = f"Proxmox currently reports {label} {runtime_status}."
+    elif runtime_status in {"offline", "stopped"}:
+        response = f"Proxmox currently reports {label} {runtime_status}."
+    else:
+        response = f"I don't have a current Proxmox runtime check for {label}, so I can't say whether it's online."
+    role = inventory.get("role")
+    if isinstance(role, str) and role.strip():
+        response += f" NetBox lists its role as {role.strip()[:120]}."
+    conflicts = resource.get("conflicts") if isinstance(resource.get("conflicts"), list) else []
+    if conflicts:
+        details = [" ".join(str(value).split())[:160] for value in conflicts[:4] if value]
+        if details:
+            response += " Source disagreement: " + "; ".join(details) + "."
+    return response + " No linked inference endpoint provides current model activity for this machine."
+
+
 def format_inference_inventory_response(user_text: str, inventory: dict, summary: dict) -> str:
     """Present bounded current model inventory without overstating health or fit."""
+    node_activity = re.search(
+        r"\bwhat(?:['’]s|s|\s+is)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+        r"(?:doing|running)\b",
+        str(user_text or ""), re.IGNORECASE,
+    )
     if not isinstance(inventory, dict):
+        if node_activity:
+            return _format_node_activity_fallback(user_text, summary)
         return "I couldn't read the configured inference inventory, so I can't verify model availability right now."
     status = str(inventory.get("status") or "UNKNOWN")
     endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
     if status == "NOT_CONFIGURED":
+        if node_activity:
+            return _format_node_activity_fallback(user_text, summary)
         return "Provider-native model inventory is not configured here, so I can't verify which models are installed or loaded."
     if not endpoints:
+        if node_activity:
+            return _format_node_activity_fallback(user_text, summary)
         return "I couldn't read any configured model endpoints, so I can't verify model availability right now."
 
     gpu_availability_intent = bool(re.search(
@@ -830,11 +881,6 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
             if canonical:
                 resource_names[canonical] = inventory_record.get("name") or resource.get("name")
 
-    node_activity = re.search(
-        r"\bwhat(?:['’]s|s|\s+is)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
-        r"(?:doing|running)\b",
-        str(user_text or ""), re.IGNORECASE,
-    )
     if node_activity:
         requested_node = re.sub(r"[^a-z0-9]+", "", node_activity.group("target").casefold())
         matching_nodes = [
@@ -843,14 +889,14 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
             and re.sub(r"[^a-z0-9]+", "", label.casefold()) == requested_node
         ]
         if len(matching_nodes) != 1:
-            return "I can't match that machine to one configured inference endpoint, so I can't verify its current model activity."
+            return _format_node_activity_fallback(user_text, summary)
         node_identity, label = matching_nodes[0]
         linked = [
             endpoint for endpoint in endpoints[:16]
             if isinstance(endpoint, dict) and endpoint.get("node_identity") == node_identity
         ]
         if len(linked) != 1:
-            return f"I can't verify current model activity for {label}: its inventory record does not link to exactly one configured inference endpoint."
+            return _format_node_activity_fallback(user_text, summary)
         endpoint = linked[0]
         if endpoint.get("status") != "READABLE":
             return f"The inference endpoint linked to {label} is not responding to its catalog read, so I can't verify its model activity."
