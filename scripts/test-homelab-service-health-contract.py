@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import ast
+import importlib
 import importlib.util
 import os
 import re
+import sys
 import tempfile
+import types
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -23,6 +26,7 @@ wanted = {
     '_hades_service_placement_response',
     '_hades_endpoint_continuation_response',
     '_hades_direct_owner_location',
+    '_hades_direct_proxmox_backup_read',
     '_hades_homelab_name_key',
     '_hades_homelab_target_from_question',
 }
@@ -38,6 +42,10 @@ namespace = {
     '_hades_live_proxmox_vm_rows': lambda: [],
     '_hades_phase2_backup_freshness_response': lambda *_args, **_kwargs: None,
     '_HADES_EXPLICIT_PUBLIC_RESEARCH_INTENT': re.compile(r'(?!)'),
+    'importlib': importlib,
+    'sys': sys,
+    '_hades_logger': type('Log', (), {'warning': staticmethod(lambda *_args, **_kwargs: None)})(),
+    '_hades_phase2_backup_response': lambda *_args, **_kwargs: 'Configured HADES backup checks: current.',
 }
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
 target = namespace['_hades_service_health_target']
@@ -46,6 +54,7 @@ groups = namespace['_hades_homelab_availability_groups']
 workloads_on_host = namespace['_hades_homelab_workloads_on_host_response']
 core_vm_placement = namespace['_hades_homelab_core_vm_placement_response']
 direct_read = namespace['_hades_direct_homelab_read']
+direct_proxmox_backup = namespace['_hades_direct_proxmox_backup_read']
 endpoint_before_provision = namespace['_hades_endpoint_intent_before_provision']
 endpoint_response = namespace['_hades_service_endpoint_response']
 placement_response = namespace['_hades_service_placement_response']
@@ -448,3 +457,42 @@ assert monitor_groups['up'] == ['Minecraft Server'], monitor_groups
 assert monitor_groups['down'] == ['Search'], monitor_groups
 assert {item['name'] for item in monitor_groups['unknown']} == {'Jellyfin', 'LLDAP', 'Malformed'}, monitor_groups
 print('PASS broad homelab summaries distinguish current probe failures from stale/unknown checks')
+
+backup_root = Path(tempfile.mkdtemp(prefix='hades-proxmox-backup-route-'))
+backup_adapter = backup_root / 'integrations' / 'homelab-readonly' / 'server.py'
+backup_adapter.parent.mkdir(parents=True)
+backup_adapter.touch()
+old_workdir = os.environ.get('HADES_HERMES_WORKING_DIRECTORY')
+old_spec_from_file = importlib.util.spec_from_file_location
+old_module_from_spec = importlib.util.module_from_spec
+class FakeLoader:
+    def exec_module(self, module):
+        module.homelab_backup_status = lambda: {'status': 'READABLE'}
+        module.format_homelab_backup_status = lambda report: 'Proxmox status: ' + report['status']
+class FakeSpec:
+    loader = FakeLoader()
+os.environ['HADES_HERMES_WORKING_DIRECTORY'] = str(backup_root)
+importlib.util.spec_from_file_location = lambda *_args, **_kwargs: FakeSpec()
+importlib.util.module_from_spec = lambda _spec: types.SimpleNamespace()
+try:
+    backup_answer = direct_proxmox_backup(
+        'Are my backups okay?', 'synthetic-owner', 'owner', 'session-key'
+    )
+    assert 'Proxmox status: READABLE' in backup_answer, backup_answer
+    assert 'Configured HADES backup checks: current.' in backup_answer, backup_answer
+    assert direct_proxmox_backup(
+        'Are my backups okay?', 'synthetic-household', 'household', 'session-key'
+    ) is None
+    assert direct_proxmox_backup(
+        'Run the backup now', 'synthetic-owner', 'owner', 'session-key'
+    ) is None
+finally:
+    importlib.util.spec_from_file_location = old_spec_from_file
+    importlib.util.module_from_spec = old_module_from_spec
+    if old_workdir is None:
+        os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
+    else:
+        os.environ['HADES_HERMES_WORKING_DIRECTORY'] = old_workdir
+    import shutil
+    shutil.rmtree(backup_root, ignore_errors=True)
+print('PASS owner backup questions compose bounded Proxmox evidence with HADES coverage; household and write requests remain gated')

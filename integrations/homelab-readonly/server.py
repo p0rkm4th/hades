@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import quote, urljoin, urlsplit, urlunsplit
 
 import anyio
 import yaml
@@ -69,6 +69,17 @@ TOOLS = [Tool(
         "with the observed compute capability matrix. Proxmox remains the "
         "only liveness authority; hardware inventory never implies online "
         "status. This is read-only and performs no writes."
+    ),
+    inputSchema={"type": "object", "properties": {}},
+), Tool(
+    name="homelab_backup_status",
+    description=(
+        "For owner questions about Proxmox backups, read configured vzdump job "
+        "definitions and the bounded archived vzdump task history from each "
+        "configured Proxmox endpoint. Report source freshness and partial or "
+        "unknown reads. This covers Proxmox vzdump only; it does not prove "
+        "backup contents, guest application data, off-site custody, or restoreability. "
+        "Read-only; never start, change, or restore a backup."
     ),
     inputSchema={"type": "object", "properties": {}},
 ), Tool(
@@ -563,6 +574,255 @@ def homelab_summary() -> dict:
         result["status"] = "PARTIAL"
     result["sources"] = source_results
     return result
+
+
+def homelab_backup_status() -> dict:
+    """Read bounded Proxmox vzdump schedules and archived task outcomes."""
+    from concurrent.futures import ThreadPoolExecutor
+    from config import proxmox_specs, proxmox_source_ids, proxmox_token_ids
+
+    try:
+        specs = proxmox_specs()
+        token_ids = proxmox_token_ids()
+        source_ids = proxmox_source_ids(specs)
+    except (OSError, ValueError):
+        return {
+            "status": "CONFIGURATION_ERROR",
+            "source": "Proxmox vzdump jobs and archived tasks",
+            "endpoints": [],
+            "read_only": True,
+            "coverage": "proxmox-vzdump-only",
+        }
+    if not specs:
+        return {
+            "status": "NOT_CONFIGURED",
+            "source": "Proxmox vzdump jobs and archived tasks",
+            "endpoints": [],
+            "read_only": True,
+            "coverage": "proxmox-vzdump-only",
+        }
+
+    ca_file = os.environ.get("HADES_PROXMOX_CA_FILE", "")
+    endpoints = []
+    for (resources_url, token_file), token_id, source_id in zip(
+        specs, token_ids, source_ids, strict=True
+    ):
+        started = time.monotonic()
+        parsed = urlsplit(resources_url)
+        path = parsed.path.rstrip("/")
+        suffix = "/cluster/resources"
+        if (
+            parsed.scheme not in {"http", "https"} or not parsed.hostname
+            or parsed.username or parsed.password or parsed.query or parsed.fragment
+            or not path.endswith(suffix)
+        ):
+            endpoints.append({
+                "source_id": source_id,
+                "status": "UNAVAILABLE",
+                "jobs_status": "UNKNOWN",
+                "tasks_status": "UNKNOWN",
+                "error_code": "INVALID_PROXMOX_RESOURCES_URL",
+                "jobs": [],
+                "tasks": [],
+            })
+            continue
+        api_base = urlunsplit((parsed.scheme, parsed.netloc, path[:-len(suffix)], "", ""))
+        jobs = []
+        tasks = []
+        jobs_status = "UNAVAILABLE"
+        tasks_status = "UNAVAILABLE"
+        jobs_truncated = False
+        nodes_truncated = False
+        tasks_truncated = False
+        error_codes = []
+        try:
+            job_payload = _fetch(
+                urljoin(api_base.rstrip("/") + "/", "cluster/backup"),
+                token_file, ca_file, token_id,
+            )
+            raw_jobs = job_payload.get("data")
+            if not isinstance(raw_jobs, list):
+                raise ValueError("Proxmox backup job response has an unsupported shape")
+            jobs_truncated = len(raw_jobs) > 64
+            for raw in raw_jobs[:64]:
+                if not isinstance(raw, dict):
+                    continue
+                item = {}
+                for key in ("id", "schedule", "storage", "node", "mode"):
+                    value = raw.get(key)
+                    if isinstance(value, str):
+                        bounded = _bounded_text(value, 128)
+                        if bounded:
+                            item[key] = bounded
+                vmid = raw.get("vmid")
+                if isinstance(vmid, str):
+                    ids = [part for part in re.split(r"[,;\s]+", vmid) if re.fullmatch(r"[1-9][0-9]{0,8}", part)]
+                    if ids:
+                        item["vmids"] = ids[:32]
+                all_guests = raw.get("all")
+                if isinstance(all_guests, (bool, int)) and all_guests in {0, 1, False, True}:
+                    item["all_guests"] = bool(all_guests)
+                enabled = raw.get("enabled")
+                if isinstance(enabled, (bool, int)) and enabled in {0, 1, False, True}:
+                    item["enabled"] = bool(enabled)
+                jobs.append(item)
+            jobs_status = "PARTIAL" if jobs_truncated else "HEALTHY"
+        except (OSError, ValueError, UnicodeError) as exc:
+            error_codes.append(_source_error_code(exc))
+
+        try:
+            runtime_payload = _fetch(resources_url, token_file, ca_file, token_id)
+            raw_resources = runtime_payload.get("data")
+            if not isinstance(raw_resources, list):
+                raise ValueError("Proxmox runtime response has an unsupported shape")
+            all_nodes = sorted({
+                row.get("node") for row in raw_resources
+                if isinstance(row, dict) and row.get("type") == "node"
+                and isinstance(row.get("node"), str)
+                and re.fullmatch(r"[A-Za-z0-9._-]{1,128}", row["node"])
+            })
+            nodes_truncated = len(all_nodes) > 16
+            nodes = all_nodes[:16]
+            if not nodes:
+                raise ValueError("Proxmox runtime response contains no readable nodes")
+            def read_tasks(node):
+                try:
+                    endpoint = urljoin(
+                        api_base.rstrip("/") + "/",
+                        f"nodes/{quote(node, safe='')}/tasks?source=archive&limit=20&typefilter=vzdump",
+                    )
+                    payload = _fetch(endpoint, token_file, ca_file, token_id)
+                    data = payload.get("data")
+                    if not isinstance(data, list):
+                        raise ValueError("Proxmox task response has an unsupported shape")
+                    normalized = []
+                    for row in data[:20]:
+                        if not isinstance(row, dict):
+                            continue
+                        raw_status = str(row.get("status") or "").strip().upper()
+                        status = "OK" if raw_status == "OK" else (
+                            "RUNNING" if raw_status == "RUNNING" else
+                            "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
+                        )
+                        item = {"node": node, "status": status}
+                        guest_id = row.get("id")
+                        if isinstance(guest_id, str) and re.fullmatch(r"[1-9][0-9]{0,8}", guest_id):
+                            item["guest_id"] = guest_id
+                        for key in ("starttime", "endtime"):
+                            value = row.get(key)
+                            if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
+                                item[key] = value
+                        if "endtime" in item:
+                            item["finished_at"] = datetime.fromtimestamp(
+                                item["endtime"], timezone.utc,
+                            ).isoformat()
+                        normalized.append(item)
+                    return "HEALTHY", normalized, None
+                except (OSError, ValueError, UnicodeError, OverflowError) as exc:
+                    return "UNAVAILABLE", [], _source_error_code(exc)
+            with ThreadPoolExecutor(max_workers=min(8, len(nodes))) as pool:
+                task_reads = list(pool.map(read_tasks, nodes))
+            task_states = [state for state, _, _ in task_reads]
+            for state, node_tasks, error in task_reads:
+                tasks.extend(node_tasks)
+                if error:
+                    error_codes.append(error)
+            tasks.sort(key=lambda row: row.get("endtime", row.get("starttime", 0)), reverse=True)
+            tasks_truncated = len(tasks) > 80
+            tasks_status = "PARTIAL" if nodes_truncated or tasks_truncated or "UNAVAILABLE" in task_states else "HEALTHY"
+            if task_states and all(state == "UNAVAILABLE" for state in task_states):
+                tasks_status = "UNAVAILABLE"
+        except (OSError, ValueError, UnicodeError, OverflowError) as exc:
+            error_codes.append(_source_error_code(exc))
+
+        states = (jobs_status, tasks_status)
+        endpoint_status = "HEALTHY" if all(x == "HEALTHY" for x in states) else (
+            "PARTIAL" if any(x in {"HEALTHY", "PARTIAL"} for x in states) else "UNAVAILABLE"
+        )
+        endpoints.append({
+            "source_id": source_id,
+            "status": endpoint_status,
+            "jobs_status": jobs_status,
+            "tasks_status": tasks_status,
+            "retrieved_at": _retrieved_at(),
+            "duration_ms": round((time.monotonic() - started) * 1000, 2),
+            "jobs": jobs,
+            "tasks": tasks[:80],
+            "jobs_truncated": jobs_truncated,
+            "tasks_truncated": tasks_truncated or nodes_truncated,
+            "error_codes": sorted(set(error_codes)),
+        })
+    states = [row["status"] for row in endpoints]
+    overall = "READABLE" if all(x == "HEALTHY" for x in states) else (
+        "SOURCE_UNAVAILABLE" if all(x == "UNAVAILABLE" for x in states) else "PARTIAL"
+    )
+    return {
+        "status": overall,
+        "source": "Proxmox vzdump jobs and archived tasks",
+        "retrieved_at": _retrieved_at(),
+        "coverage": "proxmox-vzdump-only",
+        "endpoints": endpoints,
+        "limitations": [
+            "Does not verify backup contents, guest-application data, non-Proxmox backup systems, off-site custody, or restoreability.",
+            "Task history is bounded to the latest 20 archived vzdump tasks per Proxmox node.",
+            "Storage health is not checked by this read path.",
+        ],
+        "read_only": True,
+    }
+
+
+def format_homelab_backup_status(report: dict) -> str:
+    """Format bounded Proxmox backup evidence without broad DR claims."""
+    if not isinstance(report, dict):
+        return "I couldn't read the Proxmox backup status."
+    status = str(report.get("status") or "UNKNOWN").upper()
+    if status == "NOT_CONFIGURED":
+        return "Proxmox backup status isn't configured in HADES, so I can't verify Proxmox backup jobs or tasks."
+    if status == "CONFIGURATION_ERROR":
+        return "The Proxmox backup read configuration is invalid, so I can't verify backup jobs or tasks."
+    endpoints = report.get("endpoints") if isinstance(report.get("endpoints"), list) else []
+    if not endpoints:
+        return "I couldn't read any Proxmox backup sources, so backup status is unknown."
+    sentences = []
+    for endpoint in endpoints[:8]:
+        if not isinstance(endpoint, dict):
+            continue
+        source_id = _bounded_text(endpoint.get("source_id"), 100) or "configured Proxmox source"
+        endpoint_status = str(endpoint.get("status") or "UNKNOWN").upper()
+        jobs_status = str(endpoint.get("jobs_status") or "UNKNOWN").upper()
+        tasks_status = str(endpoint.get("tasks_status") or "UNKNOWN").upper()
+        if jobs_status in {"HEALTHY", "PARTIAL"}:
+            jobs = endpoint.get("jobs") if isinstance(endpoint.get("jobs"), list) else []
+            if jobs:
+                sentences.append(f"Proxmox {source_id} reports {len(jobs)} configured vzdump job(s).")
+            else:
+                sentences.append(f"Proxmox {source_id} reports no configured vzdump jobs.")
+        else:
+            sentences.append(f"Proxmox {source_id} backup-job configuration is {jobs_status.casefold()}.")
+        if tasks_status in {"HEALTHY", "PARTIAL"}:
+            tasks = endpoint.get("tasks") if isinstance(endpoint.get("tasks"), list) else []
+            if tasks:
+                latest = tasks[0]
+                task_status = str(latest.get("status") or "UNKNOWN").upper()
+                guest_id = latest.get("guest_id")
+                guest_text = f" for guest {guest_id}" if isinstance(guest_id, str) else ""
+                when = latest.get("finished_at")
+                when_text = f" at {when}" if isinstance(when, str) else ""
+                sentences.append(f"The latest visible archived vzdump task{guest_text} reported {task_status}{when_text}.")
+            elif endpoint_status == "HEALTHY":
+                sentences.append("No archived vzdump task appears in the bounded recent task history.")
+            else:
+                sentences.append("Archived vzdump task history is incomplete.")
+        else:
+            sentences.append(f"Archived vzdump task history is {tasks_status.casefold()}.")
+        if endpoint_status == "PARTIAL":
+            sentences.append(f"The {source_id} read is partial.")
+        elif endpoint_status == "UNAVAILABLE":
+            sentences.append(f"The {source_id} backup source is unavailable.")
+    sentences.append(
+        "This covers Proxmox vzdump records only; it doesn't verify backup contents, other backup systems, off-site custody, or restoreability."
+    )
+    return " ".join(sentences)
 
 
 def homelab_compute_capabilities() -> dict:
@@ -1123,6 +1383,8 @@ async def list_tools():
 async def call_tool(name, arguments):
     if name == "homelab_owner_snapshot":
         result = homelab_owner_snapshot()
+    elif name == "homelab_backup_status":
+        result = homelab_backup_status()
     elif name == "homelab_discovery_scan":
         args = arguments or {}
         target = args.get("target")

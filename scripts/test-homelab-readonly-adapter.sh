@@ -716,6 +716,65 @@ print("PASS provider-native model catalog and residency reads preserve identity 
 print("PASS inference endpoint partial failure preserves catalog with explicit loaded-state uncertainty")
 print("PASS observed compute capability read is bounded, explicit, and read-only")
 print("PASS owner snapshot preserves partial-source errors and authority boundaries")
+
+# Proxmox backup status is a bounded, owner-gated read of vzdump job config
+# and archived task history. It must not leak raw UPIDs, usernames, or errors.
+backup_token = matrix_dir / "proxmox.token"
+backup_token.write_text("synthetic-secret-token", encoding="utf-8")
+os.chmod(backup_token, 0o600)
+os.environ.update({
+    "HADES_PROXMOX_RESOURCES_URLS": "https://pve.example.test/api2/json/cluster/resources",
+    "HADES_PROXMOX_TOKEN_FILES": str(backup_token),
+    "HADES_PROXMOX_TOKEN_IDS": "svc-hades-ro@pve!test",
+    "HADES_PROXMOX_SOURCE_IDS": "pve-test",
+})
+assert "homelab_backup_status" in {tool.name for tool in server.TOOLS}
+def backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/cluster/backup"):
+        return {"data": [{"id": "nightly", "schedule": "02:00", "storage": "backup-store", "enabled": 1}]}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "node-a"}]}
+    if "/nodes/node-a/tasks?" in url:
+        return {"data": [
+            {"id": "802", "status": "OK", "endtime": 1790900000,
+             "upid": "UPID:private-user:secret"},
+            {"id": "803", "status": "ERROR: private failure detail", "starttime": 1790800000,
+             "user": "private-user@pam"},
+        ]}
+    raise AssertionError("unexpected Proxmox backup URL")
+server._fetch = backup_fetch
+backup_report = server.homelab_backup_status()
+assert backup_report["status"] == "READABLE", backup_report
+backup_endpoint = backup_report["endpoints"][0]
+assert backup_endpoint["jobs_status"] == "HEALTHY"
+assert backup_endpoint["tasks_status"] == "HEALTHY"
+assert backup_endpoint["tasks"][0]["status"] == "OK"
+assert backup_endpoint["tasks"][1]["status"] == "ERROR"
+assert "UPID:" not in json.dumps(backup_report)
+assert "private-user" not in json.dumps(backup_report)
+assert "private failure detail" not in json.dumps(backup_report)
+backup_text = server.format_homelab_backup_status(backup_report)
+assert "doesn't verify backup contents" in backup_text
+assert "private" not in backup_text
+
+def partial_backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/cluster/backup"):
+        raise PermissionError("synthetic-token-secret-must-not-escape")
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "node-a"}, {"type": "node", "node": "node-b"}]}
+    if "/nodes/node-a/tasks?" in url:
+        return {"data": []}
+    raise TimeoutError("synthetic-timeout-secret-must-not-escape")
+server._fetch = partial_backup_fetch
+partial_backup = server.homelab_backup_status()
+assert partial_backup["status"] == "PARTIAL", partial_backup
+partial_endpoint = partial_backup["endpoints"][0]
+assert partial_endpoint["jobs_status"] == "UNAVAILABLE"
+assert partial_endpoint["tasks_status"] == "PARTIAL"
+assert "synthetic-token-secret" not in json.dumps(partial_backup)
+assert "synthetic-timeout-secret" not in json.dumps(partial_backup)
+print("PASS Proxmox backup read bounds and sanitizes configured vzdump jobs and task outcomes")
+print("PASS Proxmox backup partial-source failure preserves available evidence without leaking errors")
 PY
 
 python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py

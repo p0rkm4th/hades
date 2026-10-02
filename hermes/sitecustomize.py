@@ -5519,7 +5519,7 @@ def _hades_direct_homelab_backup_compound(user_text, subject, scope, phase2_sess
     # the existing confirmation and typed-action paths.
     if re.search(
         r"\b(?:run|create|schedule|pause|resume|delete|remove|edit|change|fix|repair|"
-        r"restart|reboot|start|stop|deploy|provision|verify|check|watch|monitor|"
+        r"restart|reboot|start|stop|deploy|provision|watch|monitor|"
         r"enable|disable|share|unshare|revoke|confirm)\b|"
         r"(?:^|[,.!?;]\s*)(?:yes|y|yeah|yep|okay|ok|no|nope|nah|cancel|never\s+mind|nevermind)\b|"
         r"\b(?:go\s+ahead|do\s+it|please\s+do)\b",
@@ -5531,6 +5531,10 @@ def _hades_direct_homelab_backup_compound(user_text, subject, scope, phase2_sess
     backup_coverage = _hades_phase2_backup_response(
         text, subject, scope, phase2_session_key
     )
+    proxmox_backup = _hades_direct_proxmox_backup_read(
+        "Are my backups okay?", subject, scope, phase2_session_key,
+        allow_homelab_context=True, include_hades_checks=False,
+    )
     sections = []
     if infrastructure:
         sections.append("SERVER STATUS:\n" + infrastructure)
@@ -5540,7 +5544,77 @@ def _hades_direct_homelab_backup_compound(user_text, subject, scope, phase2_sess
         sections.append("BACKUP COVERAGE:\n" + backup_coverage)
     else:
         sections.append("BACKUP COVERAGE: I couldn't verify the current Backup Checks.")
+    if proxmox_backup:
+        sections.append(proxmox_backup)
     return "\n\n".join(sections)
+
+
+def _hades_direct_proxmox_backup_read(
+    user_text, subject, scope, phase2_session_key="", allow_homelab_context=False,
+    include_hades_checks=True,
+):
+    """Compose owner backup coverage with bounded Proxmox vzdump evidence."""
+    text = str(user_text or "")
+    if scope != "owner" or not subject:
+        return None
+    if not re.search(r"\b(?:backup|backups|bakup|bakups)\b", text, re.IGNORECASE):
+        return None
+    if not allow_homelab_context and re.search(
+        r"\b(?:homelab|homlab|home\s+lab|proxmox|servers?|nodes?|computers?)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return None
+    if not re.search(
+        r"\b(?:status|current|currently|latest|recent|okay|ok|good|safe|healthy|successful|failed|failure|working|are|is|how|what|check)\b|"
+        r"\b(?:proxmox|vzdump|homelab|homlab|home\s+lab|server|servers|node|nodes)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return None
+    if re.search(
+        r"\b(?:run|create|schedule|pause|resume|delete|remove|edit|change|fix|repair|restart|reboot|start|stop|deploy|provision|enable|disable|restore|confirm)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return None
+    def _compose(proxmox_text):
+        sections = ["PROXMOX VZDUMP:\n" + proxmox_text]
+        check_text = (
+            _hades_phase2_backup_response(text, subject, scope, phase2_session_key)
+            if include_hades_checks else None
+        )
+        if check_text:
+            sections.append("HADES BACKUP CHECKS:\n" + check_text)
+        return "\n\n".join(sections)
+
+    workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip() or os.getcwd()
+    try:
+        from pathlib import Path
+        import importlib.util
+
+        adapter = Path(workdir) / "integrations" / "homelab-readonly" / "server.py"
+        if not adapter.is_file():
+            configured_root = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
+            if configured_root:
+                candidate = Path(configured_root) / "integrations" / "homelab-readonly" / "server.py"
+                if candidate.is_file():
+                    adapter = candidate
+        if not adapter.is_file():
+            return _compose("I can't read Proxmox backup status from this installation right now.")
+        if str(adapter.parent) not in __import__("sys").path:
+            __import__("sys").path.insert(0, str(adapter.parent))
+        spec = importlib.util.spec_from_file_location("hades_direct_proxmox_backup", adapter)
+        if spec is None or spec.loader is None:
+            return _compose("I can't read Proxmox backup status from this installation right now.")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = module.homelab_backup_status()
+        proxmox_text = module.format_homelab_backup_status(report)
+        return _compose(proxmox_text)
+    except Exception as exc:
+        _hades_logger.warning("Owner Proxmox backup read failed: %s", type(exc).__name__)
+        return _compose("I couldn't verify Proxmox backup status just now; I haven't changed or started a backup.")
 
 
 def _hades_endpoint_intent_before_provision(user_text):
@@ -7209,6 +7283,7 @@ try:
                     {
                         "mcp_homelab_readonly_homelab_summary",
                         "mcp_homelab_readonly_homelab_owner_snapshot",
+                        "mcp_homelab_readonly_homelab_backup_status",
                         "mcp_homelab_readonly_homelab_compute_capabilities",
                         "mcp_homelab_readonly_homelab_inference_inventory",
                         "mcp_homelab_readonly_homelab_discovery_scan",
@@ -7339,6 +7414,11 @@ try:
                 "description": "For compound owner questions about current homelab status and hardware, read the live Proxmox/NetBox/Uptime Kuma summary together with the observed compute capability matrix. Proxmox is the only liveness authority; hardware inventory never implies online status. Read-only, no writes.",
                 "parameters": {"type": "object", "properties": {}},
                 "call": lambda _args: module.homelab_owner_snapshot(),
+            },
+            "mcp_homelab_readonly_homelab_backup_status": {
+                "description": "For owner-only backup questions, read Proxmox vzdump job configuration and bounded archived task history. Reports partial and unavailable sources. This does not verify backup contents, application data, off-site custody, storage health, or restoreability; read-only.",
+                "parameters": {"type": "object", "properties": {}},
+                "call": lambda _args: module.homelab_backup_status(),
             },
             "mcp_homelab_readonly_homelab_compute_capabilities": {
                 "description": "Read confirmed observed CPU, RAM, and GPU hardware inventory. This tool does not provide liveness: never label a machine online from it; use Proxmox runtime for that. It does not claim CUDA, VRAM, or control authority.",
@@ -9276,6 +9356,25 @@ try:
                 return {
                     "final_response": recipe_servings_response,
                     "messages": [{"role": "assistant", "content": recipe_servings_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            proxmox_backup_response = _hades_direct_proxmox_backup_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+                _phase2_session_key,
+            )
+            if proxmox_backup_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(proxmox_backup_response)
+                _hades_logger.info(
+                    "Owner Proxmox backup status read completed without model invocation"
+                )
+                return {
+                    "final_response": proxmox_backup_response,
+                    "messages": [{"role": "assistant", "content": proxmox_backup_response}],
                     "api_calls": 0,
                     "completed": True,
                 }

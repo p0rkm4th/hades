@@ -276,6 +276,15 @@ snapshot containing stale or unknown hardware evidence is `PARTIAL`. The
 deployed owner profile retains separate bounded discovery tools;
 it does not expose a broad shell or homelab control plane.
 
+The owner-only `homelab_backup_status` read reports Proxmox `vzdump` job
+configuration and a bounded recent archived-task sample per configured node.
+It does not establish that a job succeeded merely because it is configured,
+and it does not verify backup contents, guest-application data, storage health,
+other backup systems, off-site custody, or restoreability. An unavailable or
+partially readable Proxmox source remains unknown/partial in the response.
+This is separate from HADES Backup Checks, which track their own configured
+coverage and must not be presented as a substitute for Proxmox backup evidence.
+
 Owner requests for a server IP, port, endpoint, or firewall destination first
 read the bounded NetBox application-service catalog. HADES reports an endpoint
 only when one matching service record provides a single address and validated
