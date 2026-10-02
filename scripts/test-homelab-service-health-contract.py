@@ -59,7 +59,7 @@ for prompt in (
     'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
     'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
     'Are all the computers okay?', 'Is the homelab okay?', 'Are my computers okay?',
-    'Is Minecraft working?',
+    'Is Minecraft working?', 'Where is HADES running?', 'Where is Minecraft running?',
 ):
     assert homelab_intent.search(prompt), f'owner homelab health intent missed {prompt!r}'
 target = namespace['_hades_service_health_target']
@@ -413,6 +413,9 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             restricted = direct_read(prompt, 'synthetic-household', 'household')
             assert "can't verify private infrastructure or computer status" in restricted, restricted
             assert 'Tartarus' not in restricted and 'Proxmox' not in restricted, restricted
+        for prompt in ('Where is HADES running?', 'Where is Minecraft running?'):
+            restricted_location = direct_read(prompt, 'synthetic-household', 'household')
+            assert "can't provide internal host or address details" in restricted_location, restricted_location
         write_broad_summary(
             [{'name': 'service-netbox', 'status': 'down', 'freshness': 'FRESH'}],
             sources=[{'source': 'NetBox', 'status': 'HEALTHY'}],

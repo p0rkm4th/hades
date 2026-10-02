@@ -4904,6 +4904,19 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
     household_node_status_intent = bool(
         scope != "owner" and _hades_homelab_target_from_question(text)
     )
+    household_private_placement_intent = bool(
+        scope != "owner" and re.search(
+            r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|"
+            r"grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\b.{0,40}"
+            r"\b(?:run|running|hosted|located|live|on)\b|"
+            r"\bwhere\s+does\s+(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|"
+            r"searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\s+(?:run|live)\b",
+            text,
+            re.IGNORECASE,
+        )
+    )
+    if scope != "owner" and household_private_placement_intent:
+        return "I can't provide internal host or address details from this account."
     if scope != "owner" and (broad_owner_status_intent or household_node_status_intent) and not household_game_health_intent:
         return (
             "I can't verify private infrastructure or computer status from this account. "
@@ -5972,6 +5985,8 @@ _HADES_HOMELAB_INTENT = re.compile(
     r"ram|free\s+memory|unhealthy|host(?:s)?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
     r"\bminecraft\b.{0,40}\b(?:healthy|health|up|online|running|working|okay|ok|available|down|offline|unavailable)\b|"
     r"\b(?:healthy|health|up|online|running|working|okay|ok|available|down|offline|unavailable)\b.{0,40}\bminecraft\b|"
+    r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\b.{0,40}\b(?:run|running|hosted|located|live|on)\b|"
+    r"\bwhere\s+does\s+(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\s+(?:run|live)\b|"
     r"nmap|discov(?:er|y)|ip(?:s)?|mac(?:s)?|what(?:['’]?s| is)\s+running|"
     r"what(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+running|"
     r"what(?:['’]?s| is)\s+[a-z0-9][a-z0-9 ._-]{0,60}\s+doing|"
