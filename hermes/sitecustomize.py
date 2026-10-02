@@ -5120,6 +5120,22 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
     return f"Can {target} host another model?"
 
 
+def _hades_broad_homelab_status_intent(text):
+    return bool(re.search(
+        r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
+        r"is\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
+        r"are\s+(?:(?:all\s+the|all|the|my|our)\s+)?(?:computers?|machines?|servers?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
+        r"what(?:['’]s|\s+is)\s+down|anything\s+(?:down|dying|wrong|broken)|"
+        r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)|"
+        r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)\s+with\s+(?:my\s+|our\s+|the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)|"
+        r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
+        r"why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
+        r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$",
+        str(text or ""),
+        re.IGNORECASE,
+    ))
+
+
 def _hades_direct_homelab_read(user_text, subject="", scope="", context_text=""):
     """Answer simple owner homelab-status questions from canonical read sources.
 
@@ -5151,19 +5167,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         text,
         re.IGNORECASE,
     ))
-    broad_owner_status_intent = bool(re.search(
-        r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
-        r"is\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
-        r"are\s+(?:(?:all\s+the|all|the|my|our)\s+)?(?:computers?|machines?|servers?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
-        r"what(?:['’]s|\s+is)\s+down|anything\s+(?:down|dying|wrong|broken)|"
-        r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)|"
-        r"what(?:['’]s|\s+is)\s+(?:wrong|broken|fucked)\s+with\s+(?:my\s+|our\s+|the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)|"
-        r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
-        r"why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
-        r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$",
-        text,
-        re.IGNORECASE,
-    ))
+    broad_owner_status_intent = _hades_broad_homelab_status_intent(text)
     ai_availability_intent = bool(re.search(
         r"\b(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
         r"\b(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,35}"
@@ -9908,7 +9912,8 @@ try:
         _household_homelab_boundary_intent = bool(
             self._hades_session_scope == "household"
             and (
-                _hades_service_health_target(user_message)
+                _hades_broad_homelab_status_intent(user_message)
+                or _hades_service_health_target(user_message)
                 or re.search(
                     r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|"
                     r"grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|jellyfin|netbox|uptime\s+kuma|nextcloud|vaultwarden)\b.{0,40}"

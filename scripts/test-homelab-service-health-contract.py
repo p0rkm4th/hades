@@ -37,6 +37,7 @@ wanted = {
     '_hades_homelab_target_from_question',
     '_hades_homelab_named_check_target',
     '_hades_homelab_followup_prompt',
+    '_hades_broad_homelab_status_intent',
     '_hades_positive_homelab_control_request',
 }
 functions = [
@@ -86,6 +87,22 @@ registry_module.registry = FakeHomelabRegistry()
 sys.modules['tools'] = tools_module
 sys.modules['tools.registry'] = registry_module
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
+run_conversation = next(
+    node for node in ast.walk(tree)
+    if isinstance(node, ast.FunctionDef) and node.name == '_hades_run_conversation'
+)
+household_intent_assignment = next(
+    node for node in run_conversation.body
+    if isinstance(node, ast.Assign)
+    and any(
+        isinstance(target, ast.Name) and target.id == '_household_homelab_boundary_intent'
+        for target in node.targets
+    )
+)
+household_boundary_expression = ast.unparse(household_intent_assignment.value)
+assert '_hades_broad_homelab_status_intent(user_message)' in household_boundary_expression
+assert 'self._hades_session_scope' in household_boundary_expression
+assert 'household' in household_boundary_expression
 intent_assignment = next(
     node for node in tree.body
     if isinstance(node, ast.Assign)
@@ -93,6 +110,7 @@ intent_assignment = next(
 )
 exec(compile(ast.Module(body=[intent_assignment], type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
 homelab_intent = namespace['_HADES_HOMELAB_INTENT']
+status_intent = namespace['_hades_broad_homelab_status_intent']
 for prompt in (
     'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
     'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
@@ -100,6 +118,11 @@ for prompt in (
     'Is Minecraft working?', 'Where is HADES running?', 'Where is Minecraft running?',
 ):
     assert homelab_intent.search(prompt), f'owner homelab health intent missed {prompt!r}'
+for prompt in (
+    'Is everything okay?', 'Is everything okay with the homelab?',
+    'Are all the computers okay?', 'Anything dying?', "Why's everything slow?",
+):
+    assert status_intent(prompt), f'broad homelab status intent missed {prompt!r}'
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 groups = namespace['_hades_homelab_availability_groups']

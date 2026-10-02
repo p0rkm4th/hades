@@ -204,6 +204,16 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
+    household_computer_status = household_agent.run_conversation(
+        "Are all the computers okay?", conversation_history=[]
+    )
+    assert household_computer_status.get("completed") is True, household_computer_status
+    assert household_computer_status.get("api_calls") == 0, household_computer_status
+    assert "can't verify private infrastructure or computer status" in household_computer_status["final_response"].casefold(), household_computer_status
+    assert "Synthetic Node B" not in household_computer_status["final_response"], household_computer_status
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
     os.environ["HADES_TEST_SOURCE_UNAVAILABLE"] = "1"
     try:
         outage_result = owner_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])
