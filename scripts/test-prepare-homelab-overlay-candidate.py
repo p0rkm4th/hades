@@ -46,6 +46,15 @@ def _hades_ambiguous_media_device_clarification(text):
 def _hades_run_conversation(self, user_message, previous_user_text, _preflight_text):
     if _hades_is_hermes_auxiliary_prompt(user_message):
         return "auxiliary"
+    if _hades_household_game_health_intent(
+        user_message, getattr(self, "_hades_session_scope", "")
+    ):
+        game_health_response = _hades_direct_homelab_read(
+            user_message, getattr(self, "_hades_subject", ""),
+            getattr(self, "_hades_session_scope", ""),
+        )
+        if game_health_response:
+            return game_health_response
     turn_started = time.perf_counter()
     if self._hades_session_scope == "owner" and _compound_briefing:
         return _hades_direct_homelab_read("homelab status and blockers")
@@ -82,7 +91,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     compile(candidate, str(output), "exec")
     tree = ast.parse(candidate)
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "_hades_direct_homelab_read"]
-    assert len(calls) == 4, len(calls)
+    assert len(calls) == 5, len(calls)
     assert "getattr(self, \"_hades_subject\", \"\")" in candidate
     assert "context_text=previous_user_text" in candidate
     assert "context_text=_hades_intent_text" in candidate
@@ -92,6 +101,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert 'r"\\bwhat(?:' in candidate
     assert "Owner model-capacity follow-up failed closed without model invocation" in candidate
     assert "Household game-server health read completed before managed-server routing" in candidate
+    assert 'getattr(self, "_hades_session_scope", "")' in candidate
     run_start = candidate.index("def _hades_run_conversation")
     capacity_guard = candidate.index("Owner model-capacity follow-up failed closed without model invocation", run_start)
     game_guard = candidate.index("Household game-server health read completed before managed-server routing", run_start)

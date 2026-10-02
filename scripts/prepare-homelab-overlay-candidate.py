@@ -105,6 +105,21 @@ def replace_call_sites(active_text: str, tree: ast.Module) -> str:
     replacements = []
     status_calls = 0
     request_calls = 0
+
+    def is_self_getattr(node: ast.AST, attribute: str) -> bool:
+        return (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "getattr"
+            and len(node.args) == 3
+            and isinstance(node.args[0], ast.Name)
+            and node.args[0].id == "self"
+            and isinstance(node.args[1], ast.Constant)
+            and node.args[1].value == attribute
+            and isinstance(node.args[2], ast.Constant)
+            and node.args[2].value == ""
+        )
+
     for node in ast.walk(run_conversation):
         if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name) or node.func.id != ROUTE:
             continue
@@ -129,6 +144,15 @@ def replace_call_sites(active_text: str, tree: ast.Module) -> str:
             if len(node.args) == 1 and not node.keywords:
                 new = f'{ROUTE}(user_message, getattr(self, "_hades_subject", ""), self._hades_session_scope, context_text=_hades_intent_text)'
                 replacements.append((node, old, new))
+            elif (
+                len(node.args) == 3
+                and not node.keywords
+                and is_self_getattr(node.args[1], "_hades_subject")
+                and is_self_getattr(node.args[2], "_hades_session_scope")
+            ):
+                # Preserve the early household game-health guard's explicit
+                # subject/scope call. It intentionally has no follow-up context.
+                continue
             elif isinstance(context, ast.Name) and context.id == "previous_user_text":
                 new = old.replace("context_text=previous_user_text", "context_text=_hades_intent_text")
                 if new == old:
