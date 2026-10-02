@@ -51,15 +51,29 @@ class FakeRegistry:
         return self.response
 
 
-def invoke(response, *, registered=True):
+def invoke(response, *, registered=True, discovery_register=False):
     fake = FakeRegistry(response, registered=registered)
+    discovery_calls = []
     tools = types.ModuleType("tools")
     tools.__path__ = []
     registry_module = types.ModuleType("tools.registry")
     registry_module.registry = fake
-    previous = {name: sys.modules.get(name) for name in ("tools", "tools.registry")}
+    discovery_module = types.ModuleType("tools.mcp_tool_discovery")
+
+    def discover_mcp_tools(allowed):
+        discovery_calls.append(list(allowed))
+        if discovery_register:
+            fake.registered = True
+        return ["mcp__homelab_readonly__homelab_summary"] if discovery_register else []
+
+    discovery_module.discover_mcp_tools = discover_mcp_tools
+    previous = {
+        name: sys.modules.get(name)
+        for name in ("tools", "tools.registry", "tools.mcp_tool_discovery")
+    }
     sys.modules["tools"] = tools
     sys.modules["tools.registry"] = registry_module
+    sys.modules["tools.mcp_tool_discovery"] = discovery_module
     namespace = {"json": json, "_hades_logger": logging.getLogger("test.homelab")}
     try:
         exec(compile(ast.Module(body=[helper], type_ignores=[]), "sitecustomize.py", "exec"), namespace)
@@ -70,24 +84,33 @@ def invoke(response, *, registered=True):
                 sys.modules.pop(name, None)
             else:
                 sys.modules[name] = value
-    return result, fake
+    return result, fake, discovery_calls
 
 
 payload = {"status": "OK", "source_counts": {"proxmox_runtime_rows": 2}, "resources": []}
-result, registry = invoke(json.dumps({"result": json.dumps(payload)}))
+result, registry, discovery_calls = invoke(json.dumps({"result": json.dumps(payload)}))
 assert result == payload, result
 assert registry.calls == [("mcp__homelab_readonly__homelab_summary", {})]
+assert discovery_calls == []
 
-result, _ = invoke(json.dumps({"error": "permission denied: /private/token.path"}))
+result, _, _ = invoke(json.dumps({"error": "permission denied: /private/token.path"}))
 assert result["status"] == "SOURCE_UNAVAILABLE"
 assert "/private" not in json.dumps(result) and "token.path" not in json.dumps(result)
 
-result, _ = invoke(json.dumps({"result": json.dumps({"status": "PARTIAL", "errors": ["Permission denied: /private/token"]})}))
+result, _, _ = invoke(json.dumps({"result": json.dumps({"status": "PARTIAL", "errors": ["Permission denied: /private/token"]})}))
 assert result["errors"] == ["A configured homelab source could not be read."]
 
-result, registry = invoke(None, registered=False)
+result, registry, discovery_calls = invoke(
+    json.dumps({"result": json.dumps(payload)}), registered=False, discovery_register=True,
+)
+assert result == payload
+assert registry.calls == [("mcp__homelab_readonly__homelab_summary", {})]
+assert discovery_calls == [["homelab-readonly"]]
+
+result, registry, discovery_calls = invoke(None, registered=False)
 assert result["status"] == "NOT_CONFIGURED"
 assert result["sources"][0]["status"] == "NOT_CONFIGURED"
+assert discovery_calls == [["homelab-readonly"]]
 assert registry.calls == []
 
-print("PASS deterministic homelab reads use the MCP registry, decode bounded results, and redact secret paths")
+print("PASS deterministic homelab reads discover only the configured MCP when needed, dispatch bounded results, and fail closed")

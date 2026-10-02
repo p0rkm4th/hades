@@ -4947,6 +4947,23 @@ def _hades_direct_homelab_tool_result(tool_name):
             None,
         )
         if registered_name is None:
+            # A deterministic HADES route can run before Hermes has asked the
+            # model for its tool definitions. MCP tools are discovered lazily,
+            # so initialize only this explicitly configured read-only server
+            # before deciding that the capability is unavailable.
+            try:
+                from tools.mcp_tool_discovery import discover_mcp_tools
+                discover_mcp_tools(["homelab-readonly"])
+            except Exception as discovery_error:
+                _hades_logger.warning(
+                    "Homelab MCP discovery failed: %s",
+                    type(discovery_error).__name__,
+                )
+            registered_name = next(
+                (name for name in tool_names[tool_name] if registry.get_entry(name)),
+                None,
+            )
+        if registered_name is None:
             return {
                 "status": "NOT_CONFIGURED",
                 "sources": [{
