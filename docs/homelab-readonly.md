@@ -10,6 +10,7 @@ MCP candidate evaluation is recorded in
 | Domain | Canonical source | Planned HADES access | Write authority |
 |---|---|---|---|
 | Virtualization | Proxmox VE | API reads for nodes, guests, status, and resources | None |
+| Storage and backup | Proxmox storage metadata or component-native backup verification | Separate, explicitly approved read inputs; runtime-resource reads alone do not prove storage or backup health | None |
 | Inventory/topology | NetBox | REST `GET` reads for approved objects | None |
 | Availability | Uptime Kuma | Published status-page data or metrics, where intentionally exposed | None |
 | Hardware capability | Tracked observed capability matrix | Confirmed CPU/RAM/GPU inventory, explicitly separate from live availability | None |
@@ -343,5 +344,8 @@ trends or proof of why a service feels slow. Uptime Kuma contributes only its
 intentionally published monitor observations. Guest operating-system
 identity, in-guest major-service state, actual guest filesystem free space, and
 historical network or storage trends remain unknown unless a separately
-approved canonical source supplies them. HADES must state that limit instead
+approved canonical source supplies them. Datastore state and backup completion
+also require their own read path and authorization; an HTTP 200 from
+`/cluster/resources`, a running guest, or an empty backup-task listing does not
+prove that storage or backups are healthy. HADES must state that limit instead
 of inferring a diagnosis from a running VM or a hardware inventory row.
