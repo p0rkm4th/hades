@@ -1197,7 +1197,9 @@ def homelab_inference_inventory() -> dict:
     }
 
 
-def _format_node_activity_fallback(user_text: str, summary: dict | None) -> str:
+def _format_node_activity_fallback(
+    user_text: str, summary: dict | None, inference: dict | None = None,
+) -> str:
     """Use runtime/inventory evidence when the named machine has no provider link."""
     match = re.search(
         r"\bwhat(?:['’]s|s|\s+is)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
@@ -1205,6 +1207,51 @@ def _format_node_activity_fallback(user_text: str, summary: dict | None) -> str:
         str(user_text or ""), re.IGNORECASE,
     )
     target = re.sub(r"[^a-z0-9]+", "", match.group("target").casefold()) if match else ""
+    endpoints = inference.get("endpoints", []) if isinstance(inference, dict) else []
+    endpoint_matches = [
+        endpoint for endpoint in endpoints if isinstance(endpoint, dict)
+        and re.sub(
+            r"[^a-z0-9]+", "",
+            str(endpoint.get("source_identity") or "").removeprefix("inference:").casefold(),
+        ) == target
+    ]
+    if len(endpoint_matches) == 1:
+        endpoint = endpoint_matches[0]
+        endpoint_state = str(endpoint.get("status") or "UNKNOWN").upper()
+        label = " ".join(re.sub(
+            r"[._-]+", " ",
+            str(endpoint.get("source_identity") or "").removeprefix("inference:"),
+        ).split()).title()
+        if endpoint_state not in {"READABLE", "PARTIAL"}:
+            return (
+                f"The configured {label} inference endpoint did not respond to its catalog read. "
+                "I can't verify its current model activity, and this doesn't establish whether "
+                "the physical host is down."
+            )
+        response = f"The configured {label} inference endpoint responded to a live catalog read."
+        models = endpoint.get("models") if isinstance(endpoint.get("models"), list) else []
+        model_names = list(dict.fromkeys(
+            str(model.get("name")) for model in models
+            if isinstance(model, dict) and model.get("name")
+        ))[:6]
+        if model_names:
+            response += " Its provider catalog lists " + ", ".join(model_names) + "."
+        if endpoint.get("loaded_status") == "CURRENT":
+            loaded = endpoint.get("loaded_models") if isinstance(endpoint.get("loaded_models"), list) else []
+            loaded_names = list(dict.fromkeys(
+                str(model.get("name")) for model in loaded
+                if isinstance(model, dict) and model.get("name")
+            ))[:6]
+            response += " Provider-reported residency: " + (
+                ", ".join(loaded_names) if loaded_names else "no models reported loaded"
+            ) + "."
+        else:
+            response += " Current provider-reported residency is unavailable."
+        response += (
+            " I can't verify that this endpoint belongs to the physical host you named, "
+            "or that generation or GPU execution works."
+        )
+        return response
     resources = summary.get("resources", []) if isinstance(summary, dict) else []
     matches = []
     for resource in resources if isinstance(resources, list) else []:
@@ -1255,7 +1302,7 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
     )
     if not isinstance(inventory, dict):
         if node_activity:
-            return _format_node_activity_fallback(user_text, summary)
+            return _format_node_activity_fallback(user_text, summary, inventory)
         return "I couldn't read the configured inference inventory, so I can't verify model availability right now."
     status = str(inventory.get("status") or "UNKNOWN")
     endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
@@ -1263,13 +1310,13 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
         if ai_availability:
             return "No provider-native AI endpoint is configured, so I can't check whether it is responding."
         if node_activity:
-            return _format_node_activity_fallback(user_text, summary)
+            return _format_node_activity_fallback(user_text, summary, inventory)
         return "Provider-native model inventory is not configured here, so I can't verify which models are installed or loaded."
     if not endpoints:
         if ai_availability:
             return "I couldn't check whether the configured AI endpoints are responding because no endpoint results were returned."
         if node_activity:
-            return _format_node_activity_fallback(user_text, summary)
+            return _format_node_activity_fallback(user_text, summary, inventory)
         return "I couldn't read any configured model endpoints, so I can't verify model availability right now."
 
     gpu_availability_intent = bool(re.search(
@@ -1308,14 +1355,14 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
             and re.sub(r"[^a-z0-9]+", "", label.casefold()) == requested_node
         ]
         if len(matching_nodes) != 1:
-            return _format_node_activity_fallback(user_text, summary)
+            return _format_node_activity_fallback(user_text, summary, inventory)
         node_identity, label = matching_nodes[0]
         linked = [
             endpoint for endpoint in endpoints[:16]
             if isinstance(endpoint, dict) and endpoint.get("node_identity") == node_identity
         ]
         if len(linked) != 1:
-            return _format_node_activity_fallback(user_text, summary)
+            return _format_node_activity_fallback(user_text, summary, inventory)
         endpoint = linked[0]
         if endpoint.get("status") != "READABLE":
             return f"The inference endpoint linked to {label} is not responding to its catalog read, so I can't verify its model activity."
