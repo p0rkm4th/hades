@@ -30,9 +30,52 @@ if not (overlay_dir / "sitecustomize.py").is_file():
     raise SystemExit(f"FAIL HADES overlay directory has no sitecustomize.py: {overlay_dir}")
 child = r'''import os
 import json
+import importlib.util
 import run_agent
 import sitecustomize as hades
 import threading
+import tools.registry as hermes_registry_module
+
+class SyntheticHomelabRegistry:
+    """Exercise the registered-MCP boundary without external sources."""
+    _tools = {
+        "homelab_summary",
+        "homelab_backup_status",
+        "homelab_compute_capabilities",
+        "homelab_inference_inventory",
+    }
+
+    def get_entry(self, name):
+        canonical = "mcp__homelab_readonly__"
+        legacy = "mcp_homelab_readonly_"
+        if name.startswith(canonical):
+            tool = name[len(canonical):]
+        elif name.startswith(legacy):
+            tool = name[len(legacy):]
+        else:
+            return None
+        return object() if tool in self._tools else None
+
+    def dispatch(self, name, arguments):
+        assert arguments == {}
+        if name.startswith("mcp__homelab_readonly__"):
+            tool = name.removeprefix("mcp__homelab_readonly__")
+        else:
+            tool = name.removeprefix("mcp_homelab_readonly_")
+        adapter = os.path.join(
+            os.environ["HADES_HERMES_WORKING_DIRECTORY"],
+            "integrations", "homelab-readonly", "server.py",
+        )
+        spec = importlib.util.spec_from_file_location("synthetic_homelab_mcp", adapter)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        try:
+            result = getattr(module, tool)()
+        except Exception as exc:
+            return json.dumps({"error": type(exc).__name__})
+        return json.dumps({"result": json.dumps(result)})
+
+hermes_registry_module.registry = SyntheticHomelabRegistry()
 assert hades._HADES_HOMELAB_INTENT.search("What models are available?")
 assert hades._HADES_HOMELAB_INTENT.search("Where's qwen3.6:35b?")
 assert hades._HADES_HOMELAB_INTENT.search("Which GPUs are free?")
@@ -309,6 +352,28 @@ household_game_location = household_game_agent.run_conversation(
 assert household_game_location.get("completed") is True and household_game_location.get("api_calls") == 0, household_game_location
 assert "can't provide internal host or address details" in household_game_location["final_response"], household_game_location
 assert "192.0.2." not in household_game_location["final_response"], household_game_location
+os.environ["HADES_TEST_SOURCE_UNAVAILABLE"] = "1"
+try:
+    unavailable_summary = hades._hades_direct_homelab_tool_result("homelab_summary")
+    assert unavailable_summary.get("status") == "SOURCE_UNAVAILABLE", unavailable_summary
+    failed_owner_read_agent = agent_class(
+        gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-source-outage",
+        stream_delta_callback=lambda _chunk: None, **kwargs,
+    )
+    failed_owner_read = failed_owner_read_agent.run_conversation(
+        "Is everything okay with the homelab?", conversation_history=[]
+    )
+    assert failed_owner_read.get("completed") is True and failed_owner_read.get("api_calls") == 0, failed_owner_read
+    assert "couldn't verify the current homelab sources" in failed_owner_read["final_response"], failed_owner_read
+    failed_household_read = household_game_agent.run_conversation(
+        "Is Minecraft working?", conversation_history=[]
+    )
+    assert failed_household_read.get("completed") is True and failed_household_read.get("api_calls") == 0, failed_household_read
+    assert "because the current check could not be read" in failed_household_read["final_response"], failed_household_read
+    assert "synthetic source unavailable" not in failed_household_read["final_response"], failed_household_read
+finally:
+    os.environ.pop("HADES_TEST_SOURCE_UNAVAILABLE", None)
+print("PASS registered homelab MCP source outages return explicit unknown owner/household answers without model fallback")
 hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
 provenance_history = [
     {"role": "user", "content": "Is everything okay with the homelab?"},

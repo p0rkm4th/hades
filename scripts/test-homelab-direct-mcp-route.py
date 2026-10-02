@@ -26,30 +26,29 @@ assert any(
     isinstance(node, ast.Call)
     and isinstance(node.func, ast.Name)
     and node.func.id == "_hades_direct_homelab_tool_result"
-    and len(node.args) >= 2
+    and len(node.args) == 1
     and isinstance(node.args[0], ast.Constant)
     and node.args[0].value == "homelab_summary"
-    and isinstance(node.args[1], ast.Name)
-    and node.args[1].id == "module"
     for node in ast.walk(direct_read)
 )
 
 
 class FakeRegistry:
-    def __init__(self, response):
+    def __init__(self, response, *, registered=True):
         self.response = response
+        self.registered = registered
         self.calls = []
 
     def get_entry(self, name):
-        return object() if name == "mcp__homelab_readonly__homelab_summary" else None
+        return object() if self.registered and name == "mcp__homelab_readonly__homelab_summary" else None
 
     def dispatch(self, name, arguments):
         self.calls.append((name, arguments))
         return self.response
 
 
-def invoke(response):
-    fake = FakeRegistry(response)
+def invoke(response, *, registered=True):
+    fake = FakeRegistry(response, registered=registered)
     tools = types.ModuleType("tools")
     tools.__path__ = []
     registry_module = types.ModuleType("tools.registry")
@@ -81,5 +80,10 @@ assert "/private" not in json.dumps(result) and "token.path" not in json.dumps(r
 
 result, _ = invoke(json.dumps({"result": json.dumps({"status": "PARTIAL", "errors": ["Permission denied: /private/token"]})}))
 assert result["errors"] == ["A configured homelab source could not be read."]
+
+result, registry = invoke(None, registered=False)
+assert result["status"] == "NOT_CONFIGURED"
+assert result["sources"][0]["status"] == "NOT_CONFIGURED"
+assert registry.calls == []
 
 print("PASS deterministic homelab reads use the MCP registry, decode bounded results, and redact secret paths")
