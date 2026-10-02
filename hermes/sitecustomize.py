@@ -5068,6 +5068,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         down = monitor_groups["down"]
         if down:
             response += " Uptime Kuma's configured probes failed: " + ", ".join(down) + "."
+        elif not availability:
+            response += " No service availability observations are available, so I can't confirm service health."
         if isinstance(summary, dict) and summary.get("identity_warnings"):
             response += (
                 " Some display names map to multiple resource identities, "
@@ -5117,7 +5119,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
             errors = summary.get("errors", []) if isinstance(summary, dict) else []
             if errors:
                 response += " Some sources are unavailable, so unreported nodes remain unknown."
-            elif not down and not conflicts and not unknown and not errors:
+            elif availability and not down and not conflicts and not unknown and not errors:
                 response += " No blocker was reported by the configured live sources."
             core = None
             for core_name in ("hades-core", "hades core"):

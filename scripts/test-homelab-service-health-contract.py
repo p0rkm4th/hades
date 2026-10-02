@@ -33,6 +33,7 @@ namespace = {
     'os': os,
     'Path': Path,
     '_hades_live_proxmox_vm_rows': lambda: [],
+    '_hades_phase2_backup_freshness_response': lambda *_args, **_kwargs: None,
     '_HADES_EXPLICIT_PUBLIC_RESEARCH_INTENT': re.compile(r'(?!)'),
 }
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
@@ -203,6 +204,42 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         routed_network = direct_read('Why does the network feel slow?', 'synthetic-owner', 'owner')
         assert 'Packet-loss, throughput, and historical comparison data are unavailable' in routed_network, routed_network
         assert 'cannot identify a network bottleneck or trend from this evidence' in routed_network, routed_network
+
+        def write_broad_summary(monitors):
+            summary = {
+                'status': 'OK',
+                'online_names': ['HADES Core'],
+                'inventory_only_names': [],
+                'availability_summary': monitors,
+                'resources': [{
+                    'name': 'HADES Core', 'runtime_status': 'running',
+                    'currently_online': True, 'runtime': {'vmid': 802},
+                    'availability': None, 'availability_observations': [],
+                    'availability_freshness': 'UNKNOWN', 'conflicts': [],
+                }],
+                'conflicts': [], 'identity_warnings': [], 'errors': [],
+                'service_catalog': {'status': 'OK', 'services': []},
+            }
+            (adapter_dir / 'server.py').write_text(
+                'def homelab_summary():\n    return ' + repr(summary) + '\n',
+                encoding='utf-8',
+            )
+
+        write_broad_summary([])
+        no_coverage = direct_read(
+            'Are there any blockers in the homelab?', 'synthetic-owner', 'owner'
+        )
+        assert "No service availability observations are available, so I can't confirm service health." in no_coverage, no_coverage
+        assert 'No blocker was reported by the configured live sources.' not in no_coverage, no_coverage
+
+        write_broad_summary([{
+            'name': 'HADES Core', 'status': 'up', 'freshness': 'FRESH',
+        }])
+        covered = direct_read(
+            'Are there any blockers in the homelab?', 'synthetic-owner', 'owner'
+        )
+        assert 'No blocker was reported by the configured live sources.' in covered, covered
+        assert 'A responding probe does not prove application login' in covered, covered
     finally:
         if old_workdir is None:
             os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)

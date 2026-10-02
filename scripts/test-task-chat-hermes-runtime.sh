@@ -313,7 +313,8 @@ blocker_summary = blockers_agent.run_conversation(
 )
 assert blocker_summary.get("completed") is True and blocker_summary.get("api_calls") == 0, blocker_summary
 assert "Live Proxmox currently reports: hades-core." in blocker_summary["final_response"], blocker_summary
-assert "No blocker was reported by the configured live sources." in blocker_summary["final_response"], blocker_summary
+assert "No service availability observations are available, so I can't confirm service health." in blocker_summary["final_response"], blocker_summary
+assert "No blocker was reported by the configured live sources." not in blocker_summary["final_response"], blocker_summary
 assert "HADES Core runtime is running." in blocker_summary["final_response"], blocker_summary
 
 # A normal-language performance complaint must combine live resource and
@@ -403,7 +404,7 @@ print("PASS plural owner server-status question bypasses non-confirming task app
 print("PASS one read-only owner turn composes live homelab status and Backup Check coverage, while household and action requests stay outside the shortcut")
 print("PASS speech-like named-node status separates Compute Node A's hardware listing from missing live runtime evidence")
 print("PASS physical-node wording uses a fresh monitor as reachability evidence without relabeling it as Proxmox runtime or workload health")
-print("PASS detailed homelab blocker summary remains deterministic when optional availability has no rows")
+print("PASS detailed homelab summary reports missing service observations as unknown, not as no blockers")
 print("PASS network-slowness question combines synthetic Proxmox and Kuma evidence, states missing network trends, and makes zero model calls")
 print("PASS ambiguous household entertainment-device trouble gets a plain-language clarification for owner and household without task changes or model calls")
 '''
