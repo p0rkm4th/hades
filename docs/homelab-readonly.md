@@ -182,6 +182,7 @@ HADES_UPTIME_KUMA_STATUS_SLUG=<owner-approved-slug>
 Once credentials are explicitly supplied, verify through the HADES owner path:
 
 - “What’s running in the lab?”
+- “What guests are running on `<owner-approved Proxmox host>`?”
 - “What’s down?”
 - “Where does `<owner-approved host or service>` live?”
 - “What’s wrong with the lab?”
@@ -306,6 +307,13 @@ states. A missing Proxmox row or unfamiliar state leaves it `null`; absence
 from one runtime source is not evidence that a physical host is down. The
 bounded summary retains up to 64 compact source records so alphabetical
 truncation cannot silently hide most configured hosts or monitors.
+
+An owner can ask which guests Proxmox reports on a named host. HADES matches
+the guest's runtime node and stable Proxmox endpoint identity; ambiguous or
+missing source identity fails closed. This is only the current VM/container
+list for that Proxmox host. It does not enumerate application services or
+prove that any guest workload is healthy. Household sessions do not receive
+host or guest names through this query.
 
 Cross-source records are joined only through stable source identities and an
 explicit private mapping to a NetBox device ID. Display-name agreement and IP
