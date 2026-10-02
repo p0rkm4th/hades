@@ -10107,6 +10107,26 @@ try:
                     "api_calls": 0,
                     "completed": True,
                 }
+            if self._hades_session_scope == "owner" and re.search(
+                r"\bwhat(?:['’]s|s|\s+is)\s+[a-z0-9][a-z0-9 ._'’-]{0,60}?\s+(?:doing|running)\b",
+                str(user_message or ""), re.IGNORECASE,
+            ):
+                target = _hades_homelab_target_from_question(user_message)
+                subject_name = f" for {target}" if target else ""
+                unavailable_response = (
+                    f"I couldn't verify current runtime or workload status{subject_name} "
+                    "from the configured homelab sources, so I won't guess."
+                )
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(unavailable_response)
+                _hades_logger.info("Owner node-activity read failed closed without model invocation")
+                return {
+                    "final_response": unavailable_response,
+                    "messages": [{"role": "assistant", "content": unavailable_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         reversal_notice = _hades_grocy_reversal_notice(
             user_message, previous_user_text
         )

@@ -79,6 +79,8 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "getattr(self, \"_hades_subject\", \"\")" in candidate
     assert "context_text=previous_user_text" in candidate
     assert "household_homelab_response" in candidate
+    assert "Owner node-activity read failed closed without model invocation" in candidate
+    assert "_hades_homelab_target_from_question(user_message)" in candidate
     assert "_hades_ambiguous_media_device_clarification(_preflight_text)" in candidate
     assert "_hades_direct_homelab_backup_compound" in candidate
     assert candidate.index("proxmox_backup_response = _hades_direct_proxmox_backup_read") < candidate.index(

@@ -476,6 +476,18 @@ assert "Role: synthetic inference node." in compute_node_a_text, compute_node_a_
 assert "Host CPU/GPU load and free VRAM are not connected." in compute_node_a_text, compute_node_a_text
 assert "I don't have a current host runtime check for it" in compute_node_a_text, compute_node_a_text
 assert "192.0.2.69" not in compute_node_a_text, compute_node_a_text
+actual_node_read = hades._hades_direct_homelab_read
+hades._hades_direct_homelab_read = lambda *_args, **_kwargs: None
+unavailable_node_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-unavailable-node-status",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+unavailable_node = unavailable_node_agent.run_conversation(
+    "What is Hypnos running?", conversation_history=[]
+)
+hades._hades_direct_homelab_read = actual_node_read
+assert unavailable_node.get("completed") is True and unavailable_node.get("api_calls") == 0, unavailable_node
+assert "couldn't verify current runtime or workload status for hypnos" in unavailable_node["final_response"], unavailable_node
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 # A fresh, similarly named Kuma check with no stable identity link is useful
