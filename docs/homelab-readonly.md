@@ -210,6 +210,11 @@ Kuma probe or a separate explicit check is required for current liveness.
 The existing NetBox token needs read-only permission to view application
 services for this optional catalog; when unavailable, the host/VM summary
 still works and reports the service catalog as unavailable.
+The service catalog separates API read status from inventory coverage: an
+empty result is `coverage=EMPTY`, a proven complete result is `COMPLETE`, a
+paginated or truncated result is `PARTIAL`, and missing pagination metadata is
+`UNKNOWN`. `status=OK` means the source responded; it does not mean service
+placement is populated or complete.
 The adapter accepts the documented base inputs above and derives only bounded
 read paths (`/cluster/resources`, `/api/dcim/devices/`, `/api/ipam/services/`, and the selected
 published `/api/status-page/heartbeat/<slug>` JSON endpoint, joined with the

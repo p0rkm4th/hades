@@ -246,7 +246,7 @@ spec = importlib.util.spec_from_file_location(
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 result = module.project_netbox_services(
-    {"results": [{
+    {"count": 1, "next": None, "results": [{
         "name": "Minecraft Java",
         "device": {"id": 7, "name": "test-game-host"},
         "port_mappings": ["TCP/25565", "udp/25565", "tcp/99999", "tcp/any"],
@@ -256,6 +256,8 @@ result = module.project_netbox_services(
     {"results": [{"id": 7, "name": "test-game-host", "primary_ip4": {"address": "192.0.2.75/24"}}]},
 )
 assert result["status"] == "OK" and result["writes_performed"] is False
+assert result["coverage"] == "COMPLETE"
+assert result["records_returned"] == 1 and result["source_total"] == 1
 assert result["inventory_is_not_liveness"] is True
 assert result["services"] == [{
     "name": "Minecraft Java", "parent_type": "device", "parent_name": "test-game-host",
@@ -269,6 +271,29 @@ unmatched_parent = module.project_netbox_services(
 )
 assert unmatched_parent["services"][0]["addresses"] == []
 assert unmatched_parent["services"][0]["address_source"] is None
+empty_services = module.project_netbox_services(
+    {"count": 0, "next": None, "results": []}, {"results": []},
+)
+assert empty_services["status"] == "OK"
+assert empty_services["coverage"] == "EMPTY"
+assert empty_services["records_returned"] == 0
+assert empty_services["source_total"] == 0
+partial_services = module.project_netbox_services(
+    {"count": 5, "next": "https://netbox.example.test/api/ipam/services/?offset=2", "results": [
+        {"name": "service-a"}, {"name": "service-b"},
+    ]}, {"results": []},
+)
+assert partial_services["coverage"] == "PARTIAL"
+assert partial_services["truncated"] is True
+unknown_coverage = module.project_netbox_services(
+    {"results": [{"name": "service-a"}]}, {"results": []},
+)
+assert unknown_coverage["coverage"] == "UNKNOWN"
+inconsistent_count = module.project_netbox_services(
+    {"count": 0, "next": None, "results": [{"name": "unexpected-row"}]},
+    {"results": []},
+)
+assert inconsistent_count["coverage"] == "PARTIAL"
 print("PASS NetBox service projection joins parent address, validates protocol/ports, and never claims liveness")
 PY
 
@@ -435,7 +460,7 @@ def fixture_fetch(url, *_args, **_kwargs):
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": [device_fixture]}
     if url == "https://netbox.example.test/api/ipam/services/":
-        return {"results": [service_fixture]}
+        return {"count": 1, "next": None, "results": [service_fixture]}
     if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
         return {"monitors": []}
     raise AssertionError(f"unexpected synthetic adapter URL: {url}")
@@ -460,6 +485,7 @@ assert runtime_row["runtime"] == {
 }, runtime_row
 assert runtime_row["currently_online"] is True
 assert summary["source_counts"]["netbox_service_rows"] == 1
+assert summary["service_catalog"]["coverage"] == "COMPLETE"
 assert summary["service_catalog"]["services"] == [{
     "name": "Minecraft Java", "parent_type": "device", "parent_name": "test-game-host",
     "addresses": ["192.0.2.75"], "address_source": "NetBox parent primary IP",

@@ -468,6 +468,9 @@ def homelab_summary() -> dict:
             result["service_catalog"] = {
                 "status": "UNAVAILABLE",
                 "source": "NetBox application services",
+                "coverage": "UNKNOWN",
+                "records_returned": 0,
+                "source_total": None,
                 "services": [],
                 "inventory_is_not_liveness": True,
                 "writes_performed": False,
@@ -482,6 +485,9 @@ def homelab_summary() -> dict:
         result["service_catalog"] = {
             "status": "NOT_CONFIGURED",
             "source": "NetBox application services",
+            "coverage": "UNKNOWN",
+            "records_returned": 0,
+            "source_total": None,
             "services": [],
             "inventory_is_not_liveness": True,
             "writes_performed": False,

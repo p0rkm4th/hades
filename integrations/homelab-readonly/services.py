@@ -70,6 +70,16 @@ def project_netbox_services(
     claims a service is running or reachable.
     """
     services = _rows(services_payload, "services")
+    reported_total = (
+        services_payload.get("count")
+        if isinstance(services_payload, dict)
+        and type(services_payload.get("count")) is int
+        and services_payload["count"] >= 0
+        else None
+    )
+    has_next_page = bool(
+        isinstance(services_payload, dict) and services_payload.get("next")
+    )
     devices = _rows(devices_payload, "devices")
     by_id: dict[str, dict[str, Any]] = {}
     for device in devices:
@@ -125,12 +135,29 @@ def project_netbox_services(
             "runtime_status": "UNKNOWN",
         })
 
+    truncated = (
+        len(services) > MAX_SERVICES
+        or has_next_page
+        or (reported_total is not None and reported_total > len(services))
+    )
+    if reported_total == 0 and not services and not has_next_page:
+        coverage = "EMPTY"
+    elif reported_total is not None and reported_total == len(services) and not has_next_page:
+        coverage = "COMPLETE"
+    elif truncated or (reported_total is not None and reported_total != len(services)):
+        coverage = "PARTIAL"
+    else:
+        coverage = "UNKNOWN"
+
     return {
         "status": "OK",
         "source": "NetBox application services",
+        "coverage": coverage,
+        "records_returned": min(len(services), MAX_SERVICES),
+        "source_total": reported_total,
         "inventory_is_not_liveness": True,
         "writes_performed": False,
         "services": projected,
-        "truncated": len(services) > MAX_SERVICES,
+        "truncated": truncated,
         "limitation": "NetBox describes intended service endpoints; runtime and reachability require separate live evidence.",
     }
