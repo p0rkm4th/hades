@@ -48,6 +48,11 @@ of truth.
   probe. The new route uses that bounded read-only probe and explicitly leaves
   task execution unverified; fresh owner UI dogfood confirms this, while a
   household turn remains redacted. No Agent Zero task was invoked.
+- Fresh owner UI dogfood of “what's down / what can't you verify?” now reports
+  empty service-catalog coverage as unknown intended placement. It labels
+  current availability data as Uptime Kuma probes and distinguishes responding
+  host probes from application readiness. Guest visibility and live GPU
+  capacity remain open evidence gaps.
 - Backup answers distinguish configured jobs and bounded task history from
   verified backup contents, independent custody, and restoreability.
 - Current-tree privacy checks and the focused homelab contracts pass.

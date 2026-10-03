@@ -51,6 +51,10 @@ Status: **PARTIAL**
   endpoint probe and explicitly says task execution was not tested. Fresh
   authenticated owner and household UI checks pass; no operator task is
   dispatched by this status question.
+- Fresh broad-status dogfood confirmed that empty service-catalog coverage is
+  reported as unknown intended placement. It names Uptime Kuma as the source
+  of current probes and distinguishes host-probe responses from application
+  readiness; guest visibility and live GPU capacity remain open evidence gaps.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 
