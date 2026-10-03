@@ -624,6 +624,11 @@ assert compound_status.get("completed") is True and compound_status.get("api_cal
 assert "SERVER STATUS:" in compound_status["final_response"] and "synthetic-hades-core running" in compound_status["final_response"], compound_status
 assert "BACKUP COVERAGE:" in compound_status["final_response"] and "HADES repository — enabled" in compound_status["final_response"], compound_status
 assert compound_calls == {"infrastructure": 1, "backup": 1}, compound_calls
+compound_calls_before_proxmox_only = dict(compound_calls)
+assert hades._hades_direct_homelab_backup_compound(
+    "Are my Proxmox backups current?", owner, "owner", "test-chat"
+) is None
+assert compound_calls == compound_calls_before_proxmox_only, compound_calls
 assert hades._hades_direct_homelab_backup_compound(
     "Are all the servers okay, and what backup coverage do I have?", beta, "household", "test-chat"
 ) is None

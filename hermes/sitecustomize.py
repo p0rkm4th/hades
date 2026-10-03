@@ -6327,7 +6327,7 @@ def _hades_direct_homelab_backup_compound(user_text, subject, scope, phase2_sess
     if scope != "owner" or not subject:
         return None
     if not re.search(
-        r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|nodes?|computers?)\b",
+        r"\b(?:servers?|homelab|homlab|home\s+lab|nodes?|computers?)\b",
         text,
         re.IGNORECASE,
     ) or not re.search(r"\b(?:backups?|bakups?)\b", text, re.IGNORECASE):
