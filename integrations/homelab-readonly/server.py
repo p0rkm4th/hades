@@ -1984,7 +1984,11 @@ def format_inference_inventory_response(
         r"\b(?:check|inspect|look\s+at)\s+(?:the\s+)?"
         r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+(?:\band\b|,)"
         r".{0,100}\b(?:enough\s+)?(?:room|capacity|headroom|space)\b"
-        r".{0,40}\b(?:another|new)\s+(?:ai\s+)?models?\b",
+        r".{0,40}\b(?:another|new)\s+(?:ai\s+)?models?\b|"
+        r"\b(?:can|could|will|would)\s+(?P<followup_target>(?!(?:this|that|it|another|new|a|the|my|our)\b)"
+        r"[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+        r"(?:host|handle)\s+(?:(?:a\s+)?(?:another|new)\s+model|"
+        r"(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+model)\b",
         str(user_text or ""), re.IGNORECASE,
     )
     placement_intent = bool(named_node_capacity_match or re.search(
@@ -2277,7 +2281,8 @@ def format_inference_inventory_response(
         requested_node_label = ""
         placement_endpoints = endpoints[:16]
         if named_target_match:
-            requested_name = re.sub(r"[^a-z0-9]+", "", named_target_match.group("target").casefold())
+            requested_target = named_target_match.group("target") or named_target_match.group("followup_target")
+            requested_name = re.sub(r"[^a-z0-9]+", "", requested_target.casefold())
             matched_resources = [
                 (identity, label) for identity, label in resource_names.items()
                 if isinstance(label, str)
@@ -2285,7 +2290,7 @@ def format_inference_inventory_response(
             ]
             if len(matched_resources) != 1:
                 return (
-                    f"I can't check current model headroom for {named_target_match.group('target').strip()}: "
+                    f"I can't check current model headroom for {requested_target.strip()}: "
                     "the name does not resolve to exactly one stable inventory identity."
                 )
             requested_node_identity, requested_node_label = matched_resources[0]

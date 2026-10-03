@@ -1028,6 +1028,34 @@ targeted_capacity_answer = server.format_inference_inventory_response(
 assert "GPU A" in targeted_capacity_answer, targeted_capacity_answer
 assert "GPU 0: 9000 MiB free" in targeted_capacity_answer, targeted_capacity_answer
 assert "GPU B" not in targeted_capacity_answer and "14000 MiB" not in targeted_capacity_answer, targeted_capacity_answer
+targeted_followup_capacity_answer = server.format_inference_inventory_response(
+    "Can GPU A host another model?",
+    {
+        **inference,
+        "endpoints": [
+            {**inference["endpoints"][0], "node_identity": "netbox:device:75"},
+            {**inference["endpoints"][0], "source_identity": "inference:gpu-lane-b",
+             "node_identity": "netbox:device:76"},
+        ],
+    },
+    {"resources": [
+        {"identity": {"canonical_id": "netbox:device:75"}, "inventory": {"name": "GPU A"}},
+        {"identity": {"canonical_id": "netbox:device:76"}, "inventory": {"name": "GPU B"}},
+    ]},
+    {"status": "READABLE", "retrieved_at": "2026-10-03T20:05:00Z", "endpoints": [
+        {"inference_id": "gpu-lane-a", "status": "READABLE", "devices": [
+            {"index": 0, "memory_free_mib": 9000, "memory_total_mib": 16384,
+             "gpu_utilization_percent": 25},
+        ]},
+        {"inference_id": "gpu-lane-b", "status": "READABLE", "devices": [
+            {"index": 0, "memory_free_mib": 14000, "memory_total_mib": 16384,
+             "gpu_utilization_percent": 5},
+        ]},
+    ]},
+)
+assert "GPU A" in targeted_followup_capacity_answer, targeted_followup_capacity_answer
+assert "GPU 0: 9000 MiB free" in targeted_followup_capacity_answer, targeted_followup_capacity_answer
+assert "GPU B" not in targeted_followup_capacity_answer and "14000 MiB" not in targeted_followup_capacity_answer, targeted_followup_capacity_answer
 assert "does not confirm another model will fit" in targeted_capacity_answer, targeted_capacity_answer
 compound_placement_answer = server.format_inference_inventory_response(
     "What machine should host another AI model right now? Consider current health, available GPU memory, and what is already running, and tell me what is not connected.",
