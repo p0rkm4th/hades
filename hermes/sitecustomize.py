@@ -5190,12 +5190,6 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
         mentioned = [(position, name) for position, name in mentioned if position >= 0]
         if mentioned:
             target = max(mentioned, key=lambda item: item[0])[1]
-    if not target:
-        if placement_size:
-            return f"Where should I run a {placement_size.group('size')} GB model?"
-        if placement_followup:
-            return "Where should I run another model?"
-        return None
     if placement_followup:
         mentioned = [(last_occurrence(history, name), name) for name in names]
         mentioned = [(position, name) for position, name in mentioned if position >= 0]
@@ -5205,6 +5199,12 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
                 distinct.append(name)
         if len(distinct) >= 2:
             return f"Compare current model residency and GPU capacity on {distinct[-2]} and {distinct[-1]}"
+    if not target:
+        if placement_size:
+            return f"Where should I run a {placement_size.group('size')} GB model?"
+        if placement_followup:
+            return "Where should I run another model?"
+        return None
     if explicit:
         return f"What's {target} doing right now?"
     if placement_size:
@@ -6012,6 +6012,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         node_activity_intent = True
     placement_intent = _hades_homelab_explicit_model_fit_intent(text) or bool(re.search(
         r"\bcompare\s+current\s+model\s+residency\s+and\s+gpu\s+capacity\s+on\b|"
+        r"\bwhich\s+(?:one\s+)?(?:has\s+)?more\s+room\b|"
+        r"\bwhich\s+(?:host|machine|server|gpu)\b.{0,45}\b(?:has|have)\s+more\s+(?:room|capacity)\b|"
         r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
         r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
         r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",

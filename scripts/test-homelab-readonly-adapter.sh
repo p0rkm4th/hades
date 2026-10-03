@@ -992,6 +992,13 @@ assert "GPU A live GPU sample: GPU 0: 6000 MiB free of 16000 MiB, 30% utilizatio
 assert "GPU B live GPU sample: GPU 0: 9000 MiB free of 16000 MiB, 10% utilization" in live_comparison_answer, live_comparison_answer
 assert "GPU B has the highest single-GPU free-VRAM reading (9000 MiB)" in live_comparison_answer, live_comparison_answer
 assert "point-in-time readings" in live_comparison_answer and "don't guarantee model fit" in live_comparison_answer
+natural_comparison_answer = server.format_inference_inventory_response(
+    "Which has more room for another model, GPU A or GPU B?",
+    comparison_inventory, comparison_summary,
+)
+assert "GPU A: provider reports loaded: sample:small" in natural_comparison_answer, natural_comparison_answer
+assert "GPU B: provider reports no models loaded" in natural_comparison_answer, natural_comparison_answer
+assert "can't tell which host has more capacity" in natural_comparison_answer, natural_comparison_answer
 stale_summary = {
     **summary_names,
     "capability_freshness": "STALE",
