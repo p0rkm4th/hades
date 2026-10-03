@@ -855,11 +855,13 @@ def homelab_backup_status() -> dict:
                 "error_code": "INVALID_PROXMOX_RESOURCES_URL",
                 "jobs": [],
                 "tasks": [],
+                "unattributed_tasks": [],
             })
             continue
         api_base = urlunsplit((parsed.scheme, parsed.netloc, path[:-len(suffix)], "", ""))
         jobs = []
         tasks = []
+        unattributed_tasks = []
         jobs_status = "UNAVAILABLE"
         tasks_status = "UNAVAILABLE"
         jobs_truncated = False
@@ -943,11 +945,33 @@ def homelab_backup_status() -> dict:
                         if not isinstance(data, list):
                             raise ValueError("Proxmox task response has an unsupported shape")
                         normalized = []
+                        unattributed = []
                         excluded_rows = 0
                         allowed_ids = set(task_scope.get("guest_ids") or [])
                         denied_ids = set(task_scope.get("excluded_guest_ids") or [])
                         for row in data[:20]:
                             if not isinstance(row, dict):
+                                continue
+                            raw_guest_id = row.get("id")
+                            if raw_guest_id is None or raw_guest_id == "":
+                                # Keep aggregate/job-level evidence separate:
+                                # without a guest ID it cannot prove that any
+                                # specific VM or container was backed up.
+                                raw_status = str(row.get("status") or "").strip().upper()
+                                status = "OK" if raw_status == "OK" else (
+                                    "RUNNING" if raw_status == "RUNNING" else
+                                    "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
+                                )
+                                item = {"node": node, "status": status}
+                                for key in ("starttime", "endtime"):
+                                    value = row.get(key)
+                                    if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
+                                        item[key] = value
+                                if "endtime" in item:
+                                    item["finished_at"] = datetime.fromtimestamp(
+                                        item["endtime"], timezone.utc,
+                                    ).isoformat()
+                                unattributed.append(item)
                                 continue
                             guest_id = row.get("id")
                             guest_id = (
@@ -979,21 +1003,26 @@ def homelab_backup_status() -> dict:
                                     item["endtime"], timezone.utc,
                                 ).isoformat()
                             normalized.append(item)
-                        return "HEALTHY", normalized, None, excluded_rows
+                        return "HEALTHY", normalized, unattributed, None, excluded_rows
                     except (OSError, ValueError, UnicodeError, OverflowError) as exc:
-                        return "UNAVAILABLE", [], _source_error_code(exc), 0
+                        return "UNAVAILABLE", [], [], _source_error_code(exc), 0
 
                 with ThreadPoolExecutor(max_workers=min(8, len(nodes))) as pool:
                     task_reads = list(pool.map(read_tasks, nodes))
-                task_states = [state for state, _, _, _ in task_reads]
+                task_states = [state for state, _, _, _, _ in task_reads]
                 excluded_task_rows = 0
-                for state, node_tasks, error, excluded_rows in task_reads:
+                for state, node_tasks, node_unattributed, error, excluded_rows in task_reads:
                     tasks.extend(node_tasks)
+                    unattributed_tasks.extend(node_unattributed)
                     excluded_task_rows += excluded_rows
                     if error:
                         error_codes.append(error)
                 tasks.sort(key=lambda row: row.get("endtime", row.get("starttime", 0)), reverse=True)
-                tasks_truncated = len(tasks) > 80
+                unattributed_tasks.sort(
+                    key=lambda row: row.get("endtime", row.get("starttime", 0)),
+                    reverse=True,
+                )
+                tasks_truncated = len(tasks) + len(unattributed_tasks) > 80
                 scope_is_partial = task_scope.get("scope") != "ALL_GUESTS"
                 tasks_status = "PARTIAL" if (
                     scope_is_partial or excluded_task_rows or nodes_truncated
@@ -1023,6 +1052,7 @@ def homelab_backup_status() -> dict:
             "duration_ms": round((time.monotonic() - started) * 1000, 2),
             "jobs": jobs,
             "tasks": tasks[:80],
+            "unattributed_tasks": unattributed_tasks[:80],
             "jobs_truncated": jobs_truncated,
             "tasks_truncated": tasks_truncated or nodes_truncated,
             "error_codes": sorted(set(error_codes)),
@@ -1472,6 +1502,7 @@ def format_homelab_backup_status(report: dict) -> str:
             sentences.append(f"Proxmox {source_id} backup-job configuration is {jobs_status.casefold()}.")
         if tasks_status in {"HEALTHY", "PARTIAL"}:
             tasks = endpoint.get("tasks") if isinstance(endpoint.get("tasks"), list) else []
+            unattributed_tasks = endpoint.get("unattributed_tasks") if isinstance(endpoint.get("unattributed_tasks"), list) else []
             if tasks:
                 latest = tasks[0]
                 task_status = str(latest.get("status") or "UNKNOWN").upper()
@@ -1480,6 +1511,15 @@ def format_homelab_backup_status(report: dict) -> str:
                 when = latest.get("finished_at")
                 when_text = f" at {when}" if isinstance(when, str) else ""
                 sentences.append(f"The latest visible archived vzdump task{guest_text} reported {task_status}{when_text}.")
+            elif unattributed_tasks:
+                if task_scope == "SELECTED_GUESTS":
+                    sentences.append(
+                        "No guest-attributed archived task was returned for the selected guest(s) in the bounded recent history."
+                    )
+                else:
+                    sentences.append(
+                        "No guest-attributed archived task was returned in the bounded recent history."
+                    )
             elif task_scope == "SELECTED_GUESTS":
                 sentences.append(
                     "No archived task was returned for the selected guest(s) in the bounded recent history."
@@ -1514,6 +1554,16 @@ def format_homelab_backup_status(report: dict) -> str:
         elif task_scope == "UNKNOWN":
             sentences.append(
                 "Guest backup task history is unknown because effective VM.Audit visibility could not be verified."
+            )
+        unattributed_tasks = endpoint.get("unattributed_tasks") if isinstance(endpoint.get("unattributed_tasks"), list) else []
+        if unattributed_tasks and tasks_status in {"HEALTHY", "PARTIAL"}:
+            latest = unattributed_tasks[0]
+            task_status = str(latest.get("status") or "UNKNOWN").upper()
+            when = latest.get("finished_at")
+            when_text = f" at {when}" if isinstance(when, str) else ""
+            sentences.append(
+                "Proxmox also returned an archived vzdump task without a guest ID; "
+                f"it reported {task_status}{when_text} and cannot be attributed to a specific guest."
             )
         if endpoint_status == "PARTIAL":
             sentences.append(f"The {source_id} read is partial.")

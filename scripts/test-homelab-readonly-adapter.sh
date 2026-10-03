@@ -1288,6 +1288,8 @@ def selected_scope_backup_fetch(url, *_args, **_kwargs):
         task_urls.append(url)
         return {"data": [
             {"id": "2802", "status": "OK", "endtime": 1790900000},
+            {"id": "", "status": "OK", "endtime": 1790950000,
+             "upid": "UPID:aggregate-task-secret"},
             {"id": "2803", "status": "ERROR: outside token scope", "endtime": 1791000000,
              "upid": "UPID:unrelated-private-task"},
         ]}
@@ -1299,11 +1301,17 @@ assert selected_endpoint["task_scope"] == "SELECTED_GUESTS", selected_endpoint
 assert selected_endpoint["visible_guest_count"] == 1, selected_endpoint
 assert selected_endpoint["tasks_status"] == "PARTIAL", selected_endpoint
 assert [task.get("guest_id") for task in selected_endpoint["tasks"]] == ["2802"], selected_endpoint
+assert len(selected_endpoint["unattributed_tasks"]) == 1, selected_endpoint
+assert selected_endpoint["unattributed_tasks"][0]["status"] == "OK", selected_endpoint
+assert "guest_id" not in selected_endpoint["unattributed_tasks"][0], selected_endpoint
 assert "2803" not in json.dumps(selected_backup), selected_backup
 assert "unrelated-private-task" not in json.dumps(selected_backup), selected_backup
+assert "aggregate-task-secret" not in json.dumps(selected_backup), selected_backup
 selected_text = server.format_homelab_backup_status(selected_backup)
 assert "limited to 1 selected guest" in selected_text, selected_text
 assert "other guest task history is unknown" in selected_text, selected_text
+assert "task without a guest ID" in selected_text, selected_text
+assert "cannot be attributed to a specific guest" in selected_text, selected_text
 assert "2803" not in selected_text, selected_text
 assert selected_backup["formatted_summary"] == selected_text, selected_backup
 

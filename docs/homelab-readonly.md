@@ -359,7 +359,9 @@ backed up. The read does not establish that a job succeeded merely because it
 is configured, and it does not verify backup contents, guest-application data,
 storage health, other backup systems, off-site custody, or restoreability. An
 unavailable or partially readable Proxmox source remains unknown/partial in the
-response.
+response. Archived `vzdump` records without a guest ID are retained separately
+as unattributed job-level evidence; they are never counted as a successful
+backup for a specific guest.
 This is separate from HADES Backup Checks, which track their own configured
 coverage and must not be presented as a substitute for Proxmox backup evidence.
 

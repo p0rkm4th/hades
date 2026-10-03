@@ -142,6 +142,13 @@ Status: **PARTIAL**
   boundary. The prepared fixed-command telemetry path remains unconfigured.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
+- Fresh owner backup dogfood found that Proxmox's archived history can include
+  a successful `vzdump` record with no guest ID. The current adapter omits that
+  aggregate row while correctly refusing to attribute it to a selected guest.
+  Candidate handling preserves it as separate unattributed evidence and says
+  it cannot verify any specific guest's backup. Focused adapter contracts pass;
+  Public CI and deployment acceptance are pending. Backup contents, off-site
+  custody, and restoreability remain unverified.
 
 ## Release and owner gates
 
