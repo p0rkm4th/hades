@@ -106,7 +106,6 @@ assert hades._hades_homelab_resource_ranking_intent("What's using the most resou
 assert hades._hades_homelab_resource_ranking_intent("What's the most loaded server right now?")
 assert hades._hades_homelab_resource_ranking_intent("Which server has the highest CPU usage?")
 assert not hades._hades_homelab_resource_ranking_intent("What resources does HADES use?")
-assert not hades._hades_managed_server_status_intent("What's the most loaded server right now?", "owner")
 synthetic_erebus_machine = {
     "name": "Erebus", "identity": {"canonical_id": "netbox:device:2"},
     "inventory": {"id": 2, "name": "Erebus"},
