@@ -6013,6 +6013,29 @@ def _hades_resolve_homelab_adapter_path():
     return None
 
 
+def _hades_household_safe_status_response(user_text):
+    """Explain household status limits without owner-side infrastructure jargon."""
+    text = str(user_text or "")
+    if re.search(r"\b(?:network|internet|wi-?fi|dns|everything|whole\s+house|whole-home)\b", text, re.IGNORECASE) and re.search(
+        r"\b(?:slow|latency|bottleneck|performance|packet\s+loss|throughput)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        if re.search(r"\b(?:everything|whole\s+house|whole-home)\b", text, re.IGNORECASE):
+            return (
+                "I can't diagnose why everything is slow from this account. "
+                "I can check approved household services, such as the game server."
+            )
+        return (
+            "I can't diagnose whole-home network speed from this account. "
+            "I can check approved household services, such as the game server."
+        )
+    return (
+        "I can't check all the home computers from this account. "
+        "I can check approved household services, such as the game server."
+    )
+
+
 def _hades_direct_homelab_read(
     user_text, subject="", scope="", context_text="", conversation_history=None,
 ):
@@ -6028,10 +6051,7 @@ def _hades_direct_homelab_read(
     if scope != "owner" and _hades_household_sensitive_context_followup(
         text, conversation_history, context_text
     ):
-        return (
-            "I can't verify private infrastructure or computer status from this account. "
-            "I can check approved household services, such as the game server."
-        )
+        return _hades_household_safe_status_response(text)
     workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
     if not workdir:
         workdir = os.getcwd()
@@ -6101,10 +6121,7 @@ def _hades_direct_homelab_read(
         or _hades_homelab_guest_visibility_intent(text) or provenance_intent
         or named_service_health_intent
     ) and not household_game_health_intent:
-        return (
-            "I can't verify private infrastructure or computer status from this account. "
-            "I can check approved household services, such as the game server."
-        )
+        return _hades_household_safe_status_response(text)
     # Explicit public research has a separate, privacy-checked route. Source
     # vocabulary such as "hosts" or "servers" must not turn that request into
     # an internal homelab status read.
@@ -11134,10 +11151,7 @@ try:
         )
         if _household_homelab_boundary_intent:
             if _hades_household_sensitive_context_followup(user_message, _hades_history):
-                _household_homelab_response = (
-                    "I can't verify private infrastructure or computer status from this account. "
-                    "I can check approved household services, such as the game server."
-                )
+                _household_homelab_response = _hades_household_safe_status_response(user_message)
             else:
                 _household_homelab_response = _hades_direct_homelab_read(
                     user_message,

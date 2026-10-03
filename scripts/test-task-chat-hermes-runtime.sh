@@ -198,19 +198,19 @@ assert "homelab_gpu_telemetry" not in hermes_registry_module.registry.calls
 household_computer_denial = hades._hades_direct_homelab_read(
     "Are all the computers okay?", scope="household",
 )
-assert "can't verify private infrastructure or computer status" in household_computer_denial, household_computer_denial
+assert "can't check all the home computers" in household_computer_denial, household_computer_denial
 household_named_node_denial = hades._hades_direct_homelab_read(
     "Check Synthetic Node B.", "synthetic-beta", "household",
 )
-assert "private infrastructure" in household_named_node_denial, household_named_node_denial
+assert "can't check all the home computers" in household_named_node_denial, household_named_node_denial
 household_unlinked_source_denial = hades._hades_direct_homelab_read(
     unlinked_source_question, "synthetic-beta", "household",
 )
-assert "can't verify private infrastructure or computer status" in household_unlinked_source_denial.casefold(), household_unlinked_source_denial
+assert "can't check all the home computers" in household_unlinked_source_denial.casefold(), household_unlinked_source_denial
 household_service_coverage_denial = hades._hades_direct_homelab_read(
     unverified_service_question, "synthetic-beta", "household",
 )
-assert "can't verify private infrastructure or computer status" in household_service_coverage_denial.casefold(), household_service_coverage_denial
+assert "can't check all the home computers" in household_service_coverage_denial.casefold(), household_service_coverage_denial
 synthetic_unlinked_summary = {
     "status": "PARTIAL",
     "source_counts": {"identity_unlinked_resources": 2},
@@ -337,6 +337,15 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
         hades._hades_direct_grocy_expiry_read = actual_grocy_expiry_read
     assert hasattr(hades, "_hades_direct_proxmox_backup_read")
     assert hasattr(hades, "_hades_direct_homelab_backup_compound")
+    household_slow_agent = agent_class(
+        gateway_session_key=f"hades-user-{beta}",
+        session_id="synthetic-household-everything-slow",
+        stream_delta_callback=lambda _chunk: None,
+        **kwargs,
+    ).run_conversation("Why is everything slow?", conversation_history=[])
+    assert household_slow_agent.get("completed") is True and household_slow_agent.get("api_calls") == 0, household_slow_agent
+    assert "can't diagnose why everything is slow" in household_slow_agent["final_response"], household_slow_agent
+    assert "Proxmox" not in household_slow_agent["final_response"] and "Uptime Kuma" not in household_slow_agent["final_response"], household_slow_agent
     def synthetic_proxmox_backup(text, subject="", scope="", *_args, **_kwargs):
         if scope == "owner" and "backup" in str(text).casefold() and "proxmox" in str(text).casefold():
             return "Synthetic selected Proxmox backup evidence; source read at 2026-10-02T12:00:00Z."
@@ -481,7 +490,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
         privacy_probe_history,
         privacy_probe_context,
     )
-    assert "can't verify private infrastructure or computer status" in hades._hades_direct_homelab_read(
+    assert "can't check all the home computers" in hades._hades_direct_homelab_read(
         "Can you remind me of the template and endpoint?", beta, "household",
         context_text=privacy_probe_context,
     ).casefold()
@@ -518,7 +527,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
 
     household_result = household_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])
     assert household_result.get("completed") is True and household_result.get("api_calls") == 0, household_result
-    assert "private infrastructure" in household_result["final_response"].casefold(), household_result
+    assert "can't check all the home computers" in household_result["final_response"].casefold(), household_result
     assert "Synthetic Node B" not in household_result["final_response"], household_result
     assert not registry.calls, registry.calls
 
@@ -535,7 +544,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert household_guest_visibility.get("completed") is True, household_guest_visibility
     assert household_guest_visibility.get("api_calls") == 0, household_guest_visibility
-    assert "can't verify private infrastructure or computer status" in household_guest_visibility["final_response"].casefold(), household_guest_visibility
+    assert "can't check all the home computers" in household_guest_visibility["final_response"].casefold(), household_guest_visibility
     for private_detail in (
         "synthetic-private-node", "synthetic-private-template", "198.51.100.42",
         "synthetic-private-tool", "Proxmox", "template", "endpoint",
@@ -556,7 +565,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert household_sensitive_followup.get("completed") is True, household_sensitive_followup
     assert household_sensitive_followup.get("api_calls") == 0, household_sensitive_followup
-    assert "can't verify private infrastructure or computer status" in household_sensitive_followup["final_response"].casefold(), household_sensitive_followup
+    assert "can't check all the home computers" in household_sensitive_followup["final_response"].casefold(), household_sensitive_followup
     for private_detail in (
         "synthetic-private-node", "synthetic-private-template", "198.51.100.42",
         "Proxmox", "endpoint", "template",
@@ -570,7 +579,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert household_unlinked_sources.get("completed") is True, household_unlinked_sources
     assert household_unlinked_sources.get("api_calls") == 0, household_unlinked_sources
-    assert "can't verify private infrastructure or computer status" in household_unlinked_sources["final_response"].casefold(), household_unlinked_sources
+    assert "can't check all the home computers" in household_unlinked_sources["final_response"].casefold(), household_unlinked_sources
     assert "Proxmox" not in household_unlinked_sources["final_response"], household_unlinked_sources
     assert not registry.calls, registry.calls
 
@@ -580,7 +589,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert household_service_coverage.get("completed") is True, household_service_coverage
     assert household_service_coverage.get("api_calls") == 0, household_service_coverage
-    assert "can't verify private infrastructure or computer status" in household_service_coverage["final_response"].casefold(), household_service_coverage
+    assert "can't check all the home computers" in household_service_coverage["final_response"].casefold(), household_service_coverage
     assert "Uptime Kuma" not in household_service_coverage["final_response"], household_service_coverage
     assert not registry.calls, registry.calls
 
@@ -590,7 +599,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert household_computer_status.get("completed") is True, household_computer_status
     assert household_computer_status.get("api_calls") == 0, household_computer_status
-    assert "can't verify private infrastructure or computer status" in household_computer_status["final_response"].casefold(), household_computer_status
+    assert "can't check all the home computers" in household_computer_status["final_response"].casefold(), household_computer_status
     assert "Synthetic Node B" not in household_computer_status["final_response"], household_computer_status
     assert not registry.calls, registry.calls
 
@@ -600,7 +609,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert household_network_status.get("completed") is True, household_network_status
     assert household_network_status.get("api_calls") == 0, household_network_status
-    assert "can't verify private infrastructure or computer status" in household_network_status["final_response"].casefold(), household_network_status
+    assert "can't diagnose whole-home network speed" in household_network_status["final_response"].casefold(), household_network_status
     assert "Synthetic Node B" not in household_network_status["final_response"], household_network_status
     assert not registry.calls, registry.calls
 
@@ -619,12 +628,12 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
         "How do you know that?",
         conversation_history=[
             {"role": "user", "content": "Is everything okay with the homelab?"},
-            {"role": "assistant", "content": "I can't verify private infrastructure or computer status from this account."},
+            {"role": "assistant", "content": "I can't check all the home computers from this account."},
         ],
     )
     assert household_provenance_status.get("completed") is True, household_provenance_status
     assert household_provenance_status.get("api_calls") == 0, household_provenance_status
-    assert "can't verify private infrastructure or computer status" in household_provenance_status["final_response"].casefold(), household_provenance_status
+    assert "can't check all the home computers" in household_provenance_status["final_response"].casefold(), household_provenance_status
     assert "refrigeration" not in household_provenance_status["final_response"].casefold(), household_provenance_status
     assert not registry.calls, registry.calls
 
@@ -794,7 +803,7 @@ try:
             conversation_history=[],
         )
         assert household_agent_zero_capability.get("completed") is True and household_agent_zero_capability.get("api_calls") == 0, household_agent_zero_capability
-        assert "can't verify private infrastructure or computer status" in household_agent_zero_capability["final_response"], household_agent_zero_capability
+        assert "can't check all the home computers" in household_agent_zero_capability["final_response"], household_agent_zero_capability
         assert "7002" not in household_agent_zero_capability["final_response"], household_agent_zero_capability
         assert resource_tool_calls == [], resource_tool_calls
     finally:
@@ -1273,7 +1282,7 @@ try:
 finally:
     hades._hades_phase3_response = actual_phase3_response
 assert household_monitor_diagnosis.get("completed") is True and household_monitor_diagnosis.get("api_calls") == 0, household_monitor_diagnosis
-assert "can't verify private infrastructure or computer status from this account" in household_monitor_diagnosis["final_response"].casefold(), household_monitor_diagnosis
+assert "can't check all the home computers from this account" in household_monitor_diagnosis["final_response"].casefold(), household_monitor_diagnosis
 assert "NetBox" not in household_monitor_diagnosis["final_response"] and "Kuma" not in household_monitor_diagnosis["final_response"]
 os.environ["HADES_TEST_SOURCE_UNAVAILABLE"] = "1"
 try:
@@ -1343,7 +1352,7 @@ household_provenance_direct = hades._hades_direct_homelab_read(
     "When was that checked?", beta, "household",
     context_text="Is everything okay with the homelab?",
 )
-assert "can't verify private infrastructure or computer status" in household_provenance_direct.casefold(), household_provenance_direct
+assert "can't check all the home computers" in household_provenance_direct.casefold(), household_provenance_direct
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 # A speech-like named-node question composes linked inference state with the

@@ -24,6 +24,7 @@ source = source_path.read_text(encoding='utf-8')
 tree = ast.parse(source)
 wanted = {
     '_hades_service_health_target', '_hades_service_monitor_response',
+    '_hades_household_safe_status_response',
     '_hades_homelab_availability_groups', '_hades_direct_homelab_read',
     '_hades_resolve_homelab_adapter_path',
     '_hades_direct_homelab_tool_result',
@@ -297,6 +298,12 @@ assert provenance_followup('How do you know that?', 'Is everything okay with the
 assert not provenance_followup('How do you know that?', '')
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
+household_safe_status = namespace['_hades_household_safe_status_response']
+assert 'I can\'t diagnose why everything is slow' in household_safe_status('Why is everything slow?')
+assert 'I can\'t diagnose whole-home network speed' in household_safe_status('Why is Wi-Fi slow?')
+assert 'I can\'t check all the home computers' in household_safe_status('Are all the computers okay?')
+assert 'Proxmox' not in household_safe_status('Why is everything slow?')
+assert '192.168.' not in household_safe_status('Why is everything slow?')
 assert target('Why is the NetBox monitor down?') == (['netbox'], 'netbox')
 assert target('How is NetBox reporting unavailable?') == (['netbox'], 'netbox')
 agent_zero_capability_question = (
@@ -715,7 +722,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         household_monitor_diagnosis = direct_read(
             'Why is the NetBox monitor down?', 'synthetic-household', 'household'
         )
-        assert "I can't verify private infrastructure or computer status from this account." in household_monitor_diagnosis, household_monitor_diagnosis
+        assert "I can't check all the home computers from this account." in household_monitor_diagnosis, household_monitor_diagnosis
         assert 'NetBox' not in household_monitor_diagnosis and 'Kuma' not in household_monitor_diagnosis
         household_game_status = direct_read(
             'Is Minecraft working?', 'synthetic-household', 'household'
@@ -761,7 +768,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             household_agent_zero_capability = direct_read(
                 agent_zero_capability_question, 'synthetic-household', 'household'
             )
-            assert 'can\'t verify private infrastructure or computer status' in household_agent_zero_capability, household_agent_zero_capability
+            assert 'can\'t check all the home computers' in household_agent_zero_capability, household_agent_zero_capability
             assert '7002' not in household_agent_zero_capability and 'configured endpoint' not in household_agent_zero_capability
             assert not registry_module.registry.calls, registry_module.registry.calls
             namespace['_hades_agent_zero_available'] = lambda: False
@@ -863,7 +870,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 registry_module.registry.dispatch = original_dispatch
         finally:
             os.environ.pop('HADES_TEST_INFERENCE_NODE', None)
-        assert "can't verify private infrastructure or computer status" in direct_read(
+        assert "can't check all the home computers" in direct_read(
             'Is the homelab okay?', 'synthetic-household', 'household'
         )
         routed_endpoint = direct_read(
@@ -961,11 +968,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Synthetic Host Monitor (Uptime Kuma monitor ID 17)' in unlinked_answer, unlinked_answer
         assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
         registry_module.registry.calls.clear()
-        assert "can't verify private infrastructure or computer status" in direct_read(
+        assert "can't check all the home computers" in direct_read(
             'Are any homelab sources contradicting each other right now?',
             'synthetic-household', 'household',
         )
-        assert "can't verify private infrastructure or computer status" in direct_read(
+        assert "can't check all the home computers" in direct_read(
             'Do NetBox, Proxmox, and Uptime Kuma disagree about any server right now? Show conflicts only, and distinguish intended state from live runtime and probe state.',
             'synthetic-household', 'household',
         )
@@ -1086,12 +1093,15 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert household_changes == "I can't verify private infrastructure changes from this account."
         assert 'Proxmox' not in household_changes and 'guest' not in household_changes
         household_overall = direct_read('What is down?', 'synthetic-household', 'household')
-        assert "can't verify private infrastructure or computer status" in household_overall, household_overall
+        assert "can't check all the home computers" in household_overall, household_overall
         assert 'Proxmox' not in household_overall and 'NetBox' not in household_overall, household_overall
+        household_slow = direct_read('Why is everything slow?', 'synthetic-household', 'household')
+        assert "can't diagnose why everything is slow" in household_slow, household_slow
+        assert 'Proxmox' not in household_slow and 'Uptime Kuma' not in household_slow, household_slow
         assert direct_read('Is everything okay?', 'synthetic-household', 'household') == household_overall
         for prompt in ('Is the homelab okay?', 'Are my computers okay?', 'Are all the computers okay?', 'Is Synthetic Inference Node A alive?', "What's Synthetic Inference Node A doing?"):
             restricted = direct_read(prompt, 'synthetic-household', 'household')
-            assert "can't verify private infrastructure or computer status" in restricted, restricted
+            assert "can't check all the home computers" in restricted, restricted
             assert 'Synthetic Inference Node A' not in restricted and 'Proxmox' not in restricted, restricted
         for prompt in ('Where is HADES running?', 'Where is Minecraft running?'):
             restricted_location = direct_read(prompt, 'synthetic-household', 'household')
@@ -1118,7 +1128,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'Why is service-netbox down?', 'synthetic-household', 'household'
         )
         assert len(registry_module.registry.calls) == calls_before_private_monitor
-        assert "can't verify private infrastructure or computer status" in private_monitor_diagnosis, private_monitor_diagnosis
+        assert "can't check all the home computers" in private_monitor_diagnosis, private_monitor_diagnosis
         assert 'NetBox' not in private_monitor_diagnosis and 'service-netbox' not in private_monitor_diagnosis
         write_broad_summary(
             [], status='PARTIAL',
@@ -1154,7 +1164,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'What is down or degraded right now, and what can you not verify?',
             'synthetic-household', 'household',
         )
-        assert "can't verify private infrastructure or computer status" in compound_household
+        assert "can't check all the home computers" in compound_household
         assert 'NetBox' not in compound_household and 'Proxmox' not in compound_household
         assert len(registry_module.registry.calls) == calls_before_compound_household
         write_broad_summary(
@@ -1202,7 +1212,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'What is Compute Node A running?', 'synthetic-owner', 'owner'
         )
         assert running_activity.startswith('NODE_ACTIVITY:Compute Node A'), running_activity
-        assert "can't verify private infrastructure or computer status" in direct_read(
+        assert "can't check all the home computers" in direct_read(
             "What's Compute Node A doing right now?", 'synthetic-household', 'household'
         )
         placement_route = direct_read(
@@ -1254,7 +1264,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         household_placement = direct_read(
             'Which machine is running HADES?', 'synthetic-household', 'household'
         )
-        assert 'private infrastructure or computer status' in household_placement, household_placement
+        assert "can't check all the home computers" in household_placement, household_placement
         assert 'Synthetic Virtualization Host' not in household_placement and 'VM 2802' not in household_placement, household_placement
     finally:
         if old_workdir is None:
