@@ -5206,6 +5206,7 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
 def _hades_homelab_service_coverage_intent(text):
     return bool(re.search(
         r"\b(?:which|what|list|show|tell)\b.{0,80}\b(?:homelab|home\s+lab|infrastructure)\b.{0,100}\b(?:services?|applications?|endpoints?)\b.{0,80}\b(?:verify|confirm|check|unknown|unavailable|down|health|working)\b|"
+        r"\b(?:which|what|list|show|tell)\b.{0,60}\b(?:services?|applications?|endpoints?)\b.{0,80}\b(?:can(?:not|'t)|unable\s+to|unverified|unknown|unavailable|down|verify|confirm|check)\b|"
         r"\b(?:homelab|home\s+lab|infrastructure)\b.{0,80}\b(?:services?|applications?|endpoints?)\b.{0,80}\b(?:can't|cannot|unable|unverified|unknown|unavailable)\b",
         str(text or ""), re.IGNORECASE,
     ))

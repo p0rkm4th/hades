@@ -203,6 +203,7 @@ for prompt in (
     'Which live homelab observations cannot you confidently match to the same machine?',
     'Which source records are still unlinked?',
     'Which homelab services can you not verify right now?',
+    'Which services can you not verify right now?',
     'Are any homelab sources contradicting each other right now?',
 ):
     assert status_intent(prompt), f'broad homelab status intent missed {prompt!r}'
@@ -210,6 +211,9 @@ source_identity_intent = namespace['_hades_homelab_source_identity_intent']
 conflict_intent = namespace['_hades_homelab_conflict_intent']
 assert source_identity_intent('Which source records are still unlinked?')
 assert conflict_intent('Are any homelab sources contradicting each other right now?')
+assert namespace['_hades_homelab_service_coverage_intent'](
+    'Which services can you not verify right now?'
+)
 conflict_response = namespace['_hades_homelab_conflict_response']({
     'status': 'PARTIAL',
     'retrieved_at': '2026-10-03T12:00:00+00:00',
@@ -747,6 +751,24 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         )
         assert "No service availability observations are available, so I can't confirm service health." in no_coverage, no_coverage
         assert 'No blocker was reported by the configured live sources.' not in no_coverage, no_coverage
+
+        write_broad_summary([{
+            'name': 'service-netbox', 'status': 'down', 'freshness': 'FRESH',
+        }], status='PARTIAL', sources=[
+            {'source': 'Uptime Kuma', 'status': 'OK'},
+            {'source': 'Proxmox guest visibility (erebus)', 'status': 'PARTIAL'},
+        ], service_catalog={
+            'status': 'OK', 'coverage': 'EMPTY', 'services': [],
+        }, proxmox_guest_visibility={'status': 'PARTIAL'})
+        registry_module.registry.calls.clear()
+        coverage_answer = direct_read(
+            'Which services can you not verify right now?',
+            'synthetic-owner', 'owner',
+        )
+        assert 'Fresh configured Uptime Kuma probes are failing for: service-netbox.' in coverage_answer, coverage_answer
+        assert "NetBox's application-service catalog is reachable but currently empty" in coverage_answer, coverage_answer
+        assert 'services on unreported guests remain unverified' in coverage_answer, coverage_answer
+        assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
 
         write_broad_summary([{
             'name': 'HADES Core', 'status': 'up', 'freshness': 'FRESH',
