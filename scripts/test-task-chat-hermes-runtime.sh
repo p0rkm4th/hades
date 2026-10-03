@@ -109,6 +109,22 @@ assert not hades._hades_homelab_resource_ranking_intent("What resources does HAD
 assert hades._hades_homelab_explicit_model_fit_intent("Will a 20 GB model fit on Tartarus?")
 assert hades._hades_homelab_explicit_model_fit_intent("Can Tartarus host a 20 GB model?")
 assert not hades._hades_homelab_explicit_model_fit_intent("What is a 20 GB model?")
+unavailable_model_fit = hades._hades_homelab_explicit_model_fit_response(
+    "Will a 20 GB model fit on Tartarus?", {"status": "NOT_CONFIGURED", "endpoints": []},
+)
+assert "can't confirm whether a 20 GB model fits" in unavailable_model_fit, unavailable_model_fit
+assert "model file's GB size is not its VRAM requirement" in unavailable_model_fit, unavailable_model_fit
+live_model_fit = hades._hades_homelab_explicit_model_fit_response(
+    "Will a 20 GB model fit on Tartarus?",
+    {"status": "READABLE", "retrieved_at": "2026-10-03T10:00:00Z", "endpoints": [{
+        "inference_id": "tartarus", "status": "READABLE", "devices": [{
+            "index": 0, "memory_free_mib": 9000, "memory_total_mib": 16384,
+            "gpu_utilization_percent": 25,
+        }],
+    }]},
+)
+assert "tartarus GPU 0: 9000 MiB free of 16384 MiB, 25% utilization" in live_model_fit, live_model_fit
+assert "not a fit guarantee" in live_model_fit, live_model_fit
 synthetic_erebus_machine = {
     "name": "Erebus", "identity": {"canonical_id": "netbox:device:2"},
     "inventory": {"id": 2, "name": "Erebus"},
@@ -1294,7 +1310,7 @@ explicit_fit = explicit_fit_agent.run_conversation(
     "Will a 20 GB model fit on Tartarus?", conversation_history=[],
 )
 assert explicit_fit.get("completed") is True and explicit_fit.get("api_calls") == 0, explicit_fit
-assert "can't confirm whether that model fits" in explicit_fit["final_response"], explicit_fit
+assert "can't confirm whether a 20 GB model fits" in explicit_fit["final_response"], explicit_fit
 assert "model file's GB size is not its VRAM requirement" in explicit_fit["final_response"], explicit_fit
 household_fit_agent = agent_class(
     gateway_session_key=f"hades-user-{beta}", session_id="synthetic-household-explicit-model-fit",

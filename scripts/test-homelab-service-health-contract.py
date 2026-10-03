@@ -48,6 +48,7 @@ wanted = {
     '_hades_homelab_service_coverage_intent',
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_explicit_model_fit_intent',
+    '_hades_homelab_explicit_model_fit_response',
     '_hades_homelab_network_diagnostic_response',
     '_hades_homelab_source_identity_intent',
     '_hades_homelab_conflict_intent',
@@ -707,7 +708,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 'What about a 20 GB one?', 'synthetic-owner', 'owner',
                 context_text=followup_context + 'What about a 20 GB one?',
             )
-            assert "can't determine which GPU has room" in model_size_followup, model_size_followup
+            assert "can't confirm whether a 20 GB model fits" in model_size_followup, model_size_followup
+            assert "model file's GB size is not its VRAM requirement" in model_size_followup, model_size_followup
             correction = direct_read(
                 'Sorry, Compute Node A', 'synthetic-owner', 'owner',
                 context_text=followup_context + 'Sorry, Compute Node A',

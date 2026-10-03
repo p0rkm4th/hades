@@ -5534,6 +5534,40 @@ def _hades_homelab_explicit_model_fit_intent(text):
     )
 
 
+def _hades_homelab_explicit_model_fit_response(user_text, telemetry):
+    """Report live GPU headroom without treating it as a model-fit guarantee."""
+    match = re.search(r"\b(\d+(?:\.\d+)?)\s*(?:gb|gib)\s+model\b", str(user_text or ""), re.IGNORECASE)
+    size = f"{match.group(1)} GB " if match else "stated-size "
+    reports = []
+    endpoints = telemetry.get("endpoints") if isinstance(telemetry, dict) else None
+    if isinstance(endpoints, list):
+        for endpoint in endpoints[:16]:
+            if not isinstance(endpoint, dict) or endpoint.get("status") != "READABLE":
+                continue
+            label = str(endpoint.get("inference_id") or "configured GPU host")[:80]
+            devices = endpoint.get("devices") if isinstance(endpoint.get("devices"), list) else []
+            for device in devices[:32]:
+                if not isinstance(device, dict):
+                    continue
+                free, total = device.get("memory_free_mib"), device.get("memory_total_mib")
+                if isinstance(free, int) and not isinstance(free, bool) and isinstance(total, int) and not isinstance(total, bool):
+                    utilization = device.get("gpu_utilization_percent")
+                    detail = f"{label} GPU {device.get('index')}: {free} MiB free of {total} MiB"
+                    if isinstance(utilization, int) and not isinstance(utilization, bool):
+                        detail += f", {utilization}% utilization"
+                    reports.append(detail)
+    if reports:
+        stamp = str(telemetry.get("retrieved_at") or "check time unavailable")
+        evidence = f"Current point-in-time GPU readings (checked {stamp}): " + "; ".join(reports[:8]) + ". "
+    else:
+        evidence = "I don't have current per-host free-VRAM readings. "
+    return (
+        f"I can't confirm whether a {size}model fits from its file size alone. "
+        "A model file's GB size is not its VRAM requirement. " + evidence +
+        "Quantization, context, KV cache, and other workload affect runtime memory; even a free-VRAM sample is not a fit guarantee."
+    )
+
+
 def _hades_homelab_resource_ranking_response(summary):
     """Compare only fresh Proxmox CPU and memory fields in the visible scope."""
     if not isinstance(summary, dict) or str(summary.get("status") or "").upper() in {
@@ -6027,6 +6061,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             summary = _hades_direct_homelab_tool_result("homelab_summary")
             return _hades_homelab_resource_ranking_response(summary)
         if inference_intent:
+            if scope == "owner" and _hades_homelab_explicit_model_fit_intent(text):
+                telemetry = _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
+                return _hades_homelab_explicit_model_fit_response(text, telemetry)
             inference = _hades_direct_homelab_tool_result("homelab_inference_inventory")
             model_location_intent = bool(re.search(
                 r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
@@ -9821,13 +9858,28 @@ try:
             str(user_message or ""), re.IGNORECASE,
         )
         _explicit_model_fit = _hades_homelab_explicit_model_fit_intent(user_message)
-        if getattr(self, "_hades_session_scope", "") == "owner" and (
-            _owner_capacity_followup or _explicit_model_fit
-        ):
+        if getattr(self, "_hades_session_scope", "") == "owner" and _explicit_model_fit:
+            fit_response = _hades_direct_homelab_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                "owner",
+                context_text=_hades_conversation_intent_text(user_message, kwargs.get("conversation_history", [])),
+            )
+            if fit_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(fit_response)
+                return {
+                    "final_response": fit_response,
+                    "messages": [{"role": "assistant", "content": fit_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+        if getattr(self, "_hades_session_scope", "") == "owner" and _owner_capacity_followup:
             unavailable_response = (
                 "I can't confirm whether that model fits or recommend a host from its stated size alone. "
-                "A model file's GB size is not its VRAM requirement; live per-host GPU load and free VRAM "
-                "are not connected, and quantization, context, and runtime memory needs are unknown."
+                "A model file's GB size is not its VRAM requirement; current per-host GPU load and free VRAM, "
+                "quantization, context, and runtime memory needs must be measured."
             )
             callback = getattr(self, "stream_delta_callback", None)
             if callback:
