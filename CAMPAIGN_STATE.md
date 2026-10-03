@@ -62,7 +62,10 @@ of truth.
   cannot be verified because per-host utilization/free-VRAM telemetry is not
   connected or available. It does not infer free capacity from hardware
   inventory or empty model residency. Household A receives only the owner
-  session boundary; both answers persisted.
+  session boundary; both answers persisted. A fresh “Can the homelab handle
+  another model?” read returned provider catalogs/residency but declined to
+  rank a host because capability inventory is stale, live VRAM/load is absent,
+  and runtime memory needs are unknown; that answer also persisted.
 - Backup answers distinguish configured jobs and bounded task history from
   verified backup contents, independent custody, and restoreability.
 - Current-tree privacy checks and the focused homelab contracts pass.
