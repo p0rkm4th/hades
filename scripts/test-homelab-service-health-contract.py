@@ -1076,6 +1076,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'NetBox device synthetic-router was last updated' in recent_activity_answer, recent_activity_answer
         assert 'Proxmox task coverage is partial' in recent_activity_answer, recent_activity_answer
         assert 'deletions are not included' in recent_activity_answer, recent_activity_answer
+        assert (
+            'Host operating-system, package/driver, and in-guest service events aren\'t included'
+            in recent_activity_answer
+        ), recent_activity_answer
         os.environ['HADES_TEST_PROXMOX_ACTIVITY'] = '1'
         try:
             recent_day_answer = direct_read(

@@ -93,6 +93,7 @@ TOOLS = [Tool(
         "updates for up to the last 7 days. Proxmox task metadata is limited "
         "to guests covered by effective VM.Audit scope; NetBox returns only "
         "current records' last_updated timestamps, not field diffs or deletes. "
+        "Host OS, package/driver, and in-guest service events are not included. "
         "This is not a complete change log or proof of resulting guest "
         "configuration. Read-only."
     ),
@@ -1349,6 +1350,7 @@ def homelab_recent_activity(window_hours: int = 24) -> dict:
         "limitations": [
             "Proxmox activity is bounded to archived tasks for guests covered by each token's effective VM.Audit grants.",
             "NetBox updates show only current device/service records' last_updated timestamps; field diffs and deletions are not available.",
+            "Host operating-system, package/driver, and in-guest service events are not included by these sources.",
             "This is bounded activity evidence, not a complete homelab change log or a saved before/after snapshot.",
             "Task completion does not prove the resulting guest configuration or application health.",
         ],
@@ -1431,7 +1433,9 @@ def format_homelab_recent_activity(report: dict) -> str:
         " This is bounded activity evidence, not a complete homelab change log. "
         "HADES has no saved prior snapshot for a before/after comparison; NetBox "
         "field differences and deletions are not included, and completed Proxmox "
-        "tasks don't prove resulting guest configuration or application health."
+        "tasks don't prove resulting guest configuration or application health. "
+        "Host operating-system, package/driver, and in-guest service events aren't "
+        "included in these sources."
     )
     return answer
 

@@ -5945,7 +5945,9 @@ def _hades_homelab_recent_activity_response(report):
         "I don't have a saved prior homelab snapshot for a before/after comparison. "
         "This is bounded activity evidence, not a complete change log. NetBox field "
         "differences and deletions are not included, and completed Proxmox tasks "
-        "don't prove the resulting guest configuration or application health."
+        "don't prove the resulting guest configuration or application health. "
+        "Host operating-system, package/driver, and in-guest service events aren't "
+        "included in these sources."
     )
     return " ".join(parts)
 
@@ -9193,7 +9195,7 @@ try:
                 "call": lambda _args: module.homelab_backup_status(),
             },
             "mcp_homelab_readonly_homelab_recent_activity": {
-                "description": "For owner-only recent-change questions, read up to 7 days of bounded Proxmox guest tasks within VM.Audit scope and NetBox device/service record last_updated values. No field diffs or deletes; not a complete change log. Read-only.",
+                "description": "For owner-only recent-change questions, read up to 7 days of bounded Proxmox guest tasks within VM.Audit scope and NetBox device/service record last_updated values. Host OS, package/driver, and in-guest service events are not included; no field diffs or deletes; not a complete change log. Read-only.",
                 "parameters": {"type": "object", "properties": {"window_hours": {"type": "integer", "minimum": 1, "maximum": 168}}},
                 "call": lambda args: module.homelab_recent_activity((args or {}).get("window_hours", 24)),
             },

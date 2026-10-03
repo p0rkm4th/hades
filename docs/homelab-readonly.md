@@ -372,8 +372,9 @@ type, stable record ID, name, and timestamp. Field diffs, deletions, and prior
 state are not available from this read. Usernames, UPIDs, task logs, custom
 fields, and raw upstream values are omitted. This is bounded activity evidence,
 not a complete homelab change log; successful tasks do not prove resulting
-configuration or application health. Household sessions are denied access to
-this owner-only history.
+configuration or application health. Host operating-system, package/driver,
+and in-guest service events are not included in these sources. Household
+sessions are denied access to this owner-only history.
 
 Owner requests for a server IP, port, endpoint, or firewall destination first
 read the bounded NetBox application-service catalog. HADES reports an endpoint

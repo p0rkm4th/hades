@@ -371,6 +371,13 @@ sys.path.insert(0, str(root))
 import server
 assert "homelab_inference_inventory" in {tool.name for tool in server.TOOLS}
 assert "homelab_gpu_telemetry" in {tool.name for tool in server.TOOLS}
+recent_activity_tool = next(
+    tool for tool in server.TOOLS if tool.name == "homelab_recent_activity"
+)
+assert (
+    "Host OS, package/driver, and in-guest service events are not included"
+    in recent_activity_tool.description
+)
 
 os.environ.update({
     "HADES_UPTIME_KUMA_URL": "https://status.example.test",
@@ -601,6 +608,14 @@ assert "NetBox device test-game-host" in activity_answer, activity_answer
 assert "NetBox service Minecraft Java" in activity_answer, activity_answer
 assert "not a complete homelab change log" in activity_answer, activity_answer
 assert "deletions are not included" in activity_answer, activity_answer
+assert (
+    "Host operating-system, package/driver, and in-guest service events aren't included"
+    in activity_answer
+), activity_answer
+assert any(
+    "Host operating-system, package/driver, and in-guest service events are not included" in limit
+    for limit in activity["limitations"]
+), activity
 assert abs((activity_now - int(datetime.fromisoformat(activity["window_start"]).timestamp())) - 86400) <= 2, activity
 assert abs((activity_now - int(datetime.fromisoformat(activity_week["window_start"]).timestamp())) - 7 * 86400) <= 2, activity_week
 assert server.homelab_recent_activity(0)["status"] == "INVALID_REQUEST"
