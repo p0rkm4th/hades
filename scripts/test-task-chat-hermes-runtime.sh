@@ -517,7 +517,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert owner_network_status.get("completed") is True, owner_network_status
     assert owner_network_status.get("api_calls") == 0, owner_network_status
-    assert "cannot identify a network bottleneck or trend from this evidence" in owner_network_status["final_response"], owner_network_status
+    assert "can't identify a network bottleneck or trend from this evidence" in owner_network_status["final_response"], owner_network_status
     assert "homelab_inference_inventory" not in registry.calls, registry.calls
 
     registry.calls.clear()
@@ -869,6 +869,11 @@ for index, prompt in enumerate((
     ):
         assert "No recent Proxmox or NetBox activity source is configured" in variant["final_response"], variant
         assert hermes_registry_module.registry.calls == ["homelab_recent_activity"], hermes_registry_module.registry.calls
+    elif prompt == "Why does the network feel slow?":
+        assert "Current Proxmox runtime load samples: hades-core: CPU 94.0%" in variant["final_response"], (prompt, variant)
+        assert "network-wide measurement" in variant["final_response"], (prompt, variant)
+        assert "The live homelab view is partial" not in variant["final_response"], (prompt, variant)
+        assert "identity link" not in variant["final_response"], (prompt, variant)
     else:
         assert "Live Proxmox currently reports: hades-core." in variant["final_response"], (prompt, variant)
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
@@ -1414,12 +1419,13 @@ network_diagnosis = network_agent.run_conversation(
 )
 assert network_diagnosis.get("completed") is True and network_diagnosis.get("api_calls") == 0, network_diagnosis
 network_text = network_diagnosis["final_response"]
-assert "Live Proxmox currently reports: hades-core." in network_text, network_text
-assert "CPU 94.0%" in network_text, network_text
-assert "Uptime Kuma's configured probes failed: Search latency check." in network_text, network_text
+assert "Current Proxmox runtime load samples: hades-core: CPU 94.0%" in network_text, network_text
+assert "Fresh configured checks are failing: Search latency check." in network_text, network_text
 assert "Fresh configured-probe response-time samples: Router ping: 84 ms." in network_text, network_text
-assert "Packet-loss, throughput, and historical comparison data are unavailable" in network_text, network_text
-assert "cannot identify a network bottleneck or trend from this evidence" in network_text, network_text
+assert "Packet-loss, throughput, DNS timing, and historical comparison data are unavailable" in network_text, network_text
+assert "can't identify a network bottleneck or trend from this evidence" in network_text, network_text
+assert "The live homelab view is partial" not in network_text, network_text
+assert "identity link" not in network_text, network_text
 assert "homelab_inference_inventory" not in registry.calls, registry.calls
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 registry.calls.clear()
@@ -1432,7 +1438,9 @@ natural_network = natural_network_agent.run_conversation(
 )
 assert natural_network.get("completed") is True and natural_network.get("api_calls") == 0, natural_network
 assert "Fresh configured-probe response-time samples:" in natural_network["final_response"], natural_network
-assert "cannot identify a network bottleneck or trend from this evidence" in natural_network["final_response"], natural_network
+assert "can't identify a network bottleneck or trend from this evidence" in natural_network["final_response"], natural_network
+assert "The live homelab view is partial" not in natural_network["final_response"], natural_network
+assert "identity link" not in natural_network["final_response"], natural_network
 assert "homelab_inference_inventory" not in registry.calls, registry.calls
 del os.environ["HADES_TEST_HOMELAB_BOTTLENECK"]
 

@@ -47,6 +47,7 @@ wanted = {
     '_hades_homelab_followup_prompt',
     '_hades_homelab_service_coverage_intent',
     '_hades_homelab_service_coverage_response',
+    '_hades_homelab_network_diagnostic_response',
     '_hades_homelab_source_identity_intent',
     '_hades_homelab_conflict_intent',
     '_hades_homelab_conflict_response',
@@ -731,8 +732,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert direct_read('What is Proxmox?', 'synthetic-owner', 'owner') is None
         assert direct_read('What does Minecraft do?', 'synthetic-owner', 'owner') is None
         routed_network = direct_read('Why does the network feel slow?', 'synthetic-owner', 'owner')
-        assert 'Packet-loss, throughput, and historical comparison data are unavailable' in routed_network, routed_network
-        assert 'cannot identify a network bottleneck or trend from this evidence' in routed_network, routed_network
+        assert 'Packet-loss, throughput, DNS timing, and historical comparison data are unavailable' in routed_network, routed_network
+        assert "can't identify a network bottleneck or trend from this evidence" in routed_network, routed_network
+        assert 'The live homelab view is partial' not in routed_network, routed_network
+        assert 'no verified cross-source identity link' not in routed_network, routed_network
 
         def write_broad_summary(monitors, **overrides):
             summary = {

@@ -5254,6 +5254,90 @@ def _hades_homelab_service_coverage_response(summary):
     return " ".join(parts)
 
 
+def _hades_homelab_network_diagnostic_response(summary):
+    """Keep network diagnoses focused on current probes and relevant load."""
+    if not isinstance(summary, dict):
+        return "I couldn't read current network-related homelab sources, so I can't diagnose why the network feels slow."
+    availability = summary.get("availability_summary") if isinstance(summary.get("availability_summary"), list) else []
+    groups = _hades_homelab_availability_groups(availability)
+    parts = []
+    if groups["down"]:
+        parts.append("Fresh configured checks are failing: " + ", ".join(groups["down"][:6]) + ".")
+    elif availability:
+        parts.append("No fresh configured check is currently reporting a failure.")
+    else:
+        parts.append("No current configured-check availability observations were returned.")
+    if groups["unknown"]:
+        unknown = [
+            f"{item['name']} (last reported {item['last_status']}; {item['freshness'].casefold()})"
+            for item in groups["unknown"][:4]
+        ]
+        parts.append("Probe status is stale or unknown for: " + ", ".join(unknown) + ".")
+    samples = [
+        item for item in availability
+        if isinstance(item, dict)
+        and str(item.get("freshness") or "").upper() == "FRESH"
+        and isinstance(item.get("ping_ms"), (int, float))
+        and not isinstance(item.get("ping_ms"), bool)
+        and 0 <= item["ping_ms"] <= 60000
+    ]
+    if samples:
+        samples.sort(key=lambda item: (-float(item["ping_ms"]), str(item.get("name") or "")))
+        sample_text = "; ".join(
+            f"{str(item.get('name') or 'Configured check')[:80]}: {item['ping_ms']:g} ms"
+            for item in samples[:4]
+        )
+        parts.append("Fresh configured-probe response-time samples: " + sample_text + ".")
+    else:
+        parts.append("No fresh configured-probe response-time samples were returned.")
+
+    runtime_samples = []
+    resources = summary.get("resources") if isinstance(summary.get("resources"), list) else []
+    for item in resources:
+        if not isinstance(item, dict) or str(item.get("runtime_status") or "").casefold() not in {"online", "running"}:
+            continue
+        runtime = item.get("runtime") if isinstance(item.get("runtime"), dict) else item.get("runtime_detail")
+        if not isinstance(runtime, dict):
+            continue
+        details = []
+        cpu = runtime.get("cpu")
+        if isinstance(cpu, (int, float)) and not isinstance(cpu, bool) and 0 <= cpu <= 1:
+            details.append(f"CPU {cpu * 100:.1f}%")
+        memory, max_memory = runtime.get("mem"), runtime.get("maxmem")
+        if (
+            isinstance(memory, (int, float)) and not isinstance(memory, bool)
+            and isinstance(max_memory, (int, float)) and not isinstance(max_memory, bool)
+            and memory >= 0 and max_memory > 0
+        ):
+            details.append(f"memory {memory / (1024 ** 3):.1f}/{max_memory / (1024 ** 3):.1f} GiB")
+        disk, max_disk = runtime.get("disk"), runtime.get("maxdisk")
+        if (
+            isinstance(disk, (int, float)) and not isinstance(disk, bool)
+            and isinstance(max_disk, (int, float)) and not isinstance(max_disk, bool)
+            and disk >= 0 and max_disk > 0
+        ):
+            details.append(f"disk {disk / (1024 ** 3):.1f}/{max_disk / (1024 ** 3):.1f} GiB")
+        if details:
+            name = " ".join(str(item.get("name") or runtime.get("name") or "Proxmox resource").split())[:80]
+            runtime_samples.append(f"{name}: " + ", ".join(details))
+    if runtime_samples:
+        parts.append("Current Proxmox runtime load samples: " + "; ".join(runtime_samples[:4]) + ".")
+
+    proxmox_times = [
+        str(item.get("retrieved_at"))[:80]
+        for item in (summary.get("sources") if isinstance(summary.get("sources"), list) else [])
+        if isinstance(item, dict) and str(item.get("source") or "").startswith("Proxmox") and item.get("retrieved_at")
+    ]
+    if proxmox_times and runtime_samples:
+        parts.append(f"Proxmox runtime was read at {proxmox_times[-1]}.")
+    parts.append(
+        "These endpoint checks and runtime samples are not a network-wide measurement. "
+        "Packet-loss, throughput, DNS timing, and historical comparison data are unavailable, "
+        "so I can't identify a network bottleneck or trend from this evidence."
+    )
+    return " ".join(parts)
+
+
 def _hades_homelab_source_identity_intent(text):
     return bool(re.search(
         r"\b(?:homelab|home\s+lab|infrastructure)\b.{0,100}\b"
@@ -6187,6 +6271,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             return _hades_homelab_conflict_response(summary)
         if source_identity_intent and scope == "owner":
             return _hades_homelab_unlinked_identity_response(summary)
+        if network_diagnostic_intent and scope == "owner":
+            return _hades_homelab_network_diagnostic_response(summary)
         broad_inference = None
         if scope == "owner" and broad_owner_status_intent:
             try:
