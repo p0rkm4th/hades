@@ -169,6 +169,10 @@ Status: **PARTIAL**
   fails closed because the current composed inventory cannot confirm the
   configured stable identity link. Canonical inventory visibility must be
   reconciled before presenting host telemetry for that endpoint.
+- Owner service-placement dogfood reports the configured Agent Zero endpoint
+  and its bounded HTTP reachability check separately from the empty NetBox
+  application-service catalog, and explicitly disclaims task/delegation
+  execution. Household A/B receive only the internal-host-details boundary.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 - Fresh owner backup dogfood found that Proxmox's archived history can include
