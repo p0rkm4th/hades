@@ -187,6 +187,18 @@ assert "Fresh configured Uptime Kuma probes are failing for: service-check-a" in
 assert "service-check-b (last reported down; stale)" in synthetic_service_response, synthetic_service_response
 assert "inventory does not establish their current health" in synthetic_service_response, synthetic_service_response
 assert "services on unreported guests remain unverified" in synthetic_service_response, synthetic_service_response
+original_summary_tool_result = hades._hades_direct_homelab_tool_result
+try:
+    hades._hades_direct_homelab_tool_result = lambda name, *_args, **_kwargs: (
+        synthetic_service_summary if name == "homelab_summary" else {"status": "NOT_CONFIGURED", "endpoints": []}
+    )
+    current_down_response = hades._hades_direct_homelab_read(
+        "What's down right now?", "synthetic-alpha", "owner",
+    )
+finally:
+    hades._hades_direct_homelab_tool_result = original_summary_tool_result
+assert "Uptime Kuma's configured probes failed: service-check-a" in current_down_response, current_down_response
+assert "service-check-b" not in current_down_response, current_down_response
 synthetic_empty_catalog = dict(synthetic_service_summary)
 synthetic_empty_catalog["service_catalog"] = {"status": "OK", "coverage": "EMPTY", "services": []}
 empty_catalog_response = hades._hades_homelab_service_coverage_response(synthetic_empty_catalog)

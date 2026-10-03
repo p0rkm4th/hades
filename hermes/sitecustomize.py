@@ -6339,7 +6339,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         down_question = bool(re.search(
             r"\b(?:what(?:['’]s|\s+is)\s+down|anything\s+down|"
             r"what(?:['’]s|\s+is)\s+(?:offline|unavailable)|"
-            r"which\s+(?:services?|systems?|servers?)\s+(?:are\s+)?down)\b",
+            r"which\s+(?:services?|systems?|servers?)\s+(?:are\s+)?down)"
+            r"(?:\s+(?:right\s+now|currently|today|at\s+the\s+moment))?\b",
             text, re.IGNORECASE,
         ))
         if down:
