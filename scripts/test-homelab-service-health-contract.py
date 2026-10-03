@@ -194,7 +194,8 @@ homelab_intent = namespace['_HADES_HOMELAB_INTENT']
 status_intent = namespace['_hades_broad_homelab_status_intent']
 game_health_intent = namespace['_hades_household_game_health_intent']
 for prompt in (
-    'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
+    'Is everything okay?', 'What is down?', 'What is down or degraded right now, and what can you not verify?',
+    'Anything dying?', "What's fucked?",
     'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
     'Are all the computers okay?', 'Is the homelab okay?', 'Are my computers okay?',
     'Is Minecraft working?', 'Where is HADES running?', 'Where is Minecraft running?',
@@ -210,6 +211,7 @@ for prompt in (
     'Which homelab services can you not verify right now?',
     'Which services can you not verify right now?',
     'Are any homelab sources contradicting each other right now?',
+    'What is down or degraded right now, and what can you not verify?',
 ):
     assert status_intent(prompt), f'broad homelab status intent missed {prompt!r}'
 source_identity_intent = namespace['_hades_homelab_source_identity_intent']
@@ -1040,6 +1042,21 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Proxmox' in source_outage and 'Uptime Kuma' in source_outage, source_outage
         assert 'unreported nodes remain unknown' in source_outage, source_outage
         assert 'Optional Source' not in source_outage, source_outage
+        compound_status = direct_read(
+            'What is down or degraded right now, and what can you not verify?',
+            'synthetic-owner', 'owner',
+        )
+        assert 'The live homelab view is partial.' in compound_status, compound_status
+        assert 'Current source reads unavailable or degraded: NetBox.' in compound_status, compound_status
+        assert 'unreported nodes remain unknown' in compound_status, compound_status
+        calls_before_compound_household = len(registry_module.registry.calls)
+        compound_household = direct_read(
+            'What is down or degraded right now, and what can you not verify?',
+            'synthetic-household', 'household',
+        )
+        assert "can't verify private infrastructure or computer status" in compound_household
+        assert 'NetBox' not in compound_household and 'Proxmox' not in compound_household
+        assert len(registry_module.registry.calls) == calls_before_compound_household
         write_broad_summary(
             [],
             inventory_only_names=['GPU Node'],
