@@ -257,6 +257,7 @@ for prompt in (
     'Which homelab services can you not verify right now?',
     'Which services can you not verify right now?',
     'Are any homelab sources contradicting each other right now?',
+    'Do NetBox, Proxmox, and Uptime Kuma disagree about any server right now? Show conflicts only, and distinguish intended state from live runtime and probe state.',
     'What is down or degraded right now, and what can you not verify?',
 ):
     assert status_intent(prompt), f'broad homelab status intent missed {prompt!r}'
@@ -264,6 +265,7 @@ source_identity_intent = namespace['_hades_homelab_source_identity_intent']
 conflict_intent = namespace['_hades_homelab_conflict_intent']
 assert source_identity_intent('Which source records are still unlinked?')
 assert conflict_intent('Are any homelab sources contradicting each other right now?')
+assert conflict_intent('Do NetBox, Proxmox, and Uptime Kuma disagree about any server right now? Show conflicts only, and distinguish intended state from live runtime and probe state.')
 assert namespace['_hades_homelab_service_coverage_intent'](
     'Which services can you not verify right now?'
 )
@@ -894,6 +896,12 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Synthetic Node A' in conflict_answer and 'differs from Proxmox runtime node' in conflict_answer, conflict_answer
         assert 'not a lab-wide agreement or all-clear' in conflict_answer, conflict_answer
         assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
+        explicit_source_conflict = direct_read(
+            'Do NetBox, Proxmox, and Uptime Kuma disagree about any server right now? Show conflicts only, and distinguish intended state from live runtime and probe state.',
+            'synthetic-owner', 'owner',
+        )
+        assert 'The current homelab read found source conflicts:' in explicit_source_conflict, explicit_source_conflict
+        assert 'live runtime and probe state' not in explicit_source_conflict.casefold(), explicit_source_conflict
         registry_module.registry.calls.clear()
         write_broad_summary([], status='PARTIAL', source_counts={
             'identity_unlinked_resources': 2,
@@ -924,6 +932,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         registry_module.registry.calls.clear()
         assert "can't verify private infrastructure or computer status" in direct_read(
             'Are any homelab sources contradicting each other right now?',
+            'synthetic-household', 'household',
+        )
+        assert "can't verify private infrastructure or computer status" in direct_read(
+            'Do NetBox, Proxmox, and Uptime Kuma disagree about any server right now? Show conflicts only, and distinguish intended state from live runtime and probe state.',
             'synthetic-household', 'household',
         )
         assert not registry_module.registry.calls, registry_module.registry.calls

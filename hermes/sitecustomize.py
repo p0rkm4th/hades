@@ -5483,7 +5483,7 @@ def _hades_household_sensitive_context_followup(
 
 def _hades_homelab_conflict_intent(text):
     return bool(re.search(
-        r"\b(?:homelab|home\s+lab|infrastructure|sources?)\b.{0,100}\b"
+        r"\b(?:homelab|home\s+lab|infrastructure|sources?|netbox|proxmox|uptime\s+kuma)\b.{0,100}\b"
         r"(?:conflicts?|contradict(?:ing|ory|ions?)?|disagree(?:ment|ments|ing)?|mismatch(?:es)?)\b|"
         r"\b(?:are|do)\b.{0,50}\b(?:any|the)?\s*(?:homelab\s+)?sources?\b.{0,60}\b"
         r"(?:conflict|contradict|disagree|mismatch)",
