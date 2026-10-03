@@ -536,6 +536,22 @@ for index, prompt in enumerate(("Which GPUs are free?", "Where should I run anot
     assert placement.get("completed") is True and placement.get("api_calls") == 0, (prompt, placement)
     assert "can't determine which GPU has room" in placement["final_response"], (prompt, placement)
     assert "homelab_gpu_telemetry" in hermes_registry_module.registry.calls, hermes_registry_module.registry.calls
+actual_homelab_tool_result = hades._hades_direct_homelab_tool_result
+def fail_gpu_telemetry_read(tool_name, arguments=None):
+    if tool_name == "homelab_gpu_telemetry":
+        raise TypeError("synthetic telemetry response shape failure")
+    return actual_homelab_tool_result(tool_name, arguments)
+hades._hades_direct_homelab_tool_result = fail_gpu_telemetry_read
+try:
+    failed_capacity = agent_class(
+        gateway_session_key=f"hades-user-{owner}", session_id="synthetic-gpu-telemetry-type-error",
+        stream_delta_callback=lambda _chunk: None, **kwargs,
+    ).run_conversation("Which GPUs are free right now?", conversation_history=[])
+finally:
+    hades._hades_direct_homelab_tool_result = actual_homelab_tool_result
+assert failed_capacity.get("completed") is True and failed_capacity.get("api_calls") == 0, failed_capacity
+assert "can't verify current GPU capacity" in failed_capacity["final_response"], failed_capacity
+assert "live per-host GPU utilization and free-VRAM telemetry is unavailable" in failed_capacity["final_response"], failed_capacity
 os.environ.pop("HADES_TEST_INFERENCE_ONLY", None)
 
 # Ordinary status wording should stay on the same deterministic, read-only

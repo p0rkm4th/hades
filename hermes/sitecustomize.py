@@ -6290,6 +6290,19 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 "current check could not be read."
             )
         if scope == "owner":
+            capacity_intent = bool(re.search(
+                r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|"
+                r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
+                r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
+                r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",
+                text, re.IGNORECASE,
+            ))
+            if capacity_intent:
+                return (
+                    "I can't verify current GPU capacity because live per-host GPU utilization "
+                    "and free-VRAM telemetry is unavailable. Model catalogs and hardware inventory "
+                    "do not establish available capacity."
+                )
             return (
                 "I couldn't verify the current homelab sources for this request, "
                 "so I can't confirm live status."
