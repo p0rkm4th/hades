@@ -15,44 +15,59 @@ of truth.
 
 - Source identity is explicit. Proxmox, NetBox, and Kuma records are never
   joined by display name or address alone.
+- Reviewed Proxmox source IDs, provider endpoints, identity links, and physical
+  host-monitor links are active in the owner deployment. No canonical source
+  was written by HADES.
 - Missing identity links, duplicate mappings, source disagreement, and stale
   observations remain visible in the read model.
 - Source adapters remain bounded and read-only.
 - Generic natural-language node-status routing is covered by synthetic tests.
-- Optional Ollama reads now collect installed model catalogs and current
+- Configured Ollama reads collect installed model catalogs and provider-reported
   residency from `/api/tags` and `/api/ps`. OpenAI-compatible `/v1/models`
-  catalogs are supported without claiming loaded state. Synthetic contract
+  catalogs are supported without claiming loaded state. Owner UI dogfood
+  confirms these reads while distinguishing residency from GPU execution or
+  successful generation. Synthetic contract
   coverage includes source identity, linked NetBox display names, partial
   failure, token transport requirements, and owner response shaping.
-- A direct development-runner probe exercised the provider adapter against
-  approved live inputs and verified stable NetBox device-ID joins. Detailed
-  topology and source observations remain in private infrastructure records.
-  This is adapter evidence only; it is not deployed HADES or authenticated
-  owner dogfood.
 - Model inventory questions use only configured inference sources and fetch a
   targeted NetBox record only when a model-location answer needs one; they do
   not call the broad Proxmox/Kuma summary.
+- Authenticated owner dogfood covers broad status and freshness, named-node
+  activity, service placement, backups, model inventory, and capacity caveats.
+  Household dogfood confirms generic answers and redaction for private
+  infrastructure questions. Sensitive old assistant turns are also removed
+  from household model context before routing and fallback.
+- Backup answers distinguish configured jobs and bounded task history from
+  verified backup contents, independent custody, and restoreability.
 - Current-tree privacy checks and the focused homelab contracts pass.
 
 ## Remaining evidence
 
-- Complete protected identity links for the live sources and verify their
-  intended/runtime relationships.
-- Configure the provider-native inference adapter in deployed HADES and add
-  live GPU/resource telemetry; the capability matrix is not current runtime
-  truth and free capacity/model fit remain unknown.
-- Reconcile incomplete canonical inventory/availability coverage through the
-  source owners, then exercise stale-data and source-conflict behavior against
-  current observations. Private details remain outside this public repository.
-- Complete authenticated owner dogfood for broad health, node status, service
-  placement, backups, network diagnosis, and model placement.
-- Confirm owner/household response separation and measure representative query
-  latency.
-- Keep production unchanged unless the owner separately authorizes deployment.
+- Proxmox guest visibility remains limited by the read token's current scope;
+  unobserved guests stay unknown. Any permission expansion remains owner-gated.
+- NetBox's application-service coverage is incomplete, so some intended service
+  placements cannot be established. HADES must report the gap rather than infer
+  placement from hostnames, IPs, or container listings.
+- Fixed-command, strict-host-key GPU telemetry is implemented and tested but
+  unconfigured. Current per-host utilization/free VRAM and model-fit
+  recommendations remain unavailable; host account and key activation require
+  separate owner approval.
+- Current broad status can identify responding sources and partial coverage;
+  comprehensive network trends, full backup contents/custody, and successful
+  inference execution are not established.
+- Persisted synthetic acceptance history from before the context-redaction fix
+  remains unchanged. New replies cannot recover its private details from model
+  context; editing saved history is pending owner authorization.
+- Public `main` remains green at the release-convergence baseline. Homelab
+  campaign changes remain on the review branch and have not been integrated
+  into `main`.
 
 ## Repository and deployment authority
 
 Public source contains generic code, test fixtures, and deployment-neutral
 contracts. The private infrastructure repository owns topology, host IDs,
 addresses, access configuration, live deployment provenance, and private
-acceptance records. Synthetic evidence is not live infrastructure proof.
+acceptance records. The owner deployment uses an explicitly reviewed read-only
+source configuration and an overlay candidate with a recorded rollback.
+Synthetic evidence is not live infrastructure proof. Any further production
+change requires a tested candidate, explicit scope, and rollback.
