@@ -5979,6 +5979,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
+        r"compare\s+current\s+model\s+residency\s+and\s+gpu\s+capacity|which\s+(?:one\s+)?(?:has\s+)?more\s+room|"
         r"(?:which|what).{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|where\s+should\s+i\s+(?:run|host|put)|(?:what|which)\s+(?:machine|server|gpu).{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|(?:can|could).{0,60}\b(?:handle|fit|run|host).{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
         r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b|"
         r"where(?:['’]s|\s+is)\s+(?:the\s+)?(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|nextcloud|vaultwarden)\b|"

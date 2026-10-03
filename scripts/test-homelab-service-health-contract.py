@@ -594,6 +594,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '        resources.append({"name": "Compute Node A", "runtime_status": "NOT_OBSERVED", '
         '                         "inventory": {"name": "Compute Node A"}, '
         '                         "identity": {"canonical_id": "netbox:device:7"}})\n'
+        '    if os.environ.get("HADES_TEST_INFERENCE_NODE_B") == "1":\n'
+        '        resources.append({"name": "Compute Node B", "runtime_status": "NOT_OBSERVED", '
+        '                         "inventory": {"name": "Compute Node B"}, '
+        '                         "identity": {"canonical_id": "netbox:device:8"}})\n'
         '    sources = []\n'
         '    if os.environ.get("HADES_TEST_NETBOX_MONITOR_CONFLICT") == "1":\n'
         '        resources.append({"name": "service-netbox", "availability": {"name": "service-netbox", '
@@ -612,6 +616,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         'def homelab_compute_capabilities():\n'
         '    return {"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
         'def format_inference_inventory_response(user_text, inventory, summary, gpu_telemetry=None):\n'
+        '    if "compare current model residency" in user_text.casefold():\n'
+        '        return "Compute Node A: provider reports loaded sample:small; Compute Node B: loaded state unknown; I can\'t tell which host has more capacity without live free-VRAM data."\n'
         '    if "host another model" in user_text.casefold() or "host a 20 gb model" in user_text.casefold():\n'
         '        return "I can\'t determine which GPU has room because current free-VRAM data is unavailable."\n'
         '    return "sample:small is listed at Compute Node A based on provider-reported inventory."\n',
@@ -715,6 +721,20 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 context_text=followup_context + 'Sorry, Compute Node A',
             )
             assert 'sample:small is listed at Compute Node A' in correction, correction
+            os.environ['HADES_TEST_INFERENCE_NODE_B'] = '1'
+            comparison_context = (
+                "What's wrong with Compute Node A?\n"
+                "What about Compute Node B?\n"
+                "Which one has more room?"
+            )
+            comparison = direct_read(
+                'Which one has more room?', 'synthetic-owner', 'owner',
+                context_text=comparison_context,
+            )
+            assert 'Compute Node A: provider reports loaded sample:small' in comparison, comparison
+            assert 'Compute Node B: loaded state unknown' in comparison, comparison
+            assert "can't tell which host has more capacity" in comparison, comparison
+            os.environ.pop('HADES_TEST_INFERENCE_NODE_B', None)
             assert namespace['_hades_homelab_followup_prompt'](
                 'Which one has more room?', 'owner', ''
             ) == 'Where should I run another model?'
