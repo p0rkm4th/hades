@@ -33,6 +33,12 @@ of truth.
 - The live broad owner summary reports partial Proxmox guest visibility and an
   empty NetBox application-service catalog. Agent Zero’s configured endpoint
   returned a bounded HTTP response, which does not prove task execution.
+- A fresh broad owner UI refresh confirms the same source gaps: source requests
+  respond, but both Proxmox guest-visibility scopes remain partial/degraded,
+  the NetBox application-service catalog remains empty, and 15 Proxmox/Kuma
+  resources have no verified cross-source identity link. Four configured Kuma
+  probes report no failures (reachability only); all three inference catalogs
+  respond without proving generation or GPU capacity.
 - Fresh authenticated owner UI dogfood asked where the game server runs.
   HADES reported that the NetBox application-service catalog is empty and did
   not guess intended or current placement. Household A's fresh game-health
