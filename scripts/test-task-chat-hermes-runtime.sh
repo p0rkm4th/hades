@@ -461,6 +461,60 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
         stream_delta_callback=lambda _chunk: None,
         **kwargs,
     )
+    household_model_history = []
+    original_model_run = hades._hades_original_run_conversation
+    original_legacy_backup_read = hades._hades_phase2_backup_response
+    privacy_probe_history, privacy_probe_redacted = hades._hades_redact_household_sensitive_history([
+        {"role": "user", "content": "Which Proxmox guests can you verify?"},
+        {"role": "assistant", "content": (
+            "The approved node is synthetic-private-node; template name "
+            "synthetic-private-template; Proxmox endpoint http://198.51.100.42."
+        )},
+    ])
+    assert privacy_probe_redacted
+    privacy_probe_context = hades._hades_conversation_intent_text(
+        "Can you remind me of the template and endpoint?", privacy_probe_history
+    )
+    assert hades._hades_household_sensitive_context_followup(
+        "Can you remind me of the template and endpoint?",
+        privacy_probe_history,
+        privacy_probe_context,
+    )
+    assert "can't verify private infrastructure or computer status" in hades._hades_direct_homelab_read(
+        "Can you remind me of the template and endpoint?", beta, "household",
+        context_text=privacy_probe_context,
+    ).casefold()
+    def capture_household_model_history(self, user_message, *args, **call_kwargs):
+        household_model_history.append(call_kwargs.get("conversation_history", []))
+        return {
+            "final_response": "Synthetic harmless response.",
+            "messages": [{"role": "assistant", "content": "Synthetic harmless response."}],
+            "api_calls": 0,
+            "completed": True,
+        }
+    hades._hades_original_run_conversation = capture_household_model_history
+    hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
+    try:
+        redacted_history_result = household_agent.run_conversation(
+            "What is photosynthesis?", conversation_history=[
+                {"role": "user", "content": "Which Proxmox guests are online?"},
+                {"role": "assistant", "content": (
+                    "Node synthetic-private-node; Proxmox endpoint http://198.51.100.42; "
+                    "template synthetic-private-template."
+                )},
+                {"role": "user", "content": "What is photosynthesis?"},
+            ],
+        )
+    finally:
+        hades._hades_original_run_conversation = original_model_run
+        hades._hades_phase2_backup_response = original_legacy_backup_read
+    assert redacted_history_result.get("completed") is True, redacted_history_result
+    assert len(household_model_history) == 1, household_model_history
+    assert "synthetic-private-node" not in repr(household_model_history)
+    assert "synthetic-private-template" not in repr(household_model_history)
+    assert "198.51.100.42" not in repr(household_model_history)
+    assert "Private infrastructure conversation omitted" in repr(household_model_history)
+
     household_result = household_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])
     assert household_result.get("completed") is True and household_result.get("api_calls") == 0, household_result
     assert "private infrastructure" in household_result["final_response"].casefold(), household_result

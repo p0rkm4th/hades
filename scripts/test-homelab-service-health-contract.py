@@ -52,6 +52,7 @@ wanted = {
     '_hades_homelab_network_diagnostic_response',
     '_hades_homelab_source_identity_intent',
     '_hades_homelab_guest_visibility_intent',
+    '_hades_redact_household_sensitive_history',
     '_hades_household_sensitive_context_followup',
     '_hades_homelab_conflict_intent',
     '_hades_homelab_conflict_response',
@@ -91,6 +92,7 @@ namespace = {
         'info': staticmethod(lambda *args, **_kwargs: info_logs.append(args)),
     })(),
     '_hades_phase2_backup_response': lambda *_args, **_kwargs: 'Configured HADES backup checks: current.',
+    '_HADES_HOUSEHOLD_PRIVATE_HISTORY_MARKER': '[Private infrastructure conversation omitted for household safety.]',
 }
 
 
@@ -198,6 +200,7 @@ homelab_intent = namespace['_HADES_HOMELAB_INTENT']
 status_intent = namespace['_hades_broad_homelab_status_intent']
 guest_visibility_intent = namespace['_hades_homelab_guest_visibility_intent']
 household_sensitive_followup = namespace['_hades_household_sensitive_context_followup']
+redact_household_history = namespace['_hades_redact_household_sensitive_history']
 game_health_intent = namespace['_hades_household_game_health_intent']
 for prompt in (
     'Which Proxmox guests can you verify right now, and what are their current states?',
@@ -209,8 +212,28 @@ assert not guest_visibility_intent('What is Proxmox?')
 leaked_household_history = [
     {'role': 'user', 'content': 'Which Proxmox guests can you verify?'} ,
     {'role': 'assistant', 'content': 'The approved node is synthetic-node; template name synthetic-template; http://198.51.100.1.'},
+    {'role': 'user', 'content': 'Tell me a joke.'},
 ]
 assert household_sensitive_followup('Can you remind me of the template?', leaked_household_history)
+safe_household_history, did_redact = redact_household_history(leaked_household_history)
+assert did_redact
+assert 'synthetic-node' not in repr(safe_household_history)
+assert 'synthetic-template' not in repr(safe_household_history)
+assert '198.51.100.1' not in repr(safe_household_history)
+assert '[Private infrastructure conversation omitted for household safety.]' in repr(safe_household_history)
+assert leaked_household_history[0]['content'] == 'Which Proxmox guests can you verify?'
+opaque_private_history, opaque_private_redacted = redact_household_history([
+    {'role': 'user', 'content': 'What is the current state of Proxmox guests?'},
+    {'role': 'assistant', 'content': 'Synthetic node Tartarus is online.'},
+    {'role': 'tool', 'content': '{"host":"Synthetic Node A","vmid":802}'},
+])
+assert opaque_private_redacted
+assert 'Tartarus' not in repr(opaque_private_history)
+assert 'Synthetic Node A' not in repr(opaque_private_history)
+assert 'vmid' not in repr(opaque_private_history)
+assert not redact_household_history([
+    {'role': 'assistant', 'content': 'All approved AI service checks responded; generation was not tested.'},
+])[1]
 assert not household_sensitive_followup(
     'Can you remind me what was checked?',
     [{'role': 'assistant', 'content': 'All approved AI service checks responded; generation was not tested.'}],

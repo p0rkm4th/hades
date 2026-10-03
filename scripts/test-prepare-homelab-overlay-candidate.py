@@ -15,6 +15,9 @@ PREPARER = ROOT / "scripts/prepare-homelab-overlay-candidate.py"
 SOURCE = '''
 import re, time
 from datetime import datetime
+_HADES_HOUSEHOLD_PRIVATE_HISTORY_MARKER = "[Private infrastructure conversation omitted for household safety.]"
+def _hades_redact_household_sensitive_history(history):
+    return history, bool(history)
 def _hades_direct_homelab_read(text, subject="", scope="owner", context_text=""):
     if _hades_household_sensitive_context_followup(text, context_text=context_text):
         return "private"
@@ -123,6 +126,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "Household game-server health read completed before managed-server routing" in candidate
     assert "Household service-health boundary completed before staged automation routing" in candidate
     assert "_hades_service_health_target(user_message)" in candidate
+    assert "_hades_redact_household_sensitive_history" in candidate
     assert 'getattr(self, "_hades_session_scope", "")' in candidate
     run_start = candidate.index("def _hades_run_conversation")
     capacity_guard = candidate.index("Owner model-capacity follow-up failed closed without model invocation", run_start)

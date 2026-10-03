@@ -5380,6 +5380,68 @@ def _hades_homelab_guest_visibility_intent(text):
     return bool(guest_reference and visibility_request)
 
 
+_HADES_HOUSEHOLD_PRIVATE_HISTORY_MARKER = (
+    "[Private infrastructure conversation omitted for household safety.]"
+)
+
+
+def _hades_redact_household_sensitive_history(conversation_history):
+    """Keep private infrastructure answers out of household model context."""
+    if not isinstance(conversation_history, list):
+        return conversation_history, False
+    sensitive_answer = re.compile(
+        r"\b(?:proxmox|netbox|uptime\s+kuma|homelab\s+mcp|mcp\s+(?:server|tool|binding)|"
+        r"template\s+(?:status|name|is|was)|endpoint\s+(?:is|was|at)|"
+        r"(?:node|host|guest|vmid|endpoint|template)\s+(?:is|was|named|running|online|at)|"
+        r"(?:node|host|guest|vmid|endpoint|template)\s*[\"']?\s*[:=])\b|"
+        r"https?://|\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b",
+        re.IGNORECASE,
+    )
+    sensitive_request = re.compile(
+        r"\[private infrastructure conversation omitted for household safety\.?\]|"
+        r"\b(?:proxmox|netbox|uptime\s+kuma|homelab|home\s+lab|infrastructure|"
+        r"guest\s+visibility|mcp\s+(?:server|tool|binding)|"
+        r"(?:which|what|where|show|list|check|verify)\b.{0,60}\b"
+        r"(?:server|machine|computer|host|node|guest|vm|container|endpoint|address|template)\b|"
+        r"\b(?:server|machine|computer|host|node|guest|vm|container)\b.{0,60}\b"
+        r"(?:running|online|offline|status|state|located|hosted|available)\b)",
+        re.IGNORECASE,
+    )
+    copied = [dict(message) if isinstance(message, dict) else message
+              for message in conversation_history]
+    redacted = False
+    sensitive_turn = False
+    for index, message in enumerate(copied):
+        if not isinstance(message, dict):
+            continue
+        role = message.get("role")
+        if role == "user":
+            content = message.get("content", "")
+            sensitive_turn = isinstance(content, str) and bool(sensitive_request.search(content))
+            continue
+        if role not in {"assistant", "tool"}:
+            continue
+        content = message.get("content", "")
+        if not isinstance(content, str):
+            continue
+        content_is_sensitive = bool(sensitive_answer.search(content))
+        if not content_is_sensitive and not sensitive_turn:
+            if role == "assistant":
+                sensitive_turn = False
+            continue
+        message["content"] = _HADES_HOUSEHOLD_PRIVATE_HISTORY_MARKER
+        redacted = True
+        for prior in range(index - 1, -1, -1):
+            prior_message = copied[prior]
+            if not isinstance(prior_message, dict):
+                continue
+            if prior_message.get("role") == "user":
+                prior_message["content"] = _HADES_HOUSEHOLD_PRIVATE_HISTORY_MARKER
+                break
+        sensitive_turn = True
+    return (copied if redacted else conversation_history), redacted
+
+
 def _hades_household_sensitive_context_followup(
     user_text, conversation_history=None, context_text="",
 ):
@@ -5398,6 +5460,7 @@ def _hades_household_sensitive_context_followup(
     if not followup:
         return False
     sensitive_prior_answer = re.compile(
+        r"\[private infrastructure conversation omitted for household safety\.?\]|"
         r"\b(?:proxmox|netbox|uptime\s+kuma|homelab\s+mcp|mcp\s+(?:server|tool|binding)|"
         r"template\s+(?:status|name|is|was)|(?:node|host|guest|vmid)\s+(?:is|was|named|running|online|at))\b|"
         r"https?://|\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b",
@@ -9932,6 +9995,27 @@ try:
             return _hades_original_run_conversation(
                 self, user_message, *args, **kwargs
             )
+        if getattr(self, "_hades_session_scope", "") == "household":
+            _history_for_household = kwargs.get("conversation_history")
+            if isinstance(_history_for_household, list):
+                _safe_history, _history_redacted = _hades_redact_household_sensitive_history(
+                    _history_for_household
+                )
+                if _history_redacted:
+                    kwargs = dict(kwargs)
+                    kwargs["conversation_history"] = _safe_history
+            else:
+                for _history_arg_index, _history_arg in enumerate(args):
+                    if not isinstance(_history_arg, list):
+                        continue
+                    _safe_history, _history_redacted = _hades_redact_household_sensitive_history(
+                        _history_arg
+                    )
+                    if _history_redacted:
+                        args = list(args)
+                        args[_history_arg_index] = _safe_history
+                        args = tuple(args)
+                    break
         _owner_capacity_followup = re.fullmatch(
             r"\s*what\s+about\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+(?:one|model)\s*[?.!]*\s*",
             str(user_message or ""), re.IGNORECASE,

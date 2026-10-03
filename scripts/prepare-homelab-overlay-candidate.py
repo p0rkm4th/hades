@@ -16,6 +16,7 @@ EXTRA = {
     "_hades_ambiguous_media_device_clarification",
     "_hades_direct_homelab_backup_compound",
     "_hades_direct_proxmox_backup_read",
+    "_hades_redact_household_sensitive_history",
     "_hades_homelab_recent_activity_response",
     "_hades_direct_owner_location",
     "_hades_endpoint_continuation_response",
@@ -261,6 +262,29 @@ def add_household_route(source: str) -> str:
         early_insertion = managed_server_guards[0].lineno - 1
     else:
         raise ValueError("could not uniquely locate a safe early homelab route anchor")
+    privacy_history_block = '''
+        if getattr(self, "_hades_session_scope", "") == "household":
+            _history_for_household = kwargs.get("conversation_history")
+            if isinstance(_history_for_household, list):
+                _safe_history, _history_redacted = _hades_redact_household_sensitive_history(
+                    _history_for_household
+                )
+                if _history_redacted:
+                    kwargs = dict(kwargs)
+                    kwargs["conversation_history"] = _safe_history
+            else:
+                for _history_arg_index, _history_arg in enumerate(args):
+                    if not isinstance(_history_arg, list):
+                        continue
+                    _safe_history, _history_redacted = _hades_redact_household_sensitive_history(
+                        _history_arg
+                    )
+                    if _history_redacted:
+                        args = list(args)
+                        args[_history_arg_index] = _safe_history
+                        args = tuple(args)
+                    break
+'''
     if has_early_household_service_guard:
         required_early_markers = (
             "_hades_service_placement_intent(",
@@ -468,7 +492,7 @@ def add_household_route(source: str) -> str:
         '        if getattr(self, "_hades_session_scope", "") in {"owner", "household"} and _hades_service_placement_intent(',
         household_route_start,
     )
-    early_context = early_block[:owner_route_start]
+    early_context = privacy_history_block + early_block[:owner_route_start]
     early_owner_route = early_block[owner_route_start:household_route_start]
     early_household_route = early_block[household_route_start:placement_route_start]
 
@@ -478,19 +502,26 @@ def add_household_route(source: str) -> str:
     # after the owner source read so it can use available evidence first.
     inserted_early_lines = 0
     if not has_early_household_service_guard:
-        lines[early_insertion:early_insertion] = early_block.splitlines(keepends=True)
-        inserted_early_lines = len(early_block.splitlines(keepends=True))
+        initial_block = privacy_history_block + early_block
+        lines[early_insertion:early_insertion] = initial_block.splitlines(keepends=True)
+        inserted_early_lines = len(initial_block.splitlines(keepends=True))
     else:
         missing_identity_routes = []
         needs_context = "_early_hades_intent_text = _hades_conversation_intent_text(" not in run_text
+        needs_privacy_history = "_hades_redact_household_sensitive_history(" not in run_text
         if "Owner direct homelab read completed before managed-server routing" not in run_text:
             missing_identity_routes.append(early_owner_route)
         if "Household direct homelab boundary completed before managed-server routing" not in run_text:
             missing_identity_routes.append(early_household_route)
         if missing_identity_routes:
-            identity_block = (early_context if needs_context else "") + "".join(missing_identity_routes)
+            identity_block = (
+                early_context if needs_context or needs_privacy_history else ""
+            ) + "".join(missing_identity_routes)
             lines[early_insertion:early_insertion] = identity_block.splitlines(keepends=True)
             inserted_early_lines = len(identity_block.splitlines(keepends=True))
+        elif needs_privacy_history:
+            lines[early_insertion:early_insertion] = privacy_history_block.splitlines(keepends=True)
+            inserted_early_lines = len(privacy_history_block.splitlines(keepends=True))
     lines = "".join(lines).splitlines(keepends=True)
     has_late_household_read = "Household direct homelab read completed without model invocation" in run_text
     if not has_late_household_read:
