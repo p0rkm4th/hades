@@ -1080,7 +1080,11 @@ live_gpu_answer = server.format_inference_inventory_response(
 assert "Synthetic GPU Node GPU 0: 12000 MiB free of 16384 MiB, 10% utilization" in live_gpu_answer
 assert "checked 2026-10-02T12:00:00+00:00" in live_gpu_answer
 assert "doesn't guarantee a model will fit" in live_gpu_answer
-for question in ("Where should I run another model?", "Can this handle a 20 GB model?"):
+for question in (
+    "Where should I run another model?",
+    "Can this handle a 20 GB model?",
+    "Will a 20 GB model fit on Tartarus?",
+):
     answer = server.format_inference_inventory_response(question, compatible, {})
     assert "can't recommend an inference host" in answer, (question, answer)
 

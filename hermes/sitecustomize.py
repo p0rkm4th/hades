@@ -5931,7 +5931,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         r"\b(?:how\s+busy|how\s+much\s+load)\s+(?:is|does)\s+(?P<target2>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         text, re.IGNORECASE,
     )
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not node_load_match and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not node_load_match and not _hades_homelab_explicit_model_fit_intent(text) and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -5967,7 +5967,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     ) or named_node_check_target)
     if node_load_match:
         node_activity_intent = True
-    placement_intent = bool(re.search(
+    placement_intent = _hades_homelab_explicit_model_fit_intent(text) or bool(re.search(
         r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
         r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
         r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",

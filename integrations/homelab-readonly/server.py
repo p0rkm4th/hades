@@ -1926,6 +1926,8 @@ def format_inference_inventory_response(
         str(user_text or ""), re.IGNORECASE,
     ))
     placement_intent = bool(re.search(
+        r"\b(?:will|would|can|could)\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+model\b.{0,50}\b(?:fit|run|work)\b|"
+        r"\b(?:will|would|can|could)\b.{0,80}\b(?:fit|run|host|handle)\b.{0,50}\d+(?:\.\d+)?\s*(?:gb|gib)(?:\s+(?:sized\s+)?model)?\b|"
         r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
         r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
         r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",
