@@ -60,6 +60,12 @@ Status: **PARTIAL**
   Household A/B turns for whole-home slowness and computer status persisted
   scope-limited answers without exposing private topology or querying owner
   sources. This improves household wording but does not close source coverage.
+- Candidate `33b24ec` passed Public CI and deployed the Hermes overlay and MCP
+  activity reader together with rollback. Fresh owner “What changed since
+  yesterday?” dogfood included a source-read timestamp and bounded Proxmox task
+  / NetBox update coverage, and explicitly excluded host OS, package/driver,
+  and in-guest service events. Household A remained denied private change
+  history. A complete history and saved before/after comparison remain open.
 - Fresh owner GPU-capacity dogfood says free GPU capacity is unknown without
   live per-host telemetry and does not treat inventory or empty model
   residency as capacity evidence. Household A receives only the owner-session

@@ -66,6 +66,12 @@ of truth.
   another model?” read returned provider catalogs/residency but declined to
   rank a host because capability inventory is stale, live VRAM/load is absent,
   and runtime memory needs are unknown; that answer also persisted.
+- Fresh “What changed since yesterday?” owner dogfood returned the bounded
+  Proxmox-task/NetBox-update view with a read timestamp and partial-scope
+  caveats. Candidate `33b24ec` now explicitly states that host OS,
+  package/driver, and in-guest service events are not in those sources;
+  Household A remains limited to the private-change boundary. Both chats
+  persisted after the overlay and MCP adapter were deployed together.
 - Backup answers distinguish configured jobs and bounded task history from
   verified backup contents, independent custody, and restoreability.
 - Current-tree privacy checks and the focused homelab contracts pass.
@@ -82,8 +88,9 @@ of truth.
   recommendations remain unavailable; host account and key activation require
   separate owner approval.
 - Future activity comparison still needs a saved prior snapshot; recent task
-  history is not a complete change log. Source comparison must continue to say
-  when identity links or source coverage are incomplete. Model placement
+  history is not a complete change log and host/service event sources are not
+  connected. Source comparison must continue to say when identity links or
+  source coverage are incomplete. Model placement
   remains unavailable until live per-host GPU telemetry and workload memory
   requirements are known.
 - Current broad status can identify responding sources and partial coverage;
