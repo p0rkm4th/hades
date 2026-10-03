@@ -873,26 +873,28 @@ assert {item['name'] for item in monitor_groups['unknown']} == {'Jellyfin', 'LLD
 print('PASS broad homelab summaries distinguish current probe failures from stale/unknown checks')
 
 backup_root = Path(tempfile.mkdtemp(prefix='hades-proxmox-backup-route-'))
-backup_adapter = backup_root / 'integrations' / 'homelab-readonly' / 'server.py'
-backup_adapter.parent.mkdir(parents=True)
-backup_adapter.touch()
 old_workdir = os.environ.get('HADES_HERMES_WORKING_DIRECTORY')
 old_spec_from_file = importlib.util.spec_from_file_location
 old_module_from_spec = importlib.util.module_from_spec
-class FakeLoader:
-    def exec_module(self, module):
-        module.homelab_backup_status = lambda: {'status': 'READABLE'}
-        module.format_homelab_backup_status = lambda report: 'Proxmox status: ' + report['status']
-class FakeSpec:
-    loader = FakeLoader()
+old_homelab_tool_result = namespace['_hades_direct_homelab_tool_result']
+backup_tool_calls = []
 os.environ['HADES_HERMES_WORKING_DIRECTORY'] = str(backup_root)
-importlib.util.spec_from_file_location = lambda *_args, **_kwargs: FakeSpec()
-importlib.util.module_from_spec = lambda _spec: types.SimpleNamespace()
+importlib.util.spec_from_file_location = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+    AssertionError('backup formatter must come from the active homelab MCP result')
+)
+importlib.util.module_from_spec = lambda _spec: (_ for _ in ()).throw(
+    AssertionError('backup formatter must not import a cwd adapter')
+)
+namespace['_hades_direct_homelab_tool_result'] = lambda name: (
+    backup_tool_calls.append(name)
+    or {'status': 'PARTIAL', 'formatted_summary': 'Proxmox status: selected-scope partial.'}
+)
 try:
     backup_answer = direct_proxmox_backup(
         'Are my backups okay?', 'synthetic-owner', 'owner', 'session-key'
     )
-    assert 'Proxmox status: READABLE' in backup_answer, backup_answer
+    assert 'Proxmox status: selected-scope partial.' in backup_answer, backup_answer
+    assert backup_tool_calls == ['homelab_backup_status'], backup_tool_calls
     assert 'Configured HADES backup checks: current.' in backup_answer, backup_answer
     assert direct_proxmox_backup(
         'Are my backups okay?', 'synthetic-household', 'household', 'session-key'
@@ -901,6 +903,7 @@ try:
         'Run the backup now', 'synthetic-owner', 'owner', 'session-key'
     ) is None
 finally:
+    namespace['_hades_direct_homelab_tool_result'] = old_homelab_tool_result
     importlib.util.spec_from_file_location = old_spec_from_file
     importlib.util.module_from_spec = old_module_from_spec
     if old_workdir is None:
