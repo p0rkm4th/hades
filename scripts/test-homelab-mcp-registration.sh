@@ -17,6 +17,8 @@ for marker in (
     'HADES_HOMELAB_IDENTITY_LINKS_FILE',
     'HADES_INFERENCE_ENDPOINTS_JSON',
     'HADES_DISCOVERY_ALLOWED_NETWORKS',
+    'HADES_GPU_TELEMETRY_CONFIG_FILE',
+    'homelab_gpu_telemetry',
     'homelab_recent_activity',
 ):
     if marker not in profile and marker not in env and marker not in adapter:

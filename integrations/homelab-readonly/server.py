@@ -22,6 +22,7 @@ from reconcile import _freshness, summarize
 from catalog import propose_inventory_candidates
 from scan import DEFAULT_PORTS, run_bounded_scan
 from config import (
+    gpu_telemetry_config_file,
     identity_links_file,
     load_identity_links,
     netbox_devices_spec,
@@ -31,6 +32,7 @@ from config import (
     proxmox_token_ids,
     source_specs,
 )
+from gpu_telemetry import read_gpu_telemetry
 
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
@@ -58,8 +60,8 @@ TOOLS = [Tool(
         "hardware inventory. Only Proxmox runtime_status=online for "
         "hosts or running for guests means currently live; NetBox-only "
         "inventory is not liveness. Explain "
-        "conflicts and stale observations; never perform writes or execute "
-        "network commands."
+        "conflicts and stale observations; never perform writes or run SSH "
+        "or discovery commands through this summary tool."
     ),
     inputSchema={"type": "object", "properties": {}},
 ), Tool(
@@ -105,6 +107,17 @@ TOOLS = [Tool(
         "identity, freshness, and partial failures explicit. This does not infer free "
         "GPU capacity or model fit; catalog checks do not prove generation "
         "works, and this tool cannot mutate providers."
+    ),
+    inputSchema={"type": "object", "properties": {}},
+), Tool(
+    name="homelab_gpu_telemetry",
+    description=(
+        "For owner-only questions about live GPU utilization or free VRAM, "
+        "read only explicitly configured inference endpoints over strict-host-key "
+        "SSH using a fixed remote command. The remote account must be non-sudo "
+        "and enforce the documented forced-command contract. No caller-supplied "
+        "host, command, arguments, or writes are accepted. Reports partial and "
+        "unavailable endpoint reads explicitly."
     ),
     inputSchema={"type": "object", "properties": {}},
 ), Tool(
@@ -1734,6 +1747,11 @@ def homelab_inference_inventory() -> dict:
     }
 
 
+def homelab_gpu_telemetry() -> dict:
+    """Read live GPU state from the private fixed-command SSH profile."""
+    return read_gpu_telemetry(gpu_telemetry_config_file())
+
+
 def _format_node_activity_fallback(
     user_text: str, summary: dict | None, inference: dict | None = None,
 ) -> str:
@@ -1879,7 +1897,9 @@ def _inference_monitor_is_linked_to_target(
     return bool(target_canonical_ids & monitor_canonical_ids)
 
 
-def format_inference_inventory_response(user_text: str, inventory: dict, summary: dict) -> str:
+def format_inference_inventory_response(
+    user_text: str, inventory: dict, summary: dict, gpu_telemetry: dict | None = None,
+) -> str:
     """Present bounded current model inventory without overstating health or fit."""
     ai_availability = bool(re.search(
         r"\b(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)\b|"
@@ -1925,9 +1945,54 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
         str(user_text or ""), re.IGNORECASE,
     ))
     if gpu_availability_intent:
+        telemetry = gpu_telemetry if isinstance(gpu_telemetry, dict) else {}
+        telemetry_endpoints = telemetry.get("endpoints") if isinstance(telemetry.get("endpoints"), list) else []
+        if telemetry.get("status") in {"READABLE", "PARTIAL"}:
+            gpu_resource_names = {}
+            for resource in (summary.get("resources", []) if isinstance(summary, dict) else []):
+                if not isinstance(resource, dict):
+                    continue
+                identity = resource.get("identity")
+                inventory_record = resource.get("inventory")
+                if isinstance(identity, dict) and isinstance(inventory_record, dict) and identity.get("canonical_id"):
+                    gpu_resource_names[identity["canonical_id"]] = inventory_record.get("name") or resource.get("name")
+            labels_by_id = {}
+            for provider_endpoint in endpoints:
+                if not isinstance(provider_endpoint, dict):
+                    continue
+                source_identity = str(provider_endpoint.get("source_identity") or "")
+                if source_identity.startswith("inference:"):
+                    labels_by_id[source_identity.removeprefix("inference:")] = gpu_resource_names.get(
+                        provider_endpoint.get("node_identity"), provider_endpoint.get("id")
+                    )
+            reports = []
+            for endpoint in telemetry_endpoints[:16]:
+                if not isinstance(endpoint, dict):
+                    continue
+                host_label = labels_by_id.get(endpoint.get("inference_id")) or str(endpoint.get("inference_id") or "configured host")
+                if endpoint.get("status") != "READABLE":
+                    reports.append(f"{host_label}: live GPU telemetry unavailable")
+                    continue
+                devices = endpoint.get("devices") if isinstance(endpoint.get("devices"), list) else []
+                for device in devices[:32]:
+                    if not isinstance(device, dict):
+                        continue
+                    free = device.get("memory_free_mib")
+                    total = device.get("memory_total_mib")
+                    utilization = device.get("gpu_utilization_percent")
+                    detail = f"{host_label} GPU {device.get('index')}: "
+                    detail += f"{free} MiB free of {total} MiB" if isinstance(free, int) and isinstance(total, int) else "free VRAM unavailable"
+                    detail += f", {utilization}% utilization" if isinstance(utilization, int) else ", utilization unavailable"
+                    reports.append(detail)
+            if reports:
+                checked_at = str(telemetry.get("retrieved_at") or "check time unavailable")
+                prefix = "Live read-only GPU telemetry (checked " + checked_at + "): " + "; ".join(reports[:24]) + "."
+                if telemetry.get("status") == "PARTIAL":
+                    prefix += " Some configured endpoints could not be read."
+                return prefix + " This is a point-in-time sample; it doesn't guarantee a model will fit or stay resident, because runtime memory depends on model, quantization, context, and workload."
         return (
             "I can't verify which GPUs are free right now. Live GPU utilization and free-VRAM "
-            "telemetry are not connected. A hardware inventory or empty model-residency "
+            "telemetry is not connected or currently unavailable. A hardware inventory or empty model-residency "
             "report does not establish available capacity."
         )
 
@@ -2061,6 +2126,42 @@ def format_inference_inventory_response(user_text: str, inventory: dict, summary
         response = "Responding inference endpoints: " + "; ".join(endpoint_details[:8]) + "."
         if not hardware_current:
             response += " Hardware role/capability inventory is " + hardware_freshness.casefold() + "."
+        telemetry = gpu_telemetry if isinstance(gpu_telemetry, dict) else {}
+        live_readings = []
+        telemetry_endpoints = telemetry.get("endpoints") if isinstance(telemetry.get("endpoints"), list) else []
+        for telemetry_endpoint in telemetry_endpoints[:16]:
+            if not isinstance(telemetry_endpoint, dict) or telemetry_endpoint.get("status") != "READABLE":
+                continue
+            inference_id = telemetry_endpoint.get("inference_id")
+            provider_endpoint = next((
+                endpoint for endpoint in endpoints
+                if isinstance(endpoint, dict)
+                and str(endpoint.get("source_identity") or "").removeprefix("inference:") == inference_id
+            ), None)
+            label = resource_names.get(provider_endpoint.get("node_identity")) if isinstance(provider_endpoint, dict) else None
+            if not isinstance(label, str) or not label:
+                continue
+            devices = telemetry_endpoint.get("devices") if isinstance(telemetry_endpoint.get("devices"), list) else []
+            for device in devices[:32]:
+                if isinstance(device, dict) and isinstance(device.get("memory_free_mib"), int):
+                    live_readings.append((device["memory_free_mib"], label, device.get("index"), device.get("gpu_utilization_percent")))
+        if live_readings:
+            free_mib, label, gpu_index, utilization = max(live_readings, key=lambda row: row[0])
+            checked_at = str(telemetry.get("retrieved_at") or "check time unavailable")
+            response += (
+                f" The largest free-memory reading on one GPU was {free_mib} MiB "
+                f"on {label} GPU {gpu_index} (checked {checked_at}"
+                + (f", {utilization}% utilization" if isinstance(utilization, int) else "")
+                + "). This is a point-in-time headroom comparison, not a fit guarantee."
+            )
+            if telemetry.get("status") == "PARTIAL":
+                response += " Other configured GPU endpoints could not be read, so the comparison is incomplete."
+            return (
+                response + " I still can't confirm where a new model will fit: required runtime memory "
+                "depends on the model artifact, quantization, context, KV cache, and provider placement."
+            )
+        if telemetry.get("status") == "PARTIAL":
+            response += " GPU telemetry is partial and no linked live device reading was available for comparison."
         return (
             response + " I can't rank a host for another model because live per-host "
             "GPU load and free VRAM aren't connected, and the model's runtime memory "
@@ -2286,6 +2387,8 @@ async def call_tool(name, arguments):
         result = homelab_compute_capabilities()
     elif name == "homelab_inference_inventory":
         result = homelab_inference_inventory()
+    elif name == "homelab_gpu_telemetry":
+        result = homelab_gpu_telemetry()
     elif name == "homelab_summary":
         result = homelab_summary()
     else:

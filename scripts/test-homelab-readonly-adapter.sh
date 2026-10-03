@@ -370,6 +370,7 @@ root = Path("integrations/homelab-readonly").resolve()
 sys.path.insert(0, str(root))
 import server
 assert "homelab_inference_inventory" in {tool.name for tool in server.TOOLS}
+assert "homelab_gpu_telemetry" in {tool.name for tool in server.TOOLS}
 
 os.environ.update({
     "HADES_UPTIME_KUMA_URL": "https://status.example.test",
@@ -923,6 +924,20 @@ assert "loaded: sample:small" in placement_answer, placement_answer
 assert "can't rank a host" in placement_answer, placement_answer
 assert "can't confirm capacity or fit" in placement_answer, placement_answer
 assert "candidate to evaluate" not in placement_answer, placement_answer
+live_placement_answer = server.format_inference_inventory_response(
+    "Where should I run another model?", inference, summary_names, {
+        "status": "READABLE", "retrieved_at": "2026-10-02T12:00:00+00:00",
+        "endpoints": [{
+            "inference_id": "gpu-lane-a", "status": "READABLE", "devices": [{
+                "index": 0, "memory_free_mib": 12000, "memory_total_mib": 16384,
+                "gpu_utilization_percent": 10,
+            }],
+        }],
+    },
+)
+assert "largest free-memory reading on one GPU was 12000 MiB on GPU A GPU 0" in live_placement_answer
+assert "point-in-time headroom comparison, not a fit guarantee" in live_placement_answer
+assert "can't confirm where a new model will fit" in live_placement_answer
 stale_summary = {
     **summary_names,
     "capability_freshness": "STALE",
@@ -1022,7 +1037,35 @@ gpu_answer = server.format_inference_inventory_response(
     "Which GPUs are free?", compatible, {},
 )
 assert "can't verify which GPUs are free right now" in gpu_answer, gpu_answer
+assert "telemetry is not connected or currently unavailable" in gpu_answer, gpu_answer
 assert "empty model-residency report does not establish available capacity" in gpu_answer
+gpu_inventory = {
+    "status": "READABLE",
+    "endpoints": [{
+        "source_identity": "inference:gpu-lane-a",
+        "node_identity": "netbox:device:75",
+    }],
+}
+gpu_summary = {
+    "resources": [{
+        "identity": {"canonical_id": "netbox:device:75"},
+        "inventory": {"name": "Synthetic GPU Node"},
+    }],
+}
+live_gpu_answer = server.format_inference_inventory_response(
+    "Which GPUs are free?", gpu_inventory, gpu_summary, {
+        "status": "READABLE", "retrieved_at": "2026-10-02T12:00:00+00:00",
+        "endpoints": [{
+            "inference_id": "gpu-lane-a", "status": "READABLE", "devices": [{
+                "index": 0, "memory_free_mib": 12000, "memory_total_mib": 16384,
+                "gpu_utilization_percent": 10,
+            }],
+        }],
+    },
+)
+assert "Synthetic GPU Node GPU 0: 12000 MiB free of 16384 MiB, 10% utilization" in live_gpu_answer
+assert "checked 2026-10-02T12:00:00+00:00" in live_gpu_answer
+assert "doesn't guarantee a model will fit" in live_gpu_answer
 for question in ("Where should I run another model?", "Can this handle a 20 GB model?"):
     answer = server.format_inference_inventory_response(question, compatible, {})
     assert "can't recommend an inference host" in answer, (question, answer)

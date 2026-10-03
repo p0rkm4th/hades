@@ -5010,6 +5010,10 @@ def _hades_direct_homelab_tool_result(tool_name, arguments=None):
             "mcp__homelab_readonly__homelab_inference_inventory",
             "mcp_homelab_readonly_homelab_inference_inventory",
         ),
+        "homelab_gpu_telemetry": (
+            "mcp__homelab_readonly__homelab_gpu_telemetry",
+            "mcp_homelab_readonly_homelab_gpu_telemetry",
+        ),
     }
     if tool_name not in tool_names:
         return {"status": "UNKNOWN", "errors": ["Unsupported homelab read request."]}
@@ -5595,8 +5599,16 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                             )
                         except (OSError, ValueError, UnicodeError):
                             pass
+            gpu_intent = bool(re.search(
+                r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b",
+                text, re.IGNORECASE,
+            )) or placement_intent
+            gpu_telemetry = (
+                _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
+                if gpu_intent and scope == "owner" else None
+            )
             inference_response = module.format_inference_inventory_response(
-                text, inference, summary,
+                text, inference, summary, gpu_telemetry,
             )
             if node_activity_intent:
                 target = _hades_homelab_target_from_question(text)
@@ -8150,6 +8162,7 @@ try:
                         "mcp_homelab_readonly_homelab_recent_activity",
                         "mcp_homelab_readonly_homelab_compute_capabilities",
                         "mcp_homelab_readonly_homelab_inference_inventory",
+                        "mcp_homelab_readonly_homelab_gpu_telemetry",
                         "mcp_homelab_readonly_homelab_discovery_scan",
                         "mcp_homelab_readonly_homelab_discovery_candidates",
                     },
@@ -8298,6 +8311,11 @@ try:
                 "description": "Read configured provider-native model catalogs from Ollama or OpenAI-compatible endpoints, and loaded-model state from Ollama. Keep endpoint identity, timestamp, and partial failures explicit. Does not infer free GPU capacity or model fit; read-only.",
                 "parameters": {"type": "object", "properties": {}},
                 "call": lambda _args: module.homelab_inference_inventory(),
+            },
+            "mcp_homelab_readonly_homelab_gpu_telemetry": {
+                "description": "Owner-only live GPU utilization and free-VRAM read through an explicitly configured strict-host-key SSH endpoint and fixed remote command. The server-side identity must be non-sudo and ForceCommand restricted. No arbitrary host or command is accepted; read-only.",
+                "parameters": {"type": "object", "properties": {}},
+                "call": lambda _args: module.homelab_gpu_telemetry(),
             },
             "mcp_homelab_readonly_homelab_discovery_scan": {
                 "description": "Run bounded, review-only TCP discovery inside the configured authorized LAN scope.",

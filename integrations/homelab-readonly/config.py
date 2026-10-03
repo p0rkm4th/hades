@@ -229,3 +229,8 @@ def netbox_devices_spec() -> tuple[str, str]:
 def capability_matrix_file() -> str:
     """Return the optional local, observed hardware capability manifest."""
     return os.environ.get("HADES_CAPABILITY_MATRIX_FILE", "").strip()
+
+
+def gpu_telemetry_config_file() -> str:
+    """Return the optional protected fixed-command SSH telemetry profile."""
+    return os.environ.get("HADES_GPU_TELEMETRY_CONFIG_FILE", "").strip()

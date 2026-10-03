@@ -15,7 +15,7 @@ MCP candidate evaluation is recorded in
 | Availability | Uptime Kuma | Published status-page data or metrics, where intentionally exposed | None |
 | Hardware capability | Tracked observed capability matrix | Confirmed CPU/RAM/GPU inventory, explicitly separate from live availability | None |
 | Inference catalog and residency | Provider-native APIs | Ollama `GET /api/tags` and `GET /api/ps`, or OpenAI-compatible `GET /v1/models`; bounded reads only | None |
-| Host operations | Dedicated restricted SSH account, only if later approved | Explicitly scoped read commands | None |
+| Live GPU utilization and VRAM | Node-local NVIDIA driver via a dedicated forced-command SSH identity, only after separate owner approval | One fixed `nvidia-smi` query for configured inference IDs; strict host-key validation | None |
 
 Hindsight may supply remembered labels or locations, but live status always
 comes from the relevant canonical system. HADES must report stale, unavailable,
@@ -33,6 +33,55 @@ catalogs do not establish current residency. `READABLE` means only the
 configured catalog (and, for Ollama, residency) APIs responded. It never
 equates model artifact size with required memory or mutates a provider.
 Catalog and residency responses do not prove that a generation request works.
+
+### Optional live GPU telemetry (owner-gated; not activated by this change)
+
+The `homelab_gpu_telemetry` tool can read per-GPU utilization and free VRAM
+through a private allowlist. It is only invoked for owner GPU-capacity questions.
+The profile is supplied through `HADES_GPU_TELEMETRY_CONFIG_FILE`, must be a
+regular non-symlink JSON file with mode `0600`, and contains only explicitly
+approved inference endpoint IDs, hostnames, the dedicated read-only SSH user,
+private key paths, and pinned `known_hosts` paths. The private key must be a
+regular non-symlink file with mode `0600`; the known-hosts file must be a
+regular non-symlink file with mode `0600` or `0644`. User prompts cannot supply
+hosts, usernames, commands, or arguments. SSH disables agent and forwarding,
+uses only the specified identity and known-hosts file, requires strict host
+key checking, and has a five-second client timeout.
+
+The remote account must be a separate non-sudo service identity. Install
+[`deploy/homelab/gpu-telemetry-command.sh`](../deploy/homelab/gpu-telemetry-command.sh)
+root-owned on an approved node and configure it as that account's `ForceCommand`.
+Its `authorized_keys` entry must also use `restrict,command="/usr/local/libexec/hades-gpu-telemetry-command"`
+(adjust only the installed script path) with the HADES public key. The script
+accepts exactly `hades-gpu-telemetry-v1` as the requested command and executes
+only the bounded NVIDIA query; it does not invoke a shell, sudo, or a caller
+provided program. Do not reuse an administrator or Codex key. Host account
+creation, key installation, and access activation require separate explicit
+owner approval and are not part of preparing this integration.
+
+Example private profile (replace every placeholder only after approval; do not
+commit the real file):
+
+```json
+{
+  "endpoints": [
+    {
+      "inference_id": "approved-provider-id",
+      "host": "gpu-node.example.invalid",
+      "user": "hades-gpu-ro",
+      "identity_file": "/etc/hades/keys/gpu-node_ed25519",
+      "known_hosts_file": "/etc/hades/known_hosts.gpu"
+    }
+  ]
+}
+```
+
+The output is a point-in-time read, not a placement guarantee. Free VRAM can
+change immediately and does not account for model quantization, context KV
+cache, provider allocation, or other workload needs. Unavailable endpoints
+remain explicitly unavailable; partial reads do not turn into a global green
+status. Synthetic transport tests use fake SSH responses and never connect to
+real nodes.
 
 Use the protected identity-link file to join `inference:<endpoint-id>` to a
 canonical numeric NetBox device ID. Unlinked inference endpoints remain

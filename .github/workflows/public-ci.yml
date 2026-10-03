@@ -25,7 +25,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check --no-input PyYAML==6.0.3
 
       - name: Compile public Python adapters
-        run: python -m py_compile hermes/sitecustomize.py integrations/public-research/research.py integrations/public-research/server.py integrations/browser-access/proxy.py integrations/browser-access/research_reader.py webui/task_notification_compat.py webui/receipt_upload_compat.py webui/finance_upload_compat.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-public-research-contract.py scripts/test-browser-network-pinning.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py scripts/test-homelab-service-health-contract.py scripts/test-receipt-ocr-concurrent-apply.py scripts/test-receipt-ocr-owner-boundary.py scripts/prepare-homelab-overlay-candidate.py scripts/test-prepare-homelab-overlay-candidate.py scripts/test-homelab-direct-mcp-route.py
+        run: python -m py_compile hermes/sitecustomize.py integrations/public-research/research.py integrations/public-research/server.py integrations/browser-access/proxy.py integrations/browser-access/research_reader.py integrations/homelab-readonly/gpu_telemetry.py webui/task_notification_compat.py webui/receipt_upload_compat.py webui/finance_upload_compat.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-public-research-contract.py scripts/test-browser-network-pinning.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py scripts/test-homelab-service-health-contract.py scripts/test-homelab-gpu-telemetry.py scripts/test-receipt-ocr-concurrent-apply.py scripts/test-receipt-ocr-owner-boundary.py scripts/prepare-homelab-overlay-candidate.py scripts/test-prepare-homelab-overlay-candidate.py scripts/test-homelab-direct-mcp-route.py
 
       - name: Check public JavaScript adapter
         run: node --check integrations/actual-finance-readonly/actual_client.js
@@ -44,6 +44,8 @@ jobs:
         run: python scripts/test-homelab-direct-mcp-route.py
       - name: Check homelab source identity and provider read contracts
         run: bash scripts/test-homelab-readonly-adapter.sh
+      - name: Check fixed-command read-only GPU telemetry
+        run: python scripts/test-homelab-gpu-telemetry.py
       - name: Check homelab MCP registration and private input wiring
         run: bash scripts/test-homelab-mcp-registration.sh
       - name: Check homelab read-only config preflight shapes

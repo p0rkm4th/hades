@@ -51,6 +51,7 @@ class SyntheticHomelabRegistry:
         "homelab_recent_activity",
         "homelab_compute_capabilities",
         "homelab_inference_inventory",
+        "homelab_gpu_telemetry",
     }
 
     def __init__(self):
@@ -128,10 +129,12 @@ household_ai_availability = hades._hades_direct_homelab_read(
 assert "AI service checks are responding" in household_ai_availability, household_ai_availability
 assert "haven't confirmed a prompt will work" in household_ai_availability, household_ai_availability
 assert "Synthetic Inference Node A" not in household_ai_availability and "qwen" not in household_ai_availability, household_ai_availability
+hermes_registry_module.registry.calls.clear()
 household_gpu_denial = hades._hades_direct_homelab_read(
     "Which GPUs are free?", scope="household",
 )
 assert "available only in an owner session" in household_gpu_denial
+assert "homelab_gpu_telemetry" not in hermes_registry_module.registry.calls
 household_computer_denial = hades._hades_direct_homelab_read(
     "Are all the computers okay?", scope="household",
 )
@@ -480,6 +483,7 @@ assert model_inventory.get("completed") is True and model_inventory.get("api_cal
 assert "sample:small is listed at Compute Node A" in model_inventory["final_response"], model_inventory
 
 for index, prompt in enumerate(("Which GPUs are free?", "Where should I run another model?")):
+    hermes_registry_module.registry.calls.clear()
     placement_agent = agent_class(
         gateway_session_key=f"hades-user-{owner}",
         session_id=f"synthetic-model-placement-{index}",
@@ -488,6 +492,7 @@ for index, prompt in enumerate(("Which GPUs are free?", "Where should I run anot
     placement = placement_agent.run_conversation(prompt, conversation_history=[])
     assert placement.get("completed") is True and placement.get("api_calls") == 0, (prompt, placement)
     assert "can't determine which GPU has room" in placement["final_response"], (prompt, placement)
+    assert "homelab_gpu_telemetry" in hermes_registry_module.registry.calls, hermes_registry_module.registry.calls
 os.environ.pop("HADES_TEST_INFERENCE_ONLY", None)
 
 # Ordinary status wording should stay on the same deterministic, read-only
@@ -1153,13 +1158,19 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '    return {"machines": []}\n'
         'def homelab_owner_snapshot():\n'
         '    return {"status": "OK", "summary": homelab_summary(), "compute": homelab_compute_capabilities()}\n'
+        'def homelab_recent_activity(window_hours=24):\n'
+        '    return {"status": "NOT_CONFIGURED", "window_hours": window_hours, "endpoints": []}\n'
+        'def homelab_backup_status():\n'
+        '    return {"status": "NOT_CONFIGURED", "endpoints": []}\n'
+        'def homelab_gpu_telemetry():\n'
+        '    return {"status": "NOT_CONFIGURED", "endpoints": [], "read_only": True}\n'
         'def homelab_inference_inventory():\n'
         '    if __import__("os").environ.get("HADES_TEST_SOURCE_UNAVAILABLE") == "1":\n'
         '        raise RuntimeError("synthetic source unavailable")\n'
         '    return {"status": "READABLE", "endpoints": [{"source_identity": "inference:provider-a", "node_identity": "netbox:device:7", "status": "READABLE", "loaded_status": "CURRENT", "models": [{"name": "sample:small"}], "loaded_models": [{"name": "sample:small"}]}]}\n'
         'def resolve_inference_node_labels(_inventory):\n'
         '    return {"netbox:device:7": "Compute Node A"}\n'
-        'def format_inference_inventory_response(question, _inventory, _summary):\n'
+        'def format_inference_inventory_response(question, _inventory, _summary, _gpu_telemetry=None):\n'
         '    if "20 gb model" in question.casefold():\n'
         '        return "I can\'t determine which GPU has room because live VRAM is unavailable."\n'
         '    if "synthetic node b" in question.casefold():\n'

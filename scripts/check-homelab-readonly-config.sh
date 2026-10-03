@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+cd "$(dirname "$0")/.."
 
 # Validate the configured read-only source contract without contacting a host.
 # Credential contents and endpoint values are never printed.
@@ -8,6 +9,7 @@ import ipaddress
 import os
 import re
 import stat
+import sys
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -151,6 +153,18 @@ if not os.environ.get("HADES_HOMELAB_IDENTITY_LINKS_FILE"):
     warnings.append("homelab identity links are not configured; sources remain separate observations")
 if not os.environ.get("HADES_INFERENCE_ENDPOINTS_JSON"):
     warnings.append("provider-native inference inventory is not configured")
+
+gpu_profile = os.environ.get("HADES_GPU_TELEMETRY_CONFIG_FILE", "").strip()
+if gpu_profile:
+    try:
+        sys.path.insert(0, str(Path("integrations/homelab-readonly").resolve()))
+        from gpu_telemetry import load_specs
+        if not load_specs(gpu_profile):
+            raise ValueError("empty profile")
+    except Exception:
+        invalid.append("HADES_GPU_TELEMETRY_CONFIG_FILE is invalid or references unsafe private files")
+else:
+    warnings.append("live GPU telemetry is not configured; current utilization and free VRAM remain unknown")
 
 for message in invalid:
     print(f"FAIL {message}")

@@ -542,7 +542,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '            "loaded_models": [{"name": "sample:small"}]}]}\n'
         'def homelab_compute_capabilities():\n'
         '    return {"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
-        'def format_inference_inventory_response(user_text, inventory, summary):\n'
+        'def format_inference_inventory_response(user_text, inventory, summary, gpu_telemetry=None):\n'
         '    if "host another model" in user_text.casefold() or "host a 20 gb model" in user_text.casefold():\n'
         '        return "I can\'t determine which GPU has room because current free-VRAM data is unavailable."\n'
         '    return "sample:small is listed at Compute Node A based on provider-reported inventory."\n',
@@ -820,7 +820,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             '"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
             'def resolve_inference_node_labels(_inventory):\n'
             '    return {"netbox:device:75": "Compute Node A"}\n'
-            'def format_inference_inventory_response(text, inventory, summary):\n'
+            'def format_inference_inventory_response(text, inventory, summary, gpu_telemetry=None):\n'
             '    if "where should" in text.casefold():\n'
             '        return "PLACEMENT:" + str(summary.get("capability_machines", [{}])[0].get("role"))\n'
             '    return "NODE_ACTIVITY:" + summary["resources"][0]["inventory"]["name"]\n',
