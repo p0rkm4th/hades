@@ -421,8 +421,10 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert capability_discovery_owner.get("completed") is True, capability_discovery_owner
     assert capability_discovery_owner.get("api_calls") == 0, capability_discovery_owner
-    assert "live homelab view is partial" in capability_discovery_owner["final_response"].casefold(), capability_discovery_owner
-    assert "selected guests" in capability_discovery_owner["final_response"].casefold(), capability_discovery_owner
+    assert "Live Proxmox currently reports: hades-core." in capability_discovery_owner["final_response"], capability_discovery_owner
+    assert "application-service catalog is reachable but empty" in capability_discovery_owner["final_response"], capability_discovery_owner
+    assert "can't confirm service health" in capability_discovery_owner["final_response"], capability_discovery_owner
+    assert "do not prove generation or available GPU capacity" in capability_discovery_owner["final_response"], capability_discovery_owner
 
     backup_only = owner_agent.run_conversation(
         "Are my Proxmox backups current?", conversation_history=[]
