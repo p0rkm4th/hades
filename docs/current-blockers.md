@@ -234,3 +234,11 @@ Some source display labels appear lowercase; this is cosmetic. Proxmox guest
 scope, NetBox service inventory, an unresolved provider-to-host identity link,
 whole-network telemetry, backup contents/custody/restore verification, and
 successful inference execution remain unknown or partial.
+
+A fresh broad owner UI read after this deployment confirms the same partial
+state: configured APIs respond, Proxmox guest visibility remains selected-scope,
+the NetBox application-service catalog is empty, current Kuma probes report no
+failures, and 15 Proxmox/Kuma records still lack verified cross-source identity.
+The answer does not infer all-clear, app readiness, workload execution, or model
+capacity from those responses. Protected evidence remains in the private
+acceptance area.

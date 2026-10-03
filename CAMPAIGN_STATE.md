@@ -217,9 +217,10 @@ change requires a tested candidate, explicit scope, and rollback.
 
 ### Latest authenticated follow-up acceptance — 2026-10-03
 
-- Current review-branch `HEAD` is `4a4bfdc`; Public `main` remains
-  `c83ddd6`. Public CI run `37159647718` passed. This is still a review-branch
-  candidate, not a merge to `main`.
+- Latest deployed code candidate is `4a4bfdc`; Public `main` remains `c83ddd6`.
+  Public CI run `37159647718` passed. This continuation record is on a later
+  documentation-only review-branch commit; the code candidate is not merged
+  into `main`.
 - Fresh owner UI dogfood now carries named-node activity into an evidence-based
   placement follow-up. It shows only the selected host's linked GPU sample;
   a later size follow-up and explicit named-host fit question also stay scoped
@@ -229,6 +230,8 @@ change requires a tested candidate, explicit scope, and rollback.
   GPU telemetry and keeps historical hardware inventory, provider residency,
   and unmeasured CPU load distinct. The live chain and Household A/B answers
   were saved with mode `0600` outside the public repository.
+- A separate whole-homelab owner query completed in about 4.4 seconds in one
+  fresh UI measurement; treat this as a sample, not a latency benchmark.
 - Two follow-up routing defects were repaired from real UI evidence: pronoun
   placement now recomputes from current linked telemetry when conversation
   context is trimmed, and the adapter filters generated named-host questions
