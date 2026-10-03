@@ -501,7 +501,8 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     hades._hades_phase2_backup_response = actual_backup_read
     try:
         runtime_node_running_owner = owner_agent.run_conversation(
-            "What is running on Runtime Node A right now?", conversation_history=[],
+            "Which Runtime Node A guests can HADES currently see, and which are running or stopped?",
+            conversation_history=[],
         )
     finally:
         hades._hades_phase2_backup_response = patched_backup_response
@@ -509,7 +510,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert runtime_node_running_owner.get("completed") is True, runtime_node_running_owner
     assert runtime_node_running_owner.get("api_calls") == 0, runtime_node_running_owner
     assert "Proxmox currently reports Runtime Node A online" in runtime_node_running_owner["final_response"], runtime_node_running_owner
-    assert "Runtime Services CT (lxc, running)" in runtime_node_running_owner["final_response"], runtime_node_running_owner
+    assert "Runtime Services CT (CT 803, running)" in runtime_node_running_owner["final_response"], runtime_node_running_owner
     assert "only selected guests" in runtime_node_running_owner["final_response"] and "may be incomplete" in runtime_node_running_owner["final_response"], runtime_node_running_owner
     assert "doesn't enumerate application services" in runtime_node_running_owner["final_response"], runtime_node_running_owner
     assert registry.calls == ["homelab_summary"], registry.calls
