@@ -108,9 +108,9 @@ assert hades._hades_homelab_resource_ranking_intent("What's the most loaded serv
 assert hades._hades_homelab_resource_ranking_intent("Which server has the highest CPU usage?")
 assert not hades._hades_homelab_resource_ranking_intent("What resources does HADES use?")
 assert hades._hades_homelab_workload_host_target(
-    "What is running on Alexandra right now?"
-) == "Alexandra"
-assert hades._hades_homelab_workload_host_target("What's running on Tartarus?") == "Tartarus"
+    "What is running on Runtime Node A right now?"
+) == "Runtime Node A"
+assert hades._hades_homelab_workload_host_target("What's running on Compute Node B?") == "Compute Node B"
 assert hades._hades_homelab_workload_host_target("What is running?") is None
 assert hades._hades_homelab_gpu_execution_intent(
     "Can you verify the NVIDIA driver and GPU execution status on the inference machines right now?"
@@ -134,53 +134,53 @@ assert "not proof that a requested workload completed" in gpu_execution_report, 
 assert "provider API responding" in gpu_execution_report and "resident model(s): sample:small" in gpu_execution_report, gpu_execution_report
 assert "do not verify driver health, GPU execution" in gpu_execution_report, gpu_execution_report
 assert "2026-10-03T12:34:56Z" in gpu_execution_report, gpu_execution_report
-assert hades._hades_homelab_explicit_model_fit_intent("Will a 20 GB model fit on Tartarus?")
-assert hades._hades_homelab_explicit_model_fit_intent("Can Tartarus host a 20 GB model?")
+assert hades._hades_homelab_explicit_model_fit_intent("Will a 20 GB model fit on Compute Node A?")
+assert hades._hades_homelab_explicit_model_fit_intent("Can Compute Node A host a 20 GB model?")
 assert not hades._hades_homelab_explicit_model_fit_intent("What is a 20 GB model?")
 unavailable_model_fit = hades._hades_homelab_explicit_model_fit_response(
-    "Will a 20 GB model fit on Tartarus?", {"status": "NOT_CONFIGURED", "endpoints": []},
+    "Will a 20 GB model fit on Compute Node A?", {"status": "NOT_CONFIGURED", "endpoints": []},
 )
 assert "can't confirm whether a 20 GB model fits" in unavailable_model_fit, unavailable_model_fit
 assert "model file's GB size is not its VRAM requirement" in unavailable_model_fit, unavailable_model_fit
 live_model_fit = hades._hades_homelab_explicit_model_fit_response(
-    "Will a 20 GB model fit on Tartarus?",
+    "Will a 20 GB model fit on Compute Node A?",
     {"status": "READABLE", "retrieved_at": "2026-10-03T10:00:00Z", "endpoints": [{
-        "inference_id": "tartarus", "status": "READABLE", "devices": [{
+        "inference_id": "compute_node_a", "status": "READABLE", "devices": [{
             "index": 0, "memory_free_mib": 9000, "memory_total_mib": 16384,
             "gpu_utilization_percent": 25,
         }],
     }]},
 )
-assert "tartarus GPU 0: 9000 MiB free of 16384 MiB, 25% utilization" in live_model_fit, live_model_fit
+assert "compute_node_a GPU 0: 9000 MiB free of 16384 MiB, 25% utilization" in live_model_fit, live_model_fit
 assert "not a fit guarantee" in live_model_fit, live_model_fit
-synthetic_erebus_machine = {
-    "name": "Erebus", "identity": {"canonical_id": "netbox:device:2"},
-    "inventory": {"id": 2, "name": "Erebus"},
-    "runtime_status": "online", "runtime": {"name": "erebus", "status": "online"},
-    "availability": {"name": "host-erebus", "status": "up"},
+synthetic_runtime_node_a_machine = {
+    "name": "Runtime Node A", "identity": {"canonical_id": "netbox:device:2"},
+    "inventory": {"id": 2, "name": "Runtime Node A"},
+    "runtime_status": "online", "runtime": {"name": "runtime_node_a", "status": "online"},
+    "availability": {"name": "host-runtime_node_a", "status": "up"},
 }
-synthetic_erebus_service_probe = {
-    "name": "service-proxmox-erebus", "identity": {"status": "UNLINKED"},
+synthetic_runtime_node_a_service_probe = {
+    "name": "service-proxmox-runtime_node_a", "identity": {"status": "UNLINKED"},
     "inventory": None, "runtime_status": "NOT_OBSERVED", "runtime": None,
-    "availability": {"name": "service-proxmox-erebus", "status": "up"},
+    "availability": {"name": "service-proxmox-runtime_node_a", "status": "up"},
 }
-synthetic_erebus_matches = hades._hades_homelab_named_machine_records(
-    [synthetic_erebus_machine, synthetic_erebus_service_probe], "Erebus",
+synthetic_runtime_node_a_matches = hades._hades_homelab_named_machine_records(
+    [synthetic_runtime_node_a_machine, synthetic_runtime_node_a_service_probe], "Runtime Node A",
 )
-assert synthetic_erebus_matches == [synthetic_erebus_machine], synthetic_erebus_matches
+assert synthetic_runtime_node_a_matches == [synthetic_runtime_node_a_machine], synthetic_runtime_node_a_matches
 synthetic_unlinked_host_probe = {
-    "name": "host-erebus", "runtime_status": "NOT_OBSERVED", "inventory": None,
-    "availability": {"name": "host-erebus", "status": "up"},
+    "name": "host-runtime_node_a", "runtime_status": "NOT_OBSERVED", "inventory": None,
+    "availability": {"name": "host-runtime_node_a", "status": "up"},
 }
 assert len(hades._hades_homelab_named_machine_records(
-    [synthetic_erebus_machine, synthetic_unlinked_host_probe], "Erebus",
+    [synthetic_runtime_node_a_machine, synthetic_unlinked_host_probe], "Runtime Node A",
 )) == 2
 synthetic_similar_machine = {
-    "name": "Erebus Guest", "identity": {"canonical_id": "netbox:device:9"},
-    "inventory": {"id": 9, "name": "Erebus Guest"},
+    "name": "Runtime Node A Guest", "identity": {"canonical_id": "netbox:device:9"},
+    "inventory": {"id": 9, "name": "Runtime Node A Guest"},
 }
 assert len(hades._hades_homelab_named_machine_records(
-    [synthetic_erebus_machine, synthetic_erebus_service_probe, synthetic_similar_machine], "Erebus",
+    [synthetic_runtime_node_a_machine, synthetic_runtime_node_a_service_probe, synthetic_similar_machine], "Runtime Node A",
 )) == 2
 assert hades._hades_homelab_display_label({"display": "HADES infrastructure host", "url": "http://private.invalid/roles/1"}) == "HADES infrastructure host"
 assert hades._hades_homelab_display_label({"url": "http://private.invalid/roles/1"}) == ""
@@ -468,23 +468,23 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     for private_term in ("nvidia", "gpu", "provider", "inference", "mcp", "compute node"):
         assert private_term not in household_gpu_agent["final_response"].casefold(), household_gpu_agent
     assert registry.calls == [], registry.calls
-    os.environ["HADES_TEST_ALEXANDRA_WORKLOADS"] = "1"
+    os.environ["HADES_TEST_RUNTIME_NODE_WORKLOADS"] = "1"
     registry.calls.clear()
     patched_backup_response = hades._hades_phase2_backup_response
     hades._hades_phase2_backup_response = actual_backup_read
     try:
-        alexandra_running_owner = owner_agent.run_conversation(
-            "What is running on Alexandra right now?", conversation_history=[],
+        runtime_node_running_owner = owner_agent.run_conversation(
+            "What is running on Runtime Node A right now?", conversation_history=[],
         )
     finally:
         hades._hades_phase2_backup_response = patched_backup_response
-        os.environ.pop("HADES_TEST_ALEXANDRA_WORKLOADS", None)
-    assert alexandra_running_owner.get("completed") is True, alexandra_running_owner
-    assert alexandra_running_owner.get("api_calls") == 0, alexandra_running_owner
-    assert "Proxmox currently reports Alexandra online" in alexandra_running_owner["final_response"], alexandra_running_owner
-    assert "Alexandra Services CT (lxc, running)" in alexandra_running_owner["final_response"], alexandra_running_owner
-    assert "only selected guests" in alexandra_running_owner["final_response"] and "may be incomplete" in alexandra_running_owner["final_response"], alexandra_running_owner
-    assert "doesn't enumerate application services" in alexandra_running_owner["final_response"], alexandra_running_owner
+        os.environ.pop("HADES_TEST_RUNTIME_NODE_WORKLOADS", None)
+    assert runtime_node_running_owner.get("completed") is True, runtime_node_running_owner
+    assert runtime_node_running_owner.get("api_calls") == 0, runtime_node_running_owner
+    assert "Proxmox currently reports Runtime Node A online" in runtime_node_running_owner["final_response"], runtime_node_running_owner
+    assert "Runtime Services CT (lxc, running)" in runtime_node_running_owner["final_response"], runtime_node_running_owner
+    assert "only selected guests" in runtime_node_running_owner["final_response"] and "may be incomplete" in runtime_node_running_owner["final_response"], runtime_node_running_owner
+    assert "doesn't enumerate application services" in runtime_node_running_owner["final_response"], runtime_node_running_owner
     assert registry.calls == ["homelab_summary"], registry.calls
     capability_discovery_owner = owner_agent.run_conversation(
         capability_discovery_question, conversation_history=[]
@@ -693,7 +693,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert household_capability_discovery.get("completed") is True, household_capability_discovery
     assert household_capability_discovery.get("api_calls") == 0, household_capability_discovery
     assert "can't check all the home computers" in household_capability_discovery["final_response"].casefold(), household_capability_discovery
-    for private_detail in ("Proxmox", "NetBox", "Uptime Kuma", "MCP", "host-alexandra"):
+    for private_detail in ("Proxmox", "NetBox", "Uptime Kuma", "MCP", "private-host-a"):
         assert private_detail.casefold() not in household_capability_discovery["final_response"].casefold(), household_capability_discovery
     assert not registry.calls, registry.calls
 
@@ -1562,7 +1562,7 @@ explicit_fit_agent = agent_class(
     stream_delta_callback=lambda _chunk: None, **kwargs,
 )
 explicit_fit = explicit_fit_agent.run_conversation(
-    "Will a 20 GB model fit on Tartarus?", conversation_history=[],
+    "Will a 20 GB model fit on Compute Node A?", conversation_history=[],
 )
 assert explicit_fit.get("completed") is True and explicit_fit.get("api_calls") == 0, explicit_fit
 assert "can't confirm whether a 20 GB model fits" in explicit_fit["final_response"], explicit_fit
@@ -1572,7 +1572,7 @@ household_fit_agent = agent_class(
     stream_delta_callback=lambda _chunk: None, **kwargs,
 )
 household_fit = household_fit_agent.run_conversation(
-    "Will a 20 GB model fit on Tartarus?", conversation_history=[],
+    "Will a 20 GB model fit on Compute Node A?", conversation_history=[],
 )
 assert household_fit.get("completed") is True and household_fit.get("api_calls") == 0, household_fit
 assert "can't provide private infrastructure or model-capacity details" in household_fit["final_response"], household_fit
@@ -1671,19 +1671,19 @@ del os.environ["HADES_TEST_HOMELAB_NODE_A_MONITOR"]
 # An exact canonical device match wins over an unrelated, unlinked service
 # monitor with the same node label. The host runtime and host probe still
 # compose, while structured NetBox roles render only their display text.
-os.environ["HADES_TEST_EREBUS_RECORDS"] = "1"
+os.environ["HADES_TEST_RUNTIME_NODE_A_RECORDS"] = "1"
 try:
-    linked_erebus_status = hades._hades_direct_homelab_read(
-        "Is Erebus alive right now?", owner, "owner",
+    linked_runtime_node_a_status = hades._hades_direct_homelab_read(
+        "Is Runtime Node A alive right now?", owner, "owner",
     )
 finally:
-    os.environ.pop("HADES_TEST_EREBUS_RECORDS", None)
-assert "Erebus: Proxmox runtime status is online." in linked_erebus_status, linked_erebus_status
-assert "Uptime Kuma reports up (fresh observation)." in linked_erebus_status, linked_erebus_status
-assert "Role: HADES infrastructure host." in linked_erebus_status, linked_erebus_status
-assert "service-proxmox-erebus" not in linked_erebus_status, linked_erebus_status
-assert "private.invalid" not in linked_erebus_status and "device-roles" not in linked_erebus_status, linked_erebus_status
-assert "multiple homelab records matching erebus" not in linked_erebus_status.casefold(), linked_erebus_status
+    os.environ.pop("HADES_TEST_RUNTIME_NODE_A_RECORDS", None)
+assert "Runtime Node A: Proxmox runtime status is online." in linked_runtime_node_a_status, linked_runtime_node_a_status
+assert "Uptime Kuma reports up (fresh observation)." in linked_runtime_node_a_status, linked_runtime_node_a_status
+assert "Role: HADES infrastructure host." in linked_runtime_node_a_status, linked_runtime_node_a_status
+assert "service-proxmox-runtime_node_a" not in linked_runtime_node_a_status, linked_runtime_node_a_status
+assert "private.invalid" not in linked_runtime_node_a_status and "device-roles" not in linked_runtime_node_a_status, linked_runtime_node_a_status
+assert "multiple homelab records matching runtime_node_a" not in linked_runtime_node_a_status.casefold(), linked_runtime_node_a_status
 
 blockers_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-blockers",
@@ -1827,25 +1827,25 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '                  "runtime": {"name": "hades-core", "vmid": 1802, "status": "running",\n'
         '                              "cpu": 0.94, "mem": 32212254720, "maxmem": 34359738368,\n'
         '                              "disk": 85899345920, "maxdisk": 96636764160}}]\n'
-        '    if __import__("os").environ.get("HADES_TEST_EREBUS_RECORDS") == "1":\n'
+        '    if __import__("os").environ.get("HADES_TEST_RUNTIME_NODE_A_RECORDS") == "1":\n'
         '        resources.extend([\n'
-        '            {"name": "Erebus", "identity": {"canonical_id": "netbox:device:2"},\n'
-        '             "inventory": {"id": 2, "name": "Erebus", "role": {"display": "HADES infrastructure host", "url": "http://private.invalid/api/dcim/device-roles/1/"}},\n'
+        '            {"name": "Runtime Node A", "identity": {"canonical_id": "netbox:device:2"},\n'
+        '             "inventory": {"id": 2, "name": "Runtime Node A", "role": {"display": "HADES infrastructure host", "url": "http://private.invalid/api/dcim/device-roles/1/"}},\n'
         '             "runtime_status": "online", "currently_online": True,\n'
-        '             "runtime": {"name": "erebus", "status": "online", "cpu": 0.1, "mem": 1024, "maxmem": 2048},\n'
-        '             "availability": {"name": "host-erebus", "status": "up"},\n'
+        '             "runtime": {"name": "runtime_node_a", "status": "online", "cpu": 0.1, "mem": 1024, "maxmem": 2048},\n'
+        '             "availability": {"name": "host-runtime_node_a", "status": "up"},\n'
         '             "availability_freshness": "FRESH", "conflicts": []},\n'
-        '            {"name": "service-proxmox-erebus", "identity": {"status": "UNLINKED"},\n'
+        '            {"name": "service-proxmox-runtime_node_a", "identity": {"status": "UNLINKED"},\n'
         '             "inventory": None, "runtime_status": "NOT_OBSERVED", "runtime": None,\n'
-        '             "availability": {"name": "service-proxmox-erebus", "status": "up"},\n'
+        '             "availability": {"name": "service-proxmox-runtime_node_a", "status": "up"},\n'
         '             "availability_freshness": "FRESH", "conflicts": []},\n'
         '        ])\n'
-        '    if __import__("os").environ.get("HADES_TEST_ALEXANDRA_WORKLOADS") == "1":\n'
+        '    if __import__("os").environ.get("HADES_TEST_RUNTIME_NODE_WORKLOADS") == "1":\n'
         '        resources.extend([\n'
-        '            {"name": "Alexandra", "identity": {"source_identities": {"proxmox": ["proxmox:pve-main:node:alexandra"]}},\n'
-        '             "runtime_status": "online", "runtime": {"type": "node", "node": "alexandra", "status": "online"}},\n'
-        '            {"name": "Alexandra Services CT", "identity": {"source_identities": {"proxmox": ["proxmox:pve-main:lxc:803"]}},\n'
-        '             "runtime_status": "running", "runtime": {"type": "lxc", "node": "alexandra", "vmid": 803, "status": "running"}},\n'
+        '            {"name": "Runtime Node A", "identity": {"source_identities": {"proxmox": ["proxmox:pve-main:node:runtime-node-a"]}},\n'
+        '             "runtime_status": "online", "runtime": {"type": "node", "node": "runtime-node-a", "status": "online"}},\n'
+        '            {"name": "Runtime Services CT", "identity": {"source_identities": {"proxmox": ["proxmox:pve-main:lxc:803"]}},\n'
+        '             "runtime_status": "running", "runtime": {"type": "lxc", "node": "runtime-node-a", "vmid": 803, "status": "running"}},\n'
         '        ])\n'
         '    if __import__("os").environ.get("HADES_TEST_FOLLOWUP_NODE") == "1":\n'
         '        resources.append({"name": "Compute Node A", "inventory": {"name": "Compute Node A"},\n'
@@ -1863,7 +1863,7 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '        "status": "OK",\n'
         '        "online_names": ["hades-core"],\n'
         '        "inventory_only_names": [],\n'
-        '        "proxmox_guest_visibility": (None if __import__("os").environ.get("HADES_TEST_LEGACY_GUEST_VISIBILITY") == "1" else {"status": "PARTIAL", "scope": "SELECTED_GUESTS", "endpoints": [{"source_identity": "proxmox:pve-main", "status": "HEALTHY", "scope": "SELECTED_GUESTS", "scoped_guest_count": 1}]} if __import__("os").environ.get("HADES_TEST_ALEXANDRA_WORKLOADS") == "1" else {"status": "COMPLETE", "scope": "ALL_GUESTS", "endpoints": [{"source_identity": "proxmox:pve-main", "status": "HEALTHY", "scope": "ALL_GUESTS", "scoped_guest_count": None}]}),\n'
+        '        "proxmox_guest_visibility": (None if __import__("os").environ.get("HADES_TEST_LEGACY_GUEST_VISIBILITY") == "1" else {"status": "PARTIAL", "scope": "SELECTED_GUESTS", "endpoints": [{"source_identity": "proxmox:pve-main", "status": "HEALTHY", "scope": "SELECTED_GUESTS", "scoped_guest_count": 1}]} if __import__("os").environ.get("HADES_TEST_RUNTIME_NODE_WORKLOADS") == "1" else {"status": "COMPLETE", "scope": "ALL_GUESTS", "endpoints": [{"source_identity": "proxmox:pve-main", "status": "HEALTHY", "scope": "ALL_GUESTS", "scoped_guest_count": None}]}),\n'
         '        "availability_summary": ([{"name": "Search latency check", "status": "down", "freshness": "FRESH"},\n'
         '                                  {"name": "Router ping", "status": "up", "freshness": "FRESH", "ping_ms": 84}]\n'
         '                                if __import__("os").environ.get("HADES_TEST_HOMELAB_BOTTLENECK") == "1" else []) +\n'

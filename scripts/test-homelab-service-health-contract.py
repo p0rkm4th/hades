@@ -227,11 +227,11 @@ assert '[Private infrastructure conversation omitted for household safety.]' in 
 assert leaked_household_history[0]['content'] == 'Which Proxmox guests can you verify?'
 opaque_private_history, opaque_private_redacted = redact_household_history([
     {'role': 'user', 'content': 'What is the current state of Proxmox guests?'},
-    {'role': 'assistant', 'content': 'Synthetic node Tartarus is online.'},
+    {'role': 'assistant', 'content': 'Synthetic node Compute Node A is online.'},
     {'role': 'tool', 'content': '{"host":"Synthetic Node A","vmid":802}'},
 ])
 assert opaque_private_redacted
-assert 'Tartarus' not in repr(opaque_private_history)
+assert 'Compute Node A' not in repr(opaque_private_history)
 assert 'Synthetic Node A' not in repr(opaque_private_history)
 assert 'vmid' not in repr(opaque_private_history)
 assert not redact_household_history([
@@ -488,8 +488,8 @@ assert namespace['_hades_homelab_target_from_question']('Is Compute Node B alive
 assert namespace['_hades_homelab_target_from_question']("What's wrong with Compute Node A?") == 'compute node a'
 assert namespace['_hades_homelab_target_from_question']('Is everything okay?') is None
 assert namespace['_hades_homelab_workload_host_target'](
-    'What is running on Alexandra right now?'
-) == 'Alexandra'
+    'What is running on Runtime Node A right now?'
+) == 'Runtime Node A'
 assert namespace['_hades_homelab_workload_host_target']('What is running?') is None
 
 host_workloads = workloads_on_host('What is running on Runtime Node A?', [
@@ -995,7 +995,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'name': 'service-netbox', 'status': 'down', 'freshness': 'FRESH',
         }], status='PARTIAL', sources=[
             {'source': 'Uptime Kuma', 'status': 'OK'},
-            {'source': 'Proxmox guest visibility (erebus)', 'status': 'PARTIAL'},
+            {'source': 'Proxmox guest visibility (runtime_node_a)', 'status': 'PARTIAL'},
         ], service_catalog={
             'status': 'OK', 'coverage': 'EMPTY', 'services': [],
         }, proxmox_guest_visibility={'status': 'PARTIAL'})
@@ -1237,7 +1237,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'synthetic-owner', 'owner'
         )
         assert 'couldn\'t verify Compute Node A as a current Proxmox host' in host_workload_route
-        alexandra_runtime_summary = {
+        runtime_node_summary = {
             'status': 'PARTIAL',
             'proxmox_guest_visibility': {
                 'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
@@ -1245,11 +1245,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                                'status': 'HEALTHY', 'scope': 'SELECTED_GUESTS'}],
             },
             'resources': [
-                {'name': 'Alexandra', 'runtime_status': 'online',
+                {'name': 'Runtime Node A', 'runtime_status': 'online',
                  'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
-                 'inventory': {'name': 'Alexandra'},
+                 'inventory': {'name': 'Runtime Node A'},
                  'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
-                {'name': 'Alexandra Services CT', 'runtime_status': 'running',
+                {'name': 'Runtime Services CT', 'runtime_status': 'running',
                  'identity': {'source_identities': {'proxmox': ['proxmox:site-a:lxc:803']}},
                  'runtime': {'type': 'lxc', 'node': 'pve-a', 'vmid': 803, 'status': 'running'}},
             ],
@@ -1257,21 +1257,21 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'service_catalog': {'status': 'OK', 'services': []},
         }
         (adapter_dir / 'server.py').write_text(
-            'def homelab_summary():\n    return ' + repr(alexandra_runtime_summary) + '\n',
+            'def homelab_summary():\n    return ' + repr(runtime_node_summary) + '\n',
             encoding='utf-8',
         )
-        alexandra_workloads = direct_read(
-            'What is running on Alexandra right now?', 'synthetic-owner', 'owner'
+        runtime_node_workloads = direct_read(
+            'What is running on Runtime Node A right now?', 'synthetic-owner', 'owner'
         )
-        assert 'Proxmox currently reports Alexandra online' in alexandra_workloads, alexandra_workloads
-        assert 'Alexandra Services CT (lxc, running)' in alexandra_workloads, alexandra_workloads
-        assert 'only selected guests' in alexandra_workloads and 'may be incomplete' in alexandra_workloads, alexandra_workloads
-        assert "doesn't enumerate application services" in alexandra_workloads, alexandra_workloads
-        alexandra_household = direct_read(
-            'What is running on Alexandra right now?', 'synthetic-household', 'household'
+        assert 'Proxmox currently reports Runtime Node A online' in runtime_node_workloads, runtime_node_workloads
+        assert 'Runtime Services CT (lxc, running)' in runtime_node_workloads, runtime_node_workloads
+        assert 'only selected guests' in runtime_node_workloads and 'may be incomplete' in runtime_node_workloads, runtime_node_workloads
+        assert "doesn't enumerate application services" in runtime_node_workloads, runtime_node_workloads
+        runtime_node_household = direct_read(
+            'What is running on Runtime Node A right now?', 'synthetic-household', 'household'
         )
-        assert "can't check all the home computers" in alexandra_household.casefold(), alexandra_household
-        assert 'Alexandra' not in alexandra_household and 'Proxmox' not in alexandra_household, alexandra_household
+        assert "can't check all the home computers" in runtime_node_household.casefold(), runtime_node_household
+        assert 'Runtime Node A' not in runtime_node_household and 'Proxmox' not in runtime_node_household, runtime_node_household
         private_host_summary = {
             'status': 'OK',
             'resources': [

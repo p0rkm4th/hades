@@ -434,10 +434,10 @@ original_fetch = server._fetch
 server._fetch = lambda *_args, **_kwargs: {"data": {"/vms": {"VM.Audit": 1}}}
 visibility = server._read_proxmox_guest_visibility((
     0, "https://pve-a.example.test/cluster/resources", "/run/token",
-    "svc@example!reader", "alexandra", "",
+    "svc@example!reader", "site-a", "",
 ))
-assert visibility["source_identity"] == "proxmox:alexandra", visibility
-assert visibility["source"]["source"] == "Proxmox guest visibility (alexandra)", visibility
+assert visibility["source_identity"] == "proxmox:site-a", visibility
+assert visibility["source"]["source"] == "Proxmox guest visibility (site-a)", visibility
 assert visibility["coverage"]["scope"] == "ALL_GUESTS", visibility
 server._fetch = original_fetch
 assert server._proxmox_permissions_url(
@@ -1145,7 +1145,7 @@ assert "doesn't guarantee a model will fit" in live_gpu_answer
 for question in (
     "Where should I run another model?",
     "Can this handle a 20 GB model?",
-    "Will a 20 GB model fit on Tartarus?",
+    "Will a 20 GB model fit on Compute Node A?",
 ):
     answer = server.format_inference_inventory_response(question, compatible, {})
     assert "can't recommend an inference host" in answer, (question, answer)

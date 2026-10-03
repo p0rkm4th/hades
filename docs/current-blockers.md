@@ -73,12 +73,13 @@ Status: **PARTIAL**
   reported as unknown intended placement. It names Uptime Kuma as the source
   of current probes and distinguishes host-probe responses from application
   readiness; guest visibility and live GPU capacity remain open evidence gaps.
-- Fresh owner dogfood found “What is running on Alexandra right now?” was
-  rejected by the deterministic read-intent gate and persisted only a
-  progress preamble. Current-tree routing now answers from the verified
-  Proxmox host/guest relationship and states that selected-guest visibility
-  may be incomplete. Synthetic owner/household and composed-overlay checks
-  pass; production UI reacceptance and rollout are pending.
+- Fresh owner dogfood found a named-host workload query was rejected by the
+  deterministic read-intent gate and persisted only a progress preamble.
+  Candidate `e01570c` now answers from the verified Proxmox host/guest
+  relationship and states that selected-guest visibility may be incomplete.
+  Public CI and composed-overlay checks pass; deployment with rollback and
+  fresh persisted owner/household UI acceptance now pass. Guest inventory does
+  not establish application-service health.
 - Candidate `4c73e28` passed Public CI and was deployed with rollback. Fresh
   Household A/B turns for whole-home slowness and computer status persisted
   scope-limited answers without exposing private topology or querying owner

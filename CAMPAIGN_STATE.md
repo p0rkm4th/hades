@@ -53,14 +53,13 @@ of truth.
   current availability data as Uptime Kuma probes and distinguishes responding
   host probes from application readiness. Guest visibility and live GPU
   capacity remain open evidence gaps.
-- Fresh owner dogfood of “What is running on Alexandra right now?” exposed an
-  intent-gate miss: the deterministic Proxmox guest-placement answer existed,
-  but the prompt fell through to a progress preamble. Current-tree routing now
-  recognizes the named-host workload question and returns only current guests
-  attached to the verified Proxmox node, with the selected-guest visibility
-  caveat. Synthetic owner/household contracts and exact-active-overlay runtime
-  checks pass. Production UI acceptance and rollout remain pending; household
-  output is kept generic and source-free.
+- Fresh owner dogfood of a named-host workload question exposed an intent-gate
+  miss: the deterministic Proxmox guest-placement answer existed, but the prompt
+  fell through to a progress preamble. Candidate `e01570c` now recognizes this
+  question and returns the current visible guest with the selected-guest scope
+  caveat. Public CI passed; the candidate was deployed with a root-only rollback
+  copy, and fresh owner/household chats persisted the scoped answer and generic
+  boundary. Application-service health remains unverified by guest inventory.
 - The deployed household status boundary now uses plain language for “Why is
   everything slow?” and “Are all the computers okay?” Fresh authenticated
   Household A/B chats persisted explicit limits without owner topology or
