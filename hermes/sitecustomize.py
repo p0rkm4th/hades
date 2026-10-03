@@ -4652,11 +4652,30 @@ def _hades_service_health_target(user_text):
     """Extract a named service from a direct, plain-language health question."""
     text = str(user_text or "")
     query = re.search(
-        r"\b(?:is|are)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
-        r"(?:healthy|health|up|online|running|working|okay|ok|available|down|offline)\b",
+        r"\bwhat\s+can\s+(?:you|i)\s+(?:currently\s+)?"
+        r"(?:verify|confirm|check|establish)\s+(?:about|for)\s+"
+        r"(?P<target>[a-z0-9][a-z0-9 ._-]{0,60}?)['’]?\s+"
+        r"(?:availability|health|status|readiness|task\s+execution)\b",
         text,
         re.IGNORECASE,
     )
+    if not query:
+        query = re.search(
+            r"\bcan\s+(?:you|i)\s+(?:currently\s+)?"
+            r"(?:verify|confirm|check)\s+(?:whether|if)\s+"
+            r"(?P<target>[a-z0-9][a-z0-9 ._-]{0,60}?)\s+"
+            r"(?:is|are)\s+(?:currently\s+)?"
+            r"(?:healthy|available|up|online|working|responding|down|offline)\b",
+            text,
+            re.IGNORECASE,
+        )
+    if not query:
+        query = re.search(
+            r"\b(?:is|are)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+            r"(?:healthy|health|up|online|running|working|okay|ok|available|down|offline)\b",
+            text,
+            re.IGNORECASE,
+        )
     if not query:
         query = re.search(
             r"\b(?:why|how)\s+(?:is|are|does|did)\s+"
@@ -4679,7 +4698,7 @@ def _hades_service_health_target(user_text):
     return target_words, target
 
 
-def _hades_service_monitor_response(user_text, resources, summary=None):
+def _hades_service_monitor_response(user_text, resources, summary=None, scope="owner"):
     """Answer named application-health questions only from a matching fresh monitor."""
     target_query = _hades_service_health_target(user_text)
     if not target_query:
@@ -4697,6 +4716,24 @@ def _hades_service_monitor_response(user_text, resources, summary=None):
         if all(word in name_words for word in target_words):
             matches.append((monitor_name, availability, str(resource.get("availability_freshness") or "UNKNOWN").upper(), resource))
     if not matches:
+        if target_words == ["agent", "zero"] and scope == "owner":
+            configured_url = str(os.environ.get("AGENT_ZERO_URL") or "").strip()
+            if configured_url:
+                try:
+                    responding = bool(_hades_agent_zero_available())
+                except Exception:
+                    responding = False
+                from datetime import timezone
+                checked_at = datetime.now(timezone.utc).isoformat()
+                observation = (
+                    "HADES's configured Agent Zero endpoint responded to a bounded, read-only HTTP probe."
+                    if responding else
+                    "HADES could not reach its configured Agent Zero endpoint with a bounded, read-only HTTP probe."
+                )
+                return (
+                    f"{observation} This verifies endpoint reachability only; I did not invoke Agent Zero, "
+                    f"so task execution is unverified. Checked at {checked_at}."
+                )
         return (
             f"I couldn't verify a current Uptime Kuma service monitor matching {target}. "
             "A Proxmox host or VM being online does not show whether its application accepts connections or is usable, so I can't call it healthy."
@@ -6089,7 +6126,7 @@ def _hades_direct_homelab_read(
         r"\bwhere\s+does\s+agent\s*zero\s+(?:run|live)\b",
         text,
         re.IGNORECASE,
-    ):
+    ) and not named_service_health_intent:
         return None
     if _hades_positive_homelab_control_request(text) and not (
         scope == "owner" and _hades_endpoint_intent_before_provision(text)
@@ -6519,7 +6556,9 @@ def _hades_direct_homelab_read(
             and not re.search(r"\bminecraft\b", text, re.IGNORECASE)
             else text
         )
-        service_response = _hades_service_monitor_response(service_health_text, resources, summary)
+        service_response = _hades_service_monitor_response(
+            service_health_text, resources, summary, scope=scope,
+        )
         if household_game_health_intent:
             if not service_response:
                 return "I don't have a current check for the game server, so I can't confirm whether it's working."

@@ -299,6 +299,13 @@ target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 assert target('Why is the NetBox monitor down?') == (['netbox'], 'netbox')
 assert target('How is NetBox reporting unavailable?') == (['netbox'], 'netbox')
+agent_zero_capability_question = (
+    'What can you currently verify about Agent Zero availability and task execution?'
+)
+assert target(agent_zero_capability_question) == (['agent', 'zero'], 'agent zero')
+assert target('Can you verify whether Agent Zero is currently available?') == (
+    ['agent', 'zero'], 'agent zero'
+)
 groups = namespace['_hades_homelab_availability_groups']
 workloads_on_host = namespace['_hades_homelab_workloads_on_host_response']
 core_vm_placement = namespace['_hades_homelab_core_vm_placement_response']
@@ -743,6 +750,27 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert 'loopback port 7002 on the HADES host' in agent_zero_live, agent_zero_live
             assert 'delegation or task execution' in agent_zero_live, agent_zero_live
             assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
+            registry_module.registry.calls.clear()
+            agent_zero_capability = direct_read(
+                agent_zero_capability_question, 'synthetic-owner', 'owner'
+            )
+            assert 'configured Agent Zero endpoint responded' in agent_zero_capability, agent_zero_capability
+            assert 'task execution is unverified' in agent_zero_capability, agent_zero_capability
+            assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
+            registry_module.registry.calls.clear()
+            household_agent_zero_capability = direct_read(
+                agent_zero_capability_question, 'synthetic-household', 'household'
+            )
+            assert 'can\'t verify private infrastructure or computer status' in household_agent_zero_capability, household_agent_zero_capability
+            assert '7002' not in household_agent_zero_capability and 'configured endpoint' not in household_agent_zero_capability
+            assert not registry_module.registry.calls, registry_module.registry.calls
+            namespace['_hades_agent_zero_available'] = lambda: False
+            unavailable_agent_zero_capability = direct_read(
+                agent_zero_capability_question, 'synthetic-owner', 'owner'
+            )
+            assert 'could not reach its configured Agent Zero endpoint' in unavailable_agent_zero_capability, unavailable_agent_zero_capability
+            assert 'task execution is unverified' in unavailable_agent_zero_capability, unavailable_agent_zero_capability
+            namespace['_hades_agent_zero_available'] = lambda: True
             registry_module.registry.calls.clear()
             household_agent_zero = direct_read(
                 'Where is Agent Zero running?', 'synthetic-household', 'household'

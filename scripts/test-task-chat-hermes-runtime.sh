@@ -762,6 +762,48 @@ try:
     assert "Highest current Proxmox CPU reading: Synthetic Guest B at 78.0%" in resource_rank_result["final_response"], resource_rank_result
     assert resource_tool_calls == ["homelab_summary"], resource_tool_calls
 
+    previous_agent_zero_url = os.environ.get("AGENT_ZERO_URL")
+    original_agent_zero_probe = hades._hades_agent_zero_available
+    os.environ["AGENT_ZERO_URL"] = "http://127.0.0.1:7002"
+    hades._hades_agent_zero_available = lambda: True
+    try:
+        resource_tool_calls.clear()
+        agent_zero_capability_agent = agent_class(
+            gateway_session_key=f"hades-user-{owner}",
+            session_id="synthetic-agent-zero-capability-owner",
+            stream_delta_callback=lambda _chunk: None,
+            **kwargs,
+        )
+        agent_zero_capability = agent_zero_capability_agent.run_conversation(
+            "What can you currently verify about Agent Zero availability and task execution?",
+            conversation_history=[],
+        )
+        assert agent_zero_capability.get("completed") is True and agent_zero_capability.get("api_calls") == 0, agent_zero_capability
+        assert "configured Agent Zero endpoint responded" in agent_zero_capability["final_response"], agent_zero_capability
+        assert "task execution is unverified" in agent_zero_capability["final_response"], agent_zero_capability
+        assert resource_tool_calls == ["homelab_summary"], resource_tool_calls
+
+        resource_tool_calls.clear()
+        household_agent_zero_capability = agent_class(
+            gateway_session_key=f"hades-user-{beta}",
+            session_id="synthetic-agent-zero-capability-household",
+            stream_delta_callback=lambda _chunk: None,
+            **kwargs,
+        ).run_conversation(
+            "What can you currently verify about Agent Zero availability and task execution?",
+            conversation_history=[],
+        )
+        assert household_agent_zero_capability.get("completed") is True and household_agent_zero_capability.get("api_calls") == 0, household_agent_zero_capability
+        assert "can't verify private infrastructure or computer status" in household_agent_zero_capability["final_response"], household_agent_zero_capability
+        assert "7002" not in household_agent_zero_capability["final_response"], household_agent_zero_capability
+        assert resource_tool_calls == [], resource_tool_calls
+    finally:
+        hades._hades_agent_zero_available = original_agent_zero_probe
+        if previous_agent_zero_url is None:
+            os.environ.pop("AGENT_ZERO_URL", None)
+        else:
+            os.environ["AGENT_ZERO_URL"] = previous_agent_zero_url
+
     resource_tool_calls.clear()
     household_resource_agent = agent_class(
         gateway_session_key=f"hades-user-{beta}",
