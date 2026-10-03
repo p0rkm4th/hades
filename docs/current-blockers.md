@@ -33,9 +33,9 @@ Status: **PARTIAL**
   utilization/free-VRAM samples from the configured inference endpoints;
   Household A/B receive only the infrastructure-diagnostics boundary. Other
   deployments still require their own approved host identities and profile.
-  Point-in-time GPU samples do not prove workload execution, guarantee model
-  fit, or account for context/runtime allocation, so precise placement
-  recommendations remain gated on additional evidence.
+  Point-in-time GPU samples can compare observed single-GPU headroom, but do
+  not prove workload execution or model fit and do not account for context or
+  runtime allocation. HADES must keep that distinction in placement answers.
 - Live activation exposed private Hermes-profile drift: the service parent had
   the telemetry path, but the MCP child environment did not, and the explicit
   HADES tool allowlist omitted `homelab_gpu_telemetry`. Both profile gaps are
@@ -144,6 +144,13 @@ Status: **PARTIAL**
   execution or capacity. Household A and B receive only the infrastructure-
   diagnostics boundary. The configured read path is non-sudo, fixed-command,
   strict-host-key verified, and read-only.
+- A compound owner placement prompt that also asked “what is already running”
+  was misread as a generic node-activity lookup. Candidate `ec09ed3` makes
+  placement intent take precedence over that embedded clause; its focused
+  adapter, service-health, and Hermes runtime contracts pass, and Public CI
+  run `37152683615` passes. After rollback-ready deployment, a fresh owner
+  answer includes the current largest single-GPU headroom and explicitly says
+  it cannot confirm model fit. Household A/B answers remain generic.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 - Fresh owner backup dogfood found that Proxmox's archived history can include
