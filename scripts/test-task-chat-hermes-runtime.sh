@@ -134,6 +134,8 @@ synthetic_similar_machine = {
 assert len(hades._hades_homelab_named_machine_records(
     [synthetic_erebus_machine, synthetic_erebus_service_probe, synthetic_similar_machine], "Erebus",
 )) == 2
+assert hades._hades_homelab_display_label({"display": "HADES infrastructure host", "url": "http://private.invalid/roles/1"}) == "HADES infrastructure host"
+assert hades._hades_homelab_display_label({"url": "http://private.invalid/roles/1"}) == ""
 unlinked_source_question = "Which live homelab observations cannot you confidently match to the same machine?"
 assert hades._hades_broad_homelab_status_intent(unlinked_source_question)
 unverified_service_question = "Which homelab services can you not verify right now?"
@@ -1356,6 +1358,23 @@ del os.environ["HADES_TEST_NODE_A_MONITOR_STATUS"]
 del os.environ["HADES_TEST_NODE_A_MONITOR_FRESHNESS"]
 del os.environ["HADES_TEST_HOMELAB_NODE_A_MONITOR"]
 
+# An exact canonical device match wins over an unrelated, unlinked service
+# monitor with the same node label. The host runtime and host probe still
+# compose, while structured NetBox roles render only their display text.
+os.environ["HADES_TEST_EREBUS_RECORDS"] = "1"
+try:
+    linked_erebus_status = hades._hades_direct_homelab_read(
+        "Is Erebus alive right now?", owner, "owner",
+    )
+finally:
+    os.environ.pop("HADES_TEST_EREBUS_RECORDS", None)
+assert "Erebus: Proxmox runtime status is online." in linked_erebus_status, linked_erebus_status
+assert "Uptime Kuma reports up (fresh observation)." in linked_erebus_status, linked_erebus_status
+assert "Role: HADES infrastructure host." in linked_erebus_status, linked_erebus_status
+assert "service-proxmox-erebus" not in linked_erebus_status, linked_erebus_status
+assert "private.invalid" not in linked_erebus_status and "device-roles" not in linked_erebus_status, linked_erebus_status
+assert "multiple homelab records matching erebus" not in linked_erebus_status.casefold(), linked_erebus_status
+
 blockers_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-blockers",
     stream_delta_callback=lambda _chunk: None, **kwargs,
@@ -1495,6 +1514,19 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '                  "runtime": {"name": "hades-core", "vmid": 1802, "status": "running",\n'
         '                              "cpu": 0.94, "mem": 32212254720, "maxmem": 34359738368,\n'
         '                              "disk": 85899345920, "maxdisk": 96636764160}}]\n'
+        '    if __import__("os").environ.get("HADES_TEST_EREBUS_RECORDS") == "1":\n'
+        '        resources.extend([\n'
+        '            {"name": "Erebus", "identity": {"canonical_id": "netbox:device:2"},\n'
+        '             "inventory": {"id": 2, "name": "Erebus", "role": {"display": "HADES infrastructure host", "url": "http://private.invalid/api/dcim/device-roles/1/"}},\n'
+        '             "runtime_status": "online", "currently_online": True,\n'
+        '             "runtime": {"name": "erebus", "status": "online", "cpu": 0.1, "mem": 1024, "maxmem": 2048},\n'
+        '             "availability": {"name": "host-erebus", "status": "up"},\n'
+        '             "availability_freshness": "FRESH", "conflicts": []},\n'
+        '            {"name": "service-proxmox-erebus", "identity": {"status": "UNLINKED"},\n'
+        '             "inventory": None, "runtime_status": "NOT_OBSERVED", "runtime": None,\n'
+        '             "availability": {"name": "service-proxmox-erebus", "status": "up"},\n'
+        '             "availability_freshness": "FRESH", "conflicts": []},\n'
+        '        ])\n'
         '    if __import__("os").environ.get("HADES_TEST_FOLLOWUP_NODE") == "1":\n'
         '        resources.append({"name": "Compute Node A", "inventory": {"name": "Compute Node A"},\n'
         '                          "identity": {"canonical_id": "netbox:device:7"}})\n'

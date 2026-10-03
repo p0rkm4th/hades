@@ -39,6 +39,7 @@ wanted = {
     '_hades_direct_owner_location',
     '_hades_direct_proxmox_backup_read',
     '_hades_homelab_name_key',
+    '_hades_homelab_display_label',
     '_hades_homelab_named_machine_records',
     '_hades_homelab_target_from_question',
     '_hades_homelab_named_check_target',

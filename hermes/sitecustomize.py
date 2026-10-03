@@ -5931,8 +5931,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 if len(matching_machines) == 1:
                     machine = matching_machines[0]
                     details = [f"Observed hardware inventory lists {machine.get('name', target)}."]
-                    if machine.get("role"):
-                        details.append(f"Role: {machine['role']}.")
+                    role_label = _hades_homelab_display_label(machine.get("role"))
+                    if role_label:
+                        details.append(f"Role: {role_label}.")
                     hardware_freshness = str(capability.get("freshness") or capability.get("status") or "UNKNOWN").upper()
                     hardware_observed_at = capability.get("observed_at")
                     if hardware_freshness != "FRESH":
@@ -6322,8 +6323,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             parts = [f"{name}: Proxmox runtime status is {runtime_status}."]
             if inventory.get("primary_ip"):
                 parts.append(f"Its recorded address is {inventory['primary_ip']}.")
-            if inventory.get("role"):
-                parts.append(f"Role: {inventory['role']}.")
+            role_label = _hades_homelab_display_label(inventory.get("role"))
+            if role_label:
+                parts.append(f"Role: {role_label}.")
             if availability.get("status"):
                 freshness = resource.get("availability_freshness", "UNKNOWN")
                 parts.append(f"Uptime Kuma reports {availability['status']} ({freshness.lower()} observation).")
@@ -6951,6 +6953,15 @@ _HADES_MEMORY_NEGATION = re.compile(
 def _hades_homelab_name_key(value):
     """Normalize punctuation for lookup against a configured display alias."""
     return re.sub(r"[^a-z0-9]+", "", str(value or "").casefold())
+
+
+def _hades_homelab_display_label(value):
+    """Reduce source objects to a bounded human-facing display label."""
+    if isinstance(value, dict):
+        value = value.get("display") or value.get("name") or value.get("label")
+    if not isinstance(value, str):
+        return ""
+    return " ".join(value.split())[:120]
 
 
 def _hades_homelab_named_machine_records(resources, target):
