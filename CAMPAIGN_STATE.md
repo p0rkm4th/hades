@@ -13,11 +13,11 @@ of truth.
 
 ## Current verified status — 2026-10-03
 
-- HADES branch `codex/homelab-protected-source-contract-20261001` is at
-  `eb61cd8`; Public CI run `37154690812` passed. Public `main` remains at the
-  green release-convergence baseline `c83ddd6`. The latest deployed code
-  candidate is `3c6504c`; newer branch commits record acceptance evidence and
-  do not require deployment.
+- The current homelab code candidate `a8fbb3a` passed Public CI run
+  `37156030235` and is deployed. Public `main` remains at the green
+  release-convergence baseline `c83ddd6`; later documentation-only branch
+  updates also passed CI and did not require deployment. Read the live checkout
+  for the current branch/documentation HEAD.
 - Fixed-command, non-sudo GPU telemetry is active only in the explicitly
   approved owner deployment. Fresh persisted owner dogfood reports per-device
   free VRAM/utilization for identity-linked Tartarus and Hypnos endpoints.
@@ -27,6 +27,11 @@ of truth.
   resolve its configured identity link to a named current NetBox resource, so
   it fails closed and does not present host GPU telemetry for that endpoint.
   Nyx-4 has been asked to inspect NetBox visibility and canonical identity.
+- Named-node model-capacity requests now require one stable resource identity,
+  then show only that host's linked inference endpoint and GPU readings. Fresh
+  owner “check Tartarus … room for another model” dogfood passed with all four
+  GPU samples and a no-fit-guarantee caveat; Household A/B received no host or
+  GPU details.
 - The live broad owner summary reports partial Proxmox guest visibility and an
   empty NetBox application-service catalog. Agent Zero’s configured endpoint
   returned a bounded HTTP response, which does not prove task execution.
@@ -198,7 +203,7 @@ belong in this public continuation file.
   partial/unknown handling and redaction, not complete source reconciliation.
 - Public `main` remains green at the release-convergence baseline. Homelab
   implementation and current continuation evidence are on the review branch;
-  candidate `3c6504c` passed Public CI and is deployed behind the recorded
+  candidate `a8fbb3a` passed Public CI and is deployed behind the recorded
   read-only rollback procedure, but has not been integrated into `main`.
 
 ## Repository and deployment authority

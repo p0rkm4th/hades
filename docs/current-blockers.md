@@ -178,6 +178,16 @@ Status: **PARTIAL**
   network-wide measurement and packet-loss, throughput, DNS timing, and trends
   are unavailable. It does not invent a bottleneck. Household A/B are told
   whole-home diagnosis is not available from their account.
+- A fresh multi-intent owner question—check one named inference host and assess
+  room for another model—fell through to a generic answer. Candidate `a8fbb3a`
+  adds a bounded target form, resolves it through one stable inventory identity,
+  and returns only that host's linked endpoint and per-device readings with a
+  no-fit-guarantee caveat. Focused adapter, Hermes runtime, and service-health
+  contracts pass; Public CI run `37156030235` passes. After rollback-ready
+  deployment, fresh owner dogfood shows only the requested host's four GPU
+  readings; Household A/B receive only the internal-host boundary. This closes
+  the named-node multi-intent routing defect. Model requirements and fit remain
+  unknown.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 - Fresh owner backup dogfood found that Proxmox's archived history can include
