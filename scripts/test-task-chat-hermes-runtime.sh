@@ -149,6 +149,22 @@ household_unlinked_source_denial = hades._hades_direct_homelab_read(
     unlinked_source_question, "synthetic-beta", "household",
 )
 assert "can't verify private infrastructure or computer status" in household_unlinked_source_denial.casefold(), household_unlinked_source_denial
+synthetic_unlinked_summary = {
+    "status": "PARTIAL",
+    "source_counts": {"identity_unlinked_resources": 2},
+    "retrieved_at": "2026-10-03T00:00:00Z",
+    "resources": [
+        {"name": "Synthetic Host A", "identity": {"canonical_id": None, "source_identities": {"proxmox": ["private-proxmox-id"], "kuma": []}}},
+        {"name": "Synthetic Probe A", "identity": {"canonical_id": None, "source_identities": {"proxmox": [], "kuma": ["private-kuma-id"]}}},
+        {"name": "Linked Host", "identity": {"canonical_id": "netbox:device:1", "source_identities": {"proxmox": ["private-linked-id"], "kuma": []}}},
+    ],
+}
+synthetic_unlinked_response = hades._hades_homelab_unlinked_identity_response(synthetic_unlinked_summary)
+assert "2 Proxmox or Uptime Kuma records" in synthetic_unlinked_response, synthetic_unlinked_response
+assert "Synthetic Host A (Proxmox)" in synthetic_unlinked_response, synthetic_unlinked_response
+assert "Synthetic Probe A (Uptime Kuma)" in synthetic_unlinked_response, synthetic_unlinked_response
+assert "matching display names or addresses do not prove" in synthetic_unlinked_response, synthetic_unlinked_response
+assert "private-proxmox-id" not in synthetic_unlinked_response and "private-kuma-id" not in synthetic_unlinked_response, synthetic_unlinked_response
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from integrations.task import TaskStatus, TaskStore
 
@@ -213,6 +229,19 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
         **kwargs,
     )
     registry = hermes_registry_module.registry
+    original_source_detail_tool_result = hades._hades_direct_homelab_tool_result
+    try:
+        hades._hades_direct_homelab_tool_result = lambda name, *_args, **_kwargs: (
+            synthetic_unlinked_summary if name == "homelab_summary" else {"status": "NOT_CONFIGURED", "endpoints": []}
+        )
+        owner_source_detail = hades._hades_direct_homelab_read(
+            unlinked_source_question, owner, "owner",
+        )
+    finally:
+        hades._hades_direct_homelab_tool_result = original_source_detail_tool_result
+    assert "Synthetic Host A (Proxmox)" in owner_source_detail, owner_source_detail
+    assert "Synthetic Probe A (Uptime Kuma)" in owner_source_detail, owner_source_detail
+    assert "private-proxmox-id" not in owner_source_detail, owner_source_detail
     registry.calls.clear()
     owner_node_load = hades._hades_direct_homelab_read(
         "How loaded is Synthetic Node B?", owner, "owner",
@@ -1015,6 +1044,19 @@ direct_node_status = hades._hades_direct_homelab_read(
 )
 assert registry.calls == ["homelab_inference_inventory", "homelab_owner_snapshot"], registry.calls
 assert "Observed hardware inventory lists Compute Node A." in direct_node_status, direct_node_status
+original_direct_homelab_tool_result = hades._hades_direct_homelab_tool_result
+try:
+    hades._hades_direct_homelab_tool_result = lambda name, *_args, **_kwargs: (
+        synthetic_unlinked_summary if name == "homelab_summary" else {"status": "NOT_CONFIGURED", "endpoints": []}
+    )
+    owner_unlinked_sources = hades._hades_direct_homelab_read(
+        unlinked_source_question, owner, "owner",
+    )
+finally:
+    hades._hades_direct_homelab_tool_result = original_direct_homelab_tool_result
+assert "Synthetic Host A (Proxmox)" in owner_unlinked_sources, owner_unlinked_sources
+assert "Synthetic Probe A (Uptime Kuma)" in owner_unlinked_sources, owner_unlinked_sources
+assert "private-proxmox-id" not in owner_unlinked_sources, owner_unlinked_sources
 registry.calls.clear()
 direct_node_load = hades._hades_direct_homelab_read(
     "How loaded is Compute Node A?", owner, "owner",

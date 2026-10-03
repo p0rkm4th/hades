@@ -5203,7 +5203,64 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
     return f"Can {target} host another model?"
 
 
+def _hades_homelab_source_identity_intent(text):
+    return bool(re.search(
+        r"\b(?:homelab|home\s+lab|infrastructure)\b.{0,100}\b"
+        r"(?:observations?|source\s+records?|identity|links?|unlinked|cross.source|"
+        r"match(?:ing)?|same\s+machine|conflicts?|disagreements?)\b",
+        str(text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_unlinked_identity_response(summary):
+    """Report source-local Proxmox/Kuma records without inventing joins."""
+    if not isinstance(summary, dict):
+        return "I couldn't read the current source-identity summary."
+    counts = summary.get("source_counts") if isinstance(summary.get("source_counts"), dict) else {}
+    try:
+        reported = max(0, int(counts.get("identity_unlinked_resources") or 0))
+    except (TypeError, ValueError):
+        reported = 0
+    resources = summary.get("resources") if isinstance(summary.get("resources"), list) else []
+    rows = []
+    for resource in resources:
+        if not isinstance(resource, dict):
+            continue
+        identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
+        if identity.get("canonical_id"):
+            continue
+        source_identities = identity.get("source_identities") if isinstance(identity.get("source_identities"), dict) else {}
+        sources = [
+            label for key, label in (("proxmox", "Proxmox"), ("kuma", "Uptime Kuma"))
+            if isinstance(source_identities.get(key), list) and source_identities.get(key)
+        ]
+        if sources:
+            name = " ".join(str(resource.get("name") or "Unnamed source record").split())[:80]
+            rows.append(f"{name} ({' + '.join(sources)})")
+    if reported == 0:
+        return "The current source read found no unlinked Proxmox or Uptime Kuma records."
+    if not rows:
+        return (
+            f"The current source read reports {reported} unlinked Proxmox or Uptime Kuma records, "
+            "but it did not include enough detail to identify them safely."
+        )
+    shown = rows[:12]
+    response = (
+        f"The current source read reports {reported} Proxmox or Uptime Kuma records without a verified cross-source identity link: "
+        + "; ".join(shown) + "."
+    )
+    if len(rows) > len(shown) or summary.get("resources_truncated"):
+        response += " The detailed resource list is truncated, so this may not include every unlinked record."
+    response += " These are separate source records; matching display names or addresses do not prove they refer to the same machine."
+    retrieved_at = summary.get("retrieved_at")
+    if retrieved_at:
+        response += f" The composed source read completed at {str(retrieved_at)[:80]}."
+    return response
+
+
 def _hades_broad_homelab_status_intent(text):
+    if _hades_homelab_source_identity_intent(text):
+        return True
     return bool(re.search(
         r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
         r"is\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
@@ -5214,8 +5271,7 @@ def _hades_broad_homelab_status_intent(text):
         r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
         r"(?:why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
         r"why\s+does\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+(?:feel(?:s|ing)?\s+)?slow)|"
-        r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time)|"
-        r"(?:which|what|list|show|identify).{0,80}\b(?:live\s+)?(?:homelab|home\s+lab|infrastructure)\b.{0,100}\b(?:observations?|source\s+records?|identity\s+links?|unlinked|cross.source|match(?:ing)?|conflicts?|disagreements?)\b)",
+        r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$",
         str(text or ""),
         re.IGNORECASE,
     ))
@@ -5434,6 +5490,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     if change_intent and scope != "owner":
         return "I can't verify private infrastructure changes from this account."
     household_broad_status_intent = _hades_broad_homelab_status_intent(text)
+    source_identity_intent = _hades_homelab_source_identity_intent(text)
     network_diagnostic_intent = bool(
         re.search(r"\b(?:network|internet|wi-?fi|dns)\b", text, re.IGNORECASE)
         and re.search(r"\b(?:slow|latency|bottleneck|performance|packet\s+loss|throughput)\b", text, re.IGNORECASE)
@@ -5856,6 +5913,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 + ". These timestamps are when each source read completed; they do not make an older source observation live. "
                 "NetBox describes intended inventory, Proxmox reports runtime state, and Uptime Kuma reports configured probe results; they are not interchangeable."
             )
+        if source_identity_intent and scope == "owner":
+            return _hades_homelab_unlinked_identity_response(summary)
         broad_inference = None
         if scope == "owner" and broad_owner_status_intent:
             try:
