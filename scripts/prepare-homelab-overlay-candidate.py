@@ -150,33 +150,43 @@ def replace_call_sites(active_text: str, tree: ast.Module) -> str:
                 replacements.append((node, old, new))
             elif (
                 len(node.args) == 3
-                and not node.keywords
                 and is_self_getattr(node.args[1], "_hades_subject")
                 and (
                     is_self_getattr(node.args[2], "_hades_session_scope")
                     or (
                         isinstance(node.args[2], ast.Constant)
-                        and node.args[2].value == "household"
+                        and node.args[2].value in {"owner", "household"}
+                    )
+                )
+                and (
+                    not node.keywords
+                    or (
+                        len(node.keywords) == 1
+                        and node.keywords[0].arg == "context_text"
+                        and isinstance(context, ast.Name)
+                        and context.id in {"_hades_intent_text", "_early_hades_intent_text"}
                     )
                 )
             ):
-                # Preserve early game/service-health guards with an explicit
-                # household scope. These intentionally have no follow-up context.
+                # Preserve already composed explicit-scope routes, including
+                # the legacy-overlay early route which carries follow-up text.
                 continue
             elif isinstance(context, ast.Name) and context.id == "previous_user_text":
                 new = old.replace("context_text=previous_user_text", "context_text=_hades_intent_text")
                 if new == old:
                     raise ValueError(f"could not normalize active homelab context at line {node.lineno}")
                 replacements.append((node, old, new))
-            elif isinstance(context, ast.Name) and context.id == "_hades_intent_text":
+            elif isinstance(context, ast.Name) and context.id in {
+                "_hades_intent_text", "_early_hades_intent_text"
+            }:
                 continue
             else:
                 raise ValueError(f"unrecognized active homelab request call at line {node.lineno}")
         else:
             raise ValueError(f"unrecognized active homelab call at line {node.lineno}")
-    if status_calls != 1 or request_calls < 1:
+    if status_calls > 1 or request_calls < 1:
         raise ValueError(
-            f"expected one owner status call and at least one current request call; "
+            f"expected at most one owner status call and at least one current request call; "
             f"found status={status_calls}, request={request_calls}"
         )
     offsets = []
@@ -220,9 +230,25 @@ def add_household_route(source: str) -> str:
                 and child.func.id == "_hades_is_hermes_auxiliary_prompt"
                 for child in ast.walk(node.test))
     ] if run_conversation else []
-    if len(auxiliary_guards) != 1:
-        raise ValueError("could not uniquely locate the auxiliary-prompt guard")
-    auxiliary_guard = auxiliary_guards[0]
+    managed_server_guards = [
+        node for node in ast.walk(run_conversation) if isinstance(node, ast.If)
+        and "_server_actor_turn" in ast.unparse(node.test)
+        and "_server_status_turn" in ast.unparse(node.test)
+    ] if run_conversation else []
+    if len(auxiliary_guards) == 1:
+        early_insertion = auxiliary_guards[0].end_lineno
+    elif not auxiliary_guards and len(managed_server_guards) == 1:
+        # Older production overlays have no auxiliary-prompt guard. Insert the
+        # read-only route immediately before the managed-server router so
+        # infrastructure placement/health questions cannot be mistaken for
+        # HADES-managed workload requests.
+        early_insertion = managed_server_guards[0].lineno - 1
+    elif "Household service-health boundary completed before staged automation routing" in (
+        ast.get_source_segment(source, run_conversation) or ""
+    ):
+        early_insertion = None
+    else:
+        raise ValueError("could not uniquely locate a safe early homelab route anchor")
     run_text = ast.get_source_segment(source, run_conversation) or ""
     has_early_household_service_guard = (
         "Household service-health boundary completed before staged automation routing" in run_text
@@ -236,6 +262,69 @@ def add_household_route(source: str) -> str:
         if any(marker not in run_text for marker in required_early_markers):
             raise ValueError("existing early homelab route is incomplete; refusing duplicate or partial composition")
     early_block = '''
+        _early_hades_intent_text = _hades_conversation_intent_text(
+            user_message, kwargs.get("conversation_history")
+        )
+        if getattr(self, "_hades_session_scope", "") == "owner":
+            early_proxmox_backup_response = _hades_direct_proxmox_backup_read(
+                user_message, getattr(self, "_hades_subject", ""), "owner"
+            )
+            if early_proxmox_backup_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(early_proxmox_backup_response)
+                _hades_logger.info("Owner Proxmox backup read completed before managed-server routing")
+                return {
+                    "final_response": early_proxmox_backup_response,
+                    "messages": [{"role": "assistant", "content": early_proxmox_backup_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            early_compound_backup_response = _hades_direct_homelab_backup_compound(
+                user_message, getattr(self, "_hades_subject", ""), "owner"
+            )
+            if early_compound_backup_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(early_compound_backup_response)
+                _hades_logger.info("Owner compound homelab and backup read completed before managed-server routing")
+                return {
+                    "final_response": early_compound_backup_response,
+                    "messages": [{"role": "assistant", "content": early_compound_backup_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            early_owner_homelab_response = _hades_direct_homelab_read(
+                user_message, getattr(self, "_hades_subject", ""), "owner",
+                context_text=_early_hades_intent_text,
+            )
+            if early_owner_homelab_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(early_owner_homelab_response)
+                _hades_logger.info("Owner direct homelab read completed before managed-server routing")
+                return {
+                    "final_response": early_owner_homelab_response,
+                    "messages": [{"role": "assistant", "content": early_owner_homelab_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+        if getattr(self, "_hades_session_scope", "") == "household":
+            early_household_homelab_response = _hades_direct_homelab_read(
+                user_message, getattr(self, "_hades_subject", ""), "household",
+                context_text=_early_hades_intent_text,
+            )
+            if early_household_homelab_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(early_household_homelab_response)
+                _hades_logger.info("Household direct homelab boundary completed before managed-server routing")
+                return {
+                    "final_response": early_household_homelab_response,
+                    "messages": [{"role": "assistant", "content": early_household_homelab_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         if getattr(self, "_hades_session_scope", "") in {"owner", "household"} and _hades_service_placement_intent(
             user_message, getattr(self, "_hades_session_scope", "")
         ):
@@ -363,8 +452,9 @@ def add_household_route(source: str) -> str:
     # request classification or live-read work. Named-node fallback stays
     # after the owner source read so it can use available evidence first.
     if not has_early_household_service_guard:
-        insertion = auxiliary_guard.end_lineno
-        lines[insertion:insertion] = early_block.splitlines(keepends=True)
+        if early_insertion is None:
+            raise ValueError("composed household route exists without a recognized safe insertion anchor")
+        lines[early_insertion:early_insertion] = early_block.splitlines(keepends=True)
     lines = "".join(lines).splitlines(keepends=True)
     has_late_household_read = "Household direct homelab read completed without model invocation" in run_text
     if not has_late_household_read:
@@ -414,7 +504,8 @@ def add_media_clarification(source: str) -> str:
         None,
     )
     if route is None:
-        raise ValueError("could not locate active non-briefing preflight route")
+        print("WARN active overlay has no supported Grocy preflight route; media clarification remains inactive")
+        return source
     expiry = next(
         (node for node in route.body if isinstance(node, ast.If)
          and ast.unparse(node.test) == "_expiry_response"),
@@ -463,7 +554,7 @@ def add_backup_routes(source: str) -> str:
     candidates = [
         node for node in ast.walk(tree)
         if isinstance(node, ast.Assign)
-        and any(isinstance(target, ast.Name) and target.id == "direct_backup_response" for target in node.targets)
+        and any(isinstance(target, ast.Name) and target.id in {"direct_backup_response", "_backup_response"} for target in node.targets)
         and isinstance(node.value, ast.Call)
         and isinstance(node.value.func, ast.Name)
         and node.value.func.id == "_hades_phase2_backup_response"

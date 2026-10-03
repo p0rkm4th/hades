@@ -62,8 +62,6 @@ def _hades_monitor_question_is_diagnostic(text):
 def _hades_health_watch_intent(text):
     return True
 def _hades_run_conversation(self, user_message, previous_user_text, _preflight_text):
-    if _hades_is_hermes_auxiliary_prompt(user_message):
-        return "auxiliary"
     if _hades_household_game_health_intent(
         user_message, getattr(self, "_hades_session_scope", "")
     ):
@@ -73,11 +71,9 @@ def _hades_run_conversation(self, user_message, previous_user_text, _preflight_t
         )
         if game_health_response:
             return game_health_response
-    if _server_status_turn:
+    if _server_actor_turn and _server_status_turn:
         return "managed-server-status"
     turn_started = time.perf_counter()
-    if self._hades_session_scope == "owner" and _compound_briefing:
-        return _hades_direct_homelab_read("homelab status and blockers")
     if self._hades_session_scope == "owner":
         response = _hades_direct_homelab_read(user_message)
     if self._hades_session_scope in {"owner", "household"} and not _compound_briefing:
@@ -86,7 +82,7 @@ def _hades_run_conversation(self, user_message, previous_user_text, _preflight_t
         if self._hades_session_scope == "owner":
             return "owner"
     if self._hades_session_scope in {"owner", "household"}:
-        direct_backup_response = _hades_phase2_backup_response(
+        _backup_response = _hades_phase2_backup_response(
             user_message, getattr(self, "_hades_subject", ""),
             self._hades_session_scope, _phase2_session_key,
         )
@@ -111,7 +107,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     compile(candidate, str(output), "exec")
     tree = ast.parse(candidate)
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "_hades_direct_homelab_read"]
-    assert len(calls) == 7, len(calls)
+    assert len(calls) == 8, len(calls)
     assert "getattr(self, \"_hades_subject\", \"\")" in candidate
     assert "context_text=previous_user_text" in candidate
     assert "context_text=_hades_intent_text" in candidate
@@ -128,7 +124,13 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     capacity_guard = candidate.index("Owner model-capacity follow-up failed closed without model invocation", run_start)
     game_guard = candidate.index("Household game-server health read completed before managed-server routing", run_start)
     placement_guard = candidate.index("Service-placement inventory read completed before managed-server routing", run_start)
-    managed_status_guard = candidate.index("if _server_status_turn", run_start)
+    managed_status_guard = candidate.index("if _server_actor_turn and _server_status_turn", run_start)
+    owner_homelab_guard = candidate.index("Owner direct homelab read completed before managed-server routing", run_start)
+    household_homelab_guard = candidate.index("Household direct homelab boundary completed before managed-server routing", run_start)
+    owner_backup_guard = candidate.index("Owner Proxmox backup read completed before managed-server routing", run_start)
+    assert owner_homelab_guard < managed_status_guard
+    assert household_homelab_guard < managed_status_guard
+    assert owner_backup_guard < owner_homelab_guard
     assert placement_guard < managed_status_guard
     placement_block = candidate[candidate.rfind("if getattr(self, \"_hades_session_scope\", \"\") in {\"owner\", \"household\"} and _hades_service_placement_intent(", run_start):game_guard]
     assert "previous_user_text" not in placement_block
@@ -145,9 +147,9 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "return not _hades_monitor_question_is_diagnostic(text)" in candidate
     assert 'return str(text).lstrip().casefold().startswith("why")' in candidate
     assert "from datetime import datetime" in candidate
-    assert candidate.index("proxmox_backup_response = _hades_direct_proxmox_backup_read") < candidate.index(
-        "compound_status_response = _hades_direct_homelab_backup_compound"
-    ) < candidate.index("direct_backup_response = _hades_phase2_backup_response")
+    assert candidate.index("early_proxmox_backup_response = _hades_direct_proxmox_backup_read") < candidate.index(
+        "early_compound_backup_response = _hades_direct_homelab_backup_compound"
+    ) < candidate.index("early_owner_homelab_response = _hades_direct_homelab_read")
     assert output.stat().st_mode & 0o777 == 0o600
     assert active.read_text(encoding="utf-8") == ACTIVE
 

@@ -164,11 +164,12 @@ actual_homelab_read = hades._hades_direct_homelab_read
 actual_backup_read = hades._hades_phase2_backup_response
 actual_finance_read = hades._hades_direct_finance_guidance
 actual_household_grocy_read = hades._hades_direct_household_grocy_read
-actual_grocy_expiry_read = hades._hades_direct_grocy_expiry_read
+actual_grocy_expiry_read = getattr(hades, "_hades_direct_grocy_expiry_read", None)
 hades._hades_direct_homelab_read = fixture_source("infrastructure")
 hades._hades_phase2_backup_response = fixture_source("backup")
 hades._hades_direct_household_grocy_read = fixture_source("household stock")
-hades._hades_direct_grocy_expiry_read = fixture_source("expiry")
+if actual_grocy_expiry_read is not None:
+    hades._hades_direct_grocy_expiry_read = fixture_source("expiry")
 hades._hades_direct_finance_guidance = fixture_source("finance")
 kwargs = {
     "base_url": "http://127.0.0.1:9/v1", "api_key": "synthetic-only",
@@ -182,7 +183,23 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     hades._hades_phase2_backup_response = actual_backup_read
     hades._hades_direct_finance_guidance = actual_finance_read
     hades._hades_direct_household_grocy_read = actual_household_grocy_read
-    hades._hades_direct_grocy_expiry_read = actual_grocy_expiry_read
+    if actual_grocy_expiry_read is not None:
+        hades._hades_direct_grocy_expiry_read = actual_grocy_expiry_read
+    assert hasattr(hades, "_hades_direct_proxmox_backup_read")
+    assert hasattr(hades, "_hades_direct_homelab_backup_compound")
+    def synthetic_proxmox_backup(text, subject="", scope="", *_args, **_kwargs):
+        if scope == "owner" and "backup" in str(text).casefold() and "proxmox" in str(text).casefold():
+            return "Synthetic selected Proxmox backup evidence; source read at 2026-10-02T12:00:00Z."
+        return None
+    def synthetic_compound_backup(text, subject="", scope="", *_args, **_kwargs):
+        if scope == "owner" and "backup" in str(text).casefold() and any(
+            term in str(text).casefold() for term in ("server", "homelab", "systems")
+        ):
+            return "Synthetic combined server and backup evidence."
+        return None
+    hades._hades_direct_proxmox_backup_read = synthetic_proxmox_backup
+    hades._hades_direct_homelab_backup_compound = synthetic_compound_backup
+    hades._hades_phase2_backup_response = lambda *_args, **_kwargs: "Legacy Backup Check route"
     owner_agent = agent_class(
         gateway_session_key=f"hades-user-{owner}",
         session_id="synthetic-composed-named-node-owner",
@@ -198,6 +215,32 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert "Live inference reads:" in broad_owner_status["final_response"], broad_owner_status
     assert "do not prove generation or available GPU capacity" in broad_owner_status["final_response"], broad_owner_status
     assert registry.calls[:2] == ["homelab_summary", "homelab_inference_inventory"], registry.calls
+
+    backup_only = owner_agent.run_conversation(
+        "Are my Proxmox backups current?", conversation_history=[]
+    )
+    assert backup_only.get("completed") is True and backup_only.get("api_calls") == 0, backup_only
+    assert "Synthetic selected Proxmox backup evidence" in backup_only["final_response"], backup_only
+    assert "Legacy Backup Check route" not in backup_only["final_response"], backup_only
+    assert "combined server" not in backup_only["final_response"].casefold(), backup_only
+
+    combined_backup = owner_agent.run_conversation(
+        "Are my servers and backups okay?", conversation_history=[]
+    )
+    assert "Synthetic combined server and backup evidence" in combined_backup["final_response"], combined_backup
+
+    household_backup = agent_class(
+        gateway_session_key=f"hades-user-{beta}",
+        session_id="synthetic-composed-backup-household",
+        stream_delta_callback=lambda _chunk: None,
+        **kwargs,
+    )
+    household_backup_result = household_backup.run_conversation(
+        "Are my Proxmox backups current?", conversation_history=[]
+    )
+    assert household_backup_result.get("completed") is True and household_backup_result.get("api_calls") == 0, household_backup_result
+    assert "Synthetic" not in household_backup_result["final_response"]
+    assert "Legacy Backup Check route" not in household_backup_result["final_response"]
 
     registry.calls.clear()
     owner_result = owner_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])
