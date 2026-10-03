@@ -700,7 +700,9 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         for prompt in (
             'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
             'Which computer is having trouble?', "Why's shit slow?", 'What changed?',
-            'What changed since yesterday?', 'What changed since last week?',
+            'What changed since yesterday?', 'What changed in the homelab since yesterday?',
+            'What changed in my homelab since yesterday?',
+            'What changed on the infrastructure since last week?', 'What changed since last week?',
         ):
             answer_text = direct_read(prompt, 'synthetic-owner', 'owner')
             assert answer_text, f'direct owner homelab status route missed {prompt!r}'
@@ -709,7 +711,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         os.environ['HADES_TEST_PROXMOX_ACTIVITY'] = '1'
         try:
             recent_activity_answer = direct_read(
-                'What changed since last week?', 'synthetic-owner', 'owner'
+                'What changed in the homelab since last week?', 'synthetic-owner', 'owner'
             )
         finally:
             os.environ.pop('HADES_TEST_PROXMOX_ACTIVITY', None)

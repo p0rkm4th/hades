@@ -5262,7 +5262,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         )
     provenance_intent = _hades_homelab_provenance_followup(text, context_text)
     change_intent = bool(re.search(
-        r"^\s*what\s+(?:has\s+)?changed(?:\s+since\s+(?:yesterday|last\s+week|last\s+time|last\s+check))?\s*[?.!]*\s*$",
+        r"^\s*what\s+(?:has\s+)?changed"
+        r"(?:\s+(?:in|on|with)\s+(?:(?:the|my|our|this)\s+)?(?:homelab|home\s+lab|infrastructure|servers?))?"
+        r"(?:\s+since\s+(?:yesterday|last\s+week|last\s+time|last\s+check))?\s*[?.!]*\s*$",
         text,
         re.IGNORECASE,
     ))

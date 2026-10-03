@@ -493,6 +493,8 @@ for index, prompt in enumerate((
     "Are all the computers okay?",
     "Why does the network feel slow?",
     "What changed since yesterday?",
+    "What changed in the homelab since yesterday?",
+    "What changed in my homelab since yesterday?",
 )):
     hermes_registry_module.registry.calls.clear()
     variant_agent = agent_class(
@@ -505,7 +507,11 @@ for index, prompt in enumerate((
     assert variant.get("completed") is True and variant.get("api_calls") == 0, (prompt, variant)
     assert "Live Proxmox currently reports: hades-core." in variant["final_response"], (prompt, variant)
     assert "memory update" not in variant["final_response"].casefold(), (prompt, variant)
-    if prompt == "What changed since yesterday?":
+    if prompt in (
+        "What changed since yesterday?",
+        "What changed in the homelab since yesterday?",
+        "What changed in my homelab since yesterday?",
+    ):
         assert "No recent Proxmox or NetBox activity source is configured" in variant["final_response"], variant
         assert "homelab_inference_inventory" not in hermes_registry_module.registry.calls, hermes_registry_module.registry.calls
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
