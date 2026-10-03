@@ -52,6 +52,7 @@ wanted = {
     '_hades_homelab_network_diagnostic_response',
     '_hades_homelab_source_identity_intent',
     '_hades_homelab_guest_visibility_intent',
+    '_hades_household_sensitive_context_followup',
     '_hades_homelab_conflict_intent',
     '_hades_homelab_conflict_response',
     '_hades_homelab_unlinked_identity_response',
@@ -178,6 +179,7 @@ if household_intent_assignment is not None:
     household_boundary_expression = ast.unparse(household_intent_assignment.value)
     assert '_hades_broad_homelab_status_intent(user_message)' in household_boundary_expression
     assert '_hades_homelab_guest_visibility_intent(user_message)' in household_boundary_expression
+    assert '_hades_household_sensitive_context_followup(user_message, _hades_history)' in household_boundary_expression
     assert '_hades_household_game_health_intent(user_message, self._hades_session_scope)' in household_boundary_expression
     assert '_hades_service_health_target(user_message)' in household_boundary_expression
     assert 'self._hades_session_scope' in household_boundary_expression
@@ -195,6 +197,7 @@ exec(compile(ast.Module(body=[intent_assignment], type_ignores=[]), 'sitecustomi
 homelab_intent = namespace['_HADES_HOMELAB_INTENT']
 status_intent = namespace['_hades_broad_homelab_status_intent']
 guest_visibility_intent = namespace['_hades_homelab_guest_visibility_intent']
+household_sensitive_followup = namespace['_hades_household_sensitive_context_followup']
 game_health_intent = namespace['_hades_household_game_health_intent']
 for prompt in (
     'Which Proxmox guests can you verify right now, and what are their current states?',
@@ -203,6 +206,15 @@ for prompt in (
 ):
     assert guest_visibility_intent(prompt), prompt
 assert not guest_visibility_intent('What is Proxmox?')
+leaked_household_history = [
+    {'role': 'user', 'content': 'Which Proxmox guests can you verify?'} ,
+    {'role': 'assistant', 'content': 'The approved node is synthetic-node; template name synthetic-template; http://192.168.50.1.'},
+]
+assert household_sensitive_followup('Can you remind me of the template?', leaked_household_history)
+assert not household_sensitive_followup(
+    'Can you remind me what was checked?',
+    [{'role': 'assistant', 'content': 'All approved AI service checks responded; generation was not tested.'}],
+)
 for prompt in (
     'Is everything okay?', 'What is down?', 'What is down or degraded right now, and what can you not verify?',
     'Anything dying?', "What's fucked?",

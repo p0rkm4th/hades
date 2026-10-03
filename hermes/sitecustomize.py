@@ -5380,6 +5380,36 @@ def _hades_homelab_guest_visibility_intent(text):
     return bool(guest_reference and visibility_request)
 
 
+def _hades_household_sensitive_context_followup(user_text, conversation_history):
+    """Block household follow-ups that could replay private history details."""
+    current = str(user_text or "")
+    followup = bool(re.search(
+        r"\b(?:can|could|would)\s+you\s+(?:repeat|restate|recap|summari[sz]e|"
+        r"remind\s+me|tell\s+me\s+more|elaborate)\b|"
+        r"\b(?:what|which|where|when|who|how)\b.{0,55}\b"
+        r"(?:that|it|them|those|there|one|again|earlier)\b|"
+        r"\b(?:and|what\s+about)\s+(?:the\s+)?"
+        r"(?:template|host|node|endpoint|address|guest|vm|container|mcp|tool)\b",
+        current,
+        re.IGNORECASE,
+    ))
+    if not followup or not isinstance(conversation_history, list):
+        return False
+    sensitive_prior_answer = re.compile(
+        r"\b(?:proxmox|netbox|uptime\s+kuma|homelab\s+mcp|mcp\s+(?:server|tool|binding)|"
+        r"template\s+(?:status|name|is|was)|(?:node|host|guest|vmid)\s+(?:is|was|named|running|online|at))\b|"
+        r"https?://|\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b",
+        re.IGNORECASE,
+    )
+    for message in conversation_history[-8:]:
+        if not isinstance(message, dict) or message.get("role") != "assistant":
+            continue
+        content = message.get("content", "")
+        if isinstance(content, str) and sensitive_prior_answer.search(content):
+            return True
+    return False
+
+
 def _hades_homelab_conflict_intent(text):
     return bool(re.search(
         r"\b(?:homelab|home\s+lab|infrastructure|sources?)\b.{0,100}\b"
@@ -10935,6 +10965,7 @@ try:
             and (
                 _hades_broad_homelab_status_intent(user_message)
                 or _hades_homelab_guest_visibility_intent(user_message)
+                or _hades_household_sensitive_context_followup(user_message, _hades_history)
                 or _hades_household_game_health_intent(user_message, self._hades_session_scope)
                 or _hades_homelab_provenance_followup(user_message, _hades_intent_text)
                 or _hades_service_health_target(user_message)
@@ -10950,12 +10981,18 @@ try:
             )
         )
         if _household_homelab_boundary_intent:
-            _household_homelab_response = _hades_direct_homelab_read(
-                user_message,
-                getattr(self, "_hades_subject", ""),
-                self._hades_session_scope,
-                context_text=_hades_intent_text,
-            )
+            if _hades_household_sensitive_context_followup(user_message, _hades_history):
+                _household_homelab_response = (
+                    "I can't verify private infrastructure or computer status from this account. "
+                    "I can check approved household services, such as the game server."
+                )
+            else:
+                _household_homelab_response = _hades_direct_homelab_read(
+                    user_message,
+                    getattr(self, "_hades_subject", ""),
+                    self._hades_session_scope,
+                    context_text=_hades_intent_text,
+                )
             if _household_homelab_response:
                 callback = getattr(self, "stream_delta_callback", None)
                 if callback:
