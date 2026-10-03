@@ -717,6 +717,8 @@ os.environ.pop("HADES_TEST_INFERENCE_ONLY", None)
 for index, prompt in enumerate((
     "Is everything okay?",
     "What's down?",
+    "What's down right now?",
+    "Anything down at the moment?",
     "How are the servers doing?",
     "Are all the computers okay?",
     "Why does the network feel slow?",
