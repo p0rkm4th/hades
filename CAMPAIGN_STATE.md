@@ -11,6 +11,37 @@ read-only homelab view so it composes current canonical inventory, runtime,
 availability, inference, and backup sources without inventing a second source
 of truth.
 
+## Current verified status — 2026-10-03
+
+- HADES branch `codex/homelab-protected-source-contract-20261001` is at
+  `eb61cd8`; Public CI run `37154690812` passed. Public `main` remains at the
+  green release-convergence baseline `c83ddd6`. The latest deployed code
+  candidate is `3c6504c`; newer branch commits record acceptance evidence and
+  do not require deployment.
+- Fixed-command, non-sudo GPU telemetry is active only in the explicitly
+  approved owner deployment. Fresh persisted owner dogfood reports per-device
+  free VRAM/utilization for identity-linked Tartarus and Hypnos endpoints.
+  Samples are point-in-time; host CPU load, inference execution, and model fit
+  remain unverified. Other deployments remain unconfigured and owner-gated.
+- A fresh Hermes Compute catalog read succeeds, but HADES cannot currently
+  resolve its configured identity link to a named current NetBox resource, so
+  it fails closed and does not present host GPU telemetry for that endpoint.
+  Nyx-4 has been asked to inspect NetBox visibility and canonical identity.
+- The live broad owner summary reports partial Proxmox guest visibility and an
+  empty NetBox application-service catalog. Agent Zero’s configured endpoint
+  returned a bounded HTTP response, which does not prove task execution.
+- “Where is HADES running?” reports two same-name Proxmox guests and separates
+  the stopped guest from the running guest; it does not claim application
+  health. Nyx-4 has been asked to confirm whether the stopped duplicate name is
+  intentional or stale. Household A/B dogfood remains redacted.
+- Fresh network-slowdown dogfood combines configured-probe response times and
+  Proxmox resource samples but explicitly says packet loss, throughput, DNS
+  timing, and trends are unavailable; it makes no causal diagnosis.
+
+The private coordination note and protected evidence paths are recorded in
+`hades-infra`; no private topology, credentials, or live endpoint details
+belong in this public continuation file.
+
 ## Current repository work
 
 - Source identity is explicit. Proxmox, NetBox, and Kuma records are never
@@ -74,38 +105,36 @@ of truth.
   catalogs/residency, and unresolved source links, and did not equate any of
   those with application readiness, successful generation, or GPU capacity.
   Fresh Household A dogfood returned only the generic home-computers boundary.
-- Fresh owner dogfood of a named inference-host activity question combined
-  current provider catalog/residency, the fresh configured host probe, and
-  explicitly historical hardware inventory. The answer did not imply current
-  workload/OS health or GPU capacity. Household A received only the generic
-  boundary; no owner infrastructure reads were exposed. Candidate `f4aea3b`
-  now labels a stale role “last recorded” and marks both role and specifications
-  historical. Public CI, exact-active-overlay composition, rollback deployment,
-  and fresh persisted owner/household UI acceptance pass. The underlying
-  private capability-matrix deployment drift remains open for Nyx-4 review.
+- Fresh owner dogfood of named inference-host activity initially combined
+  provider catalog/residency, a host probe, and historical hardware inventory
+  without live GPU data. The separately approved fixed-command telemetry is
+  now active for identity-linked hosts. Candidate `3c6504c` fetches only the
+  requested node's sample and removes contradictory “GPU not connected”
+  wording. Tartarus and Hypnos pass fresh persisted owner UI checks; Household
+  A/B remain generic. Hermes Compute still fails closed because its NetBox
+  identity does not resolve in current composed inventory. Hardware role and
+  specifications remain historical; CPU load and actual inference execution
+  are not verified.
 - The deployed household status boundary now uses plain language for “Why is
   everything slow?” and “Are all the computers okay?” Fresh authenticated
   Household A/B chats persisted explicit limits without owner topology or
   owner-only source reads. Candidate `4c73e28` passed Public CI; the broader
   homelab source-coverage gates remain open.
-- Fresh owner dogfood for “Which GPUs are free right now?” says live capacity
-  cannot be verified because per-host utilization/free-VRAM telemetry is not
-  connected or available. It does not infer free capacity from hardware
-  inventory or empty model residency. Household A receives only the owner
-  session boundary; both answers persisted. A fresh “Can the homelab handle
-  another model?” read returned provider catalogs/residency but declined to
-  rank a host because capability inventory is stale, live VRAM/load is absent,
-  and runtime memory needs are unknown; that answer also persisted.
-- A fresh owner request to verify NVIDIA drivers and GPU execution fell through
-  to an unrelated web response. The current-tree fix routes owners through the
-  fixed-command GPU telemetry reader plus provider inventory, and states the
-  limits of each observation. Household requests receive a generic boundary
-  before any source read. Public CI, synthetic runtime coverage, exact-active-
-  overlay composition, and fresh authenticated owner/household UI turns pass.
-  The owner answer says driver/GPU execution are unknown because host telemetry
-  is unconfigured, while reporting current provider catalog/residency reads.
-  Household receives only the generic owner-only boundary. The SSH telemetry
-  profile remains unconfigured; no host account/key or access was activated.
+- Fresh owner dogfood for “Which GPUs are free right now?” now reports
+  timestamped per-device utilization and free VRAM from the fixed-command
+  reader. The answer treats it as a point-in-time observation and does not
+  infer model fit from free VRAM or provider-reported residency. Household A/B
+  receive only the owner-only boundary. Model placement remains uncertain
+  without model, quantization, context, and runtime memory requirements.
+- A fresh owner request to verify NVIDIA/GPU status is routed through the
+  fixed-command telemetry reader and provider inventory. The approved
+  deployment's restricted `nvidia-smi` read proves device telemetry is
+  available at that check; it does not establish general driver health, GPU
+  process attribution, or successful inference. Provider-reported residency
+  remains separate evidence. Household A/B receive the generic boundary before
+  owner source reads. The dedicated non-sudo account/key and strict-host-key
+  profile are active only for the explicitly approved deployment; no driver
+  changes were made.
 - Fresh “What changed since yesterday?” owner dogfood returned the bounded
   Proxmox-task/NetBox-update view with a read timestamp and partial-scope
   caveats. Candidate `33b24ec` now explicitly states that host OS,
@@ -133,11 +162,11 @@ of truth.
 - NetBox's application-service coverage is incomplete, so some intended service
   placements cannot be established. HADES must report the gap rather than infer
   placement from hostnames, IPs, or container listings.
-- Fixed-command, strict-host-key GPU telemetry is implemented and tested but
-  unconfigured. Current per-host utilization/free VRAM and model-fit
-  recommendations remain unavailable; host account and key activation require
-  separate owner approval. The owner selected preparation of the integration;
-  this does not activate credentials or access on any node.
+- GPU telemetry is configured only in the approved owner deployment using a
+  dedicated non-sudo identity, fixed command, and strict host-key checking.
+  Other deployments remain disabled until separately configured and approved.
+  Telemetry does not measure host CPU, attribute GPU use to a process, prove
+  successful generation, or establish model fit.
 - Future activity comparison still needs a saved prior snapshot; recent task
   history is not a complete change log and host/service event sources are not
   connected. Source comparison must continue to say when identity links or
@@ -169,7 +198,7 @@ of truth.
   partial/unknown handling and redaction, not complete source reconciliation.
 - Public `main` remains green at the release-convergence baseline. Homelab
   implementation and current continuation evidence are on the review branch;
-  candidate `b6c9cfb` passed Public CI and is deployed behind the recorded
+  candidate `3c6504c` passed Public CI and is deployed behind the recorded
   read-only rollback procedure, but has not been integrated into `main`.
 
 ## Repository and deployment authority
