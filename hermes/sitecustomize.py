@@ -5352,6 +5352,9 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
         if placement_size:
             return f"Where should I run a {placement_size.group('size')} GB model?"
         if placement_followup:
+            live_winner = _hades_homelab_live_capacity_winner(summary, names)
+            if live_winner:
+                return f"Can {live_winner} host another model?"
             return "Where should I run another model?"
         return None
     if explicit:
