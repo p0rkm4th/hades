@@ -173,6 +173,11 @@ Status: **PARTIAL**
   and its bounded HTTP reachability check separately from the empty NetBox
   application-service catalog, and explicitly disclaims task/delegation
   execution. Household A/B receive only the internal-host-details boundary.
+- Fresh owner network-slowdown dogfood composes configured probe response
+  times and current Proxmox resource samples, then states that these are not a
+  network-wide measurement and packet-loss, throughput, DNS timing, and trends
+  are unavailable. It does not invent a bottleneck. Household A/B are told
+  whole-home diagnosis is not available from their account.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 - Fresh owner backup dogfood found that Proxmox's archived history can include
