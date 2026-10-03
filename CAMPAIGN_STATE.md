@@ -75,6 +75,13 @@ of truth.
 - Backup answers distinguish configured jobs and bounded task history from
   verified backup contents, independent custody, and restoreability.
 - Current-tree privacy checks and the focused homelab contracts pass.
+- A fresh capability-discovery question exposed internal source/tool descriptions
+  on a household model-fallback path; another attempt stalled on a preamble. The
+  affected acceptance chats were removed while protected evidence was retained.
+  Candidate routing now sends this intent to the deterministic owner summary or
+  the plain household boundary, and regression tests verify that no household
+  model/tool invocation occurs. Production still needs rollout and fresh UI
+  reacceptance before this defect can be considered closed.
 
 ## Remaining evidence
 

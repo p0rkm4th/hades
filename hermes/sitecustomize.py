@@ -5657,7 +5657,8 @@ def _hades_broad_homelab_status_intent(text):
     ):
         return True
     return bool(re.search(
-        r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
+        r"^\s*(?:what\s+can\s+(?:you|hades)\s+(?:currently\s+)?(?:see|verify|check)\s+(?:about|in)\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|infrastructure)(?:.{0,100}\bwhat\s+(?:can['’]?t|cannot|can\s+(?:you\s+)?not)\s+(?:you\s+)?(?:see|verify|check))?|"
+        r"is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
         r"is\s+(?:the\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
         r"are\s+(?:(?:all\s+the|all|the|my|our)\s+)?(?:computers?|machines?|servers?)\s+(?:okay|ok|all\s+right|good|healthy|up|down)|"
         r"what(?:['’]s|\s+is)\s+(?:down|degraded)(?:\s+or\s+(?:down|degraded))?"

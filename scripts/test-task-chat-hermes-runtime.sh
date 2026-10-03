@@ -162,6 +162,10 @@ assert hades._hades_broad_homelab_status_intent(unlinked_source_question)
 unverified_service_question = "Which homelab services can you not verify right now?"
 assert hades._hades_homelab_service_coverage_intent(unverified_service_question)
 assert hades._hades_broad_homelab_status_intent(unverified_service_question)
+capability_discovery_question = (
+    "What can you currently see about my homelab, and what can you not see?"
+)
+assert hades._hades_broad_homelab_status_intent(capability_discovery_question)
 assert hades._hades_homelab_target_from_question("Check Synthetic Node B.") == "synthetic node b"
 assert hades._hades_homelab_named_check_target("Check my shopping list") is None
 assert not hades._hades_positive_homelab_control_request(
@@ -412,6 +416,13 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert "Live inference reads:" in broad_owner_status["final_response"], broad_owner_status
     assert "do not prove generation or available GPU capacity" in broad_owner_status["final_response"], broad_owner_status
     assert registry.calls[:2] == ["homelab_summary", "homelab_inference_inventory"], registry.calls
+    capability_discovery_owner = owner_agent.run_conversation(
+        capability_discovery_question, conversation_history=[]
+    )
+    assert capability_discovery_owner.get("completed") is True, capability_discovery_owner
+    assert capability_discovery_owner.get("api_calls") == 0, capability_discovery_owner
+    assert "live homelab view is partial" in capability_discovery_owner["final_response"].casefold(), capability_discovery_owner
+    assert "selected guests" in capability_discovery_owner["final_response"].casefold(), capability_discovery_owner
 
     backup_only = owner_agent.run_conversation(
         "Are my Proxmox backups current?", conversation_history=[]
@@ -601,6 +612,17 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert household_computer_status.get("api_calls") == 0, household_computer_status
     assert "can't check all the home computers" in household_computer_status["final_response"].casefold(), household_computer_status
     assert "Synthetic Node B" not in household_computer_status["final_response"], household_computer_status
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
+    household_capability_discovery = household_agent.run_conversation(
+        capability_discovery_question, conversation_history=[]
+    )
+    assert household_capability_discovery.get("completed") is True, household_capability_discovery
+    assert household_capability_discovery.get("api_calls") == 0, household_capability_discovery
+    assert "can't check all the home computers" in household_capability_discovery["final_response"].casefold(), household_capability_discovery
+    for private_detail in ("Proxmox", "NetBox", "Uptime Kuma", "MCP", "host-alexandra"):
+        assert private_detail.casefold() not in household_capability_discovery["final_response"].casefold(), household_capability_discovery
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
@@ -803,7 +825,7 @@ try:
             conversation_history=[],
         )
         assert household_agent_zero_capability.get("completed") is True and household_agent_zero_capability.get("api_calls") == 0, household_agent_zero_capability
-        assert "can't check all the home computers" in household_agent_zero_capability["final_response"], household_agent_zero_capability
+        assert "Agent Zero is owner-only" in household_agent_zero_capability["final_response"], household_agent_zero_capability
         assert "7002" not in household_agent_zero_capability["final_response"], household_agent_zero_capability
         assert resource_tool_calls == [], resource_tool_calls
     finally:

@@ -35,6 +35,12 @@ Status: **PARTIAL**
 - Live source coverage is incomplete in the current private deployment.
   Detailed endpoint observations, topology, and source conflicts remain in
   private infrastructure records; do not infer broad health from partial data.
+- Capability-discovery dogfood found a household question that fell through to
+  model fallback and described internal source/tool capabilities; a separate
+  attempt persisted only an unfinished preamble. Candidate code now routes this
+  question to a deterministic owner summary or a plain household boundary and
+  has focused regression coverage. Production reacceptance remains required;
+  keep this disclosure defect open until the candidate is deployed and verified.
 - Live owner dogfood found one compound change-history question that returned
   a broad current snapshot and, with an added qualifier, could be falsely
   refused by the private-person research guard. A general model-placement
