@@ -33,6 +33,7 @@ wanted = {
     '_hades_endpoint_intent_before_provision',
     '_hades_service_endpoint_response',
     '_hades_service_placement_intent',
+    '_hades_agent_zero_runtime_placement_response',
     '_hades_managed_server_status_intent',
     '_hades_service_placement_response',
     '_hades_endpoint_continuation_response',
@@ -153,6 +154,7 @@ registry_module.registry = FakeHomelabRegistry()
 sys.modules['tools'] = tools_module
 sys.modules['tools.registry'] = registry_module
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
+namespace['_hades_agent_zero_available'] = lambda: True
 run_conversation = next((
     node for node in ast.walk(tree)
     if isinstance(node, ast.FunctionDef) and node.name == '_hades_run_conversation'
@@ -349,6 +351,26 @@ assert 'incomplete' in placement_response(
 assert 'empty' in placement_response(
     'Where is Agent Zero?', {'status': 'OK', 'coverage': 'EMPTY', 'services': []}, 'owner'
 )
+previous_agent_zero_url = os.environ.get('AGENT_ZERO_URL')
+os.environ['AGENT_ZERO_URL'] = 'http://127.0.0.1:7002/private-path'
+try:
+    local_agent_zero = placement_response(
+        'Where is Agent Zero running?', {'status': 'OK', 'coverage': 'EMPTY', 'services': []}, 'owner'
+    )
+    assert 'loopback port 7002 on the HADES host' in local_agent_zero, local_agent_zero
+    assert 'returned an HTTP response' in local_agent_zero and 'NetBox' in local_agent_zero, local_agent_zero
+    assert 'private-path' not in local_agent_zero, local_agent_zero
+    namespace['_hades_agent_zero_available'] = lambda: False
+    unavailable_agent_zero = placement_response(
+        'Where is Agent Zero running?', {'status': 'OK', 'coverage': 'EMPTY', 'services': []}, 'owner'
+    )
+    assert "could not reach the configured endpoint" in unavailable_agent_zero, unavailable_agent_zero
+finally:
+    if previous_agent_zero_url is None:
+        os.environ.pop('AGENT_ZERO_URL', None)
+    else:
+        os.environ['AGENT_ZERO_URL'] = previous_agent_zero_url
+    namespace['_hades_agent_zero_available'] = lambda: True
 assert 'multiple matching service records' in endpoint_response(
     'Can you give me the Minecraft IP and port for the firewall?', {
     'status': 'OK', 'coverage': 'COMPLETE', 'services': [
@@ -635,6 +657,27 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'Where is Agent Zero?', 'synthetic-owner', 'owner'
         )
         assert direct_read('Where is Agent Zero?', 'synthetic-household', 'household') is None
+        previous_agent_zero_url = os.environ.get('AGENT_ZERO_URL')
+        os.environ['AGENT_ZERO_URL'] = 'http://127.0.0.1:7002'
+        registry_module.registry.calls.clear()
+        try:
+            agent_zero_live = direct_read(
+                'Where is Agent Zero running?', 'synthetic-owner', 'owner'
+            )
+            assert 'loopback port 7002 on the HADES host' in agent_zero_live, agent_zero_live
+            assert 'delegation or task execution' in agent_zero_live, agent_zero_live
+            assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
+            registry_module.registry.calls.clear()
+            household_agent_zero = direct_read(
+                'Where is Agent Zero running?', 'synthetic-household', 'household'
+            )
+            assert household_agent_zero and '7002' not in household_agent_zero and 'loopback' not in household_agent_zero, household_agent_zero
+            assert not registry_module.registry.calls, registry_module.registry.calls
+        finally:
+            if previous_agent_zero_url is None:
+                os.environ.pop('AGENT_ZERO_URL', None)
+            else:
+                os.environ['AGENT_ZERO_URL'] = previous_agent_zero_url
         os.environ['HADES_TEST_INFERENCE_NODE'] = '1'
         try:
             followup_context = (

@@ -6969,6 +6969,63 @@ def _hades_service_placement_intent(user_text, scope=""):
     ))
 
 
+def _hades_agent_zero_runtime_placement_response(user_text, service_catalog, scope=""):
+    """Report the configured Agent Zero endpoint separately from NetBox intent."""
+    if scope != "owner" or not _hades_service_placement_intent(user_text, scope):
+        return None
+    if not re.search(r"\bagent\s*zero\b|\bagent0\b", str(user_text or ""), re.IGNORECASE):
+        return None
+    configured_url = str(os.environ.get("AGENT_ZERO_URL") or "").strip()
+    if not configured_url:
+        return None
+    try:
+        from urllib.parse import urlsplit
+        parsed = urlsplit(configured_url)
+        hostname = parsed.hostname or ""
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError:
+        return None
+    if parsed.scheme not in {"http", "https"} or not hostname or not re.fullmatch(
+        r"[A-Za-z0-9.:-]{1,253}", hostname
+    ):
+        return None
+    import ipaddress
+    try:
+        local_endpoint = hostname.casefold() == "localhost" or ipaddress.ip_address(hostname).is_loopback
+    except ValueError:
+        local_endpoint = hostname.casefold() == "localhost"
+    endpoint = f"loopback port {port}" if local_endpoint else f"{hostname}:{port}"
+    try:
+        responding = bool(_hades_agent_zero_available())
+    except Exception:
+        responding = False
+    from datetime import timezone
+    checked_at = datetime.now(timezone.utc).isoformat()
+    status = (
+        "The configured endpoint returned an HTTP response to HADES's bounded read-only probe."
+        if responding else
+        "HADES's bounded read-only probe could not reach the configured endpoint."
+    )
+    catalog = service_catalog if isinstance(service_catalog, dict) else {}
+    coverage = str(catalog.get("coverage") or "UNKNOWN").upper()
+    catalog_status = str(catalog.get("status") or "UNKNOWN").upper()
+    if catalog_status == "OK" and coverage == "EMPTY":
+        inventory = "NetBox's application-service catalog is reachable but empty, so intended placement is not recorded there."
+    elif catalog_status == "OK" and coverage == "COMPLETE":
+        inventory = "NetBox has no matching Agent Zero application-service record, so intended placement is not recorded there."
+    else:
+        inventory = "NetBox application-service placement is unavailable or incomplete."
+    connector = (
+        f"HADES is configured to reach Agent Zero through {endpoint} on the HADES host."
+        if local_endpoint else
+        f"HADES is configured to reach Agent Zero at {endpoint}."
+    )
+    return (
+        f"{connector} {status} {inventory} This verifies endpoint reachability only, not Agent Zero delegation or task execution. "
+        f"Checked at {checked_at}."
+    )
+
+
 def _hades_managed_server_status_intent(user_text, scope=""):
     """Route only managed-workload status requests to the managed server view."""
     text = str(user_text or "")
@@ -6996,14 +7053,17 @@ def _hades_service_placement_response(user_text, service_catalog, scope=""):
         return None
     text = str(user_text or "")
     if not isinstance(service_catalog, dict):
-        return "I couldn't check the service inventory, so I can't verify where that service is intended to run."
+        observed = _hades_agent_zero_runtime_placement_response(user_text, None, scope)
+        return observed or "I couldn't check the service inventory, so I can't verify where that service is intended to run."
     status = str(service_catalog.get("status") or "UNKNOWN").upper()
     coverage = str(service_catalog.get("coverage") or "UNKNOWN").upper()
     rows = service_catalog.get("services")
     if status != "OK" or coverage not in {"COMPLETE", "EMPTY"} or not isinstance(rows, list):
-        return "The service inventory is unavailable or incomplete, so I can't verify where that service is intended to run."
+        observed = _hades_agent_zero_runtime_placement_response(user_text, service_catalog, scope)
+        return observed or "The service inventory is unavailable or incomplete, so I can't verify where that service is intended to run."
     if coverage == "EMPTY" or not rows:
-        return "The NetBox service inventory is empty, so I can't establish where that service is intended to run."
+        observed = _hades_agent_zero_runtime_placement_response(user_text, service_catalog, scope)
+        return observed or "The NetBox service inventory is empty, so I can't establish where that service is intended to run."
     matches = [
         row for row in rows
         if isinstance(row, dict) and isinstance(row.get("name"), str)
@@ -7012,7 +7072,8 @@ def _hades_service_placement_response(user_text, service_catalog, scope=""):
     if len(matches) > 1:
         return "I found multiple matching service records, so I can't choose one placement safely."
     if not matches:
-        return "I couldn't find a matching service record in NetBox, so I can't verify its intended placement."
+        observed = _hades_agent_zero_runtime_placement_response(user_text, service_catalog, scope)
+        return observed or "I couldn't find a matching service record in NetBox, so I can't verify its intended placement."
     row = matches[0]
     name = " ".join(str(row.get("name") or "service").split())[:100]
     parent = " ".join(str(row.get("parent_name") or "").split())[:100]
