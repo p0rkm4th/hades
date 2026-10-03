@@ -14,15 +14,19 @@ Status: **PARTIAL**
   joins records by display name or IP alone.
 - Synthetic tests cover stale observations, unavailable sources, duplicate
   names, source conflicts, household boundaries, and no-write behavior.
-- Current source-link configuration and authenticated owner UI dogfood remain
-  private deployment gates. Until that work is proven, a complete live
-  homelab summary is not accepted.
+- Reviewed source links are active in the owner deployment. Authenticated owner
+  and household UI dogfood now covers live node reads, provider model
+  inventory/residency, model-capacity caveats, and household redaction. A full
+  live homelab summary is still not accepted because Proxmox guest visibility
+  and service identity/catalog coverage remain incomplete.
 - An optional provider-native reader now queries Ollama model catalogs and
   residency plus OpenAI-compatible model catalogs, preserving endpoint
-  identity and partial/unavailable states. A direct development-runner probe
-  verified approved private endpoints, but deployed HADES and authenticated
-  owner dogfood remain unverified. GPU utilization/free-memory telemetry and
-  placement evidence remain open.
+  identity and partial/unavailable states. Deployed HADES owner dogfood
+  confirms provider catalogs and reported residency, while explicitly
+  distinguishing these from successful generation and available capacity.
+  Fixed-command read-only GPU telemetry is prepared and tested but remains
+  unconfigured; live per-host utilization/free-VRAM evidence and model-fit
+  recommendations remain open.
 - Live source coverage is incomplete in the current private deployment.
   Detailed endpoint observations, topology, and source conflicts remain in
   private infrastructure records; do not infer broad health from partial data.

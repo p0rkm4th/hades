@@ -21,6 +21,14 @@ Hindsight may supply remembered labels or locations, but live status always
 comes from the relevant canonical system. HADES must report stale, unavailable,
 or partial data rather than infer health.
 
+## Runtime source parity
+
+The Hermes policy overlay and `integrations/homelab-readonly/server.py` are
+separate runtime artifacts. A policy-only overlay deployment does not update
+formatter or source-reader changes in the MCP adapter. Deployments that change
+both must stage, back up, and validate both loaded files as one candidate, then
+verify the actual runtime paths and source hashes before authenticated dogfood.
+
 The capability matrix is an observed inventory snapshot, not current model
 availability, GPU load, or runtime health. Provider-native inference reads are
 disabled unless `HADES_INFERENCE_ENDPOINTS_JSON` is explicitly configured.

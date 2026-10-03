@@ -12,8 +12,8 @@ recovery custody details.
 | Identity and household boundaries | Synthetic contract coverage | Repeat owner-approved acceptance on the intended deployment |
 | Core chat and memory | Product behavior accepted in synthetic tests | Preserve stable identity mapping across restore |
 | Shared household services | Synthetic UI coverage | Owner-gated production acceptance |
-| Read-only homelab view | PARTIAL | Stable source links, freshness/conflict handling, authenticated owner dogfood, and partial-source acceptance |
-| Inference awareness | PARTIAL | Configure and verify provider-native reads against live endpoints; add current GPU telemetry and evidence-based fit estimates |
+| Read-only homelab view | PARTIAL | Owner/household UI dogfood and reviewed source links are active; improve partial Proxmox guest visibility and service identity/catalog coverage |
+| Inference awareness | PARTIAL | Provider catalogs and residency are deployed and owner-dogfooded; configure the owner-gated fixed-command GPU telemetry before making live capacity comparisons |
 | Backup and restore | PARTIAL | Complete synthetic restore proof plus separately managed off-host custody |
 | Installation and upgrades | Contract documented | Independent clean-host reproduction and operator acceptance |
 | Optional integrations | GATED | Require explicit private inputs and remain disabled when absent |
