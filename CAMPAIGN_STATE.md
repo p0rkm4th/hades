@@ -43,8 +43,11 @@ of truth.
   an inconclusive existing check. A local candidate now says there is no
   current game-server check when no matching monitor is available, while
   preserving the separate inconclusive wording for a matching monitor with
-  unknown status. Focused service-health and Hermes runtime contracts pass;
-  this candidate is not deployed.
+  unknown status. Candidate `fa33f81` passed focused service-health and Hermes
+  runtime contracts and Public CI. It was deployed to the approved owner
+  runtime with a root-only hash-guarded rollback. Hermes is active; fresh
+  owner UI identifies the missing matching Kuma monitor, and Household A now
+  says it has no current game-server check without exposing owner topology.
 - “Where is HADES running?” reports two same-name Proxmox guests and separates
   the stopped guest from the running guest; it does not claim application
   health. Nyx-4 has been asked to confirm whether the stopped duplicate name is
