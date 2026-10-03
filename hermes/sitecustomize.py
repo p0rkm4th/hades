@@ -5637,6 +5637,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     change_intent = bool(re.search(
         r"^\s*what\s+(?:has\s+)?changed"
         r"(?:\s+(?:in|on|with)\s+(?:(?:the|my|our|this)\s+)?(?:homelab|home\s+lab|infrastructure|servers?))?"
+        r"(?:\s+(?:in|over|during)\s+(?:the\s+)?(?:last|past)\s+(?:(?:24|48|72|168)\s+hours?|day|week))?"
         r"(?:\s+since\s+(?:yesterday|last\s+week|last\s+time|last\s+check))?\s*[?.!]*\s*$",
         text,
         re.IGNORECASE,
@@ -5818,7 +5819,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         if change_intent:
-            history_window_hours = 168 if re.search(r"\blast\s+week\b", text, re.IGNORECASE) else 24
+            explicit_hours = re.search(r"\b(24|48|72|168)\s+hours?\b", text, re.IGNORECASE)
+            history_window_hours = (
+                int(explicit_hours.group(1)) if explicit_hours
+                else 168 if re.search(r"\b(?:last|past)\s+week\b", text, re.IGNORECASE)
+                else 24
+            )
             activity = _hades_direct_homelab_tool_result(
                 "homelab_recent_activity", {"window_hours": history_window_hours}
             )

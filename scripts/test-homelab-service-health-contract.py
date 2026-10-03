@@ -735,6 +735,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'Which computer is having trouble?', "Why's shit slow?", 'What changed?',
             'What changed since yesterday?', 'What changed in the homelab since yesterday?',
             'What changed in my homelab since yesterday?',
+            'What changed in the homelab in the last 24 hours?',
             'What changed on the infrastructure since last week?', 'What changed since last week?',
         ):
             registry_module.registry.calls.clear()
@@ -757,6 +758,15 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'NetBox device synthetic-router was last updated' in recent_activity_answer, recent_activity_answer
         assert 'Proxmox task coverage is partial' in recent_activity_answer, recent_activity_answer
         assert 'deletions are not included' in recent_activity_answer, recent_activity_answer
+        os.environ['HADES_TEST_PROXMOX_ACTIVITY'] = '1'
+        try:
+            recent_day_answer = direct_read(
+                'What changed in the homelab in the last 24 hours?', 'synthetic-owner', 'owner'
+            )
+        finally:
+            os.environ.pop('HADES_TEST_PROXMOX_ACTIVITY', None)
+        assert 'last 24 hours' in recent_day_answer, recent_day_answer
+        assert registry_module.registry.calls[-1][1] == {'window_hours': 24}, registry_module.registry.calls[-1]
         calls_before_household_change = len(registry_module.registry.calls)
         household_changes = direct_read(
             'What changed in the homelab since yesterday?', 'synthetic-household', 'household'
