@@ -19,6 +19,8 @@ def _hades_direct_homelab_read(text, subject="", scope="owner", context_text="")
     if _hades_service_health_target(text):
         return text
     return _hades_homelab_helper(text)
+def _hades_homelab_recent_activity_response(report):
+    return str(report)
 def _hades_service_health_target(text):
     return text if "down" in text.casefold() else None
 def _hades_homelab_helper(text):

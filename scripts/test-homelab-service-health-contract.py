@@ -26,6 +26,7 @@ wanted = {
     '_hades_service_health_target', '_hades_service_monitor_response',
     '_hades_homelab_availability_groups', '_hades_direct_homelab_read',
     '_hades_direct_homelab_tool_result',
+    '_hades_homelab_recent_activity_response',
     '_hades_homelab_workloads_on_host_response',
     '_hades_homelab_core_vm_placement_response',
     '_hades_endpoint_intent_before_provision',
@@ -52,6 +53,10 @@ functions = [
 assert {node.name for node in functions} == wanted
 debug_logs = []
 info_logs = []
+def record_warning(*args, **_kwargs):
+    error = sys.exc_info()[1]
+    debug_logs.append((*args, repr(error) if error else None))
+
 namespace = {
     'json': __import__('json'),
     're': re,
@@ -65,7 +70,7 @@ namespace = {
     'sys': sys,
     'time': time,
     '_hades_logger': type('Log', (), {
-        'warning': staticmethod(lambda *args, **_kwargs: debug_logs.append(args)),
+        'warning': staticmethod(record_warning),
         'info': staticmethod(lambda *args, **_kwargs: info_logs.append(args)),
     })(),
     '_hades_phase2_backup_response': lambda *_args, **_kwargs: 'Configured HADES backup checks: current.',
@@ -118,11 +123,15 @@ class FakeHomelabRegistry:
                 },
             }
             return __import__('json').dumps({'result': __import__('json').dumps(report)})
-        assert arguments == {}
+        if tool == 'homelab_recent_activity':
+            assert arguments in ({'window_hours': 24}, {'window_hours': 168})
+        else:
+            assert arguments == {}
         call = getattr(module, tool, None)
         if not callable(call):
             return __import__('json').dumps({'error': 'synthetic tool is unavailable'})
-        return __import__('json').dumps({'result': __import__('json').dumps(call())})
+        result = call(arguments.get('window_hours', 24)) if tool == 'homelab_recent_activity' else call()
+        return __import__('json').dumps({'result': __import__('json').dumps(result)})
 
 
 tools_module = types.ModuleType('tools')
@@ -704,10 +713,12 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'What changed in my homelab since yesterday?',
             'What changed on the infrastructure since last week?', 'What changed since last week?',
         ):
+            registry_module.registry.calls.clear()
             answer_text = direct_read(prompt, 'synthetic-owner', 'owner')
             assert answer_text, f'direct owner homelab status route missed {prompt!r}'
             if prompt.startswith('What changed'):
-                assert 'recent changes remain unverified' in answer_text, answer_text
+                assert 'recent homelab changes' in answer_text.casefold(), (answer_text, debug_logs[-5:], registry_module.registry.calls[-5:])
+                assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_recent_activity'), registry_module.registry.calls
         os.environ['HADES_TEST_PROXMOX_ACTIVITY'] = '1'
         try:
             recent_activity_answer = direct_read(

@@ -16,6 +16,7 @@ EXTRA = {
     "_hades_ambiguous_media_device_clarification",
     "_hades_direct_homelab_backup_compound",
     "_hades_direct_proxmox_backup_read",
+    "_hades_homelab_recent_activity_response",
     "_hades_direct_owner_location",
     "_hades_endpoint_continuation_response",
     "_hades_service_placement_intent",

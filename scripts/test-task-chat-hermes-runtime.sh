@@ -48,6 +48,7 @@ class SyntheticHomelabRegistry:
         "homelab_summary",
         "homelab_owner_snapshot",
         "homelab_backup_status",
+        "homelab_recent_activity",
         "homelab_compute_capabilities",
         "homelab_inference_inventory",
     }
@@ -67,11 +68,14 @@ class SyntheticHomelabRegistry:
         return object() if tool in self._tools else None
 
     def dispatch(self, name, arguments):
-        assert arguments == {}
         if name.startswith("mcp__homelab_readonly__"):
             tool = name.removeprefix("mcp__homelab_readonly__")
         else:
             tool = name.removeprefix("mcp_homelab_readonly_")
+        if tool == "homelab_recent_activity":
+            assert arguments == {"window_hours": 24}
+        else:
+            assert arguments == {}
         self.calls.append(tool)
         adapter = os.path.join(
             os.environ["HADES_HERMES_WORKING_DIRECTORY"],
@@ -81,7 +85,11 @@ class SyntheticHomelabRegistry:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         try:
-            result = getattr(module, tool)()
+            result = (
+                getattr(module, tool)(arguments.get("window_hours", 24))
+                if tool == "homelab_recent_activity"
+                else getattr(module, tool)()
+            )
         except Exception as exc:
             return json.dumps({"error": type(exc).__name__})
         return json.dumps({"result": json.dumps(result)})
@@ -505,7 +513,6 @@ for index, prompt in enumerate((
     )
     variant = variant_agent.run_conversation(prompt, conversation_history=[])
     assert variant.get("completed") is True and variant.get("api_calls") == 0, (prompt, variant)
-    assert "Live Proxmox currently reports: hades-core." in variant["final_response"], (prompt, variant)
     assert "memory update" not in variant["final_response"].casefold(), (prompt, variant)
     if prompt in (
         "What changed since yesterday?",
@@ -513,7 +520,9 @@ for index, prompt in enumerate((
         "What changed in my homelab since yesterday?",
     ):
         assert "No recent Proxmox or NetBox activity source is configured" in variant["final_response"], variant
-        assert "homelab_inference_inventory" not in hermes_registry_module.registry.calls, hermes_registry_module.registry.calls
+        assert hermes_registry_module.registry.calls == ["homelab_recent_activity"], hermes_registry_module.registry.calls
+    else:
+        assert "Live Proxmox currently reports: hades-core." in variant["final_response"], (prompt, variant)
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
 ai_availability_agent = agent_class(

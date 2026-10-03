@@ -5230,6 +5230,104 @@ def _hades_household_game_health_intent(user_text, scope):
     ))
 
 
+def _hades_homelab_recent_activity_response(report):
+    """Format bounded recent-change evidence without a broad status read."""
+    if not isinstance(report, dict):
+        return "I couldn't read recent homelab activity."
+    status = str(report.get("status") or "UNKNOWN").upper()
+    if status == "NOT_CONFIGURED":
+        return "No recent Proxmox or NetBox activity source is configured, so I can't verify recent homelab changes."
+    if status in {"SOURCE_UNAVAILABLE", "CONFIGURATION_ERROR", "UNKNOWN"}:
+        return "I couldn't read the configured Proxmox or NetBox activity sources, so recent homelab changes are unknown."
+    window_hours = report.get("window_hours")
+    if type(window_hours) is not int or not 1 <= window_hours <= 168:
+        window_hours = 24
+    source_status = report.get("source_status")
+    source_status = source_status if isinstance(source_status, dict) else {}
+    endpoints = report.get("endpoints") if isinstance(report.get("endpoints"), list) else []
+    proxmox_status = str(source_status.get("proxmox") or ("READABLE" if endpoints else "NOT_CONFIGURED")).upper()
+    netbox = report.get("netbox") if isinstance(report.get("netbox"), dict) else {}
+    netbox_status = str(source_status.get("netbox") or netbox.get("status") or "NOT_CONFIGURED").upper()
+    events = [
+        event for endpoint in endpoints if isinstance(endpoint, dict)
+        for event in endpoint.get("events", []) if isinstance(event, dict)
+    ]
+    timeline = [(event.get("starttime", 0), "proxmox", event) for event in events]
+    objects = netbox.get("objects") if isinstance(netbox.get("objects"), list) else []
+    for item in objects:
+        if not isinstance(item, dict):
+            continue
+        try:
+            updated = datetime.fromisoformat(str(item.get("last_updated", "")).replace("Z", "+00:00"))
+            stamp = updated.timestamp()
+        except (ValueError, OverflowError, TypeError):
+            stamp = 0
+        timeline.append((stamp, "netbox", item))
+    timeline.sort(key=lambda row: row[0], reverse=True)
+    parts = []
+    if timeline:
+        records = []
+        for stamp, source, item in timeline[:6]:
+            if source == "netbox":
+                kind = str(item.get("object_type") or "inventory record")[:24]
+                name = str(item.get("name") or "unnamed record")[:100]
+                updated = str(item.get("last_updated") or "time unknown")[:40]
+                records.append(f"NetBox {kind} {name} was last updated at {updated}")
+                continue
+            try:
+                observed = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(stamp))
+            except (TypeError, ValueError, OverflowError, OSError):
+                observed = "time unknown"
+            node = str(item.get("node") or "Proxmox node")[:64]
+            guest = str(item.get("guest_id") or "audited guest")[:20]
+            task = str(item.get("task_type") or "unknown task")[:32]
+            result = str(item.get("status") or "UNKNOWN").casefold()[:24]
+            records.append(f"{task} for guest {guest} on {node} ({result}, {observed})")
+        parts.append(
+            f"Recent recorded activity for the last {window_hours} hours: "
+            + "; ".join(records) + "."
+        )
+        if len(timeline) > 6:
+            parts.append(f"{len(timeline) - 6} additional records omitted.")
+    else:
+        empty = []
+        if proxmox_status == "READABLE":
+            empty.append(f"no archived guest tasks in the audited scope for the last {window_hours} hours")
+        elif proxmox_status == "PARTIAL":
+            empty.append(f"no archived tasks returned in the readable Proxmox scope for the last {window_hours} hours")
+        elif proxmox_status == "SOURCE_UNAVAILABLE":
+            empty.append("Proxmox task history is unavailable")
+        if netbox_status == "READABLE":
+            empty.append(f"no recently updated NetBox device/service records returned for the last {window_hours} hours")
+        elif netbox_status == "PARTIAL":
+            empty.append("NetBox inventory-update coverage is partial")
+        elif netbox_status == "SOURCE_UNAVAILABLE":
+            empty.append("NetBox inventory-update coverage is unavailable")
+        parts.append(
+            "No recorded changes were returned: " + "; ".join(empty) + "."
+            if empty else "No configured activity source returned usable recent-change data."
+        )
+    retrieved_at = str(report.get("retrieved_at") or "")[:40]
+    if proxmox_status == "PARTIAL":
+        parts.append("Proxmox task coverage is partial.")
+    elif proxmox_status == "SOURCE_UNAVAILABLE":
+        parts.append("Proxmox task history is unavailable.")
+    elif proxmox_status == "NOT_CONFIGURED":
+        parts.append("Proxmox task history is not configured.")
+    if netbox_status == "PARTIAL":
+        parts.append("NetBox inventory-update coverage is partial.")
+    elif netbox_status == "SOURCE_UNAVAILABLE":
+        parts.append("NetBox inventory-update coverage is unavailable.")
+    parts.append(f"Sources were read at {retrieved_at}." if retrieved_at else "Source read time is unavailable.")
+    parts.append(
+        "I don't have a saved prior homelab snapshot for a before/after comparison. "
+        "This is bounded activity evidence, not a complete change log. NetBox field "
+        "differences and deletions are not included, and completed Proxmox tasks "
+        "don't prove the resulting guest configuration or application health."
+    )
+    return " ".join(parts)
+
+
 def _hades_homelab_provenance_followup(user_text, context_text=""):
     """Recognize source/freshness follow-ups tied to an earlier homelab read."""
     return bool(
@@ -5453,6 +5551,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             return None
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        if change_intent:
+            history_window_hours = 168 if re.search(r"\blast\s+week\b", text, re.IGNORECASE) else 24
+            activity = _hades_direct_homelab_tool_result(
+                "homelab_recent_activity", {"window_hours": history_window_hours}
+            )
+            return _hades_homelab_recent_activity_response(activity)
         if inference_intent:
             inference = _hades_direct_homelab_tool_result("homelab_inference_inventory")
             model_location_intent = bool(re.search(
@@ -6165,85 +6269,6 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             unlinked_count = source_counts.get("identity_unlinked_resources", 0) if isinstance(source_counts, dict) else 0
             if isinstance(unlinked_count, int) and not isinstance(unlinked_count, bool) and unlinked_count > 0:
                 response += f" {unlinked_count} observations have no verified cross-source identity link and remain separate."
-        if change_intent:
-            history_window_hours = 168 if re.search(r"\blast\s+week\b", text, re.IGNORECASE) else 24
-            activity = _hades_direct_homelab_tool_result(
-                "homelab_recent_activity", {"window_hours": history_window_hours}
-            )
-            activity_status = str(activity.get("status") or "UNKNOWN").upper() if isinstance(activity, dict) else "UNKNOWN"
-            source_status = activity.get("source_status", {}) if isinstance(activity, dict) else {}
-            if not isinstance(source_status, dict):
-                source_status = {}
-            activity_endpoints = activity.get("endpoints", []) if isinstance(activity, dict) else []
-            proxmox_status = str(source_status.get("proxmox") or ("READABLE" if activity_endpoints else "NOT_CONFIGURED"))
-            netbox = activity.get("netbox", {}) if isinstance(activity, dict) else {}
-            if not isinstance(netbox, dict):
-                netbox = {}
-            netbox_status = str(source_status.get("netbox") or netbox.get("status") or "NOT_CONFIGURED")
-            if activity_status == "NOT_CONFIGURED":
-                response += " No recent Proxmox or NetBox activity source is configured, so I can't verify recent homelab changes."
-            elif activity_status in {"SOURCE_UNAVAILABLE", "CONFIGURATION_ERROR", "UNKNOWN"}:
-                response += " I couldn't read the configured Proxmox or NetBox activity sources, so recent changes remain unverified."
-            else:
-                endpoints = activity_endpoints
-                retrieved_at = str(activity.get("retrieved_at") or "") if isinstance(activity, dict) else ""
-                response += " I don't have a saved prior homelab snapshot for a before/after comparison."
-                if retrieved_at:
-                    response += f" Proxmox and NetBox activity sources were read at {retrieved_at}."
-                events = [
-                    event for endpoint in endpoints if isinstance(endpoint, dict)
-                    for event in endpoint.get("events", []) if isinstance(event, dict)
-                ]
-                timeline = [(event.get("starttime", 0), "proxmox", event) for event in events]
-                netbox_objects = netbox.get("objects", []) if isinstance(netbox.get("objects"), list) else []
-                for item in netbox_objects:
-                    if not isinstance(item, dict):
-                        continue
-                    try:
-                        changed_at = datetime.fromisoformat(str(item.get("last_updated", "")).replace("Z", "+00:00"))
-                        changed_epoch = changed_at.timestamp()
-                    except (ValueError, OverflowError):
-                        changed_epoch = 0
-                    timeline.append((changed_epoch, "netbox", item))
-                timeline.sort(key=lambda row: row[0], reverse=True)
-                if timeline:
-                    summaries = []
-                    for _, source, item in timeline[:6]:
-                        if source == "netbox":
-                            object_type = str(item.get("object_type") or "inventory record")[:24]
-                            name = str(item.get("name") or "unnamed record")[:100]
-                            changed_at = str(item.get("last_updated") or "time unknown")[:40]
-                            summaries.append(f"NetBox {object_type} {name} was last updated at {changed_at}")
-                            continue
-                        event = item
-                        node = str(event.get("node") or "Proxmox node")[:64]
-                        guest = str(event.get("guest_id") or "audited guest")[:20]
-                        task_type = str(event.get("task_type") or "unknown task")[:32]
-                        state = str(event.get("status") or "UNKNOWN").casefold()
-                        try:
-                            stamp = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(event["starttime"]))
-                        except (KeyError, TypeError, ValueError, OverflowError, OSError):
-                            stamp = "time unknown"
-                        summaries.append(f"{task_type} for guest {guest} on {node} ({state}, {stamp})")
-                    response += f" Recent recorded activity for the last {history_window_hours} hours: " + "; ".join(summaries) + "."
-                    if len(timeline) > 6:
-                        response += f" {len(timeline) - 6} additional records were omitted."
-                else:
-                    if proxmox_status == "READABLE":
-                        response += f" Proxmox returned no archived guest tasks in the audited scope for the last {history_window_hours} hours."
-                    elif proxmox_status == "PARTIAL":
-                        response += f" No archived tasks were returned in the readable Proxmox scope for the last {history_window_hours} hours."
-                    elif proxmox_status == "SOURCE_UNAVAILABLE":
-                        response += " Proxmox task history is unavailable."
-                    if netbox_status == "READABLE":
-                        response += f" No recently updated NetBox device/service records were returned for the last {history_window_hours} hours."
-                if proxmox_status in {"PARTIAL", "SOURCE_UNAVAILABLE", "NOT_CONFIGURED"}:
-                    response += " Proxmox task coverage is " + ("not configured" if proxmox_status == "NOT_CONFIGURED" else "partial" if proxmox_status == "PARTIAL" else "unavailable") + "."
-                if netbox_status in {"PARTIAL", "SOURCE_UNAVAILABLE"}:
-                    response += " NetBox inventory-update coverage is " + ("partial" if netbox_status == "PARTIAL" else "unavailable") + "."
-                elif netbox_status == "NOT_CONFIGURED":
-                    response += " NetBox inventory-update reads are not configured."
-                response += " This is bounded activity evidence, not a complete change log. NetBox field differences and deletions are not included, and completed Proxmox tasks don't prove the resulting guest configuration or application health."
         return response
     except Exception as exc:
         _hades_logger.warning("Direct homelab read failed (%s)", type(exc).__name__)
