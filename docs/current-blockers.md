@@ -153,9 +153,9 @@ Status: **PARTIAL**
   dogfood now reports both source-level aggregate task records without
   attributing either to a guest, retains selected-guest coverage limits, and
   disclaims backup-content, off-site custody, and restoreability verification.
-  Household A receives only the generic home-computer boundary. The adapter
-  omission is closed; complete guest attribution and restore verification
-  remain open.
+  Household A and B receive only the generic home-computer boundary. The
+  adapter omission is closed; complete guest attribution and restore
+  verification remain open.
   Focused adapter contracts and Public CI runs `37150356935` and
   `37150661595` pass; deployment acceptance is complete. Backup contents,
   off-site custody, and restoreability remain unverified.
