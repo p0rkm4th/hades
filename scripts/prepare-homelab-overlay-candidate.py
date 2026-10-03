@@ -238,6 +238,25 @@ def add_household_route(source: str) -> str:
                     "api_calls": 0,
                     "completed": True,
                 }
+        if getattr(self, "_hades_session_scope", "") == "household" and _hades_service_health_target(user_message):
+            household_service_health_response = _hades_direct_homelab_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                "household",
+            )
+            if household_service_health_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(household_service_health_response)
+                _hades_logger.info(
+                    "Household service-health boundary completed before staged automation routing"
+                )
+                return {
+                    "final_response": household_service_health_response,
+                    "messages": [{"role": "assistant", "content": household_service_health_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         if _hades_household_game_health_intent(
             user_message, getattr(self, "_hades_session_scope", "")
         ):

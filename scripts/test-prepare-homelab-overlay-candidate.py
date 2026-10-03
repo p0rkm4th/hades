@@ -16,7 +16,11 @@ SOURCE = '''
 import re, time
 from datetime import datetime
 def _hades_direct_homelab_read(text, subject="", scope="owner", context_text=""):
+    if _hades_service_health_target(text):
+        return text
     return _hades_homelab_helper(text)
+def _hades_service_health_target(text):
+    return text if "down" in text.casefold() else None
 def _hades_homelab_helper(text):
     datetime.fromisoformat(text)
     return text
@@ -105,7 +109,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     compile(candidate, str(output), "exec")
     tree = ast.parse(candidate)
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "_hades_direct_homelab_read"]
-    assert len(calls) == 6, len(calls)
+    assert len(calls) == 7, len(calls)
     assert "getattr(self, \"_hades_subject\", \"\")" in candidate
     assert "context_text=previous_user_text" in candidate
     assert "context_text=_hades_intent_text" in candidate
@@ -115,6 +119,8 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert 'r"\\bwhat(?:' in candidate
     assert "Owner model-capacity follow-up failed closed without model invocation" in candidate
     assert "Household game-server health read completed before managed-server routing" in candidate
+    assert "Household service-health boundary completed before staged automation routing" in candidate
+    assert "_hades_service_health_target(user_message)" in candidate
     assert 'getattr(self, "_hades_session_scope", "")' in candidate
     run_start = candidate.index("def _hades_run_conversation")
     capacity_guard = candidate.index("Owner model-capacity follow-up failed closed without model invocation", run_start)

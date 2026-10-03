@@ -713,9 +713,19 @@ household_game_location = household_game_agent.run_conversation(
 assert household_game_location.get("completed") is True and household_game_location.get("api_calls") == 0, household_game_location
 assert "can't provide internal host or address details" in household_game_location["final_response"], household_game_location
 assert "192.0.2." not in household_game_location["final_response"], household_game_location
-household_monitor_diagnosis = household_game_agent.run_conversation(
-    "Why is the NetBox monitor down?", conversation_history=[]
-)
+actual_phase3_response = hades._hades_phase3_response
+def forbid_monitor_diagnosis_phase3(text, *_args, **_kwargs):
+    if text == "Why is the NetBox monitor down?":
+        raise AssertionError("household monitor diagnosis must stop before staged automation routing")
+    return actual_phase3_response(text, *_args, **_kwargs)
+
+hades._hades_phase3_response = forbid_monitor_diagnosis_phase3
+try:
+    household_monitor_diagnosis = household_game_agent.run_conversation(
+        "Why is the NetBox monitor down?", conversation_history=[]
+    )
+finally:
+    hades._hades_phase3_response = actual_phase3_response
 assert household_monitor_diagnosis.get("completed") is True and household_monitor_diagnosis.get("api_calls") == 0, household_monitor_diagnosis
 assert "can't verify private infrastructure or computer status from this account" in household_monitor_diagnosis["final_response"].casefold(), household_monitor_diagnosis
 assert "NetBox" not in household_monitor_diagnosis["final_response"] and "Kuma" not in household_monitor_diagnosis["final_response"]
