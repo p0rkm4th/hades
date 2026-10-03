@@ -1529,6 +1529,57 @@ direct_node_status = hades._hades_direct_homelab_read(
 )
 assert registry.calls == ["homelab_inference_inventory", "homelab_owner_snapshot"], registry.calls
 assert "Observed hardware inventory lists Compute Node A." in direct_node_status, direct_node_status
+node_gpu_tool_calls = []
+synthetic_node_gpu_results = {
+    "homelab_inference_inventory": {
+        "status": "READABLE", "endpoints": [{
+            "source_identity": "inference:provider-a",
+            "node_identity": "netbox:device:7", "status": "READABLE",
+            "loaded_status": "CURRENT", "models": [{"name": "qwen:small"}],
+            "loaded_models": [{"name": "qwen:small"}],
+        }],
+    },
+    "homelab_owner_snapshot": {
+        "status": "READABLE",
+        "summary": {"resources": [{
+            "name": "Compute Node A",
+            "identity": {"canonical_id": "netbox:device:7"},
+            "inventory": {"name": "Compute Node A"},
+        }]},
+        "compute": {"status": "READABLE", "machines": []},
+    },
+    "homelab_gpu_telemetry": {
+        "status": "READABLE", "retrieved_at": "2026-10-03T20:00:00Z",
+        "endpoints": [{
+            "inference_id": "provider-a", "status": "READABLE",
+            "devices": [{
+                "index": 0, "name": "Synthetic Quadro", "memory_free_mib": 6000,
+                "memory_total_mib": 8192, "gpu_utilization_percent": 35,
+            }],
+        }],
+    },
+}
+actual_gpu_route_tool_result = hades._hades_direct_homelab_tool_result
+def synthetic_node_gpu_tool_result(tool_name, *_args, **_kwargs):
+    node_gpu_tool_calls.append(tool_name)
+    return synthetic_node_gpu_results[tool_name]
+hades._hades_direct_homelab_tool_result = synthetic_node_gpu_tool_result
+os.environ["HADES_TEST_FOLLOWUP_NODE"] = "1"
+try:
+    direct_node_gpu_activity = hades._hades_direct_homelab_read(
+        "What's Compute Node A doing right now?", owner, "owner",
+    )
+finally:
+    hades._hades_direct_homelab_tool_result = actual_gpu_route_tool_result
+    os.environ.pop("HADES_TEST_FOLLOWUP_NODE", None)
+assert node_gpu_tool_calls == [
+    "homelab_inference_inventory", "homelab_owner_snapshot", "homelab_gpu_telemetry",
+], node_gpu_tool_calls
+assert "Live host GPU sample" in direct_node_gpu_activity, direct_node_gpu_activity
+assert "6000 MiB free of 8192 MiB, 35% utilization" in direct_node_gpu_activity, direct_node_gpu_activity
+assert "host CPU load remains unmeasured" in direct_node_gpu_activity, direct_node_gpu_activity
+assert "current GPU sample is shown above" in direct_node_gpu_activity, direct_node_gpu_activity
+assert "does not measure host CPU/GPU utilization" not in direct_node_gpu_activity, direct_node_gpu_activity
 original_direct_homelab_tool_result = hades._hades_direct_homelab_tool_result
 try:
     hades._hades_direct_homelab_tool_result = lambda name, *_args, **_kwargs: (
@@ -1928,6 +1979,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '        return "No provider-linked model is recorded for Synthetic Node B."\n'
         '    if "ai thing" in question.casefold() or "ai available" in question.casefold():\n'
         '        return "All 1 configured AI provider checks are responding to catalog reads. I haven\'t tested a generation, so I can\'t confirm the AI can answer a prompt right now."\n'
+        '    if "compute node a" in question.casefold() and "doing" in question.casefold() and isinstance(_gpu_telemetry, dict) and _gpu_telemetry.get("status") == "READABLE":\n'
+        '        return "Live host GPU sample: 6000 MiB free of 8192 MiB, 35% utilization. Host CPU load remains unknown."\n'
         '    if "gpu" in question.casefold() or "another model" in question.casefold():\n'
         '        return "I can\'t determine which GPU has room or whether another model will fit. Live telemetry is not connected."\n'
         '    return "sample:small is listed at Compute Node A. Loaded now. A generation request was not made."\n',

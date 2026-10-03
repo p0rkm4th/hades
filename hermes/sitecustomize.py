@@ -6504,9 +6504,32 @@ def _hades_direct_homelab_read(
                 r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b",
                 text, re.IGNORECASE,
             )) or placement_intent
+            node_gpu_telemetry_intent = False
+            if node_activity_intent and scope == "owner":
+                node_target_key = _hades_homelab_name_key(
+                    _hades_homelab_target_from_question(text)
+                )
+                resources = summary.get("resources", []) if isinstance(summary, dict) else []
+                target_identities = set()
+                for resource in resources if isinstance(resources, list) else []:
+                    if not isinstance(resource, dict):
+                        continue
+                    inventory_record = resource.get("inventory") if isinstance(resource.get("inventory"), dict) else {}
+                    label = inventory_record.get("name") or resource.get("name")
+                    identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
+                    canonical_id = identity.get("canonical_id")
+                    if node_target_key and _hades_homelab_name_key(label) == node_target_key and canonical_id:
+                        target_identities.add(canonical_id)
+                inference_endpoints = inference.get("endpoints", []) if isinstance(inference, dict) else []
+                node_gpu_telemetry_intent = any(
+                    isinstance(endpoint, dict)
+                    and endpoint.get("node_identity") in target_identities
+                    and str(endpoint.get("source_identity") or "").startswith("inference:")
+                    for endpoint in inference_endpoints if isinstance(inference_endpoints, list)
+                )
             gpu_telemetry = (
                 _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
-                if gpu_intent and scope == "owner" else None
+                if (gpu_intent or node_gpu_telemetry_intent) and scope == "owner" else None
             )
             inference_response = module.format_inference_inventory_response(
                 text, inference, summary, gpu_telemetry,
@@ -6591,9 +6614,14 @@ def _hades_direct_homelab_read(
                                 gpu_names.append(str(gpu.get("model") or gpu.get("name")))
                         if gpu_names:
                             details.append("GPU inventory: " + ", ".join(gpu_names[:8]) + ".")
-                    details.append(
-                        "This hardware inventory is not live utilization. Host CPU/GPU load and free VRAM are not connected."
-                    )
+                    if node_gpu_telemetry_intent and "Live host GPU sample" in inference_response:
+                        details.append(
+                            "This hardware inventory is historical, not live utilization. The current GPU sample is shown above; host CPU load remains unmeasured."
+                        )
+                    else:
+                        details.append(
+                            "This hardware inventory is not live utilization. Host CPU/GPU load and free VRAM are not connected."
+                        )
                     matched_resources = [
                         row for row in summary.get("resources", []) if isinstance(row, dict)
                         and _hades_homelab_name_key(row.get("name")) == _hades_homelab_name_key(target)

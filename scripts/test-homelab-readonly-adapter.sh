@@ -881,6 +881,39 @@ assert "separate Uptime Kuma check named host-synthetic-inference-node-a reports
 assert "No stable identity link confirms that this check targets the physical host" in synthetic_inference_node_a_activity, synthetic_inference_node_a_activity
 assert "can't verify that this endpoint belongs to the physical host you named" in synthetic_inference_node_a_activity, synthetic_inference_node_a_activity
 assert "Proxmox currently reports Synthetic Inference Node A online" not in synthetic_inference_node_a_activity, synthetic_inference_node_a_activity
+linked_gpu_inference_node = {
+    "status": "READABLE",
+    "endpoints": [{
+        "source_identity": "inference:synthetic-inference-node-a",
+        "node_identity": "netbox:device:3", "status": "READABLE",
+        "loaded_status": "CURRENT", "models": [{"name": "qwen:small"}],
+        "loaded_models": [{"name": "qwen:small"}],
+    }],
+}
+live_inference_node_summary = {
+    "resources": [{
+        "name": "Synthetic Inference Node A",
+        "identity": {"canonical_id": "netbox:device:3"},
+        "inventory": {"name": "Synthetic Inference Node A"},
+    }],
+}
+live_synthetic_inference_node_activity = server.format_inference_inventory_response(
+    "What's Synthetic Inference Node A doing right now?",
+    linked_gpu_inference_node, live_inference_node_summary, {
+        "status": "READABLE", "retrieved_at": "2026-10-03T20:00:00Z",
+        "endpoints": [{
+            "inference_id": "synthetic-inference-node-a", "status": "READABLE",
+            "devices": [{
+                "index": 0, "name": "Synthetic Quadro", "memory_free_mib": 6000,
+                "memory_total_mib": 8192, "gpu_utilization_percent": 35,
+            }],
+        }],
+    },
+)
+assert "Live host GPU sample (checked 2026-10-03T20:00:00Z)" in live_synthetic_inference_node_activity, live_synthetic_inference_node_activity
+assert "GPU 0 (Synthetic Quadro): 6000 MiB free of 8192 MiB, 35% utilization" in live_synthetic_inference_node_activity, live_synthetic_inference_node_activity
+assert "this read does not measure host CPU utilization" in live_synthetic_inference_node_activity, live_synthetic_inference_node_activity
+assert "does not measure host CPU/GPU utilization" not in live_synthetic_inference_node_activity, live_synthetic_inference_node_activity
 stale_synthetic_inference_node_a_activity = server.format_inference_inventory_response(
     "What's Synthetic Inference Node A doing right now?", unlinked_inference, {
         "availability_summary": [{

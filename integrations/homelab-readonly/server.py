@@ -2216,10 +2216,51 @@ def format_inference_inventory_response(
             ) + "."
         else:
             result += " Current loaded-model state is unavailable."
+        telemetry = gpu_telemetry if isinstance(gpu_telemetry, dict) else {}
+        telemetry_rows = telemetry.get("endpoints") if isinstance(telemetry.get("endpoints"), list) else []
+        inference_id = str(endpoint.get("source_identity") or "").removeprefix("inference:")
+        gpu_sample = next((
+            sample for sample in telemetry_rows[:16]
+            if isinstance(sample, dict) and sample.get("inference_id") == inference_id
+        ), None)
+        live_gpu_sample = isinstance(gpu_sample, dict) and gpu_sample.get("status") == "READABLE"
+        if live_gpu_sample:
+            devices = gpu_sample.get("devices") if isinstance(gpu_sample.get("devices"), list) else []
+            gpu_details = []
+            for device in devices[:32]:
+                if not isinstance(device, dict):
+                    continue
+                name = " ".join(str(device.get("name") or "").split())
+                detail = f"GPU {device.get('index')}"
+                if name:
+                    detail += f" ({name[:80]})"
+                free, total = device.get("memory_free_mib"), device.get("memory_total_mib")
+                if isinstance(free, int) and isinstance(total, int):
+                    detail += f": {free} MiB free of {total} MiB"
+                else:
+                    detail += ": free VRAM unavailable"
+                utilization = device.get("gpu_utilization_percent")
+                detail += f", {utilization}% utilization" if isinstance(utilization, int) else ", utilization unavailable"
+                gpu_details.append(detail)
+            if gpu_details:
+                checked_at = str(telemetry.get("retrieved_at") or "check time unavailable")
+                result += " Live host GPU sample (checked " + checked_at + "): " + "; ".join(gpu_details) + "."
+                if telemetry.get("status") == "PARTIAL":
+                    result += " Other configured GPU endpoints were unavailable."
+        elif gpu_telemetry is not None:
+            result += (
+                " Live GPU utilization/free-VRAM telemetry is unavailable for this host in this check."
+                if telemetry.get("status") not in {"NOT_CONFIGURED", "CONFIGURATION_ERROR"}
+                else " Live GPU utilization/free-VRAM telemetry is not configured for this host."
+            )
         return (
             result
             + " Provider-reported residency does not prove GPU execution or a successful generation, "
-            "and this read does not measure host CPU/GPU utilization."
+            + (
+                "and this read does not measure host CPU utilization."
+                if live_gpu_sample
+                else "and this read does not measure host CPU/GPU utilization."
+            )
         )
 
     if placement_intent:
