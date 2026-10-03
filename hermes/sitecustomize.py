@@ -6172,10 +6172,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         if target_name:
             target = target_name
             target_key = _hades_homelab_name_key(target)
-            matching = [
-                resource for resource in resources
-                if target_key in _hades_homelab_name_key(resource.get("name"))
-            ]
+            matching = _hades_homelab_named_machine_records(resources, target)
             if len(matching) > 1:
                 identities = [
                     item.get("identity") for item in matching
@@ -6954,6 +6951,35 @@ _HADES_MEMORY_NEGATION = re.compile(
 def _hades_homelab_name_key(value):
     """Normalize punctuation for lookup against a configured display alias."""
     return re.sub(r"[^a-z0-9]+", "", str(value or "").casefold())
+
+
+def _hades_homelab_named_machine_records(resources, target):
+    """Match a named machine without mistaking its service monitors for machines."""
+    target_key = _hades_homelab_name_key(target)
+    matching = [
+        resource for resource in resources
+        if isinstance(resource, dict)
+        and target_key in _hades_homelab_name_key(resource.get("name"))
+    ]
+    exact_inventory = any(
+        _hades_homelab_name_key(resource.get("name")) == target_key
+        and isinstance(resource.get("identity"), dict)
+        and bool(resource["identity"].get("canonical_id"))
+        and isinstance(resource.get("inventory"), dict)
+        for resource in matching
+    )
+    if not exact_inventory:
+        return matching
+    return [
+        resource for resource in matching
+        if not (
+            str(resource.get("name") or "").strip().casefold().startswith("service-")
+            and isinstance(resource.get("availability"), dict)
+            and not isinstance(resource.get("inventory"), dict)
+            and not isinstance(resource.get("runtime"), dict)
+            and not isinstance(resource.get("runtime_detail"), dict)
+        )
+    ]
 
 
 def _hades_homelab_target_from_question(value):

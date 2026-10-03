@@ -105,6 +105,35 @@ assert hades._HADES_HOMELAB_INTENT.search("Check Synthetic Node B.")
 assert hades._hades_homelab_resource_ranking_intent("What's using the most resources right now?")
 assert hades._hades_homelab_resource_ranking_intent("Which server has the highest CPU usage?")
 assert not hades._hades_homelab_resource_ranking_intent("What resources does HADES use?")
+synthetic_erebus_machine = {
+    "name": "Erebus", "identity": {"canonical_id": "netbox:device:2"},
+    "inventory": {"id": 2, "name": "Erebus"},
+    "runtime_status": "online", "runtime": {"name": "erebus", "status": "online"},
+    "availability": {"name": "host-erebus", "status": "up"},
+}
+synthetic_erebus_service_probe = {
+    "name": "service-proxmox-erebus", "identity": {"status": "UNLINKED"},
+    "inventory": None, "runtime_status": "NOT_OBSERVED", "runtime": None,
+    "availability": {"name": "service-proxmox-erebus", "status": "up"},
+}
+synthetic_erebus_matches = hades._hades_homelab_named_machine_records(
+    [synthetic_erebus_machine, synthetic_erebus_service_probe], "Erebus",
+)
+assert synthetic_erebus_matches == [synthetic_erebus_machine], synthetic_erebus_matches
+synthetic_unlinked_host_probe = {
+    "name": "host-erebus", "runtime_status": "NOT_OBSERVED", "inventory": None,
+    "availability": {"name": "host-erebus", "status": "up"},
+}
+assert len(hades._hades_homelab_named_machine_records(
+    [synthetic_erebus_machine, synthetic_unlinked_host_probe], "Erebus",
+)) == 2
+synthetic_similar_machine = {
+    "name": "Erebus Guest", "identity": {"canonical_id": "netbox:device:9"},
+    "inventory": {"id": 9, "name": "Erebus Guest"},
+}
+assert len(hades._hades_homelab_named_machine_records(
+    [synthetic_erebus_machine, synthetic_erebus_service_probe, synthetic_similar_machine], "Erebus",
+)) == 2
 unlinked_source_question = "Which live homelab observations cannot you confidently match to the same machine?"
 assert hades._hades_broad_homelab_status_intent(unlinked_source_question)
 unverified_service_question = "Which homelab services can you not verify right now?"
