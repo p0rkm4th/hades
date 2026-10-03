@@ -61,6 +61,7 @@ wanted = {
     '_hades_broad_homelab_status_intent',
     '_hades_homelab_resource_ranking_intent',
     '_hades_homelab_resource_ranking_response',
+    '_hades_homelab_gpu_execution_intent',
     '_hades_household_game_health_intent',
     '_hades_homelab_provenance_followup',
     '_hades_positive_homelab_control_request',
