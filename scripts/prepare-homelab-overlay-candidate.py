@@ -222,7 +222,6 @@ def add_household_route(source: str) -> str:
                 user_message,
                 getattr(self, "_hades_subject", ""),
                 getattr(self, "_hades_session_scope", ""),
-                context_text=previous_user_text,
             )
             if service_placement_response:
                 callback = getattr(self, "stream_delta_callback", None)

@@ -114,6 +114,8 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     placement_guard = candidate.index("Service-placement inventory read completed before managed-server routing", run_start)
     managed_status_guard = candidate.index("if _server_status_turn", run_start)
     assert placement_guard < managed_status_guard
+    placement_block = candidate[candidate.rfind("if getattr(self, \"_hades_session_scope\", \"\") in {\"owner\", \"household\"} and _hades_service_placement_intent(", run_start):game_guard]
+    assert "previous_user_text" not in placement_block
     assert game_guard < candidate.index("turn_started = time.perf_counter()", run_start)
     assert game_guard < capacity_guard
     assert capacity_guard < candidate.index("turn_started = time.perf_counter()", run_start)
