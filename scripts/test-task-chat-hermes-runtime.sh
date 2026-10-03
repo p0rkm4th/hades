@@ -397,6 +397,27 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
         **kwargs,
     )
     registry = hermes_registry_module.registry
+    synthetic_unmonitored_game_summary = {
+        "status": "PARTIAL", "resources": [], "availability_summary": [],
+        "sources": [{"source": "Uptime Kuma", "status": "HEALTHY",
+                     "retrieved_at": "2026-10-03T18:00:00+00:00"}],
+        "service_catalog": {"status": "OK", "coverage": "EMPTY", "services": []},
+    }
+    original_game_status_tool_result = hades._hades_direct_homelab_tool_result
+    try:
+        hades._hades_direct_homelab_tool_result = lambda name, *_args, **_kwargs: (
+            synthetic_unmonitored_game_summary if name == "homelab_summary"
+            else {"status": "NOT_CONFIGURED", "endpoints": []}
+        )
+        owner_game_health = owner_agent.run_conversation(
+            "Is the game server working?", conversation_history=[],
+        )
+    finally:
+        hades._hades_direct_homelab_tool_result = original_game_status_tool_result
+    assert owner_game_health.get("completed") is True and owner_game_health.get("api_calls") == 0, owner_game_health
+    assert "couldn't verify a current Uptime Kuma service monitor matching Minecraft" in owner_game_health["final_response"], owner_game_health
+    assert "I can't call it healthy" in owner_game_health["final_response"], owner_game_health
+
     original_source_detail_tool_result = hades._hades_direct_homelab_tool_result
     try:
         hades._hades_direct_homelab_tool_result = lambda name, *_args, **_kwargs: (

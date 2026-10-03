@@ -246,7 +246,8 @@ for prompt in (
     'Anything dying?', "What's fucked?",
     'Which computer is having trouble?', "Why's shit slow?", 'What changed since yesterday?',
     'Are all the computers okay?', 'Is the homelab okay?', 'Are my computers okay?',
-    'Is Minecraft working?', 'Where is HADES running?', 'Where is Minecraft running?',
+    'Is Minecraft working?', 'Is the game server working?',
+    'Where is HADES running?', 'Where is Minecraft running?',
 ):
     assert homelab_intent.search(prompt), f'owner homelab health intent missed {prompt!r}'
 for prompt in (
@@ -308,6 +309,10 @@ assert 'Proxmox' not in household_safe_status('Why is everything slow?')
 assert '192.168.' not in household_safe_status('Why is everything slow?')
 assert target('Why is the NetBox monitor down?') == (['netbox'], 'netbox')
 assert target('How is NetBox reporting unavailable?') == (['netbox'], 'netbox')
+assert target('Is the game server working?') == (['minecraft'], 'Minecraft')
+assert target('Can you verify whether our game server is currently online?') == (
+    ['minecraft'], 'Minecraft'
+)
 agent_zero_capability_question = (
     'What can you currently verify about Agent Zero availability and task execution?'
 )
@@ -731,6 +736,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
     try:
         routed_up = direct_read('Is Minecraft healthy enough for tonight?', 'synthetic-owner', 'owner')
         assert "Uptime Kuma's configured check for Minecraft Server is up." in routed_up, routed_up
+        owner_game_status = direct_read(
+            'Is the game server working?', 'synthetic-owner', 'owner'
+        )
+        assert "Uptime Kuma's configured check for Minecraft Server is up." in owner_game_status, owner_game_status
+        assert "does not verify an application login" in owner_game_status, owner_game_status
         os.environ['HADES_TEST_NETBOX_MONITOR_CONFLICT'] = '1'
         try:
             monitor_diagnosis = direct_read(
@@ -761,10 +771,15 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             missing_game_check = direct_read(
                 'Is Minecraft working?', 'synthetic-household', 'household'
             )
+            owner_missing_game_check = direct_read(
+                'Is the game server working?', 'synthetic-owner', 'owner'
+            )
         finally:
             os.environ.pop('HADES_TEST_NO_GAME_MONITOR', None)
         assert "can't confirm whether the game server is working from the current check" in missing_game_check, missing_game_check
         assert 'Proxmox' not in missing_game_check and 'Test Host' not in missing_game_check, missing_game_check
+        assert "couldn't verify a current Uptime Kuma service monitor matching Minecraft" in owner_missing_game_check, owner_missing_game_check
+        assert "I can't call it healthy" in owner_missing_game_check, owner_missing_game_check
         assert 'couldn\'t find a matching service record' in direct_read(
             'Where is Agent Zero?', 'synthetic-owner', 'owner'
         )

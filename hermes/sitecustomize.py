@@ -4693,6 +4693,17 @@ def _hades_service_health_target(user_text):
         if word.casefold() not in stop
     ]
     if not target_words:
+        # “the game server” is the plain-language alias for the configured
+        # Minecraft service. Resolve it to the service name so owner health
+        # questions use the same monitor-backed path instead of the broad
+        # homelab summary. The response still depends on an actual matching
+        # current monitor; the alias does not imply that one exists.
+        if re.fullmatch(
+            r"(?:the|my|our)?\s*game\s+server",
+            query.group("target"),
+            re.IGNORECASE,
+        ):
+            return ["minecraft"], "Minecraft"
         return None
     target = " ".join(target_words)[:64]
     return target_words, target
