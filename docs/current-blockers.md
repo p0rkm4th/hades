@@ -151,6 +151,18 @@ Status: **PARTIAL**
   run `37152683615` passes. After rollback-ready deployment, a fresh owner
   answer includes the current largest single-GPU headroom and explicitly says
   it cannot confirm model fit. Household A/B answers remain generic.
+- Fresh named-node owner dogfood then found that “What’s Tartarus doing right
+  now?” still omitted the now-connected GPU sample and claimed GPU telemetry
+  was not connected. Candidate `3c6504c` requests telemetry only when stable
+  inventory identity links the named node to an inference endpoint, formats
+  only that endpoint’s live sample, and keeps host CPU load explicitly
+  unmeasured. Focused adapter, Hermes runtime, and service-health contracts
+  pass; Public CI run `37153465634` passes. The rollback-ready deployment is
+  active and healthy. Fresh owner UI shows timestamped per-device free VRAM
+  and utilization while identifying provider residency and hardware role data
+  as separate/historical evidence. Household A/B receive only the generic
+  infrastructure boundary. Live named-node telemetry is now verified; broader
+  guest visibility and service catalog coverage remain incomplete.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 - Fresh owner backup dogfood found that Proxmox's archived history can include
