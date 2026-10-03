@@ -5363,6 +5363,23 @@ def _hades_homelab_source_identity_intent(text):
     ))
 
 
+def _hades_homelab_guest_visibility_intent(text):
+    """Recognize private guest/VM visibility questions before model fallback."""
+    text = str(text or "")
+    guest_reference = re.search(
+        r"\b(?:guests?|virtual\s+machines?|vms?|lxc(?:\s+containers?)?|containers?)\b",
+        text,
+        re.IGNORECASE,
+    )
+    visibility_request = re.search(
+        r"\b(?:which|what|list|show|check|verify|see|visible|visibility|status|state|"
+        r"running|online|offline|powered|power\s+state|current|currently)\b",
+        text,
+        re.IGNORECASE,
+    )
+    return bool(guest_reference and visibility_request)
+
+
 def _hades_homelab_conflict_intent(text):
     return bool(re.search(
         r"\b(?:homelab|home\s+lab|infrastructure|sources?)\b.{0,100}\b"
@@ -5932,7 +5949,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     if scope != "owner" and resource_ranking_intent:
         return "Live infrastructure resource details are available only in an owner session."
     if scope != "owner" and (
-        household_broad_status_intent or household_node_status_intent or provenance_intent
+        household_broad_status_intent or household_node_status_intent
+        or _hades_homelab_guest_visibility_intent(text) or provenance_intent
         or named_service_health_intent
     ) and not household_game_health_intent:
         return (
@@ -10916,6 +10934,7 @@ try:
             self._hades_session_scope == "household"
             and (
                 _hades_broad_homelab_status_intent(user_message)
+                or _hades_homelab_guest_visibility_intent(user_message)
                 or _hades_household_game_health_intent(user_message, self._hades_session_scope)
                 or _hades_homelab_provenance_followup(user_message, _hades_intent_text)
                 or _hades_service_health_target(user_message)

@@ -51,6 +51,7 @@ wanted = {
     '_hades_homelab_explicit_model_fit_response',
     '_hades_homelab_network_diagnostic_response',
     '_hades_homelab_source_identity_intent',
+    '_hades_homelab_guest_visibility_intent',
     '_hades_homelab_conflict_intent',
     '_hades_homelab_conflict_response',
     '_hades_homelab_unlinked_identity_response',
@@ -176,6 +177,7 @@ else:
 if household_intent_assignment is not None:
     household_boundary_expression = ast.unparse(household_intent_assignment.value)
     assert '_hades_broad_homelab_status_intent(user_message)' in household_boundary_expression
+    assert '_hades_homelab_guest_visibility_intent(user_message)' in household_boundary_expression
     assert '_hades_household_game_health_intent(user_message, self._hades_session_scope)' in household_boundary_expression
     assert '_hades_service_health_target(user_message)' in household_boundary_expression
     assert 'self._hades_session_scope' in household_boundary_expression
@@ -192,7 +194,15 @@ intent_assignment = next(
 exec(compile(ast.Module(body=[intent_assignment], type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
 homelab_intent = namespace['_HADES_HOMELAB_INTENT']
 status_intent = namespace['_hades_broad_homelab_status_intent']
+guest_visibility_intent = namespace['_hades_homelab_guest_visibility_intent']
 game_health_intent = namespace['_hades_household_game_health_intent']
+for prompt in (
+    'Which Proxmox guests can you verify right now, and what are their current states?',
+    'What VMs and containers are running?',
+    'Show me the current guest visibility.',
+):
+    assert guest_visibility_intent(prompt), prompt
+assert not guest_visibility_intent('What is Proxmox?')
 for prompt in (
     'Is everything okay?', 'What is down?', 'What is down or degraded right now, and what can you not verify?',
     'Anything dying?', "What's fucked?",

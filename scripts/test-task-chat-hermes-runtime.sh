@@ -251,8 +251,8 @@ try:
     )
 finally:
     hades._hades_direct_homelab_tool_result = original_summary_tool_result
-assert "Uptime Kuma's configured probes failed: service-check-a" in current_down_response, current_down_response
-assert "service-check-b" not in current_down_response, current_down_response
+assert "Fresh configured Uptime Kuma probes are failing for: service-check-a" in current_down_response, current_down_response
+assert "service-check-b (last reported down; stale)" in current_down_response, current_down_response
 synthetic_resource_summary = {
     "status": "PARTIAL",
     "retrieved_at": "2026-10-03T07:00:00Z",
@@ -465,6 +465,27 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert household_result.get("completed") is True and household_result.get("api_calls") == 0, household_result
     assert "private infrastructure" in household_result["final_response"].casefold(), household_result
     assert "Synthetic Node B" not in household_result["final_response"], household_result
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
+    household_guest_visibility = household_agent.run_conversation(
+        "Which Proxmox guests can you verify right now, and what are their current states?",
+        conversation_history=[
+            {"role": "user", "content": "Earlier owner-only server notes."},
+            {"role": "assistant", "content": (
+                "Private node synthetic-private-node; template synthetic-private-template; "
+                "endpoint 198.51.100.42; MCP binding synthetic-private-tool."
+            )},
+        ],
+    )
+    assert household_guest_visibility.get("completed") is True, household_guest_visibility
+    assert household_guest_visibility.get("api_calls") == 0, household_guest_visibility
+    assert "can't verify private infrastructure or computer status" in household_guest_visibility["final_response"].casefold(), household_guest_visibility
+    for private_detail in (
+        "synthetic-private-node", "synthetic-private-template", "198.51.100.42",
+        "synthetic-private-tool", "Proxmox", "template", "endpoint",
+    ):
+        assert private_detail.casefold() not in household_guest_visibility["final_response"].casefold(), household_guest_visibility
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
@@ -1440,7 +1461,7 @@ blocker_summary = blockers_agent.run_conversation(
 )
 assert blocker_summary.get("completed") is True and blocker_summary.get("api_calls") == 0, blocker_summary
 assert "Live Proxmox currently reports: hades-core." in blocker_summary["final_response"], blocker_summary
-assert "No service availability observations are available, so I can't confirm service health." in blocker_summary["final_response"], blocker_summary
+assert "No current service-availability observations were returned, so I can't confirm service health." in blocker_summary["final_response"], blocker_summary
 assert "No blocker was reported by the configured live sources." not in blocker_summary["final_response"], blocker_summary
 assert "HADES Core runtime is running." in blocker_summary["final_response"], blocker_summary
 
