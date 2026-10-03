@@ -768,6 +768,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Fresh configured Uptime Kuma probes are failing for: service-netbox.' in coverage_answer, coverage_answer
         assert "NetBox's application-service catalog is reachable but currently empty" in coverage_answer, coverage_answer
         assert 'services on unreported guests remain unverified' in coverage_answer, coverage_answer
+        assert coverage_answer.index("NetBox's application-service catalog") < coverage_answer.index('Fresh configured Uptime Kuma probes'), coverage_answer
         assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
 
         write_broad_summary([{

@@ -5216,23 +5216,9 @@ def _hades_homelab_service_coverage_response(summary):
     """Report bounded check coverage without calling a probe application health."""
     if not isinstance(summary, dict):
         return "I couldn't read the current homelab service-check summary."
-    availability = summary.get("availability_summary") if isinstance(summary.get("availability_summary"), list) else []
-    groups = _hades_homelab_availability_groups(availability)
-    parts = []
-    if groups["up"]:
-        parts.append("Fresh configured Uptime Kuma probes responded for: " + ", ".join(groups["up"][:8]) + ".")
-    if groups["down"]:
-        parts.append("Fresh configured Uptime Kuma probes are failing for: " + ", ".join(groups["down"][:8]) + ".")
-    if groups["unknown"]:
-        labels = [
-            f"{item['name']} (last reported {item['last_status']}; {item['freshness'].casefold()})"
-            for item in groups["unknown"][:8]
-        ]
-        parts.append("Current probe status is unknown for: " + ", ".join(labels) + ".")
-    if not availability:
-        parts.append("No configured service-check observations were returned, so I can't confirm service health.")
     catalog = summary.get("service_catalog") if isinstance(summary.get("service_catalog"), dict) else {}
     catalog_services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
+    parts = []
     if catalog_services:
         parts.append(
             f"NetBox lists {len(catalog_services)} application-service records; that inventory does not establish their current health."
@@ -5246,6 +5232,20 @@ def _hades_homelab_service_coverage_response(summary):
     visibility = summary.get("proxmox_guest_visibility") if isinstance(summary.get("proxmox_guest_visibility"), dict) else {}
     if str(visibility.get("status") or "").upper() in {"PARTIAL", "UNKNOWN"}:
         parts.append("Proxmox guest visibility is partial or unknown, so services on unreported guests remain unverified.")
+    availability = summary.get("availability_summary") if isinstance(summary.get("availability_summary"), list) else []
+    groups = _hades_homelab_availability_groups(availability)
+    if groups["up"]:
+        parts.append("Fresh configured Uptime Kuma probes responded for: " + ", ".join(groups["up"][:8]) + ".")
+    if groups["down"]:
+        parts.append("Fresh configured Uptime Kuma probes are failing for: " + ", ".join(groups["down"][:8]) + ".")
+    if groups["unknown"]:
+        labels = [
+            f"{item['name']} (last reported {item['last_status']}; {item['freshness'].casefold()})"
+            for item in groups["unknown"][:8]
+        ]
+        parts.append("Current probe status is unknown for: " + ", ".join(labels) + ".")
+    if not availability:
+        parts.append("No configured service-check observations were returned, so I can't confirm service health.")
     if groups["up"] and not groups["down"] and not groups["unknown"]:
         parts.append("A responding probe confirms only that its configured check answered, not that a user workflow works.")
     retrieved_at = summary.get("retrieved_at")
