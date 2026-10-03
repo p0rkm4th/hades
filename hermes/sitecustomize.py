@@ -4838,7 +4838,10 @@ def _hades_homelab_workloads_on_host_response(
 ):
     """List only current Proxmox guests for a specifically named Proxmox host."""
     match = re.search(
-        r"\bwhat(?:['’]s|\s+is)\s+running\s+on\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
+        r"\bwhat(?:['’]s|\s+is)\s+running\s+on\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)"
+        r"(?:\s+(?:right\s+)?now)?"
+        r"(?:[?.!]\s*(?:please\s+)?(?:and\s+)?(?:be\s+)?(?:clear|explicit)\b[^?.!]{0,100})?"
+        r"\s*[?.!]*$",
         str(user_text or ""), re.IGNORECASE,
     )
     if not match:

@@ -435,6 +435,16 @@ host_workloads = workloads_on_host('What is running on Runtime Node A?', [
 ], 'PARTIAL')
 assert 'Runtime Node A online' in host_workloads and 'Dinner VM (qemu, running)' in host_workloads
 assert 'Unrelated CT' not in host_workloads and "Other source state is partial or unknown" in host_workloads
+right_now_host_workloads = workloads_on_host(
+    'What is running on Runtime Node A right now? Be clear about guest visibility limits.', [
+    {'name': 'Runtime Node A', 'runtime_status': 'online',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+     'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+    {'name': 'Dinner VM', 'runtime_status': 'running',
+     'identity': {'source_identities': {'proxmox': ['proxmox:site-a:qemu:101']}},
+     'runtime': {'type': 'qemu', 'node': 'pve-a', 'vmid': 101, 'status': 'running'}},
+], 'PARTIAL')
+assert 'Dinner VM (qemu, running)' in right_now_host_workloads, right_now_host_workloads
 selected_guest_coverage = {
     'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
     'endpoints': [{
@@ -1086,7 +1096,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'Where should I run another model?', 'synthetic-household', 'household'
         )
         host_workload_route = direct_read(
-            "What's running on Compute Node A?", 'synthetic-owner', 'owner'
+            "What's running on Compute Node A right now? Be clear about guest visibility limits.",
+            'synthetic-owner', 'owner'
         )
         assert 'couldn\'t verify Compute Node A as a current Proxmox host' in host_workload_route
         private_host_summary = {
@@ -1106,7 +1117,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             encoding='utf-8',
         )
         household_host_query = direct_read(
-            'What is running on Private Runtime Host?', 'synthetic-household', 'household'
+            'What is running on Private Runtime Host right now?', 'synthetic-household', 'household'
         )
         assert household_host_query is None or not any(
             private_detail in household_host_query
