@@ -148,9 +148,17 @@ Status: **PARTIAL**
   Candidate handling preserves it as separate unattributed evidence and says
   it cannot verify any specific guest's backup; it also avoids appending an
   unrelated HADES Backup Check to explicit Proxmox/guest-scoped questions.
-  Focused adapter contracts pass;
-  Public CI run `37150356935` passes; live deployment acceptance is pending.
-  Backup contents, off-site custody, and restoreability remain unverified.
+  Candidate `a87f3ba` passed Public CI and is deployed on VM 802 with hash-
+  guarded root-only rollback copies of the overlay and adapter. Fresh owner
+  dogfood now reports both source-level aggregate task records without
+  attributing either to a guest, retains selected-guest coverage limits, and
+  disclaims backup-content, off-site custody, and restoreability verification.
+  Household A receives only the generic home-computer boundary. The adapter
+  omission is closed; complete guest attribution and restore verification
+  remain open.
+  Focused adapter contracts and Public CI runs `37150356935` and
+  `37150661595` pass; deployment acceptance is complete. Backup contents,
+  off-site custody, and restoreability remain unverified.
 
 ## Release and owner gates
 
