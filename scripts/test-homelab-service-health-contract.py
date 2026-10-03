@@ -47,6 +47,8 @@ wanted = {
     '_hades_homelab_service_coverage_intent',
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_source_identity_intent',
+    '_hades_homelab_conflict_intent',
+    '_hades_homelab_conflict_response',
     '_hades_homelab_unlinked_identity_response',
     '_hades_broad_homelab_status_intent',
     '_hades_homelab_resource_ranking_intent',
@@ -199,9 +201,35 @@ for prompt in (
     'Are all the computers okay?', 'Anything dying?', "Why's everything slow?",
     'Why does the network feel slow?', 'Why does Wi-Fi feel slow?',
     'Which live homelab observations cannot you confidently match to the same machine?',
+    'Which source records are still unlinked?',
     'Which homelab services can you not verify right now?',
+    'Are any homelab sources contradicting each other right now?',
 ):
     assert status_intent(prompt), f'broad homelab status intent missed {prompt!r}'
+source_identity_intent = namespace['_hades_homelab_source_identity_intent']
+conflict_intent = namespace['_hades_homelab_conflict_intent']
+assert source_identity_intent('Which source records are still unlinked?')
+assert conflict_intent('Are any homelab sources contradicting each other right now?')
+conflict_response = namespace['_hades_homelab_conflict_response']({
+    'status': 'PARTIAL',
+    'retrieved_at': '2026-10-03T12:00:00+00:00',
+    'sources': [{'source': 'Proxmox', 'status': 'OK'}, {'source': 'NetBox', 'status': 'UNAVAILABLE'}],
+    'conflicts': [{
+        'name': 'Synthetic Node A',
+        'reasons': ['NetBox intended node differs from Proxmox runtime node'],
+    }],
+    'source_counts': {'identity_unlinked_resources': 2},
+    'proxmox_guest_visibility': {'status': 'PARTIAL'},
+})
+assert 'Synthetic Node A' in conflict_response and 'differs from Proxmox runtime node' in conflict_response
+assert 'coverage is incomplete' in conflict_response.casefold() and 'not a lab-wide agreement or all-clear' in conflict_response
+assert '2 Proxmox or Uptime Kuma records' in conflict_response
+no_conflict_response = namespace['_hades_homelab_conflict_response']({
+    'status': 'PARTIAL', 'conflicts': [], 'sources': [],
+    'proxmox_guest_visibility': {'status': 'PARTIAL'}, 'source_counts': {},
+})
+assert 'No conflicts were reported among the homelab records compared in this read' in no_conflict_response
+assert 'not a lab-wide agreement or all-clear' in no_conflict_response
 assert game_health_intent('Is the game server working?', 'household')
 assert game_health_intent('Is Minecraft working?', 'household')
 assert not game_health_intent('Is the game server working?', 'owner')
@@ -683,6 +711,35 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 '"loaded_status": "CURRENT", "loaded_models": []}]}\n',
                 encoding='utf-8',
             )
+
+        write_broad_summary([], status='PARTIAL', sources=[
+            {'source': 'Proxmox', 'status': 'OK'},
+            {'source': 'NetBox', 'status': 'UNAVAILABLE'},
+        ], conflicts=[{
+            'name': 'Synthetic Node A',
+            'reasons': ['NetBox intended node differs from Proxmox runtime node'],
+        }], source_counts={'identity_unlinked_resources': 2},
+            proxmox_guest_visibility={'status': 'PARTIAL'})
+        registry_module.registry.calls.clear()
+        conflict_answer = direct_read(
+            'Are any homelab sources contradicting each other right now?',
+            'synthetic-owner', 'owner',
+        )
+        assert 'Synthetic Node A' in conflict_answer and 'differs from Proxmox runtime node' in conflict_answer, conflict_answer
+        assert 'not a lab-wide agreement or all-clear' in conflict_answer, conflict_answer
+        assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
+        registry_module.registry.calls.clear()
+        unlinked_answer = direct_read(
+            'Which source records are still unlinked?', 'synthetic-owner', 'owner'
+        )
+        assert unlinked_answer and 'unlinked' in unlinked_answer.casefold(), unlinked_answer
+        assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
+        registry_module.registry.calls.clear()
+        assert "can't verify private infrastructure or computer status" in direct_read(
+            'Are any homelab sources contradicting each other right now?',
+            'synthetic-household', 'household',
+        )
+        assert not registry_module.registry.calls, registry_module.registry.calls
 
         write_broad_summary([])
         no_coverage = direct_read(

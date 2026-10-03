@@ -5257,9 +5257,73 @@ def _hades_homelab_source_identity_intent(text):
     return bool(re.search(
         r"\b(?:homelab|home\s+lab|infrastructure)\b.{0,100}\b"
         r"(?:observations?|source\s+records?|identity|links?|unlinked|cross.source|"
-        r"match(?:ing)?|same\s+machine|conflicts?|disagreements?)\b",
+        r"match(?:ing)?|same\s+machine|conflicts?|disagreements?|contradict(?:ing|ory|ions?)?|"
+        r"disagree(?:ment|ments|ing)?|mismatch(?:es)?)\b|"
+        r"\b(?:which|what|list|show)\s+(?:the\s+)?(?:homelab\s+)?source\s+(?:records?|identities?)\b"
+        r".{0,60}\b(?:still\s+)?(?:unlinked|unmatched|not\s+linked|not\s+matched)\b",
         str(text or ""), re.IGNORECASE,
     ))
+
+
+def _hades_homelab_conflict_intent(text):
+    return bool(re.search(
+        r"\b(?:homelab|home\s+lab|infrastructure|sources?)\b.{0,100}\b"
+        r"(?:conflicts?|contradict(?:ing|ory|ions?)?|disagree(?:ment|ments|ing)?|mismatch(?:es)?)\b|"
+        r"\b(?:are|do)\b.{0,50}\b(?:any|the)?\s*(?:homelab\s+)?sources?\b.{0,60}\b"
+        r"(?:conflict|contradict|disagree|mismatch)",
+        str(text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_conflict_response(summary):
+    """Report current reconciliation conflicts without hiding incomplete scope."""
+    if not isinstance(summary, dict):
+        return "I couldn't compare current homelab sources, so conflicts are unknown."
+    status = str(summary.get("status") or "UNKNOWN").upper()
+    if status in {"UNKNOWN", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "NOT_CONFIGURED", "CONFIGURATION_ERROR"}:
+        return "I couldn't compare current homelab sources, so conflicts are unknown."
+    conflicts = summary.get("conflicts") if isinstance(summary.get("conflicts"), list) else []
+    entries = []
+    for item in conflicts[:12]:
+        if not isinstance(item, dict):
+            continue
+        name = " ".join(str(item.get("name") or "Unnamed resource").split())[:80]
+        reasons = item.get("reasons") if isinstance(item.get("reasons"), list) else []
+        safe_reasons = [" ".join(str(reason).split())[:160] for reason in reasons[:4] if reason]
+        entries.append(name + (": " + "; ".join(safe_reasons) if safe_reasons else ": conflicting source records"))
+    if entries:
+        response = "The current homelab read found source conflicts: " + ". ".join(entries) + "."
+        response += " HADES is keeping the source records separate instead of choosing one observation as universal truth."
+    else:
+        response = "No conflicts were reported among the homelab records compared in this read."
+    source_rows = summary.get("sources") if isinstance(summary.get("sources"), list) else []
+    unreadable = [
+        " ".join(str(row.get("source") or "Configured source").split())[:80]
+        for row in source_rows if isinstance(row, dict)
+        and str(row.get("status") or "UNKNOWN").upper() not in {"OK", "HEALTHY", "READABLE", "AVAILABLE"}
+    ]
+    visibility = summary.get("proxmox_guest_visibility") if isinstance(summary.get("proxmox_guest_visibility"), dict) else {}
+    incomplete = status == "PARTIAL" or str(visibility.get("status") or "").upper() in {"PARTIAL", "UNKNOWN"}
+    counts = summary.get("source_counts") if isinstance(summary.get("source_counts"), dict) else {}
+    try:
+        unlinked = max(0, int(counts.get("identity_unlinked_resources") or 0))
+    except (TypeError, ValueError):
+        unlinked = 0
+    caveats = []
+    if unreadable:
+        caveats.append("unavailable or partial sources include " + ", ".join(unreadable[:6]))
+    if str(visibility.get("status") or "").upper() in {"PARTIAL", "UNKNOWN"}:
+        caveats.append("Proxmox guest visibility is partial or unknown")
+    if unlinked:
+        caveats.append(f"{unlinked} Proxmox or Uptime Kuma records have no verified identity link and were not compared across sources")
+    if incomplete and not caveats:
+        caveats.append("source coverage is partial")
+    if caveats:
+        response += " Coverage is incomplete: " + "; ".join(caveats) + ". This is not a lab-wide agreement or all-clear."
+    retrieved_at = summary.get("retrieved_at")
+    if retrieved_at:
+        response += f" The composed source read completed at {str(retrieved_at)[:80]}."
+    return response
 
 
 def _hades_homelab_unlinked_identity_response(summary):
@@ -5309,7 +5373,11 @@ def _hades_homelab_unlinked_identity_response(summary):
 
 
 def _hades_broad_homelab_status_intent(text):
-    if _hades_homelab_source_identity_intent(text) or _hades_homelab_service_coverage_intent(text):
+    if (
+        _hades_homelab_source_identity_intent(text)
+        or _hades_homelab_conflict_intent(text)
+        or _hades_homelab_service_coverage_intent(text)
+    ):
         return True
     return bool(re.search(
         r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
@@ -5646,6 +5714,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         return "I can't verify private infrastructure changes from this account."
     household_broad_status_intent = _hades_broad_homelab_status_intent(text)
     service_coverage_intent = _hades_homelab_service_coverage_intent(text)
+    conflict_intent = _hades_homelab_conflict_intent(text)
     source_identity_intent = _hades_homelab_source_identity_intent(text)
     network_diagnostic_intent = bool(
         re.search(r"\b(?:network|internet|wi-?fi|dns)\b", text, re.IGNORECASE)
@@ -6089,6 +6158,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             )
         if service_coverage_intent and scope == "owner":
             return _hades_homelab_service_coverage_response(summary)
+        if conflict_intent and scope == "owner":
+            return _hades_homelab_conflict_response(summary)
         if source_identity_intent and scope == "owner":
             return _hades_homelab_unlinked_identity_response(summary)
         broad_inference = None
