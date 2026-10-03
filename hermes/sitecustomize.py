@@ -5236,6 +5236,12 @@ def _hades_homelab_service_coverage_response(summary):
         parts.append(
             f"NetBox lists {len(catalog_services)} application-service records; that inventory does not establish their current health."
         )
+    elif str(catalog.get("status") or "").upper() == "OK" and str(catalog.get("coverage") or "").upper() == "EMPTY":
+        parts.append("NetBox's application-service catalog is reachable but currently empty, so there are no catalogued application services to match to these probes.")
+    elif str(catalog.get("status") or "").upper() == "NOT_CONFIGURED":
+        parts.append("NetBox's application-service catalog is not configured, so service inventory cannot be compared with these probes.")
+    elif str(catalog.get("status") or "").upper() in {"UNAVAILABLE", "SOURCE_UNAVAILABLE", "ERROR"}:
+        parts.append("NetBox's application-service catalog could not be read, so service inventory cannot be compared with these probes.")
     visibility = summary.get("proxmox_guest_visibility") if isinstance(summary.get("proxmox_guest_visibility"), dict) else {}
     if str(visibility.get("status") or "").upper() in {"PARTIAL", "UNKNOWN"}:
         parts.append("Proxmox guest visibility is partial or unknown, so services on unreported guests remain unverified.")
