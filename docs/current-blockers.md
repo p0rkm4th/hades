@@ -35,9 +35,12 @@ Status: **PARTIAL**
 - An owner dogfood question about NVIDIA driver/GPU execution was misrouted to
   unrelated web research. Current-tree routing now reads the prepared GPU
   telemetry contract and provider inventory, with household requests denied
-  before source access. Regression tests pass; production rollout and live UI
-  acceptance are still pending. This does not activate SSH access or claim
-  current host GPU evidence.
+  before source access. The route passed Public CI, exact-active-overlay
+  composition, and persisted authenticated owner/household UI checks. Owner
+  output correctly reports host GPU state unknown because telemetry is not
+  configured; Household gets only a generic denial. Host account/key creation
+  and access remain separately gated, so live GPU utilization/free VRAM is
+  still unavailable.
 - Live source coverage is incomplete in the current private deployment.
   Detailed endpoint observations, topology, and source conflicts remain in
   private infrastructure records; do not infer broad health from partial data.

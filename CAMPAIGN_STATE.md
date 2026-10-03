@@ -70,9 +70,12 @@ of truth.
   to an unrelated web response. The current-tree fix routes owners through the
   fixed-command GPU telemetry reader plus provider inventory, and states the
   limits of each observation. Household requests receive a generic boundary
-  before any source read. Synthetic runtime coverage passes; this candidate is
-  not yet deployed or live-dogfooded. The SSH telemetry profile remains
-  unconfigured until separately approved host identities and keys are ready.
+  before any source read. Public CI, synthetic runtime coverage, exact-active-
+  overlay composition, and fresh authenticated owner/household UI turns pass.
+  The owner answer says driver/GPU execution are unknown because host telemetry
+  is unconfigured, while reporting current provider catalog/residency reads.
+  Household receives only the generic owner-only boundary. The SSH telemetry
+  profile remains unconfigured; no host account/key or access was activated.
 - Fresh “What changed since yesterday?” owner dogfood returned the bounded
   Proxmox-task/NetBox-update view with a read timestamp and partial-scope
   caveats. Candidate `33b24ec` now explicitly states that host OS,
