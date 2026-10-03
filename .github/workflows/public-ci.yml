@@ -101,6 +101,8 @@ jobs:
 
       - name: Check long-conversation routing boundary
         run: bash scripts/test-long-conversation-boundary.sh
+      - name: Check Hermes turn liveness and optional fallback contract
+        run: bash scripts/test-turn-liveness-contract.sh
       - name: Check confirmation conversation isolation
         run: bash scripts/test-confirmation-conversation-isolation.sh
       - name: Check persistent Task chat surface
