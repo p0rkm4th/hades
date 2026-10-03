@@ -42,7 +42,7 @@ configured catalog (and, for Ollama, residency) APIs responded. It never
 equates model artifact size with required memory or mutates a provider.
 Catalog and residency responses do not prove that a generation request works.
 
-### Optional live GPU telemetry (owner-gated; not activated by this change)
+### Optional live GPU telemetry (owner-gated, deployment-specific)
 
 The `homelab_gpu_telemetry` tool can read per-GPU utilization and free VRAM
 through a private allowlist. It is only invoked for owner GPU-capacity questions.
@@ -65,7 +65,11 @@ accepts exactly `hades-gpu-telemetry-v1` as the requested command and executes
 only the bounded NVIDIA query; it does not invoke a shell, sudo, or a caller
 provided program. Do not reuse an administrator or Codex key. Host account
 creation, key installation, and access activation require separate explicit
-owner approval and are not part of preparing this integration.
+owner approval; the generic HADES profile does not create or activate them.
+When a Hermes profile uses an explicit MCP `tools.include` list, include
+`homelab_gpu_telemetry` after the private profile and restricted host access
+are approved. Passing the configuration path alone does not make a filtered
+tool available to the Hermes runtime.
 
 Example private profile (replace every placeholder only after approval; do not
 commit the real file):

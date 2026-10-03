@@ -28,19 +28,21 @@ Status: **PARTIAL**
   identity and partial/unavailable states. Deployed HADES owner dogfood
   confirms provider catalogs and reported residency, while explicitly
   distinguishing these from successful generation and available capacity.
-  Fixed-command read-only GPU telemetry is implemented and tested but remains
-  unconfigured pending separate approval for host service identities and keys;
-  live per-host utilization/free-VRAM evidence and model-fit recommendations
-  remain open.
-- An owner dogfood question about NVIDIA driver/GPU execution was misrouted to
-  unrelated web research. Current-tree routing now reads the prepared GPU
-  telemetry contract and provider inventory, with household requests denied
-  before source access. The route passed Public CI, exact-active-overlay
-  composition, and persisted authenticated owner/household UI checks. Owner
-  output correctly reports host GPU state unknown because telemetry is not
-  configured; Household gets only a generic denial. Host account/key creation
-  and access remain separately gated, so live GPU utilization/free VRAM is
-  still unavailable.
+  Fixed-command read-only GPU telemetry is now activated for the explicitly
+  approved private HADES deployment. Fresh owner UI reads return current
+  utilization/free-VRAM samples from the configured inference endpoints;
+  Household A/B receive only the infrastructure-diagnostics boundary. Other
+  deployments still require their own approved host identities and profile.
+  Point-in-time GPU samples do not prove workload execution, guarantee model
+  fit, or account for context/runtime allocation, so precise placement
+  recommendations remain gated on additional evidence.
+- Live activation exposed private Hermes-profile drift: the service parent had
+  the telemetry path, but the MCP child environment did not, and the explicit
+  HADES tool allowlist omitted `homelab_gpu_telemetry`. Both profile gaps are
+  corrected with root-only rollback copies. The owner route now composes the
+  live fixed-command sample with provider inventory; household requests are
+  denied before source access. The adapter's synthetic safety contracts and
+  exact-route runtime checks pass.
 - Live source coverage is incomplete in the current private deployment.
   Detailed endpoint observations, topology, and source conflicts remain in
   private infrastructure records; do not infer broad health from partial data.
@@ -136,10 +138,12 @@ Status: **PARTIAL**
   / NetBox update coverage, and explicitly excluded host OS, package/driver,
   and in-guest service events. Household A remained denied private change
   history. A complete history and saved before/after comparison remain open.
-- Fresh owner GPU-capacity dogfood says free GPU capacity is unknown without
-  live per-host telemetry and does not treat inventory or empty model
-  residency as capacity evidence. Household A receives only the owner-session
-  boundary. The prepared fixed-command telemetry path remains unconfigured.
+- Fresh owner GPU-capacity dogfood now reports live per-device utilization and
+  free VRAM with a source-read timestamp and a point-in-time/model-fit caveat.
+  Provider residency remains separate evidence and does not establish model
+  execution or capacity. Household A and B receive only the infrastructure-
+  diagnostics boundary. The configured read path is non-sudo, fixed-command,
+  strict-host-key verified, and read-only.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 - Fresh owner backup dogfood found that Proxmox's archived history can include
