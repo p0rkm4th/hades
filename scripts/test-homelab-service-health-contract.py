@@ -827,7 +827,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Lab Host host' in formatted and 'App Guest VM 2803 on Lab Host' in formatted, formatted
         assert 'None VM None' not in formatted, formatted
         assert 'no linked Proxmox runtime record is available' in formatted and 'does not mean they are offline' in formatted, formatted
-        assert '3 source observations have no verified cross-source identity link' in formatted, formatted
+        assert '3 Proxmox or Uptime Kuma resources have no verified cross-source identity link' in formatted, formatted
         assert 'Proxmox-reported disk fields' in formatted and 'not guest filesystem utilization' in formatted, formatted
         (adapter_dir / 'server.py').write_text(
             'def homelab_inference_inventory():\n'

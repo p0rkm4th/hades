@@ -6423,7 +6423,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                     except (TypeError, ValueError):
                         unlinked_count = 0
             if unlinked_count:
-                response += f" {unlinked_count} source observations have no verified cross-source identity link, so I kept them separate."
+                response += f" {unlinked_count} Proxmox or Uptime Kuma resources have no verified cross-source identity link, so I kept them separate."
             unknown = monitor_groups["unknown"]
             if unknown:
                 labels = [
@@ -6487,7 +6487,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             source_counts = summary.get("source_counts") if isinstance(summary, dict) else None
             unlinked_count = source_counts.get("identity_unlinked_resources", 0) if isinstance(source_counts, dict) else 0
             if isinstance(unlinked_count, int) and not isinstance(unlinked_count, bool) and unlinked_count > 0:
-                response += f" {unlinked_count} observations have no verified cross-source identity link and remain separate."
+                response += f" {unlinked_count} Proxmox or Uptime Kuma resources have no verified cross-source identity link and remain separate."
         return response
     except Exception as exc:
         _hades_logger.warning("Direct homelab read failed (%s)", type(exc).__name__)
