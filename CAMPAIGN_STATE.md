@@ -33,6 +33,11 @@ of truth.
 - The live broad owner summary reports partial Proxmox guest visibility and an
   empty NetBox application-service catalog. Agent Zero’s configured endpoint
   returned a bounded HTTP response, which does not prove task execution.
+- Fresh authenticated owner UI dogfood asked where the game server runs.
+  HADES reported that the NetBox application-service catalog is empty and did
+  not guess intended or current placement. Household A's fresh game-health
+  answer could not confirm status from its current check and disclosed no
+  owner topology. Protected response artifacts remain mode 0600.
 - “Where is HADES running?” reports two same-name Proxmox guests and separates
   the stopped guest from the running guest; it does not claim application
   health. Nyx-4 has been asked to confirm whether the stopped duplicate name is
