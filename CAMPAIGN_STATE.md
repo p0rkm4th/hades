@@ -78,7 +78,11 @@ of truth.
   current provider catalog/residency, the fresh configured host probe, and
   explicitly historical hardware inventory. The answer did not imply current
   workload/OS health or GPU capacity. Household A received only the generic
-  boundary; no owner infrastructure reads were exposed.
+  boundary; no owner infrastructure reads were exposed. Candidate `f4aea3b`
+  now labels a stale role “last recorded” and marks both role and specifications
+  historical. Public CI, exact-active-overlay composition, rollback deployment,
+  and fresh persisted owner/household UI acceptance pass. The underlying
+  private capability-matrix deployment drift remains open for Nyx-4 review.
 - The deployed household status boundary now uses plain language for “Why is
   everything slow?” and “Are all the computers okay?” Fresh authenticated
   Household A/B chats persisted explicit limits without owner topology or

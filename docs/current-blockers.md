@@ -97,7 +97,11 @@ Status: **PARTIAL**
 - Fresh named inference-host owner dogfood combines provider-reported catalog
   and residency with the current configured host probe, while labeling
   hardware specifications historical and host workload/GPU utilization
-  unavailable. Household A remains limited to the generic boundary.
+  unavailable. Candidate `f4aea3b` also labels stale roles as last recorded;
+  it passed Public CI, composed-overlay checks, rollback deployment, and fresh
+  persisted owner/household UI acceptance. The deployed capability matrix still
+  predates newer private inventory observations and needs owner/infra review.
+  Household A remains limited to the generic boundary.
 - Candidate `4c73e28` passed Public CI and was deployed with rollback. Fresh
   Household A/B turns for whole-home slowness and computer status persisted
   scope-limited answers without exposing private topology or querying owner
