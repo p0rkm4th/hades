@@ -1921,25 +1921,6 @@ def format_inference_inventory_response(
         r"(?:doing|running)\b",
         str(user_text or ""), re.IGNORECASE,
     )
-    if not isinstance(inventory, dict):
-        if node_activity:
-            return _format_node_activity_fallback(user_text, summary, inventory)
-        return "I couldn't read the configured inference inventory, so I can't verify model availability right now."
-    status = str(inventory.get("status") or "UNKNOWN")
-    endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
-    if status == "NOT_CONFIGURED":
-        if ai_availability:
-            return "No provider-native AI endpoint is configured, so I can't check whether it is responding."
-        if node_activity:
-            return _format_node_activity_fallback(user_text, summary, inventory)
-        return "Provider-native model inventory is not configured here, so I can't verify which models are installed or loaded."
-    if not endpoints:
-        if ai_availability:
-            return "I couldn't check whether the configured AI endpoints are responding because no endpoint results were returned."
-        if node_activity:
-            return _format_node_activity_fallback(user_text, summary, inventory)
-        return "I couldn't read any configured model endpoints, so I can't verify model availability right now."
-
     gpu_availability_intent = bool(re.search(
         r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b",
         str(user_text or ""), re.IGNORECASE,
@@ -1950,6 +1931,35 @@ def format_inference_inventory_response(
         r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",
         str(user_text or ""), re.IGNORECASE,
     ))
+    capacity_unknown = (
+        "I can't verify current GPU capacity because live per-host GPU utilization and free-VRAM "
+        "telemetry is unavailable. Model catalogs and hardware inventory do not establish available capacity."
+    )
+    if not isinstance(inventory, dict):
+        if gpu_availability_intent or placement_intent:
+            return capacity_unknown
+        if node_activity:
+            return _format_node_activity_fallback(user_text, summary, inventory)
+        return "I couldn't read the configured inference inventory, so I can't verify model availability right now."
+    status = str(inventory.get("status") or "UNKNOWN")
+    endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
+    if status == "NOT_CONFIGURED":
+        if gpu_availability_intent or placement_intent:
+            return capacity_unknown
+        if ai_availability:
+            return "No provider-native AI endpoint is configured, so I can't check whether it is responding."
+        if node_activity:
+            return _format_node_activity_fallback(user_text, summary, inventory)
+        return "Provider-native model inventory is not configured here, so I can't verify which models are installed or loaded."
+    if not endpoints:
+        if gpu_availability_intent or placement_intent:
+            return capacity_unknown
+        if ai_availability:
+            return "I couldn't check whether the configured AI endpoints are responding because no endpoint results were returned."
+        if node_activity:
+            return _format_node_activity_fallback(user_text, summary, inventory)
+        return "I couldn't read any configured model endpoints, so I can't verify model availability right now."
+
     if gpu_availability_intent:
         telemetry = gpu_telemetry if isinstance(gpu_telemetry, dict) else {}
         telemetry_endpoints = telemetry.get("endpoints") if isinstance(telemetry.get("endpoints"), list) else []

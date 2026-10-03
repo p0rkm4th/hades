@@ -819,6 +819,20 @@ where_answer = server.format_inference_inventory_response(
 assert "sample:small is listed by GPU A" in where_answer, where_answer
 assert "Provider reports it resident on GPU A" in where_answer, where_answer
 assert "does not prove GPU execution" in where_answer, where_answer
+unavailable_gpu_inventory_answer = server.format_inference_inventory_response(
+    "Which GPUs are free right now?", {
+        "status": "SOURCE_UNAVAILABLE", "endpoints": [],
+    }, summary_names,
+)
+assert "can't verify current GPU capacity" in unavailable_gpu_inventory_answer, unavailable_gpu_inventory_answer
+assert "live per-host GPU utilization and free-VRAM telemetry is unavailable" in unavailable_gpu_inventory_answer, unavailable_gpu_inventory_answer
+assert "hardware inventory do not establish available capacity" in unavailable_gpu_inventory_answer, unavailable_gpu_inventory_answer
+unconfigured_gpu_placement_answer = server.format_inference_inventory_response(
+    "Where should I run another model?", {
+        "status": "NOT_CONFIGURED", "endpoints": [],
+    }, summary_names,
+)
+assert "can't verify current GPU capacity" in unconfigured_gpu_placement_answer, unconfigured_gpu_placement_answer
 unlinked_inference = {
     "status": "READABLE",
     "endpoints": [{
