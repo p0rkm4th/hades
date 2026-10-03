@@ -35,6 +35,8 @@ if not (overlay_dir / "sitecustomize.py").is_file():
 child = r'''import os
 import json
 import importlib.util
+import tempfile
+from pathlib import Path
 import run_agent
 import sitecustomize as hades
 import threading
@@ -554,6 +556,47 @@ assert "Live Proxmox currently reports: hades-core." in actual_compound_status["
 assert "No Backup Check exists yet." in actual_compound_status["final_response"], actual_compound_status
 assert "can't verify host, VM, service, or household-data backup coverage" in actual_compound_status["final_response"], actual_compound_status
 actual_proxmox_backup_read = hades._hades_direct_proxmox_backup_read
+actual_homelab_tool_result = hades._hades_direct_homelab_tool_result
+backup_tool_calls = []
+def synthetic_scoped_backup_tool_result(tool_name):
+    backup_tool_calls.append(tool_name)
+    return {
+        "status": "PARTIAL",
+        "formatted_summary": (
+            "No archived task was returned for the selected guest(s). "
+            "Other guest task history is unknown."
+        ),
+    }
+hades._hades_direct_homelab_tool_result = synthetic_scoped_backup_tool_result
+old_working_directory = os.environ.get("HADES_HERMES_WORKING_DIRECTORY")
+try:
+    with tempfile.TemporaryDirectory(prefix="hades-stale-backup-formatter-") as stale_root:
+        stale_adapter = Path(stale_root) / "integrations" / "homelab-readonly" / "server.py"
+        stale_adapter.parent.mkdir(parents=True)
+        stale_adapter.write_text("raise AssertionError('stale adapter formatter imported')\n")
+        os.environ["HADES_HERMES_WORKING_DIRECTORY"] = stale_root
+        scope_aware_backup_answer = hades._hades_direct_proxmox_backup_read(
+            "Are my backups okay?", owner, "owner", "synthetic-backup-scope",
+            include_hades_checks=False,
+        )
+        assert "No archived task was returned for the selected guest(s)" in scope_aware_backup_answer
+        assert "Other guest task history is unknown" in scope_aware_backup_answer
+        assert backup_tool_calls == ["homelab_backup_status"], backup_tool_calls
+finally:
+    if old_working_directory is None:
+        os.environ.pop("HADES_HERMES_WORKING_DIRECTORY", None)
+    else:
+        os.environ["HADES_HERMES_WORKING_DIRECTORY"] = old_working_directory
+hades._hades_direct_homelab_tool_result = lambda _name: {
+    "status": "PARTIAL", "tasks": [{"guest_id": "must-not-escape"}],
+}
+missing_scope_summary = hades._hades_direct_proxmox_backup_read(
+    "Are my backups okay?", owner, "owner", "synthetic-backup-missing-summary",
+    include_hades_checks=False,
+)
+assert "did not provide a scope-verified backup summary" in missing_scope_summary
+assert "must-not-escape" not in missing_scope_summary
+hades._hades_direct_homelab_tool_result = actual_homelab_tool_result
 proxmox_backup_calls = []
 def synthetic_proxmox_backup(text, subject, scope, session_key, *, allow_homelab_context=False, **_kwargs):
     proxmox_backup_calls.append((text, subject, scope, allow_homelab_context))

@@ -1017,7 +1017,7 @@ def homelab_backup_status() -> dict:
     overall = "READABLE" if all(x == "HEALTHY" for x in states) else (
         "SOURCE_UNAVAILABLE" if all(x == "UNAVAILABLE" for x in states) else "PARTIAL"
     )
-    return {
+    report = {
         "status": overall,
         "source": "Proxmox vzdump jobs and archived tasks",
         "retrieved_at": _retrieved_at(),
@@ -1030,6 +1030,8 @@ def homelab_backup_status() -> dict:
         ],
         "read_only": True,
     }
+    report["formatted_summary"] = format_homelab_backup_status(report)
+    return report
 
 
 def _netbox_recent_inventory_updates(since: int) -> dict:

@@ -6336,29 +6336,18 @@ def _hades_direct_proxmox_backup_read(
             sections.append("HADES BACKUP CHECKS:\n" + check_text)
         return "\n\n".join(sections)
 
-    workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip() or os.getcwd()
     try:
-        from pathlib import Path
-        import importlib.util
-
-        adapter = Path(workdir) / "integrations" / "homelab-readonly" / "server.py"
-        if not adapter.is_file():
-            configured_root = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
-            if configured_root:
-                candidate = Path(configured_root) / "integrations" / "homelab-readonly" / "server.py"
-                if candidate.is_file():
-                    adapter = candidate
-        if not adapter.is_file():
-            return _compose("I can't read Proxmox backup status from this installation right now.")
-        if str(adapter.parent) not in __import__("sys").path:
-            __import__("sys").path.insert(0, str(adapter.parent))
-        spec = importlib.util.spec_from_file_location("hades_direct_proxmox_backup", adapter)
-        if spec is None or spec.loader is None:
-            return _compose("I can't read Proxmox backup status from this installation right now.")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
         report = _hades_direct_homelab_tool_result("homelab_backup_status")
-        proxmox_text = module.format_homelab_backup_status(report)
+        proxmox_text = (
+            report.get("formatted_summary")
+            if isinstance(report, dict) else None
+        )
+        if not isinstance(proxmox_text, str) or not proxmox_text.strip():
+            return _compose(
+                "The configured homelab reader did not provide a scope-verified backup summary, "
+                "so I can't safely report archived task status."
+            )
+        _hades_logger.info("Owner backup answer used the active homelab MCP formatter")
         return _compose(proxmox_text)
     except Exception as exc:
         _hades_logger.warning("Owner Proxmox backup read failed: %s", type(exc).__name__)

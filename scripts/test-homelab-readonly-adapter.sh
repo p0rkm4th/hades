@@ -1108,6 +1108,7 @@ assert "private-user" not in json.dumps(backup_report)
 assert "private failure detail" not in json.dumps(backup_report)
 backup_text = server.format_homelab_backup_status(backup_report)
 assert "doesn't verify backup contents" in backup_text
+assert backup_report["formatted_summary"] == backup_text, backup_report
 assert "private" not in backup_text
 
 def empty_backup_fetch(url, *_args, **_kwargs):
@@ -1177,6 +1178,7 @@ selected_text = server.format_homelab_backup_status(selected_backup)
 assert "limited to 1 selected guest" in selected_text, selected_text
 assert "other guest task history is unknown" in selected_text, selected_text
 assert "2803" not in selected_text, selected_text
+assert selected_backup["formatted_summary"] == selected_text, selected_backup
 
 def empty_selected_scope_backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/cluster/backup"):
