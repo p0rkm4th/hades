@@ -88,6 +88,12 @@ Status: **PARTIAL**
   overlay, rollback deployment, and persisted owner/household UI checks pass.
   The household reply gives no host or address details. Canonical service
   inventory and service-health coverage remain incomplete.
+- Fresh broad owner dogfood returns an explicitly partial current summary:
+  selected-guest visibility, empty intended-service inventory, host-probe
+  availability, inference catalog/residency, and unlinked records remain
+  distinct evidence. It does not promote host probes to app health or model
+  catalogs to generation/GPU capacity. Household A receives only the generic
+  boundary.
 - Candidate `4c73e28` passed Public CI and was deployed with rollback. Fresh
   Household A/B turns for whole-home slowness and computer status persisted
   scope-limited answers without exposing private topology or querying owner

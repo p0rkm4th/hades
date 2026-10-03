@@ -68,6 +68,12 @@ of truth.
   this no-match answer; Public CI, exact-active-overlay composition, rollback
   deployment, and fresh persisted owner/household chats pass. The household
   placement reply contains no host or address details.
+- Fresh “Is everything okay with the homelab?” owner dogfood returned a partial
+  live summary rather than a false all-clear. It separated selected-guest
+  visibility, empty NetBox service inventory, fresh host probes, inference
+  catalogs/residency, and unresolved source links, and did not equate any of
+  those with application readiness, successful generation, or GPU capacity.
+  Fresh Household A dogfood returned only the generic home-computers boundary.
 - The deployed household status boundary now uses plain language for “Why is
   everything slow?” and “Are all the computers okay?” Fresh authenticated
   Household A/B chats persisted explicit limits without owner topology or
