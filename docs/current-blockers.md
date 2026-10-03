@@ -147,8 +147,8 @@ Status: **PARTIAL**
   aggregate row while correctly refusing to attribute it to a selected guest.
   Candidate handling preserves it as separate unattributed evidence and says
   it cannot verify any specific guest's backup. Focused adapter contracts pass;
-  Public CI and deployment acceptance are pending. Backup contents, off-site
-  custody, and restoreability remain unverified.
+  Public CI run `37150356935` passes; live deployment acceptance is pending.
+  Backup contents, off-site custody, and restoreability remain unverified.
 
 ## Release and owner gates
 
