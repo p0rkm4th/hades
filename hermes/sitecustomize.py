@@ -5314,26 +5314,24 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
         if len(distinct) >= 2:
             return f"Compare current model residency and GPU capacity on {distinct[-2]} and {distinct[-1]}"
     elif placement_followup:
-        latest_assistant = ""
-        for line in reversed(history.splitlines()):
-            # Context is flattened, but each historical message remains on its
-            # own line. The latest assistant comparison carries its winner in
-            # plain prose and can resolve “there” without guessing from order.
-            latest_assistant = line
-            if line.strip():
-                break
-        selected = []
+        # Conversation context is flattened across both user and assistant
+        # messages. Search the bounded history for an explicit comparison
+        # winner, then use the latest such statement to resolve “there.”
+        winners = []
         for name in names:
             winner_pattern = (
-                r"(?<![\w])" + re.escape(name) + r"(?![\w]).{0,100}"
+                r"(?<![\w])(?P<host>" + re.escape(name) + r")(?![\w]).{0,100}"
                 r"\b(?:has|had|is|was|shows|offers)\b.{0,35}"
                 r"\b(?:the\s+)?(?:highest|largest|most|more)\b.{0,45}"
                 r"\b(?:free|room|headroom|capacity|gpu|vram|memory)\b"
             )
-            if re.search(winner_pattern, latest_assistant, re.IGNORECASE):
-                selected.append(name)
-        if len(selected) == 1:
-            return f"Can {selected[0]} host another model?"
+            winners.extend(
+                (match.start(), match.group("host"))
+                for match in re.finditer(winner_pattern, history, re.IGNORECASE)
+            )
+        if winners:
+            _, winner = max(winners, key=lambda item: item[0])
+            return f"Can {winner} host another model?"
     if not target:
         if placement_size:
             return f"Where should I run a {placement_size.group('size')} GB model?"
