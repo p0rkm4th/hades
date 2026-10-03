@@ -700,7 +700,10 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         'def homelab_summary():\n'
         '    import os\n'
         '    if os.environ.get("HADES_TEST_NO_GAME_MONITOR") == "1":\n'
-        '        return {"resources": [], "service_catalog": {"status": "OK", "coverage": "EMPTY", "services": []}}\n'
+        '        sources = []\n'
+        '        if os.environ.get("HADES_TEST_KUMA_UNAVAILABLE") == "1":\n'
+        '            sources = [{"source": "Uptime Kuma", "status": "UNAVAILABLE", "retrieved_at": "2026-10-03T12:00:00Z"}]\n'
+        '        return {"resources": [], "sources": sources, "service_catalog": {"status": "OK", "coverage": "EMPTY", "services": []}}\n'
         '    resources = [{"name": "Minecraft Server", '
         '"runtime_status": "NOT_OBSERVED", "currently_online": False, '
         '"availability": {"name": "Minecraft Server", "status": "up", '
@@ -708,6 +711,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '"availability_freshness": "FRESH"}]\n'
         '    if os.environ.get("HADES_TEST_UNKNOWN_GAME_MONITOR") == "1":\n'
         '        resources[0]["availability"]["status"] = "unknown"\n'
+        '    if os.environ.get("HADES_TEST_STALE_GAME_MONITOR") == "1":\n'
+        '        resources[0]["availability_freshness"] = "STALE"\n'
         '    if os.environ.get("HADES_TEST_INFERENCE_NODE") == "1":\n'
         '        resources.append({"name": "Compute Node A", "runtime_status": "NOT_OBSERVED", '
         '                         "inventory": {"name": "Compute Node A"}, '
@@ -797,7 +802,25 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             )
         finally:
             os.environ.pop('HADES_TEST_UNKNOWN_GAME_MONITOR', None)
-        assert 'from the current check' in inconclusive_game_check, inconclusive_game_check
+        assert 'current game-server check is inconclusive' in inconclusive_game_check, inconclusive_game_check
+        os.environ['HADES_TEST_STALE_GAME_MONITOR'] = '1'
+        try:
+            stale_game_check = direct_read(
+                'Is Minecraft working?', 'synthetic-household', 'household'
+            )
+        finally:
+            os.environ.pop('HADES_TEST_STALE_GAME_MONITOR', None)
+        assert 'last game-server check is stale' in stale_game_check, stale_game_check
+        os.environ['HADES_TEST_NO_GAME_MONITOR'] = '1'
+        os.environ['HADES_TEST_KUMA_UNAVAILABLE'] = '1'
+        try:
+            unreadable_game_check = direct_read(
+                'Is Minecraft working?', 'synthetic-household', 'household'
+            )
+        finally:
+            os.environ.pop('HADES_TEST_NO_GAME_MONITOR', None)
+            os.environ.pop('HADES_TEST_KUMA_UNAVAILABLE', None)
+        assert "couldn't read a current game-server check" in unreadable_game_check, unreadable_game_check
         assert 'couldn\'t find a matching service record' in direct_read(
             'Where is Agent Zero?', 'synthetic-owner', 'owner'
         )

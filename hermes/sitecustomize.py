@@ -6960,13 +6960,35 @@ def _hades_direct_homelab_read(
                 or "couldn't verify a current uptime kuma service monitor"
                 in service_response.casefold()
             ):
+                source_rows = summary.get("sources", []) if isinstance(summary, dict) else []
+                if not isinstance(source_rows, list):
+                    source_rows = []
+                kuma_unavailable = any(
+                    isinstance(row, dict)
+                    and row.get("source") == "Uptime Kuma"
+                    and str(row.get("status") or "").upper()
+                    in {"UNAVAILABLE", "SOURCE_UNAVAILABLE"}
+                    for row in source_rows
+                )
+                if kuma_unavailable:
+                    return "I couldn't read a current game-server check, so I can't confirm whether it's working."
+                if service_response and "observation is stale" in service_response.casefold():
+                    return "The last game-server check is stale, so I can't confirm whether it's working."
+                if service_response and "observation is unknown" in service_response.casefold():
+                    return "I can't verify whether the last game-server check is current, so I can't confirm whether it's working."
                 return "I don't have a current check for the game server, so I can't confirm whether it's working."
             lowered_service_response = service_response.casefold()
+            if "observation is stale" in lowered_service_response:
+                return "The last game-server check is stale, so I can't confirm whether it's working."
+            if "observation is unknown" in lowered_service_response:
+                return "I can't verify whether the last game-server check is current, so I can't confirm whether it's working."
+            if "couldn't verify a current uptime kuma service monitor" in lowered_service_response:
+                return "I don't have a current check for the game server, so I can't confirm whether it's working."
             if " is up." in lowered_service_response:
                 return "The configured game-server check is responding. That doesn't guarantee the game is joinable."
             if " is down." in lowered_service_response:
                 return "The configured game-server check is failing. I can't verify why or say the game is available."
-            return "I can't confirm whether the game server is working from the current check."
+            return "The current game-server check is inconclusive, so I can't confirm whether it's working."
         if service_response:
             if scope == "owner":
                 return service_response
