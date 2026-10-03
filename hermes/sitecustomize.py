@@ -6261,8 +6261,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                     ]
                     if machine.get("address"):
                         details.append(f"The recorded address is {machine['address']}.")
-                    if machine.get("role"):
-                        details.append(f"It is listed as {machine['role']}.")
+                    role_label = _hades_homelab_display_label(machine.get("role"))
+                    if role_label:
+                        details.append(f"It is listed as {role_label}.")
                     monitor_note = _unlinked_monitor_note(target)
                     if monitor_note:
                         details.append(monitor_note)
