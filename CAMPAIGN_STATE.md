@@ -60,6 +60,14 @@ of truth.
   caveat. Public CI passed; the candidate was deployed with a root-only rollback
   copy, and fresh owner/household chats persisted the scoped answer and generic
   boundary. Application-service health remains unverified by guest inventory.
+- Fresh owner dogfood of a household-app placement question confirmed the
+  reachable NetBox service catalog is empty; HADES declines to guess current or
+  intended placement. Its availability question found no matching current Kuma
+  monitor and correctly declined to call the app healthy. Candidate `1beba11`
+  now includes the Kuma source-read timestamp (or source-unavailable state) in
+  this no-match answer; Public CI, exact-active-overlay composition, rollback
+  deployment, and fresh persisted owner/household chats pass. The household
+  placement reply contains no host or address details.
 - The deployed household status boundary now uses plain language for “Why is
   everything slow?” and “Are all the computers okay?” Fresh authenticated
   Household A/B chats persisted explicit limits without owner topology or

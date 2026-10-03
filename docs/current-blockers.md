@@ -80,6 +80,14 @@ Status: **PARTIAL**
   Public CI and composed-overlay checks pass; deployment with rollback and
   fresh persisted owner/household UI acceptance now pass. Guest inventory does
   not establish application-service health.
+- Fresh owner placement and health questions for a household app confirmed the
+  live NetBox application-service catalog has no records and no matching
+  current Uptime Kuma monitor is available. HADES correctly refuses to infer
+  placement or health. Candidate `1beba11` adds the Kuma source-read time (or
+  explicit source state) when a matching monitor is absent; CI, composed
+  overlay, rollback deployment, and persisted owner/household UI checks pass.
+  The household reply gives no host or address details. Canonical service
+  inventory and service-health coverage remain incomplete.
 - Candidate `4c73e28` passed Public CI and was deployed with rollback. Fresh
   Household A/B turns for whole-home slowness and computer status persisted
   scope-limited answers without exposing private topology or querying owner
