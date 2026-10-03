@@ -28,6 +28,10 @@ intent_helper = next(
     node for node in tree.body
     if isinstance(node, ast.FunctionDef) and node.name == "_hades_is_backup_freshness_intent"
 )
+model_fit_helper = next(
+    node for node in tree.body
+    if isinstance(node, ast.FunctionDef) and node.name == "_hades_homelab_explicit_model_fit_intent"
+)
 aux_guard = next(
     node for node in ast.walk(tree)
     if isinstance(node, ast.Assign)
@@ -78,7 +82,7 @@ with tempfile.TemporaryDirectory() as root:
             else None
         ),
     }
-    exec(compile(ast.Module(body=[aux_guard, aux_helper, intent_helper, helper], type_ignores=[]), "sitecustomize.py", "exec"), namespace)
+    exec(compile(ast.Module(body=[aux_guard, aux_helper, intent_helper, helper, model_fit_helper], type_ignores=[]), "sitecustomize.py", "exec"), namespace)
     intent = namespace["_hades_is_backup_freshness_intent"]
     assert intent("Do we have a recent backup?")
     assert intent("Was our backup checked recently?")
