@@ -18,6 +18,7 @@ EXTRA = {
     "_hades_direct_proxmox_backup_read",
     "_hades_direct_owner_location",
     "_hades_endpoint_continuation_response",
+    "_hades_service_placement_intent",
 }
 
 
@@ -214,6 +215,28 @@ def add_household_route(source: str) -> str:
         raise ValueError("could not uniquely locate the auxiliary-prompt guard")
     auxiliary_guard = auxiliary_guards[0]
     early_block = '''
+        if getattr(self, "_hades_session_scope", "") in {"owner", "household"} and _hades_service_placement_intent(
+            user_message, getattr(self, "_hades_session_scope", "")
+        ):
+            service_placement_response = _hades_direct_homelab_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                getattr(self, "_hades_session_scope", ""),
+                context_text=previous_user_text,
+            )
+            if service_placement_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(service_placement_response)
+                _hades_logger.info(
+                    "Service-placement inventory read completed before managed-server routing"
+                )
+                return {
+                    "final_response": service_placement_response,
+                    "messages": [{"role": "assistant", "content": service_placement_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         if _hades_household_game_health_intent(
             user_message, getattr(self, "_hades_session_scope", "")
         ):

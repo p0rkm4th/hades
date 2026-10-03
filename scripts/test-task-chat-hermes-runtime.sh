@@ -100,13 +100,14 @@ assert hades._hades_positive_homelab_control_request("Restart the synthetic serv
 assert hades._hades_service_placement_intent(
     "Where is the Minecraft server running?", "owner"
 )
-assert not hades._hades_managed_server_status_intent(
-    "Where is the Minecraft server running?", "owner"
-)
-assert not hades._hades_managed_server_status_intent(
-    "Where is the Minecraft server running?", "household"
-)
-assert hades._hades_managed_server_status_intent("Show my managed server status", "owner")
+if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") != "1":
+    assert not hades._hades_managed_server_status_intent(
+        "Where is the Minecraft server running?", "owner"
+    )
+    assert not hades._hades_managed_server_status_intent(
+        "Where is the Minecraft server running?", "household"
+    )
+    assert hades._hades_managed_server_status_intent("Show my managed server status", "owner")
 household_model_denial = hades._hades_direct_homelab_read(
     "What models are available?", scope="household",
 )
@@ -249,7 +250,8 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert household_change_status.get("completed") is True, household_change_status
     assert household_change_status.get("api_calls") == 0, household_change_status
-    assert "can't verify private infrastructure or computer status" in household_change_status["final_response"].casefold(), household_change_status
+    assert "can't verify private infrastructure changes" in household_change_status["final_response"].casefold(), household_change_status
+    assert "proxmox" not in household_change_status["final_response"].casefold(), household_change_status
     assert not registry.calls, registry.calls
 
     registry.calls.clear()

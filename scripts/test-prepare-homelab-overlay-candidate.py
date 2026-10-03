@@ -34,6 +34,8 @@ def _hades_is_hermes_auxiliary_prompt(text):
     return False
 def _hades_household_game_health_intent(text, scope):
     return False
+def _hades_service_placement_intent(text, scope):
+    return scope in {"owner", "household"} and "where" in text.casefold()
 '''
 
 ACTIVE = '''
@@ -57,6 +59,8 @@ def _hades_run_conversation(self, user_message, previous_user_text, _preflight_t
         )
         if game_health_response:
             return game_health_response
+    if _server_status_turn:
+        return "managed-server-status"
     turn_started = time.perf_counter()
     if self._hades_session_scope == "owner" and _compound_briefing:
         return _hades_direct_homelab_read("homelab status and blockers")
@@ -93,7 +97,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     compile(candidate, str(output), "exec")
     tree = ast.parse(candidate)
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "_hades_direct_homelab_read"]
-    assert len(calls) == 5, len(calls)
+    assert len(calls) == 6, len(calls)
     assert "getattr(self, \"_hades_subject\", \"\")" in candidate
     assert "context_text=previous_user_text" in candidate
     assert "context_text=_hades_intent_text" in candidate
@@ -107,6 +111,9 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     run_start = candidate.index("def _hades_run_conversation")
     capacity_guard = candidate.index("Owner model-capacity follow-up failed closed without model invocation", run_start)
     game_guard = candidate.index("Household game-server health read completed before managed-server routing", run_start)
+    placement_guard = candidate.index("Service-placement inventory read completed before managed-server routing", run_start)
+    managed_status_guard = candidate.index("if _server_status_turn", run_start)
+    assert placement_guard < managed_status_guard
     assert game_guard < candidate.index("turn_started = time.perf_counter()", run_start)
     assert game_guard < capacity_guard
     assert capacity_guard < candidate.index("turn_started = time.perf_counter()", run_start)
