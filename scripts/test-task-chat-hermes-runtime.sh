@@ -102,6 +102,8 @@ assert hades._HADES_HOMELAB_INTENT.search("Where's qwen3.6:35b?")
 assert hades._HADES_HOMELAB_INTENT.search("Which GPUs are free?")
 assert hades._HADES_HOMELAB_INTENT.search("Where should I run another model?")
 assert hades._HADES_HOMELAB_INTENT.search("Check Synthetic Node B.")
+unlinked_source_question = "Which live homelab observations cannot you confidently match to the same machine?"
+assert hades._hades_broad_homelab_status_intent(unlinked_source_question)
 assert hades._hades_homelab_target_from_question("Check Synthetic Node B.") == "synthetic node b"
 assert hades._hades_homelab_named_check_target("Check my shopping list") is None
 assert not hades._hades_positive_homelab_control_request(
@@ -143,6 +145,10 @@ household_named_node_denial = hades._hades_direct_homelab_read(
     "Check Synthetic Node B.", "synthetic-beta", "household",
 )
 assert "private infrastructure" in household_named_node_denial, household_named_node_denial
+household_unlinked_source_denial = hades._hades_direct_homelab_read(
+    unlinked_source_question, "synthetic-beta", "household",
+)
+assert "can't verify private infrastructure or computer status" in household_unlinked_source_denial.casefold(), household_unlinked_source_denial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from integrations.task import TaskStatus, TaskStore
 
@@ -291,6 +297,16 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert household_result.get("completed") is True and household_result.get("api_calls") == 0, household_result
     assert "private infrastructure" in household_result["final_response"].casefold(), household_result
     assert "Synthetic Node B" not in household_result["final_response"], household_result
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
+    household_unlinked_sources = household_agent.run_conversation(
+        unlinked_source_question, conversation_history=[]
+    )
+    assert household_unlinked_sources.get("completed") is True, household_unlinked_sources
+    assert household_unlinked_sources.get("api_calls") == 0, household_unlinked_sources
+    assert "can't verify private infrastructure or computer status" in household_unlinked_sources["final_response"].casefold(), household_unlinked_sources
+    assert "Proxmox" not in household_unlinked_sources["final_response"], household_unlinked_sources
     assert not registry.calls, registry.calls
 
     registry.calls.clear()

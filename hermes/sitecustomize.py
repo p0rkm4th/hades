@@ -5214,7 +5214,8 @@ def _hades_broad_homelab_status_intent(text):
         r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
         r"(?:why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
         r"why\s+does\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+(?:feel(?:s|ing)?\s+)?slow)|"
-        r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$",
+        r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time)|"
+        r"(?:which|what|list|show|identify).{0,80}\b(?:live\s+)?(?:homelab|home\s+lab|infrastructure)\b.{0,100}\b(?:observations?|source\s+records?|identity\s+links?|unlinked|cross.source|match(?:ing)?|conflicts?|disagreements?)\b)",
         str(text or ""),
         re.IGNORECASE,
     ))
