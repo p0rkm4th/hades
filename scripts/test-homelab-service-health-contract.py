@@ -688,12 +688,24 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         )
         assert 'No blocker was reported by the configured live sources.' in covered, covered
         assert 'A responding probe does not prove application login' in covered, covered
+        no_current_failures = direct_read('What is down?', 'synthetic-owner', 'owner')
+        assert 'No fresh configured service probe is currently reporting a failure.' in no_current_failures, no_current_failures
+        assert "Uptime Kuma's configured probes failed:" not in no_current_failures, no_current_failures
         everything_ok = direct_read('Is everything okay?', 'synthetic-owner', 'owner')
         assert 'Live inference reads: Test Fast API responding (1 catalog models; 0 reported loaded)' in everything_ok, everything_ok
         assert 'Inference-worker health was not independently verified' not in everything_ok, everything_ok
         my_homelab_ok = direct_read('Is everything okay with my homelab?', 'synthetic-owner', 'owner')
         assert 'Live inference reads: Test Fast API responding (1 catalog models; 0 reported loaded)' in my_homelab_ok, my_homelab_ok
         assert 'do not prove generation or available GPU capacity' in my_homelab_ok, my_homelab_ok
+        write_broad_summary([{
+            'name': 'Search latency check', 'status': 'down', 'freshness': 'STALE',
+        }])
+        stale_down = direct_read('What is down?', 'synthetic-owner', 'owner')
+        assert 'No fresh service probe confirms a current failure.' in stale_down, stale_down
+        assert 'Search latency check (last reported down; stale)' in stale_down, stale_down
+        write_broad_summary([{
+            'name': 'HADES Core', 'status': 'up', 'freshness': 'FRESH',
+        }])
         mcp_read_logs = [row for row in info_logs if row and str(row[0]).startswith('Homelab MCP read completed:')]
         assert mcp_read_logs, info_logs
         assert any(

@@ -6171,6 +6171,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             )
         monitor_groups = _hades_homelab_availability_groups(availability)
         down = monitor_groups["down"]
+        down_question = bool(re.search(
+            r"\b(?:what(?:['’]s|\s+is)\s+down|anything\s+down|"
+            r"what(?:['’]s|\s+is)\s+(?:offline|unavailable)|"
+            r"which\s+(?:services?|systems?|servers?)\s+(?:are\s+)?down)\b",
+            text, re.IGNORECASE,
+        ))
         if down:
             response += " Uptime Kuma's configured probes failed: " + ", ".join(down) + "."
             netbox_api_responded = any(
@@ -6202,6 +6208,17 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                     + ("its target has no verified identity link" if monitor_linkage == "unlinked" else "its target identity is not established by this read")
                     + ", so I can't tell whether that probe checks the inventory API itself."
                 )
+        elif down_question and monitor_groups["unknown"]:
+            labels = [
+                f"{item['name']} (last reported {item['last_status']}; {item['freshness'].casefold()})"
+                for item in monitor_groups["unknown"][:8]
+            ]
+            response += (
+                " No fresh service probe confirms a current failure. Current status is unknown for: "
+                + ", ".join(labels) + "."
+            )
+        elif down_question and availability:
+            response += " No fresh configured service probe is currently reporting a failure."
         elif not availability:
             response += " No service availability observations are available, so I can't confirm service health."
         if isinstance(summary, dict) and summary.get("identity_warnings"):
