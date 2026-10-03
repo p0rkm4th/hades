@@ -4869,11 +4869,8 @@ def _hades_homelab_core_vm_placement_response(user_text, resources):
     return prefix + "; ".join(placements) + ". This is VM placement and power state only; it doesn't verify HADES application health."
 
 
-def _hades_homelab_workloads_on_host_response(
-    user_text, resources, summary_status="UNKNOWN", source_results=None,
-    guest_visibility=None,
-):
-    """List only current Proxmox guests for a specifically named Proxmox host."""
+def _hades_homelab_workload_host_target(user_text):
+    """Extract a directly named host from a guest-placement question."""
     match = re.search(
         r"\bwhat(?:['’]s|\s+is)\s+running\s+on\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)"
         r"(?:\s+(?:right\s+)?now)?"
@@ -4881,9 +4878,18 @@ def _hades_homelab_workloads_on_host_response(
         r"\s*[?.!]*$",
         str(user_text or ""), re.IGNORECASE,
     )
-    if not match:
+    return " ".join(match.group("target").split()).strip(" .?!'’") if match else None
+
+
+def _hades_homelab_workloads_on_host_response(
+    user_text, resources, summary_status="UNKNOWN", source_results=None,
+    guest_visibility=None,
+):
+    """List only current Proxmox guests for a specifically named Proxmox host."""
+    target_text = _hades_homelab_workload_host_target(user_text)
+    if not target_text:
         return None
-    target = _hades_homelab_name_key(match.group("target").strip())
+    target = _hades_homelab_name_key(target_text)
     rows = resources if isinstance(resources, list) else []
     hosts = []
     for row in rows:
@@ -4900,10 +4906,10 @@ def _hades_homelab_workloads_on_host_response(
             hosts.append((row, runtime))
     if len(hosts) != 1:
         if len(hosts) > 1:
-            return f"I found multiple Proxmox host records matching {match.group('target')}; I can't safely choose one."
-        return f"I couldn't verify {match.group('target')} as a current Proxmox host, so I can't say what guests are running there."
+            return f"I found multiple Proxmox host records matching {target_text}; I can't safely choose one."
+        return f"I couldn't verify {target_text} as a current Proxmox host, so I can't say what guests are running there."
     host, host_runtime = hosts[0]
-    host_name = str(host.get("name") or match.group("target"))
+    host_name = str(host.get("name") or target_text)
     host_state = str(host.get("runtime_status") or "UNKNOWN")
     guests = []
     host_key = str(host_runtime.get("node") or "")
@@ -6172,6 +6178,7 @@ def _hades_direct_homelab_read(
         workdir = os.getcwd()
     resource_ranking_intent = _hades_homelab_resource_ranking_intent(text)
     gpu_execution_intent = _hades_homelab_gpu_execution_intent(text)
+    workload_host_target = _hades_homelab_workload_host_target(text)
     named_node_check_target = _hades_homelab_named_check_target(text)
     followup_prompt = _hades_homelab_followup_prompt(text, scope, context_text)
     if followup_prompt and followup_prompt.casefold() != text.casefold():
@@ -6234,6 +6241,8 @@ def _hades_direct_homelab_read(
         return "Live infrastructure resource details are available only in an owner session."
     if scope != "owner" and gpu_execution_intent:
         return "I can't check infrastructure diagnostics from this account."
+    if scope != "owner" and workload_host_target:
+        return _hades_household_safe_status_response(text)
     if scope != "owner" and (
         household_broad_status_intent or household_node_status_intent
         or _hades_homelab_guest_visibility_intent(text) or provenance_intent
@@ -6283,7 +6292,7 @@ def _hades_direct_homelab_read(
         r"\b(?:how\s+busy|how\s+much\s+load)\s+(?:is|does)\s+(?P<target2>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         text, re.IGNORECASE,
     )
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not gpu_execution_intent and not node_load_match and not _hades_homelab_explicit_model_fit_intent(text) and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not gpu_execution_intent and not workload_host_target and not node_load_match and not _hades_homelab_explicit_model_fit_intent(text) and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"

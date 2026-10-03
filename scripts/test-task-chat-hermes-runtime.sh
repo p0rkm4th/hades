@@ -107,6 +107,11 @@ assert hades._hades_homelab_resource_ranking_intent("What is using the most reso
 assert hades._hades_homelab_resource_ranking_intent("What's the most loaded server right now?")
 assert hades._hades_homelab_resource_ranking_intent("Which server has the highest CPU usage?")
 assert not hades._hades_homelab_resource_ranking_intent("What resources does HADES use?")
+assert hades._hades_homelab_workload_host_target(
+    "What is running on Alexandra right now?"
+) == "Alexandra"
+assert hades._hades_homelab_workload_host_target("What's running on Tartarus?") == "Tartarus"
+assert hades._hades_homelab_workload_host_target("What is running?") is None
 assert hades._hades_homelab_gpu_execution_intent(
     "Can you verify the NVIDIA driver and GPU execution status on the inference machines right now?"
 )
@@ -463,6 +468,24 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     for private_term in ("nvidia", "gpu", "provider", "inference", "mcp", "compute node"):
         assert private_term not in household_gpu_agent["final_response"].casefold(), household_gpu_agent
     assert registry.calls == [], registry.calls
+    os.environ["HADES_TEST_ALEXANDRA_WORKLOADS"] = "1"
+    registry.calls.clear()
+    patched_backup_response = hades._hades_phase2_backup_response
+    hades._hades_phase2_backup_response = actual_backup_read
+    try:
+        alexandra_running_owner = owner_agent.run_conversation(
+            "What is running on Alexandra right now?", conversation_history=[],
+        )
+    finally:
+        hades._hades_phase2_backup_response = patched_backup_response
+        os.environ.pop("HADES_TEST_ALEXANDRA_WORKLOADS", None)
+    assert alexandra_running_owner.get("completed") is True, alexandra_running_owner
+    assert alexandra_running_owner.get("api_calls") == 0, alexandra_running_owner
+    assert "Proxmox currently reports Alexandra online" in alexandra_running_owner["final_response"], alexandra_running_owner
+    assert "Alexandra Services CT (lxc, running)" in alexandra_running_owner["final_response"], alexandra_running_owner
+    assert "only selected guests" in alexandra_running_owner["final_response"] and "may be incomplete" in alexandra_running_owner["final_response"], alexandra_running_owner
+    assert "doesn't enumerate application services" in alexandra_running_owner["final_response"], alexandra_running_owner
+    assert registry.calls == ["homelab_summary"], registry.calls
     capability_discovery_owner = owner_agent.run_conversation(
         capability_discovery_question, conversation_history=[]
     )
@@ -1817,6 +1840,13 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '             "availability": {"name": "service-proxmox-erebus", "status": "up"},\n'
         '             "availability_freshness": "FRESH", "conflicts": []},\n'
         '        ])\n'
+        '    if __import__("os").environ.get("HADES_TEST_ALEXANDRA_WORKLOADS") == "1":\n'
+        '        resources.extend([\n'
+        '            {"name": "Alexandra", "identity": {"source_identities": {"proxmox": ["proxmox:pve-main:node:alexandra"]}},\n'
+        '             "runtime_status": "online", "runtime": {"type": "node", "node": "alexandra", "status": "online"}},\n'
+        '            {"name": "Alexandra Services CT", "identity": {"source_identities": {"proxmox": ["proxmox:pve-main:lxc:803"]}},\n'
+        '             "runtime_status": "running", "runtime": {"type": "lxc", "node": "alexandra", "vmid": 803, "status": "running"}},\n'
+        '        ])\n'
         '    if __import__("os").environ.get("HADES_TEST_FOLLOWUP_NODE") == "1":\n'
         '        resources.append({"name": "Compute Node A", "inventory": {"name": "Compute Node A"},\n'
         '                          "identity": {"canonical_id": "netbox:device:7"}})\n'
@@ -1833,7 +1863,7 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '        "status": "OK",\n'
         '        "online_names": ["hades-core"],\n'
         '        "inventory_only_names": [],\n'
-        '        "proxmox_guest_visibility": (None if __import__("os").environ.get("HADES_TEST_LEGACY_GUEST_VISIBILITY") == "1" else {"status": "COMPLETE", "scope": "ALL_GUESTS", "endpoints": [{"source_identity": "proxmox:pve-main", "status": "HEALTHY", "scope": "ALL_GUESTS", "scoped_guest_count": None}]}),\n'
+        '        "proxmox_guest_visibility": (None if __import__("os").environ.get("HADES_TEST_LEGACY_GUEST_VISIBILITY") == "1" else {"status": "PARTIAL", "scope": "SELECTED_GUESTS", "endpoints": [{"source_identity": "proxmox:pve-main", "status": "HEALTHY", "scope": "SELECTED_GUESTS", "scoped_guest_count": 1}]} if __import__("os").environ.get("HADES_TEST_ALEXANDRA_WORKLOADS") == "1" else {"status": "COMPLETE", "scope": "ALL_GUESTS", "endpoints": [{"source_identity": "proxmox:pve-main", "status": "HEALTHY", "scope": "ALL_GUESTS", "scoped_guest_count": None}]}),\n'
         '        "availability_summary": ([{"name": "Search latency check", "status": "down", "freshness": "FRESH"},\n'
         '                                  {"name": "Router ping", "status": "up", "freshness": "FRESH", "ping_ms": 84}]\n'
         '                                if __import__("os").environ.get("HADES_TEST_HOMELAB_BOTTLENECK") == "1" else []) +\n'

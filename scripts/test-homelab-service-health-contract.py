@@ -30,6 +30,7 @@ wanted = {
     '_hades_direct_homelab_tool_result',
     '_hades_homelab_recent_activity_response',
     '_hades_homelab_workloads_on_host_response',
+    '_hades_homelab_workload_host_target',
     '_hades_homelab_core_vm_placement_response',
     '_hades_endpoint_intent_before_provision',
     '_hades_service_endpoint_response',
@@ -486,6 +487,10 @@ assert namespace['_hades_homelab_target_from_question']('whats Compute Node A do
 assert namespace['_hades_homelab_target_from_question']('Is Compute Node B alive?') == 'compute node b'
 assert namespace['_hades_homelab_target_from_question']("What's wrong with Compute Node A?") == 'compute node a'
 assert namespace['_hades_homelab_target_from_question']('Is everything okay?') is None
+assert namespace['_hades_homelab_workload_host_target'](
+    'What is running on Alexandra right now?'
+) == 'Alexandra'
+assert namespace['_hades_homelab_workload_host_target']('What is running?') is None
 
 host_workloads = workloads_on_host('What is running on Runtime Node A?', [
     {'name': 'Runtime Node A', 'runtime_status': 'online',
@@ -1232,6 +1237,41 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'synthetic-owner', 'owner'
         )
         assert 'couldn\'t verify Compute Node A as a current Proxmox host' in host_workload_route
+        alexandra_runtime_summary = {
+            'status': 'PARTIAL',
+            'proxmox_guest_visibility': {
+                'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
+                'endpoints': [{'source_identity': 'proxmox:site-a',
+                               'status': 'HEALTHY', 'scope': 'SELECTED_GUESTS'}],
+            },
+            'resources': [
+                {'name': 'Alexandra', 'runtime_status': 'online',
+                 'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
+                 'inventory': {'name': 'Alexandra'},
+                 'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
+                {'name': 'Alexandra Services CT', 'runtime_status': 'running',
+                 'identity': {'source_identities': {'proxmox': ['proxmox:site-a:lxc:803']}},
+                 'runtime': {'type': 'lxc', 'node': 'pve-a', 'vmid': 803, 'status': 'running'}},
+            ],
+            'sources': [{'source': 'Proxmox', 'status': 'HEALTHY'}],
+            'service_catalog': {'status': 'OK', 'services': []},
+        }
+        (adapter_dir / 'server.py').write_text(
+            'def homelab_summary():\n    return ' + repr(alexandra_runtime_summary) + '\n',
+            encoding='utf-8',
+        )
+        alexandra_workloads = direct_read(
+            'What is running on Alexandra right now?', 'synthetic-owner', 'owner'
+        )
+        assert 'Proxmox currently reports Alexandra online' in alexandra_workloads, alexandra_workloads
+        assert 'Alexandra Services CT (lxc, running)' in alexandra_workloads, alexandra_workloads
+        assert 'only selected guests' in alexandra_workloads and 'may be incomplete' in alexandra_workloads, alexandra_workloads
+        assert "doesn't enumerate application services" in alexandra_workloads, alexandra_workloads
+        alexandra_household = direct_read(
+            'What is running on Alexandra right now?', 'synthetic-household', 'household'
+        )
+        assert "can't check all the home computers" in alexandra_household.casefold(), alexandra_household
+        assert 'Alexandra' not in alexandra_household and 'Proxmox' not in alexandra_household, alexandra_household
         private_host_summary = {
             'status': 'OK',
             'resources': [

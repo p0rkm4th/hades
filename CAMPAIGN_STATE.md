@@ -53,6 +53,14 @@ of truth.
   current availability data as Uptime Kuma probes and distinguishes responding
   host probes from application readiness. Guest visibility and live GPU
   capacity remain open evidence gaps.
+- Fresh owner dogfood of “What is running on Alexandra right now?” exposed an
+  intent-gate miss: the deterministic Proxmox guest-placement answer existed,
+  but the prompt fell through to a progress preamble. Current-tree routing now
+  recognizes the named-host workload question and returns only current guests
+  attached to the verified Proxmox node, with the selected-guest visibility
+  caveat. Synthetic owner/household contracts and exact-active-overlay runtime
+  checks pass. Production UI acceptance and rollout remain pending; household
+  output is kept generic and source-free.
 - The deployed household status boundary now uses plain language for “Why is
   everything slow?” and “Are all the computers okay?” Fresh authenticated
   Household A/B chats persisted explicit limits without owner topology or
@@ -106,7 +114,8 @@ of truth.
 - Fixed-command, strict-host-key GPU telemetry is implemented and tested but
   unconfigured. Current per-host utilization/free VRAM and model-fit
   recommendations remain unavailable; host account and key activation require
-  separate owner approval.
+  separate owner approval. The owner selected preparation of the integration;
+  this does not activate credentials or access on any node.
 - Future activity comparison still needs a saved prior snapshot; recent task
   history is not a complete change log and host/service event sources are not
   connected. Source comparison must continue to say when identity links or
