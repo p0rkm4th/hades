@@ -153,6 +153,40 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert output.stat().st_mode & 0o777 == 0o600
     assert active.read_text(encoding="utf-8") == ACTIVE
 
+    # A production overlay may already contain the earlier placement/game
+    # guards but lack broad owner/household reads. Upgrade that partial shape
+    # without duplicating the existing guards.
+    partial_route = '''
+    if _hades_is_hermes_auxiliary_prompt(user_message):
+        return "auxiliary"
+    if _hades_service_placement_intent(user_message, getattr(self, "_hades_session_scope", "")):
+        _hades_direct_homelab_read(user_message, getattr(self, "_hades_subject", ""), getattr(self, "_hades_session_scope", ""))
+    if _hades_household_game_health_intent(user_message, getattr(self, "_hades_session_scope", "")):
+        _hades_direct_homelab_read(user_message, getattr(self, "_hades_subject", ""), getattr(self, "_hades_session_scope", ""))
+        _hades_logger.info("Household service-health boundary completed before staged automation routing")
+    _hades_logger.info("Owner model-capacity follow-up failed closed without model invocation")
+'''
+    partial_active = directory / "partial-active.py"
+    partial_active.write_text(
+        ACTIVE.replace("    if _hades_household_game_health_intent(\n", partial_route + "    if _hades_household_game_health_intent(\n", 1),
+        encoding="utf-8",
+    )
+    partial_candidate = directory / "partial-candidate.py"
+    partial_result = run(
+        "--active-overlay", str(partial_active), "--source", str(source), "--output", str(partial_candidate)
+    )
+    assert partial_result.returncode == 0, partial_result.stderr
+    partial_text = partial_candidate.read_text(encoding="utf-8")
+    assert partial_text.count("Owner direct homelab read completed before managed-server routing") == 1
+    assert partial_text.count("Household direct homelab boundary completed before managed-server routing") == 1
+    assert partial_text.count("Household service-health boundary completed before staged automation routing") == 1
+    partial_recomposed = directory / "partial-recomposed.py"
+    partial_second = run(
+        "--active-overlay", str(partial_candidate), "--source", str(source), "--output", str(partial_recomposed)
+    )
+    assert partial_second.returncode == 0, partial_second.stderr
+    assert partial_recomposed.stat().st_size == partial_candidate.stat().st_size
+
     recomposed = directory / "recomposed.py"
     second_composition = run(
         "--active-overlay", str(output), "--source", str(source), "--output", str(recomposed)

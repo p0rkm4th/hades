@@ -240,7 +240,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     assert household_backup_result.get("completed") is True and household_backup_result.get("api_calls") == 0, household_backup_result
     assert "Synthetic" not in household_backup_result["final_response"]
-    assert "Legacy Backup Check route" not in household_backup_result["final_response"]
+    assert "Proxmox" not in household_backup_result["final_response"]
 
     registry.calls.clear()
     owner_result = owner_agent.run_conversation("Check Synthetic Node B.", conversation_history=[])

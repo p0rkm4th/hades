@@ -230,6 +230,14 @@ def add_household_route(source: str) -> str:
                 and child.func.id == "_hades_is_hermes_auxiliary_prompt"
                 for child in ast.walk(node.test))
     ] if run_conversation else []
+    run_text = ast.get_source_segment(source, run_conversation) or ""
+    has_early_household_service_guard = (
+        "Household service-health boundary completed before staged automation routing" in run_text
+    )
+    placement_guards = [
+        node for node in ast.walk(run_conversation) if isinstance(node, ast.If)
+        and "_hades_service_placement_intent" in ast.unparse(node.test)
+    ] if run_conversation else []
     managed_server_guards = [
         node for node in ast.walk(run_conversation) if isinstance(node, ast.If)
         and "_server_actor_turn" in ast.unparse(node.test)
@@ -237,22 +245,16 @@ def add_household_route(source: str) -> str:
     ] if run_conversation else []
     if len(auxiliary_guards) == 1:
         early_insertion = auxiliary_guards[0].end_lineno
+    elif not auxiliary_guards and has_early_household_service_guard and placement_guards:
+        early_insertion = min(placement_guards, key=lambda node: node.lineno).lineno - 1
     elif not auxiliary_guards and len(managed_server_guards) == 1:
         # Older production overlays have no auxiliary-prompt guard. Insert the
         # read-only route immediately before the managed-server router so
         # infrastructure placement/health questions cannot be mistaken for
         # HADES-managed workload requests.
         early_insertion = managed_server_guards[0].lineno - 1
-    elif "Household service-health boundary completed before staged automation routing" in (
-        ast.get_source_segment(source, run_conversation) or ""
-    ):
-        early_insertion = None
     else:
         raise ValueError("could not uniquely locate a safe early homelab route anchor")
-    run_text = ast.get_source_segment(source, run_conversation) or ""
-    has_early_household_service_guard = (
-        "Household service-health boundary completed before staged automation routing" in run_text
-    )
     if has_early_household_service_guard:
         required_early_markers = (
             "_hades_service_placement_intent(",
@@ -447,19 +449,43 @@ def add_household_route(source: str) -> str:
                 "completed": True,
             }
 '''
+    owner_route_start = early_block.index(
+        '        if getattr(self, "_hades_session_scope", "") == "owner":'
+    )
+    household_route_start = early_block.index(
+        '        if getattr(self, "_hades_session_scope", "") == "household":', owner_route_start
+    )
+    placement_route_start = early_block.index(
+        '        if getattr(self, "_hades_session_scope", "") in {"owner", "household"} and _hades_service_placement_intent(',
+        household_route_start,
+    )
+    early_context = early_block[:owner_route_start]
+    early_owner_route = early_block[owner_route_start:household_route_start]
+    early_household_route = early_block[household_route_start:placement_route_start]
+
     lines = source.splitlines(keepends=True)
     # Capacity is known to lack live VRAM evidence, so stop it before any
     # request classification or live-read work. Named-node fallback stays
     # after the owner source read so it can use available evidence first.
+    inserted_early_lines = 0
     if not has_early_household_service_guard:
-        if early_insertion is None:
-            raise ValueError("composed household route exists without a recognized safe insertion anchor")
         lines[early_insertion:early_insertion] = early_block.splitlines(keepends=True)
+        inserted_early_lines = len(early_block.splitlines(keepends=True))
+    else:
+        missing_identity_routes = []
+        needs_context = "_early_hades_intent_text = _hades_conversation_intent_text(" not in run_text
+        if "Owner direct homelab read completed before managed-server routing" not in run_text:
+            missing_identity_routes.append(early_owner_route)
+        if "Household direct homelab boundary completed before managed-server routing" not in run_text:
+            missing_identity_routes.append(early_household_route)
+        if missing_identity_routes:
+            identity_block = (early_context if needs_context else "") + "".join(missing_identity_routes)
+            lines[early_insertion:early_insertion] = identity_block.splitlines(keepends=True)
+            inserted_early_lines = len(identity_block.splitlines(keepends=True))
     lines = "".join(lines).splitlines(keepends=True)
     has_late_household_read = "Household direct homelab read completed without model invocation" in run_text
     if not has_late_household_read:
-        early_lines = 0 if has_early_household_service_guard else len(early_block.splitlines(keepends=True))
-        insertion = owner.end_lineno + early_lines
+        insertion = owner.end_lineno + inserted_early_lines
         lines[insertion:insertion] = late_block.splitlines(keepends=True)
     composed = "".join(lines)
     return composed
