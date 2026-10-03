@@ -1223,6 +1223,9 @@ assert not module.is_explicit_private_person_query(focused_research_prompt)
 assert not module.is_explicit_private_person_query(
     "What changed in my homelab since yesterday? Only report changes the live sources can establish, and say what you cannot compare."
 )
+assert not module.is_explicit_private_person_query(
+    "What machine should host another AI model right now? Consider current health, available GPU memory, and what is already running, and tell me what is not connected."
+)
 
 for public_support_request in (
     "What support services are available for survivors of domestic violence in Example City?",

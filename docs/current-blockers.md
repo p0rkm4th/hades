@@ -36,8 +36,10 @@ Status: **PARTIAL**
   private infrastructure records; do not infer broad health from partial data.
 - Live owner dogfood found one compound change-history question that returned
   a broad current snapshot and, with an added qualifier, could be falsely
-  refused by the private-person research guard. Candidate routing and privacy
-  contracts now cover the wording; deployed owner UI re-acceptance is pending.
+  refused by the private-person research guard. A general model-placement
+  question also fell through to named-machine lookup. Candidate routing and
+  privacy contracts now cover both cases; deployed owner UI re-acceptance is
+  pending.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 

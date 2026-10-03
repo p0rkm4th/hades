@@ -6261,7 +6261,7 @@ def _hades_direct_homelab_read(
             inference_response = module.format_inference_inventory_response(
                 text, inference, summary, gpu_telemetry,
             )
-            if node_activity_intent:
+            if node_activity_intent and not placement_intent:
                 target = _hades_homelab_target_from_question(text)
                 if node_load_match and scope == "owner":
                     target = (node_load_match.group("target") or node_load_match.group("target2") or "").strip()

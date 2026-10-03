@@ -54,8 +54,9 @@ of truth.
   separate owner approval.
 - Fresh owner dogfood found that a compound "what changed since yesterday"
   question could bypass the recent-activity reader, and its added qualifier
-  could trigger a false private-person refusal. Candidate routing and privacy
-  regression tests now cover that wording; production UI re-acceptance remains
+  could trigger a false private-person refusal. It also found a general model
+  placement question routed through named-node lookup. Candidate routing and
+  privacy tests now cover these cases; production UI re-acceptance remains
   pending.
 - Current broad status can identify responding sources and partial coverage;
   comprehensive network trends, full backup contents/custody, and successful

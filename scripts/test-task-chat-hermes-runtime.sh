@@ -873,7 +873,11 @@ model_inventory = model_inventory_agent.run_conversation(
 assert model_inventory.get("completed") is True and model_inventory.get("api_calls") == 0, model_inventory
 assert "sample:small is listed at Compute Node A" in model_inventory["final_response"], model_inventory
 
-for index, prompt in enumerate(("Which GPUs are free?", "Where should I run another model?")):
+for index, prompt in enumerate((
+    "Which GPUs are free?",
+    "Where should I run another model?",
+    "What machine should host another AI model right now? Consider current health, available GPU memory, and what is already running, and tell me what is not connected.",
+)):
     hermes_registry_module.registry.calls.clear()
     placement_agent = agent_class(
         gateway_session_key=f"hades-user-{owner}",
