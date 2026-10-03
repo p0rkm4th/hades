@@ -46,6 +46,11 @@ Status: **PARTIAL**
   surfaced source-comparison coverage limits, and ranked the available
   Proxmox resource records with explicit partial-scope caveats. Household UI
   turns remained generic and denied owner-only placement/source details.
+- A named Agent Zero availability/task-execution question also fell through
+  to a generic answer. The current route uses only the configured bounded
+  endpoint probe and explicitly says task execution was not tested. Fresh
+  authenticated owner and household UI checks pass; no operator task is
+  dispatched by this status question.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 

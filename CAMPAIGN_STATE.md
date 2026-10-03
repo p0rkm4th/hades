@@ -43,6 +43,11 @@ of truth.
   resource ranking. Household UI turns remained generic and denied owner-only
   placement and source details. This acceptance is limited to those prompts;
   it does not close the incomplete-source gaps below.
+- A follow-up owner question about Agent Zero availability and task execution
+  initially fell through to a generic answer despite the configured endpoint
+  probe. The new route uses that bounded read-only probe and explicitly leaves
+  task execution unverified; fresh owner UI dogfood confirms this, while a
+  household turn remains redacted. No Agent Zero task was invoked.
 - Backup answers distinguish configured jobs and bounded task history from
   verified backup contents, independent custody, and restoreability.
 - Current-tree privacy checks and the focused homelab contracts pass.
