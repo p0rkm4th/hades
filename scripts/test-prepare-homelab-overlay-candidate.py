@@ -16,9 +16,13 @@ SOURCE = '''
 import re, time
 from datetime import datetime
 def _hades_direct_homelab_read(text, subject="", scope="owner", context_text=""):
+    if _hades_household_sensitive_context_followup(text, context_text=context_text):
+        return "private"
     if _hades_service_health_target(text):
         return text
     return _hades_homelab_helper(text)
+def _hades_household_sensitive_context_followup(text, conversation_history=None, context_text=""):
+    return bool(context_text)
 def _hades_homelab_recent_activity_response(report):
     return str(report)
 def _hades_service_health_target(text):
@@ -109,7 +113,7 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "_hades_direct_homelab_read"]
     assert len(calls) == 8, len(calls)
     assert "getattr(self, \"_hades_subject\", \"\")" in candidate
-    assert "context_text=previous_user_text" in candidate
+    assert "context_text=_hades_conversation_intent_text(" in candidate
     assert "context_text=_hades_intent_text" in candidate
     assert "household_homelab_response" in candidate
     assert "Owner node-activity read failed closed without model invocation" in candidate

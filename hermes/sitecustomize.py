@@ -5380,7 +5380,9 @@ def _hades_homelab_guest_visibility_intent(text):
     return bool(guest_reference and visibility_request)
 
 
-def _hades_household_sensitive_context_followup(user_text, conversation_history):
+def _hades_household_sensitive_context_followup(
+    user_text, conversation_history=None, context_text="",
+):
     """Block household follow-ups that could replay private history details."""
     current = str(user_text or "")
     followup = bool(re.search(
@@ -5393,7 +5395,7 @@ def _hades_household_sensitive_context_followup(user_text, conversation_history)
         current,
         re.IGNORECASE,
     ))
-    if not followup or not isinstance(conversation_history, list):
+    if not followup:
         return False
     sensitive_prior_answer = re.compile(
         r"\b(?:proxmox|netbox|uptime\s+kuma|homelab\s+mcp|mcp\s+(?:server|tool|binding)|"
@@ -5401,13 +5403,19 @@ def _hades_household_sensitive_context_followup(user_text, conversation_history)
         r"https?://|\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b",
         re.IGNORECASE,
     )
-    for message in conversation_history[-8:]:
-        if not isinstance(message, dict) or message.get("role") != "assistant":
-            continue
-        content = message.get("content", "")
-        if isinstance(content, str) and sensitive_prior_answer.search(content):
-            return True
-    return False
+    prior_texts = []
+    if isinstance(conversation_history, list):
+        prior_texts.extend(
+            message.get("content", "") for message in conversation_history[-8:]
+            if isinstance(message, dict) and message.get("role") == "assistant"
+            and isinstance(message.get("content", ""), str)
+        )
+    context = str(context_text or "")
+    if context.casefold().endswith(current.casefold()):
+        context = context[:-len(current)].rstrip() if current else context
+    if context:
+        prior_texts.append(context)
+    return any(sensitive_prior_answer.search(content) for content in prior_texts)
 
 
 def _hades_homelab_conflict_intent(text):
@@ -5904,7 +5912,9 @@ def _hades_resolve_homelab_adapter_path():
     return None
 
 
-def _hades_direct_homelab_read(user_text, subject="", scope="", context_text=""):
+def _hades_direct_homelab_read(
+    user_text, subject="", scope="", context_text="", conversation_history=None,
+):
     """Answer simple owner homelab-status questions from canonical read sources.
 
     These questions are safe to answer without a model round trip.  That matters
@@ -5914,6 +5924,13 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     or provisioning requests.
     """
     text = str(user_text or "")
+    if scope != "owner" and _hades_household_sensitive_context_followup(
+        text, conversation_history, context_text
+    ):
+        return (
+            "I can't verify private infrastructure or computer status from this account. "
+            "I can check approved household services, such as the game server."
+        )
     workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
     if not workdir:
         workdir = os.getcwd()
@@ -10965,7 +10982,9 @@ try:
             and (
                 _hades_broad_homelab_status_intent(user_message)
                 or _hades_homelab_guest_visibility_intent(user_message)
-                or _hades_household_sensitive_context_followup(user_message, _hades_history)
+                or _hades_household_sensitive_context_followup(
+                    user_message, _hades_history, _hades_intent_text
+                )
                 or _hades_household_game_health_intent(user_message, self._hades_session_scope)
                 or _hades_homelab_provenance_followup(user_message, _hades_intent_text)
                 or _hades_service_health_target(user_message)

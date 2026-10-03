@@ -179,7 +179,7 @@ if household_intent_assignment is not None:
     household_boundary_expression = ast.unparse(household_intent_assignment.value)
     assert '_hades_broad_homelab_status_intent(user_message)' in household_boundary_expression
     assert '_hades_homelab_guest_visibility_intent(user_message)' in household_boundary_expression
-    assert '_hades_household_sensitive_context_followup(user_message, _hades_history)' in household_boundary_expression
+    assert '_hades_household_sensitive_context_followup(user_message, _hades_history, _hades_intent_text)' in household_boundary_expression
     assert '_hades_household_game_health_intent(user_message, self._hades_session_scope)' in household_boundary_expression
     assert '_hades_service_health_target(user_message)' in household_boundary_expression
     assert 'self._hades_session_scope' in household_boundary_expression
@@ -208,7 +208,7 @@ for prompt in (
 assert not guest_visibility_intent('What is Proxmox?')
 leaked_household_history = [
     {'role': 'user', 'content': 'Which Proxmox guests can you verify?'} ,
-    {'role': 'assistant', 'content': 'The approved node is synthetic-node; template name synthetic-template; http://192.168.50.1.'},
+    {'role': 'assistant', 'content': 'The approved node is synthetic-node; template name synthetic-template; http://198.51.100.1.'},
 ]
 assert household_sensitive_followup('Can you remind me of the template?', leaked_household_history)
 assert not household_sensitive_followup(

@@ -180,6 +180,12 @@ def replace_call_sites(active_text: str, tree: ast.Module) -> str:
                 "_hades_intent_text", "_early_hades_intent_text"
             }:
                 continue
+            elif (
+                isinstance(context, ast.Call)
+                and isinstance(context.func, ast.Name)
+                and context.func.id == "_hades_conversation_intent_text"
+            ):
+                continue
             else:
                 raise ValueError(f"unrecognized active homelab request call at line {node.lineno}")
         else:
@@ -411,7 +417,10 @@ def add_household_route(source: str) -> str:
         if self._hades_session_scope == "household":
             household_homelab_response = _hades_direct_homelab_read(
                 user_message, getattr(self, "_hades_subject", ""),
-                self._hades_session_scope, context_text=previous_user_text,
+                self._hades_session_scope,
+                context_text=_hades_conversation_intent_text(
+                    user_message, kwargs.get("conversation_history")
+                ),
             )
             if household_homelab_response:
                 callback = getattr(self, "stream_delta_callback", None)
