@@ -1403,6 +1403,13 @@ try:
     assert 'Proxmox status: selected-scope partial.' in infrastructure_backup_answer, infrastructure_backup_answer
     assert 'HADES BACKUP CHECKS' not in infrastructure_backup_answer, infrastructure_backup_answer
     assert 'securely tie that Backup Check request to this chat' not in infrastructure_backup_answer, infrastructure_backup_answer
+    guest_scoped_backup_answer = direct_proxmox_backup(
+        'Are my backups current? Report the latest per-guest task evidence and what you cannot verify.',
+        'synthetic-owner', 'owner', 'session-key',
+    )
+    assert 'Proxmox status: selected-scope partial.' in guest_scoped_backup_answer, guest_scoped_backup_answer
+    assert 'HADES BACKUP CHECKS' not in guest_scoped_backup_answer, guest_scoped_backup_answer
+    assert 'securely tie that Backup Check request to this chat' not in guest_scoped_backup_answer, guest_scoped_backup_answer
     assert direct_proxmox_backup(
         'Are my backups okay?', 'synthetic-household', 'household', 'session-key'
     ) is None

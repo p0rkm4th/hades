@@ -7376,7 +7376,8 @@ def _hades_direct_proxmox_backup_read(
     def _compose(proxmox_text):
         sections = ["PROXMOX VZDUMP:\n" + proxmox_text]
         targeted_infrastructure = bool(re.search(
-            r"\b(?:homelab|homlab|home\s+lab|infrastructure|servers?|nodes?|computers?)\b",
+            r"\b(?:homelab|homlab|home\s+lab|infrastructure|servers?|nodes?|computers?|"
+            r"proxmox|vzdump|guests?|vms?|virtual\s+machines?|containers?)\b",
             text, re.IGNORECASE,
         ))
         check_text = (

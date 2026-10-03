@@ -146,7 +146,9 @@ Status: **PARTIAL**
   a successful `vzdump` record with no guest ID. The current adapter omits that
   aggregate row while correctly refusing to attribute it to a selected guest.
   Candidate handling preserves it as separate unattributed evidence and says
-  it cannot verify any specific guest's backup. Focused adapter contracts pass;
+  it cannot verify any specific guest's backup; it also avoids appending an
+  unrelated HADES Backup Check to explicit Proxmox/guest-scoped questions.
+  Focused adapter contracts pass;
   Public CI run `37150356935` passes; live deployment acceptance is pending.
   Backup contents, off-site custody, and restoreability remain unverified.
 
