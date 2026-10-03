@@ -1756,6 +1756,19 @@ assert live_winner_followup == "Can Compute Node B host another model?", live_wi
 assert fallback_followup_calls == [
     "homelab_summary", "homelab_inference_inventory", "homelab_gpu_telemetry",
 ], fallback_followup_calls
+fallback_followup_calls.clear()
+hades._hades_direct_homelab_tool_result = fallback_followup_tool
+try:
+    trimmed_context_winner = hades._hades_homelab_followup_prompt(
+        "Could I put another model there?", "owner",
+        "Which one has more room?\nCould I put another model there?",
+    )
+finally:
+    hades._hades_direct_homelab_tool_result = original_followup_summary_read
+assert trimmed_context_winner == "Can Compute Node B host another model?", trimmed_context_winner
+assert fallback_followup_calls == [
+    "homelab_summary", "homelab_inference_inventory", "homelab_gpu_telemetry",
+], fallback_followup_calls
 explicit_fit_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-explicit-model-fit",
     stream_delta_callback=lambda _chunk: None, **kwargs,

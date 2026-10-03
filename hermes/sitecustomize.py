@@ -5340,6 +5340,11 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
             ]
             compared = [(position, name) for position, name in compared if position >= 0]
             recent_hosts = [name for _, name in sorted(compared)[-2:]]
+            if len(recent_hosts) < 2:
+                # Some UI paths retain the comparison turn but trim the earlier
+                # host mentions. In that case, recompute the winner across all
+                # uniquely linked configured hosts instead of guessing a referent.
+                recent_hosts = names
             live_winner = _hades_homelab_live_capacity_winner(summary, recent_hosts)
             if live_winner:
                 return f"Can {live_winner} host another model?"
