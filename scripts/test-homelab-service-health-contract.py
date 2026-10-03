@@ -112,7 +112,8 @@ class FakeHomelabRegistry:
                     'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
                     'events': [{
                         'guest_id': '12802', 'node': 'synthetic-pve',
-                        'task_type': 'qmstart', 'status': 'OK', 'starttime': 1790942400,
+                        'task_type': 'qmstart', 'status': 'OK',
+                        'starttime': 1790942400, 'endtime': 1790946000,
                     }],
                 }],
                 'netbox': {
@@ -739,7 +740,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             )
         finally:
             os.environ.pop('HADES_TEST_PROXMOX_ACTIVITY', None)
-        assert 'qmstart for guest 12802 on synthetic-pve (ok' in recent_activity_answer, (recent_activity_answer, registry_module.registry.calls[-5:], debug_logs[-3:])
+        assert 'qmstart for guest 12802 on synthetic-pve (ok, started at 2026-10-02 12:00 UTC; ended at 2026-10-02 13:00 UTC)' in recent_activity_answer, (recent_activity_answer, registry_module.registry.calls[-5:], debug_logs[-3:])
         assert 'last 168 hours' in recent_activity_answer, recent_activity_answer
         assert 'saved prior homelab snapshot' in recent_activity_answer, recent_activity_answer
         assert 'not a complete change log' in recent_activity_answer, recent_activity_answer

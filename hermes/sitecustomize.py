@@ -5279,14 +5279,22 @@ def _hades_homelab_recent_activity_response(report):
                 records.append(f"NetBox {kind} {name} was last updated at {updated}")
                 continue
             try:
-                observed = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(stamp))
+                started = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(stamp))
             except (TypeError, ValueError, OverflowError, OSError):
-                observed = "time unknown"
+                started = "time unknown"
             node = str(item.get("node") or "Proxmox node")[:64]
             guest = str(item.get("guest_id") or "audited guest")[:20]
             task = str(item.get("task_type") or "unknown task")[:32]
             result = str(item.get("status") or "UNKNOWN").casefold()[:24]
-            records.append(f"{task} for guest {guest} on {node} ({result}, {observed})")
+            time_label = f"started at {started}"
+            ended_at = item.get("endtime")
+            if isinstance(ended_at, (int, float)) and not isinstance(ended_at, bool) and ended_at >= stamp:
+                try:
+                    ended = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(ended_at))
+                except (TypeError, ValueError, OverflowError, OSError):
+                    ended = "time unknown"
+                time_label += f"; ended at {ended}"
+            records.append(f"{task} for guest {guest} on {node} ({result}, {time_label})")
         parts.append(
             f"Recent recorded activity for the last {window_hours} hours: "
             + "; ".join(records) + "."
