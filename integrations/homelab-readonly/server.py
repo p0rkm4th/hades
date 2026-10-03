@@ -793,7 +793,7 @@ def homelab_summary() -> dict:
 
 
 def homelab_backup_status() -> dict:
-    """Read bounded Proxmox vzdump schedules and archived task outcomes."""
+    """Read vzdump schedules and only archived tasks in effective VM.Audit scope."""
     from concurrent.futures import ThreadPoolExecutor
     from config import proxmox_specs, proxmox_source_ids, proxmox_token_ids
 
@@ -837,6 +837,7 @@ def homelab_backup_status() -> dict:
                 "status": "UNAVAILABLE",
                 "jobs_status": "UNKNOWN",
                 "tasks_status": "UNKNOWN",
+                "task_scope": "UNKNOWN",
                 "error_code": "INVALID_PROXMOX_RESOURCES_URL",
                 "jobs": [],
                 "tasks": [],
@@ -851,6 +852,14 @@ def homelab_backup_status() -> dict:
         nodes_truncated = False
         tasks_truncated = False
         error_codes = []
+        task_scope = {"scope": "UNKNOWN", "all_guests": False, "guest_ids": []}
+        try:
+            permissions_payload = _fetch(
+                _proxmox_permissions_url(resources_url), token_file, ca_file, token_id,
+            )
+            task_scope = _proxmox_guest_task_scope(permissions_payload)
+        except (OSError, ValueError, UnicodeError) as exc:
+            error_codes.append(_source_error_code(exc))
         try:
             job_payload = _fetch(
                 urljoin(api_base.rstrip("/") + "/", "cluster/backup"),
@@ -901,53 +910,83 @@ def homelab_backup_status() -> dict:
             nodes = all_nodes[:16]
             if not nodes:
                 raise ValueError("Proxmox runtime response contains no readable nodes")
-            def read_tasks(node):
-                try:
-                    endpoint = urljoin(
-                        api_base.rstrip("/") + "/",
-                        f"nodes/{quote(node, safe='')}/tasks?source=archive&limit=20&typefilter=vzdump",
-                    )
-                    payload = _fetch(endpoint, token_file, ca_file, token_id)
-                    data = payload.get("data")
-                    if not isinstance(data, list):
-                        raise ValueError("Proxmox task response has an unsupported shape")
-                    normalized = []
-                    for row in data[:20]:
-                        if not isinstance(row, dict):
-                            continue
-                        raw_status = str(row.get("status") or "").strip().upper()
-                        status = "OK" if raw_status == "OK" else (
-                            "RUNNING" if raw_status == "RUNNING" else
-                            "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
+            can_read_guest_tasks = (
+                task_scope.get("all_guests") is True
+                or bool(task_scope.get("guest_ids"))
+            )
+            if not can_read_guest_tasks:
+                tasks_status = "UNKNOWN"
+                task_states = []
+            else:
+                def read_tasks(node):
+                    try:
+                        endpoint = urljoin(
+                            api_base.rstrip("/") + "/",
+                            f"nodes/{quote(node, safe='')}/tasks?source=archive&limit=20&typefilter=vzdump",
                         )
-                        item = {"node": node, "status": status}
-                        guest_id = row.get("id")
-                        if isinstance(guest_id, str) and re.fullmatch(r"[1-9][0-9]{0,8}", guest_id):
-                            item["guest_id"] = guest_id
-                        for key in ("starttime", "endtime"):
-                            value = row.get(key)
-                            if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
-                                item[key] = value
-                        if "endtime" in item:
-                            item["finished_at"] = datetime.fromtimestamp(
-                                item["endtime"], timezone.utc,
-                            ).isoformat()
-                        normalized.append(item)
-                    return "HEALTHY", normalized, None
-                except (OSError, ValueError, UnicodeError, OverflowError) as exc:
-                    return "UNAVAILABLE", [], _source_error_code(exc)
-            with ThreadPoolExecutor(max_workers=min(8, len(nodes))) as pool:
-                task_reads = list(pool.map(read_tasks, nodes))
-            task_states = [state for state, _, _ in task_reads]
-            for state, node_tasks, error in task_reads:
-                tasks.extend(node_tasks)
-                if error:
-                    error_codes.append(error)
-            tasks.sort(key=lambda row: row.get("endtime", row.get("starttime", 0)), reverse=True)
-            tasks_truncated = len(tasks) > 80
-            tasks_status = "PARTIAL" if nodes_truncated or tasks_truncated or "UNAVAILABLE" in task_states else "HEALTHY"
-            if task_states and all(state == "UNAVAILABLE" for state in task_states):
-                tasks_status = "UNAVAILABLE"
+                        payload = _fetch(endpoint, token_file, ca_file, token_id)
+                        data = payload.get("data")
+                        if not isinstance(data, list):
+                            raise ValueError("Proxmox task response has an unsupported shape")
+                        normalized = []
+                        excluded_rows = 0
+                        allowed_ids = set(task_scope.get("guest_ids") or [])
+                        denied_ids = set(task_scope.get("excluded_guest_ids") or [])
+                        for row in data[:20]:
+                            if not isinstance(row, dict):
+                                continue
+                            guest_id = row.get("id")
+                            guest_id = (
+                                guest_id if isinstance(guest_id, str)
+                                and re.fullmatch(r"[1-9][0-9]{0,8}", guest_id)
+                                else None
+                            )
+                            if task_scope.get("all_guests") is True:
+                                if guest_id in denied_ids:
+                                    excluded_rows += 1
+                                    continue
+                            elif guest_id not in allowed_ids:
+                                excluded_rows += 1
+                                continue
+                            raw_status = str(row.get("status") or "").strip().upper()
+                            status = "OK" if raw_status == "OK" else (
+                                "RUNNING" if raw_status == "RUNNING" else
+                                "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
+                            )
+                            item = {"node": node, "status": status}
+                            if guest_id:
+                                item["guest_id"] = guest_id
+                            for key in ("starttime", "endtime"):
+                                value = row.get(key)
+                                if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
+                                    item[key] = value
+                            if "endtime" in item:
+                                item["finished_at"] = datetime.fromtimestamp(
+                                    item["endtime"], timezone.utc,
+                                ).isoformat()
+                            normalized.append(item)
+                        return "HEALTHY", normalized, None, excluded_rows
+                    except (OSError, ValueError, UnicodeError, OverflowError) as exc:
+                        return "UNAVAILABLE", [], _source_error_code(exc), 0
+
+                with ThreadPoolExecutor(max_workers=min(8, len(nodes))) as pool:
+                    task_reads = list(pool.map(read_tasks, nodes))
+                task_states = [state for state, _, _, _ in task_reads]
+                excluded_task_rows = 0
+                for state, node_tasks, error, excluded_rows in task_reads:
+                    tasks.extend(node_tasks)
+                    excluded_task_rows += excluded_rows
+                    if error:
+                        error_codes.append(error)
+                tasks.sort(key=lambda row: row.get("endtime", row.get("starttime", 0)), reverse=True)
+                tasks_truncated = len(tasks) > 80
+                scope_is_partial = task_scope.get("scope") != "ALL_GUESTS"
+                tasks_status = "PARTIAL" if (
+                    scope_is_partial or excluded_task_rows or nodes_truncated
+                    or tasks_truncated or "UNAVAILABLE" in task_states
+                ) else "HEALTHY"
+                if task_states and all(state == "UNAVAILABLE" for state in task_states):
+                    tasks_status = "UNAVAILABLE"
         except (OSError, ValueError, UnicodeError, OverflowError) as exc:
             error_codes.append(_source_error_code(exc))
 
@@ -960,6 +999,12 @@ def homelab_backup_status() -> dict:
             "status": endpoint_status,
             "jobs_status": jobs_status,
             "tasks_status": tasks_status,
+            "task_scope": task_scope.get("scope", "UNKNOWN"),
+            "visible_guest_count": (
+                len(task_scope.get("guest_ids") or [])
+                if task_scope.get("scope") in {"SELECTED_GUESTS", "PARTIAL"}
+                and task_scope.get("all_guests") is not True else None
+            ),
             "retrieved_at": _retrieved_at(),
             "duration_ms": round((time.monotonic() - started) * 1000, 2),
             "jobs": jobs,
@@ -1396,6 +1441,8 @@ def format_homelab_backup_status(report: dict) -> str:
         endpoint_status = str(endpoint.get("status") or "UNKNOWN").upper()
         jobs_status = str(endpoint.get("jobs_status") or "UNKNOWN").upper()
         tasks_status = str(endpoint.get("tasks_status") or "UNKNOWN").upper()
+        task_scope = str(endpoint.get("task_scope") or "UNKNOWN").upper()
+        visible_guest_count = endpoint.get("visible_guest_count")
         if jobs_status in {"HEALTHY", "PARTIAL"}:
             jobs = endpoint.get("jobs") if isinstance(endpoint.get("jobs"), list) else []
             if jobs:
@@ -1414,12 +1461,41 @@ def format_homelab_backup_status(report: dict) -> str:
                 when = latest.get("finished_at")
                 when_text = f" at {when}" if isinstance(when, str) else ""
                 sentences.append(f"The latest visible archived vzdump task{guest_text} reported {task_status}{when_text}.")
+            elif task_scope == "SELECTED_GUESTS":
+                sentences.append(
+                    "No archived task was returned for the selected guest(s) in the bounded recent history."
+                )
+            elif task_scope == "PARTIAL":
+                sentences.append(
+                    "No archived task was returned in the visible guest scope in the bounded recent history."
+                )
             elif endpoint_status == "HEALTHY":
                 sentences.append("No archived vzdump task appears in the bounded recent task history.")
             else:
                 sentences.append("Archived vzdump task history is incomplete.")
         else:
             sentences.append(f"Archived vzdump task history is {tasks_status.casefold()}.")
+        if task_scope == "SELECTED_GUESTS":
+            count_text = (
+                f"{visible_guest_count} selected guest(s)"
+                if isinstance(visible_guest_count, int) and not isinstance(visible_guest_count, bool)
+                else "selected guests"
+            )
+            sentences.append(
+                f"Task history is limited to {count_text} covered by this read-only token; other guest task history is unknown."
+            )
+        elif task_scope == "PARTIAL":
+            sentences.append(
+                "Task history has partial guest coverage under this read-only token; unlisted guest task history is unknown."
+            )
+        elif task_scope == "NO_GUEST_AUDIT":
+            sentences.append(
+                "Guest backup task history is unknown because this read-only token has no VM.Audit visibility."
+            )
+        elif task_scope == "UNKNOWN":
+            sentences.append(
+                "Guest backup task history is unknown because effective VM.Audit visibility could not be verified."
+            )
         if endpoint_status == "PARTIAL":
             sentences.append(f"The {source_id} read is partial.")
         elif endpoint_status == "UNAVAILABLE":

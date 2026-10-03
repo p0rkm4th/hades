@@ -294,10 +294,15 @@ it does not expose a broad shell or homelab control plane.
 
 The owner-only `homelab_backup_status` read reports Proxmox `vzdump` job
 configuration and a bounded recent archived-task sample per configured node.
-It does not establish that a job succeeded merely because it is configured,
-and it does not verify backup contents, guest-application data, storage health,
-other backup systems, off-site custody, or restoreability. An unavailable or
-partially readable Proxmox source remains unknown/partial in the response.
+Task reads are filtered to each token's effective `VM.Audit` guest scope. A
+selected-guest grant is reported as partial; a missing or unreadable permission
+scope yields unknown task history and prevents task rows from being returned.
+An empty task list under a selected scope does not mean that no other guest was
+backed up. The read does not establish that a job succeeded merely because it
+is configured, and it does not verify backup contents, guest-application data,
+storage health, other backup systems, off-site custody, or restoreability. An
+unavailable or partially readable Proxmox source remains unknown/partial in the
+response.
 This is separate from HADES Backup Checks, which track their own configured
 coverage and must not be presented as a substitute for Proxmox backup evidence.
 

@@ -1082,6 +1082,8 @@ assert "homelab_backup_status" in {tool.name for tool in server.TOOLS}
 def backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/cluster/backup"):
         return {"data": [{"id": "nightly", "schedule": "02:00", "storage": "backup-store", "enabled": 1}]}
+    if url.endswith("/access/permissions"):
+        return {"data": {"/": {"Sys.Audit": 1}, "/vms": {"VM.Audit": 1}}}
     if url.endswith("/cluster/resources"):
         return {"data": [{"type": "node", "node": "node-a"}]}
     if "/nodes/node-a/tasks?" in url:
@@ -1098,6 +1100,7 @@ assert backup_report["status"] == "READABLE", backup_report
 backup_endpoint = backup_report["endpoints"][0]
 assert backup_endpoint["jobs_status"] == "HEALTHY"
 assert backup_endpoint["tasks_status"] == "HEALTHY"
+assert backup_endpoint["task_scope"] == "ALL_GUESTS"
 assert backup_endpoint["tasks"][0]["status"] == "OK"
 assert backup_endpoint["tasks"][1]["status"] == "ERROR"
 assert "UPID:" not in json.dumps(backup_report)
@@ -1110,6 +1113,8 @@ assert "private" not in backup_text
 def empty_backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/cluster/backup"):
         return {"data": []}
+    if url.endswith("/access/permissions"):
+        return {"data": {"/": {"Sys.Audit": 1}, "/vms": {"VM.Audit": 1}}}
     if url.endswith("/cluster/resources"):
         return {"data": [{"type": "node", "node": "node-a"}]}
     if "/nodes/node-a/tasks?" in url:
@@ -1127,6 +1132,8 @@ assert "everything is backed up" not in empty_text.casefold()
 def partial_backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/cluster/backup"):
         raise PermissionError("synthetic-token-secret-must-not-escape")
+    if url.endswith("/access/permissions"):
+        return {"data": {"/": {"Sys.Audit": 1}, "/vms": {"VM.Audit": 1}}}
     if url.endswith("/cluster/resources"):
         return {"data": [{"type": "node", "node": "node-a"}, {"type": "node", "node": "node-b"}]}
     if "/nodes/node-a/tasks?" in url:
@@ -1140,7 +1147,97 @@ assert partial_endpoint["jobs_status"] == "UNAVAILABLE"
 assert partial_endpoint["tasks_status"] == "PARTIAL"
 assert "synthetic-token-secret" not in json.dumps(partial_backup)
 assert "synthetic-timeout-secret" not in json.dumps(partial_backup)
+
+task_urls = []
+def selected_scope_backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/cluster/backup"):
+        return {"data": []}
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms/2802": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "node-a"}]}
+    if "/nodes/node-a/tasks?" in url:
+        task_urls.append(url)
+        return {"data": [
+            {"id": "2802", "status": "OK", "endtime": 1790900000},
+            {"id": "2803", "status": "ERROR: outside token scope", "endtime": 1791000000,
+             "upid": "UPID:unrelated-private-task"},
+        ]}
+    raise AssertionError("unexpected selected-scope backup URL")
+server._fetch = selected_scope_backup_fetch
+selected_backup = server.homelab_backup_status()
+selected_endpoint = selected_backup["endpoints"][0]
+assert selected_endpoint["task_scope"] == "SELECTED_GUESTS", selected_endpoint
+assert selected_endpoint["visible_guest_count"] == 1, selected_endpoint
+assert selected_endpoint["tasks_status"] == "PARTIAL", selected_endpoint
+assert [task.get("guest_id") for task in selected_endpoint["tasks"]] == ["2802"], selected_endpoint
+assert "2803" not in json.dumps(selected_backup), selected_backup
+assert "unrelated-private-task" not in json.dumps(selected_backup), selected_backup
+selected_text = server.format_homelab_backup_status(selected_backup)
+assert "limited to 1 selected guest" in selected_text, selected_text
+assert "other guest task history is unknown" in selected_text, selected_text
+assert "2803" not in selected_text, selected_text
+
+def empty_selected_scope_backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/cluster/backup"):
+        return {"data": []}
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms/2802": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "node-a"}]}
+    if "/nodes/node-a/tasks?" in url:
+        return {"data": []}
+    raise AssertionError("unexpected empty selected-scope backup URL")
+server._fetch = empty_selected_scope_backup_fetch
+empty_selected_scope_backup = server.homelab_backup_status()
+empty_selected_text = server.format_homelab_backup_status(empty_selected_scope_backup)
+assert "No archived task was returned for the selected guest(s)" in empty_selected_text
+assert "other guest task history is unknown" in empty_selected_text
+
+no_audit_task_urls = []
+def no_audit_backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/cluster/backup"):
+        return {"data": []}
+    if url.endswith("/access/permissions"):
+        return {"data": {"/": {"Sys.Audit": 1}}}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "node-a"}]}
+    if "/nodes/node-a/tasks?" in url:
+        no_audit_task_urls.append(url)
+        raise AssertionError("task endpoint must not be called without VM.Audit")
+    raise AssertionError("unexpected no-audit backup URL")
+server._fetch = no_audit_backup_fetch
+no_audit_backup = server.homelab_backup_status()
+no_audit_endpoint = no_audit_backup["endpoints"][0]
+assert no_audit_endpoint["task_scope"] == "NO_GUEST_AUDIT", no_audit_endpoint
+assert no_audit_endpoint["tasks_status"] == "UNKNOWN", no_audit_endpoint
+assert no_audit_endpoint["tasks"] == [], no_audit_endpoint
+assert no_audit_task_urls == [], no_audit_task_urls
+assert "no VM.Audit visibility" in server.format_homelab_backup_status(no_audit_backup)
+
+unknown_scope_task_urls = []
+def unknown_scope_backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/cluster/backup"):
+        return {"data": []}
+    if url.endswith("/access/permissions"):
+        raise TimeoutError("synthetic-permissions-secret-must-not-escape")
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "node-a"}]}
+    if "/nodes/node-a/tasks?" in url:
+        unknown_scope_task_urls.append(url)
+        raise AssertionError("task endpoint must not be called if VM.Audit scope is unknown")
+    raise AssertionError("unexpected unknown-scope backup URL")
+server._fetch = unknown_scope_backup_fetch
+unknown_scope_backup = server.homelab_backup_status()
+unknown_scope_endpoint = unknown_scope_backup["endpoints"][0]
+assert unknown_scope_endpoint["task_scope"] == "UNKNOWN", unknown_scope_endpoint
+assert unknown_scope_endpoint["tasks_status"] == "UNKNOWN", unknown_scope_endpoint
+assert unknown_scope_endpoint["tasks"] == [], unknown_scope_endpoint
+assert unknown_scope_task_urls == [], unknown_scope_task_urls
+assert "synthetic-permissions-secret" not in json.dumps(unknown_scope_backup)
+assert "effective VM.Audit visibility could not be verified" in server.format_homelab_backup_status(unknown_scope_backup)
 print("PASS Proxmox backup read bounds and sanitizes configured vzdump jobs and task outcomes")
+print("PASS Proxmox backup reads enforce effective VM.Audit scope and preserve incomplete-coverage honesty")
 print("PASS Proxmox backup partial-source failure preserves available evidence without leaking errors")
 PY
 
