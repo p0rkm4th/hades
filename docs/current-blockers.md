@@ -32,6 +32,12 @@ Status: **PARTIAL**
   unconfigured pending separate approval for host service identities and keys;
   live per-host utilization/free-VRAM evidence and model-fit recommendations
   remain open.
+- An owner dogfood question about NVIDIA driver/GPU execution was misrouted to
+  unrelated web research. Current-tree routing now reads the prepared GPU
+  telemetry contract and provider inventory, with household requests denied
+  before source access. Regression tests pass; production rollout and live UI
+  acceptance are still pending. This does not activate SSH access or claim
+  current host GPU evidence.
 - Live source coverage is incomplete in the current private deployment.
   Detailed endpoint observations, topology, and source conflicts remain in
   private infrastructure records; do not infer broad health from partial data.

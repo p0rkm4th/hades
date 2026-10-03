@@ -5693,6 +5693,118 @@ def _hades_homelab_resource_ranking_intent(text):
     ))
 
 
+def _hades_homelab_gpu_execution_intent(text):
+    """Identify questions about live NVIDIA driver or GPU execution state."""
+    text = str(text or "")
+    driver = re.search(r"\b(?:nvidia|drivers?|cuda)\b", text, re.IGNORECASE)
+    gpu_execution = re.search(
+        r"\b(?:gpus?|graphics\s+cards?)\b", text, re.IGNORECASE
+    ) and re.search(
+        r"\b(?:execution|executing|process(?:es)?|utili[sz]ation|utili[sz]ed|"
+        r"using|compute\s+load)\b",
+        text,
+        re.IGNORECASE,
+    )
+    state_request = re.search(
+        r"\b(?:verify|check|status|health|healthy|working|running|active|loaded|"
+        r"execution|executing|utili[sz]ation|utili[sz]ed|responding)\b",
+        text,
+        re.IGNORECASE,
+    )
+    return bool(state_request and (driver or gpu_execution))
+
+
+def _hades_homelab_gpu_execution_response(inventory, telemetry=None):
+    """Separate host GPU query evidence from provider catalog observations."""
+    telemetry = telemetry if isinstance(telemetry, dict) else {}
+    telemetry_endpoints = telemetry.get("endpoints") if isinstance(telemetry.get("endpoints"), list) else []
+    readable_rows = []
+    unavailable_rows = []
+    for endpoint in telemetry_endpoints[:16]:
+        if not isinstance(endpoint, dict):
+            continue
+        inference_id = str(endpoint.get("inference_id") or "configured endpoint")
+        if endpoint.get("status") != "READABLE":
+            unavailable_rows.append(inference_id)
+            continue
+        devices = endpoint.get("devices") if isinstance(endpoint.get("devices"), list) else []
+        if not devices:
+            unavailable_rows.append(inference_id)
+            continue
+        for device in devices[:32]:
+            if not isinstance(device, dict):
+                continue
+            detail = f"{inference_id} GPU {device.get('index')}: NVIDIA query responded"
+            model = str(device.get("name") or "").strip()
+            if model:
+                detail += f" ({model[:80]})"
+            utilization = device.get("gpu_utilization_percent")
+            free = device.get("memory_free_mib")
+            total = device.get("memory_total_mib")
+            detail += f", {utilization}% utilization" if isinstance(utilization, int) else ", utilization unavailable"
+            if isinstance(free, int) and isinstance(total, int):
+                detail += f", {free} MiB free of {total} MiB"
+            readable_rows.append(detail)
+    if readable_rows:
+        checked_at = str(telemetry.get("retrieved_at") or "check time unavailable")[:80]
+        response = (
+            "Live host telemetry: " + "; ".join(readable_rows[:24])
+            + f". Read at {checked_at}. A responding NVIDIA query confirms the driver interface answered; utilization is a point-in-time signal, not proof that a requested workload completed."
+        )
+        if unavailable_rows or str(telemetry.get("status") or "").upper() == "PARTIAL":
+            response += " Telemetry was unavailable for: " + ", ".join(unavailable_rows[:16] or ["one or more configured endpoints"]) + "."
+    else:
+        response = (
+            "Host NVIDIA driver health and actual GPU execution are unknown because "
+            "live host-driver and GPU-process telemetry are not configured or currently unavailable."
+        )
+    if not isinstance(inventory, dict):
+        return response + " I couldn't read the configured inference-provider status either."
+    endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
+    reports = []
+    for endpoint in endpoints[:16]:
+        if not isinstance(endpoint, dict):
+            continue
+        identity = str(endpoint.get("source_identity") or "").removeprefix("inference:")
+        label = " ".join(re.sub(r"[._-]+", " ", identity).split())[:80] or "Configured provider"
+        state = str(endpoint.get("status") or "UNKNOWN").upper()
+        if state in {"READABLE", "HEALTHY", "OK"}:
+            detail = f"{label}: provider API responding"
+        elif state in {"PARTIAL", "DEGRADED"}:
+            detail = f"{label}: provider read is partial"
+        else:
+            detail = f"{label}: provider API status {state.casefold()}"
+        loaded_status = str(endpoint.get("loaded_status") or "UNKNOWN").upper()
+        loaded = endpoint.get("loaded_models") if isinstance(endpoint.get("loaded_models"), list) else []
+        names = [
+            " ".join(str(model.get("name") or "").split())[:128]
+            for model in loaded[:8] if isinstance(model, dict) and model.get("name")
+        ]
+        if loaded_status == "CURRENT":
+            detail += "; provider reports " + (
+                "resident model(s): " + ", ".join(names)
+                if names else "no models resident"
+            )
+        elif loaded_status == "UNSUPPORTED":
+            detail += "; provider does not expose a residency check"
+        else:
+            detail += "; residency is unknown"
+        reports.append(detail)
+    if reports:
+        response += " Current configured provider observations: " + "; ".join(reports) + "."
+    else:
+        status = str(inventory.get("status") or "UNKNOWN").casefold()
+        response += f" Configured inference-provider observations are {status}; no endpoint details were returned."
+    retrieved_at = str(inventory.get("retrieved_at") or "").strip()
+    if retrieved_at:
+        response += f" Provider inventory was read at {retrieved_at[:80]}."
+    response += (
+        " Provider catalog or residency responses do not verify driver health, GPU execution, "
+        "or successful generation; no generation request was made."
+    )
+    return response
+
+
 def _hades_homelab_explicit_model_fit_intent(text):
     """Recognize bounded model-fit questions that need live capacity evidence."""
     text = str(text or "")
@@ -6059,6 +6171,7 @@ def _hades_direct_homelab_read(
     if not workdir:
         workdir = os.getcwd()
     resource_ranking_intent = _hades_homelab_resource_ranking_intent(text)
+    gpu_execution_intent = _hades_homelab_gpu_execution_intent(text)
     named_node_check_target = _hades_homelab_named_check_target(text)
     followup_prompt = _hades_homelab_followup_prompt(text, scope, context_text)
     if followup_prompt and followup_prompt.casefold() != text.casefold():
@@ -6119,6 +6232,8 @@ def _hades_direct_homelab_read(
         return "I can't provide internal host or address details from this account."
     if scope != "owner" and resource_ranking_intent:
         return "Live infrastructure resource details are available only in an owner session."
+    if scope != "owner" and gpu_execution_intent:
+        return "I can't check infrastructure diagnostics from this account."
     if scope != "owner" and (
         household_broad_status_intent or household_node_status_intent
         or _hades_homelab_guest_visibility_intent(text) or provenance_intent
@@ -6168,7 +6283,7 @@ def _hades_direct_homelab_read(
         r"\b(?:how\s+busy|how\s+much\s+load)\s+(?:is|does)\s+(?P<target2>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         text, re.IGNORECASE,
     )
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not node_load_match and not _hades_homelab_explicit_model_fit_intent(text) and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not gpu_execution_intent and not node_load_match and not _hades_homelab_explicit_model_fit_intent(text) and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -6253,6 +6368,10 @@ def _hades_direct_homelab_read(
             return None
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        if gpu_execution_intent and scope == "owner":
+            inventory = _hades_direct_homelab_tool_result("homelab_inference_inventory")
+            telemetry = _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
+            return _hades_homelab_gpu_execution_response(inventory, telemetry)
         if change_intent:
             explicit_hours = re.search(r"\b(24|48|72|168)\s+hours?\b", text, re.IGNORECASE)
             history_window_hours = (
@@ -11140,6 +11259,7 @@ try:
                 )
                 or _hades_household_game_health_intent(user_message, self._hades_session_scope)
                 or _hades_homelab_provenance_followup(user_message, _hades_intent_text)
+                or _hades_homelab_gpu_execution_intent(user_message)
                 or _hades_service_health_target(user_message)
                 or re.search(
                     r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?(?:hades(?:\s+core)?|open\s+webui|hermes(?:\s+agent)?|"

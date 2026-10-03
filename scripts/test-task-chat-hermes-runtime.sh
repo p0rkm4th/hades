@@ -107,6 +107,28 @@ assert hades._hades_homelab_resource_ranking_intent("What is using the most reso
 assert hades._hades_homelab_resource_ranking_intent("What's the most loaded server right now?")
 assert hades._hades_homelab_resource_ranking_intent("Which server has the highest CPU usage?")
 assert not hades._hades_homelab_resource_ranking_intent("What resources does HADES use?")
+assert hades._hades_homelab_gpu_execution_intent(
+    "Can you verify the NVIDIA driver and GPU execution status on the inference machines right now?"
+)
+assert not hades._hades_homelab_gpu_execution_intent("What is an NVIDIA GPU?")
+gpu_execution_report = hades._hades_homelab_gpu_execution_response({
+    "status": "READABLE", "retrieved_at": "2026-10-03T12:34:56Z", "endpoints": [{
+        "source_identity": "inference:provider-a", "status": "READABLE",
+        "loaded_status": "CURRENT", "loaded_models": [{"name": "sample:small"}],
+    }],
+}, {
+    "status": "READABLE", "retrieved_at": "2026-10-03T12:35:10Z", "endpoints": [{
+        "inference_id": "provider-a", "status": "READABLE", "devices": [{
+            "index": 0, "name": "Synthetic GPU", "memory_free_mib": 12000,
+            "memory_total_mib": 16384, "gpu_utilization_percent": 10,
+        }],
+    }],
+})
+assert "NVIDIA query responded" in gpu_execution_report and "10% utilization" in gpu_execution_report, gpu_execution_report
+assert "not proof that a requested workload completed" in gpu_execution_report, gpu_execution_report
+assert "provider API responding" in gpu_execution_report and "resident model(s): sample:small" in gpu_execution_report, gpu_execution_report
+assert "do not verify driver health, GPU execution" in gpu_execution_report, gpu_execution_report
+assert "2026-10-03T12:34:56Z" in gpu_execution_report, gpu_execution_report
 assert hades._hades_homelab_explicit_model_fit_intent("Will a 20 GB model fit on Tartarus?")
 assert hades._hades_homelab_explicit_model_fit_intent("Can Tartarus host a 20 GB model?")
 assert not hades._hades_homelab_explicit_model_fit_intent("What is a 20 GB model?")
@@ -416,6 +438,31 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert "Live inference reads:" in broad_owner_status["final_response"], broad_owner_status
     assert "do not prove generation or available GPU capacity" in broad_owner_status["final_response"], broad_owner_status
     assert registry.calls[:2] == ["homelab_summary", "homelab_inference_inventory"], registry.calls
+    registry.calls.clear()
+    gpu_driver_owner = owner_agent.run_conversation(
+        "Can you verify the NVIDIA driver and GPU execution status on the inference machines right now?",
+        conversation_history=[],
+    )
+    assert gpu_driver_owner.get("completed") is True and gpu_driver_owner.get("api_calls") == 0, gpu_driver_owner
+    assert "Host NVIDIA driver health and actual GPU execution are unknown" in gpu_driver_owner["final_response"], gpu_driver_owner
+    assert "provider API responding" in gpu_driver_owner["final_response"], gpu_driver_owner
+    assert "do not verify driver health, GPU execution" in gpu_driver_owner["final_response"], gpu_driver_owner
+    assert registry.calls == ["homelab_inference_inventory", "homelab_gpu_telemetry"], registry.calls
+    registry.calls.clear()
+    household_gpu_agent = agent_class(
+        gateway_session_key=f"hades-user-{beta}",
+        session_id="synthetic-composed-gpu-driver-household",
+        stream_delta_callback=lambda _chunk: None,
+        **kwargs,
+    ).run_conversation(
+        "Can you verify the NVIDIA driver and GPU execution status on the inference machines right now?",
+        conversation_history=[],
+    )
+    assert household_gpu_agent.get("completed") is True and household_gpu_agent.get("api_calls") == 0, household_gpu_agent
+    assert "can't check infrastructure diagnostics" in household_gpu_agent["final_response"].casefold(), household_gpu_agent
+    for private_term in ("nvidia", "gpu", "provider", "inference", "mcp", "compute node"):
+        assert private_term not in household_gpu_agent["final_response"].casefold(), household_gpu_agent
+    assert registry.calls == [], registry.calls
     capability_discovery_owner = owner_agent.run_conversation(
         capability_discovery_question, conversation_history=[]
     )

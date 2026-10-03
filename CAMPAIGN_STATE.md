@@ -66,6 +66,13 @@ of truth.
   another model?” read returned provider catalogs/residency but declined to
   rank a host because capability inventory is stale, live VRAM/load is absent,
   and runtime memory needs are unknown; that answer also persisted.
+- A fresh owner request to verify NVIDIA drivers and GPU execution fell through
+  to an unrelated web response. The current-tree fix routes owners through the
+  fixed-command GPU telemetry reader plus provider inventory, and states the
+  limits of each observation. Household requests receive a generic boundary
+  before any source read. Synthetic runtime coverage passes; this candidate is
+  not yet deployed or live-dogfooded. The SSH telemetry profile remains
+  unconfigured until separately approved host identities and keys are ready.
 - Fresh “What changed since yesterday?” owner dogfood returned the bounded
   Proxmox-task/NetBox-update view with a read timestamp and partial-scope
   caveats. Candidate `33b24ec` now explicitly states that host OS,
