@@ -103,8 +103,10 @@ assert hades._HADES_HOMELAB_INTENT.search("Which GPUs are free?")
 assert hades._HADES_HOMELAB_INTENT.search("Where should I run another model?")
 assert hades._HADES_HOMELAB_INTENT.search("Check Synthetic Node B.")
 assert hades._hades_homelab_resource_ranking_intent("What's using the most resources right now?")
+assert hades._hades_homelab_resource_ranking_intent("What's the most loaded server right now?")
 assert hades._hades_homelab_resource_ranking_intent("Which server has the highest CPU usage?")
 assert not hades._hades_homelab_resource_ranking_intent("What resources does HADES use?")
+assert not hades._hades_managed_server_status_intent("What's the most loaded server right now?", "owner")
 synthetic_erebus_machine = {
     "name": "Erebus", "identity": {"canonical_id": "netbox:device:2"},
     "inventory": {"id": 2, "name": "Erebus"},
@@ -621,7 +623,7 @@ def synthetic_resource_tool_result(name, *_args, **_kwargs):
 hades._hades_direct_homelab_tool_result = synthetic_resource_tool_result
 try:
     resource_rank_direct = hades._hades_direct_homelab_read(
-        "What's using the most resources right now?", owner, "owner",
+        "What's the most loaded server right now?", owner, "owner",
     )
     assert "Highest current Proxmox CPU reading: Synthetic Guest B at 78.0%" in resource_rank_direct, resource_rank_direct
     assert resource_tool_calls == ["homelab_summary"], resource_tool_calls
@@ -633,7 +635,7 @@ try:
         **kwargs,
     )
     resource_rank_result = resource_rank_agent.run_conversation(
-        "What's using the most resources right now?", conversation_history=[],
+        "What's the most loaded server right now?", conversation_history=[],
     )
     assert resource_rank_result.get("completed") is True and resource_rank_result.get("api_calls") == 0, resource_rank_result
     assert "Highest current Proxmox CPU reading: Synthetic Guest B at 78.0%" in resource_rank_result["final_response"], resource_rank_result

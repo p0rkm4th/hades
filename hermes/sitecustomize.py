@@ -5508,7 +5508,8 @@ def _hades_broad_homelab_status_intent(text):
 def _hades_homelab_resource_ranking_intent(text):
     """Identify owner questions asking which homelab resource is most loaded."""
     return bool(re.fullmatch(
-        r"\s*(?:what(?:['’]s|\s+is)\s+using\s+(?:the\s+)?most\s+(?:homelab\s+)?resources?|"
+        r"\s*(?:what(?:['’]s|\s+is)\s+(?:the\s+)?(?:most\s+loaded|busiest)\s+(?:homelab\s+)?(?:computer|machine|server|node)|"
+        r"what(?:['’]s|\s+is)\s+using\s+(?:the\s+)?most\s+(?:homelab\s+)?resources?|"
         r"what(?:['’]s|\s+is)\s+using\s+(?:the\s+)?most\s+(?:cpu|memory)|"
         r"(?:which|what)\s+(?:computer|machine|server|node)\s+(?:is\s+)?(?:the\s+)?(?:most\s+loaded|busiest|most\s+busy)|"
         r"(?:which|what)\s+(?:computer|machine|server|node)\s+(?:is\s+)?(?:using|uses)\s+(?:the\s+)?most\s+(?:resources?|cpu|memory|ram)|"
@@ -7115,7 +7116,11 @@ def _hades_agent_zero_runtime_placement_response(user_text, service_catalog, sco
 def _hades_managed_server_status_intent(user_text, scope=""):
     """Route only managed-workload status requests to the managed server view."""
     text = str(user_text or "")
-    if scope not in {"owner", "household"} or _hades_service_placement_intent(text, scope):
+    if (
+        scope not in {"owner", "household"}
+        or _hades_service_placement_intent(text, scope)
+        or _hades_homelab_resource_ranking_intent(text)
+    ):
         return False
     definition_question = bool(
         re.fullmatch(r"\s*what(?:'s|\s+(?:is|are))\s+.+?[?.!]*\s*", text, re.IGNORECASE)
