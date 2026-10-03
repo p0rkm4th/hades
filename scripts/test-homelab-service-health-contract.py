@@ -495,6 +495,12 @@ assert namespace['_hades_homelab_target_from_question']('Is everything okay?') i
 assert namespace['_hades_homelab_workload_host_target'](
     'What is running on Runtime Node A right now?'
 ) == 'Runtime Node A'
+assert namespace['_hades_homelab_workload_host_target'](
+    'Which Runtime Node A guests can HADES currently see, and which are running or stopped?'
+) == 'Runtime Node A'
+assert namespace['_hades_homelab_workload_host_target'](
+    'Which VMs or containers are currently running on Runtime Node A?'
+) == 'Runtime Node A'
 assert namespace['_hades_homelab_workload_host_target']('What is running?') is None
 
 host_workloads = workloads_on_host('What is running on Runtime Node A?', [
@@ -508,7 +514,7 @@ host_workloads = workloads_on_host('What is running on Runtime Node A?', [
      'identity': {'source_identities': {'proxmox': ['proxmox:site-b:lxc:202']}},
      'runtime': {'type': 'lxc', 'node': 'pve-a', 'vmid': 202, 'status': 'running'}},
 ], 'PARTIAL')
-assert 'Runtime Node A online' in host_workloads and 'Dinner VM (qemu, running)' in host_workloads
+assert 'Runtime Node A online' in host_workloads and 'Dinner VM (VM 101, running)' in host_workloads
 assert 'Unrelated CT' not in host_workloads and "Other source state is partial or unknown" in host_workloads
 right_now_host_workloads = workloads_on_host(
     'What is running on Runtime Node A right now? Be clear about guest visibility limits.', [
@@ -519,7 +525,7 @@ right_now_host_workloads = workloads_on_host(
      'identity': {'source_identities': {'proxmox': ['proxmox:site-a:qemu:101']}},
      'runtime': {'type': 'qemu', 'node': 'pve-a', 'vmid': 101, 'status': 'running'}},
 ], 'PARTIAL')
-assert 'Dinner VM (qemu, running)' in right_now_host_workloads, right_now_host_workloads
+assert 'Dinner VM (VM 101, running)' in right_now_host_workloads, right_now_host_workloads
 selected_guest_coverage = {
     'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
     'endpoints': [{
@@ -528,7 +534,7 @@ selected_guest_coverage = {
     }],
 }
 selected_host_workloads = workloads_on_host(
-    'What is running on Runtime Node A?', [
+    'Which Runtime Node A guests can HADES currently see?', [
         {'name': 'Runtime Node A', 'runtime_status': 'online',
          'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
          'runtime': {'type': 'node', 'node': 'pve-a', 'status': 'online'}},
@@ -1294,10 +1300,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             encoding='utf-8',
         )
         runtime_node_workloads = direct_read(
-            'What is running on Runtime Node A right now?', 'synthetic-owner', 'owner'
+            'Which Runtime Node A guests can HADES currently see, and what states are they in?',
+            'synthetic-owner', 'owner'
         )
         assert 'Proxmox currently reports Runtime Node A online' in runtime_node_workloads, runtime_node_workloads
-        assert 'Runtime Services CT (lxc, running)' in runtime_node_workloads, runtime_node_workloads
+        assert 'Runtime Services CT (CT 803, running)' in runtime_node_workloads, runtime_node_workloads
         assert 'only selected guests' in runtime_node_workloads and 'may be incomplete' in runtime_node_workloads, runtime_node_workloads
         assert "doesn't enumerate application services" in runtime_node_workloads, runtime_node_workloads
         runtime_node_household = direct_read(

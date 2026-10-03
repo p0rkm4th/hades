@@ -108,6 +108,12 @@ Status: **PARTIAL**
   distinct evidence. It does not promote host probes to app health or model
   catalogs to generation/GPU capacity. Household A receives only the generic
   boundary.
+- Fresh owner dogfood found that a host-scoped guest-inventory phrasing could
+  fall through to the narrower self-service VM registry and return only its
+  managed guest. Candidate routing now sends these variants through the
+  canonical read-only host inventory path and includes guest IDs with current
+  VM/CT state. Focused contracts pass; public CI, deployment, and fresh owner UI
+  acceptance remain pending. Full Proxmox and NetBox coverage is still partial.
 - Fresh named inference-host owner dogfood combines provider-reported catalog
   and residency with the current configured host probe, while labeling
   hardware specifications historical and host workload/GPU utilization

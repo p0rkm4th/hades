@@ -111,6 +111,12 @@ assert hades._hades_homelab_workload_host_target(
     "What is running on Runtime Node A right now?"
 ) == "Runtime Node A"
 assert hades._hades_homelab_workload_host_target("What's running on Compute Node B?") == "Compute Node B"
+assert hades._hades_homelab_workload_host_target(
+    "Which Runtime Node A guests can HADES currently see, and which are running or stopped?"
+) == "Runtime Node A"
+assert hades._hades_homelab_workload_host_target(
+    "Which VMs or containers are currently running on Runtime Node A?"
+) == "Runtime Node A"
 assert hades._hades_homelab_workload_host_target("What is running?") is None
 assert hades._hades_homelab_gpu_execution_intent(
     "Can you verify the NVIDIA driver and GPU execution status on the inference machines right now?"

@@ -4905,15 +4905,38 @@ def _hades_homelab_core_vm_placement_response(user_text, resources):
 
 
 def _hades_homelab_workload_host_target(user_text):
-    """Extract a directly named host from a guest-placement question."""
+    """Extract a directly named host from a guest inventory/status question."""
+    text = str(user_text or "")
     match = re.search(
         r"\bwhat(?:['’]s|\s+is)\s+running\s+on\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)"
         r"(?:\s+(?:right\s+)?now)?"
         r"(?:[?.!]\s*(?:please\s+)?(?:and\s+)?(?:be\s+)?(?:clear|explicit)\b[^?.!]{0,100})?"
         r"\s*[?.!]*$",
-        str(user_text or ""), re.IGNORECASE,
+        text, re.IGNORECASE,
     )
-    return " ".join(match.group("target").split()).strip(" .?!'’") if match else None
+    if match:
+        return " ".join(match.group("target").split()).strip(" .?!'’")
+
+    # Owner phrasings such as "Which Erebus guests can HADES currently see?"
+    # describe the same read-only per-host inventory as "What's running on
+    # Erebus?". Route them through the canonical Proxmox/NetBox/Kuma summary;
+    # otherwise the general machine-name matcher can answer from the narrower
+    # HADES-managed sandbox registry and misleadingly return just that VM.
+    patterns = (
+        r"\b(?:which|what)\s+(?:guests?|vms?|virtual\s+machines?|containers?)\b"
+        r"[^?.!]{0,80}?\b(?:on|at)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)"
+        r"(?:\s+(?:right\s+)?now)?\s*[?.!]*$",
+        r"\b(?:which|what)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)"
+        r"\s+(?:guests?|vms?|virtual\s+machines?|containers?)\b",
+        r"\b(?:list|show)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)"
+        r"\s+(?:guests?|vms?|virtual\s+machines?|containers?)\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            target = " ".join(match.group("target").split()).strip(" .?!,'’")
+            return target or None
+    return None
 
 
 def _hades_homelab_workloads_on_host_response(
@@ -4995,11 +5018,17 @@ def _hades_homelab_workloads_on_host_response(
     if not host_source_prefix:
         response += ". I can't correlate guests to this Proxmox source with one stable endpoint identity."
     elif guests:
-        guest_lines = [
-            f"{row.get('name') or 'Unnamed guest'} ({(row.get('runtime') or row.get('runtime_detail') or {}).get('type')}, "
-            f"{(row.get('runtime') or row.get('runtime_detail') or {}).get('status')})"
-            for row in guests[:12]
-        ]
+        guest_lines = []
+        for row in guests[:12]:
+            runtime = row.get('runtime') or row.get('runtime_detail') or {}
+            guest_type = str(runtime.get('type') or 'guest').lower()
+            guest_kind = 'VM' if guest_type == 'qemu' else 'CT' if guest_type == 'lxc' else guest_type
+            vmid = runtime.get('vmid')
+            guest_id = f" {vmid}" if isinstance(vmid, int) and not isinstance(vmid, bool) else ''
+            guest_lines.append(
+                f"{row.get('name') or 'Unnamed guest'} ({guest_kind}{guest_id}, "
+                f"{runtime.get('status') or 'unknown'})"
+            )
         response += (
             ". Guests reported there: " if visibility_complete else
             ". Guests visible to this Proxmox read: "
