@@ -967,6 +967,7 @@ for index, prompt in enumerate((
     "What changed in the homelab since yesterday?",
     "What changed in my homelab since yesterday?",
     "What changed in the homelab in the last 24 hours?",
+    "What changed in my homelab since yesterday? Only report changes the live sources can establish, and say what you cannot compare.",
 )):
     hermes_registry_module.registry.calls.clear()
     variant_agent = agent_class(
@@ -983,6 +984,7 @@ for index, prompt in enumerate((
         "What changed in the homelab since yesterday?",
         "What changed in my homelab since yesterday?",
         "What changed in the homelab in the last 24 hours?",
+        "What changed in my homelab since yesterday? Only report changes the live sources can establish, and say what you cannot compare.",
     ):
         assert "No recent Proxmox or NetBox activity source is configured" in variant["final_response"], variant
         assert hermes_registry_module.registry.calls == ["homelab_recent_activity"], hermes_registry_module.registry.calls

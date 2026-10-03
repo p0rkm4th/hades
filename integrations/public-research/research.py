@@ -181,7 +181,7 @@ _PERSON_REFERENT = (
 )
 _PERSON_NAME = (
     r"\b(?!(?:What|Where|Who|When|Which|How|Can|Could|Please|Tell|Find|Is|Are|Does|Do|Give|Show|Track|Get|"
-    r"A|An|The|My|Our|Your|Their|His|Her|Its|This|That|Research|Using|Company|Organization|Corporation|Group|Team|Board|Brand|Product|Party)\b)"
+    r"A|An|The|My|Our|Your|Their|His|Her|Its|This|That|Only|Research|Using|Company|Organization|Corporation|Group|Team|Board|Brand|Product|Party)\b)"
     r"[A-Z][a-z]+(?:[-'][A-Z]?[a-z]+)?(?:\s+[A-Z][a-z]+(?:[-'][A-Z]?[a-z]+)?){0,2}\b"
 )
 _NAMED_PERSON_CURRENT_LOCATION_QUERY = (

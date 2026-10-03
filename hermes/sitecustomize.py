@@ -6009,7 +6009,7 @@ def _hades_direct_homelab_read(
         r"^\s*what\s+(?:has\s+)?changed"
         r"(?:\s+(?:in|on|with)\s+(?:(?:the|my|our|this)\s+)?(?:homelab|home\s+lab|infrastructure|servers?))?"
         r"(?:\s+(?:in|over|during)\s+(?:the\s+)?(?:last|past)\s+(?:(?:24|48|72|168)\s+hours?|day|week))?"
-        r"(?:\s+since\s+(?:yesterday|last\s+week|last\s+time|last\s+check))?\s*[?.!]*\s*$",
+        r"(?:\s+since\s+(?:yesterday|last\s+week|last\s+time|last\s+check))?(?=\s|[?.!]|$)",
         text,
         re.IGNORECASE,
     ))

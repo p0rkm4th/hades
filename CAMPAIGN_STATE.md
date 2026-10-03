@@ -52,12 +52,20 @@ of truth.
   unconfigured. Current per-host utilization/free VRAM and model-fit
   recommendations remain unavailable; host account and key activation require
   separate owner approval.
+- Fresh owner dogfood found that a compound "what changed since yesterday"
+  question could bypass the recent-activity reader, and its added qualifier
+  could trigger a false private-person refusal. Candidate routing and privacy
+  regression tests now cover that wording; production UI re-acceptance remains
+  pending.
 - Current broad status can identify responding sources and partial coverage;
   comprehensive network trends, full backup contents/custody, and successful
   inference execution are not established.
-- Persisted synthetic acceptance history from before the context-redaction fix
-  remains unchanged. New replies cannot recover its private details from model
-  context; editing saved history is pending owner authorization.
+- Two synthetic Household A acceptance chats from before the context-redaction
+  fix were scrubbed in both the displayed assistant message and its nested
+  generation output. A fresh scan of 402 household chats found no remaining
+  candidates, and both updated replies were verified in the authenticated UI.
+  The protected pre-edit backup and scan evidence are retained in the private
+  acceptance area; these acceptance records are not public product fixtures.
 - Public `main` remains green at the release-convergence baseline. Homelab
   campaign changes remain on the review branch and have not been integrated
   into `main`.

@@ -1220,6 +1220,9 @@ focused_research_prompt = (
     'If that page does not support an answer, say that; do not guess.'
 )
 assert not module.is_explicit_private_person_query(focused_research_prompt)
+assert not module.is_explicit_private_person_query(
+    "What changed in my homelab since yesterday? Only report changes the live sources can establish, and say what you cannot compare."
+)
 
 for public_support_request in (
     "What support services are available for survivors of domestic violence in Example City?",

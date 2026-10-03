@@ -1001,6 +1001,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'What changed since yesterday?', 'What changed in the homelab since yesterday?',
             'What changed in my homelab since yesterday?',
             'What changed in the homelab in the last 24 hours?',
+            'What changed in my homelab since yesterday? Only report changes the live sources can establish, and say what you cannot compare.',
             'What changed on the infrastructure since last week?', 'What changed since last week?',
         ):
             registry_module.registry.calls.clear()
