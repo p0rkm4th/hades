@@ -5203,6 +5203,50 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
     return f"Can {target} host another model?"
 
 
+def _hades_homelab_service_coverage_intent(text):
+    return bool(re.search(
+        r"\b(?:which|what|list|show|tell)\b.{0,80}\b(?:homelab|home\s+lab|infrastructure)\b.{0,100}\b(?:services?|applications?|endpoints?)\b.{0,80}\b(?:verify|confirm|check|unknown|unavailable|down|health|working)\b|"
+        r"\b(?:homelab|home\s+lab|infrastructure)\b.{0,80}\b(?:services?|applications?|endpoints?)\b.{0,80}\b(?:can't|cannot|unable|unverified|unknown|unavailable)\b",
+        str(text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_service_coverage_response(summary):
+    """Report bounded check coverage without calling a probe application health."""
+    if not isinstance(summary, dict):
+        return "I couldn't read the current homelab service-check summary."
+    availability = summary.get("availability_summary") if isinstance(summary.get("availability_summary"), list) else []
+    groups = _hades_homelab_availability_groups(availability)
+    parts = []
+    if groups["up"]:
+        parts.append("Fresh configured Uptime Kuma probes responded for: " + ", ".join(groups["up"][:8]) + ".")
+    if groups["down"]:
+        parts.append("Fresh configured Uptime Kuma probes are failing for: " + ", ".join(groups["down"][:8]) + ".")
+    if groups["unknown"]:
+        labels = [
+            f"{item['name']} (last reported {item['last_status']}; {item['freshness'].casefold()})"
+            for item in groups["unknown"][:8]
+        ]
+        parts.append("Current probe status is unknown for: " + ", ".join(labels) + ".")
+    if not availability:
+        parts.append("No configured service-check observations were returned, so I can't confirm service health.")
+    catalog = summary.get("service_catalog") if isinstance(summary.get("service_catalog"), dict) else {}
+    catalog_services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
+    if catalog_services:
+        parts.append(
+            f"NetBox lists {len(catalog_services)} application-service records; that inventory does not establish their current health."
+        )
+    visibility = summary.get("proxmox_guest_visibility") if isinstance(summary.get("proxmox_guest_visibility"), dict) else {}
+    if str(visibility.get("status") or "").upper() in {"PARTIAL", "UNKNOWN"}:
+        parts.append("Proxmox guest visibility is partial or unknown, so services on unreported guests remain unverified.")
+    if groups["up"] and not groups["down"] and not groups["unknown"]:
+        parts.append("A responding probe confirms only that its configured check answered, not that a user workflow works.")
+    retrieved_at = summary.get("retrieved_at")
+    if retrieved_at:
+        parts.append(f"The composed source read completed at {str(retrieved_at)[:80]}.")
+    return " ".join(parts)
+
+
 def _hades_homelab_source_identity_intent(text):
     return bool(re.search(
         r"\b(?:homelab|home\s+lab|infrastructure)\b.{0,100}\b"
@@ -5259,7 +5303,7 @@ def _hades_homelab_unlinked_identity_response(summary):
 
 
 def _hades_broad_homelab_status_intent(text):
-    if _hades_homelab_source_identity_intent(text):
+    if _hades_homelab_source_identity_intent(text) or _hades_homelab_service_coverage_intent(text):
         return True
     return bool(re.search(
         r"^\s*(?:is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"
@@ -5490,6 +5534,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     if change_intent and scope != "owner":
         return "I can't verify private infrastructure changes from this account."
     household_broad_status_intent = _hades_broad_homelab_status_intent(text)
+    service_coverage_intent = _hades_homelab_service_coverage_intent(text)
     source_identity_intent = _hades_homelab_source_identity_intent(text)
     network_diagnostic_intent = bool(
         re.search(r"\b(?:network|internet|wi-?fi|dns)\b", text, re.IGNORECASE)
@@ -5913,6 +5958,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 + ". These timestamps are when each source read completed; they do not make an older source observation live. "
                 "NetBox describes intended inventory, Proxmox reports runtime state, and Uptime Kuma reports configured probe results; they are not interchangeable."
             )
+        if service_coverage_intent and scope == "owner":
+            return _hades_homelab_service_coverage_response(summary)
         if source_identity_intent and scope == "owner":
             return _hades_homelab_unlinked_identity_response(summary)
         broad_inference = None

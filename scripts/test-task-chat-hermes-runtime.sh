@@ -104,6 +104,9 @@ assert hades._HADES_HOMELAB_INTENT.search("Where should I run another model?")
 assert hades._HADES_HOMELAB_INTENT.search("Check Synthetic Node B.")
 unlinked_source_question = "Which live homelab observations cannot you confidently match to the same machine?"
 assert hades._hades_broad_homelab_status_intent(unlinked_source_question)
+unverified_service_question = "Which homelab services can you not verify right now?"
+assert hades._hades_homelab_service_coverage_intent(unverified_service_question)
+assert hades._hades_broad_homelab_status_intent(unverified_service_question)
 assert hades._hades_homelab_target_from_question("Check Synthetic Node B.") == "synthetic node b"
 assert hades._hades_homelab_named_check_target("Check my shopping list") is None
 assert not hades._hades_positive_homelab_control_request(
@@ -149,6 +152,10 @@ household_unlinked_source_denial = hades._hades_direct_homelab_read(
     unlinked_source_question, "synthetic-beta", "household",
 )
 assert "can't verify private infrastructure or computer status" in household_unlinked_source_denial.casefold(), household_unlinked_source_denial
+household_service_coverage_denial = hades._hades_direct_homelab_read(
+    unverified_service_question, "synthetic-beta", "household",
+)
+assert "can't verify private infrastructure or computer status" in household_service_coverage_denial.casefold(), household_service_coverage_denial
 synthetic_unlinked_summary = {
     "status": "PARTIAL",
     "source_counts": {"identity_unlinked_resources": 2},
@@ -165,6 +172,21 @@ assert "Synthetic Host A (Proxmox)" in synthetic_unlinked_response, synthetic_un
 assert "Synthetic Probe A (Uptime Kuma)" in synthetic_unlinked_response, synthetic_unlinked_response
 assert "matching display names or addresses do not prove" in synthetic_unlinked_response, synthetic_unlinked_response
 assert "private-proxmox-id" not in synthetic_unlinked_response and "private-kuma-id" not in synthetic_unlinked_response, synthetic_unlinked_response
+synthetic_service_summary = {
+    "availability_summary": [
+        {"name": "service-check-a", "status": "down", "freshness": "FRESH"},
+        {"name": "service-check-b", "status": "down", "freshness": "STALE"},
+        {"name": "service-check-c", "status": "up", "freshness": "FRESH"},
+    ],
+    "service_catalog": {"services": [{"name": "Synthetic Service"}]},
+    "proxmox_guest_visibility": {"status": "PARTIAL"},
+    "retrieved_at": "2026-10-03T00:01:00Z",
+}
+synthetic_service_response = hades._hades_homelab_service_coverage_response(synthetic_service_summary)
+assert "Fresh configured Uptime Kuma probes are failing for: service-check-a" in synthetic_service_response, synthetic_service_response
+assert "service-check-b (last reported down; stale)" in synthetic_service_response, synthetic_service_response
+assert "inventory does not establish their current health" in synthetic_service_response, synthetic_service_response
+assert "services on unreported guests remain unverified" in synthetic_service_response, synthetic_service_response
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from integrations.task import TaskStatus, TaskStore
 
@@ -242,6 +264,18 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert "Synthetic Host A (Proxmox)" in owner_source_detail, owner_source_detail
     assert "Synthetic Probe A (Uptime Kuma)" in owner_source_detail, owner_source_detail
     assert "private-proxmox-id" not in owner_source_detail, owner_source_detail
+    try:
+        hades._hades_direct_homelab_tool_result = lambda name, *_args, **_kwargs: (
+            synthetic_service_summary if name == "homelab_summary" else {"status": "NOT_CONFIGURED", "endpoints": []}
+        )
+        owner_service_coverage = hades._hades_direct_homelab_read(
+            unverified_service_question, owner, "owner",
+        )
+    finally:
+        hades._hades_direct_homelab_tool_result = original_source_detail_tool_result
+    assert "service-check-a" in owner_service_coverage, owner_service_coverage
+    assert "service-check-b (last reported down; stale)" in owner_service_coverage, owner_service_coverage
+    assert "inventory does not establish their current health" in owner_service_coverage, owner_service_coverage
     registry.calls.clear()
     owner_node_load = hades._hades_direct_homelab_read(
         "How loaded is Synthetic Node B?", owner, "owner",
@@ -336,6 +370,16 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert household_unlinked_sources.get("api_calls") == 0, household_unlinked_sources
     assert "can't verify private infrastructure or computer status" in household_unlinked_sources["final_response"].casefold(), household_unlinked_sources
     assert "Proxmox" not in household_unlinked_sources["final_response"], household_unlinked_sources
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
+    household_service_coverage = household_agent.run_conversation(
+        unverified_service_question, conversation_history=[]
+    )
+    assert household_service_coverage.get("completed") is True, household_service_coverage
+    assert household_service_coverage.get("api_calls") == 0, household_service_coverage
+    assert "can't verify private infrastructure or computer status" in household_service_coverage["final_response"].casefold(), household_service_coverage
+    assert "Uptime Kuma" not in household_service_coverage["final_response"], household_service_coverage
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
