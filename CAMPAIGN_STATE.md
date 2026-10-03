@@ -58,6 +58,11 @@ of truth.
   Household A/B chats persisted explicit limits without owner topology or
   owner-only source reads. Candidate `4c73e28` passed Public CI; the broader
   homelab source-coverage gates remain open.
+- Fresh owner dogfood for “Which GPUs are free right now?” says live capacity
+  cannot be verified because per-host utilization/free-VRAM telemetry is not
+  connected or available. It does not infer free capacity from hardware
+  inventory or empty model residency. Household A receives only the owner
+  session boundary; both answers persisted.
 - Backup answers distinguish configured jobs and bounded task history from
   verified backup contents, independent custody, and restoreability.
 - Current-tree privacy checks and the focused homelab contracts pass.

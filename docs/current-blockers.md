@@ -60,6 +60,10 @@ Status: **PARTIAL**
   Household A/B turns for whole-home slowness and computer status persisted
   scope-limited answers without exposing private topology or querying owner
   sources. This improves household wording but does not close source coverage.
+- Fresh owner GPU-capacity dogfood says free GPU capacity is unknown without
+  live per-host telemetry and does not treat inventory or empty model
+  residency as capacity evidence. Household A receives only the owner-session
+  boundary. The prepared fixed-command telemetry path remains unconfigured.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 
