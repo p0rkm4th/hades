@@ -2,7 +2,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require(process.env.HADES_PLAYWRIGHT_MODULE || 'playwright');
-const base = process.env.HADES_DOM_BASE_URL || 'http://127.0.0.1:3000/';
+// The API calls below append absolute-looking paths, so keep one canonical
+// base form even when operators provide a trailing slash.
+const base = (process.env.HADES_DOM_BASE_URL || 'http://127.0.0.1:3000/').replace(/\/$/, '');
 const root = process.env.HADES_DOM_CREDENTIAL_DIR || require('path').join(require('os').homedir(), '.config', 'hades-dom');
 const user = (process.env.HADES_EPSILON_DOM_USER || 'owner').toLowerCase();
 const userFiles = user === 'householda' || user === 'household-a'
