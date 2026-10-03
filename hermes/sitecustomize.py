@@ -5516,7 +5516,12 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     )
     if _definition_question:
         return None
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not re.search(
+    node_load_match = re.search(
+        r"\bhow\s+(?:heavily\s+)?loaded\s+is\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$|"
+        r"\b(?:how\s+busy|how\s+much\s+load)\s+(?:is|does)\s+(?P<target2>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
+        text, re.IGNORECASE,
+    )
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not node_load_match and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -5550,6 +5555,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         _hades_homelab_target_from_question(text)
         and re.search(r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\b", text, re.IGNORECASE)
     ) or named_node_check_target)
+    if node_load_match:
+        node_activity_intent = True
     placement_intent = bool(re.search(
         r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
         r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
@@ -5652,6 +5659,42 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             )
             if node_activity_intent:
                 target = _hades_homelab_target_from_question(text)
+                if node_load_match and scope == "owner":
+                    target = (node_load_match.group("target") or node_load_match.group("target2") or "").strip()
+                    target_key = _hades_homelab_name_key(target)
+                    matching_resources = [
+                        row for row in summary.get("resources", [])
+                        if isinstance(row, dict)
+                        and _hades_homelab_name_key(row.get("name")) == target_key
+                    ] if isinstance(summary, dict) else []
+                    if len(matching_resources) != 1:
+                        return (
+                            f"I can't verify current load for {target}: "
+                            "there isn't one unambiguous live runtime record for that machine."
+                        )
+                    load_resource = matching_resources[0]
+                    load_runtime = load_resource.get("runtime") or load_resource.get("runtime_detail") or {}
+                    load_state = str(load_resource.get("runtime_status") or "UNKNOWN").upper()
+                    if not isinstance(load_runtime, dict) or load_state in {"UNKNOWN", "NOT_OBSERVED"}:
+                        return (
+                            f"I can't verify current load for {load_resource.get('name') or target}. "
+                            "Proxmox has no current runtime observation for it, and the hardware inventory is not live utilization."
+                        )
+                    load_parts = [
+                        f"Proxmox reports {load_resource.get('name') or target} {load_state.casefold()}.",
+                    ]
+                    cpu_value = load_runtime.get("cpu")
+                    if isinstance(cpu_value, (int, float)):
+                        load_parts.append(f"CPU load is {float(cpu_value) * 100:.1f}%.")
+                    mem_value, maxmem_value = load_runtime.get("mem"), load_runtime.get("maxmem")
+                    if isinstance(mem_value, (int, float)) and isinstance(maxmem_value, (int, float)) and maxmem_value > 0:
+                        load_parts.append(
+                            f"Memory is {mem_value / (1024 ** 3):.1f} of {maxmem_value / (1024 ** 3):.1f} GiB."
+                        )
+                    if len(load_parts) == 1:
+                        load_parts.append("The current Proxmox record contains no CPU or memory utilization fields.")
+                    load_parts.append("These are Proxmox runtime metrics, not guest filesystem or GPU utilization.")
+                    return " ".join(load_parts)
                 capability = capabilities
                 machines = capability.get("machines", []) if isinstance(capability, dict) else []
                 if not machines:

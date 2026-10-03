@@ -986,6 +986,18 @@ direct_node_status = hades._hades_direct_homelab_read(
 )
 assert registry.calls == ["homelab_inference_inventory", "homelab_owner_snapshot"], registry.calls
 assert "Observed hardware inventory lists Compute Node A." in direct_node_status, direct_node_status
+registry.calls.clear()
+direct_node_load = hades._hades_direct_homelab_read(
+    "How loaded is Compute Node A?", owner, "owner",
+)
+assert registry.calls == ["homelab_inference_inventory", "homelab_owner_snapshot"], registry.calls
+assert "I can't verify current load for Compute Node A" in direct_node_load, direct_node_load
+assert "unambiguous live runtime record" in direct_node_load, direct_node_load
+assert "running normally" not in direct_node_load.casefold(), direct_node_load
+household_node_load = hades._hades_direct_homelab_read(
+    "How loaded is Compute Node A?", beta, "household",
+)
+assert "available only in an owner session" in household_node_load, household_node_load
 issue_status = compute_node_a_agent.run_conversation(
     "What's wrong with Compute Node A?", conversation_history=[],
 )
