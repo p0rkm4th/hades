@@ -38,7 +38,8 @@ Status: **PARTIAL**
   a broad current snapshot and, with an added qualifier, could be falsely
   refused by the private-person research guard. A general model-placement
   question also fell through to named-machine lookup, and a natural question
-  comparing source systems fell back to the broad summary. Candidate routing
+  comparing source systems fell back to the broad summary. A scoped resource
+  ranking question returned an unfinished check preamble. Candidate routing
   and privacy contracts now cover these cases; deployed owner UI re-acceptance
   is pending.
 - Backup readiness must report scope and custody. Repository verification is

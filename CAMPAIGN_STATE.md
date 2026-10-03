@@ -56,9 +56,10 @@ of truth.
   question could bypass the recent-activity reader, and its added qualifier
   could trigger a false private-person refusal. It also found a general model
   placement question routed through named-node lookup and a natural source-
-  disagreement question that fell back to the broad summary. Candidate routing
-  and privacy tests now cover these cases; production UI re-acceptance remains
-  pending.
+  disagreement question that fell back to the broad summary. A resource-ranking
+  question with a homelab qualifier also returned only a check preamble instead
+  of a result. Candidate routing and privacy tests now cover these cases;
+  production UI re-acceptance remains pending.
 - Current broad status can identify responding sources and partial coverage;
   comprehensive network trends, full backup contents/custody, and successful
   inference execution are not established.

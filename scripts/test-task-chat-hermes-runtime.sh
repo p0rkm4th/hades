@@ -103,6 +103,7 @@ assert hades._HADES_HOMELAB_INTENT.search("Which GPUs are free?")
 assert hades._HADES_HOMELAB_INTENT.search("Where should I run another model?")
 assert hades._HADES_HOMELAB_INTENT.search("Check Synthetic Node B.")
 assert hades._hades_homelab_resource_ranking_intent("What's using the most resources right now?")
+assert hades._hades_homelab_resource_ranking_intent("What is using the most resources in my homelab right now?")
 assert hades._hades_homelab_resource_ranking_intent("What's the most loaded server right now?")
 assert hades._hades_homelab_resource_ranking_intent("Which server has the highest CPU usage?")
 assert not hades._hades_homelab_resource_ranking_intent("What resources does HADES use?")
@@ -742,6 +743,12 @@ try:
     assert "Highest current Proxmox CPU reading: Synthetic Guest B at 78.0%" in resource_rank_direct, resource_rank_direct
     assert resource_tool_calls == ["homelab_summary"], resource_tool_calls
     resource_tool_calls.clear()
+    scoped_resource_rank = hades._hades_direct_homelab_read(
+        "What is using the most resources in my homelab right now?", owner, "owner",
+    )
+    assert "Highest current Proxmox CPU reading: Synthetic Guest B at 78.0%" in scoped_resource_rank, scoped_resource_rank
+    assert resource_tool_calls == ["homelab_summary"], resource_tool_calls
+    resource_tool_calls.clear()
     resource_rank_agent = agent_class(
         gateway_session_key=f"hades-user-{owner}",
         session_id="synthetic-resource-ranking-owner",
@@ -749,7 +756,7 @@ try:
         **kwargs,
     )
     resource_rank_result = resource_rank_agent.run_conversation(
-        "What's the most loaded server right now?", conversation_history=[],
+        "What is using the most resources in my homelab right now?", conversation_history=[],
     )
     assert resource_rank_result.get("completed") is True and resource_rank_result.get("api_calls") == 0, resource_rank_result
     assert "Highest current Proxmox CPU reading: Synthetic Guest B at 78.0%" in resource_rank_result["final_response"], resource_rank_result

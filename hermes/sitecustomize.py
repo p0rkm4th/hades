@@ -5649,6 +5649,7 @@ def _hades_homelab_resource_ranking_intent(text):
         r"(?:which|what)\s+(?:computer|machine|server|node)\s+(?:is\s+)?(?:the\s+)?(?:most\s+loaded|busiest|most\s+busy)|"
         r"(?:which|what)\s+(?:computer|machine|server|node)\s+(?:is\s+)?(?:using|uses)\s+(?:the\s+)?most\s+(?:resources?|cpu|memory|ram)|"
         r"(?:which|what)\s+(?:computer|machine|server|node)\s+has\s+(?:the\s+)?highest\s+(?:cpu|memory|ram)\s+(?:load|usage))"
+        r"(?:\s+(?:in|on)\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab))?"
         r"(?:\s+(?:right\s+now|currently|today|at\s+the\s+moment))?\s*[?.!]*\s*",
         str(text or ""), re.IGNORECASE,
     ))
