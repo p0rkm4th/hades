@@ -94,9 +94,10 @@ Status: **PARTIAL**
   focused route/runtime contracts, overlay composition, rollback deployment,
   and persisted owner/household UI acceptance pass. The owner now sees that no
   current service monitor matches Minecraft and gets the source-read time;
-  Household A receives only the generic unknown. Minecraft health remains
-  unverified because canonical service inventory and a matching monitor are
-  absent.
+  Household A and B receive only the generic unknown. Both household replies
+  persist without host, address, or infrastructure-source details. Minecraft
+  health remains unverified because canonical service inventory and a matching
+  monitor are absent.
 - Fresh broad owner dogfood returns an explicitly partial current summary:
   selected-guest visibility, empty intended-service inventory, host-probe
   availability, inference catalog/residency, and unlinked records remain

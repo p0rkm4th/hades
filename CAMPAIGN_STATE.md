@@ -157,8 +157,9 @@ of truth.
   broad summary even though the correct service-health unknown was available.
   Candidate `b6c9cfb` routes the plain-language alias to the Minecraft monitor
   check. Owner now sees the missing current monitor and source-read timestamp;
-  Household A remains generic. Public CI, focused route/runtime contracts,
-  composed overlay, rollback deployment, and persisted UI acceptance pass.
+  Household A and B receive generic answers without infrastructure detail.
+  Public CI, focused route/runtime contracts, composed overlay, rollback
+  deployment, and persisted UI acceptance pass.
   Service health and placement remain unknown without canonical service
   inventory and a matching current monitor.
 - Public `main` remains green at the release-convergence baseline. Homelab
