@@ -67,6 +67,8 @@ wanted = {
     '_hades_homelab_gpu_execution_intent',
     '_hades_household_game_health_intent',
     '_hades_homelab_provenance_followup',
+    '_hades_homelab_guest_visibility_provenance_intent',
+    '_hades_homelab_guest_visibility_provenance_response',
     '_hades_positive_homelab_control_request',
 }
 functions = [
@@ -301,6 +303,40 @@ assert not game_health_intent('Is the game server working?', 'owner')
 provenance_followup = namespace['_hades_homelab_provenance_followup']
 assert provenance_followup('How do you know that?', 'Is everything okay with the homelab?')
 assert not provenance_followup('How do you know that?', '')
+guest_scope_question = (
+    'How do you know what Proxmox guests you can see, and is that all guests or only a selection?'
+)
+guest_scope_intent = namespace['_hades_homelab_guest_visibility_provenance_intent']
+guest_scope_response = namespace['_hades_homelab_guest_visibility_provenance_response']
+assert guest_scope_intent(guest_scope_question)
+assert not guest_scope_intent('Which guests are online?')
+selected_scope = guest_scope_response({
+    'proxmox_guest_visibility': {
+        'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
+        'endpoints': [{'status': 'DEGRADED', 'scope': 'SELECTED_GUESTS'}],
+    },
+    'sources': [{
+        'source': 'Proxmox guest visibility (synthetic)', 'status': 'DEGRADED',
+        'retrieved_at': '2026-10-03T23:44:14+00:00',
+    }],
+})
+assert 'selected guests only' in selected_scope and 'effective-permission data' in selected_scope
+assert '2026-10-03T23:44:14+00:00' in selected_scope
+all_guest_scope = guest_scope_response({
+    'proxmox_guest_visibility': {'status': 'COMPLETE', 'scope': 'ALL_GUESTS'},
+    'sources': [],
+})
+assert 'all guests' in all_guest_scope and 'every configured Proxmox source' in all_guest_scope
+mixed_guest_scope = guest_scope_response({
+    'proxmox_guest_visibility': {'status': 'PARTIAL', 'scope': 'MIXED'},
+    'sources': [],
+})
+assert 'mixed or incomplete' in mixed_guest_scope
+unknown_guest_scope = guest_scope_response({
+    'proxmox_guest_visibility': {'status': 'UNKNOWN', 'scope': 'UNKNOWN'},
+    'sources': [],
+})
+assert 'could not verify effective Proxmox guest permissions' in unknown_guest_scope
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 household_safe_status = namespace['_hades_household_safe_status_response']
@@ -729,6 +765,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '        sources = [{"source": "NetBox", "status": "READABLE", '
         '                    "retrieved_at": "2026-10-03T02:00:01Z"}]\n'
         '    return {"resources": resources, "sources": sources, '
+        '"proxmox_guest_visibility": {"status": "PARTIAL", "scope": "SELECTED_GUESTS", "endpoints": [{"status": "DEGRADED", "scope": "SELECTED_GUESTS"}]}, '
         '"service_catalog": {"status": "OK", "coverage": "COMPLETE", "services": [{'
         '"name": "Minecraft Server", "parent_name": "Test Host", '
         '"addresses": ["192.0.2.10"], "port_mappings": ["tcp/25565"]}]}}\n'
@@ -749,6 +786,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
     old_workdir = os.environ.get('HADES_HERMES_WORKING_DIRECTORY')
     os.environ['HADES_HERMES_WORKING_DIRECTORY'] = temp_root
     try:
+        guest_scope_answer = direct_read(
+            guest_scope_question, 'synthetic-owner', 'owner'
+        )
+        assert 'selected guests only' in guest_scope_answer, guest_scope_answer
+        assert 'effective-permission data' in guest_scope_answer, guest_scope_answer
         routed_up = direct_read('Is Minecraft healthy enough for tonight?', 'synthetic-owner', 'owner')
         assert "Uptime Kuma's configured check for Minecraft Server is up." in routed_up, routed_up
         owner_game_status = direct_read(

@@ -6294,6 +6294,54 @@ def _hades_homelab_provenance_followup(user_text, context_text=""):
     )
 
 
+def _hades_homelab_guest_visibility_provenance_intent(user_text):
+    """Recognize owner questions asking whether guest visibility is complete."""
+    return bool(
+        _hades_homelab_guest_visibility_intent(user_text)
+        and re.search(
+            r"\b(?:all|selected|selection|scope|permission|permissions|audit|"
+            r"complete|coverage|how\s+do\s+you\s+know)\b",
+            str(user_text or ""), re.IGNORECASE,
+        )
+    )
+
+
+def _hades_homelab_guest_visibility_provenance_response(summary):
+    """Explain guest visibility from the current effective permission reads."""
+    visibility = (
+        summary.get("proxmox_guest_visibility")
+        if isinstance(summary, dict) else None
+    )
+    if not isinstance(visibility, dict):
+        return "I couldn't verify the current Proxmox guest-visibility scope."
+    status = str(visibility.get("status") or "UNKNOWN").upper()
+    scope = str(visibility.get("scope") or "UNKNOWN").upper()
+    if status == "COMPLETE" and scope == "ALL_GUESTS":
+        answer = "The latest read-only permission checks report all guests in scope at every configured Proxmox source."
+    elif status == "PARTIAL" and scope == "SELECTED_GUESTS":
+        answer = "The latest read-only permission checks show selected guests only; HADES cannot verify the other guest state."
+    elif status == "PARTIAL" and scope == "NO_GUEST_AUDIT":
+        answer = "At least one configured Proxmox source has no guest-audit visibility, so HADES cannot verify all guest state."
+    elif status == "PARTIAL" or scope == "MIXED":
+        answer = "The configured Proxmox guest-visibility scopes are mixed or incomplete, so HADES cannot claim a complete guest view."
+    elif status == "NOT_CONFIGURED":
+        answer = "Proxmox guest-visibility checks are not configured, so HADES cannot verify guest scope."
+    else:
+        answer = "HADES could not verify effective Proxmox guest permissions, so it cannot confirm complete guest visibility."
+    answer += " This scope comes from read-only effective-permission data, not from assuming the returned guest list is exhaustive."
+    source_rows = summary.get("sources", []) if isinstance(summary, dict) else []
+    if isinstance(source_rows, list):
+        times = [
+            " ".join(str(row.get("retrieved_at") or "").split())[:64]
+            for row in source_rows if isinstance(row, dict)
+            and str(row.get("source") or "").startswith("Proxmox guest visibility")
+            and row.get("retrieved_at")
+        ]
+        if times:
+            answer += " Permission-scope reads completed at " + ", ".join(times[:4]) + "."
+    return answer
+
+
 def _hades_resolve_homelab_adapter_path():
     """Resolve the formatter module from the active Hermes profile first.
 
@@ -6395,6 +6443,7 @@ def _hades_direct_homelab_read(
             followup_prompt, subject, scope, context_text=context_text
         )
     provenance_intent = _hades_homelab_provenance_followup(text, context_text)
+    guest_visibility_provenance_intent = _hades_homelab_guest_visibility_provenance_intent(text)
     change_intent = bool(re.search(
         r"^\s*what\s+(?:has\s+)?changed"
         r"(?:\s+(?:in|on|with)\s+(?:(?:the|my|our|this)\s+)?(?:homelab|home\s+lab|infrastructure|servers?))?"
@@ -6880,6 +6929,8 @@ def _hades_direct_homelab_read(
                 observation
                 + f" I can't confirm that this monitor targets {target_name}, because no stable identity link is configured."
             )
+        if guest_visibility_provenance_intent and scope == "owner":
+            return _hades_homelab_guest_visibility_provenance_response(summary)
         if provenance_intent and scope == "owner":
             source_rows = summary.get("sources", []) if isinstance(summary, dict) else []
             readable = [row for row in source_rows if isinstance(row, dict) and row.get("source")]

@@ -65,6 +65,13 @@ of truth.
   and a fresh monitor with unknown status in plain household wording. Synthetic
   coverage exercises each state; fresh owner/Household A UI acceptance still
   passes with no topology disclosure.
+- Fresh owner provenance dogfood asked whether Proxmox scope covers all guests
+  or only a selection. HADES refreshed both permission sources and showed their
+  read timestamps and degraded status, but did not state the effective scope.
+  A local candidate now reports complete, selected, mixed, no-audit, or unknown
+  scope from the adapter's effective-permission result and distinguishes that
+  source from the returned guest list. Focused route tests pass; this candidate
+  is not deployed yet.
 - “Where is HADES running?” reports two same-name Proxmox guests and separates
   the stopped guest from the running guest; it does not claim application
   health. Nyx-4 has been asked to confirm whether the stopped duplicate name is
