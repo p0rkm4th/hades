@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sys
+import time
 import types
 from pathlib import Path
 
@@ -76,7 +77,7 @@ def invoke(response, *, tool_name="homelab_summary", arguments=None, registered=
     sys.modules["tools"] = tools
     sys.modules["tools.registry"] = registry_module
     sys.modules["tools.mcp_tool_discovery"] = discovery_module
-    namespace = {"json": json, "_hades_logger": logging.getLogger("test.homelab")}
+    namespace = {"json": json, "time": time, "_hades_logger": logging.getLogger("test.homelab")}
     try:
         exec(compile(ast.Module(body=[helper], type_ignores=[]), "sitecustomize.py", "exec"), namespace)
         result = namespace[helper.name](tool_name, arguments)
