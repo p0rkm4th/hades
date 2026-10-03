@@ -219,6 +219,23 @@ assert "Highest current Proxmox memory use: Synthetic Guest B" in synthetic_reso
 assert "compares 3 currently online/running Proxmox runtime record(s)" in synthetic_resource_rank, synthetic_resource_rank
 assert "not a complete homelab ranking" in synthetic_resource_rank, synthetic_resource_rank
 assert "GPU load" in synthetic_resource_rank and "2026-10-03T07:00:00Z" in synthetic_resource_rank, synthetic_resource_rank
+synthetic_tied_resource_summary = dict(synthetic_resource_summary)
+synthetic_tied_resource_summary["resources"] = [
+    {"name": "Synthetic Tie A", "runtime_status": "online", "runtime": {"cpu": 0.5, "mem": 10, "maxmem": 20}},
+    {"name": "Synthetic Tie B", "runtime_status": "running", "runtime": {"cpu": 0.5, "mem": 20, "maxmem": 40}},
+]
+synthetic_tied_rank = hades._hades_homelab_resource_ranking_response(synthetic_tied_resource_summary)
+assert "Synthetic Tie A, Synthetic Tie B at 50.0%" in synthetic_tied_rank, synthetic_tied_rank
+assert "memory use is tied: Synthetic Tie A, Synthetic Tie B at 50.0%" in synthetic_tied_rank, synthetic_tied_rank
+synthetic_invalid_resource_summary = dict(synthetic_resource_summary)
+synthetic_invalid_resource_summary["resources"] = [
+    {"name": "Bad CPU", "runtime_status": "online", "runtime": {"cpu": 2.0, "mem": 11, "maxmem": 10}},
+    {"name": "Boolean metric", "runtime_status": "running", "runtime": {"cpu": True, "mem": True, "maxmem": 8}},
+    {"name": "Stopped", "runtime_status": "stopped", "runtime": {"cpu": 0.99, "mem": 99, "maxmem": 100}},
+]
+synthetic_invalid_rank = hades._hades_homelab_resource_ranking_response(synthetic_invalid_resource_summary)
+assert "No comparable current Proxmox CPU utilization values" in synthetic_invalid_rank, synthetic_invalid_rank
+assert "No comparable current Proxmox memory-use values" in synthetic_invalid_rank, synthetic_invalid_rank
 synthetic_empty_catalog = dict(synthetic_service_summary)
 synthetic_empty_catalog["service_catalog"] = {"status": "OK", "coverage": "EMPTY", "services": []}
 empty_catalog_response = hades._hades_homelab_service_coverage_response(synthetic_empty_catalog)

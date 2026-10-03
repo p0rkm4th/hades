@@ -45,6 +45,17 @@ evidence is maintained in the private infrastructure repository; this static
 capability matrix remains inventory evidence only and does not establish
 current utilization, free memory, or model placement.
 
+## Current resource ranking
+
+Owner answers about the most-loaded resource compare current Proxmox CPU
+readings and used-memory ratios separately. They report the number of runtime
+records with comparable values and the source-read time. HADES does not combine
+CPU and memory into one score, add host and guest values together, or rank
+inference hosts without live host telemetry. If Proxmox guest visibility is
+partial or unknown, the answer is only a ranking within the returned scope.
+These values do not establish per-process use, guest filesystem pressure, GPU
+load, or workload performance.
+
 ## Private deployment records
 
 Use the private infrastructure repository for physical inventory, source URLs,
