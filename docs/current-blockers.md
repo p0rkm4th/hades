@@ -40,8 +40,12 @@ Status: **PARTIAL**
   question also fell through to named-machine lookup, and a natural question
   comparing source systems fell back to the broad summary. A scoped resource
   ranking question returned an unfinished check preamble. Candidate routing
-  and privacy contracts now cover these cases; deployed owner UI re-acceptance
-  is pending.
+  and privacy contracts now cover these cases. Following the candidate rollout,
+  fresh authenticated owner UI turns correctly returned bounded recent
+  activity, refused unsupported model-fit ranking without live GPU capacity,
+  surfaced source-comparison coverage limits, and ranked the available
+  Proxmox resource records with explicit partial-scope caveats. Household UI
+  turns remained generic and denied owner-only placement/source details.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 

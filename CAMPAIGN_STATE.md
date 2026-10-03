@@ -37,6 +37,12 @@ of truth.
   Household dogfood confirms generic answers and redaction for private
   infrastructure questions. Sensitive old assistant turns are also removed
   from household model context before routing and fallback.
+- The latest routed-read candidate is deployed after green Public CI with a
+  root-only rollback copy. Fresh owner UI turns verified bounded recent
+  activity, model-capacity uncertainty, source-coverage caveats, and scoped
+  resource ranking. Household UI turns remained generic and denied owner-only
+  placement and source details. This acceptance is limited to those prompts;
+  it does not close the incomplete-source gaps below.
 - Backup answers distinguish configured jobs and bounded task history from
   verified backup contents, independent custody, and restoreability.
 - Current-tree privacy checks and the focused homelab contracts pass.
@@ -52,14 +58,11 @@ of truth.
   unconfigured. Current per-host utilization/free VRAM and model-fit
   recommendations remain unavailable; host account and key activation require
   separate owner approval.
-- Fresh owner dogfood found that a compound "what changed since yesterday"
-  question could bypass the recent-activity reader, and its added qualifier
-  could trigger a false private-person refusal. It also found a general model
-  placement question routed through named-node lookup and a natural source-
-  disagreement question that fell back to the broad summary. A resource-ranking
-  question with a homelab qualifier also returned only a check preamble instead
-  of a result. Candidate routing and privacy tests now cover these cases;
-  production UI re-acceptance remains pending.
+- Future activity comparison still needs a saved prior snapshot; recent task
+  history is not a complete change log. Source comparison must continue to say
+  when identity links or source coverage are incomplete. Model placement
+  remains unavailable until live per-host GPU telemetry and workload memory
+  requirements are known.
 - Current broad status can identify responding sources and partial coverage;
   comprehensive network trends, full backup contents/custody, and successful
   inference execution are not established.
@@ -69,9 +72,9 @@ of truth.
   candidates, and both updated replies were verified in the authenticated UI.
   The protected pre-edit backup and scan evidence are retained in the private
   acceptance area; these acceptance records are not public product fixtures.
-- Public `main` remains green at the release-convergence baseline. Homelab
-  campaign changes remain on the review branch and have not been integrated
-  into `main`.
+- Public `main` remains green at the release-convergence baseline. The
+  homelab candidate and its documentation remain on the review branch and
+  have not been integrated into `main`.
 
 ## Repository and deployment authority
 

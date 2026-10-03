@@ -12,7 +12,7 @@ recovery custody details.
 | Identity and household boundaries | Synthetic contract coverage | Repeat owner-approved acceptance on the intended deployment |
 | Core chat and memory | Product behavior accepted in synthetic tests | Preserve stable identity mapping across restore |
 | Shared household services | Synthetic UI coverage | Owner-gated production acceptance |
-| Read-only homelab view | PARTIAL | Owner/household UI dogfood and reviewed source links are active; improve partial Proxmox guest visibility and service identity/catalog coverage |
+| Read-only homelab view | PARTIAL | Owner/household UI dogfood confirms scoped activity, resource ranking, source-coverage caveats, and household redaction; improve partial Proxmox guest visibility and service identity/catalog coverage |
 | Inference awareness | PARTIAL | Provider catalogs and residency are deployed and owner-dogfooded; configure the owner-gated fixed-command GPU telemetry before making live capacity comparisons |
 | Backup and restore | PARTIAL | Complete synthetic restore proof plus separately managed off-host custody |
 | Installation and upgrades | Contract documented | Independent clean-host reproduction and operator acceptance |
@@ -50,7 +50,7 @@ deployment status remain in the private infrastructure records.
 | Web/search | OWNER-GATED | Confirm fresh search behavior in authenticated owner use. |
 | Bounded operator | PASS | Keep unsafe delegation rejected before upstream dispatch. |
 | Finance | OWNER-GATED | Approve canonical environment, credentials, and production scope before writes. |
-| Homelab | PARTIAL | Synthetic identity, freshness, conflict, partial-source, and Ollama catalog/residency contracts pass; live source links and authenticated owner dogfood remain. |
+| Homelab | PARTIAL | Synthetic identity, freshness, conflict, partial-source, and Ollama catalog/residency contracts pass; authenticated owner/household dogfood confirms scoped answers and redaction. Guest visibility, service catalog coverage, and live GPU telemetry remain incomplete. |
 | Home Assistant | PARTIAL | Connect only an approved read-only endpoint and entity allowlist. |
 | Automation | PARTIAL | Complete owner-approved production authority and recovery acceptance. |
 | Recovery | PARTIAL | Complete full synthetic restore and document separate custody policy. |
