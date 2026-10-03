@@ -1201,6 +1201,13 @@ try:
     assert 'Proxmox status: selected-scope partial.' in backup_answer, backup_answer
     assert backup_tool_calls == ['homelab_backup_status'], backup_tool_calls
     assert 'Configured HADES backup checks: current.' in backup_answer, backup_answer
+    infrastructure_backup_answer = direct_proxmox_backup(
+        'Are my infrastructure backups okay right now, and what coverage cannot you verify?',
+        'synthetic-owner', 'owner', 'session-key',
+    )
+    assert 'Proxmox status: selected-scope partial.' in infrastructure_backup_answer, infrastructure_backup_answer
+    assert 'HADES BACKUP CHECKS' not in infrastructure_backup_answer, infrastructure_backup_answer
+    assert 'securely tie that Backup Check request to this chat' not in infrastructure_backup_answer, infrastructure_backup_answer
     assert direct_proxmox_backup(
         'Are my backups okay?', 'synthetic-household', 'household', 'session-key'
     ) is None

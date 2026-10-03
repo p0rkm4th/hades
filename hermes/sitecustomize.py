@@ -7001,9 +7001,13 @@ def _hades_direct_proxmox_backup_read(
         return None
     def _compose(proxmox_text):
         sections = ["PROXMOX VZDUMP:\n" + proxmox_text]
+        targeted_infrastructure = bool(re.search(
+            r"\b(?:homelab|homlab|home\s+lab|infrastructure|servers?|nodes?|computers?)\b",
+            text, re.IGNORECASE,
+        ))
         check_text = (
             _hades_phase2_backup_response(text, subject, scope, phase2_session_key)
-            if include_hades_checks else None
+            if include_hades_checks and not targeted_infrastructure else None
         )
         if check_text:
             sections.append("HADES BACKUP CHECKS:\n" + check_text)
