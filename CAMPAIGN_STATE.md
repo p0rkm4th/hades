@@ -39,6 +39,11 @@ of truth.
   resources have no verified cross-source identity link. Four configured Kuma
   probes report no failures (reachability only); all three inference catalogs
   respond without proving generation or GPU capacity.
+- Fresh owner backup dogfood received configured job and recent successful
+  task evidence from both Proxmox sources plus enabled repository backup
+  checks. Some returned tasks have no guest attribution, and task coverage is
+  limited to selected guests. HADES explicitly does not claim backup-content
+  integrity, off-site custody, or restoreability from this evidence.
 - Fresh authenticated owner UI dogfood asked where the game server runs.
   HADES reported that the NetBox application-service catalog is empty and did
   not guess intended or current placement. Household A's fresh game-health
