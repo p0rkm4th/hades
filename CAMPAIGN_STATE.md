@@ -161,8 +161,10 @@ belong in this public continuation file.
 
 ## Remaining evidence
 
-- Proxmox guest visibility remains limited by the read token's current scope;
-  unobserved guests stay unknown. Any permission expansion remains owner-gated.
+- Proxmox guest visibility remains limited by the configured read tokens;
+  unobserved guests stay unknown. The previously owner-approved VM.Audit scope
+  still needs effective-permission verification; any broader scope remains
+  gated.
 - NetBox's application-service coverage is incomplete, so some intended service
   placements cannot be established. HADES must report the gap rather than infer
   placement from hostnames, IPs, or container listings.
@@ -174,9 +176,9 @@ belong in this public continuation file.
 - Future activity comparison still needs a saved prior snapshot; recent task
   history is not a complete change log and host/service event sources are not
   connected. Source comparison must continue to say when identity links or
-  source coverage are incomplete. Model placement
-  remains unavailable until live per-host GPU telemetry and workload memory
-  requirements are known.
+  source coverage are incomplete. Linked-host GPU telemetry is available only
+  in the approved owner deployment, but model fit remains unconfirmed without
+  runtime memory requirements, context, quantization, and workload details.
 - Current broad status can identify responding sources and partial coverage;
   comprehensive network trends, full backup contents/custody, and successful
   inference execution are not established.
@@ -232,6 +234,11 @@ change requires a tested candidate, explicit scope, and rollback.
   were saved with mode `0600` outside the public repository.
 - A separate whole-homelab owner query completed in about 4.4 seconds in one
   fresh UI measurement; treat this as a sample, not a latency benchmark.
+- Fresh owner questions about resource use, recent change, and unverified
+  services returned bounded Proxmox metrics/task history and explicit source
+  gaps. Ranking is guest-scope only and partial; change history has no saved
+  before/after snapshot; service probes do not establish application readiness.
+  Each turn completed in about 4.4 seconds in a single UI sample.
 - Two follow-up routing defects were repaired from real UI evidence: pronoun
   placement now recomputes from current linked telemetry when conversation
   context is trimmed, and the adapter filters generated named-host questions

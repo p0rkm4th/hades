@@ -38,12 +38,15 @@ The optional read-only provider adapter queries Ollama installed model
 metadata and current residency, or an OpenAI-compatible endpoint's model
 catalog, with source timestamps and bounded errors. Synthetic tests cover
 linked NetBox identity, partial provider failure, and unsupported residency.
-Catalog reads are not generation probes and do not report free GPU memory.
-A direct development-runner probe has exercised approved private provider APIs
-and NetBox identity joins. Deployment-specific runtime and owner-acceptance
-evidence is maintained in the private infrastructure repository; this static
-capability matrix remains inventory evidence only and does not establish
-current utilization, free memory, or model placement.
+Catalog reads are not generation probes and do not report free GPU memory. The
+explicitly approved owner deployment separately reads current GPU utilization
+and free VRAM through a fixed-command, non-sudo, strict-host-key integration.
+Those point-in-time host samples do not prove successful inference or precise
+model fit. Other deployments remain unconfigured until they provide their own
+approved identities and read-only telemetry profile. Deployment-specific
+runtime and owner-acceptance evidence is maintained in the private
+infrastructure repository; this static capability matrix is not current
+capacity evidence.
 
 ## Current resource ranking
 

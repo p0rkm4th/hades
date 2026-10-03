@@ -242,3 +242,9 @@ failures, and 15 Proxmox/Kuma records still lack verified cross-source identity.
 The answer does not infer all-clear, app readiness, workload execution, or model
 capacity from those responses. Protected evidence remains in the private
 acceptance area.
+
+Other fresh owner checks report current Proxmox guest CPU/memory rankings with
+partial-scope and host/guest-overlap caveats, bounded recent task history without
+a saved before/after snapshot, and unverified services from the empty NetBox
+application-service catalog. Each response completed in about 4.4 seconds in
+one UI sample; this is not a benchmark.
