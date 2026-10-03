@@ -19,18 +19,17 @@ of truth.
   candidate was superseded by later follow-up-routing fixes.
 - Fixed-command, non-sudo GPU telemetry is active only in the explicitly
   approved owner deployment. Fresh persisted owner dogfood reports per-device
-  free VRAM/utilization for identity-linked Tartarus and Hypnos endpoints.
+  free VRAM/utilization for two identity-linked inference endpoints.
   Samples are point-in-time; host CPU load, inference execution, and model fit
   remain unverified. Other deployments remain unconfigured and owner-gated.
-- A fresh Hermes Compute catalog read succeeds, but HADES cannot currently
+- A fresh third inference provider catalog read succeeds, but HADES cannot currently
   resolve its configured identity link to a named current NetBox resource, so
   it fails closed and does not present host GPU telemetry for that endpoint.
   Nyx-4 has been asked to inspect NetBox visibility and canonical identity.
 - Named-node model-capacity requests now require one stable resource identity,
   then show only that host's linked inference endpoint and GPU readings. Fresh
-  owner “check Tartarus … room for another model” dogfood passed with all four
-  GPU samples and a no-fit-guarantee caveat; Household A/B received no host or
-  GPU details.
+  owner multi-intent capacity dogfood passed with four linked-device readings
+  and a no-fit-guarantee caveat; Household A/B received no host or GPU details.
 - The live broad owner summary reports partial Proxmox guest visibility and an
   empty NetBox application-service catalog. Agent Zero’s configured endpoint
   returned a bounded HTTP response, which does not prove task execution.
@@ -114,9 +113,9 @@ belong in this public continuation file.
   without live GPU data. The separately approved fixed-command telemetry is
   now active for identity-linked hosts. Candidate `3c6504c` fetches only the
   requested node's sample and removes contradictory “GPU not connected”
-  wording. Tartarus and Hypnos pass fresh persisted owner UI checks; Household
-  A/B remain generic. Hermes Compute still fails closed because its NetBox
-  identity does not resolve in current composed inventory. Hardware role and
+  wording. Two linked inference hosts pass fresh persisted owner UI checks;
+  Household A/B remain generic. A third provider endpoint still fails closed
+  because its NetBox identity does not resolve in current composed inventory. Hardware role and
   specifications remain historical; CPU load and actual inference execution
   are not verified.
 - The deployed household status boundary now uses plain language for “Why is

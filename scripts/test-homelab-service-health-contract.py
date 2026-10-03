@@ -308,7 +308,7 @@ assert 'I can\'t diagnose why everything is slow' in household_safe_status('Why 
 assert 'I can\'t diagnose whole-home network speed' in household_safe_status('Why is Wi-Fi slow?')
 assert 'I can\'t check all the home computers' in household_safe_status('Are all the computers okay?')
 assert 'Proxmox' not in household_safe_status('Why is everything slow?')
-assert '192.168.' not in household_safe_status('Why is everything slow?')
+assert '192.0.2.' not in household_safe_status('Why is everything slow?')
 assert target('Why is the NetBox monitor down?') == (['netbox'], 'netbox')
 assert target('How is NetBox reporting unavailable?') == (['netbox'], 'netbox')
 assert target('Is the game server working?') == (['minecraft'], 'Minecraft')

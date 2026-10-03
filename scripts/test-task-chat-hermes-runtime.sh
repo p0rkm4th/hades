@@ -146,11 +146,11 @@ assert hades._hades_homelab_named_node_capacity_target(
     "Check Compute Node A and tell me whether it has enough room for another model."
 ) == "Compute Node A"
 assert hades._hades_homelab_named_node_capacity_target(
-    "Can Hypnos host a 20 GB model?"
-) == "Hypnos"
+    "Can Synthetic GPU Node B host a 20 GB model?"
+) == "Synthetic GPU Node B"
 assert hades._hades_homelab_named_node_capacity_target(
-    "Will a 20 GB model fit on Hypnos?"
-) == "Hypnos"
+    "Will a 20 GB model fit on Synthetic GPU Node B?"
+) == "Synthetic GPU Node B"
 assert not hades._hades_homelab_named_node_capacity_target(
     "Where should I run another model?"
 )

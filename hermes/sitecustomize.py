@@ -4917,9 +4917,10 @@ def _hades_homelab_workload_host_target(user_text):
     if match:
         return " ".join(match.group("target").split()).strip(" .?!'’")
 
-    # Owner phrasings such as "Which Erebus guests can HADES currently see?"
-    # describe the same read-only per-host inventory as "What's running on
-    # Erebus?". Route them through the canonical Proxmox/NetBox/Kuma summary;
+    # Owner phrasings such as "Which hypervisor guests can HADES currently
+    # see?" describe the same read-only per-host inventory as "What's running
+    # on this hypervisor?". Route them through the canonical
+    # Proxmox/NetBox/Kuma summary;
     # otherwise the general machine-name matcher can answer from the narrower
     # HADES-managed sandbox registry and misleadingly return just that VM.
     patterns = (

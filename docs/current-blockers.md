@@ -151,8 +151,8 @@ Status: **PARTIAL**
   run `37152683615` passes. After rollback-ready deployment, a fresh owner
   answer includes the current largest single-GPU headroom and explicitly says
   it cannot confirm model fit. Household A/B answers remain generic.
-- Fresh named-node owner dogfood then found that “What’s Tartarus doing right
-  now?” still omitted the now-connected GPU sample and claimed GPU telemetry
+- Fresh named-node owner dogfood then found that a natural-language inference
+  node status question still omitted the now-connected GPU sample and claimed GPU telemetry
   was not connected. Candidate `3c6504c` requests telemetry only when stable
   inventory identity links the named node to an inference endpoint, formats
   only that endpoint’s live sample, and keeps host CPU load explicitly
