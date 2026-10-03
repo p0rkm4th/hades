@@ -887,7 +887,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         no_coverage = direct_read(
             'Are there any blockers in the homelab?', 'synthetic-owner', 'owner'
         )
-        assert "No service availability observations are available, so I can't confirm service health." in no_coverage, no_coverage
+        assert "No current service-availability observations were returned, so I can't confirm service health." in no_coverage, no_coverage
         assert 'No blocker was reported by the configured live sources.' not in no_coverage, no_coverage
 
         write_broad_summary([{
@@ -915,8 +915,9 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         covered = direct_read(
             'Are there any blockers in the homelab?', 'synthetic-owner', 'owner'
         )
-        assert 'No blocker was reported by the configured live sources.' in covered, covered
+        assert 'No blocker was reported by the configured live sources.' in covered, (covered, debug_logs[-4:])
         assert 'A responding probe does not prove application login' in covered, covered
+        assert 'Fresh configured Uptime Kuma probes responded for: HADES Core.' in covered, covered
         no_current_failures = direct_read('What is down?', 'synthetic-owner', 'owner')
         assert 'No fresh configured service probe is currently reporting a failure.' in no_current_failures, no_current_failures
         assert "Uptime Kuma's configured probes failed:" not in no_current_failures, no_current_failures
@@ -930,7 +931,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             'name': 'Search latency check', 'status': 'down', 'freshness': 'STALE',
         }])
         stale_down = direct_read('What is down?', 'synthetic-owner', 'owner')
-        assert 'No fresh service probe confirms a current failure.' in stale_down, stale_down
+        assert 'No fresh configured service probe is currently reporting a failure.' in stale_down, stale_down
+        assert 'Current service-probe status is stale or unknown for:' in stale_down, stale_down
         assert 'Search latency check (last reported down; stale)' in stale_down, stale_down
         write_broad_summary([{
             'name': 'HADES Core', 'status': 'up', 'freshness': 'FRESH',
@@ -1039,6 +1041,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         )
         source_outage = direct_read('Is everything okay?', 'synthetic-owner', 'owner')
         assert 'The live homelab view is partial.' in source_outage, source_outage
+        assert "No current service-availability observations were returned, so I can't confirm service health." in source_outage, source_outage
         assert 'Current source reads unavailable or degraded: NetBox.' in source_outage, source_outage
         assert 'Proxmox' in source_outage and 'Uptime Kuma' in source_outage, source_outage
         assert 'unreported nodes remain unknown' in source_outage, source_outage

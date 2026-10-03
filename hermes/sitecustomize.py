@@ -6713,15 +6713,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
             )
         monitor_groups = _hades_homelab_availability_groups(availability)
         down = monitor_groups["down"]
-        down_question = bool(re.search(
-            r"\b(?:what(?:['’]s|\s+is)\s+down|anything\s+down|"
-            r"what(?:['’]s|\s+is)\s+(?:offline|unavailable)|"
-            r"which\s+(?:services?|systems?|servers?)\s+(?:are\s+)?down)"
-            r"(?:\s+(?:right\s+now|currently|today|at\s+the\s+moment))?\b",
-            text, re.IGNORECASE,
-        ))
         if down:
-            response += " Uptime Kuma's configured probes failed: " + ", ".join(down) + "."
+            response += " Fresh configured Uptime Kuma probes are failing for: " + ", ".join(down[:4]) + "."
             netbox_api_responded = any(
                 isinstance(item, dict) and item.get("source") == "NetBox" and item.get("status") == "HEALTHY"
                 for item in (summary.get("sources", []) if isinstance(summary, dict) else [])
@@ -6751,19 +6744,20 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                     + ("its target has no verified identity link" if monitor_linkage == "unlinked" else "its target identity is not established by this read")
                     + ", so I can't tell whether that probe checks the inventory API itself."
                 )
-        elif down_question and monitor_groups["unknown"]:
+        up = monitor_groups["up"]
+        if up:
+            response += " Fresh configured Uptime Kuma probes responded for: " + ", ".join(up[:4]) + "."
+            response += " A responding probe does not prove application login, session, or workload readiness."
+        if monitor_groups["unknown"]:
             labels = [
                 f"{item['name']} (last reported {item['last_status']}; {item['freshness'].casefold()})"
                 for item in monitor_groups["unknown"][:8]
             ]
-            response += (
-                " No fresh service probe confirms a current failure. Current status is unknown for: "
-                + ", ".join(labels) + "."
-            )
-        elif down_question and availability:
+            response += " Current service-probe status is stale or unknown for: " + ", ".join(labels) + "."
+        if availability and not down:
             response += " No fresh configured service probe is currently reporting a failure."
         elif not availability:
-            response += " No service availability observations are available, so I can't confirm service health."
+            response += " No current service-availability observations were returned, so I can't confirm service health."
         if isinstance(summary, dict) and summary.get("identity_warnings"):
             response += (
                 " Some display names map to multiple resource identities, "
@@ -6809,21 +6803,10 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                         unlinked_count = 0
             if unlinked_count:
                 response += f" {unlinked_count} Proxmox or Uptime Kuma resources have no verified cross-source identity link, so I kept them separate."
-            unknown = monitor_groups["unknown"]
-            if unknown:
-                labels = [
-                    f"{item['name']} (last reported {item['last_status']}; {item['freshness'].casefold()})"
-                    for item in unknown
-                ]
-                response += " Current service-check results are unavailable for: " + ", ".join(labels) + "."
-            up = monitor_groups["up"]
-            if up:
-                response += " Uptime Kuma's configured probes responded for: " + ", ".join(up) + "."
-                response += " A responding probe does not prove application login, session, or workload readiness."
             conflicts = summary.get("conflicts", []) if isinstance(summary, dict) else []
             if conflicts:
                 response += " Source conflicts require attention for: " + ", ".join(str(item.get("name")) for item in conflicts if isinstance(item, dict)) + "."
-            if availability and not down and not conflicts and not unknown and not source_errors:
+            if availability and not down and not conflicts and not monitor_groups["unknown"] and not source_errors:
                 response += " No blocker was reported by the configured live sources."
             core = None
             for core_name in ("hades-core", "hades core"):
