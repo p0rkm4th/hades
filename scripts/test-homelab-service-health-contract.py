@@ -724,7 +724,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'deletions are not included' in recent_activity_answer, recent_activity_answer
         calls_before_household_change = len(registry_module.registry.calls)
         household_changes = direct_read(
-            'What changed since yesterday?', 'synthetic-household', 'household'
+            'What changed in the homelab since yesterday?', 'synthetic-household', 'household'
         )
         assert len(registry_module.registry.calls) == calls_before_household_change
         assert household_changes == "I can't verify private infrastructure changes from this account."

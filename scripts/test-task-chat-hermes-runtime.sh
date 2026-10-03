@@ -248,7 +248,7 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
 
     registry.calls.clear()
     household_change_status = household_agent.run_conversation(
-        "What changed since yesterday?", conversation_history=[]
+        "What changed in the homelab since yesterday?", conversation_history=[]
     )
     assert household_change_status.get("completed") is True, household_change_status
     assert household_change_status.get("api_calls") == 0, household_change_status
