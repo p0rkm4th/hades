@@ -740,7 +740,8 @@ try:
 finally:
     hades._hades_load_control_module = actual_control_loader
 assert owner_minecraft_location.get("completed") is True and owner_minecraft_location.get("api_calls") == 0, owner_minecraft_location
-assert "NetBox service inventory is empty" in owner_minecraft_location["final_response"], owner_minecraft_location
+assert "NetBox service catalog is empty" in owner_minecraft_location["final_response"], owner_minecraft_location
+assert "can't verify where that service is currently running" in owner_minecraft_location["final_response"], owner_minecraft_location
 assert "gamma-sandbox" not in owner_minecraft_location["final_response"] and "test-pve" not in owner_minecraft_location["final_response"], owner_minecraft_location
 assert household_minecraft_location.get("completed") is True and household_minecraft_location.get("api_calls") == 0, household_minecraft_location
 assert "can't provide internal host or address details" in household_minecraft_location["final_response"], household_minecraft_location

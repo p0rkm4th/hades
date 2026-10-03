@@ -7211,16 +7211,16 @@ def _hades_service_placement_response(user_text, service_catalog, scope=""):
     text = str(user_text or "")
     if not isinstance(service_catalog, dict):
         observed = _hades_agent_zero_runtime_placement_response(user_text, None, scope)
-        return observed or "I couldn't check the service inventory, so I can't verify where that service is intended to run."
+        return observed or "I couldn't check the service inventory, so I can't verify where that service is currently running or intended to run."
     status = str(service_catalog.get("status") or "UNKNOWN").upper()
     coverage = str(service_catalog.get("coverage") or "UNKNOWN").upper()
     rows = service_catalog.get("services")
     if status != "OK" or coverage not in {"COMPLETE", "EMPTY"} or not isinstance(rows, list):
         observed = _hades_agent_zero_runtime_placement_response(user_text, service_catalog, scope)
-        return observed or "The service inventory is unavailable or incomplete, so I can't verify where that service is intended to run."
+        return observed or "The service inventory is unavailable or incomplete, so I can't verify where that service is currently running or intended to run."
     if coverage == "EMPTY" or not rows:
         observed = _hades_agent_zero_runtime_placement_response(user_text, service_catalog, scope)
-        return observed or "The NetBox service inventory is empty, so I can't establish where that service is intended to run."
+        return observed or "The NetBox service catalog is empty, so I can't verify where that service is currently running or where it is intended to run."
     matches = [
         row for row in rows
         if isinstance(row, dict) and isinstance(row.get("name"), str)
@@ -7230,7 +7230,7 @@ def _hades_service_placement_response(user_text, service_catalog, scope=""):
         return "I found multiple matching service records, so I can't choose one placement safely."
     if not matches:
         observed = _hades_agent_zero_runtime_placement_response(user_text, service_catalog, scope)
-        return observed or "I couldn't find a matching service record in NetBox, so I can't verify its intended placement."
+        return observed or "I couldn't find a matching service record in NetBox, so I can't verify its current runtime or intended placement."
     row = matches[0]
     name = " ".join(str(row.get("name") or "service").split())[:100]
     parent = " ".join(str(row.get("parent_name") or "").split())[:100]

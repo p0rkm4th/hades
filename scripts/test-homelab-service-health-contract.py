@@ -354,6 +354,13 @@ assert 'incomplete' in placement_response(
 assert 'empty' in placement_response(
     'Where is Agent Zero?', {'status': 'OK', 'coverage': 'EMPTY', 'services': []}, 'owner'
 )
+empty_nextcloud_placement = placement_response(
+    'Where is Nextcloud running right now?',
+    {'status': 'OK', 'coverage': 'EMPTY', 'services': []}, 'owner'
+)
+assert 'service catalog is empty' in empty_nextcloud_placement, empty_nextcloud_placement
+assert "can't verify where that service is currently running" in empty_nextcloud_placement, empty_nextcloud_placement
+assert 'where it is intended to run' in empty_nextcloud_placement, empty_nextcloud_placement
 previous_agent_zero_url = os.environ.get('AGENT_ZERO_URL')
 os.environ['AGENT_ZERO_URL'] = 'http://127.0.0.1:7002/private-path'
 try:
