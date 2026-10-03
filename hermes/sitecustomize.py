@@ -6377,7 +6377,7 @@ def _hades_direct_proxmox_backup_read(
     if not re.search(r"\b(?:backup|backups|bakup|bakups)\b", text, re.IGNORECASE):
         return None
     if not allow_homelab_context and re.search(
-        r"\b(?:homelab|homlab|home\s+lab|proxmox|servers?|nodes?|computers?)\b",
+        r"\b(?:homelab|homlab|home\s+lab|servers?|nodes?|computers?)\b",
         text,
         re.IGNORECASE,
     ):

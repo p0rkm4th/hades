@@ -1518,6 +1518,12 @@ def format_homelab_backup_status(report: dict) -> str:
     sentences.append(
         "This covers Proxmox vzdump records only; it doesn't verify backup contents, other backup systems, off-site custody, or restoreability."
     )
+    retrieved_at = _bounded_text(report.get("retrieved_at"), 40)
+    sentences.append(
+        f"Source reads completed at {retrieved_at}."
+        if retrieved_at else
+        "Source read time is unavailable."
+    )
     return " ".join(sentences)
 
 

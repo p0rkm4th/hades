@@ -652,8 +652,6 @@ hades._hades_direct_homelab_tool_result = actual_homelab_tool_result
 proxmox_backup_calls = []
 def synthetic_proxmox_backup(text, subject, scope, session_key, *, allow_homelab_context=False, **_kwargs):
     proxmox_backup_calls.append((text, subject, scope, allow_homelab_context))
-    if "proxmox" in text.lower() and not allow_homelab_context:
-        return None
     return "PROXMOX VZDUMP: no configured jobs or recent archived tasks."
 hades._hades_direct_proxmox_backup_read = synthetic_proxmox_backup
 proxmox_backup_agent = agent_class(
@@ -666,10 +664,13 @@ proxmox_backup_status = proxmox_backup_agent.run_conversation(
 hades._hades_direct_proxmox_backup_read = actual_proxmox_backup_read
 assert proxmox_backup_status.get("completed") is True and proxmox_backup_status.get("api_calls") == 0, proxmox_backup_status
 assert "PROXMOX VZDUMP: no configured jobs" in proxmox_backup_status["final_response"], proxmox_backup_status
+assert "SERVER STATUS:" not in proxmox_backup_status["final_response"], proxmox_backup_status
 assert proxmox_backup_calls == [
     ("Are my Proxmox backups current?", owner, "owner", False),
-    ("Are my backups okay?", owner, "owner", True),
 ], proxmox_backup_calls
+assert hades._hades_direct_proxmox_backup_read(
+    "Are my Proxmox backups current?", beta, "household", "synthetic-backup-household"
+) is None
 generic_backup_calls = []
 def synthetic_generic_backup(text, subject, scope, session_key, *, allow_homelab_context=False, **_kwargs):
     generic_backup_calls.append((text, subject, scope, allow_homelab_context))

@@ -1151,8 +1151,12 @@ assert "private-user" not in json.dumps(backup_report)
 assert "private failure detail" not in json.dumps(backup_report)
 backup_text = server.format_homelab_backup_status(backup_report)
 assert "doesn't verify backup contents" in backup_text
+assert backup_report["retrieved_at"] in backup_text, backup_text
 assert backup_report["formatted_summary"] == backup_text, backup_report
 assert "private" not in backup_text
+backup_without_read_time = dict(backup_report)
+backup_without_read_time.pop("retrieved_at", None)
+assert "Source read time is unavailable" in server.format_homelab_backup_status(backup_without_read_time)
 
 def empty_backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/cluster/backup"):
