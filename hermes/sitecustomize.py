@@ -5351,7 +5351,31 @@ def _hades_homelab_unlinked_identity_response(summary):
         ]
         if sources:
             name = " ".join(str(resource.get("name") or "Unnamed source record").split())[:80]
-            rows.append(f"{name} ({' + '.join(sources)})")
+            source_details = []
+            if "Proxmox" in sources:
+                runtime = resource.get("runtime") if isinstance(resource.get("runtime"), dict) else {}
+                vmid = runtime.get("vmid")
+                guest_type = str(runtime.get("type") or "").upper()
+                node = " ".join(str(runtime.get("node") or "").split())[:64]
+                if isinstance(vmid, int) and not isinstance(vmid, bool) and vmid > 0:
+                    detail = f"Proxmox {guest_type + ' ' if guest_type in {'QEMU', 'LXC'} else ''}guest VMID {vmid}"
+                    if node:
+                        detail += f" on {node}"
+                    source_details.append(detail)
+                else:
+                    source_details.append("Proxmox")
+            if "Uptime Kuma" in sources:
+                identities = source_identities.get("kuma") or []
+                monitor_ids = []
+                for source_identity in identities[:4]:
+                    match = re.fullmatch(r"kuma:monitor:([1-9][0-9]{0,19})", str(source_identity))
+                    if match:
+                        monitor_ids.append(match.group(1))
+                source_details.append(
+                    "Uptime Kuma monitor ID " + ", ".join(monitor_ids)
+                    if monitor_ids else "Uptime Kuma"
+                )
+            rows.append(f"{name} ({'; '.join(source_details)})")
     if reported == 0:
         return "The current source read found no unlinked Proxmox or Uptime Kuma records."
     if not rows:

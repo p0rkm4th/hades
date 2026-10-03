@@ -733,10 +733,31 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'not a lab-wide agreement or all-clear' in conflict_answer, conflict_answer
         assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
         registry_module.registry.calls.clear()
+        write_broad_summary([], status='PARTIAL', source_counts={
+            'identity_unlinked_resources': 2,
+        }, resources=[
+            {
+                'name': 'Synthetic Guest A',
+                'identity': {
+                    'status': 'UNLINKED', 'canonical_id': None,
+                    'source_identities': {'proxmox': ['proxmox:synthetic-pve:qemu:802'], 'kuma': []},
+                },
+                'runtime': {'type': 'qemu', 'vmid': 802, 'node': 'synthetic-pve'},
+            },
+            {
+                'name': 'Synthetic Host Monitor',
+                'identity': {
+                    'status': 'UNLINKED', 'canonical_id': None,
+                    'source_identities': {'proxmox': [], 'kuma': ['kuma:monitor:17']},
+                },
+            },
+        ])
         unlinked_answer = direct_read(
             'Which source records are still unlinked?', 'synthetic-owner', 'owner'
         )
-        assert unlinked_answer and 'unlinked' in unlinked_answer.casefold(), unlinked_answer
+        assert unlinked_answer and 'without a verified cross-source identity link' in unlinked_answer, unlinked_answer
+        assert 'Synthetic Guest A (Proxmox QEMU guest VMID 802 on synthetic-pve)' in unlinked_answer, unlinked_answer
+        assert 'Synthetic Host Monitor (Uptime Kuma monitor ID 17)' in unlinked_answer, unlinked_answer
         assert len(registry_module.registry.calls) == 1 and registry_module.registry.calls[0][0].endswith('homelab_summary'), registry_module.registry.calls
         registry_module.registry.calls.clear()
         assert "can't verify private infrastructure or computer status" in direct_read(
