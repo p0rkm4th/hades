@@ -552,6 +552,55 @@ finally:
 assert failed_capacity.get("completed") is True and failed_capacity.get("api_calls") == 0, failed_capacity
 assert "can't verify current GPU capacity" in failed_capacity["final_response"], failed_capacity
 assert "live per-host GPU utilization and free-VRAM telemetry is unavailable" in failed_capacity["final_response"], failed_capacity
+actual_workdir = os.environ.get("HADES_HERMES_WORKING_DIRECTORY")
+actual_integrations_root = os.environ.get("HADES_INTEGRATIONS_ROOT")
+actual_homelab_tool_result = hades._hades_direct_homelab_tool_result
+with tempfile.TemporaryDirectory(prefix="hades-versioned-homelab-adapter-") as temp_root:
+    root = Path(temp_root) / "generated"
+    stale = Path(temp_root) / "stale-checkout"
+    active_adapter = root / "integrations" / "homelab-readonly-v2" / "server.py"
+    stale_adapter = stale / "integrations" / "homelab-readonly" / "server.py"
+    profile = root / "profile" / "profiles" / "hades" / "config.yaml"
+    active_adapter.parent.mkdir(parents=True)
+    stale_adapter.parent.mkdir(parents=True)
+    profile.parent.mkdir(parents=True)
+    active_adapter.write_text(
+        'def format_inference_inventory_response(*args): return "active profile adapter"\n',
+        encoding="utf-8",
+    )
+    stale_adapter.write_text(
+        'def format_inference_inventory_response(text, inventory, summary): return "stale checkout adapter"\n',
+        encoding="utf-8",
+    )
+    profile.write_text(
+        "mcp_servers:\n  homelab-readonly:\n    args:\n      - "
+        + json.dumps(str(active_adapter)) + "\n",
+        encoding="utf-8",
+    )
+    os.environ["HADES_INTEGRATIONS_ROOT"] = str(root)
+    os.environ["HADES_HERMES_WORKING_DIRECTORY"] = str(stale)
+    def synthetic_versioned_adapter_result(tool_name, arguments=None):
+        if tool_name == "homelab_inference_inventory":
+            return {"status": "READABLE", "endpoints": []}
+        if tool_name == "homelab_gpu_telemetry":
+            return {"status": "NOT_CONFIGURED", "endpoints": []}
+        raise AssertionError("unexpected homelab tool: " + tool_name)
+    hades._hades_direct_homelab_tool_result = synthetic_versioned_adapter_result
+    try:
+        versioned_adapter_answer = hades._hades_direct_homelab_read(
+            "Which GPUs are free right now?", "synthetic-owner", "owner",
+        )
+    finally:
+        hades._hades_direct_homelab_tool_result = actual_homelab_tool_result
+        if actual_workdir is None:
+            os.environ.pop("HADES_HERMES_WORKING_DIRECTORY", None)
+        else:
+            os.environ["HADES_HERMES_WORKING_DIRECTORY"] = actual_workdir
+        if actual_integrations_root is None:
+            os.environ.pop("HADES_INTEGRATIONS_ROOT", None)
+        else:
+            os.environ["HADES_INTEGRATIONS_ROOT"] = actual_integrations_root
+assert versioned_adapter_answer == "active profile adapter", versioned_adapter_answer
 os.environ.pop("HADES_TEST_INFERENCE_ONLY", None)
 
 # Ordinary status wording should stay on the same deterministic, read-only

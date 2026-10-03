@@ -5346,6 +5346,55 @@ def _hades_homelab_provenance_followup(user_text, context_text=""):
     )
 
 
+def _hades_resolve_homelab_adapter_path():
+    """Resolve the formatter module from the active Hermes profile first.
+
+    Production may run Hermes from a checkout that is older than the generated
+    integration bundle. The registered MCP reader's command path is the
+    deployment source of truth for the adapter version in that case.
+    """
+    configured_root = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
+    if configured_root:
+        profile_path = Path(configured_root) / "profile" / "profiles" / "hades" / "config.yaml"
+        if profile_path.is_file():
+            try:
+                import yaml
+                document = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError, UnicodeError):
+                document = None
+            servers = document.get("mcp_servers") if isinstance(document, dict) else None
+            server = servers.get("homelab-readonly") if isinstance(servers, dict) else None
+            args = server.get("args") if isinstance(server, dict) else None
+            configured_paths = [
+                arg for arg in args if isinstance(arg, str)
+                and "homelab-readonly" in arg
+                and arg.rstrip("/").endswith("server.py")
+            ] if isinstance(args, list) else []
+            if len(configured_paths) == 1:
+                candidate = Path(os.path.expandvars(configured_paths[0])).expanduser()
+                if not candidate.is_absolute():
+                    candidate = Path(configured_root) / candidate
+                if candidate.is_file():
+                    return candidate
+                _hades_logger.warning(
+                    "Configured read-only homelab adapter path is unavailable"
+                )
+                return None
+
+    workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
+    if not workdir:
+        workdir = os.getcwd()
+    if workdir:
+        candidate = Path(workdir) / "integrations" / "homelab-readonly" / "server.py"
+        if candidate.is_file():
+            return candidate
+    if configured_root:
+        candidate = Path(configured_root) / "integrations" / "homelab-readonly" / "server.py"
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def _hades_direct_homelab_read(user_text, subject="", scope="", context_text=""):
     """Answer simple owner homelab-status questions from canonical read sources.
 
@@ -5356,6 +5405,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     or provisioning requests.
     """
     text = str(user_text or "")
+    workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
+    if not workdir:
+        workdir = os.getcwd()
     named_node_check_target = _hades_homelab_named_check_target(text)
     followup_prompt = _hades_homelab_followup_prompt(text, scope, context_text)
     if followup_prompt and followup_prompt.casefold() != text.casefold():
@@ -5523,30 +5575,10 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 )
             return "I couldn't verify whether the AI service is available right now."
         return "Detailed model and infrastructure information is available only in an owner session."
-    workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
-    if not workdir:
-        # The generated service already runs from the reconciled repository;
-        # use that deployment contract when the protected env omits the
-        # operator-only variable.
-        workdir = os.getcwd()
-    if not workdir:
-        return None
     try:
-        from pathlib import Path
         import importlib.util
-
-        adapter = Path(workdir) / "integrations" / "homelab-readonly" / "server.py"
-        if not adapter.is_file():
-            # Hermes may change cwd during gateway bootstrap. Use only the
-            # explicitly configured installed integration root as fallback.
-            configured_root = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
-            if not configured_root:
-                return None
-            deployed_root = Path(configured_root)
-            candidate = deployed_root / "integrations" / "homelab-readonly" / "server.py"
-            if candidate.is_file():
-                adapter = candidate
-        if not adapter.is_file():
+        adapter = _hades_resolve_homelab_adapter_path()
+        if adapter is None:
             return None
         if str(adapter.parent) not in __import__("sys").path:
             __import__("sys").path.insert(0, str(adapter.parent))

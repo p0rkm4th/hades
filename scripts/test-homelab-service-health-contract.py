@@ -25,6 +25,7 @@ tree = ast.parse(source)
 wanted = {
     '_hades_service_health_target', '_hades_service_monitor_response',
     '_hades_homelab_availability_groups', '_hades_direct_homelab_read',
+    '_hades_resolve_homelab_adapter_path',
     '_hades_direct_homelab_tool_result',
     '_hades_homelab_recent_activity_response',
     '_hades_homelab_workloads_on_host_response',
