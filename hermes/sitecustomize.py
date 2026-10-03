@@ -5332,6 +5332,17 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
         if winners:
             _, winner = max(winners, key=lambda item: item[0])
             return f"Can {winner} host another model?"
+        comparison_at = history.casefold().rfind("which one has more room")
+        if comparison_at >= 0:
+            compared = [
+                (last_occurrence(history[:comparison_at], name), name)
+                for name in names
+            ]
+            compared = [(position, name) for position, name in compared if position >= 0]
+            recent_hosts = [name for _, name in sorted(compared)[-2:]]
+            live_winner = _hades_homelab_live_capacity_winner(summary, recent_hosts)
+            if live_winner:
+                return f"Can {live_winner} host another model?"
     if not target:
         if placement_size:
             return f"Where should I run a {placement_size.group('size')} GB model?"
@@ -5930,6 +5941,59 @@ def _hades_homelab_named_node_capacity_target(text):
         if match:
             return " ".join(match.group("target").split())
     return ""
+
+
+def _hades_homelab_live_capacity_winner(summary, candidate_names):
+    """Select a comparison winner only from fresh linked host GPU samples."""
+    if not isinstance(summary, dict) or not isinstance(candidate_names, list) or len(candidate_names) < 2:
+        return ""
+    resources = summary.get("resources", [])
+    canonical_names = {}
+    for resource in resources if isinstance(resources, list) else []:
+        if not isinstance(resource, dict):
+            continue
+        identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
+        inventory = resource.get("inventory") if isinstance(resource.get("inventory"), dict) else {}
+        canonical_id = identity.get("canonical_id")
+        name = inventory.get("name") or resource.get("name")
+        if canonical_id and name:
+            canonical_names.setdefault(canonical_id, []).append(" ".join(str(name).split()))
+    candidate_keys = {_hades_homelab_name_key(name) for name in candidate_names}
+    inference = _hades_direct_homelab_tool_result("homelab_inference_inventory")
+    telemetry = _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
+    if not isinstance(inference, dict) or not isinstance(telemetry, dict):
+        return ""
+    if str(telemetry.get("status") or "").upper() not in {"READABLE", "PARTIAL"}:
+        return ""
+    samples = {
+        str(row.get("inference_id") or ""): row
+        for row in telemetry.get("endpoints", []) if isinstance(row, dict)
+    }
+    scores = {}
+    for endpoint in inference.get("endpoints", []) if isinstance(inference.get("endpoints"), list) else []:
+        if not isinstance(endpoint, dict) or endpoint.get("identity_status") != "LINKED":
+            continue
+        labels = canonical_names.get(endpoint.get("node_identity"), [])
+        if len(labels) != 1 or _hades_homelab_name_key(labels[0]) not in candidate_keys:
+            continue
+        source_identity = str(endpoint.get("source_identity") or "")
+        inference_id = source_identity.removeprefix("inference:") if source_identity.startswith("inference:") else ""
+        sample = samples.get(inference_id)
+        if not inference_id or not isinstance(sample, dict) or sample.get("status") != "READABLE":
+            continue
+        free_values = [
+            device.get("memory_free_mib")
+            for device in sample.get("devices", []) if isinstance(device, dict)
+            and isinstance(device.get("memory_free_mib"), int)
+            and not isinstance(device.get("memory_free_mib"), bool)
+        ]
+        if free_values:
+            scores[labels[0]] = max(free_values)
+    if not scores:
+        return ""
+    best = max(scores.values())
+    winners = [name for name, value in scores.items() if value == best]
+    return winners[0] if len(winners) == 1 else ""
 
 
 def _hades_homelab_explicit_model_fit_response(user_text, telemetry, inference=None, summary=None):

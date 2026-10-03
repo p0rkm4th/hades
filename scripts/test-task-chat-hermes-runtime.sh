@@ -1728,6 +1728,34 @@ finally:
     hades._hades_direct_homelab_tool_result = original_followup_summary_read
 assert selected_capacity_target == "Can Compute Node B host another model?", selected_capacity_target
 assert selected_size_target == "Can Compute Node B host a 20 GB model?", selected_size_target
+fallback_capacity_results = {
+    "homelab_summary": comparison_followup_summary,
+    "homelab_inference_inventory": {"status": "READABLE", "endpoints": [
+        {"source_identity": "inference:lane-a", "node_identity": "netbox:device:7", "identity_status": "LINKED"},
+        {"source_identity": "inference:lane-b", "node_identity": "netbox:device:8", "identity_status": "LINKED"},
+    ]},
+    "homelab_gpu_telemetry": {"status": "READABLE", "endpoints": [
+        {"inference_id": "lane-a", "status": "READABLE", "devices": [{"memory_free_mib": 3000}]},
+        {"inference_id": "lane-b", "status": "READABLE", "devices": [{"memory_free_mib": 8000}]},
+    ]},
+}
+fallback_followup_calls = []
+def fallback_followup_tool(name, *_args, **_kwargs):
+    fallback_followup_calls.append(name)
+    return fallback_capacity_results.get(name, {"status": "NOT_CONFIGURED", "endpoints": []})
+hades._hades_direct_homelab_tool_result = fallback_followup_tool
+try:
+    live_winner_followup = hades._hades_homelab_followup_prompt(
+        "Could I put another model there?", "owner",
+        "What's wrong with Compute Node A?\nWhat about Compute Node B?\n"
+        "Which one has more room?\nCould I put another model there?",
+    )
+finally:
+    hades._hades_direct_homelab_tool_result = original_followup_summary_read
+assert live_winner_followup == "Can Compute Node B host another model?", live_winner_followup
+assert fallback_followup_calls == [
+    "homelab_summary", "homelab_inference_inventory", "homelab_gpu_telemetry",
+], fallback_followup_calls
 explicit_fit_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-explicit-model-fit",
     stream_delta_callback=lambda _chunk: None, **kwargs,

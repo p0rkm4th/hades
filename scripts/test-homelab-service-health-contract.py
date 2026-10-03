@@ -51,6 +51,7 @@ wanted = {
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_explicit_model_fit_intent',
     '_hades_homelab_named_node_capacity_target',
+    '_hades_homelab_live_capacity_winner',
     '_hades_homelab_explicit_model_fit_response',
     '_hades_homelab_network_diagnostic_response',
     '_hades_homelab_source_identity_intent',
