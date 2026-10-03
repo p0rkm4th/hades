@@ -1979,7 +1979,14 @@ def format_inference_inventory_response(
         r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b",
         str(user_text or ""), re.IGNORECASE,
     ))
-    placement_intent = bool(re.search(
+    named_node_capacity_match = re.search(
+        r"\b(?:check|inspect|look\s+at)\s+(?:the\s+)?"
+        r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+(?:\band\b|,)"
+        r".{0,100}\b(?:enough\s+)?(?:room|capacity|headroom|space)\b"
+        r".{0,40}\b(?:another|new)\s+(?:ai\s+)?models?\b",
+        str(user_text or ""), re.IGNORECASE,
+    )
+    placement_intent = bool(named_node_capacity_match or re.search(
         r"\b(?:will|would|can|could)\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+model\b.{0,50}\b(?:fit|run|work)\b|"
         r"\b(?:will|would|can|could)\b.{0,80}\b(?:fit|run|host|handle)\b.{0,50}\d+(?:\.\d+)?\s*(?:gb|gib)(?:\s+(?:sized\s+)?model)?\b|"
         r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
@@ -2264,6 +2271,32 @@ def format_inference_inventory_response(
         )
 
     if placement_intent:
+        named_target_match = named_node_capacity_match
+        requested_node_identity = None
+        requested_node_label = ""
+        placement_endpoints = endpoints[:16]
+        if named_target_match:
+            requested_name = re.sub(r"[^a-z0-9]+", "", named_target_match.group("target").casefold())
+            matched_resources = [
+                (identity, label) for identity, label in resource_names.items()
+                if isinstance(label, str)
+                and re.sub(r"[^a-z0-9]+", "", label.casefold()) == requested_name
+            ]
+            if len(matched_resources) != 1:
+                return (
+                    f"I can't check current model headroom for {named_target_match.group('target').strip()}: "
+                    "the name does not resolve to exactly one stable inventory identity."
+                )
+            requested_node_identity, requested_node_label = matched_resources[0]
+            placement_endpoints = [
+                endpoint for endpoint in placement_endpoints
+                if isinstance(endpoint, dict) and endpoint.get("node_identity") == requested_node_identity
+            ]
+            if not placement_endpoints:
+                return (
+                    f"I can't check current model headroom for {requested_node_label}: "
+                    "no configured inference endpoint is linked to that stable inventory identity."
+                )
         candidates = []
         capability_machines = (
             summary.get("capability_machines", []) if isinstance(summary, dict) else []
@@ -2272,7 +2305,7 @@ def format_inference_inventory_response(
             re.sub(r"[^a-z0-9]+", "", str(machine.get("name") or "").casefold()): machine
             for machine in capability_machines if isinstance(machine, dict)
         }
-        for endpoint in endpoints[:16]:
+        for endpoint in placement_endpoints:
             if (
                 not isinstance(endpoint, dict)
                 or endpoint.get("status") not in {"READABLE", "PARTIAL"}
@@ -2301,6 +2334,8 @@ def format_inference_inventory_response(
                 loaded, loaded_state, models, str(endpoint.get("status") or "UNKNOWN").upper(),
             ))
         if not candidates:
+            if requested_node_label:
+                return f"I can't check current model headroom for {requested_node_label}: its linked inference endpoint isn't responding."
             return (
                 "I can't recommend an inference host from the current reads: no responding "
                 "provider endpoint is linked to a named inventory device."
@@ -2351,6 +2386,11 @@ def format_inference_inventory_response(
                 if isinstance(endpoint, dict)
                 and str(endpoint.get("source_identity") or "").removeprefix("inference:") == inference_id
             ), None)
+            if requested_node_identity and (
+                not isinstance(provider_endpoint, dict)
+                or provider_endpoint.get("node_identity") != requested_node_identity
+            ):
+                continue
             label = resource_names.get(provider_endpoint.get("node_identity")) if isinstance(provider_endpoint, dict) else None
             if not isinstance(label, str) or not label:
                 continue
@@ -2359,6 +2399,20 @@ def format_inference_inventory_response(
                 if isinstance(device, dict) and isinstance(device.get("memory_free_mib"), int):
                     live_readings.append((device["memory_free_mib"], label, device.get("index"), device.get("gpu_utilization_percent")))
         if live_readings:
+            if requested_node_label:
+                checked_at = str(telemetry.get("retrieved_at") or "check time unavailable")
+                details = "; ".join(
+                    f"GPU {index}: {free_mib} MiB free"
+                    + (f", {utilization}% utilization" if isinstance(utilization, int) else "")
+                    for free_mib, _label, index, utilization in live_readings
+                )
+                response += (
+                    f" Live point-in-time readings for {requested_node_label} (checked {checked_at}): "
+                    + details
+                    + ". This does not confirm another model will fit; runtime memory depends on model, "
+                    "quantization, context, KV cache, provider placement, and other workload."
+                )
+                return response
             free_mib, label, gpu_index, utilization = max(live_readings, key=lambda row: row[0])
             checked_at = str(telemetry.get("retrieved_at") or "check time unavailable")
             response += (
@@ -2375,6 +2429,11 @@ def format_inference_inventory_response(
             )
         if telemetry.get("status") == "PARTIAL":
             response += " GPU telemetry is partial and no linked live device reading was available for comparison."
+        if requested_node_label:
+            return (
+                response + f" I can't verify current GPU headroom for {requested_node_label}: "
+                "no live per-device telemetry was returned for its linked endpoint."
+            )
         return (
             response + " I can't rank a host for another model because live per-host "
             "GPU load and free VRAM aren't connected, and the model's runtime memory "

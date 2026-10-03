@@ -5890,6 +5890,18 @@ def _hades_homelab_explicit_model_fit_intent(text):
     )
 
 
+def _hades_homelab_named_node_capacity_target(text):
+    """Extract a named host from a bounded status-plus-capacity question."""
+    match = re.search(
+        r"\b(?:check|inspect|look\s+at)\s+(?:the\s+)?"
+        r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+(?:\band\b|,)"
+        r".{0,100}\b(?:enough\s+)?(?:room|capacity|headroom|space)\b"
+        r".{0,40}\b(?:another|new)\s+(?:ai\s+)?models?\b",
+        str(text or ""), re.IGNORECASE,
+    )
+    return " ".join(match.group("target").split()) if match else ""
+
+
 def _hades_homelab_explicit_model_fit_response(user_text, telemetry):
     """Report live GPU headroom without treating it as a model-fit guarantee."""
     match = re.search(r"\b(\d+(?:\.\d+)?)\s*(?:gb|gib)\s+model\b", str(user_text or ""), re.IGNORECASE)
@@ -6299,7 +6311,10 @@ def _hades_direct_homelab_read(
             re.IGNORECASE,
         )
     )
-    if scope != "owner" and household_private_placement_intent:
+    household_private_capacity_intent = bool(
+        scope != "owner" and _hades_homelab_named_node_capacity_target(text)
+    )
+    if scope != "owner" and (household_private_placement_intent or household_private_capacity_intent):
         return "I can't provide internal host or address details from this account."
     if scope != "owner" and resource_ranking_intent:
         return "Live infrastructure resource details are available only in an owner session."
@@ -6356,7 +6371,7 @@ def _hades_direct_homelab_read(
         r"\b(?:how\s+busy|how\s+much\s+load)\s+(?:is|does)\s+(?P<target2>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         text, re.IGNORECASE,
     )
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not gpu_execution_intent and not workload_host_target and not node_load_match and not _hades_homelab_explicit_model_fit_intent(text) and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not gpu_execution_intent and not workload_host_target and not node_load_match and not _hades_homelab_explicit_model_fit_intent(text) and not _hades_homelab_named_node_capacity_target(text) and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -6393,7 +6408,8 @@ def _hades_direct_homelab_read(
     ) or named_node_check_target)
     if node_load_match:
         node_activity_intent = True
-    placement_intent = _hades_homelab_explicit_model_fit_intent(text) or bool(re.search(
+    named_node_capacity_target = _hades_homelab_named_node_capacity_target(text)
+    placement_intent = bool(named_node_capacity_target) or _hades_homelab_explicit_model_fit_intent(text) or bool(re.search(
         r"\bcompare\s+current\s+model\s+residency\s+and\s+gpu\s+capacity\s+on\b|"
         r"\bwhich\s+(?:one\s+)?(?:has\s+)?more\s+room\b|"
         r"\bwhich\s+(?:host|machine|server|gpu)\b.{0,45}\b(?:has|have)\s+more\s+(?:room|capacity)\b|"
@@ -6505,9 +6521,9 @@ def _hades_direct_homelab_read(
                 text, re.IGNORECASE,
             )) or placement_intent
             node_gpu_telemetry_intent = False
-            if node_activity_intent and scope == "owner":
+            if (node_activity_intent or named_node_capacity_target) and scope == "owner":
                 node_target_key = _hades_homelab_name_key(
-                    _hades_homelab_target_from_question(text)
+                    named_node_capacity_target or _hades_homelab_target_from_question(text)
                 )
                 resources = summary.get("resources", []) if isinstance(summary, dict) else []
                 target_identities = set()

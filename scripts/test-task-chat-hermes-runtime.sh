@@ -142,6 +142,12 @@ assert "do not verify driver health, GPU execution" in gpu_execution_report, gpu
 assert "2026-10-03T12:34:56Z" in gpu_execution_report, gpu_execution_report
 assert hades._hades_homelab_explicit_model_fit_intent("Will a 20 GB model fit on Compute Node A?")
 assert hades._hades_homelab_explicit_model_fit_intent("Can Compute Node A host a 20 GB model?")
+assert hades._hades_homelab_named_node_capacity_target(
+    "Check Compute Node A and tell me whether it has enough room for another model."
+) == "Compute Node A"
+assert not hades._hades_homelab_named_node_capacity_target(
+    "Where should I run another model?"
+)
 assert not hades._hades_homelab_explicit_model_fit_intent("What is a 20 GB model?")
 unavailable_model_fit = hades._hades_homelab_explicit_model_fit_response(
     "Will a 20 GB model fit on Compute Node A?", {"status": "NOT_CONFIGURED", "endpoints": []},
@@ -1580,6 +1586,41 @@ assert "6000 MiB free of 8192 MiB, 35% utilization" in direct_node_gpu_activity,
 assert "host CPU load remains unmeasured" in direct_node_gpu_activity, direct_node_gpu_activity
 assert "current GPU sample is shown above" in direct_node_gpu_activity, direct_node_gpu_activity
 assert "does not measure host CPU/GPU utilization" not in direct_node_gpu_activity, direct_node_gpu_activity
+named_capacity_tool_calls = []
+original_named_capacity_tool_result = hades._hades_direct_homelab_tool_result
+def synthetic_named_capacity_tool_result(tool_name, *_args, **_kwargs):
+    named_capacity_tool_calls.append(tool_name)
+    return synthetic_node_gpu_results[tool_name]
+hades._hades_direct_homelab_tool_result = synthetic_named_capacity_tool_result
+os.environ["HADES_TEST_FOLLOWUP_NODE"] = "1"
+try:
+    direct_named_capacity = hades._hades_direct_homelab_read(
+        "Check Compute Node A and tell me whether it has enough room for another model.",
+        owner, "owner",
+    )
+finally:
+    hades._hades_direct_homelab_tool_result = original_named_capacity_tool_result
+    os.environ.pop("HADES_TEST_FOLLOWUP_NODE", None)
+assert named_capacity_tool_calls == [
+    "homelab_inference_inventory", "homelab_owner_snapshot", "homelab_gpu_telemetry",
+], named_capacity_tool_calls
+assert "Compute Node A" in direct_named_capacity and "6000 MiB free" in direct_named_capacity, direct_named_capacity
+assert "does not confirm another model will fit" in direct_named_capacity, direct_named_capacity
+assert "gpu 1" not in direct_named_capacity.casefold(), direct_named_capacity
+household_capacity_tool_calls = []
+def forbidden_household_capacity_read(*args, **kwargs):
+    household_capacity_tool_calls.append(args[0] if args else "unknown")
+    raise AssertionError("household named-node capacity must not query owner infrastructure")
+hades._hades_direct_homelab_tool_result = forbidden_household_capacity_read
+try:
+    household_named_capacity = hades._hades_direct_homelab_read(
+        "Check Compute Node A and tell me whether it has enough room for another model.",
+        beta, "household",
+    )
+finally:
+    hades._hades_direct_homelab_tool_result = original_named_capacity_tool_result
+assert household_capacity_tool_calls == [], household_capacity_tool_calls
+assert "owner session" in household_named_capacity.casefold() or "can't provide internal" in household_named_capacity.casefold(), household_named_capacity
 original_direct_homelab_tool_result = hades._hades_direct_homelab_tool_result
 try:
     hades._hades_direct_homelab_tool_result = lambda name, *_args, **_kwargs: (
@@ -1981,6 +2022,8 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '        return "All 1 configured AI provider checks are responding to catalog reads. I haven\'t tested a generation, so I can\'t confirm the AI can answer a prompt right now."\n'
         '    if "compute node a" in question.casefold() and "doing" in question.casefold() and isinstance(_gpu_telemetry, dict) and _gpu_telemetry.get("status") == "READABLE":\n'
         '        return "Live host GPU sample: 6000 MiB free of 8192 MiB, 35% utilization. Host CPU load remains unknown."\n'
+        '    if "compute node a" in question.casefold() and "room for another model" in question.casefold() and isinstance(_gpu_telemetry, dict) and _gpu_telemetry.get("status") == "READABLE":\n'
+        '        return "Compute Node A GPU 0 has 6000 MiB free. This does not confirm another model will fit."\n'
         '    if "gpu" in question.casefold() or "another model" in question.casefold():\n'
         '        return "I can\'t determine which GPU has room or whether another model will fit. Live telemetry is not connected."\n'
         '    return "sample:small is listed at Compute Node A. Loaded now. A generation request was not made."\n',
