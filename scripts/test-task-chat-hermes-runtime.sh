@@ -21,6 +21,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import json
 from pathlib import Path
 
 repo = Path(sys.argv[1]).resolve()
@@ -96,6 +97,16 @@ assert not hades._hades_positive_homelab_control_request(
     "Check the homelab and do not change anything."
 )
 assert hades._hades_positive_homelab_control_request("Restart the synthetic server.")
+assert hades._hades_service_placement_intent(
+    "Where is the Minecraft server running?", "owner"
+)
+assert not hades._hades_managed_server_status_intent(
+    "Where is the Minecraft server running?", "owner"
+)
+assert not hades._hades_managed_server_status_intent(
+    "Where is the Minecraft server running?", "household"
+)
+assert hades._hades_managed_server_status_intent("Show my managed server status", "owner")
 household_model_denial = hades._hades_direct_homelab_read(
     "What models are available?", scope="household",
 )
@@ -358,6 +369,42 @@ owner_server_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-server-overview",
     stream_delta_callback=lambda _chunk: None, **kwargs,
 )
+class SyntheticManagedGuestControl:
+    def list_managed_guests(self):
+        return {"status": "READY", "guests": [{
+            "name": "gamma-sandbox", "status": "running", "node": "test-pve", "vmid": 900,
+        }]}
+
+control_loader_calls = []
+actual_control_loader = hades._hades_load_control_module
+def synthetic_control_loader():
+    control_loader_calls.append("list_managed_guests")
+    return SyntheticManagedGuestControl()
+hades._hades_load_control_module = synthetic_control_loader
+try:
+    owner_minecraft_location_agent = agent_class(
+        gateway_session_key=f"hades-user-{owner}", session_id="synthetic-minecraft-location-owner",
+        stream_delta_callback=lambda _chunk: None, **kwargs,
+    )
+    owner_minecraft_location = owner_minecraft_location_agent.run_conversation(
+        "Where is the Minecraft server running?", conversation_history=[]
+    )
+    household_minecraft_location_agent = agent_class(
+        gateway_session_key=f"hades-user-{beta}", session_id="synthetic-minecraft-location-household",
+        stream_delta_callback=lambda _chunk: None, **kwargs,
+    )
+    household_minecraft_location = household_minecraft_location_agent.run_conversation(
+        "Where is the Minecraft server running?", conversation_history=[]
+    )
+finally:
+    hades._hades_load_control_module = actual_control_loader
+assert owner_minecraft_location.get("completed") is True and owner_minecraft_location.get("api_calls") == 0, owner_minecraft_location
+assert "NetBox service inventory is empty" in owner_minecraft_location["final_response"], owner_minecraft_location
+assert "gamma-sandbox" not in owner_minecraft_location["final_response"] and "test-pve" not in owner_minecraft_location["final_response"], owner_minecraft_location
+assert household_minecraft_location.get("completed") is True and household_minecraft_location.get("api_calls") == 0, household_minecraft_location
+assert "can't provide internal host or address details" in household_minecraft_location["final_response"], household_minecraft_location
+assert "gamma-sandbox" not in household_minecraft_location["final_response"] and "test-pve" not in household_minecraft_location["final_response"], household_minecraft_location
+assert control_loader_calls == [], control_loader_calls
 server_overview = owner_server_agent.run_conversation(
     "Is everything okay with the servers?", conversation_history=[]
 )
@@ -991,6 +1038,7 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '        "errors": [],\n'
         '        "sources": [{"source": "Proxmox", "status": "HEALTHY", "retrieved_at": "2026-10-02T14:00:00+00:00"},\n'
         '                    {"source": "NetBox", "status": "HEALTHY", "retrieved_at": "2026-10-02T14:00:01+00:00"}],\n'
+        '        "service_catalog": {"status": "OK", "coverage": "EMPTY", "services": []},\n'
         '        "resources": resources,\n'
         '    }\n'
         'def homelab_compute_capabilities():\n'
@@ -1025,6 +1073,18 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         "    role: synthetic specialized inference node\n",
         encoding="utf-8",
     )
+    workload_registry = root / "self-service-workloads.json"
+    workload_registry.write_text(json.dumps({
+        "version": 1,
+        "workloads": {
+            "synthetic-resource-900": {
+                "owner": "synthetic-owner", "node": "test-pve", "vmid": 900,
+                "template": "linux-sandbox", "name": "gamma-sandbox",
+                "shared_with": ["synthetic-beta"],
+            },
+        },
+    }), encoding="utf-8")
+    workload_registry.chmod(0o600)
     script = root / "probe.py"
     script.write_text(child, encoding="utf-8")
     probe_env = os.environ.copy()
@@ -1046,6 +1106,7 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         "HADES_EPSILON_STATE_FILE": str(root / "epsilon.sqlite"),
         "HADES_HERMES_WORKING_DIRECTORY": str(homelab),
         "HADES_CAPABILITY_MATRIX_FILE": str(capability_matrix),
+        "HADES_SELF_SERVICE_REGISTRY_FILE": str(workload_registry),
         "HADES_OWNER_SUBJECT_IDS": "synthetic-owner,synthetic-owner-clean",
         "HADES_TEST_RESULT_KEY_FILE": str(root / "result-query.key"),
     })

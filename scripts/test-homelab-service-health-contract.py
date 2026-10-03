@@ -30,6 +30,8 @@ wanted = {
     '_hades_homelab_core_vm_placement_response',
     '_hades_endpoint_intent_before_provision',
     '_hades_service_endpoint_response',
+    '_hades_service_placement_intent',
+    '_hades_managed_server_status_intent',
     '_hades_service_placement_response',
     '_hades_endpoint_continuation_response',
     '_hades_direct_owner_location',
@@ -194,6 +196,8 @@ direct_proxmox_backup = namespace['_hades_direct_proxmox_backup_read']
 endpoint_before_provision = namespace['_hades_endpoint_intent_before_provision']
 endpoint_response = namespace['_hades_service_endpoint_response']
 placement_response = namespace['_hades_service_placement_response']
+placement_intent = namespace['_hades_service_placement_intent']
+managed_server_status_intent = namespace['_hades_managed_server_status_intent']
 endpoint_continuation = namespace['_hades_endpoint_continuation_response']
 direct_owner_location = namespace['_hades_direct_owner_location']
 
@@ -268,6 +272,11 @@ assert 'couldn\'t verify a server address or port' in endpoint_response(
     request, {'status': 'UNAVAILABLE', 'coverage': 'UNKNOWN', 'services': [], 'limitation': 'NetBox timed out.'}, 'owner'
 )
 assert endpoint_response(request, {'status': 'OK', 'services': []}, 'household') is None
+assert placement_intent('Where is the Minecraft server running?', 'owner')
+assert placement_intent('Where is the Minecraft server running?', 'household')
+assert not managed_server_status_intent('Where is the Minecraft server running?', 'owner')
+assert not managed_server_status_intent('Where is the Minecraft server running?', 'household')
+assert managed_server_status_intent('Show my managed server status', 'owner')
 placement_catalog = {
     'status': 'OK', 'coverage': 'COMPLETE', 'services': [{
         'name': 'Agent Zero', 'parent_name': 'Compute Node A',

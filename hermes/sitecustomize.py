@@ -6452,20 +6452,46 @@ def _hades_service_endpoint_response(user_text, service_catalog, scope=""):
             "or forwarded from the internet. I haven't changed the firewall.")
 
 
-def _hades_service_placement_response(user_text, service_catalog, scope=""):
-    """Answer owner service-location questions from complete NetBox coverage."""
-    text = str(user_text or "")
-    if scope != "owner" or not re.search(
+def _hades_service_placement_intent(user_text, scope=""):
+    """Recognize named-service placement questions before managed-VM routing."""
+    return bool(re.search(
         r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?(?:open\s+webui|hermes(?:\s+agent)?|"
         r"grocy|hindsight|n8n|lldap|searxng|agent\s*zero|minecraft|netbox|"
         r"uptime\s+kuma|nextcloud|vaultwarden)\b|"
         r"\bwhere\s+does\s+(?:open\s+webui|hermes(?:\s+agent)?|grocy|hindsight|"
         r"n8n|lldap|searxng|agent\s*zero|minecraft|netbox|uptime\s+kuma|"
         r"nextcloud|vaultwarden)\s+(?:run|live)\b",
+        str(user_text or ""),
+        re.IGNORECASE,
+    ))
+
+
+def _hades_managed_server_status_intent(user_text, scope=""):
+    """Route only managed-workload status requests to the managed server view."""
+    text = str(user_text or "")
+    if scope not in {"owner", "household"} or _hades_service_placement_intent(text, scope):
+        return False
+    definition_question = bool(
+        re.fullmatch(r"\s*what(?:'s|\s+(?:is|are))\s+.+?[?.!]*\s*", text, re.IGNORECASE)
+        or re.fullmatch(r"\s*what\s+does\s+.+?\s+(?:do|mean)\s*[?.!]*\s*", text, re.IGNORECASE)
+    ) and not re.search(
+        r"\b(?:status|state|health|healthy|running|working|online|offline|up|down|doing|"
+        r"responding|reachable|performance|slow|broken|failing|wrong|unavailable)\b",
         text,
         re.IGNORECASE,
-    ):
+    )
+    return bool(
+        not definition_question
+        and re.search(r"\b(?:show|list|what|which|check|status|is|are)\b", text, re.IGNORECASE)
+        and re.search(r"\b(?:server|sandbox|workload|guest|vm|virtual\s+machine)\b", text, re.IGNORECASE)
+    )
+
+
+def _hades_service_placement_response(user_text, service_catalog, scope=""):
+    """Answer owner service-location questions from complete NetBox coverage."""
+    if scope != "owner" or not _hades_service_placement_intent(user_text, scope):
         return None
+    text = str(user_text or "")
     if not isinstance(service_catalog, dict):
         return "I couldn't check the service inventory, so I can't verify where that service is intended to run."
     status = str(service_catalog.get("status") or "UNKNOWN").upper()
@@ -9413,20 +9439,8 @@ try:
         _server_share_match = re.search(r"\b(?:share|unshare|revoke|stop\s+sharing)\b", _server_text, re.IGNORECASE)
         _server_action_matches = list(re.finditer(r"\b(start|stop|restart|reboot|delete|remove)\b", _server_text, re.IGNORECASE))
         _server_action_match = _server_action_matches[-1] if _server_action_matches else None
-        _server_status_turn = bool(
-            not (
-                (re.fullmatch(r"\s*what(?:'s|\s+(?:is|are))\s+.+?[?.!]*\s*", _server_text, re.IGNORECASE)
-                 or re.fullmatch(r"\s*what\s+does\s+.+?\s+(?:do|mean)\s*[?.!]*\s*", _server_text, re.IGNORECASE))
-                and not re.search(
-                    r"\b(?:status|state|health|healthy|running|working|online|offline|up|down|doing|"
-                    r"responding|reachable|performance|slow|broken|failing|wrong|unavailable)\b",
-                    _server_text,
-                    re.IGNORECASE,
-                )
-            )
-            and
-            re.search(r"\b(?:show|list|what|which|check|status|is|are)\b", _server_text, re.IGNORECASE)
-            and re.search(r"\b(?:server|sandbox|workload|guest|vm|virtual\s+machine)\b", _server_text, re.IGNORECASE)
+        _server_status_turn = _hades_managed_server_status_intent(
+            _server_text, getattr(self, "_hades_session_scope", "")
         )
         _server_action_turn = bool(
             _server_action_match and re.search(r"\b(?:server|sandbox|workload|guest|vm|virtual\s+machine)\b", _server_text, re.IGNORECASE)
