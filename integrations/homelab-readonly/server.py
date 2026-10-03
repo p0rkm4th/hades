@@ -1933,6 +1933,10 @@ def format_inference_inventory_response(
         r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",
         str(user_text or ""), re.IGNORECASE,
     ))
+    compare_capacity_intent = bool(re.search(
+        r"\bcompare\s+current\s+model\s+residency\s+and\s+gpu\s+capacity\s+on\b",
+        str(user_text or ""), re.IGNORECASE,
+    ))
     capacity_unknown = (
         "I can't verify current GPU capacity because live per-host GPU utilization and free-VRAM "
         "telemetry is unavailable. Model catalogs and hardware inventory do not establish available capacity."
@@ -2024,6 +2028,96 @@ def format_inference_inventory_response(
             canonical = identity.get("canonical_id")
             if canonical:
                 resource_names[canonical] = inventory_record.get("name") or resource.get("name")
+
+    if compare_capacity_intent:
+        requested = [
+            (label, identity) for identity, label in resource_names.items()
+            if isinstance(label, str) and re.search(
+                r"(?<![\w])" + re.escape(label) + r"(?![\w])",
+                str(user_text or ""), re.IGNORECASE,
+            )
+        ]
+        if len(requested) != 2:
+            return "I can't compare those hosts from the current context because I couldn't resolve exactly two inventory identities."
+        details = []
+        provider_by_node = {}
+        for label, identity in requested:
+            linked = [
+                endpoint for endpoint in endpoints[:16]
+                if isinstance(endpoint, dict) and endpoint.get("node_identity") == identity
+            ]
+            if len(linked) != 1:
+                details.append(f"{label}: no unambiguous linked inference endpoint")
+                continue
+            endpoint = linked[0]
+            provider_by_node[identity] = endpoint
+            if endpoint.get("status") not in {"READABLE", "PARTIAL"}:
+                details.append(f"{label}: inference endpoint unavailable")
+                continue
+            if endpoint.get("loaded_status") == "CURRENT":
+                loaded = endpoint.get("loaded_models") if isinstance(endpoint.get("loaded_models"), list) else []
+                names = list(dict.fromkeys(
+                    str(model.get("name")) for model in loaded
+                    if isinstance(model, dict) and model.get("name")
+                ))[:5]
+                details.append(f"{label}: provider reports " + ("no models loaded" if not names else "loaded: " + ", ".join(names)))
+            else:
+                details.append(f"{label}: current loaded-model state unavailable")
+        telemetry = gpu_telemetry if isinstance(gpu_telemetry, dict) else {}
+        readings_by_host = {}
+        telemetry_endpoints = telemetry.get("endpoints") if isinstance(telemetry.get("endpoints"), list) else []
+        for sample in telemetry_endpoints[:16]:
+            if not isinstance(sample, dict) or sample.get("status") != "READABLE":
+                continue
+            inference_id = str(sample.get("inference_id") or "")
+            provider = next((
+                endpoint for endpoint in provider_by_node.values()
+                if str(endpoint.get("source_identity") or "").removeprefix("inference:") == inference_id
+            ), None)
+            if not isinstance(provider, dict):
+                continue
+            label = resource_names.get(provider.get("node_identity"))
+            devices = sample.get("devices") if isinstance(sample.get("devices"), list) else []
+            for device in devices[:32]:
+                if not isinstance(device, dict):
+                    continue
+                readings_by_host.setdefault(label, []).append(device)
+        for label, _identity in requested:
+            devices = readings_by_host.get(label, [])
+            if devices:
+                formatted = []
+                for device in devices:
+                    detail = f"GPU {device.get('index')}: "
+                    free = device.get("memory_free_mib")
+                    total = device.get("memory_total_mib")
+                    detail += f"{free} MiB free of {total} MiB" if isinstance(free, int) and isinstance(total, int) else "free VRAM unavailable"
+                    utilization = device.get("gpu_utilization_percent")
+                    detail += f", {utilization}% utilization" if isinstance(utilization, int) else ", utilization unavailable"
+                    formatted.append(detail)
+                details.append(f"{label} live GPU sample: " + ", ".join(formatted))
+        response = "; ".join(details) + "."
+        if len(readings_by_host) == len(requested):
+            free_samples = [
+                (device.get("memory_free_mib"), label)
+                for label in readings_by_host
+                for device in readings_by_host[label]
+                if isinstance(device.get("memory_free_mib"), int)
+            ]
+            if free_samples:
+                highest_free, highest_label = max(free_samples, key=lambda sample: sample[0])
+                response += (
+                    f" At this check, {highest_label} has the highest single-GPU free-VRAM reading "
+                    f"({highest_free} MiB)."
+                )
+            response += " These are point-in-time readings and don't guarantee model fit."
+            if telemetry.get("status") == "PARTIAL":
+                response += " GPU telemetry is partial, so this comparison may omit a host."
+        elif readings_by_host:
+            response += " This GPU telemetry is incomplete for the two-host comparison, so I can't rank their available capacity."
+        else:
+            freshness = str(telemetry.get("status") or "NOT_CONFIGURED").casefold().replace("_", " ")
+            response += f" Live per-host GPU telemetry is {freshness}, so I can't tell which host has more capacity."
+        return response + " Model runtime memory also depends on quantization, context, KV cache, and workload."
 
     if node_activity:
         requested_node = re.sub(r"[^a-z0-9]+", "", node_activity.group("target").casefold())

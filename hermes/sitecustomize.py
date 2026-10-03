@@ -5196,6 +5196,15 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
         if placement_followup:
             return "Where should I run another model?"
         return None
+    if placement_followup:
+        mentioned = [(last_occurrence(history, name), name) for name in names]
+        mentioned = [(position, name) for position, name in mentioned if position >= 0]
+        distinct = []
+        for _, name in sorted(mentioned):
+            if name not in distinct:
+                distinct.append(name)
+        if len(distinct) >= 2:
+            return f"Compare current model residency and GPU capacity on {distinct[-2]} and {distinct[-1]}"
     if explicit:
         return f"What's {target} doing right now?"
     if placement_size:
@@ -6002,6 +6011,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     if node_load_match:
         node_activity_intent = True
     placement_intent = _hades_homelab_explicit_model_fit_intent(text) or bool(re.search(
+        r"\bcompare\s+current\s+model\s+residency\s+and\s+gpu\s+capacity\s+on\b|"
         r"\bwhere\s+should\s+i\s+(?:run|host|put)\b|"
         r"\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|"
         r"\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b",

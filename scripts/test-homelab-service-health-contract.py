@@ -718,6 +718,27 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert namespace['_hades_homelab_followup_prompt'](
                 'Which one has more room?', 'owner', ''
             ) == 'Where should I run another model?'
+            original_dispatch = registry_module.registry.dispatch
+            registry_module.registry.dispatch = lambda name, _arguments: {
+                'resources': [
+                    {'name': 'Compute Node A', 'inventory': {'name': 'Compute Node A'}},
+                    {'name': 'Compute Node B', 'inventory': {'name': 'Compute Node B'}},
+                ]
+            }
+            try:
+                compare_context = (
+                    "What's wrong with Compute Node A?\n"
+                    "What about Compute Node B?\n"
+                    "Which one has more room?"
+                )
+                comparison_prompt = namespace['_hades_homelab_followup_prompt'](
+                    'Which one has more room?', 'owner', compare_context
+                )
+                assert comparison_prompt == (
+                    'Compare current model residency and GPU capacity on Compute Node A and Compute Node B'
+                ), comparison_prompt
+            finally:
+                registry_module.registry.dispatch = original_dispatch
         finally:
             os.environ.pop('HADES_TEST_INFERENCE_NODE', None)
         assert "can't verify private infrastructure or computer status" in direct_read(

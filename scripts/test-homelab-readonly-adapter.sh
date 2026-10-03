@@ -952,6 +952,46 @@ live_placement_answer = server.format_inference_inventory_response(
 assert "largest free-memory reading on one GPU was 12000 MiB on GPU A GPU 0" in live_placement_answer
 assert "point-in-time headroom comparison, not a fit guarantee" in live_placement_answer
 assert "can't confirm where a new model will fit" in live_placement_answer
+comparison_inventory = {
+    **inference,
+    "endpoints": [
+        {**inference["endpoints"][0], "node_identity": "netbox:device:75", "loaded_status": "CURRENT"},
+        {"source_identity": "inference:gpu-lane-b", "node_identity": "netbox:device:76",
+         "status": "READABLE", "loaded_status": "CURRENT", "loaded_models": [], "models": []},
+    ],
+}
+comparison_summary = {"resources": [
+    {"identity": {"canonical_id": "netbox:device:75"}, "inventory": {"name": "GPU A"}},
+    {"identity": {"canonical_id": "netbox:device:76"}, "inventory": {"name": "GPU B"}},
+]}
+comparison_answer = server.format_inference_inventory_response(
+    "Compare current model residency and GPU capacity on GPU A and GPU B",
+    comparison_inventory, comparison_summary,
+)
+assert "GPU A: provider reports loaded: sample:small" in comparison_answer, comparison_answer
+assert "GPU B: provider reports no models loaded" in comparison_answer, comparison_answer
+assert "Live per-host GPU telemetry is not configured" in comparison_answer, comparison_answer
+assert "can't tell which host has more capacity" in comparison_answer, comparison_answer
+live_comparison_answer = server.format_inference_inventory_response(
+    "Compare current model residency and GPU capacity on GPU A and GPU B",
+    comparison_inventory, comparison_summary, {
+        "status": "READABLE", "retrieved_at": "2026-10-03T12:00:00+00:00",
+        "endpoints": [
+            {"inference_id": "gpu-lane-a", "status": "READABLE", "devices": [{
+                "index": 0, "memory_free_mib": 6000, "memory_total_mib": 16000,
+                "gpu_utilization_percent": 30,
+            }]},
+            {"inference_id": "gpu-lane-b", "status": "READABLE", "devices": [{
+                "index": 0, "memory_free_mib": 9000, "memory_total_mib": 16000,
+                "gpu_utilization_percent": 10,
+            }]},
+        ],
+    },
+)
+assert "GPU A live GPU sample: GPU 0: 6000 MiB free of 16000 MiB, 30% utilization" in live_comparison_answer, live_comparison_answer
+assert "GPU B live GPU sample: GPU 0: 9000 MiB free of 16000 MiB, 10% utilization" in live_comparison_answer, live_comparison_answer
+assert "GPU B has the highest single-GPU free-VRAM reading (9000 MiB)" in live_comparison_answer, live_comparison_answer
+assert "point-in-time readings" in live_comparison_answer and "don't guarantee model fit" in live_comparison_answer
 stale_summary = {
     **summary_names,
     "capability_freshness": "STALE",
