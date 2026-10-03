@@ -49,6 +49,7 @@ functions = [
 ]
 assert {node.name for node in functions} == wanted
 debug_logs = []
+info_logs = []
 namespace = {
     'json': __import__('json'),
     're': re,
@@ -61,7 +62,10 @@ namespace = {
     'importlib': importlib,
     'sys': sys,
     'time': time,
-    '_hades_logger': type('Log', (), {'warning': staticmethod(lambda *args, **_kwargs: debug_logs.append(args))})(),
+    '_hades_logger': type('Log', (), {
+        'warning': staticmethod(lambda *args, **_kwargs: debug_logs.append(args)),
+        'info': staticmethod(lambda *args, **_kwargs: info_logs.append(args)),
+    })(),
     '_hades_phase2_backup_response': lambda *_args, **_kwargs: 'Configured HADES backup checks: current.',
 }
 
@@ -646,6 +650,19 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         my_homelab_ok = direct_read('Is everything okay with my homelab?', 'synthetic-owner', 'owner')
         assert 'Live inference reads: Test Fast API responding (1 catalog models; 0 reported loaded)' in my_homelab_ok, my_homelab_ok
         assert 'do not prove generation or available GPU capacity' in my_homelab_ok, my_homelab_ok
+        mcp_read_logs = [row for row in info_logs if row and str(row[0]).startswith('Homelab MCP read completed:')]
+        assert mcp_read_logs, info_logs
+        assert any(
+            len(row) == 6
+            and row[1] == 'homelab_summary'
+            and row[2] in {'HEALTHY', 'READABLE', 'PARTIAL', 'UNAVAILABLE', 'SOURCE_UNAVAILABLE', 'NOT_CONFIGURED', 'CONFIGURATION_ERROR', 'UNKNOWN', 'OTHER'}
+            and all(isinstance(value, (str, int, float)) for value in row[1:])
+            for row in mcp_read_logs
+        ), mcp_read_logs
+        assert not any(
+            any(isinstance(value, (dict, list)) for value in row)
+            for row in mcp_read_logs
+        ), mcp_read_logs
         for prompt in (
             'Is everything okay?', 'What is down?', 'Anything dying?', "What's fucked?",
             'Which computer is having trouble?', "Why's shit slow?", 'What changed?',

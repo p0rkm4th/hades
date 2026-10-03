@@ -4985,6 +4985,27 @@ def _hades_direct_homelab_tool_result(tool_name, arguments=None):
     }
     if tool_name not in tool_names:
         return {"status": "UNKNOWN", "errors": ["Unsupported homelab read request."]}
+    read_started = time.perf_counter()
+    discovery_ms = 0.0
+    dispatch_ms = 0.0
+
+    def _log_homelab_read(status):
+        safe_status = str(status or "UNKNOWN").upper()
+        if safe_status not in {
+            "HEALTHY", "READABLE", "PARTIAL", "UNAVAILABLE", "SOURCE_UNAVAILABLE",
+            "NOT_CONFIGURED", "CONFIGURATION_ERROR", "UNKNOWN",
+        }:
+            safe_status = "OTHER"
+        _hades_logger.info(
+            "Homelab MCP read completed: tool=%s status=%s discovery_ms=%.1f "
+            "dispatch_ms=%.1f total_ms=%.1f",
+            tool_name,
+            safe_status,
+            discovery_ms,
+            dispatch_ms,
+            (time.perf_counter() - read_started) * 1000,
+        )
+
     try:
         from tools.registry import registry
         registered_name = next(
@@ -4998,17 +5019,22 @@ def _hades_direct_homelab_tool_result(tool_name, arguments=None):
             # before deciding that the capability is unavailable.
             try:
                 from tools.mcp_tool_discovery import discover_mcp_tools
+                discovery_started = time.perf_counter()
                 discover_mcp_tools(["homelab-readonly"])
             except Exception as discovery_error:
                 _hades_logger.warning(
                     "Homelab MCP discovery failed: %s",
                     type(discovery_error).__name__,
                 )
+            finally:
+                if "discovery_started" in locals():
+                    discovery_ms = (time.perf_counter() - discovery_started) * 1000
             registered_name = next(
                 (name for name in tool_names[tool_name] if registry.get_entry(name)),
                 None,
             )
         if registered_name is None:
+            _log_homelab_read("NOT_CONFIGURED")
             return {
                 "status": "NOT_CONFIGURED",
                 "sources": [{
@@ -5020,7 +5046,9 @@ def _hades_direct_homelab_tool_result(tool_name, arguments=None):
             }
         else:
             tool_arguments = arguments if isinstance(arguments, dict) else {}
+            dispatch_started = time.perf_counter()
             result = registry.dispatch(registered_name, tool_arguments)
+            dispatch_ms = (time.perf_counter() - dispatch_started) * 1000
         # Hermes MCP handlers wrap adapter JSON in a JSON result envelope.
         for _ in range(2):
             if isinstance(result, str):
@@ -5029,14 +5057,17 @@ def _hades_direct_homelab_tool_result(tool_name, arguments=None):
                 try:
                     result = json.loads(result)
                 except ValueError:
+                    _log_homelab_read("SOURCE_UNAVAILABLE")
                     return {"status": "SOURCE_UNAVAILABLE", "errors": ["The homelab tool returned an unreadable result."]}
             if isinstance(result, dict) and "error" in result:
+                _log_homelab_read("SOURCE_UNAVAILABLE")
                 return {"status": "SOURCE_UNAVAILABLE", "errors": ["The configured homelab source read failed."]}
             if isinstance(result, dict) and isinstance(result.get("result"), (str, dict)):
                 result = result["result"]
                 continue
             break
         if not isinstance(result, dict):
+            _log_homelab_read("SOURCE_UNAVAILABLE")
             return {"status": "SOURCE_UNAVAILABLE", "errors": ["The homelab tool returned an unsupported result."]}
         # Older adapters may include local paths in errors. Preserve failure
         # visibility without returning credential paths to the user.
@@ -5048,11 +5079,12 @@ def _hades_direct_homelab_tool_result(tool_name, arguments=None):
                 else error
                 for error in errors
             ]
+        _log_homelab_read(result.get("status"))
         return result
     except Exception as exc:
         _hades_logger.warning(
-            "Homelab MCP read failed: tool=%s error=%s",
-            tool_name, type(exc).__name__,
+            "Homelab MCP read failed: tool=%s error=%s total_ms=%.1f",
+            tool_name, type(exc).__name__, (time.perf_counter() - read_started) * 1000,
         )
         return {"status": "SOURCE_UNAVAILABLE", "errors": ["The configured homelab source read failed."]}
 
