@@ -208,6 +208,19 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     )
     registry = hermes_registry_module.registry
     registry.calls.clear()
+    owner_node_load = hades._hades_direct_homelab_read(
+        "How loaded is Synthetic Node B?", owner, "owner",
+    )
+    assert isinstance(owner_node_load, str) and owner_node_load, owner_node_load
+    assert "running normally" not in owner_node_load.casefold(), owner_node_load
+    assert "CPU load is" not in owner_node_load, owner_node_load
+    assert "current load" in owner_node_load.casefold() or "current homelab sources" in owner_node_load.casefold(), owner_node_load
+    household_node_load = hades._hades_direct_homelab_read(
+        "How loaded is Synthetic Node B?", beta, "household",
+    )
+    assert "owner session" in household_node_load.casefold(), household_node_load
+    assert "Synthetic Node B" not in household_node_load, household_node_load
+    registry.calls.clear()
     broad_owner_status = owner_agent.run_conversation(
         "Is everything okay with my homelab?", conversation_history=[]
     )
