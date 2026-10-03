@@ -162,6 +162,11 @@ of truth.
   deployment, and persisted UI acceptance pass.
   Service health and placement remain unknown without canonical service
   inventory and a matching current monitor.
+- A fresh owner source-comparison question returned no contradictions among
+  linked records compared, while explicitly excluding unlinked records and
+  partial Proxmox guest scope and disclaiming a lab-wide all-clear. Household B
+  received only the generic boundary. Both chats persisted; this confirms
+  partial/unknown handling and redaction, not complete source reconciliation.
 - Public `main` remains green at the release-convergence baseline. Homelab
   implementation and current continuation evidence are on the review branch;
   candidate `b6c9cfb` passed Public CI and is deployed behind the recorded

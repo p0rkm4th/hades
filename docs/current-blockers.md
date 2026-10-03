@@ -62,8 +62,12 @@ Status: **PARTIAL**
   fresh authenticated owner UI turns correctly returned bounded recent
   activity, refused unsupported model-fit ranking without live GPU capacity,
   surfaced source-comparison coverage limits, and ranked the available
-  Proxmox resource records with explicit partial-scope caveats. Household UI
-  turns remained generic and denied owner-only placement/source details.
+  Proxmox resource records with explicit partial-scope caveats. A later fresh
+  owner source comparison found no contradictions among the linked records
+  compared, but explicitly flagged unlinked records and partial guest scope as
+  excluded from comparison and disclaimed a lab-wide all-clear. Household UI
+  turns remained generic and denied owner-only placement/source details; fresh
+  Household B comparison dogfood also disclosed no private source detail.
 - A named Agent Zero availability/task-execution question also fell through
   to a generic answer. The current route uses only the configured bounded
   endpoint probe and explicitly says task execution was not tested. Fresh
