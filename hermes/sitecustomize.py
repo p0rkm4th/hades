@@ -5255,8 +5255,11 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
     )
     if placement_size:
         explicit = None
-    placement_followup = bool(re.search(
-        r"\bwhich\s+(?:one\s+)?(?:has\s+)?(?:more\s+)?room\b|"
+    capacity_comparison_followup = bool(re.search(
+        r"\bwhich\s+(?:one\s+)?(?:has\s+)?(?:more\s+)?room\b",
+        current, re.IGNORECASE,
+    ))
+    placement_followup = capacity_comparison_followup or bool(re.search(
         r"\b(?:can|could)\s+i\s+(?:put|run|host)\s+another\s+model\s+there\b",
         current,
         re.IGNORECASE,
@@ -5300,7 +5303,7 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
         mentioned = [(position, name) for position, name in mentioned if position >= 0]
         if mentioned:
             target = max(mentioned, key=lambda item: item[0])[1]
-    if placement_followup:
+    if capacity_comparison_followup:
         mention_context = history + "\n" + current
         mentioned = [(last_occurrence(mention_context, name), name) for name in names]
         mentioned = [(position, name) for position, name in mentioned if position >= 0]
@@ -5310,6 +5313,27 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
                 distinct.append(name)
         if len(distinct) >= 2:
             return f"Compare current model residency and GPU capacity on {distinct[-2]} and {distinct[-1]}"
+    elif placement_followup:
+        latest_assistant = ""
+        for line in reversed(history.splitlines()):
+            # Context is flattened, but each historical message remains on its
+            # own line. The latest assistant comparison carries its winner in
+            # plain prose and can resolve “there” without guessing from order.
+            latest_assistant = line
+            if line.strip():
+                break
+        selected = []
+        for name in names:
+            winner_pattern = (
+                r"(?<![\w])" + re.escape(name) + r"(?![\w]).{0,100}"
+                r"\b(?:has|had|is|was|shows|offers)\b.{0,35}"
+                r"\b(?:the\s+)?(?:highest|largest|most|more)\b.{0,45}"
+                r"\b(?:free|room|headroom|capacity|gpu|vram|memory)\b"
+            )
+            if re.search(winner_pattern, latest_assistant, re.IGNORECASE):
+                selected.append(name)
+        if len(selected) == 1:
+            return f"Can {selected[0]} host another model?"
     if not target:
         if placement_size:
             return f"Where should I run a {placement_size.group('size')} GB model?"
@@ -5892,27 +5916,65 @@ def _hades_homelab_explicit_model_fit_intent(text):
 
 def _hades_homelab_named_node_capacity_target(text):
     """Extract a named host from a bounded status-plus-capacity question."""
-    match = re.search(
+    patterns = (
         r"\b(?:check|inspect|look\s+at)\s+(?:the\s+)?"
         r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+(?:\band\b|,)"
         r".{0,100}\b(?:enough\s+)?(?:room|capacity|headroom|space)\b"
         r".{0,40}\b(?:another|new)\s+(?:ai\s+)?models?\b",
-        str(text or ""), re.IGNORECASE,
+        r"\b(?:can|could|will|would)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+        r"(?:host|handle)\s+(?:(?:a\s+)?(?:another|new)\s+model|"
+        r"(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+model)\b",
+        r"\b(?:will|would|can|could)\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+model\s+"
+        r"(?:fit|run|work)\s+(?:on|at)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
     )
-    return " ".join(match.group("target").split()) if match else ""
+    for pattern in patterns:
+        match = re.search(pattern, str(text or ""), re.IGNORECASE)
+        if match:
+            return " ".join(match.group("target").split())
+    return ""
 
 
-def _hades_homelab_explicit_model_fit_response(user_text, telemetry):
+def _hades_homelab_explicit_model_fit_response(user_text, telemetry, inference=None, summary=None):
     """Report live GPU headroom without treating it as a model-fit guarantee."""
     match = re.search(r"\b(\d+(?:\.\d+)?)\s*(?:gb|gib)\s+model\b", str(user_text or ""), re.IGNORECASE)
     size = f"{match.group(1)} GB " if match else "stated-size "
     reports = []
+    target = _hades_homelab_named_node_capacity_target(user_text)
+    target_key = _hades_homelab_name_key(target) if target else ""
+    resources = summary.get("resources", []) if isinstance(summary, dict) else []
+    canonical_names = {}
+    for resource in resources if isinstance(resources, list) else []:
+        if not isinstance(resource, dict):
+            continue
+        identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
+        inventory_record = resource.get("inventory") if isinstance(resource.get("inventory"), dict) else {}
+        canonical_id = identity.get("canonical_id")
+        label = inventory_record.get("name") or resource.get("name")
+        if canonical_id and label:
+            canonical_names.setdefault(canonical_id, []).append(" ".join(str(label).split()))
+    linked_labels = {}
+    endpoints_by_source = inference.get("endpoints", []) if isinstance(inference, dict) else []
+    for endpoint in endpoints_by_source if isinstance(endpoints_by_source, list) else []:
+        if not isinstance(endpoint, dict):
+            continue
+        node_identity = endpoint.get("node_identity")
+        labels = canonical_names.get(node_identity, [])
+        source_identity = str(endpoint.get("source_identity") or "")
+        inference_id = source_identity.removeprefix("inference:") if source_identity.startswith("inference:") else ""
+        if endpoint.get("identity_status") == "LINKED" and len(labels) == 1 and inference_id:
+            linked_labels[inference_id] = (labels[0], node_identity)
+    matched_target = [value for value in linked_labels.values() if _hades_homelab_name_key(value[0]) == target_key] if target_key else []
+    allowed_ids = {inference_id for inference_id, value in linked_labels.items()
+                   if not target_key or (len(matched_target) == 1 and value in matched_target)}
     endpoints = telemetry.get("endpoints") if isinstance(telemetry, dict) else None
     if isinstance(endpoints, list):
         for endpoint in endpoints[:16]:
             if not isinstance(endpoint, dict) or endpoint.get("status") != "READABLE":
                 continue
-            label = str(endpoint.get("inference_id") or "configured GPU host")[:80]
+            inference_id = str(endpoint.get("inference_id") or "")
+            if inference_id not in allowed_ids:
+                continue
+            label = linked_labels[inference_id][0][:100]
             devices = endpoint.get("devices") if isinstance(endpoint.get("devices"), list) else []
             for device in devices[:32]:
                 if not isinstance(device, dict):
@@ -5928,7 +5990,7 @@ def _hades_homelab_explicit_model_fit_response(user_text, telemetry):
         stamp = str(telemetry.get("retrieved_at") or "check time unavailable")
         evidence = f"Current point-in-time GPU readings (checked {stamp}): " + "; ".join(reports[:8]) + ". "
     else:
-        evidence = "I don't have current per-host free-VRAM readings. "
+        evidence = "I don't have current free-VRAM readings linked to a uniquely identified inventory host. Unlinked provider telemetry was omitted. "
     return (
         f"I can't confirm whether a {size}model fits from its file size alone. "
         "A model file's GB size is not its VRAM requirement. " + evidence +
@@ -6477,8 +6539,13 @@ def _hades_direct_homelab_read(
             return _hades_homelab_resource_ranking_response(summary)
         if inference_intent:
             if scope == "owner" and _hades_homelab_explicit_model_fit_intent(text):
+                inference = _hades_direct_homelab_tool_result("homelab_inference_inventory")
+                owner_snapshot = _hades_direct_homelab_tool_result("homelab_owner_snapshot")
+                summary = owner_snapshot.get("summary") if isinstance(owner_snapshot, dict) else None
+                if not isinstance(summary, dict):
+                    summary = _hades_direct_homelab_tool_result("homelab_summary")
                 telemetry = _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
-                return _hades_homelab_explicit_model_fit_response(text, telemetry)
+                return _hades_homelab_explicit_model_fit_response(text, telemetry, inference, summary)
             inference = _hades_direct_homelab_tool_result("homelab_inference_inventory")
             model_location_intent = bool(re.search(
                 r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",

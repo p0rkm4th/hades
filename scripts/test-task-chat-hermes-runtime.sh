@@ -145,6 +145,12 @@ assert hades._hades_homelab_explicit_model_fit_intent("Can Compute Node A host a
 assert hades._hades_homelab_named_node_capacity_target(
     "Check Compute Node A and tell me whether it has enough room for another model."
 ) == "Compute Node A"
+assert hades._hades_homelab_named_node_capacity_target(
+    "Can Hypnos host a 20 GB model?"
+) == "Hypnos"
+assert hades._hades_homelab_named_node_capacity_target(
+    "Will a 20 GB model fit on Hypnos?"
+) == "Hypnos"
 assert not hades._hades_homelab_named_node_capacity_target(
     "Where should I run another model?"
 )
@@ -162,9 +168,24 @@ live_model_fit = hades._hades_homelab_explicit_model_fit_response(
             "gpu_utilization_percent": 25,
         }],
     }]},
+    {"status": "READABLE", "endpoints": [{
+        "source_identity": "inference:compute_node_a", "node_identity": "netbox:device:1",
+        "identity_status": "LINKED",
+    }]},
+    {"resources": [{"name": "Compute Node A", "inventory": {"name": "Compute Node A"},
+                      "identity": {"canonical_id": "netbox:device:1"}}]},
 )
-assert "compute_node_a GPU 0: 9000 MiB free of 16384 MiB, 25% utilization" in live_model_fit, live_model_fit
+assert "Compute Node A GPU 0: 9000 MiB free of 16384 MiB, 25% utilization" in live_model_fit, live_model_fit
 assert "not a fit guarantee" in live_model_fit, live_model_fit
+unlinked_model_fit = hades._hades_homelab_explicit_model_fit_response(
+    "Will a 20 GB model fit?",
+    {"status": "READABLE", "endpoints": [{"inference_id": "unlinked-host", "status": "READABLE",
+      "devices": [{"index": 0, "memory_free_mib": 20000, "memory_total_mib": 24000}]}]},
+    {"status": "READABLE", "endpoints": [{"source_identity": "inference:unlinked-host",
+      "node_identity": None, "identity_status": "UNLINKED"}]},
+    {"resources": []},
+)
+assert "20000 MiB" not in unlinked_model_fit and "Unlinked provider telemetry was omitted" in unlinked_model_fit, unlinked_model_fit
 synthetic_runtime_node_a_machine = {
     "name": "Runtime Node A", "identity": {"canonical_id": "netbox:device:2"},
     "inventory": {"id": 2, "name": "Runtime Node A"},
@@ -1677,6 +1698,36 @@ assert capacity_followup.get("completed") is True and capacity_followup.get("api
 assert "can't confirm whether that model fits" in capacity_followup["final_response"], capacity_followup
 assert unanchored_capacity_followup.get("completed") is True and unanchored_capacity_followup.get("api_calls") == 0, unanchored_capacity_followup
 assert "can't confirm whether that model fits" in unanchored_capacity_followup["final_response"], unanchored_capacity_followup
+comparison_followup_summary = {"resources": [
+    {"name": "Compute Node A", "inventory": {"name": "Compute Node A"},
+     "identity": {"canonical_id": "netbox:device:7"}},
+    {"name": "Compute Node B", "inventory": {"name": "Compute Node B"},
+     "identity": {"canonical_id": "netbox:device:8"}},
+]}
+original_followup_summary_read = hades._hades_direct_homelab_tool_result
+hades._hades_direct_homelab_tool_result = lambda name, *_args, **_kwargs: (
+    comparison_followup_summary if name == "homelab_summary" else {"status": "NOT_CONFIGURED", "endpoints": []}
+)
+try:
+    selected_capacity_target = hades._hades_homelab_followup_prompt(
+        "Could I put another model there?", "owner",
+        "What's wrong with Compute Node A?\nCompute Node A has current GPU telemetry.\n"
+        "What about Compute Node B?\nCompute Node B has current GPU telemetry.\n"
+        "Which one has more room?\nAt this check, Compute Node B had the highest single-GPU free-VRAM reading.\n"
+        "Could I put another model there?",
+    )
+    selected_size_target = hades._hades_homelab_followup_prompt(
+        "What about a 20 GB one?", "owner",
+        "What's wrong with Compute Node A?\nCompute Node A has current GPU telemetry.\n"
+        "What about Compute Node B?\nCompute Node B has current GPU telemetry.\n"
+        "Which one has more room?\nAt this check, Compute Node B had the highest single-GPU free-VRAM reading.\n"
+        "Could I put another model there?\nCan Compute Node B host another model?\n"
+        "Compute Node B current GPU data does not guarantee model fit.\nWhat about a 20 GB one?",
+    )
+finally:
+    hades._hades_direct_homelab_tool_result = original_followup_summary_read
+assert selected_capacity_target == "Can Compute Node B host another model?", selected_capacity_target
+assert selected_size_target == "Can Compute Node B host a 20 GB model?", selected_size_target
 explicit_fit_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-explicit-model-fit",
     stream_delta_callback=lambda _chunk: None, **kwargs,

@@ -1108,6 +1108,18 @@ assert "inference endpoint linked to GPU A is responding" in node_activity_answe
 assert "Provider-reported residency: sample:small" in node_activity_answer, node_activity_answer
 assert "does not prove GPU execution" in node_activity_answer, node_activity_answer
 assert "does not measure host CPU/GPU utilization" in node_activity_answer, node_activity_answer
+issue_status_answer = server.format_inference_inventory_response(
+    "What's wrong with GPU A?", inference, summary_names,
+    {"status": "READABLE", "retrieved_at": "2026-10-03T21:00:00Z", "endpoints": [{
+        "inference_id": "gpu-lane-a", "status": "READABLE", "devices": [{
+            "index": 0, "memory_free_mib": 7000, "memory_total_mib": 16384,
+            "gpu_utilization_percent": 12,
+        }],
+    }]},
+)
+assert "Live host GPU sample (checked 2026-10-03T21:00:00Z)" in issue_status_answer, issue_status_answer
+assert "7000 MiB free" in issue_status_answer and "12% utilization" in issue_status_answer
+assert "does not prove GPU execution" in issue_status_answer
 proxmox_node_summary = {"resources": [{
     "name": "Runtime Node B", "runtime_status": "online",
     "inventory": {"name": "Runtime Node B", "role": "virtualization host"},

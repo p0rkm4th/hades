@@ -1972,7 +1972,8 @@ def format_inference_inventory_response(
     ))
     node_activity = re.search(
         r"\bwhat(?:['’]s|s|\s+is)\s+(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
-        r"(?:doing|running)\b",
+        r"(?:doing|running)\b|"
+        r"\bwhat(?:['’]s|\s+is)\s+wrong\s+with\s+(?P<issue_target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         str(user_text or ""), re.IGNORECASE,
     )
     gpu_availability_intent = bool(re.search(
@@ -2187,7 +2188,7 @@ def format_inference_inventory_response(
             return response + " Model runtime memory also depends on quantization, context, KV cache, and workload."
 
     if node_activity and not placement_intent:
-        requested_node = re.sub(r"[^a-z0-9]+", "", node_activity.group("target").casefold())
+        requested_node = re.sub(r"[^a-z0-9]+", "", (node_activity.group("target") or node_activity.group("issue_target")).casefold())
         matching_nodes = [
             (identity, label) for identity, label in resource_names.items()
             if isinstance(label, str)
