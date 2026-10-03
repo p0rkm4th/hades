@@ -737,6 +737,13 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 assert comparison_prompt == (
                     'Compare current model residency and GPU capacity on Compute Node A and Compute Node B'
                 ), comparison_prompt
+                explicit_comparison = namespace['_hades_homelab_followup_prompt'](
+                    'Which has more room for another model, Compute Node A or Compute Node B?',
+                    'owner', '',
+                )
+                assert explicit_comparison == (
+                    'Compare current model residency and GPU capacity on Compute Node A and Compute Node B'
+                ), explicit_comparison
             finally:
                 registry_module.registry.dispatch = original_dispatch
         finally:

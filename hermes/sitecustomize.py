@@ -5146,7 +5146,7 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
     if placement_size:
         explicit = None
     placement_followup = bool(re.search(
-        r"\bwhich\s+one\s+(?:has\s+)?(?:more\s+)?room\b|"
+        r"\bwhich\s+(?:one\s+)?(?:has\s+)?(?:more\s+)?room\b|"
         r"\b(?:can|could)\s+i\s+(?:put|run|host)\s+another\s+model\s+there\b",
         current,
         re.IGNORECASE,
@@ -5191,7 +5191,8 @@ def _hades_homelab_followup_prompt(user_text, scope, context_text):
         if mentioned:
             target = max(mentioned, key=lambda item: item[0])[1]
     if placement_followup:
-        mentioned = [(last_occurrence(history, name), name) for name in names]
+        mention_context = history + "\n" + current
+        mentioned = [(last_occurrence(mention_context, name), name) for name in names]
         mentioned = [(position, name) for position, name in mentioned if position >= 0]
         distinct = []
         for _, name in sorted(mentioned):
