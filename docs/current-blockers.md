@@ -163,6 +163,12 @@ Status: **PARTIAL**
   as separate/historical evidence. Household A/B receive only the generic
   infrastructure boundary. Live named-node telemetry is now verified; broader
   guest visibility and service catalog coverage remain incomplete.
+- Representative post-deployment node dogfood passes for two identity-linked
+  inference hosts, with target-only GPU readings. A third provider endpoint
+  answers catalog/residency reads, but its named physical-host query correctly
+  fails closed because the current composed inventory cannot confirm the
+  configured stable identity link. Canonical inventory visibility must be
+  reconciled before presenting host telemetry for that endpoint.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 - Fresh owner backup dogfood found that Proxmox's archived history can include
