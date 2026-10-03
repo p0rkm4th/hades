@@ -106,6 +106,9 @@ assert hades._hades_homelab_resource_ranking_intent("What's using the most resou
 assert hades._hades_homelab_resource_ranking_intent("What's the most loaded server right now?")
 assert hades._hades_homelab_resource_ranking_intent("Which server has the highest CPU usage?")
 assert not hades._hades_homelab_resource_ranking_intent("What resources does HADES use?")
+assert hades._hades_homelab_explicit_model_fit_intent("Will a 20 GB model fit on Tartarus?")
+assert hades._hades_homelab_explicit_model_fit_intent("Can Tartarus host a 20 GB model?")
+assert not hades._hades_homelab_explicit_model_fit_intent("What is a 20 GB model?")
 synthetic_erebus_machine = {
     "name": "Erebus", "identity": {"canonical_id": "netbox:device:2"},
     "inventory": {"id": 2, "name": "Erebus"},
@@ -1283,6 +1286,25 @@ assert capacity_followup.get("completed") is True and capacity_followup.get("api
 assert "can't confirm whether that model fits" in capacity_followup["final_response"], capacity_followup
 assert unanchored_capacity_followup.get("completed") is True and unanchored_capacity_followup.get("api_calls") == 0, unanchored_capacity_followup
 assert "can't confirm whether that model fits" in unanchored_capacity_followup["final_response"], unanchored_capacity_followup
+explicit_fit_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-explicit-model-fit",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+explicit_fit = explicit_fit_agent.run_conversation(
+    "Will a 20 GB model fit on Tartarus?", conversation_history=[],
+)
+assert explicit_fit.get("completed") is True and explicit_fit.get("api_calls") == 0, explicit_fit
+assert "can't confirm whether that model fits" in explicit_fit["final_response"], explicit_fit
+assert "model file's GB size is not its VRAM requirement" in explicit_fit["final_response"], explicit_fit
+household_fit_agent = agent_class(
+    gateway_session_key=f"hades-user-{beta}", session_id="synthetic-household-explicit-model-fit",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+household_fit = household_fit_agent.run_conversation(
+    "Will a 20 GB model fit on Tartarus?", conversation_history=[],
+)
+assert household_fit.get("completed") is True and household_fit.get("api_calls") == 0, household_fit
+assert "can't provide private infrastructure or model-capacity details" in household_fit["final_response"], household_fit
 actual_node_read = hades._hades_direct_homelab_read
 hades._hades_direct_homelab_read = lambda *_args, **_kwargs: None
 unavailable_node_agent = agent_class(

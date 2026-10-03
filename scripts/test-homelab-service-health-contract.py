@@ -47,6 +47,7 @@ wanted = {
     '_hades_homelab_followup_prompt',
     '_hades_homelab_service_coverage_intent',
     '_hades_homelab_service_coverage_response',
+    '_hades_homelab_explicit_model_fit_intent',
     '_hades_homelab_network_diagnostic_response',
     '_hades_homelab_source_identity_intent',
     '_hades_homelab_conflict_intent',

@@ -5519,6 +5519,21 @@ def _hades_homelab_resource_ranking_intent(text):
     ))
 
 
+def _hades_homelab_explicit_model_fit_intent(text):
+    """Recognize bounded model-fit questions that need live capacity evidence."""
+    text = str(text or "")
+    size = r"\d+(?:\.\d+)?\s*(?:gb|gib)"
+    return bool(
+        re.search(
+            r"\b(?:will|would|can|could)\s+(?:a\s+)?" + size + r"\s+model\b.{0,50}\b(?:fit|run|work)\b|"
+            r"\b(?:will|would|can|could)\b.{0,80}\b(?:fit|run|host|handle)\b.{0,50}"
+            + size + r"(?:\s+(?:sized\s+)?model)?\b",
+            text,
+            re.IGNORECASE,
+        )
+    )
+
+
 def _hades_homelab_resource_ranking_response(summary):
     """Compare only fresh Proxmox CPU and memory fields in the visible scope."""
     if not isinstance(summary, dict) or str(summary.get("status") or "").upper() in {
@@ -5935,7 +5950,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         re.IGNORECASE,
     ):
         return None
-    inference_intent = bool(re.search(
+    inference_intent = _hades_homelab_explicit_model_fit_intent(text) or bool(re.search(
         r"\b(?:ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running))\b|"
         r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|\bwhere\s+should\s+i\s+(?:run|host|put)\b|\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
         r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
@@ -9801,13 +9816,18 @@ try:
             return _hades_original_run_conversation(
                 self, user_message, *args, **kwargs
             )
-        if getattr(self, "_hades_session_scope", "") == "owner" and re.fullmatch(
+        _owner_capacity_followup = re.fullmatch(
             r"\s*what\s+about\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+(?:one|model)\s*[?.!]*\s*",
             str(user_message or ""), re.IGNORECASE,
+        )
+        _explicit_model_fit = _hades_homelab_explicit_model_fit_intent(user_message)
+        if getattr(self, "_hades_session_scope", "") == "owner" and (
+            _owner_capacity_followup or _explicit_model_fit
         ):
             unavailable_response = (
-                "I can't confirm whether that model fits or recommend a host: current per-host "
-                "GPU load and free VRAM are not connected, and runtime memory needs are unknown."
+                "I can't confirm whether that model fits or recommend a host from its stated size alone. "
+                "A model file's GB size is not its VRAM requirement; live per-host GPU load and free VRAM "
+                "are not connected, and quantization, context, and runtime memory needs are unknown."
             )
             callback = getattr(self, "stream_delta_callback", None)
             if callback:
@@ -9816,6 +9836,22 @@ try:
             return {
                 "final_response": unavailable_response,
                 "messages": [{"role": "assistant", "content": unavailable_response}],
+                "api_calls": 0,
+                "completed": True,
+            }
+        if (
+            getattr(self, "_hades_session_scope", "") == "household"
+            and _explicit_model_fit
+        ):
+            private_capacity_denial = (
+                "I can't provide private infrastructure or model-capacity details from this account."
+            )
+            callback = getattr(self, "stream_delta_callback", None)
+            if callback:
+                callback(private_capacity_denial)
+            return {
+                "final_response": private_capacity_denial,
+                "messages": [{"role": "assistant", "content": private_capacity_denial}],
                 "api_calls": 0,
                 "completed": True,
             }
@@ -11185,9 +11221,13 @@ try:
             self._hades_session_scope == "household"
             and _hades_homelab_resource_ranking_intent(user_message)
         )
+        _direct_private_model_fit = (
+            self._hades_session_scope == "household"
+            and _hades_homelab_explicit_model_fit_intent(user_message)
+        )
         if self._hades_session_scope == "owner" or (
             self._hades_session_scope == "household"
-            and (_direct_ai_availability or _direct_private_resource_ranking)
+            and (_direct_ai_availability or _direct_private_resource_ranking or _direct_private_model_fit)
         ):
             direct_homelab_response = _hades_direct_homelab_read(
                 user_message,
