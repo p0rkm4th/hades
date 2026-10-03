@@ -423,6 +423,15 @@ os.environ.update({
     "HADES_KUMA_STATUS_URL": "https://status.example.test/api/status-page/heartbeat/hades-status",
 })
 original_fetch = server._fetch
+server._fetch = lambda *_args, **_kwargs: {"data": {"/vms": {"VM.Audit": 1}}}
+visibility = server._read_proxmox_guest_visibility((
+    0, "https://pve-a.example.test/cluster/resources", "/run/token",
+    "svc@example!reader", "alexandra", "",
+))
+assert visibility["source_identity"] == "proxmox:alexandra", visibility
+assert visibility["source"]["source"] == "Proxmox guest visibility (alexandra)", visibility
+assert visibility["coverage"]["scope"] == "ALL_GUESTS", visibility
+server._fetch = original_fetch
 assert server._proxmox_permissions_url(
     "https://pve.example.test/api2/json/cluster/resources?type=vm"
 ) == "https://pve.example.test/api2/json/access/permissions"

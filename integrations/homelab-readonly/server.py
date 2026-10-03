@@ -384,7 +384,9 @@ def _aggregate_proxmox_guest_visibility(rows: list[dict]) -> dict:
 
 def _read_proxmox_guest_visibility(args: tuple[int, str, str, str, str, str]) -> dict:
     index, url, token_file, token_id, source_id, ca_file = args
-    source = f"Proxmox guest visibility[{index + 1}]"
+    # Stable configured IDs make partial coverage actionable without exposing
+    # endpoint URLs or forcing owners to correlate opaque list positions.
+    source = f"Proxmox guest visibility ({source_id or f'endpoint-{index + 1}'})"
     started = time.monotonic()
     if not url:
         return {
