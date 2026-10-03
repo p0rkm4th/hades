@@ -967,6 +967,21 @@ live_placement_answer = server.format_inference_inventory_response(
 assert "largest free-memory reading on one GPU was 12000 MiB on GPU A GPU 0" in live_placement_answer
 assert "point-in-time headroom comparison, not a fit guarantee" in live_placement_answer
 assert "can't confirm where a new model will fit" in live_placement_answer
+compound_placement_answer = server.format_inference_inventory_response(
+    "What machine should host another AI model right now? Consider current health, available GPU memory, and what is already running, and tell me what is not connected.",
+    inference, summary_names, {
+        "status": "READABLE", "retrieved_at": "2026-10-02T12:01:00+00:00",
+        "endpoints": [{
+            "inference_id": "gpu-lane-a", "status": "READABLE", "devices": [{
+                "index": 0, "memory_free_mib": 12000, "memory_total_mib": 16384,
+                "gpu_utilization_percent": 10,
+            }],
+        }],
+    },
+)
+assert "largest free-memory reading on one GPU was 12000 MiB on GPU A GPU 0" in compound_placement_answer, compound_placement_answer
+assert "can't confirm where a new model will fit" in compound_placement_answer, compound_placement_answer
+assert "can't match that machine to a current runtime record" not in compound_placement_answer, compound_placement_answer
 comparison_inventory = {
     **inference,
     "endpoints": [

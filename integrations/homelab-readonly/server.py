@@ -2179,7 +2179,7 @@ def format_inference_inventory_response(
                 response += f" Live per-host GPU telemetry is {freshness}, so I can't tell which host has more capacity."
             return response + " Model runtime memory also depends on quantization, context, KV cache, and workload."
 
-    if node_activity:
+    if node_activity and not placement_intent:
         requested_node = re.sub(r"[^a-z0-9]+", "", node_activity.group("target").casefold())
         matching_nodes = [
             (identity, label) for identity, label in resource_names.items()
