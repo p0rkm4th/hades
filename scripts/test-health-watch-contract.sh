@@ -66,7 +66,11 @@ with tempfile.TemporaryDirectory() as directory:
     route_functions = [
         node for node in tree.body
         if isinstance(node, ast.FunctionDef)
-        and node.name in {"_hades_health_watch_intent", "_hades_health_watch_response"}
+        and node.name in {
+            "_hades_monitor_question_is_diagnostic",
+            "_hades_health_watch_intent",
+            "_hades_health_watch_response",
+        }
     ]
     route_namespace = {
         "re": re,
@@ -88,6 +92,12 @@ with tempfile.TemporaryDirectory() as directory:
         interval_minutes=10, conversation_id="conversation-alpha",
     )
     route = route_namespace["_hades_health_watch_response"]
+    diagnostic = route_namespace["_hades_monitor_question_is_diagnostic"]
+    assert diagnostic("Why is the NetBox monitor down?")
+    assert diagnostic("Is the NetBox monitor down?")
+    assert not diagnostic("Can you monitor the server if it goes down?")
+    assert not diagnostic("Watch the server if it goes down.")
+    assert route("Why is the NetBox monitor down?", "owner", "owner", "conversation-alpha") is None
     cross_chat = route("yes", "owner", "owner", "conversation-beta")
     assert "couldn't match that confirmation" in cross_chat.lower()
     assert store.latest_preview("owner", conversation_id="conversation-alpha")["preview_id"] == route_preview["preview_id"]

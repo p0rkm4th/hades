@@ -188,6 +188,8 @@ assert provenance_followup('How do you know that?', 'Is everything okay with the
 assert not provenance_followup('How do you know that?', '')
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
+assert target('Why is the NetBox monitor down?') == (['netbox'], 'netbox')
+assert target('How is NetBox reporting unavailable?') == (['netbox'], 'netbox')
 groups = namespace['_hades_homelab_availability_groups']
 workloads_on_host = namespace['_hades_homelab_workloads_on_host_response']
 core_vm_placement = namespace['_hades_homelab_core_vm_placement_response']
@@ -513,7 +515,14 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '        resources.append({"name": "Compute Node A", "runtime_status": "NOT_OBSERVED", '
         '                         "inventory": {"name": "Compute Node A"}, '
         '                         "identity": {"canonical_id": "netbox:device:7"}})\n'
-        '    return {"resources": resources, '
+        '    sources = []\n'
+        '    if os.environ.get("HADES_TEST_NETBOX_MONITOR_CONFLICT") == "1":\n'
+        '        resources.append({"name": "service-netbox", "availability": {"name": "service-netbox", '
+        '                          "status": "down", "last_updated": "2026-10-03T02:00:00Z"}, '
+        '                         "availability_freshness": "FRESH"})\n'
+        '        sources = [{"source": "NetBox", "status": "READABLE", '
+        '                    "retrieved_at": "2026-10-03T02:00:01Z"}]\n'
+        '    return {"resources": resources, "sources": sources, '
         '"service_catalog": {"status": "OK", "coverage": "COMPLETE", "services": [{'
         '"name": "Minecraft Server", "parent_name": "Test Host", '
         '"addresses": ["192.0.2.10"], "port_mappings": ["tcp/25565"]}]}}\n'
@@ -534,6 +543,16 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
     try:
         routed_up = direct_read('Is Minecraft healthy enough for tonight?', 'synthetic-owner', 'owner')
         assert "Uptime Kuma's configured check for Minecraft Server is up." in routed_up, routed_up
+        os.environ['HADES_TEST_NETBOX_MONITOR_CONFLICT'] = '1'
+        try:
+            monitor_diagnosis = direct_read(
+                'Why is the NetBox monitor down?', 'synthetic-owner', 'owner'
+            )
+        finally:
+            os.environ.pop('HADES_TEST_NETBOX_MONITOR_CONFLICT', None)
+        assert "Uptime Kuma's configured check for service-netbox is down." in monitor_diagnosis, monitor_diagnosis
+        assert "That shows the probe failed, but not why." in monitor_diagnosis, monitor_diagnosis
+        assert "NetBox inventory responded, but I can't confirm that this probe targets NetBox." in monitor_diagnosis, monitor_diagnosis
         household_game_status = direct_read(
             'Is Minecraft working?', 'synthetic-household', 'household'
         )

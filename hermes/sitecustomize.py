@@ -1592,9 +1592,28 @@ def _hades_health_watch_target(text, sources):
     return matches[0] if len(set(matches)) == 1 else None
 
 
+def _hades_monitor_question_is_diagnostic(text):
+    """Keep status/diagnosis questions out of the watch-creation intent."""
+    value = str(text or "")
+    explicit_watch_request = bool(re.match(
+        r"^\s*(?:can|could|would)\s+you\s+(?:please\s+)?"
+        r"(?:watch|monitor|observe|keep\s+an\s+eye\s+on|tell\s+me\s+if|let\s+me\s+know\s+if|"
+        r"set\s+up\s+(?:a\s+)?(?:watch|monitor))\b",
+        value,
+        re.IGNORECASE,
+    ))
+    if explicit_watch_request:
+        return False
+    return bool(re.match(
+        r"^\s*(?:why|how|what|where|when|who|is|are|was|were|does|did|has|have|will|can|could|would|should)\b",
+        value,
+        re.IGNORECASE,
+    ))
+
+
 def _hades_health_watch_intent(text):
     value = str(text or "")
-    create = bool(re.search(
+    create = bool(not _hades_monitor_question_is_diagnostic(value) and re.search(
         r"\b(?:watch|monitor|observe|keep\s+an\s+eye\s+on|tell\s+me\s+if|let\s+me\s+know\s+if)\b",
         value, re.IGNORECASE,
     )) and bool(re.search(r"\b(?:down|offline|dies|fails|breaks|stops|health)\b", value, re.IGNORECASE))
@@ -4639,8 +4658,17 @@ def _hades_service_health_target(user_text):
         re.IGNORECASE,
     )
     if not query:
+        query = re.search(
+            r"\b(?:why|how)\s+(?:is|are|does|did)\s+"
+            r"(?P<target>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s+"
+            r"(?:(?:show(?:ing)?|report(?:ing)?)\s+)?"
+            r"(?:down|offline|failing|unavailable|not\s+responding)\b",
+            text,
+            re.IGNORECASE,
+        )
+    if not query:
         return None
-    stop = {"a", "an", "the", "my", "our", "home", "all", "every", "everything", "server", "servers", "computer", "computers", "node", "nodes", "infrastructure", "homelab", "service", "services", "app", "application", "workload", "system", "game"}
+    stop = {"a", "an", "the", "my", "our", "home", "all", "every", "everything", "server", "servers", "computer", "computers", "node", "nodes", "infrastructure", "homelab", "service", "services", "app", "application", "workload", "system", "game", "monitor", "check", "probe", "for"}
     target_words = [
         word.casefold() for word in re.findall(r"[a-z0-9]+", query.group("target"), re.IGNORECASE)
         if word.casefold() not in stop
@@ -5261,6 +5289,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         re.IGNORECASE,
     ))
     household_game_health_intent = _hades_household_game_health_intent(text, scope)
+    named_service_health_intent = bool(_hades_service_health_target(text))
     household_node_status_intent = bool(
         scope != "owner" and _hades_homelab_target_from_question(text)
     )
@@ -5322,7 +5351,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     )
     if _definition_question:
         return None
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not change_intent and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"

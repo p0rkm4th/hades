@@ -36,6 +36,10 @@ def _hades_household_game_health_intent(text, scope):
     return False
 def _hades_service_placement_intent(text, scope):
     return scope in {"owner", "household"} and "where" in text.casefold()
+def _hades_monitor_question_is_diagnostic(text):
+    return str(text).lstrip().casefold().startswith("why")
+def _hades_health_watch_intent(text):
+    return not _hades_monitor_question_is_diagnostic(text)
 '''
 
 ACTIVE = '''
@@ -47,6 +51,10 @@ def _hades_direct_homelab_read(text):
     return text
 def _hades_ambiguous_media_device_clarification(text):
     return None
+def _hades_monitor_question_is_diagnostic(text):
+    return False
+def _hades_health_watch_intent(text):
+    return True
 def _hades_run_conversation(self, user_message, previous_user_text, _preflight_text):
     if _hades_is_hermes_auxiliary_prompt(user_message):
         return "auxiliary"
@@ -126,6 +134,8 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert "_hades_homelab_target_from_question(user_message)" in candidate
     assert "_hades_ambiguous_media_device_clarification(_preflight_text)" in candidate
     assert "_hades_direct_homelab_backup_compound" in candidate
+    assert "return not _hades_monitor_question_is_diagnostic(text)" in candidate
+    assert 'return str(text).lstrip().casefold().startswith("why")' in candidate
     assert "from datetime import datetime" in candidate
     assert candidate.index("proxmox_backup_response = _hades_direct_proxmox_backup_read") < candidate.index(
         "compound_status_response = _hades_direct_homelab_backup_compound"

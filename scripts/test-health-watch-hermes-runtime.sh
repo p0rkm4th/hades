@@ -129,4 +129,35 @@ assert store.latest_preview(owner, conversation_id=inverse_conversation)["previe
 assert store.get(watch["automation_id"])["shared_subjects"] == (household,)
 assert len(store.list_all()) == 1
 print("PASS Hermes runtime kept the persisted current create preview over stale worker-local action state")
+
+# A question about an existing failed monitor must reach the homelab reader;
+# the noun "monitor" is not an instruction to create a new watch.
+actual_homelab_read = hades._hades_direct_homelab_read
+read_calls = []
+default_monitor_answer = (
+    "Uptime Kuma's configured check for service-netbox is down. "
+    "That shows the probe failed, but not why. NetBox inventory responded, "
+    "but I can't confirm that this probe targets NetBox."
+)
+def synthetic_homelab_read(text, subject, scope, context_text=""):
+    read_calls.append((text, subject, scope))
+    return default_monitor_answer if text == "Why is the NetBox monitor down?" else None
+
+hades._hades_direct_homelab_read = synthetic_homelab_read
+try:
+    diagnostic_agent = run_agent.AIAgent(
+        gateway_session_key=f"hades-user-{owner}",
+        session_id="synthetic-monitor-diagnosis",
+        stream_delta_callback=lambda _chunk: None,
+        **kwargs,
+    )
+    diagnosis = diagnostic_agent.run_conversation(
+        "Why is the NetBox monitor down?", conversation_history=[]
+    )
+finally:
+    hades._hades_direct_homelab_read = actual_homelab_read
+assert diagnosis.get("completed") is True and diagnosis.get("api_calls") == 0, diagnosis
+assert diagnosis.get("final_response") == default_monitor_answer, diagnosis
+assert read_calls == [("Why is the NetBox monitor down?", owner, "owner")], read_calls
+print("PASS Hermes runtime routes monitor diagnosis to the read-only homelab path without creating a watch or calling a model")
 PY

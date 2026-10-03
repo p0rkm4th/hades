@@ -19,6 +19,8 @@ EXTRA = {
     "_hades_direct_owner_location",
     "_hades_endpoint_continuation_response",
     "_hades_service_placement_intent",
+    "_hades_monitor_question_is_diagnostic",
+    "_hades_health_watch_intent",
 }
 
 

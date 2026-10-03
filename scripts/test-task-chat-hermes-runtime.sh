@@ -369,6 +369,38 @@ hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
 hades._hades_direct_household_grocy_read = lambda *_args, **_kwargs: None
 hades._hades_direct_grocy_expiry_read = lambda *_args, **_kwargs: None
 hades._hades_direct_finance_guidance = lambda *_args, **_kwargs: None
+
+# A diagnostic mentioning a monitor must not be consumed as a request to
+# create a Server Health Watch before it reaches the current read-only source.
+monitor_read_calls = []
+monitor_diagnosis_text = (
+    "Uptime Kuma's configured check for service-netbox is down. "
+    "That shows the probe failed, but not why. NetBox inventory responded, "
+    "but I can't confirm that this probe targets NetBox."
+)
+def synthetic_monitor_diagnosis(text, subject, scope, context_text=""):
+    monitor_read_calls.append((text, subject, scope))
+    if text == "Why is the NetBox monitor down?":
+        return monitor_diagnosis_text
+    return None
+
+hades._hades_direct_homelab_read = synthetic_monitor_diagnosis
+try:
+    monitor_diagnosis_agent = agent_class(
+        gateway_session_key=f"hades-user-{owner}",
+        session_id="synthetic-monitor-diagnosis-route",
+        stream_delta_callback=lambda _chunk: None,
+        **kwargs,
+    )
+    monitor_diagnosis_result = monitor_diagnosis_agent.run_conversation(
+        "Why is the NetBox monitor down?", conversation_history=[]
+    )
+finally:
+    hades._hades_direct_homelab_read = actual_homelab_read
+assert monitor_diagnosis_result.get("completed") is True and monitor_diagnosis_result.get("api_calls") == 0, monitor_diagnosis_result
+assert monitor_diagnosis_result.get("final_response") == monitor_diagnosis_text, monitor_diagnosis_result
+assert monitor_read_calls == [("Why is the NetBox monitor down?", owner, "owner")], monitor_read_calls
+
 owner_server_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-server-overview",
     stream_delta_callback=lambda _chunk: None, **kwargs,
