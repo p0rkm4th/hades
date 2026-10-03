@@ -42,6 +42,8 @@ wanted = {
     '_hades_homelab_target_from_question',
     '_hades_homelab_named_check_target',
     '_hades_homelab_followup_prompt',
+    '_hades_homelab_source_identity_intent',
+    '_hades_homelab_unlinked_identity_response',
     '_hades_broad_homelab_status_intent',
     '_hades_household_game_health_intent',
     '_hades_homelab_provenance_followup',
@@ -190,6 +192,7 @@ for prompt in (
     'Is everything okay with my homelab?', 'Is everything okay with our homelab?',
     'Are all the computers okay?', 'Anything dying?', "Why's everything slow?",
     'Why does the network feel slow?', 'Why does Wi-Fi feel slow?',
+    'Which live homelab observations cannot you confidently match to the same machine?',
 ):
     assert status_intent(prompt), f'broad homelab status intent missed {prompt!r}'
 assert game_health_intent('Is the game server working?', 'household')
