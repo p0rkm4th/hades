@@ -151,10 +151,16 @@ def replace_call_sites(active_text: str, tree: ast.Module) -> str:
                 len(node.args) == 3
                 and not node.keywords
                 and is_self_getattr(node.args[1], "_hades_subject")
-                and is_self_getattr(node.args[2], "_hades_session_scope")
+                and (
+                    is_self_getattr(node.args[2], "_hades_session_scope")
+                    or (
+                        isinstance(node.args[2], ast.Constant)
+                        and node.args[2].value == "household"
+                    )
+                )
             ):
-                # Preserve the early household game-health guard's explicit
-                # subject/scope call. It intentionally has no follow-up context.
+                # Preserve early game/service-health guards with an explicit
+                # household scope. These intentionally have no follow-up context.
                 continue
             elif isinstance(context, ast.Name) and context.id == "previous_user_text":
                 new = old.replace("context_text=previous_user_text", "context_text=_hades_intent_text")
@@ -216,6 +222,18 @@ def add_household_route(source: str) -> str:
     if len(auxiliary_guards) != 1:
         raise ValueError("could not uniquely locate the auxiliary-prompt guard")
     auxiliary_guard = auxiliary_guards[0]
+    run_text = ast.get_source_segment(source, run_conversation) or ""
+    has_early_household_service_guard = (
+        "Household service-health boundary completed before staged automation routing" in run_text
+    )
+    if has_early_household_service_guard:
+        required_early_markers = (
+            "_hades_service_placement_intent(",
+            "_hades_household_game_health_intent(",
+            "Owner model-capacity follow-up failed closed without model invocation",
+        )
+        if any(marker not in run_text for marker in required_early_markers):
+            raise ValueError("existing early homelab route is incomplete; refusing duplicate or partial composition")
     early_block = '''
         if getattr(self, "_hades_session_scope", "") in {"owner", "household"} and _hades_service_placement_intent(
             user_message, getattr(self, "_hades_session_scope", "")
@@ -343,10 +361,15 @@ def add_household_route(source: str) -> str:
     # Capacity is known to lack live VRAM evidence, so stop it before any
     # request classification or live-read work. Named-node fallback stays
     # after the owner source read so it can use available evidence first.
-    insertion = auxiliary_guard.end_lineno
-    lines[insertion:insertion] = early_block.splitlines(keepends=True)
+    if not has_early_household_service_guard:
+        insertion = auxiliary_guard.end_lineno
+        lines[insertion:insertion] = early_block.splitlines(keepends=True)
     lines = "".join(lines).splitlines(keepends=True)
-    lines[owner.end_lineno + len(early_block.splitlines(keepends=True)):owner.end_lineno + len(early_block.splitlines(keepends=True))] = late_block.splitlines(keepends=True)
+    has_late_household_read = "Household direct homelab read completed without model invocation" in run_text
+    if not has_late_household_read:
+        early_lines = 0 if has_early_household_service_guard else len(early_block.splitlines(keepends=True))
+        insertion = owner.end_lineno + early_lines
+        lines[insertion:insertion] = late_block.splitlines(keepends=True)
     composed = "".join(lines)
     return composed
 

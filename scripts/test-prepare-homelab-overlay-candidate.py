@@ -149,6 +149,24 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     assert output.stat().st_mode & 0o777 == 0o600
     assert active.read_text(encoding="utf-8") == ACTIVE
 
+    recomposed = directory / "recomposed.py"
+    second_composition = run(
+        "--active-overlay", str(output), "--source", str(source), "--output", str(recomposed)
+    )
+    assert second_composition.returncode == 0, second_composition.stderr
+    recomposed_text = recomposed.read_text(encoding="utf-8")
+    assert recomposed_text.count(
+        "Household service-health boundary completed before staged automation routing"
+    ) == candidate.count(
+        "Household service-health boundary completed before staged automation routing"
+    )
+    assert recomposed_text.count(
+        "Household direct homelab read completed without model invocation"
+    ) == candidate.count(
+        "Household direct homelab read completed without model invocation"
+    )
+    assert recomposed.stat().st_size == output.stat().st_size
+
     # A second run must not overwrite an existing candidate.
     second = run("--active-overlay", str(active), "--source", str(source), "--output", str(output))
     assert second.returncode != 0
