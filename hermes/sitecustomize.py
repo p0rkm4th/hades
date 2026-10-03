@@ -4734,9 +4734,33 @@ def _hades_service_monitor_response(user_text, resources, summary=None, scope="o
                     f"{observation} This verifies endpoint reachability only; I did not invoke Agent Zero, "
                     f"so task execution is unverified. Checked at {checked_at}."
                 )
+        source_rows = [
+            row for row in (summary.get("sources", []) if isinstance(summary, dict) else [])
+            if isinstance(row, dict) and row.get("source") == "Uptime Kuma"
+        ]
+        source_context = " Uptime Kuma source check time is unavailable."
+        if len(source_rows) == 1:
+            source_row = source_rows[0]
+            source_status = str(source_row.get("status") or "UNKNOWN").upper()
+            retrieved_at = " ".join(str(source_row.get("retrieved_at") or "").split())[:80]
+            if retrieved_at:
+                source_context = f" Uptime Kuma was checked at {retrieved_at}."
+            if source_status in {"UNAVAILABLE", "SOURCE_UNAVAILABLE", "FAILED"}:
+                source_context += " The Uptime Kuma source was unavailable for that read."
+            elif source_status in {"NOT_CONFIGURED", "NOT CONFIGURED"}:
+                source_context += " Uptime Kuma is not configured as a source."
+            elif source_status not in {"HEALTHY", "READABLE", "OK"}:
+                source_context += f" The Uptime Kuma source status was {source_status.casefold()}."
+        elif len(source_rows) > 1:
+            source_context = " Multiple Uptime Kuma source reads were composed; a single check time is unavailable."
+        if isinstance(summary, dict) and (
+            summary.get("resources_truncated") or summary.get("availability_summary_truncated")
+        ):
+            source_context += " The returned availability records were truncated, so a matching check may be omitted."
         return (
             f"I couldn't verify a current Uptime Kuma service monitor matching {target}. "
             "A Proxmox host or VM being online does not show whether its application accepts connections or is usable, so I can't call it healthy."
+            + source_context
         )
     if len(matches) > 1:
         names = ", ".join(" ".join(name.split())[:80] for name, _availability, _freshness, _resource in matches[:5])

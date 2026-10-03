@@ -646,6 +646,22 @@ unmonitored = answer('Is Jellyfin healthy enough for tonight?', fresh_minecraft)
 assert 'couldn\'t verify a current Uptime Kuma service monitor matching jellyfin' in unmonitored, unmonitored
 assert 'Proxmox host or VM being online does not show' in unmonitored, unmonitored
 assert "can't call it healthy" in unmonitored, unmonitored
+unmonitored_current = answer('Is Grocy working right now?', [], {
+    'sources': [{
+        'source': 'Uptime Kuma', 'status': 'HEALTHY',
+        'retrieved_at': '2026-10-03T18:00:00+00:00',
+    }],
+})
+assert 'Uptime Kuma was checked at 2026-10-03T18:00:00+00:00' in unmonitored_current, unmonitored_current
+assert "couldn't verify a current Uptime Kuma service monitor matching grocy" in unmonitored_current, unmonitored_current
+unmonitored_outage = answer('Is Grocy working right now?', [], {
+    'sources': [{
+        'source': 'Uptime Kuma', 'status': 'UNAVAILABLE',
+        'retrieved_at': '2026-10-03T18:01:00+00:00',
+    }],
+})
+assert 'Uptime Kuma was checked at 2026-10-03T18:01:00+00:00' in unmonitored_outage, unmonitored_outage
+assert 'Uptime Kuma source was unavailable' in unmonitored_outage, unmonitored_outage
 
 stale = [dict(fresh_minecraft[0], availability_freshness='STALE')]
 stale_answer = answer('Is Minecraft online?', stale)
