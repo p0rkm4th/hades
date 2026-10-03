@@ -94,6 +94,10 @@ Status: **PARTIAL**
   distinct evidence. It does not promote host probes to app health or model
   catalogs to generation/GPU capacity. Household A receives only the generic
   boundary.
+- Fresh named inference-host owner dogfood combines provider-reported catalog
+  and residency with the current configured host probe, while labeling
+  hardware specifications historical and host workload/GPU utilization
+  unavailable. Household A remains limited to the generic boundary.
 - Candidate `4c73e28` passed Public CI and was deployed with rollback. Fresh
   Household A/B turns for whole-home slowness and computer status persisted
   scope-limited answers without exposing private topology or querying owner

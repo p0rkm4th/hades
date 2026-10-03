@@ -74,6 +74,11 @@ of truth.
   catalogs/residency, and unresolved source links, and did not equate any of
   those with application readiness, successful generation, or GPU capacity.
   Fresh Household A dogfood returned only the generic home-computers boundary.
+- Fresh owner dogfood of a named inference-host activity question combined
+  current provider catalog/residency, the fresh configured host probe, and
+  explicitly historical hardware inventory. The answer did not imply current
+  workload/OS health or GPU capacity. Household A received only the generic
+  boundary; no owner infrastructure reads were exposed.
 - The deployed household status boundary now uses plain language for “Why is
   everything slow?” and “Are all the computers okay?” Fresh authenticated
   Household A/B chats persisted explicit limits without owner topology or
