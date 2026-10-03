@@ -113,8 +113,11 @@ Status: **PARTIAL**
   managed guest. Candidate routing now sends these variants through the
   canonical read-only host inventory path and includes guest IDs with current
   VM/CT state. Focused contracts, exact composed-overlay runtime checks, and
-  Public CI run `37149367145` pass. Deployment and fresh owner UI acceptance
-  remain pending. Full Proxmox and NetBox coverage is still partial.
+  Public CI run `37149616879` pass. Deployment with a hash-guarded root-only
+  rollback is complete. Fresh owner UI lists currently visible guest IDs and
+  power states with the selected-scope caveat intact; fresh Household A/B
+  answers remain generic and expose no infrastructure detail. Full Proxmox
+  scope and NetBox application-service coverage remain partial.
 - Fresh named inference-host owner dogfood combines provider-reported catalog
   and residency with the current configured host probe, while labeling
   hardware specifications historical and host workload/GPU utilization
