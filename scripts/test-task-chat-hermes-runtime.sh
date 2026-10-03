@@ -1462,7 +1462,7 @@ assert compute_node_a_status.get("completed") is True and compute_node_a_status.
 compute_node_a_text = compute_node_a_status["final_response"]
 assert "sample:small is listed at Compute Node A" in compute_node_a_text, compute_node_a_text
 assert "Observed hardware inventory lists Compute Node A." in compute_node_a_text, compute_node_a_text
-assert "Role: synthetic inference node." in compute_node_a_text, compute_node_a_text
+assert "Last recorded role: synthetic inference node." in compute_node_a_text, compute_node_a_text
 assert "Host CPU/GPU load and free VRAM are not connected." in compute_node_a_text, compute_node_a_text
 assert "I don't have a current host runtime check for it" in compute_node_a_text, compute_node_a_text
 assert "192.0.2.69" not in compute_node_a_text, compute_node_a_text

@@ -1232,6 +1232,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             "What's Compute Node A doing right now?", 'synthetic-owner', 'owner'
         )
         assert node_activity.startswith('NODE_ACTIVITY:Compute Node A Observed hardware inventory lists Compute Node A.'), node_activity
+        assert 'Last recorded role: synthetic inference node.' in node_activity
+        assert 'treat its role and specifications as historical' in node_activity
         assert 'hardware inventory is stale; last observed 2026-09-01' in node_activity
         assert "Host CPU/GPU load and free VRAM are not connected." in node_activity
         running_activity = direct_read(

@@ -6527,15 +6527,16 @@ def _hades_direct_homelab_read(
                 if len(matching_machines) == 1:
                     machine = matching_machines[0]
                     details = [f"Observed hardware inventory lists {machine.get('name', target)}."]
-                    role_label = _hades_homelab_display_label(machine.get("role"))
-                    if role_label:
-                        details.append(f"Role: {role_label}.")
                     hardware_freshness = str(capability.get("freshness") or capability.get("status") or "UNKNOWN").upper()
                     hardware_observed_at = capability.get("observed_at")
+                    role_label = _hades_homelab_display_label(machine.get("role"))
+                    if role_label:
+                        role_prefix = "Role" if hardware_freshness == "FRESH" else "Last recorded role"
+                        details.append(f"{role_prefix}: {role_label}.")
                     if hardware_freshness != "FRESH":
                         observed_label = f"; last observed {hardware_observed_at}" if hardware_observed_at else ""
                         details.append(
-                            f"That hardware inventory is {hardware_freshness.casefold()}{observed_label}; treat those specifications as historical."
+                            f"That hardware inventory is {hardware_freshness.casefold()}{observed_label}; treat its role and specifications as historical."
                         )
                     if machine.get("cpu"):
                         details.append(f"CPU inventory: {machine['cpu']}.")
