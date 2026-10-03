@@ -80,8 +80,11 @@ of truth.
   affected acceptance chats were removed while protected evidence was retained.
   Candidate routing now sends this intent to the deterministic owner summary or
   the plain household boundary, and regression tests verify that no household
-  model/tool invocation occurs. Production still needs rollout and fresh UI
-  reacceptance before this defect can be considered closed.
+  model/tool invocation occurs. Public CI passed, the exact-active-overlay
+  runtime contract passed, and the fix was deployed with a root-only rollback
+  copy. Fresh owner and household UI chats persisted the scoped summary and
+  generic boundary respectively, closing this disclosure defect. The broader
+  homelab source-coverage gaps below remain open.
 
 ## Remaining evidence
 

@@ -37,10 +37,12 @@ Status: **PARTIAL**
   private infrastructure records; do not infer broad health from partial data.
 - Capability-discovery dogfood found a household question that fell through to
   model fallback and described internal source/tool capabilities; a separate
-  attempt persisted only an unfinished preamble. Candidate code now routes this
-  question to a deterministic owner summary or a plain household boundary and
-  has focused regression coverage. Production reacceptance remains required;
-  keep this disclosure defect open until the candidate is deployed and verified.
+  attempt persisted only an unfinished preamble. Candidate code routes this
+  question to a deterministic owner summary or a plain household boundary, with
+  focused regression coverage. It passed Public CI and the composed runtime
+  check, was deployed with a root-only rollback copy, and fresh authenticated
+  owner/household chats passed. This disclosure defect is closed; the incomplete
+  Proxmox and NetBox source coverage below remains open.
 - Live owner dogfood found one compound change-history question that returned
   a broad current snapshot and, with an added qualifier, could be falsely
   refused by the private-person research guard. A general model-placement
