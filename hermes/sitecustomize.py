@@ -5515,7 +5515,8 @@ def _hades_broad_homelab_status_intent(text):
         r"which\s+(?:computer|machine|server)\s+is\s+having\s+trouble|"
         r"(?:why(?:['’]s|\s+is)\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+slow|"
         r"why\s+does\s+(?:the\s+)?(?:network|internet|wi-?fi|everything|stuff|shit)\s+(?:feel(?:s|ing)?\s+)?slow)|"
-        r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))\s*[?.!]*\s*$",
+        r"what\s+(?:has\s+)?changed\s+since\s+(?:yesterday|last\s+week|last\s+time))"
+        r"(?:\s+(?:right\s+now|currently|today|at\s+the\s+moment))?\s*[?.!]*\s*$",
         str(text or ""),
         re.IGNORECASE,
     ))
@@ -7389,7 +7390,9 @@ _HADES_HOMELAB_INTENT = re.compile(
     r"^\s*(?:(?:check|inspect)\s+(?:the\s+)?"
     r"(?!(?:my|our|if|whether|shopping\s+list|grocery\s+list|recipes?|settings|memory|conversation|tasks?|emails?)\b)"
     r"[a-z0-9][a-z0-9 ._'’-]{0,60}?|"
-    r"is\s+everything\s+(?:okay|ok|all\s+right|good)|"
+    r"is\s+everything\s+(?:okay|ok|all\s+right|good)"
+    r"(?:\s+with\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?"
+    r"(?:\s+(?:right\s+now|currently|today|at\s+the\s+moment))?|"
     r"what(?:['’]s|\s+is)\s+(?:down|degraded)(?:\s+or\s+(?:down|degraded))?"
     r"(?:\s+(?:right\s+now|currently|today|at\s+the\s+moment))?"
     r"(?:\s*,?\s*(?:and\s+)?what\s+(?:can\s+you\s+not|can['’]t\s+you|cannot\s+you)\s+verify"

@@ -204,6 +204,7 @@ for prompt in (
 for prompt in (
     'Is everything okay?', 'Is everything okay with the homelab?',
     'Is everything okay with my homelab?', 'Is everything okay with our homelab?',
+    'Is everything okay with the homelab right now?', 'Is everything okay right now?',
     'Are all the computers okay?', 'Anything dying?', "Why's everything slow?",
     'Why does the network feel slow?', 'Why does Wi-Fi feel slow?',
     'Which live homelab observations cannot you confidently match to the same machine?',
@@ -1042,6 +1043,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Proxmox' in source_outage and 'Uptime Kuma' in source_outage, source_outage
         assert 'unreported nodes remain unknown' in source_outage, source_outage
         assert 'Optional Source' not in source_outage, source_outage
+        right_now_status = direct_read(
+            'Is everything okay with the homelab right now?', 'synthetic-owner', 'owner'
+        )
+        assert 'The live homelab view is partial.' in right_now_status, right_now_status
+        assert 'Live inference reads: Test Fast API responding' in right_now_status, right_now_status
         compound_status = direct_read(
             'What is down or degraded right now, and what can you not verify?',
             'synthetic-owner', 'owner',
