@@ -53,6 +53,11 @@ of truth.
   current availability data as Uptime Kuma probes and distinguishes responding
   host probes from application readiness. Guest visibility and live GPU
   capacity remain open evidence gaps.
+- The deployed household status boundary now uses plain language for “Why is
+  everything slow?” and “Are all the computers okay?” Fresh authenticated
+  Household A/B chats persisted explicit limits without owner topology or
+  owner-only source reads. Candidate `4c73e28` passed Public CI; the broader
+  homelab source-coverage gates remain open.
 - Backup answers distinguish configured jobs and bounded task history from
   verified backup contents, independent custody, and restoreability.
 - Current-tree privacy checks and the focused homelab contracts pass.
@@ -82,9 +87,10 @@ of truth.
   candidates, and both updated replies were verified in the authenticated UI.
   The protected pre-edit backup and scan evidence are retained in the private
   acceptance area; these acceptance records are not public product fixtures.
-- Public `main` remains green at the release-convergence baseline. The
-  homelab candidate and its documentation remain on the review branch and
-  have not been integrated into `main`.
+- Public `main` remains green at the release-convergence baseline. Homelab
+  implementation and current continuation evidence are on the review branch;
+  candidate `4c73e28` passed Public CI and is deployed behind the recorded
+  read-only rollback procedure, but has not been integrated into `main`.
 
 ## Repository and deployment authority
 

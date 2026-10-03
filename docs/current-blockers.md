@@ -18,10 +18,11 @@ Status: **PARTIAL**
   Authenticated owner UI dogfood covers broad current status and provenance,
   named-node activity, service placement, provider inventory/residency,
   backup scope, and model-capacity caveats. Household dogfood checks service
-  health and private infrastructure redaction. Sensitive prior assistant turns
-  are removed from household model context before routing or fallback. A full
-  live homelab summary remains partial because Proxmox guest visibility and
-  NetBox application-service coverage are incomplete.
+  health, private-infrastructure redaction, and plain-language boundaries for
+  whole-home speed and computer-status questions. Sensitive prior assistant
+  turns are removed from household model context before routing or fallback.
+  A full live homelab summary remains partial because Proxmox guest visibility
+  and NetBox application-service coverage are incomplete.
 - An optional provider-native reader now queries Ollama model catalogs and
   residency plus OpenAI-compatible model catalogs, preserving endpoint
   identity and partial/unavailable states. Deployed HADES owner dogfood
@@ -55,6 +56,10 @@ Status: **PARTIAL**
   reported as unknown intended placement. It names Uptime Kuma as the source
   of current probes and distinguishes host-probe responses from application
   readiness; guest visibility and live GPU capacity remain open evidence gaps.
+- Candidate `4c73e28` passed Public CI and was deployed with rollback. Fresh
+  Household A/B turns for whole-home slowness and computer status persisted
+  scope-limited answers without exposing private topology or querying owner
+  sources. This improves household wording but does not close source coverage.
 - Backup readiness must report scope and custody. Repository verification is
   not proof that host/VM backups are current or independently recoverable.
 
