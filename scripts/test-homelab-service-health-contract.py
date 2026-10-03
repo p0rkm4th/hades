@@ -47,6 +47,8 @@ wanted = {
     '_hades_homelab_source_identity_intent',
     '_hades_homelab_unlinked_identity_response',
     '_hades_broad_homelab_status_intent',
+    '_hades_homelab_resource_ranking_intent',
+    '_hades_homelab_resource_ranking_response',
     '_hades_household_game_health_intent',
     '_hades_homelab_provenance_followup',
     '_hades_positive_homelab_control_request',

@@ -102,6 +102,9 @@ assert hades._HADES_HOMELAB_INTENT.search("Where's qwen3.6:35b?")
 assert hades._HADES_HOMELAB_INTENT.search("Which GPUs are free?")
 assert hades._HADES_HOMELAB_INTENT.search("Where should I run another model?")
 assert hades._HADES_HOMELAB_INTENT.search("Check Synthetic Node B.")
+assert hades._hades_homelab_resource_ranking_intent("What's using the most resources right now?")
+assert hades._hades_homelab_resource_ranking_intent("Which server has the highest CPU usage?")
+assert not hades._hades_homelab_resource_ranking_intent("What resources does HADES use?")
 unlinked_source_question = "Which live homelab observations cannot you confidently match to the same machine?"
 assert hades._hades_broad_homelab_status_intent(unlinked_source_question)
 unverified_service_question = "Which homelab services can you not verify right now?"
@@ -199,6 +202,23 @@ finally:
     hades._hades_direct_homelab_tool_result = original_summary_tool_result
 assert "Uptime Kuma's configured probes failed: service-check-a" in current_down_response, current_down_response
 assert "service-check-b" not in current_down_response, current_down_response
+synthetic_resource_summary = {
+    "status": "PARTIAL",
+    "retrieved_at": "2026-10-03T07:00:00Z",
+    "proxmox_guest_visibility": {"status": "PARTIAL"},
+    "resources": [
+        {"name": "Synthetic Host A", "runtime_status": "online", "runtime": {"cpu": 0.22, "mem": 40, "maxmem": 100}},
+        {"name": "Synthetic Guest B", "runtime_status": "running", "runtime": {"cpu": 0.78, "mem": 3_500_000_000, "maxmem": 4_000_000_000}},
+        {"name": "Synthetic Guest C", "runtime_status": "running", "runtime": {"cpu": 0.44, "mem": 9_000_000_000, "maxmem": 16_000_000_000}},
+        {"name": "Inventory Only", "runtime_status": "NOT_OBSERVED", "runtime": {}, "inventory": {"name": "Inventory Only"}},
+    ],
+}
+synthetic_resource_rank = hades._hades_homelab_resource_ranking_response(synthetic_resource_summary)
+assert "Highest current Proxmox CPU reading: Synthetic Guest B at 78.0%" in synthetic_resource_rank, synthetic_resource_rank
+assert "Highest current Proxmox memory use: Synthetic Guest B" in synthetic_resource_rank, synthetic_resource_rank
+assert "compares 3 currently online/running Proxmox runtime record(s)" in synthetic_resource_rank, synthetic_resource_rank
+assert "not a complete homelab ranking" in synthetic_resource_rank, synthetic_resource_rank
+assert "GPU load" in synthetic_resource_rank and "2026-10-03T07:00:00Z" in synthetic_resource_rank, synthetic_resource_rank
 synthetic_empty_catalog = dict(synthetic_service_summary)
 synthetic_empty_catalog["service_catalog"] = {"status": "OK", "coverage": "EMPTY", "services": []}
 empty_catalog_response = hades._hades_homelab_service_coverage_response(synthetic_empty_catalog)
@@ -542,6 +562,50 @@ hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
 hades._hades_direct_household_grocy_read = lambda *_args, **_kwargs: None
 hades._hades_direct_grocy_expiry_read = lambda *_args, **_kwargs: None
 hades._hades_direct_finance_guidance = lambda *_args, **_kwargs: None
+
+original_tool_result = hades._hades_direct_homelab_tool_result
+resource_tool_calls = []
+def synthetic_resource_tool_result(name, *_args, **_kwargs):
+    resource_tool_calls.append(name)
+    if name == "homelab_summary":
+        return synthetic_resource_summary
+    return {"status": "NOT_CONFIGURED", "endpoints": []}
+hades._hades_direct_homelab_tool_result = synthetic_resource_tool_result
+try:
+    resource_rank_direct = hades._hades_direct_homelab_read(
+        "What's using the most resources right now?", owner, "owner",
+    )
+    assert "Highest current Proxmox CPU reading: Synthetic Guest B at 78.0%" in resource_rank_direct, resource_rank_direct
+    assert resource_tool_calls == ["homelab_summary"], resource_tool_calls
+    resource_tool_calls.clear()
+    resource_rank_agent = agent_class(
+        gateway_session_key=f"hades-user-{owner}",
+        session_id="synthetic-resource-ranking-owner",
+        stream_delta_callback=lambda _chunk: None,
+        **kwargs,
+    )
+    resource_rank_result = resource_rank_agent.run_conversation(
+        "What's using the most resources right now?", conversation_history=[],
+    )
+    assert resource_rank_result.get("completed") is True and resource_rank_result.get("api_calls") == 0, resource_rank_result
+    assert "Highest current Proxmox CPU reading: Synthetic Guest B at 78.0%" in resource_rank_result["final_response"], resource_rank_result
+    assert resource_tool_calls == ["homelab_summary"], resource_tool_calls
+
+    resource_tool_calls.clear()
+    household_resource_agent = agent_class(
+        gateway_session_key=f"hades-user-{beta}",
+        session_id="synthetic-resource-ranking-household",
+        stream_delta_callback=lambda _chunk: None,
+        **kwargs,
+    )
+    household_resource_result = household_resource_agent.run_conversation(
+        "What's using the most resources right now?", conversation_history=[],
+    )
+    assert household_resource_result.get("completed") is True and household_resource_result.get("api_calls") == 0, household_resource_result
+    assert "only in an owner session" in household_resource_result["final_response"], household_resource_result
+    assert resource_tool_calls == [], resource_tool_calls
+finally:
+    hades._hades_direct_homelab_tool_result = original_tool_result
 
 # A diagnostic mentioning a monitor must not be consumed as a request to
 # create a Server Health Watch before it reaches the current read-only source.

@@ -5328,6 +5328,108 @@ def _hades_broad_homelab_status_intent(text):
     ))
 
 
+def _hades_homelab_resource_ranking_intent(text):
+    """Identify owner questions asking which homelab resource is most loaded."""
+    return bool(re.fullmatch(
+        r"\s*(?:what(?:['’]s|\s+is)\s+using\s+(?:the\s+)?most\s+(?:homelab\s+)?resources?|"
+        r"what(?:['’]s|\s+is)\s+using\s+(?:the\s+)?most\s+(?:cpu|memory)|"
+        r"(?:which|what)\s+(?:computer|machine|server|node)\s+(?:is\s+)?(?:the\s+)?(?:most\s+loaded|busiest|most\s+busy)|"
+        r"(?:which|what)\s+(?:computer|machine|server|node)\s+(?:is\s+)?(?:using|uses)\s+(?:the\s+)?most\s+(?:resources?|cpu|memory|ram)|"
+        r"(?:which|what)\s+(?:computer|machine|server|node)\s+has\s+(?:the\s+)?highest\s+(?:cpu|memory|ram)\s+(?:load|usage))"
+        r"(?:\s+(?:right\s+now|currently|today|at\s+the\s+moment))?\s*[?.!]*\s*",
+        str(text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_resource_ranking_response(summary):
+    """Compare only fresh Proxmox CPU and memory fields in the visible scope."""
+    if not isinstance(summary, dict) or str(summary.get("status") or "").upper() in {
+        "UNKNOWN", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "NOT_CONFIGURED",
+    }:
+        return "I couldn't read current Proxmox runtime metrics, so I can't rank homelab resource use."
+    import math
+
+    resources = summary.get("resources") if isinstance(summary.get("resources"), list) else []
+    cpu_rows = []
+    memory_rows = []
+    runtime_count = 0
+
+    def finite_number(value):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        try:
+            converted = float(value)
+        except (OverflowError, TypeError, ValueError):
+            return None
+        return converted if math.isfinite(converted) else None
+
+    for resource in resources:
+        if not isinstance(resource, dict):
+            continue
+        status = str(resource.get("runtime_status") or "UNKNOWN").casefold()
+        runtime = resource.get("runtime") if isinstance(resource.get("runtime"), dict) else {}
+        if status not in {"online", "running"} or not runtime:
+            continue
+        runtime_count += 1
+        label = " ".join(str(resource.get("name") or runtime.get("name") or "Unnamed Proxmox resource").split())[:100]
+        cpu = finite_number(runtime.get("cpu"))
+        if cpu is not None and 0 <= cpu <= 1:
+            cpu_rows.append((cpu, label))
+        used = finite_number(runtime.get("mem"))
+        capacity = finite_number(runtime.get("maxmem"))
+        if used is not None and capacity is not None and 0 <= used <= capacity and capacity > 0:
+            memory_rows.append((used / capacity, used, capacity, label))
+
+    parts = []
+    if cpu_rows:
+        usage = max(value for value, _label in cpu_rows)
+        labels = sorted(label for value, label in cpu_rows if abs(value - usage) < 1e-9)
+        leader = ", ".join(labels[:4]) + (f" and {len(labels) - 4} others" if len(labels) > 4 else "")
+        parts.append(
+            f"Highest current Proxmox CPU reading: {leader} at {usage * 100:.1f}% "
+            f"among {len(cpu_rows)} records with valid CPU data."
+        )
+    else:
+        parts.append("No comparable current Proxmox CPU utilization values were returned.")
+    if memory_rows:
+        ratio = max(value for value, _used, _capacity, _label in memory_rows)
+        leaders = [row for row in memory_rows if abs(row[0] - ratio) < 1e-9]
+        labels = sorted(row[3] for row in leaders)
+        leader = ", ".join(labels[:4]) + (f" and {len(labels) - 4} others" if len(labels) > 4 else "")
+        if len(leaders) == 1:
+            used, capacity = leaders[0][1], leaders[0][2]
+            parts.append(
+                f"Highest current Proxmox memory use: {leader} at {used / (1024 ** 3):.1f} / "
+                f"{capacity / (1024 ** 3):.1f} GiB ({ratio * 100:.1f}%) among {len(memory_rows)} "
+                "records with valid memory data."
+            )
+        else:
+            parts.append(
+                f"Highest current Proxmox memory use is tied: {leader} at {ratio * 100:.1f}% "
+                f"among {len(memory_rows)} records with valid memory data."
+            )
+    else:
+        parts.append("No comparable current Proxmox memory-use values were returned.")
+    parts.append(
+        f"This compares {runtime_count} currently online/running Proxmox runtime record(s); "
+        "host and guest readings are separate and may overlap."
+    )
+    visibility = summary.get("proxmox_guest_visibility")
+    visibility_status = str(visibility.get("status") or "UNKNOWN").upper() if isinstance(visibility, dict) else "UNKNOWN"
+    if visibility_status in {"PARTIAL", "UNKNOWN"}:
+        parts.append(
+            "Proxmox guest visibility is partial or unknown, so this is not a complete homelab ranking."
+        )
+    parts.append(
+        "This does not measure process-level use, guest filesystem use, GPU load, or inference hosts "
+        "without live host metrics."
+    )
+    retrieved_at = summary.get("retrieved_at")
+    if isinstance(retrieved_at, str) and retrieved_at:
+        parts.append(f"The Proxmox source read completed at {retrieved_at[:80]}.")
+    return " ".join(parts)
+
+
 def _hades_household_game_health_intent(user_text, scope):
     if scope != "household":
         return False
@@ -5524,6 +5626,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
     if not workdir:
         workdir = os.getcwd()
+    resource_ranking_intent = _hades_homelab_resource_ranking_intent(text)
     named_node_check_target = _hades_homelab_named_check_target(text)
     followup_prompt = _hades_homelab_followup_prompt(text, scope, context_text)
     if followup_prompt and followup_prompt.casefold() != text.casefold():
@@ -5580,6 +5683,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     )
     if scope != "owner" and household_private_placement_intent:
         return "I can't provide internal host or address details from this account."
+    if scope != "owner" and resource_ranking_intent:
+        return "Live infrastructure resource details are available only in an owner session."
     if scope != "owner" and (
         household_broad_status_intent or household_node_status_intent or provenance_intent
         or named_service_health_intent
@@ -5618,7 +5723,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
     _definition_question = bool(
         re.fullmatch(r"\s*what(?:'s|\s+(?:is|are))\s+.+?[?.!]*\s*", text, re.IGNORECASE)
         or re.fullmatch(r"\s*what\s+does\s+.+?\s+(?:do|mean)\s*[?.!]*\s*", text, re.IGNORECASE)
-    ) and not re.search(
+    ) and not resource_ranking_intent and not re.search(
         r"\b(?:status|state|health|healthy|running|working|online|offline|up|down|doing|"
         r"responding|reachable|performance|slow|broken|failing|wrong|fucked|dying|trouble|okay|ok|good|changed|unavailable)\b",
         text,
@@ -5631,7 +5736,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         r"\b(?:how\s+busy|how\s+much\s+load)\s+(?:is|does)\s+(?P<target2>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         text, re.IGNORECASE,
     )
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not node_load_match and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not node_load_match and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -5718,6 +5823,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                 "homelab_recent_activity", {"window_hours": history_window_hours}
             )
             return _hades_homelab_recent_activity_response(activity)
+        if resource_ranking_intent and scope == "owner":
+            summary = _hades_direct_homelab_tool_result("homelab_summary")
+            return _hades_homelab_resource_ranking_response(summary)
         if inference_intent:
             inference = _hades_direct_homelab_tool_result("homelab_inference_inventory")
             model_location_intent = bool(re.search(
@@ -10774,8 +10882,13 @@ try:
             r"\b(?:working|available|online|up|down|healthy|responding)\b",
             str(user_message or ""), re.IGNORECASE,
         ))
+        _direct_private_resource_ranking = (
+            self._hades_session_scope == "household"
+            and _hades_homelab_resource_ranking_intent(user_message)
+        )
         if self._hades_session_scope == "owner" or (
-            self._hades_session_scope == "household" and _direct_ai_availability
+            self._hades_session_scope == "household"
+            and (_direct_ai_availability or _direct_private_resource_ranking)
         ):
             direct_homelab_response = _hades_direct_homelab_read(
                 user_message,
