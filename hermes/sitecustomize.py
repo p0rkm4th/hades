@@ -5995,10 +5995,17 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
                                 f"The {monitor_name} check last reported {monitor_status}, but that observation is {monitor_freshness.casefold()}."
                                 + monitor_identity_caveat
                             )
+                    linked_fresh_positive_probe = (
+                        len(monitor_resources) == 1
+                        and str(monitor_resources[0].get("availability_freshness") or "UNKNOWN").upper() == "FRESH"
+                        and str((monitor_resources[0].get("availability") or {}).get("status") or "").casefold() in {"up", "online"}
+                        and isinstance(monitor_resources[0].get("identity"), dict)
+                        and bool(monitor_resources[0]["identity"].get("canonical_id"))
+                    )
                     if not any(
                         row.get("runtime_status") in {"online", "running"}
                         for row in matched_resources
-                    ):
+                    ) and not linked_fresh_positive_probe:
                         details.append("I don't have a current host runtime check for it, so I can't say whether it's online.")
                     inference_response += " " + " ".join(details)
             return inference_response

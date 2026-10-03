@@ -1338,6 +1338,15 @@ assert "current host workload or operating-system status" in compute_node_a_moni
 assert "No stable identity link confirms that this monitor targets the named host." in compute_node_a_monitor_text, compute_node_a_monitor_text
 assert "Proxmox runtime status is NOT_OBSERVED" not in compute_node_a_monitor_text, compute_node_a_monitor_text
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
+os.environ["HADES_TEST_NODE_A_MONITOR_LINKED"] = "1"
+linked_compute_node_a_monitor = hades._hades_direct_homelab_read(
+    "whats compute-node-a doing rn", owner, "owner",
+)
+assert "the compute node a ssh check is responding (fresh observation)" in linked_compute_node_a_monitor.casefold(), linked_compute_node_a_monitor
+assert "current host workload or operating-system status" in linked_compute_node_a_monitor, linked_compute_node_a_monitor
+assert "can't say whether it's online" not in linked_compute_node_a_monitor.casefold(), linked_compute_node_a_monitor
+assert "running normally" not in linked_compute_node_a_monitor.casefold(), linked_compute_node_a_monitor
+del os.environ["HADES_TEST_NODE_A_MONITOR_LINKED"]
 for status, freshness, expected in (
     ("down", "FRESH", "the Compute Node A SSH check is failing (fresh observation)"),
     ("up", "STALE", "the Compute Node A SSH check last reported up, but that observation is stale"),
@@ -1532,6 +1541,7 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '                          "identity": {"canonical_id": "netbox:device:7"}})\n'
         '    if __import__("os").environ.get("HADES_TEST_HOMELAB_NODE_A_MONITOR") == "1":\n'
         '        resources.append({"name": "Compute Node A SSH", "runtime_status": "NOT_OBSERVED",\n'
+        '                          "identity": ({"canonical_id": "netbox:device:7"} if __import__("os").environ.get("HADES_TEST_NODE_A_MONITOR_LINKED") == "1" else {"status": "UNLINKED"}),\n'
         '                          "currently_online": False, "inventory": None,\n'
         '                          "availability": {"name": "Compute Node A SSH",\n'
         '                                           "status": __import__("os").environ.get("HADES_TEST_NODE_A_MONITOR_STATUS", "up"),\n'
