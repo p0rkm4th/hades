@@ -219,3 +219,18 @@ Status: **PARTIAL**
 
 No public document in this repository is authoritative for private
 infrastructure state. Use the private inventory and live canonical sources.
+
+### Latest live follow-up evidence — 2026-10-03
+
+Review-branch `4a4bfdc` passed Public CI run `37159647718` and was deployed to
+the explicitly approved owner runtime with root-only rollback. Fresh authenticated
+owner UI dogfood verifies named-node GPU status, comparison-winner placement
+follow-up, a size follow-up, and explicit named-host fit. Each capacity answer
+uses only the uniquely linked host's current GPU samples and does not equate
+artifact size with runtime VRAM needs. Household A/B remain topology-redacted.
+The multi-turn evidence is protected outside this repository. Public `main`
+remains at `c83ddd6`; this does not close the source-coverage blockers above.
+Some source display labels appear lowercase; this is cosmetic. Proxmox guest
+scope, NetBox service inventory, an unresolved provider-to-host identity link,
+whole-network telemetry, backup contents/custody/restore verification, and
+successful inference execution remain unknown or partial.

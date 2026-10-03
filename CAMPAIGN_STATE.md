@@ -13,11 +13,10 @@ of truth.
 
 ## Current verified status — 2026-10-03
 
-- The current homelab code candidate `a8fbb3a` passed Public CI run
-  `37156030235` and is deployed. Public `main` remains at the green
-  release-convergence baseline `c83ddd6`; later documentation-only branch
-  updates also passed CI and did not require deployment. Read the live checkout
-  for the current branch/documentation HEAD.
+- The current homelab review-branch candidate `4a4bfdc` passed Public CI run
+  `37159647718` and is deployed. Public `main` remains at the green
+  release-convergence baseline `c83ddd6`. The earlier `a8fbb3a` named-capacity
+  candidate was superseded by later follow-up-routing fixes.
 - Fixed-command, non-sudo GPU telemetry is active only in the explicitly
   approved owner deployment. Fresh persisted owner dogfood reports per-device
   free VRAM/utilization for identity-linked Tartarus and Hypnos endpoints.
@@ -215,3 +214,29 @@ acceptance records. The owner deployment uses an explicitly reviewed read-only
 source configuration and an overlay candidate with a recorded rollback.
 Synthetic evidence is not live infrastructure proof. Any further production
 change requires a tested candidate, explicit scope, and rollback.
+
+### Latest authenticated follow-up acceptance — 2026-10-03
+
+- Current review-branch `HEAD` is `4a4bfdc`; Public `main` remains
+  `c83ddd6`. Public CI run `37159647718` passed. This is still a review-branch
+  candidate, not a merge to `main`.
+- Fresh owner UI dogfood now carries named-node activity into an evidence-based
+  placement follow-up. It shows only the selected host's linked GPU sample;
+  a later size follow-up and explicit named-host fit question also stay scoped
+  to that identity and do not reveal provider endpoint IDs for unlinked hosts.
+  Household A/B receive only the generic infrastructure boundary.
+- A fresh owner diagnostic for a named inference node includes live per-device
+  GPU telemetry and keeps historical hardware inventory, provider residency,
+  and unmeasured CPU load distinct. The live chain and Household A/B answers
+  were saved with mode `0600` outside the public repository.
+- Two follow-up routing defects were repaired from real UI evidence: pronoun
+  placement now recomputes from current linked telemetry when conversation
+  context is trimmed, and the adapter filters generated named-host questions
+  to that host instead of listing every endpoint. Focused adapter/runtime and
+  service-health contracts pass.
+- Remaining gaps are unchanged: selected-scope Proxmox visibility, empty
+  NetBox application-service catalog, an unlinked physical inference endpoint,
+  incomplete network trends and backup verification, and unverified successful
+  inference execution. Display labels from inventory currently render in
+  lowercase in some answers; this is a minor presentation issue, not an identity
+  or safety failure.
