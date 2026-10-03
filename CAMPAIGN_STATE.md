@@ -59,10 +59,12 @@ of truth.
   runtime with a root-only hash-guarded rollback. Hermes is active; fresh
   owner UI identifies the missing matching Kuma monitor, and Household A now
   says it has no current game-server check without exposing owner topology.
-- A follow-on local candidate now distinguishes a stale monitor observation,
-  an unavailable Kuma source, and a fresh monitor with unknown status in plain
-  household wording. Synthetic route coverage for each state passes; this
-  follow-on is not deployed yet.
+- Follow-on candidate `9d58e64` passed Public CI and was deployed with a separate
+  root-only, hash-guarded rollback. It distinguishes a missing monitor, an
+  unavailable Kuma source, a stale observation, unknown observation freshness,
+  and a fresh monitor with unknown status in plain household wording. Synthetic
+  coverage exercises each state; fresh owner/Household A UI acceptance still
+  passes with no topology disclosure.
 - “Where is HADES running?” reports two same-name Proxmox guests and separates
   the stopped guest from the running guest; it does not claim application
   health. Nyx-4 has been asked to confirm whether the stopped duplicate name is
