@@ -6955,7 +6955,11 @@ def _hades_direct_homelab_read(
             service_health_text, resources, summary, scope=scope,
         )
         if household_game_health_intent:
-            if not service_response:
+            if (
+                not service_response
+                or "couldn't verify a current uptime kuma service monitor"
+                in service_response.casefold()
+            ):
                 return "I don't have a current check for the game server, so I can't confirm whether it's working."
             lowered_service_response = service_response.casefold()
             if " is up." in lowered_service_response:

@@ -38,6 +38,13 @@ of truth.
   not guess intended or current placement. Household A's fresh game-health
   answer could not confirm status from its current check and disclosed no
   owner topology. Protected response artifacts remain mode 0600.
+- Paired live owner/Household A game-health dogfood found that the owner view
+  could not verify a matching Kuma monitor, while the household wording implied
+  an inconclusive existing check. A local candidate now says there is no
+  current game-server check when no matching monitor is available, while
+  preserving the separate inconclusive wording for a matching monitor with
+  unknown status. Focused service-health and Hermes runtime contracts pass;
+  this candidate is not deployed.
 - “Where is HADES running?” reports two same-name Proxmox guests and separates
   the stopped guest from the running guest; it does not claim application
   health. Nyx-4 has been asked to confirm whether the stopped duplicate name is

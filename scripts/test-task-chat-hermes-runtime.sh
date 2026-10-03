@@ -1409,7 +1409,7 @@ household_game_status = household_game_agent.run_conversation(
     "Is Minecraft working?", conversation_history=[],
 )
 assert household_game_status.get("completed") is True and household_game_status.get("api_calls") == 0, household_game_status
-assert "can't confirm whether the game server is working" in household_game_status["final_response"], household_game_status
+assert "I don't have a current check for the game server" in household_game_status["final_response"], household_game_status
 assert "192.0.2." not in household_game_status["final_response"], household_game_status
 household_game_location = household_game_agent.run_conversation(
     "Where does Minecraft run?", conversation_history=[],

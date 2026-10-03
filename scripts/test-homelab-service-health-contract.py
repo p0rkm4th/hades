@@ -706,6 +706,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '"availability": {"name": "Minecraft Server", "status": "up", '
         '"last_updated": "2026-09-27T12:00:00Z"}, '
         '"availability_freshness": "FRESH"}]\n'
+        '    if os.environ.get("HADES_TEST_UNKNOWN_GAME_MONITOR") == "1":\n'
+        '        resources[0]["availability"]["status"] = "unknown"\n'
         '    if os.environ.get("HADES_TEST_INFERENCE_NODE") == "1":\n'
         '        resources.append({"name": "Compute Node A", "runtime_status": "NOT_OBSERVED", '
         '                         "inventory": {"name": "Compute Node A"}, '
@@ -784,10 +786,18 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             )
         finally:
             os.environ.pop('HADES_TEST_NO_GAME_MONITOR', None)
-        assert "can't confirm whether the game server is working from the current check" in missing_game_check, missing_game_check
+        assert "I don't have a current check for the game server" in missing_game_check, missing_game_check
         assert 'Proxmox' not in missing_game_check and 'Test Host' not in missing_game_check, missing_game_check
         assert "couldn't verify a current Uptime Kuma service monitor matching Minecraft" in owner_missing_game_check, owner_missing_game_check
         assert "I can't call it healthy" in owner_missing_game_check, owner_missing_game_check
+        os.environ['HADES_TEST_UNKNOWN_GAME_MONITOR'] = '1'
+        try:
+            inconclusive_game_check = direct_read(
+                'Is Minecraft working?', 'synthetic-household', 'household'
+            )
+        finally:
+            os.environ.pop('HADES_TEST_UNKNOWN_GAME_MONITOR', None)
+        assert 'from the current check' in inconclusive_game_check, inconclusive_game_check
         assert 'couldn\'t find a matching service record' in direct_read(
             'Where is Agent Zero?', 'synthetic-owner', 'owner'
         )
