@@ -151,6 +151,7 @@ if household_intent_assignment is not None:
     household_boundary_expression = ast.unparse(household_intent_assignment.value)
     assert '_hades_broad_homelab_status_intent(user_message)' in household_boundary_expression
     assert '_hades_household_game_health_intent(user_message, self._hades_session_scope)' in household_boundary_expression
+    assert '_hades_service_health_target(user_message)' in household_boundary_expression
     assert 'self._hades_session_scope' in household_boundary_expression
     assert 'household' in household_boundary_expression
 else:
@@ -553,6 +554,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert "Uptime Kuma's configured check for service-netbox is down." in monitor_diagnosis, monitor_diagnosis
         assert "That shows the probe failed, but not why." in monitor_diagnosis, monitor_diagnosis
         assert "NetBox inventory responded, but I can't confirm that this probe targets NetBox." in monitor_diagnosis, monitor_diagnosis
+        household_monitor_diagnosis = direct_read(
+            'Why is the NetBox monitor down?', 'synthetic-household', 'household'
+        )
+        assert "I can't verify private infrastructure or computer status from this account." in household_monitor_diagnosis, household_monitor_diagnosis
+        assert 'NetBox' not in household_monitor_diagnosis and 'Kuma' not in household_monitor_diagnosis
         household_game_status = direct_read(
             'Is Minecraft working?', 'synthetic-household', 'household'
         )

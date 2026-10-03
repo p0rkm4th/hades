@@ -713,6 +713,12 @@ household_game_location = household_game_agent.run_conversation(
 assert household_game_location.get("completed") is True and household_game_location.get("api_calls") == 0, household_game_location
 assert "can't provide internal host or address details" in household_game_location["final_response"], household_game_location
 assert "192.0.2." not in household_game_location["final_response"], household_game_location
+household_monitor_diagnosis = household_game_agent.run_conversation(
+    "Why is the NetBox monitor down?", conversation_history=[]
+)
+assert household_monitor_diagnosis.get("completed") is True and household_monitor_diagnosis.get("api_calls") == 0, household_monitor_diagnosis
+assert "can't verify private infrastructure or computer status from this account" in household_monitor_diagnosis["final_response"].casefold(), household_monitor_diagnosis
+assert "NetBox" not in household_monitor_diagnosis["final_response"] and "Kuma" not in household_monitor_diagnosis["final_response"]
 os.environ["HADES_TEST_SOURCE_UNAVAILABLE"] = "1"
 try:
     unavailable_summary = hades._hades_direct_homelab_tool_result("homelab_summary")

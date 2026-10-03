@@ -5308,6 +5308,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="")
         return "I can't provide internal host or address details from this account."
     if scope != "owner" and (
         household_broad_status_intent or household_node_status_intent or provenance_intent
+        or named_service_health_intent
     ) and not household_game_health_intent:
         return (
             "I can't verify private infrastructure or computer status from this account. "
