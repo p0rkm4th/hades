@@ -1591,7 +1591,7 @@ blocker_summary = blockers_agent.run_conversation(
 )
 assert blocker_summary.get("completed") is True and blocker_summary.get("api_calls") == 0, blocker_summary
 assert "Live Proxmox currently reports: hades-core." in blocker_summary["final_response"], blocker_summary
-assert "No current service-availability observations were returned, so I can't confirm service health." in blocker_summary["final_response"], blocker_summary
+assert "No current Uptime Kuma availability observations were returned, so I can't confirm service health." in blocker_summary["final_response"], blocker_summary
 assert "No blocker was reported by the configured live sources." not in blocker_summary["final_response"], blocker_summary
 assert "HADES Core runtime is running." in blocker_summary["final_response"], blocker_summary
 

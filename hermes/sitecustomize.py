@@ -6849,6 +6849,15 @@ def _hades_direct_homelab_read(
             response = "Live Proxmox currently reports: " + ", ".join(str(name) for name in online) + "."
         else:
             response = "Proxmox did not report any currently running homelab resources."
+        service_catalog = summary.get("service_catalog") if isinstance(summary, dict) else None
+        if scope == "owner" and isinstance(service_catalog, dict):
+            catalog_status = str(service_catalog.get("status") or "UNKNOWN").upper()
+            catalog_coverage = str(service_catalog.get("coverage") or "UNKNOWN").upper()
+            if catalog_status == "OK" and catalog_coverage == "EMPTY":
+                response += (
+                    " NetBox's application-service catalog is reachable but empty, "
+                    "so intended placement for unlisted services remains unverified."
+                )
         source_errors = summary.get("errors", []) if isinstance(summary, dict) else []
         if source_errors:
             response += " Some sources are unavailable, so unreported nodes remain unknown."
@@ -6921,11 +6930,11 @@ def _hades_direct_homelab_read(
                 f"{item['name']} (last reported {item['last_status']}; {item['freshness'].casefold()})"
                 for item in monitor_groups["unknown"][:8]
             ]
-            response += " Current service-probe status is stale or unknown for: " + ", ".join(labels) + "."
+            response += " Current Uptime Kuma probe status is stale or unknown for: " + ", ".join(labels) + "."
         if availability and not down:
-            response += " No fresh configured service probe is currently reporting a failure."
+            response += " No fresh configured Uptime Kuma probe is currently reporting a failure."
         elif not availability:
-            response += " No current service-availability observations were returned, so I can't confirm service health."
+            response += " No current Uptime Kuma availability observations were returned, so I can't confirm service health."
         if isinstance(summary, dict) and summary.get("identity_warnings"):
             response += (
                 " Some display names map to multiple resource identities, "
