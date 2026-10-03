@@ -153,9 +153,17 @@ of truth.
   candidates, and both updated replies were verified in the authenticated UI.
   The protected pre-edit backup and scan evidence are retained in the private
   acceptance area; these acceptance records are not public product fixtures.
+- Fresh owner UI dogfood found “Is the game server working?” fell through to a
+  broad summary even though the correct service-health unknown was available.
+  Candidate `b6c9cfb` routes the plain-language alias to the Minecraft monitor
+  check. Owner now sees the missing current monitor and source-read timestamp;
+  Household A remains generic. Public CI, focused route/runtime contracts,
+  composed overlay, rollback deployment, and persisted UI acceptance pass.
+  Service health and placement remain unknown without canonical service
+  inventory and a matching current monitor.
 - Public `main` remains green at the release-convergence baseline. Homelab
   implementation and current continuation evidence are on the review branch;
-  candidate `4c73e28` passed Public CI and is deployed behind the recorded
+  candidate `b6c9cfb` passed Public CI and is deployed behind the recorded
   read-only rollback procedure, but has not been integrated into `main`.
 
 ## Repository and deployment authority

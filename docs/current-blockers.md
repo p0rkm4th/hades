@@ -88,6 +88,15 @@ Status: **PARTIAL**
   overlay, rollback deployment, and persisted owner/household UI checks pass.
   The household reply gives no host or address details. Canonical service
   inventory and service-health coverage remain incomplete.
+- A fresh owner “Is the game server working?” question fell through to broad
+  homelab status instead of the named-service health path. Candidate `b6c9cfb`
+  maps that plain-language alias to Minecraft's monitor check. Public CI,
+  focused route/runtime contracts, overlay composition, rollback deployment,
+  and persisted owner/household UI acceptance pass. The owner now sees that no
+  current service monitor matches Minecraft and gets the source-read time;
+  Household A receives only the generic unknown. Minecraft health remains
+  unverified because canonical service inventory and a matching monitor are
+  absent.
 - Fresh broad owner dogfood returns an explicitly partial current summary:
   selected-guest visibility, empty intended-service inventory, host-probe
   availability, inference catalog/residency, and unlinked records remain
