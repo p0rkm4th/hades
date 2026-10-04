@@ -345,3 +345,15 @@ timestamps. Household A receives a generic computer-status boundary, and its
 game-server check says no current check is available rather than calling the
 service healthy. Protected four-prompt evidence is mode 0600 outside the public
 tree. No source or infrastructure configuration was changed.
+
+Fresh owner dogfood asked which GPUs were available and where to host another
+model. Live read-only telemetry returned eight timestamped device rows across
+three configured inference endpoints, with observed free VRAM ranging from
+about 0.4 to 7.9 GiB and zero utilization at that sample. HADES treated this as
+point-in-time headroom, did not claim a model would fit, and reported the
+hardware role/capability inventory as stale. Household A's AI availability
+answer disclosed only that configured checks respond; it said generation was
+not tested. Household A's game-server answer remained unknown because no current
+check is configured. Protected evidence is mode 0600 outside the public tree.
+Nyx-4 was asked to verify the capability inventory freshness and the canonical
+service/Kuma records; no infrastructure writes were made.

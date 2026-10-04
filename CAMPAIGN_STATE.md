@@ -251,3 +251,14 @@ server. Four-prompt protected raw evidence is mode 0600 at
 configuration was changed. Nyx-4 has a read-only assignment to verify whether
 the empty NetBox application-service catalog is expected or a missing canonical
 record; no NetBox/Kuma mutation was requested.
+
+Fresh owner GPU dogfood returned eight timestamped device readings across three
+configured inference endpoints (roughly 0.4–7.9 GiB free per device, zero
+utilization at the sample). The answer treated these as point-in-time values,
+said model fit remained unknown, and disclosed stale hardware role/capability
+inventory. Household A received only generic inference-check availability and
+was told generation was not tested; its game-server health remained unknown
+because no current check was available. Protected evidence is mode 0600 outside
+the repository. Nyx-4's private coordination request now includes checking the
+capability freshness and current Kuma monitor records; no source writes have
+been made.
