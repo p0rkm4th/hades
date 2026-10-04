@@ -13,17 +13,18 @@ of truth.
 
 ## Current verified status — 2026-10-04
 
-- The latest verified review baseline is `002c758`; Public CI run `37176811125`
-  passed. Public `main` remains at `c83ddd6` with green status checks.
-- The production candidate is the deterministic composed overlay
-  `214c755e…ac128e8`, built over active overlay
-  `d6977174…e29277a2`. A current read-only VM 802 check reconfirmed that exact
-  base, file mode/owner `0640 scotty:hades-runtime`, and active
-  `hades-hermes.service`. The candidate combines owner broad-source timestamps,
-  cluster guest state, and restore-check guest presence. Composed runtime tests
-  cover those routes, partial scope, timestamps, and household boundaries.
-  Exact-scope rollout approval is pending; hash-check the live base again just
-  before installation. Production remains unchanged.
+- Review branch documentation baseline `608598c` passed Public CI run
+  `37176967000`; public `main` remains green at `c83ddd6`. The homelab source
+  implementation `e7fb6a1` passed Public CI run `37175267641` and is now
+  deployed to the owner VM. Private artifact hashes, root-only rollback, and
+  live acceptance captures are recorded in `hades-infra`.
+- Fresh owner acceptance after deployment now includes per-source read times in
+  broad status; complete-scope Proxmox guest state with separate running and
+  stopped groups; and restore-task follow-up joined to current guest inventory,
+  bounded to the recent task window. Household A/B received generic boundaries
+  for those same infrastructure questions. Persisted chats show no household
+  tool-role messages or tool-call records. Power state is still not represented
+  as guest OS, application, or workload health.
 - Owner-approved read-only VM audit is effective on both configured Proxmox
   sources. Nyx-4 verified complete guest enumeration without access-denied
   exclusions. This supports inventory and reported power state, not guest OS,
@@ -37,25 +38,21 @@ of truth.
   correction and verified affected inference services remained available
   without restarts; no reboot was performed, so reboot persistence remains
   unverified.
-- Fresh authenticated dogfood completed: owner source-coverage question in
-  4.7s, Household A everyday status in 4.1s, and Household B network-slowdown
-  question in 4.1s. Household answers disclosed no private topology or
-  owner-only infrastructure detail. Current production owner/Household A
-  prompts confirm the broad-summary provenance gap, honest missing game-server
-  check, and household AI wording that does not claim generation succeeded.
-  Owner GPU dogfood returned eight timestamped samples across three inference
-  endpoints and refused to guarantee model fit. The same answer reports stale
-  hardware role/capability inventory; a private checkout matrix dated 2026-10-02
-  should be within the seven-day rule, so Nyx-4 is checking the deployed matrix
-  path for mismatch. A fresh owner provenance follow-up returns per-source read
-  times and labels missing timestamps, clarifying that a completed read does
-  not make an older observation live; the initial broad answer still omits the
-  times. Household A's follow-up remains generic with no owner-source details.
-  Raw evidence is mode-0600 outside this repository.
+- Fresh authenticated owner dogfood returned eight timestamped GPU samples
+  across three inference endpoints and refused to guarantee model fit. The
+  hardware capability reader correctly marked its deployed input stale: a
+  private read-only comparison confirmed the configured VM input copy lags the
+  current private inventory. Nyx-4 has been assigned to refresh that existing
+  read-only input with a protected rollback and fresh owner validation. Raw
+  evidence and private hashes remain outside this repository.
 - No P0/P1 product regression is established by these samples. Source gaps and
   the capability-freshness mismatch remain open evidence, not an all-clear.
 
 ## Current repository work
+
+Older dated progress entries below preserve their state at the time; the
+current deployment and evidence above supersede earlier statements that the
+combined owner routes were still pending.
 
 - Proxmox, NetBox, Kuma, and service-native records retain their canonical
   identities. HADES does not join them by display name or IP alone and has not
@@ -86,7 +83,8 @@ of truth.
 - The configured Proxmox audit scopes are complete for current guest
   enumeration, but do not inspect guest operating systems or prove in-guest
   service health. The natural-language cluster summary, restore follow-up, and
-  source timestamps are in the combined candidate, pending exact-scope approval.
+  broad source timestamps are deployed and passed fresh owner plus Household
+  A/B acceptance.
 - GPU telemetry does not provide CPU utilization, process attribution,
   successful inference execution, or guaranteed model fit. Nyx-4 applied a scoped persistence-service
   correction and verified affected inference services remained available; no

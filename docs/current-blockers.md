@@ -376,3 +376,35 @@ and Household B receive the expected generic boundary for both, with no
 Proxmox, host, or guest details disclosed. Protected raw responses are mode
 0600 outside the public tree. These are the exact routes included in the
 deterministic candidate; deployment approval remains pending.
+
+### Current deployed status — 2026-10-04 (supersedes pre-rollout notes above)
+
+The deterministic homelab Hermes implementation in HADES `e7fb6a1` passed
+Public CI run `37175267641` and is deployed in the owner environment. Its
+private overlay hash and root-only rollback bundle are recorded in `hades-infra`,
+not this public repository. Review documentation head `608598c` also passed
+Public CI run `37176967000`; public `main` remains green at `c83ddd6`.
+
+Fresh authenticated owner UI acceptance now passes for the previously failing
+routes. Broad status carries per-source retrieval times and continues to call
+partial coverage partial. Cluster-wide Proxmox status returns all nine
+configured guest IDs in running/stopped groups, cites both source-read times,
+and distinguishes guest power state from application health. Restore follow-up
+joins recent restore tasks to current guest inventory, gives both read times,
+and preserves its seven-day and workload-health limits. Fresh Household A/B
+replies to the same cluster and restore prompts disclose no private topology or
+owner data; persisted chat histories contain no tool-role messages or tool-call
+records for those household turns. Protected captures remain outside this repo.
+
+A separate read-only comparison confirmed that HADES's deployed capability
+reader is using an older copy of the private hardware matrix. HADES correctly
+labels that input stale; Nyx-4 is refreshing the existing read-only source and
+will verify a fresh owner answer. Private paths, hashes, and machine data remain
+in `hades-infra`.
+
+The overall view remains **PARTIAL**. NetBox's application-service and VM
+catalogs are empty, game-server health has no current matching monitor, and
+some observations remain unlinked. Proxmox guest power state does not prove
+in-guest health; GPU samples do not prove successful inference or model fit;
+backup task history does not prove contents, independent custody, or
+restoreability. These unknowns remain explicit in owner answers.
