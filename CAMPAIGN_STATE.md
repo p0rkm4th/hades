@@ -33,12 +33,17 @@ of truth.
 - The approved owner deployment has linked read-only inference catalogs and
   fixed-command GPU telemetry. Samples are timestamped and point-in-time; they
   do not measure CPU, attribute GPU use to a process, prove inference execution,
-  or guarantee model fit. Reboot persistence remains unverified.
+  or guarantee model fit. Nyx-4 applied the scoped persistence-service
+  correction and verified affected inference services remained available
+  without restarts; no reboot was performed, so reboot persistence remains
+  unverified.
 - Fresh authenticated dogfood completed: owner source-coverage question in
   4.7s, Household A everyday status in 4.1s, and Household B network-slowdown
   question in 4.1s. Household answers disclosed no private topology or
-  owner-only infrastructure detail. Protected raw evidence remains mode-0600
-  outside this repository.
+  owner-only infrastructure detail. A separate fresh owner query again
+  misrouted cluster-wide guest status as a physical-host question (4.55s),
+  confirming the open production defect fixed by candidate `9511c75`. Protected
+  raw evidence remains mode-0600 outside this repository.
 - No P0/P1 is currently evidenced. This does not mean the homelab is fully
   healthy or completely observable; remaining coverage limits are listed below.
 
@@ -76,9 +81,9 @@ of truth.
   are fixed in candidate `9511c75`, pending its exact-candidate deployment
   approval.
 - GPU telemetry does not provide CPU utilization, process attribution,
-  successful inference execution, or guaranteed model fit. Nyx-4 has a scoped
-  request to correct a persistence-service issue; no real reboot-persistence
-  test has been performed.
+  successful inference execution, or guaranteed model fit. Nyx-4 applied a scoped persistence-service
+  correction and verified affected inference services remained available; no
+  real reboot-persistence test has been performed.
 - Recent task history is not a complete change log. Host OS, driver, package,
   and in-guest service events are not represented by connected sources.
   Network loss, throughput, DNS timing, and long-term trends are not measured,
