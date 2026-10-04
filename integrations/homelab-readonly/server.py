@@ -2814,6 +2814,17 @@ def format_inference_inventory_response(
                 result += " It is not currently reported as loaded."
             if any(label in unlinked_labels for label in locations):
                 result += " I can't verify which physical machine this endpoint belongs to."
+            retrieved_at = str(inventory.get("retrieved_at") or "").strip()
+            if retrieved_at:
+                result += f" Provider catalog and residency reads completed at {retrieved_at[:80]}."
+            else:
+                result += " Provider catalog and residency read time is unavailable."
+            if unavailable:
+                provider_word = "provider" if unavailable == 1 else "providers"
+                result += (
+                    f" {unavailable} configured inference {provider_word} could not be checked,"
+                    " so other model locations may be missing."
+                )
             return (
                 result
                 + " This checks provider catalog and residency APIs; it does not prove GPU execution "

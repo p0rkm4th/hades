@@ -166,6 +166,7 @@ assert snapshot["read_only"] is True
 # labels do not become host names unless the read model links them.
 inventory = {
     "status": "READABLE",
+    "retrieved_at": "2026-10-04T12:00:00Z",
     "endpoints": [{
         "id": "fast-lane", "source_identity": "inference:fast-lane",
         "node_identity": "netbox:device:42", "identity_status": "LINKED",
@@ -210,7 +211,26 @@ model_location = server.format_inference_inventory_response(
 )
 assert "model-a:8b is listed by Compute Alpha" in model_location, model_location
 assert "Provider reports it resident on Compute Alpha" in model_location, model_location
+assert "Provider catalog and residency reads completed at 2026-10-04T12:00:00Z" in model_location, model_location
 assert "192.168." not in model_location and "generation" in model_location
+without_read_time = {**inventory}
+without_read_time.pop("retrieved_at")
+untimed_model_location = server.format_inference_inventory_response(
+    "Where's model-a:8b?", without_read_time, summary,
+)
+assert "Provider catalog and residency read time is unavailable" in untimed_model_location, untimed_model_location
+partial_inventory = {
+    **inventory,
+    "endpoints": [*inventory["endpoints"], {
+        "id": "other-lane", "source_identity": "inference:other-lane",
+        "identity_status": "UNLINKED", "status": "UNAVAILABLE",
+    }],
+}
+partial_model_location = server.format_inference_inventory_response(
+    "Where's model-a:8b?", partial_inventory, summary,
+)
+assert "1 configured inference provider could not be checked" in partial_model_location, partial_model_location
+assert "other model locations may be missing" in partial_model_location, partial_model_location
 gpu_answer = server.format_inference_inventory_response(
     "Which GPUs are free?", inventory, summary, {
         "status": "READABLE", "retrieved_at": "2026-10-04T12:00:00Z",
