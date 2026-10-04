@@ -9,11 +9,11 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 Public `main` remains at `b903ad331dc0269becf46600bf29db8931707fef` at the
 last reconciliation. The sanitized homelab candidate is on
-`codex/homelab-public-sanitized-20261004`. Public CI passed at `5d41e4e`
-(run `37223353465`); the current follow-up that registers the local homelab
-reader before direct owner routes passed the focused authenticated UI test, and
-its hosted CI is pending. Check exact branch head and run status before
-promotion. No production deployment was performed in this follow-up.
+`codex/homelab-public-sanitized-20261004`. Sanitized candidate `21809b5`
+passed Public CI run `37224039987`. The local homelab reader fallback fix also
+passed authenticated synthetic UI acceptance. Check exact branch head and run
+status before promotion. No production deployment was performed in this
+follow-up.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address

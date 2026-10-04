@@ -12,8 +12,8 @@ The sanitized homelab candidate is on
 `codex/homelab-public-sanitized-20261004`; current local candidate code adds a
 read-only local-adapter fallback for deterministic owner routes. Its focused
 authenticated Open WebUI/Hermes Task-attention acceptance passed after the fix.
-Hosted Public CI passed for the preceding sanitized source at `5d41e4e` (run
-`37223353465`); CI for the follow-up fallback fix is pending.
+Hosted Public CI passed for the sanitized candidate at `21809b5` (run
+`37224039987`).
 
 The current source tree removes private destination acceptance records and
 per-user share mappings, requires explicit destination hostname input, and uses
