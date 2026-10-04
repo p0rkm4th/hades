@@ -306,6 +306,7 @@ node_activity_answer = server.format_inference_inventory_response(
 )
 assert "Recorded hardware inventory (observed synthetic-matrix-time; freshness fresh)" in node_activity_answer, node_activity_answer
 assert "role: deep inference" in node_activity_answer and "RAM: 64 GiB" in node_activity_answer
+assert "recorded GPUs: Quadro P4000, Quadro P4000" in node_activity_answer
 assert "this is not live utilization" in node_activity_answer
 assert "Live host GPU sample (synthetic-endpoint-time)" in node_activity_answer, node_activity_answer
 assert "Provider API read at synthetic-provider-time" in node_activity_answer
@@ -332,6 +333,15 @@ unknown_inventory_answer = server.format_inference_inventory_response(
     dict(summary, capability_freshness="READABLE"), linked_telemetry,
 )
 assert "freshness unknown" in unknown_inventory_answer
+aggregated_gpu_inventory = server.format_inference_inventory_response(
+    "What's Compute Alpha doing?", linked_hardware,
+    dict(summary, capability_machines=[{
+        "name": "Compute Alpha", "role": "deep inference",
+        "gpus": ["4x Quadro P4000"],
+    }]), linked_telemetry,
+)
+assert "recorded GPUs: 4x Quadro P4000" in aggregated_gpu_inventory
+assert "recorded GPUs: 1 × 4x Quadro P4000" not in aggregated_gpu_inventory
 assert "does not measure host CPU/GPU utilization" not in node_activity_answer
 without_utilization = dict(linked_telemetry, endpoints=[dict(
     linked_telemetry["endpoints"][0], devices=[{

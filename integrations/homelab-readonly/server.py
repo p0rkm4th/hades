@@ -2592,7 +2592,10 @@ def format_inference_inventory_response(
             if isinstance(gpus, list):
                 gpu_names = [" ".join(str(value).split())[:100] for value in gpus[:8] if isinstance(value, str) and value.strip()]
                 if gpu_names:
-                    facts.append(f"recorded GPUs: {len(gpu_names)} × " + ", ".join(gpu_names))
+                    # Matrix entries may already carry an observed GPU count
+                    # (for example, "4x Quadro P4000"); do not infer a second
+                    # count from the number of descriptive strings.
+                    facts.append("recorded GPUs: " + ", ".join(gpu_names))
             if facts:
                 observed_at = str(summary.get("capability_observed_at") or "time unavailable")[:80]
                 freshness = str(summary.get("capability_freshness") or "UNKNOWN").upper()
