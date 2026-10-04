@@ -87,6 +87,13 @@ of truth.
   and Household B's “Why is everything slow?” returned plain account-boundary
   answers without infrastructure details. Persisted protected evidence and
   per-turn timings are recorded in the private infrastructure note.
+- A fresh owner source-conflict question found no conflicts among the records
+  compared, included the source-read completion timestamp, and explicitly said
+  that unlinked records and partial guest visibility prevent a lab-wide
+  agreement or all-clear claim. The first capture attempt used an overly strict
+  WebSocket-only completion condition and timed out; the corrected UI harness
+  accepted the newly rendered completed response in 4.5 seconds. This was a
+  harness correction, not a product change.
 
 The private coordination note and protected evidence paths are recorded in
 `hades-infra`; no private topology, credentials, or live endpoint details
