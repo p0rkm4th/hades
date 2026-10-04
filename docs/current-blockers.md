@@ -7,7 +7,7 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` is at `f55bd0a`; Public CI run `37240583967` passed. Earlier
+Code checkpoint `f55bd0a` passed Public CI run `37240583967`. Earlier
 source checkpoint `07b0055` adds NetBox pagination completeness and
 contradictory-coverage handling. HADES calls the service catalog
 complete or empty only when `count`, `next`, and `results` agree; missing pages
@@ -55,6 +55,12 @@ candidate passed owner and household checks. Public CI passed at `f55bd0a`
 summary does not query backup schedule/task status, and network measurement,
 service-native checks, stale-source acceptance, and synthetic restore evidence
 remain open.
+
+Fresh owner/household network-slow dogfood returns configured-probe timing
+samples only and explicitly declines a network-wide diagnosis. Packet loss,
+throughput, DNS timing, and historical comparison are not currently available,
+so network bottleneck and trend claims remain unverified. Household wording
+withholds private infrastructure details.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address

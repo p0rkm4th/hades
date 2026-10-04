@@ -87,6 +87,12 @@ inventory identity disappears, and stale Kuma data stays stale. Owner broad
 status now avoids a raw inventory dump and distinguishes fresh probes from
 guest power state, service-coverage gaps, and backup limits.
 
+Fresh owner dogfood for “Why does the network feel slow?” returned only
+configured-probe timings and runtime samples, then explicitly declined a
+network-wide diagnosis. Packet loss, throughput, DNS timing, and historical
+comparison remain unavailable; the household “Why is everything slow?”
+answer exposed no private topology. Network performance remains unverified.
+
 Authenticated synthetic UI acceptance exposed a registration gap: deterministic
 owner routes could run before the local read-only adapter fallback was
 registered. After MCP discovery returned no handler, the route incorrectly
