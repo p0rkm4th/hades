@@ -177,13 +177,14 @@ Status: **PARTIAL**
 - A later fresh owner dogfood exposed a natural-language hardware-target gap:
   a card-model/count question returned broad status, while “big GPU box” fell
   through to a generic unsupported answer despite configured live telemetry.
-  The local candidate resolves card model/count and “big GPU box” only through
-  complete current GPU reads and unique inference-to-NetBox identity links,
-  includes per-card readings for status questions, and refuses ambiguous or
-  incomplete comparisons. The household route returns an owner-hardware
-  boundary before any telemetry read. Focused adapter, route, runtime, and
-  public-tree-safety tests pass. CI and authenticated post-deployment UI
-  acceptance are still pending.
+  Candidate `40054cb` passed Public CI run `37167027365` and was deployed to
+  VM 802 with hash-guarded root-only rollback copies. Fresh authenticated owner
+  UI resolved the card model/count and returned timestamped per-card readings
+  for “big GPU box”, with an explicit limitation on workload completion.
+  Household A received only the generic hardware boundary. Hashes, modes,
+  service state, and UI acceptance pass. Lowercase rendering of the canonical
+  host label remains a presentation P2; broader source coverage remains
+  incomplete.
 - Owner service-placement dogfood reports the configured Agent Zero endpoint
   and its bounded HTTP reachability check separately from the empty NetBox
   application-service catalog, and explicitly disclaims task/delegation

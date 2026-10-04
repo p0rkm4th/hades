@@ -37,13 +37,14 @@ of truth.
   and a no-fit-guarantee caveat; Household A/B received no host or GPU details.
 - Fresh owner natural-language dogfood found that “What server has the four
   P4000s?” fell through to broad status and “How's the big GPU box doing?” fell
-  through to an ungrounded fallback. An un-deployed HADES candidate now resolves
-  card model/count and the qualitative “big GPU box” through complete live GPU
-  telemetry plus explicit inference-to-NetBox links, and returns current
-  per-card readings for the latter. Incomplete or ambiguous mappings fail
-  closed; Household access is denied before telemetry reads. Focused synthetic
-  adapter, routing, runtime, and public-tree-safety contracts pass. Authenticated
-  post-deployment owner/household acceptance remains open.
+  through to an ungrounded fallback. Candidate `40054cb` passed Public CI run
+  `37167027365` and was deployed to VM 802 with hash-guarded root-only rollback
+  copies. Fresh owner UI resolved the four-P4000 question and returned
+  timestamped per-card activity for “big GPU box”; it disclaimed workload
+  completion. Household A received only the generic hardware boundary.
+  Installed hashes, service state, file modes, and focused UI acceptance pass.
+  Displayed canonical host labels remain lowercase in this path; this is a
+  presentation P2.
 - The live broad owner summary reports partial Proxmox guest visibility and an
   empty NetBox application-service catalog. Agent Zero’s configured endpoint
   returned a bounded HTTP response, which does not prove task execution.
