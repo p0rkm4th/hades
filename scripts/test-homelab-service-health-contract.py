@@ -42,6 +42,7 @@ wanted = {
     '_hades_endpoint_continuation_response',
     '_hades_direct_owner_location',
     '_hades_direct_proxmox_backup_read',
+    '_hades_direct_backup_restore_guest_state_read',
     '_hades_backup_restore_guest_state_intent',
     '_hades_backup_restore_guest_state_response',
     '_hades_homelab_name_key',

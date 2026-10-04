@@ -297,6 +297,23 @@ def add_household_route(source: str) -> str:
         _early_hades_intent_text = _hades_conversation_intent_text(
             user_message, kwargs.get("conversation_history")
         )
+        if _hades_backup_restore_guest_state_intent(user_message):
+            if getattr(self, "_hades_session_scope", "") == "owner":
+                restore_guest_state_response = _hades_direct_backup_restore_guest_state_read(
+                    user_message, getattr(self, "_hades_subject", ""), "owner",
+                ) or "I couldn't verify whether recent backup restore guests remain present."
+            else:
+                restore_guest_state_response = "I can't check private infrastructure details from this account."
+            callback = getattr(self, "stream_delta_callback", None)
+            if callback:
+                callback(restore_guest_state_response)
+            _hades_logger.info("Restore guest-state question completed at the scoped homelab boundary")
+            return {
+                "final_response": restore_guest_state_response,
+                "messages": [{"role": "assistant", "content": restore_guest_state_response}],
+                "api_calls": 0,
+                "completed": True,
+            }
         if getattr(self, "_hades_session_scope", "") == "owner":
             early_proxmox_backup_response = _hades_direct_proxmox_backup_read(
                 user_message, getattr(self, "_hades_subject", ""), "owner"

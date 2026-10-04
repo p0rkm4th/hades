@@ -19,11 +19,19 @@ _HADES_HOUSEHOLD_PRIVATE_HISTORY_MARKER = "[Private infrastructure conversation 
 def _hades_redact_household_sensitive_history(history):
     return history, bool(history)
 def _hades_direct_homelab_read(text, subject="", scope="owner", context_text=""):
+    if _hades_backup_restore_guest_state_intent(text):
+        if scope != "owner":
+            return "private infrastructure boundary"
+        return _hades_direct_backup_restore_guest_state_read(text, subject, scope)
     if _hades_household_sensitive_context_followup(text, context_text=context_text):
         return "private"
     if _hades_service_health_target(text):
         return text
     return _hades_homelab_helper(text)
+def _hades_backup_restore_guest_state_intent(text):
+    return "restore" in text.casefold()
+def _hades_direct_backup_restore_guest_state_read(text, subject, scope):
+    return "current restore guest inventory"
 def _hades_household_sensitive_context_followup(text, conversation_history=None, context_text=""):
     return bool(context_text)
 def _hades_homelab_recent_activity_response(report):
@@ -136,9 +144,13 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     owner_homelab_guard = candidate.index("Owner direct homelab read completed before managed-server routing", run_start)
     household_homelab_guard = candidate.index("Household direct homelab boundary completed before managed-server routing", run_start)
     owner_backup_guard = candidate.index("Owner Proxmox backup read completed before managed-server routing", run_start)
+    assert "_hades_backup_restore_guest_state_intent(user_message)" in candidate
+    assert "_hades_direct_backup_restore_guest_state_read(" in candidate
+    restore_guard = candidate.index("Restore guest-state question completed at the scoped homelab boundary", run_start)
     assert owner_homelab_guard < managed_status_guard
     assert household_homelab_guard < managed_status_guard
     assert owner_backup_guard < owner_homelab_guard
+    assert restore_guard < owner_backup_guard
     assert placement_guard < managed_status_guard
     placement_block = candidate[candidate.rfind("if getattr(self, \"_hades_session_scope\", \"\") in {\"owner\", \"household\"} and _hades_service_placement_intent(", run_start):game_guard]
     assert "previous_user_text" not in placement_block

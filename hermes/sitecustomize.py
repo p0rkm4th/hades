@@ -6552,6 +6552,13 @@ def _hades_direct_homelab_read(
     or provisioning requests.
     """
     text = str(user_text or "")
+    if _hades_backup_restore_guest_state_intent(text):
+        if scope != "owner":
+            return "I can't check private infrastructure details from this account."
+        restore_guest_state_response = _hades_direct_backup_restore_guest_state_read(
+            text, subject, scope,
+        )
+        return restore_guest_state_response or "I couldn't verify whether recent backup restore guests remain present."
     if scope != "owner" and _hades_household_sensitive_context_followup(
         text, conversation_history, context_text
     ):
@@ -11810,6 +11817,23 @@ try:
         _hades_intent_text = _hades_conversation_intent_text(
             user_message, _hades_history
         )
+        if _hades_backup_restore_guest_state_intent(user_message):
+            if self._hades_session_scope == "owner":
+                _restore_guest_state_response = _hades_direct_backup_restore_guest_state_read(
+                    user_message, getattr(self, "_hades_subject", ""), "owner",
+                ) or "I couldn't verify whether recent backup restore guests remain present."
+            else:
+                _restore_guest_state_response = "I can't check private infrastructure details from this account."
+            callback = getattr(self, "stream_delta_callback", None)
+            if callback:
+                callback(_restore_guest_state_response)
+            _hades_logger.info("Restore guest-state question completed at the scoped homelab boundary")
+            return {
+                "final_response": _restore_guest_state_response,
+                "messages": [{"role": "assistant", "content": _restore_guest_state_response}],
+                "api_calls": 0,
+                "completed": True,
+            }
         previous_user_text = _hades_previous_user_message(_hades_history)
         _phase2_session_key = _hades_turn_identity(
             user_message, _hades_history,
@@ -12040,24 +12064,6 @@ try:
                 return {
                     "final_response": recipe_servings_response,
                     "messages": [{"role": "assistant", "content": recipe_servings_response}],
-                    "api_calls": 0,
-                    "completed": True,
-                }
-            backup_restore_guest_state = _hades_direct_backup_restore_guest_state_read(
-                user_message,
-                getattr(self, "_hades_subject", ""),
-                self._hades_session_scope,
-            )
-            if backup_restore_guest_state:
-                callback = getattr(self, "stream_delta_callback", None)
-                if callback:
-                    callback(backup_restore_guest_state)
-                _hades_logger.info(
-                    "Owner restore guest-state reconciliation completed without model invocation"
-                )
-                return {
-                    "final_response": backup_restore_guest_state,
-                    "messages": [{"role": "assistant", "content": backup_restore_guest_state}],
                     "api_calls": 0,
                     "completed": True,
                 }

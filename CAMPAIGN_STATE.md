@@ -164,3 +164,19 @@ to repository backup status, and performs no privileged reads for a household
 user. These are repository/synthetic contract results; the new code has not
 been deployed or owner-dogfooded. Production remains unchanged pending approval
 of the exact new candidate.
+
+### Deployment-composition gate — follow-up
+
+The first implementation was placed only in the clean source conversation
+handler, which the focused production overlay composer does not copy. Before
+rollout, the restore-state path was moved into the composed homelab route and a
+higher-priority owner/household preflight was added ahead of backup fallback.
+The composer regression now asserts that ordering. A fresh read of the deployed
+overlay was composed locally without changing the VM; the resulting artifact
+passed the composed Hermes runtime check for owner source reads, household
+redaction/no source reads, and source outage fail-closed behavior. The public
+research policy test also confirms generic Proxmox/restore questions are not
+classified as private-person requests while person-location controls remain.
+The composed-route follow-up is now committed on the review branch; hosted CI
+for that exact revision is pending. Production remains unchanged. Any rollout
+request must identify the exact resulting artifact and state its file scope.
