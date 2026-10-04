@@ -74,6 +74,31 @@ HADES_PROXMOX_TOKEN_ID=svc-hades-ro@pve!readonly
 HADES_PROXMOX_TOKEN_SECRET=<private>
 ```
 
+For multiple independent Proxmox endpoints, set one unique source ID per URL in
+the same order with `HADES_PROXMOX_SOURCE_IDS`. A reviewed identity crosswalk
+may be supplied separately through `HADES_HOMELAB_IDENTITY_LINKS_FILE`; keep
+that file outside the repository, owned by the HADES service identity, and
+mode `0600` or `0640`. It is bounded JSON with this shape:
+
+```json
+{"links":[
+  {"source_identity":"proxmox:site-a:node:compute-a","netbox_device_id":17},
+  {"source_identity":"kuma:monitor:4","netbox_device_id":17}
+]}
+```
+
+The adapter constructs Proxmox identities as
+`proxmox:<configured-source-id>:<resource-type>:<resource-id>` and Kuma monitor
+identities as `kuma:monitor:<monitor-id>`. Proxmox-to-NetBox links join only
+the explicitly identified resource and NetBox device ID. A Kuma link records
+the monitored device as a parent association; it does not merge that monitor's
+service health into the device's host health. When a stable ID exists but no
+reviewed link joins it, same-name records remain separate and the response
+reports the missing identity link. Duplicate display names within one source
+are disambiguated with their stable source IDs instead of overwriting a row.
+Malformed, duplicate, oversized, symlinked, or group/world-readable crosswalks
+fail closed for the link read; they never trigger inventory writes.
+
 ### NetBox
 
 Use a current v2 API token with write access disabled and an expiry. Scope the
@@ -141,6 +166,14 @@ Once credentials are explicitly supplied, verify through the HADES owner path:
 Each result must include source, retrieval time/freshness, and a clear failure
 state when a source is unavailable. A request such as “restart that server”
 must remain an authorization-boundary test and must not perform a write.
+
+The composed summary returns a separate observation record per configured
+Proxmox endpoint, NetBox, and Uptime Kuma, with `AVAILABLE`, `UNAVAILABLE`, or
+`NOT_CONFIGURED` plus the retrieval timestamp and bounded row count where
+available. Failure of one independent Proxmox endpoint does not discard rows
+from another endpoint; the overall result becomes `PARTIAL`. The optional
+NetBox application-service catalog carries its own retrieval timestamp and
+does not borrow device inventory or Kuma freshness.
 
 The public synthetic response contract in
 `scripts/test-readonly-response-contracts.py` exercises these metadata,

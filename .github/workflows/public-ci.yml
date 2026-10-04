@@ -40,6 +40,8 @@ jobs:
         run: bash scripts/test-hades-memory-intent.sh
       - name: Check service-level homelab health contract
         run: python scripts/test-homelab-service-health-contract.py
+      - name: Check canonical homelab read-source composition
+        run: bash scripts/test-homelab-readonly-adapter.sh
 
       - name: Check mixed-domain composition boundary
         run: bash scripts/test-composition-boundary.sh

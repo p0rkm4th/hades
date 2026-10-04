@@ -59,6 +59,47 @@ future = module.summarize(
     now=now,
 )
 assert future["resources"][0]["availability_freshness"] == "UNKNOWN"
+duplicate_guest_names = module.summarize(
+    {"data": [
+        {"type": "qemu", "vmid": 800, "name": "hades-core", "node": "erebus", "status": "stopped"},
+        {"type": "qemu", "vmid": 802, "name": "hades-core", "node": "erebus", "status": "running"},
+    ]},
+    {"results": []},
+    {"monitors": []},
+)
+assert duplicate_guest_names["source_counts"]["proxmox_runtime_rows"] == 2
+assert duplicate_guest_names["source_counts"]["composed_resources"] == 2
+assert {
+    (row["runtime"]["vmid"], row["runtime_status"], bool(row["conflicts"]))
+    for row in duplicate_guest_names["resources"]
+} == {(800, "stopped", True), (802, "running", True)}
+linked_identity = module.summarize(
+    {"data": [{
+        "id": "node/alpha", "type": "node", "node": "alpha", "name": "alpha",
+        "status": "online", "source_identity": "proxmox:alpha:node:alpha",
+    }]},
+    {"results": [{"id": 41, "name": "inventory-alpha", "role": "compute"}]},
+    {"monitors": [{
+        "id": "9", "source_identity": "kuma:monitor:9", "name": "alpha-api",
+        "status": "down", "last_updated": "2026-09-14T11:59:00+00:00",
+        "monitor_type": "http",
+    }]},
+    now=now,
+    identity_links={"proxmox:alpha:node:alpha": 41, "kuma:monitor:9": 41},
+)
+host = next(row for row in linked_identity["resources"] if row["inventory"])
+monitor = next(row for row in linked_identity["resources"] if row["availability"])
+assert host["runtime_status"] == "online" and host["inventory"]["id"] == 41
+assert host["availability"] is None
+assert monitor["runtime"] is None and monitor["availability"]["status"] == "down"
+assert monitor["related_inventory_device_id"] == 41
+unlinked_same_label = module.summarize(
+    {"data": [{"id": "qemu/900", "type": "qemu", "vmid": 900, "node": "alpha", "name": "same-label", "status": "running"}]},
+    {"results": [{"id": 42, "name": "same-label"}]},
+    None,
+)
+assert unlinked_same_label["source_counts"]["composed_resources"] == 2
+assert all(any("no stable identity link" in conflict for conflict in row["conflicts"]) for row in unlinked_same_label["resources"])
 inventory_only = module.summarize(
     {"data": []},
     {"results": [{"name": "tartarus"}]},
@@ -111,10 +152,15 @@ assert config.proxmox_token_ids() == (
     "svc-hades-ro@pve!a",
     "svc-hades-ro@pve!b",
 )
+os.environ["HADES_PROXMOX_SOURCE_IDS"] = "alpha,beta"
+assert config.proxmox_source_ids() == ("alpha", "beta")
 print("PASS homelab adapter preserves runtime/inventory/availability authority")
 print("PASS homelab adapter discloses node conflict and stale Kuma observation")
 print("PASS Proxmox runtime exposes VM 802 without inventing a NetBox record")
 print("PASS future monitoring observations fail closed as unknown")
+print("PASS duplicate guest display names preserve each stable Proxmox identity")
+print("PASS explicit Proxmox-to-NetBox identity links correlate hosts without collapsing service monitors")
+print("PASS stable same-name records remain unlinked without an explicit crosswalk")
 print("PASS homelab MCP exposes review-only discovery candidates")
 print("PASS documented homelab bases resolve to bounded read endpoints")
 PY
@@ -235,10 +281,29 @@ kuma = server._normalize_kuma_status({
     },
 })
 assert kuma["monitors"] == [
-    {"name": "host-alpha", "status": "up", "last_updated": "2026-09-16 09:00:00.000", "monitor_type": "ping", "ping_ms": 84},
-    {"name": "host-beta", "status": "down", "last_updated": "2026-09-16 09:00:01.000", "monitor_type": "ping"},
+    {"name": "host-alpha", "status": "up", "last_updated": "2026-09-16 09:00:00.000", "monitor_type": "ping", "id": "7", "source_identity": "kuma:monitor:7", "ping_ms": 84},
+    {"name": "host-beta", "status": "down", "last_updated": "2026-09-16 09:00:01.000", "monitor_type": "ping", "id": "8", "source_identity": "kuma:monitor:8"},
 ]
 assert server._kuma_config_url() == "https://status.example.test/api/status-page/hades-status"
+assert server._proxmox_source_identity("alpha", {"type": "node", "id": "node/alpha"}) == "proxmox:alpha:node:alpha"
+assert server._proxmox_source_identity("alpha", {"type": "qemu", "id": "qemu/802"}) == "proxmox:alpha:qemu:802"
+assert server._proxmox_source_identity("", {"type": "node", "node": "alpha"}) is None
+identity_path = matrix_dir / "identity-links.json"
+identity_path.write_text(json.dumps({"links": [
+    {"source_identity": "proxmox:synthetic:node:alpha", "netbox_device_id": 75},
+]}), encoding="utf-8")
+identity_path.chmod(0o600)
+os.environ["HADES_HOMELAB_IDENTITY_LINKS_FILE"] = str(identity_path)
+assert server._read_identity_links() == {"proxmox:synthetic:node:alpha": 75}
+identity_path.chmod(0o644)
+try:
+    server._read_identity_links()
+except ValueError as exc:
+    assert "mode 0600 or 0640" in str(exc)
+else:
+    raise AssertionError("identity-link file with unsafe permissions must be rejected")
+identity_path.chmod(0o600)
+print("PASS identity crosswalk is bounded, schema-checked, and rejects unsafe permissions")
 
 from datetime import datetime, timezone
 now = datetime.now(timezone.utc)
@@ -266,6 +331,7 @@ os.environ.update({
     "HADES_PROXMOX_RESOURCES_URLS": "https://pve.example.test/cluster/resources",
     "HADES_PROXMOX_TOKEN_FILES": "/run/synthetic-proxmox-token",
     "HADES_PROXMOX_TOKEN_IDS": "svc-hades-ro@pve!synthetic",
+    "HADES_PROXMOX_SOURCE_IDS": "synthetic",
     "HADES_NETBOX_DEVICES_URL": "https://netbox.example.test/api/dcim/devices/",
     "HADES_NETBOX_SERVICES_URL": "https://netbox.example.test/api/ipam/services/",
     "HADES_KUMA_STATUS_URL": "https://status.example.test/api/status-page/heartbeat/hades-status",
@@ -308,6 +374,10 @@ assert runtime_row["runtime"] == {
 }, runtime_row
 assert runtime_row["currently_online"] is True
 assert summary["source_counts"]["netbox_service_rows"] == 1
+assert summary["service_catalog"]["retrieved_at"]
+assert {row["source"] for row in summary["source_observations"]} == {
+    "Proxmox:synthetic", "NetBox", "Uptime Kuma",
+}
 assert summary["service_catalog"]["services"] == [{
     "name": "Minecraft Java", "parent_type": "device", "parent_name": "Thanatos",
     "addresses": ["192.0.2.75"], "address_source": "NetBox parent primary IP",
@@ -317,6 +387,40 @@ assert "secret_like_field" not in str(summary)
 assert "unrelated_secret_like_field" not in str(summary)
 server._fetch = original_fetch
 print("PASS homelab MCP summary retains bounded runtime telemetry without unrelated upstream fields")
+
+# A failed independent Proxmox endpoint must not discard rows retrieved from
+# another endpoint, and the summary must preserve per-source retrieval status.
+os.environ.update({
+    "HADES_PROXMOX_RESOURCES_URLS": "https://pve-a.example.test/cluster/resources,https://pve-b.example.test/cluster/resources",
+    "HADES_PROXMOX_SOURCE_IDS": "alpha,beta",
+})
+def partial_fetch(url, *_args, **_kwargs):
+    if url == "https://pve-a.example.test/cluster/resources":
+        return {"data": [{
+            "id": "qemu/802", "type": "qemu", "vmid": 802,
+            "name": "hades-core", "node": "alpha", "status": "running",
+        }]}
+    if url == "https://pve-b.example.test/cluster/resources":
+        raise OSError("synthetic endpoint timeout")
+    if url == "https://netbox.example.test/api/dcim/devices/":
+        return {"results": [device_fixture]}
+    if url == "https://netbox.example.test/api/ipam/services/":
+        return {"results": [service_fixture]}
+    if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
+        return {"monitors": []}
+    raise AssertionError(f"unexpected synthetic adapter URL: {url}")
+server._fetch = partial_fetch
+partial = server.homelab_summary()
+assert partial["status"] == "PARTIAL", partial
+assert any((row["runtime"] or {}).get("vmid") == 802 for row in partial["resources"])
+pve_sources = [row for row in partial["source_observations"] if row["source"].startswith("Proxmox:")]
+assert [(row["source"], row["status"]) for row in pve_sources] == [
+    ("Proxmox:alpha", "AVAILABLE"), ("Proxmox:beta", "UNAVAILABLE"),
+]
+assert pve_sources[0]["retrieved_at"] and pve_sources[0]["rows"] == 1
+assert pve_sources[1]["retrieved_at"] is None
+server._fetch = original_fetch
+print("PASS partial Proxmox outage preserves successful source rows and per-source freshness")
 
 result = server.homelab_compute_capabilities()
 assert result["status"] == "OK"

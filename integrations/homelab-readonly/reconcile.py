@@ -44,41 +44,176 @@ def _bounded_ping_ms(value: Any) -> int | float | None:
     return value
 
 
+def _stable_source_key(source: str, row: dict[str, Any]) -> str:
+    """Return a source-local identity for rows that cannot safely join by name."""
+    source_identity = row.get("source_identity")
+    if isinstance(source_identity, str) and source_identity:
+        return source_identity
+    if source == "proxmox":
+        node = row.get("node")
+        kind = row.get("type")
+        vmid = row.get("vmid")
+        if node and kind and vmid is not None:
+            return f"proxmox:{node}:{kind}:{vmid}"
+        if kind == "node" and node:
+            return f"proxmox:node:{node}"
+    source_id = row.get("id")
+    if source_id is not None:
+        return f"{source}:{source_id}"
+    return f"{source}:unidentified"
+
+
+def _has_stable_identity(source: str, row: dict[str, Any]) -> bool:
+    if source == "proxmox":
+        return bool(
+            row.get("id") is not None
+            or (row.get("node") and row.get("type") and row.get("vmid") is not None)
+            or (row.get("type") == "node" and row.get("node"))
+        )
+    if source == "netbox":
+        return row.get("id") is not None
+    return row.get("id") is not None or bool(row.get("source_identity"))
+
+
 def summarize(
     proxmox: dict[str, Any] | None,
     netbox: dict[str, Any] | None,
     kuma: dict[str, Any] | None,
     *,
     now: datetime | None = None,
+    identity_links: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     """Compose source results without allowing one authority to replace another."""
     now = now or datetime.now(timezone.utc)
     runtime_rows = (proxmox or {}).get("data", [])
     inventory_rows = (netbox or {}).get("results", [])
     availability_rows = (kuma or {}).get("monitors", [])
-    runtime = {
-        str(row.get("name")): row for row in runtime_rows
-        if isinstance(row, dict) and row.get("name")
+    # Display names are labels, not identities. Keep the simple legacy join
+    # only when a label is unique within each source. A duplicate in any one
+    # source switches all rows with that label to source-local stable keys, so
+    # response order can never choose which VM or monitor survives.
+    source_rows = {
+        "proxmox": [row for row in runtime_rows if isinstance(row, dict)],
+        "netbox": [row for row in inventory_rows if isinstance(row, dict)],
+        "kuma": [row for row in availability_rows if isinstance(row, dict)],
     }
-    runtime.update({
-        str(row.get("node")): row for row in runtime_rows
-        if isinstance(row, dict) and row.get("type") == "node" and row.get("node")
-    })
-    inventory = {
-        str(row.get("name")): row for row in inventory_rows
-        if isinstance(row, dict) and row.get("name")
+    identity_links = identity_links or {}
+    netbox_ids = {
+        int(row["id"])
+        for row in source_rows["netbox"]
+        if isinstance(row.get("id"), int) and not isinstance(row.get("id"), bool)
     }
-    observed = {
-        str(row.get("name")): row for row in availability_rows
-        if isinstance(row, dict) and row.get("name")
+    name_counts_by_source: dict[str, dict[str, int]] = {}
+    for source, rows in source_rows.items():
+        counts: dict[str, int] = {}
+        for row in rows:
+            label = row.get("name") or (row.get("node") if row.get("type") == "node" else None)
+            if label:
+                folded = str(label).casefold()
+                counts[folded] = counts.get(folded, 0) + 1
+        name_counts_by_source[source] = counts
+
+    ambiguous_names = {
+        name
+        for counts in name_counts_by_source.values()
+        for name, count in counts.items()
+        if count > 1
     }
-    names = sorted(set(runtime) | set(inventory) | set(observed))
+    stable_sources_by_name: dict[str, set[str]] = {}
+    for source, rows in source_rows.items():
+        for row in rows:
+            label = row.get("name") or (row.get("node") if row.get("type") == "node" else None)
+            if label and _has_stable_identity(source, row):
+                stable_sources_by_name.setdefault(str(label).casefold(), set()).add(source)
+    unlinked_names = {
+        name for name, sources in stable_sources_by_name.items()
+        if len(sources) > 1
+    }
+
+    indexed: dict[str, dict[str, dict[str, Any]]] = {
+        "proxmox": {}, "netbox": {}, "kuma": {}
+    }
+    labels: dict[str, str] = {}
+    ambiguous: set[str] = set()
+    unlinked: set[str] = set()
+    related_inventory_ids: dict[str, int] = {}
+    missing_link_targets: set[str] = set()
+    for source, rows in source_rows.items():
+        for row in rows:
+            label_value = row.get("name") or (row.get("node") if row.get("type") == "node" else None)
+            if not label_value:
+                continue
+            label = str(label_value)
+            folded = label.casefold()
+            source_identity = row.get("source_identity")
+            linked_id = identity_links.get(source_identity) if isinstance(source_identity, str) else None
+            if source == "proxmox" and linked_id is not None:
+                key = f"netbox-device:{linked_id}"
+                if linked_id not in netbox_ids:
+                    missing_link_targets.add(key)
+            elif source == "kuma" and linked_id is not None:
+                # The proposed link identifies the monitored device, not
+                # necessarily the monitored service. Keep the monitor as an
+                # independent observation and expose only its parent link.
+                key = _stable_source_key(source, row)
+                related_inventory_ids[key] = linked_id
+                if linked_id not in netbox_ids:
+                    missing_link_targets.add(f"netbox-device:{linked_id}")
+            elif source == "netbox" and isinstance(row.get("id"), int) and not isinstance(row.get("id"), bool):
+                key = f"netbox-device:{row['id']}"
+            else:
+                stable = _has_stable_identity(source, row)
+                if folded not in ambiguous_names and not stable:
+                    key = f"name:{folded}"
+                else:
+                    key = _stable_source_key(source, row)
+                    if folded in ambiguous_names:
+                        ambiguous.add(key)
+                    if folded in unlinked_names:
+                        unlinked.add(key)
+            has_explicit_link = source in {"proxmox", "kuma"} and linked_id is not None
+            if folded in ambiguous_names or (folded in unlinked_names and not has_explicit_link):
+                if folded in unlinked_names and not has_explicit_link:
+                    unlinked.add(key)
+                if source == "proxmox" and row.get("node") and row.get("type"):
+                    suffix = row.get("vmid") if row.get("vmid") is not None else row.get("id")
+                    label = f"{label} ({row['node']} {row['type']} {suffix})"
+                elif source == "netbox" and row.get("id") is not None:
+                    label = f"{label} (NetBox {row['id']})"
+                elif source == "kuma" and row.get("id") is not None:
+                    label = f"{label} (Kuma monitor {row['id']})"
+            # A duplicated source ID is itself malformed. Preserve the first
+            # row deterministically and surface the collision below.
+            if key in indexed[source]:
+                ambiguous.add(key)
+                duplicate_key = _stable_source_key(source, row)
+                if duplicate_key in indexed[source]:
+                    duplicate_key = f"{duplicate_key}:duplicate:{len(indexed[source]) + 1}"
+                key = duplicate_key
+            indexed[source][key] = row
+            labels[key] = label
+
+    runtime, inventory, observed = (
+        indexed["proxmox"], indexed["netbox"], indexed["kuma"]
+    )
+    keys = sorted(set(runtime) | set(inventory) | set(observed))
     resources: list[dict[str, Any]] = []
-    for name in names:
-        current = runtime.get(name)
-        planned = inventory.get(name)
-        monitor = observed.get(name)
-        conflicts: list[str] = []
+    for key in keys:
+        current = runtime.get(key)
+        planned = inventory.get(key)
+        monitor = observed.get(key)
+        name = labels[key]
+        conflicts: list[str] = (
+            ["Display name is ambiguous; source records remain separate pending a stable identity link"]
+            if key in ambiguous else []
+        )
+        if key in unlinked:
+            conflicts.append("Another source has the same display name, but no stable identity link confirms it is the same resource")
+        if key in missing_link_targets:
+            conflicts.append("Configured stable identity link points to a NetBox device not returned by the current inventory read")
+        related_device_id = related_inventory_ids.get(key)
+        if related_device_id is not None and related_device_id not in netbox_ids:
+            conflicts.append("Configured monitor parent link points to a NetBox device not returned by the current inventory read")
         if current and planned and current.get("node") and planned.get("planned_node") and current["node"] != planned["planned_node"]:
             conflicts.append("NetBox intended node differs from Proxmox runtime node")
         resources.append({
@@ -96,7 +231,7 @@ def summarize(
             ),
             "inventory": _compact(
                 planned,
-                ("name", "planned_node", "role", "status", "primary_ip", "site"),
+                ("id", "name", "planned_node", "role", "status", "primary_ip", "site"),
             ),
             "availability": _compact(
                 monitor,
@@ -108,6 +243,7 @@ def summarize(
                 now=now,
                 max_age=timedelta(minutes=5),
             ) if monitor else "UNKNOWN",
+            "related_inventory_device_id": related_device_id,
             "conflicts": conflicts,
         })
     online_names = [
@@ -135,7 +271,13 @@ def summarize(
         if resource["conflicts"]
     ]
     return {
-        "status": "OK" if proxmox is not None and netbox is not None and kuma is not None else "PARTIAL",
+        "status": "OK" if (
+            proxmox is not None and netbox is not None and kuma is not None
+            and not any(
+                isinstance(source, dict) and source.get("errors")
+                for source in (proxmox, netbox, kuma)
+            )
+        ) else "PARTIAL",
         "authority": {
             "runtime": "Proxmox",
             "inventory": "NetBox",

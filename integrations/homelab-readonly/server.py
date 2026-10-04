@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import ssl
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -17,11 +18,19 @@ from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 from reconcile import summarize
 from catalog import propose_inventory_candidates
 from scan import DEFAULT_PORTS, run_bounded_scan
-from config import netbox_services_spec, proxmox_specs, proxmox_token_ids, source_specs
+from config import (
+    homelab_identity_links_file,
+    netbox_services_spec,
+    proxmox_specs,
+    proxmox_source_ids,
+    proxmox_token_ids,
+    supporting_source_specs,
+)
 
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 MAX_TOKEN_BYTES = 8192
+MAX_IDENTITY_LINK_BYTES = 256 * 1024
 TIMEOUT_SECONDS = 10
 TOOLS = [Tool(
     name="homelab_summary",
@@ -149,6 +158,9 @@ def _normalize_kuma_status(payload: dict) -> dict:
                 "last_updated": latest.get("time"),
                 "monitor_type": monitor.get("type"),
             }
+            if monitor.get("id") is not None:
+                row["id"] = str(monitor["id"])
+                row["source_identity"] = f"kuma:monitor:{monitor['id']}"
             # Uptime Kuma's public heartbeat includes a per-check response
             # time. Preserve only a finite, nonnegative, bounded sample; it is
             # not a network-wide measurement or a historical baseline.
@@ -159,6 +171,65 @@ def _normalize_kuma_status(payload: dict) -> dict:
                     row["ping_ms"] = ping
             monitors.append(row)
     return {"monitors": monitors}
+
+
+def _read_identity_links() -> dict[str, int]:
+    """Read an optional protected source-identity to NetBox-device crosswalk."""
+    path_value = homelab_identity_links_file()
+    if not path_value:
+        return {}
+    path = Path(path_value)
+    if not path.is_file() or path.is_symlink():
+        raise ValueError("homelab identity-link file must be a regular non-symlink file")
+    if (path.stat().st_mode & 0o777) not in {0o600, 0o640}:
+        raise ValueError("homelab identity-link file must be mode 0600 or 0640")
+    if path.stat().st_size > MAX_IDENTITY_LINK_BYTES:
+        raise ValueError("homelab identity-link file exceeds bounded size")
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("homelab identity-link file is unreadable or invalid JSON") from exc
+    if not isinstance(document, dict) or set(document) != {"links"} or not isinstance(document["links"], list):
+        raise ValueError("homelab identity-link file must contain only a links array")
+    links: dict[str, int] = {}
+    for row in document["links"]:
+        if not isinstance(row, dict) or set(row) != {"source_identity", "netbox_device_id"}:
+            raise ValueError("homelab identity-link row has an unsupported shape")
+        source_identity = row["source_identity"]
+        device_id = row["netbox_device_id"]
+        if (
+            not isinstance(source_identity, str)
+            or not source_identity
+            or len(source_identity) > 256
+            or isinstance(device_id, bool)
+            or not isinstance(device_id, int)
+            or device_id <= 0
+            or source_identity in links
+        ):
+            raise ValueError("homelab identity-link row is invalid or duplicated")
+        links[source_identity] = device_id
+    return links
+
+
+def _proxmox_source_identity(source_id: str, row: dict) -> str | None:
+    resource_type = row.get("type")
+    if not source_id or not isinstance(resource_type, str) or not resource_type:
+        return None
+    entity_id = row.get("id")
+    if isinstance(entity_id, str) and "/" in entity_id:
+        entity_id = entity_id.rsplit("/", 1)[1]
+    if entity_id is None and resource_type == "node":
+        entity_id = row.get("node")
+    if entity_id is None:
+        entity_id = row.get("vmid")
+    return (
+        f"proxmox:{source_id}:{resource_type}:{entity_id}"
+        if entity_id is not None else None
+    )
+
+
+def _retrieved_at() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _kuma_config_url() -> str:
@@ -173,26 +244,77 @@ def _kuma_config_url() -> str:
 def homelab_summary() -> dict:
     values: list[dict | None] = []
     errors: list[str] = []
+    source_observations: list[dict] = []
     proxmox_value: dict | None = None
     netbox_value: dict | None = None
     try:
+        specs = proxmox_specs()
+    except ValueError as exc:
+        specs = ()
+        errors.append(f"Proxmox configuration invalid: {exc}")
+        source_observations.append({
+            "source": "Proxmox", "status": "INVALID_CONFIGURATION", "retrieved_at": None,
+        })
+    if specs:
         rows: list[dict] = []
+        proxmox_errors: list[str] = []
         ca_file = os.environ.get("HADES_PROXMOX_CA_FILE", "")
-        token_ids = proxmox_token_ids()
-        for index, (url, token_file) in enumerate(proxmox_specs()):
+        try:
+            source_ids = proxmox_source_ids()
+            token_ids = proxmox_token_ids()
+        except ValueError as exc:
+            source_ids = tuple("" for _ in specs)
+            token_ids = tuple("" for _ in specs)
+            proxmox_errors.append(str(exc))
+        for index, (url, token_file) in enumerate(specs):
+            source_label = source_ids[index] or f"endpoint-{index + 1}"
             if not url:
+                source_observations.append({
+                    "source": f"Proxmox:{source_label}",
+                    "status": "NOT_CONFIGURED",
+                    "retrieved_at": None,
+                })
                 continue
-            result = _fetch(url, token_file, ca_file, token_ids[index])
-            rows.extend(row for row in result.get("data", []) if isinstance(row, dict))
-        if rows or proxmox_specs():
-            proxmox_value = {"data": rows}
-    except (OSError, ValueError, json.JSONDecodeError) as exc:
-        errors.append(str(exc))
+            try:
+                payload = _fetch(url, token_file, ca_file, token_ids[index])
+                source_rows = [row for row in payload.get("data", []) if isinstance(row, dict)]
+                for source_row in source_rows:
+                    row = dict(source_row)
+                    source_identity = _proxmox_source_identity(source_ids[index], row)
+                    if source_identity:
+                        row["source_identity"] = source_identity
+                    rows.append(row)
+                source_observations.append({
+                    "source": f"Proxmox:{source_label}",
+                    "status": "AVAILABLE",
+                    "retrieved_at": _retrieved_at(),
+                    "rows": len(source_rows),
+                })
+            except (OSError, ValueError, json.JSONDecodeError) as exc:
+                message = f"Proxmox:{source_label} source unavailable: {exc}"
+                errors.append(message)
+                proxmox_errors.append(message)
+                source_observations.append({
+                    "source": f"Proxmox:{source_label}",
+                    "status": "UNAVAILABLE",
+                    "retrieved_at": None,
+                })
+        proxmox_value = {"data": rows}
+        if proxmox_errors:
+            proxmox_value["errors"] = proxmox_errors
+    elif not source_observations:
+        errors.append("Proxmox source is not configured")
+        source_observations.append({
+            "source": "Proxmox", "status": "NOT_CONFIGURED", "retrieved_at": None,
+        })
     values.append(proxmox_value)
-    for label, (url, token_file) in zip(("NetBox", "Uptime Kuma"), source_specs()[1:], strict=True):
+    for label, (url, token_file) in zip(("NetBox", "Uptime Kuma"), supporting_source_specs(), strict=True):
         if not url:
             values.append(None)
             errors.append(f"{label} source is not configured")
+            source_observations.append({
+                "source": label, "status": "NOT_CONFIGURED", "retrieved_at": None,
+            })
             continue
         try:
             value = _fetch(url, token_file)
@@ -205,12 +327,29 @@ def homelab_summary() -> dict:
                 merged.update(value)
                 value = merged
             values.append(_normalize_kuma_status(value) if label == "Uptime Kuma" else value)
+            source_observations.append({
+                "source": label,
+                "status": "AVAILABLE",
+                "retrieved_at": _retrieved_at(),
+                "rows": len(value.get("results", [])) if label == "NetBox" else len(value.get("monitors", [])),
+            })
             if label == "NetBox":
                 netbox_value = value
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             values.append(None)
-            errors.append(str(exc))
-    result = summarize(*values)
+            errors.append(f"{label} source unavailable: {exc}")
+            source_observations.append({
+                "source": label, "status": "UNAVAILABLE", "retrieved_at": None,
+            })
+    try:
+        identity_links = _read_identity_links()
+    except (OSError, ValueError) as exc:
+        identity_links = {}
+        errors.append(str(exc))
+    result = summarize(*values, identity_links=identity_links)
+    if errors and result["status"] == "OK":
+        result["status"] = "PARTIAL"
+    result["source_observations"] = source_observations
     from services import project_netbox_services
 
     service_url, service_token_file = netbox_services_spec()
@@ -220,10 +359,12 @@ def homelab_summary() -> dict:
             result["service_catalog"] = project_netbox_services(
                 service_payload, netbox_value
             )
+            result["service_catalog"]["retrieved_at"] = _retrieved_at()
         except (OSError, ValueError, json.JSONDecodeError):
             result["service_catalog"] = {
                 "status": "UNAVAILABLE",
                 "source": "NetBox application services",
+                "retrieved_at": None,
                 "services": [],
                 "inventory_is_not_liveness": True,
                 "writes_performed": False,
@@ -233,6 +374,7 @@ def homelab_summary() -> dict:
         result["service_catalog"] = {
             "status": "NOT_CONFIGURED",
             "source": "NetBox application services",
+            "retrieved_at": None,
             "services": [],
             "inventory_is_not_liveness": True,
             "writes_performed": False,
@@ -255,6 +397,8 @@ def homelab_summary() -> dict:
             "runtime_status": resource.get("runtime_status"),
             "currently_online": resource.get("currently_online"),
             "runtime": resource.get("runtime"),
+            "inventory_device_id": inventory.get("id"),
+            "related_inventory_device_id": resource.get("related_inventory_device_id"),
             "primary_ip": inventory.get("primary_ip"),
             "role": inventory.get("role"),
             "availability_status": availability.get("status"),

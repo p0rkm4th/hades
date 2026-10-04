@@ -42,17 +42,32 @@ def proxmox_token_ids() -> tuple[str, ...]:
     return tuple(ids)
 
 
-def source_specs() -> tuple[tuple[str, str], ...]:
-    """Resolve documented base inputs to the adapter's bounded GET paths."""
-    proxmox_base = os.environ.get("HADES_PROXMOX_URL", "").rstrip("/")
+def proxmox_source_ids() -> tuple[str, ...]:
+    """Return explicit source IDs used by the reviewed identity crosswalk."""
+    ids = _split("HADES_PROXMOX_SOURCE_IDS")
+    count = len(proxmox_specs())
+    if not ids:
+        return tuple("" for _ in range(count))
+    if len(ids) not in {1, count}:
+        raise ValueError("Proxmox source-ID count must match URL count or use one shared source ID")
+    if len(ids) == 1:
+        ids *= count
+    if len(set(ids)) != len(ids):
+        raise ValueError("Proxmox source IDs must be unique")
+    return tuple(ids)
+
+
+def homelab_identity_links_file() -> str:
+    """Return the protected optional source-to-NetBox identity map path."""
+    return os.environ.get("HADES_HOMELAB_IDENTITY_LINKS_FILE", "").strip()
+
+
+def supporting_source_specs() -> tuple[tuple[str, str], ...]:
+    """Resolve NetBox and Kuma inputs without depending on Proxmox config."""
     netbox_base = os.environ.get("HADES_NETBOX_URL", "").rstrip("/")
     kuma_base = os.environ.get("HADES_UPTIME_KUMA_URL", "").rstrip("/")
     kuma_slug = os.environ.get("HADES_UPTIME_KUMA_STATUS_SLUG", "").strip("/")
     return (
-        (
-            proxmox_specs()[0][0] if proxmox_specs() else "",
-            proxmox_specs()[0][1] if proxmox_specs() else "",
-        ),
         (
             os.environ.get("HADES_NETBOX_DEVICES_URL", "")
             or (urljoin(f"{netbox_base}/", "api/dcim/devices/") if netbox_base else ""),
@@ -64,6 +79,13 @@ def source_specs() -> tuple[tuple[str, str], ...]:
             os.environ.get("HADES_KUMA_TOKEN_FILE", ""),
         ),
     )
+
+
+def source_specs() -> tuple[tuple[str, str], ...]:
+    """Resolve documented base inputs to the adapter's bounded GET paths."""
+    proxmox = proxmox_specs()
+    first_proxmox = proxmox[0] if proxmox else ("", "")
+    return (first_proxmox, *supporting_source_specs())
 
 
 def netbox_services_spec() -> tuple[str, str]:
