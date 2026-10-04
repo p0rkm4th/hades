@@ -372,8 +372,14 @@ coverage_without_explicit_empty_marker = coverage_response({
         {'name': 'synthetic-host-probe', 'status': 'up', 'freshness': 'FRESH'},
     ],
 })
-assert 'service catalog is reachable but empty' in coverage_without_explicit_empty_marker, coverage_without_explicit_empty_marker
+assert 'total coverage is unknown' in coverage_without_explicit_empty_marker, coverage_without_explicit_empty_marker
+assert 'catalog is reachable but empty' not in coverage_without_explicit_empty_marker, coverage_without_explicit_empty_marker
 assert 'configured probes responded' in coverage_without_explicit_empty_marker, coverage_without_explicit_empty_marker
+partial_catalog_coverage = coverage_response({
+    'service_catalog': {'status': 'OK', 'coverage': 'PARTIAL', 'services': [], 'truncated': True},
+})
+assert 'partial or truncated' in partial_catalog_coverage, partial_catalog_coverage
+assert 'catalog is reachable but empty' not in partial_catalog_coverage, partial_catalog_coverage
 provenance_history = [
     {'role': 'user', 'content': "What's down?"},
     {'role': 'assistant', 'content': 'No fresh configured failures.'},
@@ -390,6 +396,7 @@ assert 'Synthetic NetBox: unavailable; read time unavailable' in provenance, pro
 assert 'not proof that older observations remain live' in provenance, provenance
 assert conflict_intent('Do any sources disagree?')
 assert namespace['_hades_is_homelab_intent']('Do any sources disagree?')
+assert namespace['_hades_is_homelab_intent']('Which services can you not verify?')
 conflict = conflict_response({'conflicts': [{
     'name': 'Synthetic Node',
     'reasons': ['NetBox intended node differs from Proxmox runtime node'],
@@ -433,9 +440,9 @@ assert 'selected guests only' in partial_visibility, partial_visibility
 assert placement_intent('Where is Agent Zero running?')
 assert namespace['_hades_is_homelab_intent']('Where is Agent Zero running?')
 intended_placement = placement_response('Where is Minecraft Server running?', {
-    'service_catalog': {'status': 'OK', 'services': [{
+    'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE', 'services': [{
         'name': 'Minecraft Server', 'parent_name': 'Synthetic Host',
-    }]},
+    }], 'truncated': False},
 })
 assert 'NetBox lists Minecraft Server on Synthetic Host' in intended_placement, intended_placement
 assert 'does not establish whether the service is currently running or healthy' in intended_placement
@@ -444,6 +451,16 @@ unknown_placement = placement_response('Where is Agent Zero running?', {
 })
 assert 'catalog is reachable but empty' in unknown_placement, unknown_placement
 assert 'remembered location' in unknown_placement, unknown_placement
+partial_placement = placement_response('Where is Minecraft running?', {
+    'service_catalog': {'status': 'OK', 'coverage': 'PARTIAL', 'services': [], 'truncated': True},
+})
+assert 'partial or doesn\'t confirm complete coverage' in partial_placement, partial_placement
+assert 'remembered location' in partial_placement, partial_placement
+unknown_coverage_placement = placement_response('Where is Minecraft running?', {
+    'service_catalog': {'status': 'OK', 'services': [], 'truncated': False},
+})
+assert 'doesn\'t confirm complete coverage' in unknown_coverage_placement, unknown_coverage_placement
+assert 'catalog is reachable but empty' not in unknown_coverage_placement, unknown_coverage_placement
 assert ranking_intent("What's the most loaded server?")
 assert ranking_intent('What is using the most resources?')
 assert namespace['_hades_is_homelab_intent']("What's the most loaded server?")
@@ -758,7 +775,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '"availability": {"name": "Minecraft Server", "status": "up", '
         '"last_updated": "2026-09-27T12:00:00Z"}, '
         '"availability_freshness": "FRESH"}], '
-        '"service_catalog": {"status": "OK", "services": [{'
+        '"service_catalog": {"status": "OK", "coverage": "COMPLETE", "truncated": False, "services": [{'
         '"name": "Minecraft Server", "parent_name": "Test Host", '
         '"addresses": ["192.0.2.10"], "port_mappings": ["tcp/25565"]}]}}\n',
         encoding='utf-8',
@@ -822,7 +839,8 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         owner_coverage = direct_read(
             'Which services can you not verify?', 'synthetic-owner', 'owner'
         )
-        assert 'application services' in owner_coverage, owner_coverage
+        assert 'service catalog' in owner_coverage, owner_coverage
+        assert 'service catalog lists 1 application service' in owner_coverage, owner_coverage
         assert 'No configured service-check observations' in owner_coverage, owner_coverage
         assert direct_read(
             'Which services can you not verify?', 'synthetic-household', 'household'

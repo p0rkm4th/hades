@@ -4720,15 +4720,17 @@ def _hades_homelab_service_coverage_response(summary):
     catalog_status = str(catalog.get("status") or "UNKNOWN").upper()
     catalog_coverage = str(catalog.get("coverage") or "UNKNOWN").upper()
     services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
-    if catalog_status == "OK" and (
-        catalog_coverage == "EMPTY"
-        or (not services and catalog.get("truncated") is not True)
-    ):
+    if catalog_status == "OK" and catalog_coverage == "EMPTY" and catalog.get("truncated") is not True:
         parts.append("The service catalog is reachable but empty, so expected application placement cannot be compared with current checks.")
+    elif catalog_status == "OK" and (catalog_coverage == "PARTIAL" or catalog.get("truncated") is True):
+        parts.append("The service catalog read is partial or truncated, so missing records cannot be treated as absent.")
+    elif catalog_status == "OK" and catalog_coverage == "UNKNOWN":
+        parts.append("The service catalog responded, but its total coverage is unknown, so I can't confirm that unlisted services are absent.")
     elif catalog_status in {"NOT_CONFIGURED", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "ERROR"}:
         parts.append("The service catalog is not currently available, so expected application placement cannot be compared with current checks.")
     elif services:
-        parts.append(f"The service catalog lists {len(services)} application services, but the catalog alone does not establish their current health.")
+        service_word = "service" if len(services) == 1 else "services"
+        parts.append(f"The service catalog lists {len(services)} application {service_word}, but the catalog alone does not establish their current health.")
     visibility = summary.get("proxmox_guest_visibility") if isinstance(summary.get("proxmox_guest_visibility"), dict) else {}
     if str(visibility.get("status") or "").upper() in {"PARTIAL", "UNKNOWN"}:
         parts.append("Guest visibility is partial or unknown, so services on unreported guests remain unverified.")
@@ -4902,6 +4904,10 @@ def _hades_homelab_service_placement_response(user_text, summary):
     services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
     if status in {"NOT_CONFIGURED", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "ERROR"}:
         return "The application-service inventory is not currently available, so I can't verify service placement. I won't substitute a remembered location."
+    if status == "OK" and (
+        coverage in {"PARTIAL", "UNKNOWN"} or catalog.get("truncated") is True
+    ):
+        return "The NetBox application-service read is partial or doesn't confirm complete coverage, so I can't verify whether this service is missing or where it is intended to run. I won't substitute a remembered location."
     requested = re.search(
         r"\bwhere(?:['’]s|\s+is)\s+(?P<name>.+?)\s+(?:running|hosted|located|live)\b|"
         r"\bwhere\s+does\s+(?P<does>.+?)\s+(?:run|live)\b",
@@ -4917,7 +4923,7 @@ def _hades_homelab_service_placement_response(user_text, summary):
         names = ", ".join(" ".join(str(row.get("name") or "").split())[:80] for row in matches[:5])
         return f"I found multiple matching service records: {names}. Which service do you mean?"
     if not matches:
-        if coverage == "EMPTY" or (status == "OK" and not services):
+        if coverage == "EMPTY":
             return "The application-service catalog is reachable but empty, so I can't verify where that service is intended to run. I won't substitute a remembered location."
         if target:
             return f"The current application-service inventory has no matching record for {target[:100]}, so I can't verify its placement. I won't substitute a remembered location."
@@ -6986,6 +6992,7 @@ def _hades_is_homelab_intent(user_text):
         _HADES_HOMELAB_INTENT.search(str(user_text or ""))
         or _hades_configured_homelab_alias_match(user_text)
         or _hades_broad_homelab_status_intent(user_text)
+        or _hades_homelab_service_coverage_intent(user_text)
         or _hades_homelab_conflict_intent(user_text)
         or _hades_homelab_guest_visibility_intent(user_text)
         or _hades_homelab_service_placement_intent(user_text)

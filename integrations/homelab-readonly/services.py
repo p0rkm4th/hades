@@ -71,6 +71,10 @@ def project_netbox_services(
     """
     services = _rows(services_payload, "services")
     devices = _rows(devices_payload, "devices")
+    service_document = services_payload if isinstance(services_payload, dict) else {}
+    raw_service_rows = service_document.get("results", [])
+    service_count = service_document.get("count")
+    next_page = service_document.get("next")
     by_id: dict[str, dict[str, Any]] = {}
     by_name: dict[str, dict[str, Any]] = {}
     for device in devices:
@@ -129,12 +133,41 @@ def project_netbox_services(
             "runtime_status": "UNKNOWN",
         })
 
+    valid_count = (
+        isinstance(service_count, int)
+        and not isinstance(service_count, bool)
+        and service_count >= 0
+    )
+    has_complete_pagination_metadata = (
+        "count" in service_document
+        and "next" in service_document
+        and valid_count
+    )
+    count_mismatch = valid_count and service_count != len(raw_service_rows)
+    invalid_rows = any(not isinstance(value, dict) for value in raw_service_rows)
+    omitted_by_projection = len(services) > MAX_SERVICES or len(projected) != len(services)
+    definitely_partial = (
+        next_page is not None
+        or count_mismatch
+        or invalid_rows
+        or omitted_by_projection
+    )
+    if definitely_partial:
+        coverage = "PARTIAL"
+    elif not has_complete_pagination_metadata:
+        coverage = "UNKNOWN"
+    elif not projected:
+        coverage = "EMPTY"
+    else:
+        coverage = "COMPLETE"
+
     return {
         "status": "OK",
+        "coverage": coverage,
         "source": "NetBox application services",
         "inventory_is_not_liveness": True,
         "writes_performed": False,
         "services": projected,
-        "truncated": len(services) > MAX_SERVICES,
+        "truncated": definitely_partial,
         "limitation": "NetBox describes intended service endpoints; runtime and reachability require separate live evidence.",
     }

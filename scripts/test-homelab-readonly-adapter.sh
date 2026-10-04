@@ -246,7 +246,7 @@ spec = importlib.util.spec_from_file_location(
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 result = module.project_netbox_services(
-    {"results": [{
+    {"count": 1, "next": None, "results": [{
         "name": "Minecraft Java",
         "device": {"id": 7, "name": "service-host-alpha"},
         "port_mappings": ["TCP/25565", "udp/25565", "tcp/99999", "tcp/any"],
@@ -256,6 +256,7 @@ result = module.project_netbox_services(
     {"results": [{"id": 7, "name": "service-host-alpha", "primary_ip4": {"address": "192.0.2.75/24"}}]},
 )
 assert result["status"] == "OK" and result["writes_performed"] is False
+assert result["coverage"] == "COMPLETE" and result["truncated"] is False
 assert result["inventory_is_not_liveness"] is True
 assert result["services"] == [{
     "name": "Minecraft Java", "parent_type": "device", "parent_name": "service-host-alpha",
@@ -263,7 +264,35 @@ assert result["services"] == [{
     "port_mappings": ["tcp/25565", "udp/25565"], "runtime_status": "UNKNOWN",
 }]
 assert "untrusted_secret_like_field" not in str(result)
+empty = module.project_netbox_services(
+    {"count": 0, "next": None, "results": []}, {"count": 0, "next": None, "results": []}
+)
+assert empty["coverage"] == "EMPTY" and empty["services"] == [], empty
+partial = module.project_netbox_services(
+    {"count": 120, "next": "https://netbox.example.test/api/ipam/services/?offset=50", "results": []},
+    {"count": 0, "next": None, "results": []},
+)
+assert partial["coverage"] == "PARTIAL" and partial["truncated"] is True, partial
+unknown = module.project_netbox_services(
+    {"results": []}, {"results": []}
+)
+assert unknown["coverage"] == "UNKNOWN" and unknown["services"] == [], unknown
+for malformed in (
+    {"count": 0, "results": []},
+    {"next": None, "results": []},
+    {"count": "0", "next": None, "results": []},
+    {"count": True, "next": None, "results": []},
+):
+    malformed_result = module.project_netbox_services(malformed, {"results": []})
+    assert malformed_result["coverage"] == "UNKNOWN", malformed_result
+invalid = module.project_netbox_services(
+    {"count": 1, "next": None, "results": [None]}, {"results": []}
+)
+assert invalid["coverage"] == "PARTIAL" and invalid["truncated"] is True, invalid
+missing = module.project_netbox_services(None, {"count": 0, "next": None, "results": []})
+assert missing["coverage"] == "UNKNOWN" and missing["services"] == [], missing
 print("PASS NetBox service projection joins parent address, validates protocol/ports, and never claims liveness")
+print("PASS NetBox service projection distinguishes complete, empty, partial-page, and unknown coverage")
 PY
 
 python3 - <<'PY'
@@ -459,7 +488,7 @@ def fixture_fetch(url, *_args, **_kwargs):
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": [device_fixture]}
     if url == "https://netbox.example.test/api/ipam/services/":
-        return {"results": [service_fixture]}
+        return {"count": 1, "next": None, "results": [service_fixture]}
     if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
         return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
     if url == "https://status.example.test/api/status-page/hades-status":
@@ -744,7 +773,7 @@ def partial_fetch(url, *_args, **_kwargs):
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": [device_fixture]}
     if url == "https://netbox.example.test/api/ipam/services/":
-        return {"results": [service_fixture]}
+        return {"count": 1, "next": None, "results": [service_fixture]}
     if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
         return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
     if url == "https://status.example.test/api/status-page/hades-status":
@@ -837,7 +866,7 @@ def netbox_seed_fetch(url, *_args, **_kwargs):
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": [seed_device]}
     if url == "https://netbox.example.test/api/ipam/services/":
-        return {"results": []}
+        return {"count": 0, "next": None, "results": []}
     if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
         return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
     if url == "https://status.example.test/api/status-page/hades-status":
@@ -846,6 +875,8 @@ def netbox_seed_fetch(url, *_args, **_kwargs):
 
 server._fetch = netbox_seed_fetch
 netbox_seed = server.homelab_summary()
+assert netbox_seed["service_catalog"]["status"] == "OK"
+assert netbox_seed["service_catalog"]["coverage"] == "EMPTY"
 seed_resource = next(
     row for row in netbox_seed["resources"]
     if (row.get("runtime") or {}).get("vmid") == 102
@@ -899,7 +930,7 @@ def proxmox_outage_fetch(url, *_args, **_kwargs):
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": [seed_device]}
     if url == "https://netbox.example.test/api/ipam/services/":
-        return {"results": []}
+        return {"count": 0, "next": None, "results": []}
     if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
         return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
     if url == "https://status.example.test/api/status-page/hades-status":
