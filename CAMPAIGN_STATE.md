@@ -14,22 +14,21 @@ of truth.
 ## Current verified status — 2026-10-04
 
 - HADES review branch `codex/homelab-protected-source-contract-20261001` is
-  pushed. Public `main` remains at `c83ddd6`; its release-
-  convergence CI is green. Review head `4096f39` passed Public CI run
-  `37170321258`; runtime candidate `9511c75` passed run `37169928930`. Later checkpoint-only documentation commits have no separate recorded CI
-  status.
-- Candidate `9511c75` is not deployed. Its current composed runtime passed the
-  direct Proxmox owner route for complete and partial scopes, the household
-  boundary, the Hermes runtime contract, focused adapter checks, and the
-  public-tree safety check. Its deployment requires approval for that exact
-  candidate. The older `a87f3ba` approval referred to a rollout already
-  completed and subsequently superseded.
+  pushed at `aa2adde`; Public CI run `37175954312` passed. Public `main` remains
+  at `c83ddd6` with green status checks.
+- The production candidate is the deterministic composed overlay
+  `214c755e…ac128e8`, built over the last verified active overlay
+  `d6977174…e29277a2`. It combines owner broad-source timestamps, cluster guest
+  state, and restore-check guest presence. Composed runtime tests cover those
+  routes, partial scope, timestamps, and household boundaries. Exact-scope
+  rollout approval is pending. The live base must be rechecked before any
+  installation; production remains unchanged.
 - Owner-approved read-only VM audit is effective on both configured Proxmox
   sources. Nyx-4 verified complete guest enumeration without access-denied
   exclusions. This supports inventory and reported power state, not guest OS,
-  application, or workload health. Production still misroutes a cluster-wide
-  guest-status question; candidate `9511c75` fixes the route, includes source
-  read timestamps, and limits completeness claims to configured source scope.
+  application, or workload health. Fresh production owner dogfood still
+  confirms broad status is partial and omits per-source timestamps; the
+  candidate fixes this response as well as the cluster-wide guest-status route.
 - The approved owner deployment has linked read-only inference catalogs and
   fixed-command GPU telemetry. Samples are timestamped and point-in-time; they
   do not measure CPU, attribute GPU use to a process, prove inference execution,
@@ -40,12 +39,16 @@ of truth.
 - Fresh authenticated dogfood completed: owner source-coverage question in
   4.7s, Household A everyday status in 4.1s, and Household B network-slowdown
   question in 4.1s. Household answers disclosed no private topology or
-  owner-only infrastructure detail. A separate fresh owner query again
-  misrouted cluster-wide guest status as a physical-host question (4.55s),
-  confirming the open production defect fixed by candidate `9511c75`. Protected
-  raw evidence remains mode-0600 outside this repository.
-- No P0/P1 is currently evidenced. This does not mean the homelab is fully
-  healthy or completely observable; remaining coverage limits are listed below.
+  owner-only infrastructure detail. Current production owner/Household A
+  prompts confirm the broad-summary provenance gap, honest missing game-server
+  check, and household AI wording that does not claim generation succeeded.
+  Owner GPU dogfood returned eight timestamped samples across three inference
+  endpoints and refused to guarantee model fit. The same answer reports stale
+  hardware role/capability inventory; a private checkout matrix dated 2026-10-02
+  should be within the seven-day rule, so Nyx-4 is checking the deployed matrix
+  path for mismatch. Raw evidence is mode-0600 outside this repository.
+- No P0/P1 product regression is established by these samples. Source gaps and
+  the capability-freshness mismatch remain open evidence, not an all-clear.
 
 ## Current repository work
 
@@ -77,9 +80,8 @@ of truth.
   gated.
 - The configured Proxmox audit scopes are complete for current guest
   enumeration, but do not inspect guest operating systems or prove in-guest
-  service health. The natural-language cluster summary and source timestamps
-  are fixed in candidate `9511c75`, pending its exact-candidate deployment
-  approval.
+  service health. The natural-language cluster summary, restore follow-up, and
+  source timestamps are in the combined candidate, pending exact-scope approval.
 - GPU telemetry does not provide CPU utilization, process attribution,
   successful inference execution, or guaranteed model fit. Nyx-4 applied a scoped persistence-service
   correction and verified affected inference services remained available; no
