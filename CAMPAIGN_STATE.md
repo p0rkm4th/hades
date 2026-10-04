@@ -13,9 +13,10 @@ of truth.
 
 ## Current verified status — 2026-10-04
 
-- Review-branch candidate `09698a3` passed Public CI run `37164664971` and is
-  deployed with a root-only hash-guarded rollback. Public `main` remains at the
-  green release-convergence baseline `c83ddd6`.
+- HADES review branch `codex/homelab-protected-source-contract-20261001` is
+  pushed at `9a1ab9f`; Public CI run `37165195131` passed. Runtime candidate
+  `09698a3` is deployed with a root-only hash-guarded rollback. Public `main`
+  remains at the green release-convergence baseline `c83ddd6`.
 - Fixed-command, non-sudo GPU telemetry is active only in the explicitly
   approved owner deployment. Fresh persisted owner dogfood reports per-device
   free VRAM/utilization for identity-linked inference endpoints, including the
