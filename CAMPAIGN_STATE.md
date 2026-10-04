@@ -8,11 +8,12 @@ records.
 ## Current checkpoint — 2026-10-04
 
 Public `main` is at
-`8e4a804a575c7e5035bc9feab2a0f26aa72857b2`, fast-forwarded from
+`619d1da1ef050a05b8b8aeab1bf7c4c97462c22e`, fast-forwarded from
 `codex/inference-read-freshness-20261004`. Hosted Public CI passed for code
 revision `e939b3caac8760291f610d2d428795956257ccb4` (run `37227907387`), the
 source-attribution follow-up `8e4a804` (branch run `37230026776`; main run
-`37230088761`), and intervening documentation checkpoints. The source adds
+`37230088761`), and the current docs checkpoint `619d1da` (branch run
+`37230492532`; main run `37230575891`). The source adds
 provider-read timestamps and partial-provider caveats to model-location
 answers, and source/time attribution plus conservative ambiguity wording to
 HADES guest placement. Synthetic outage regressions cover Proxmox runtime and
