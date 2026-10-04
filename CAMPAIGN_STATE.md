@@ -80,6 +80,13 @@ of truth.
 - Fresh network-slowdown dogfood combines configured-probe response times and
   Proxmox resource samples but explicitly says packet loss, throughput, DNS
   timing, and trends are unavailable; it makes no causal diagnosis.
+- Fresh natural-language dogfood on the current owner deployment asked which
+  sources are verifiable and what remains unknown. The owner answer preserved
+  partial guest visibility, empty intended-service coverage, unlinked records,
+  and the limit of host probes. Household A's “Are all the computers okay?”
+  and Household B's “Why is everything slow?” returned plain account-boundary
+  answers without infrastructure details. Persisted protected evidence and
+  per-turn timings are recorded in the private infrastructure note.
 
 The private coordination note and protected evidence paths are recorded in
 `hades-infra`; no private topology, credentials, or live endpoint details
