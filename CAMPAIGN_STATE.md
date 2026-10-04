@@ -7,12 +7,21 @@ records.
 
 ## Current checkpoint — 2026-10-04
 
-Public `main` is at `5ed8c8d`; source checkpoint `07b0055` added explicit
+Public `main` is at `08ee4e7`; source checkpoint `07b0055` added explicit
 NetBox pagination completeness and contradictory-coverage handling. Public CI
 passed on the source and documented tip (main run `37234655212`). The adapter
 requires valid `count`, `next`, and `results` metadata before calling a
 service catalog complete or empty; missing pages and malformed/contradictory
 metadata remain partial or unknown. Focused synthetic contracts pass.
+
+Fresh owner dogfood found that the tracked hardware matrix's successful file
+read (`status=OK`) was incorrectly being reused as its data freshness. The
+adapter now marks this static observed inventory `HISTORICAL`, while retaining
+`status=OK` solely for read success; unavailable reads report freshness as
+`UNKNOWN`. Hermes consumes only the explicit freshness field, so a readable
+source cannot make old inventory appear current. Focused synthetic tests cover
+both the adapter response and the status/freshness separation. Full CI and
+deployment validation remain open.
 
 A first private composition attempt removed adjacent helpers and caused an
 owner-chat error. Hash-guarded rollback restored both prior files and health.

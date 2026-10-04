@@ -891,6 +891,7 @@ def homelab_compute_capabilities() -> dict:
     if not path_value:
         return {
             "status": "UNAVAILABLE",
+            "freshness": "UNKNOWN",
             "source": "observed capability matrix",
             "error": "capability matrix is not configured",
             "read_only": True,
@@ -899,6 +900,7 @@ def homelab_compute_capabilities() -> dict:
     if not path.is_file() or path.is_symlink():
         return {
             "status": "UNAVAILABLE",
+            "freshness": "UNKNOWN",
             "source": "observed capability matrix",
             "error": "capability matrix is not a regular file",
             "read_only": True,
@@ -910,6 +912,7 @@ def homelab_compute_capabilities() -> dict:
     except (OSError, UnicodeError, yaml.YAMLError) as exc:
         return {
             "status": "UNAVAILABLE",
+            "freshness": "UNKNOWN",
             "source": "observed capability matrix",
             "error": f"capability matrix could not be read: {exc}",
             "read_only": True,
@@ -935,6 +938,10 @@ def homelab_compute_capabilities() -> dict:
         rows.append(row)
     return {
         "status": "OK",
+        # A successful file read says nothing about when the recorded facts
+        # were last verified. This tracked matrix is historical context until
+        # it has a separately maintained freshness contract.
+        "freshness": "HISTORICAL",
         "source": "tracked observed capability matrix",
         "availability_not_provided": True,
         "observed_at": document.get("observed_at"),

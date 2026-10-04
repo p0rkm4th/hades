@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import tempfile
 import types
 from pathlib import Path
 
@@ -64,6 +65,27 @@ expect_invalid(json.dumps([
     {"id": "x", "url": "http://example.test"},
     {"id": "x", "url": "http://other.example.test"},
 ]))
+
+# Reading the static matrix successfully is a read-status fact, not evidence
+# that its hardware observations are current.
+with tempfile.TemporaryDirectory(prefix="hades-capability-matrix-") as temp_dir:
+    matrix_path = Path(temp_dir) / "matrix.json"
+    matrix_path.write_text(json.dumps({
+        "observed_at": "2026-10-02T00:00:00Z",
+        "machines": [{"name": "Compute Alpha", "gpus": ["Synthetic GPU"]}],
+    }), encoding="utf-8")
+    previous_matrix = os.environ.get("HADES_CAPABILITY_MATRIX_FILE")
+    os.environ["HADES_CAPABILITY_MATRIX_FILE"] = str(matrix_path)
+    try:
+        hardware = server.homelab_compute_capabilities()
+    finally:
+        if previous_matrix is None:
+            os.environ.pop("HADES_CAPABILITY_MATRIX_FILE", None)
+        else:
+            os.environ["HADES_CAPABILITY_MATRIX_FILE"] = previous_matrix
+assert hardware["status"] == "OK"
+assert hardware["freshness"] == "HISTORICAL"
+assert hardware["observed_at"] == "2026-10-02T00:00:00Z"
 
 os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([
     {"id": "fast-lane", "url": "http://inference.example.test:11434"},

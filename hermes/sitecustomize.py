@@ -6707,7 +6707,10 @@ def _hades_direct_homelab_inference_read(user_text, subject, scope):
         summary = values.get("summary") if isinstance(values.get("summary"), dict) else {}
         hardware = values.get("hardware") if isinstance(values.get("hardware"), dict) else {}
         summary["capability_machines"] = hardware.get("machines", [])
-        summary["capability_freshness"] = hardware.get("freshness", hardware.get("status", "UNKNOWN"))
+        # Source-read success (status=OK) is not data freshness. Only consume
+        # an explicit freshness field supplied by the capability source.
+        summary["capability_freshness"] = hardware.get("freshness", "UNKNOWN")
+        summary["capability_source_status"] = hardware.get("status", "UNKNOWN")
         summary["capability_observed_at"] = hardware.get("observed_at")
         if named_node_activity:
             target_key = re.sub(r"[^a-z0-9]+", "", str(named_node).casefold())

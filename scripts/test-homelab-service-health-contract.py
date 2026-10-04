@@ -15,6 +15,23 @@ import yaml
 
 source = Path('hermes/sitecustomize.py').read_text(encoding='utf-8')
 tree = ast.parse(source)
+inference_reader = next(
+    node for node in tree.body
+    if isinstance(node, ast.FunctionDef) and node.name == '_hades_direct_homelab_inference_read'
+)
+freshness_assignment = next(
+    node for node in ast.walk(inference_reader)
+    if isinstance(node, ast.Assign)
+    and any(
+        isinstance(target, ast.Subscript)
+        and isinstance(target.value, ast.Name) and target.value.id == 'summary'
+        and isinstance(target.slice, ast.Constant) and target.slice.value == 'capability_freshness'
+        for target in node.targets
+    )
+)
+assert ast.dump(freshness_assignment.value) == ast.dump(ast.parse(
+    "hardware.get('freshness', 'UNKNOWN')", mode='eval'
+).body), 'source read status must not be used as data freshness'
 wanted = {
     '_hades_capability_matrix_path', '_hades_configured_homelab_records',
     '_hades_configured_homelab_aliases',

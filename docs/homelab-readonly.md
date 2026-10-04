@@ -14,7 +14,7 @@ The current upstream MCP candidate evaluation is recorded in
 | Virtualization | Proxmox VE | API reads for nodes, guests, status, and resources | None |
 | Inventory/topology | NetBox | REST `GET` reads for approved objects | None |
 | Availability | Uptime Kuma | Published status-page data or metrics, where intentionally exposed | None |
-| Hardware capability | Tracked observed capability matrix | Confirmed CPU/RAM/GPU inventory, explicitly separate from live availability | None |
+| Hardware capability | Tracked observed capability matrix | Historical CPU/RAM/GPU inventory, explicitly separate from live availability; a successful read does not make the inventory current | None |
 | Host operations | Dedicated restricted SSH account, only if later approved | Explicitly scoped read commands | None |
 
 Hindsight may supply remembered labels or locations, but live status always

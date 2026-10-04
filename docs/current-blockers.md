@@ -30,6 +30,12 @@ The deployed read layer still needs representative stale/partial live-source
 checks, service-native application health, source-conflict dogfood, network
 measurements, backup/recovery evidence, and broader normal-user dogfood.
 
+Fresh owner dogfood also found a status/freshness conflation for the static
+hardware capability matrix: a successful read was phrased as `ok` despite the
+inventory being historical. Source read status and data freshness are now
+separate in the adapter and Hermes projection, with regression contracts; the
+change has not yet passed full CI or a production owner-UI rollout.
+
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address
 audit do not erase or certify every older public commit. The current branch tip
