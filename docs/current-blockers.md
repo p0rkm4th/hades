@@ -329,7 +329,9 @@ The current composed review candidate adds up to six bounded source/read
 timestamp pairs to owner summaries and includes the tested owner routes for
 cluster-wide guest state and restore-check guest presence; household responses
 remain unchanged. HADES `44ac5f1` passed Public CI run `37174603462`, and the
-composed Hermes runtime passes locally. The composed overlay SHA-256 is
-`9121a07c…d7e26ad6` over active SHA `d6977174…e29277a2`. Deployment approval
-for this exact combined scope and fresh owner/household UI acceptance remain
-pending.
+composed Hermes runtime passes locally. A reproducibility defect in composer
+ordering was then fixed and now has a cross-`PYTHONHASHSEED` byte-equality
+contract. The deterministic composed overlay SHA-256 is
+`214c755e…ac128e8` over active SHA `d6977174…e29277a2`. Public CI for the
+composer correction and deployment approval for this exact combined scope are
+pending; fresh owner/household UI acceptance follows deployment.

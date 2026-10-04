@@ -430,6 +430,79 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
         **kwargs,
     )
     registry = hermes_registry_module.registry
+    composed_cluster_guest_question = "Which Proxmox guests are running right now, and which are stopped?"
+    composed_cluster_summary = {
+        "status": "OK",
+        "sources": [{"source": "Proxmox guest visibility (site-a)", "retrieved_at": "2026-10-04T01:40:00Z"}],
+        "proxmox_guest_visibility": {
+            "status": "COMPLETE", "scope": "ALL_GUESTS",
+            "endpoints": [{"source_identity": "proxmox:site-a", "status": "HEALTHY", "scope": "ALL_GUESTS"}],
+        },
+        "resources": [
+            {"name": "Synthetic VM Alpha", "runtime_status": "RUNNING",
+             "runtime": {"type": "qemu", "vmid": 101, "status": "running"},
+             "identity": {"source_identities": {"proxmox": ["proxmox:site-a:qemu:101"]}}},
+            {"name": "Synthetic CT Beta", "runtime_status": "STOPPED",
+             "runtime": {"type": "lxc", "vmid": 202, "status": "stopped"},
+             "identity": {"source_identities": {"proxmox": ["proxmox:site-a:lxc:202"]}}},
+        ],
+    }
+    original_composed_tool_result = hades._hades_direct_homelab_tool_result
+    composed_tool_calls = []
+    try:
+        def composed_tool_result(name, *_args, **_kwargs):
+            composed_tool_calls.append(name)
+            if name == "homelab_summary":
+                return composed_cluster_summary
+            raise AssertionError(f"unexpected composed homelab tool: {name}")
+        hades._hades_direct_homelab_tool_result = composed_tool_result
+        composed_cluster_guest_response = hades._hades_direct_homelab_read(
+            composed_cluster_guest_question, owner, "owner",
+        )
+        assert "Complete audit scope" in composed_cluster_guest_response, composed_cluster_guest_response
+        assert "Running: Synthetic VM Alpha (VM 101)" in composed_cluster_guest_response, composed_cluster_guest_response
+        assert "Stopped: Synthetic CT Beta (CT 202)" in composed_cluster_guest_response, composed_cluster_guest_response
+        assert "guest-scope reads completed at 2026-10-04T01:40:00Z" in composed_cluster_guest_response, composed_cluster_guest_response
+        assert "not application or service health" in composed_cluster_guest_response, composed_cluster_guest_response
+        composed_tool_calls.clear()
+        composed_household_cluster = hades._hades_direct_homelab_read(
+            composed_cluster_guest_question, beta, "household",
+        )
+        assert "can't check all the home computers" in composed_household_cluster.casefold(), composed_household_cluster
+        assert not composed_tool_calls, composed_tool_calls
+        composed_restore_question = (
+            "Did recent backup restore checks leave any temporary guests present or running right now?"
+        )
+        composed_activity = {
+            "status": "READABLE", "source_status": {"proxmox": "READABLE"},
+            "endpoints": [{
+                "source_id": "site-a", "status": "HEALTHY", "scope": "ALL_GUESTS",
+                "retrieved_at": "2026-10-04T01:40:02Z",
+                "events": [{"guest_id": "101", "task_type": "qmrestore", "status": "OK"}],
+            }],
+        }
+        def composed_restore_tool_result(name, *_args, **_kwargs):
+            composed_tool_calls.append(name)
+            if name == "homelab_recent_activity":
+                return composed_activity
+            if name == "homelab_summary":
+                return composed_cluster_summary
+            raise AssertionError(f"unexpected restore tool: {name}")
+        hades._hades_direct_homelab_tool_result = composed_restore_tool_result
+        composed_restore_response = hades._hades_direct_homelab_read(
+            composed_restore_question, owner, "owner",
+        )
+        assert "VM 101 is present and Proxmox reports it running" in composed_restore_response, composed_restore_response
+        assert "Restore-task reads completed at 2026-10-04T01:40:02Z" in composed_restore_response, composed_restore_response
+        composed_tool_calls.clear()
+        composed_household_restore = hades._hades_direct_homelab_read(
+            composed_restore_question, beta, "household",
+        )
+        assert "can't check private infrastructure details" in composed_household_restore.casefold(), composed_household_restore
+        assert not composed_tool_calls, composed_tool_calls
+    finally:
+        hades._hades_direct_homelab_tool_result = original_composed_tool_result
+    print("PASS composed cluster guest and restore routes preserve source scope, timestamps, and household boundaries")
     synthetic_unmonitored_game_summary = {
         "status": "PARTIAL", "resources": [], "availability_summary": [],
         "sources": [{"source": "Uptime Kuma", "status": "HEALTHY",

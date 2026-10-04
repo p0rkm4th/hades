@@ -104,8 +104,8 @@ def _hades_run_conversation(self, user_message, previous_user_text, _preflight_t
 '''
 
 
-def run(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run([sys.executable, str(PREPARER), *args], text=True, capture_output=True)
+def run(*args: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([sys.executable, str(PREPARER), *args], text=True, capture_output=True, env=env)
 
 
 with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
@@ -172,6 +172,18 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-preparer-test-") as raw:
     ) < candidate.index("early_owner_homelab_response = _hades_direct_homelab_read")
     assert output.stat().st_mode & 0o777 == 0o600
     assert active.read_text(encoding="utf-8") == ACTIVE
+
+    # Set iteration must not change the reviewed deployable artifact hash.
+    deterministic_one = directory / "deterministic-one.py"
+    deterministic_two = directory / "deterministic-two.py"
+    deterministic_args = ("--active-overlay", str(active), "--source", str(source))
+    first_seed = {**os.environ, "PYTHONHASHSEED": "1"}
+    second_seed = {**os.environ, "PYTHONHASHSEED": "271828"}
+    first_result = run(*deterministic_args, "--output", str(deterministic_one), env=first_seed)
+    second_result = run(*deterministic_args, "--output", str(deterministic_two), env=second_seed)
+    assert first_result.returncode == 0, first_result.stderr
+    assert second_result.returncode == 0, second_result.stderr
+    assert deterministic_one.read_bytes() == deterministic_two.read_bytes()
 
     # A production overlay may already contain the earlier placement/game
     # guards but lack broad owner/household reads. Upgrade that partial shape

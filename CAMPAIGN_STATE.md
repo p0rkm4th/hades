@@ -227,12 +227,14 @@ Protected raw responses remain outside the repository.
 The exact composed candidate adds up to six source retrieval timestamps to owner
 broad summaries and carries the previously tested owner routes for cluster-wide
 Proxmox guest status and restore-check guest presence. Household wording/source
-access remain unchanged. Focused Hermes-runtime, service-health, composer, and
-public-tree checks pass; Public CI run `37174603462` passed for HADES
-`44ac5f1950a86d335358f8f9c71572d1f96cc374`. The composed overlay SHA-256 is
-`9121a07c734b335df804a369b7cd4fe0bcaa210ad0524c19202b6c55d7e26ad6`, based on
+access remain unchanged. A follow-up found composer output could vary with
+Python hash seed because helper definitions were emitted from a set. The
+composer now sorts emitted functions and global assignments; a regression
+composes under two hash seeds and compares exact bytes. Two builds from the same
+base now produce identical output. Deterministic overlay SHA-256 is
+`214c755eeaf414d26a1be6d8609c8dd4d1760215ea2b3489763eecda5ac128e8`, based on
 active SHA `d697717418e00da5693940ea9351de4faaf1affc35dedaea9ac7f49ee29277a2`.
-The combined candidate is not deployed; exact-scope owner approval and fresh
-authenticated owner/household UI acceptance remain pending. The older
-`a87f3ba` two-file approval referred to an already completed and superseded
-deployment and does not authorize this candidate.
+The combined candidate is not deployed; the composer fix needs Public CI, after
+which exact-scope owner approval and fresh authenticated owner/household UI
+acceptance remain pending. Previous approval requests named nondeterministic
+artifact hashes and must not be used.

@@ -92,7 +92,7 @@ def referenced_globals(source: str, label: str, closure: set[str]) -> set[str]:
         for child in table.get_children():
             collect(child)
 
-    for name in closure:
+    for name in sorted(closure):
         for table in tables.get(name, []):
             collect(table)
     return result
@@ -718,7 +718,7 @@ def main() -> int:
     active_lines = active_text.splitlines(keepends=True)
     patches: list[tuple[int, int, list[str]]] = []
     additions: list[str] = []
-    for name in closure:
+    for name in sorted(closure):
         node = source_functions[name]
         replacement = source_lines[node.lineno - 1:node.end_lineno]
         if name in active_functions:
@@ -728,7 +728,7 @@ def main() -> int:
             patches.append((active_node.lineno, active_node.end_lineno, replacement))
         else:
             additions.extend(replacement)
-    for name in refs & set(source_assignments):
+    for name in sorted(refs & set(source_assignments)):
         node = source_assignments[name]
         replacement = source_lines[node.lineno - 1:node.end_lineno]
         if name in active_assignments:
