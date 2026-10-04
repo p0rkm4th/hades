@@ -7,9 +7,10 @@ records.
 
 ## Current checkpoint — 2026-10-04
 
-Public `main` is at `08ee4e7`; source checkpoint `07b0055` added explicit
-NetBox pagination completeness and contradictory-coverage handling. Public CI
-passed on the source and documented tip (main run `37234655212`). The adapter
+Code checkpoint `8b28cae` separates hardware-observation freshness; earlier
+checkpoint `07b0055` added NetBox pagination completeness and
+contradictory-coverage handling. Public CI run `37236639218` passed for the
+code checkpoint. The adapter
 requires valid `count`, `next`, and `results` metadata before calling a
 service catalog complete or empty; missing pages and malformed/contradictory
 metadata remain partial or unknown. Focused synthetic contracts pass.
@@ -20,8 +21,11 @@ adapter now classifies `observed_at` independently using the documented
 seven-day window (`FRESH`, `STALE`, or `UNKNOWN`), while retaining `status=OK`
 solely for read success. Hermes consumes only the explicit freshness field.
 Focused synthetic tests cover the age boundary, invalid/future timestamps, and
-the status/freshness separation. Full CI and deployment validation remain
-open.
+the status/freshness separation. Public CI passed, and a fresh owner UI answer
+now uses the current seven-day classification without calling a successful
+read `ok`; household game-server status remains unknown without leaking owner
+topology. Hermes and WebUI health passed after rollout. The owner answer still
+repeats some telemetry caveats, a P2 wording issue.
 
 A first private composition attempt removed adjacent helpers and caused an
 owner-chat error. Hash-guarded rollback restored both prior files and health.

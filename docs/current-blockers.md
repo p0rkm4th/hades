@@ -34,8 +34,10 @@ Fresh owner dogfood also found a status/freshness conflation for the hardware
 capability matrix: a successful read was phrased as `ok` despite the
 observation age. Source read status and data freshness are now separate; the
 matrix's explicit timestamp is evaluated against a seven-day freshness window,
-with regression contracts. The change has not yet passed a production owner-UI
-rollout.
+with regression contracts. Public CI passed at `8b28cae`, and a fresh owner UI
+check verified the corrected role/freshness path. Household game-server status
+remains explicitly unknown with no topology leak. This closes the formatter
+regression; repeated telemetry caveats remain a P2 wording issue.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address
