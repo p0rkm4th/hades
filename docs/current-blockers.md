@@ -425,5 +425,5 @@ creation sequence are documented privately. Under the owner's standing
 authorization for this campaign, Nyx-4 is continuing the narrow reconciliation
 with pre/post reads and rollback evidence; HADES's own source integrations
 remain read-only. Network-wide OS/package/image currency and the naturally
-scheduled Alexandra backup result are also still being checked. No network-wide
+scheduled management-backup result are also still being checked. No network-wide
 “up to date” or backup-restorable claim is made until those checks finish.
