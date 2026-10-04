@@ -4730,17 +4730,22 @@ def _hades_homelab_health_summary_response(summary):
     catalog = catalog if isinstance(catalog, dict) else {}
     catalog_status = str(catalog.get("status") or "UNKNOWN").upper()
     catalog_coverage = str(catalog.get("coverage") or "UNKNOWN").upper()
+    guest_visibility = summary.get("proxmox_guest_visibility")
+    guest_visibility = guest_visibility if isinstance(guest_visibility, dict) else {}
+    guest_visibility_status = str(guest_visibility.get("status") or "UNKNOWN").upper()
+    guest_visibility_scope = str(guest_visibility.get("scope") or "UNKNOWN").upper()
+    guest_scope_incomplete = guest_visibility_status not in {"COMPLETE", "NOT_CONFIGURED"}
 
     if down or conflicts:
         parts = ["Some configured homelab evidence needs attention."]
-    elif unavailable or summary.get("status") != "OK":
+    elif unavailable or summary.get("status") != "OK" or guest_scope_incomplete:
         parts = ["I can't confirm that the whole homelab is okay; source coverage is partial or unavailable."]
     else:
         parts = ["No failure is reported by fresh configured availability checks."]
 
     if down:
         parts.append("Failing configured checks: " + ", ".join(down[:4]) + ".")
-    else:
+    elif conflicts or unavailable or guest_scope_incomplete:
         parts.append("No fresh configured probe is reporting a failure.")
     if up:
         parts.append(f"{len(up)} configured availability check(s) responded in this live read.")
@@ -4757,6 +4762,10 @@ def _hades_homelab_health_summary_response(summary):
         ]
         if labels:
             parts.append("Sources disagree about " + ", ".join(labels) + ".")
+    if guest_scope_incomplete:
+        parts.append(
+            f"Proxmox guest visibility is {guest_visibility_scope.casefold()}; unreported guest state remains unknown."
+        )
     if unavailable:
         labels = [
             " ".join(str(row.get("source") or "A configured source").split())[:64]
@@ -4765,7 +4774,7 @@ def _hades_homelab_health_summary_response(summary):
         parts.append("Could not verify " + ", ".join(labels) + " in this read.")
     if catalog_status != "OK" or catalog_coverage not in {"COMPLETE", "EMPTY"} or catalog_coverage == "EMPTY":
         parts.append("Application-service placement coverage is missing, empty, or incomplete.")
-    if unknown or not availability or catalog_coverage != "COMPLETE":
+    if unknown or not availability or catalog_coverage != "COMPLETE" or guest_scope_incomplete:
         parts.append("Some unmonitored services remain unknown for application health.")
     parts.append("Backup contents and restoreability were not checked in this summary.")
     return " ".join(parts)

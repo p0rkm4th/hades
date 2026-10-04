@@ -181,6 +181,7 @@ healthy_checks_partial_coverage = health_summary_response({
         {'source': 'Synthetic NetBox', 'status': 'AVAILABLE', 'retrieved_at': 'now'},
     ],
     'service_catalog': {'status': 'OK', 'coverage': 'EMPTY', 'services': []},
+    'proxmox_guest_visibility': {'status': 'COMPLETE', 'scope': 'ALL_GUESTS'},
     'conflicts': [],
 })
 assert 'No failure is reported by fresh configured availability checks' in healthy_checks_partial_coverage
@@ -189,6 +190,17 @@ assert 'power/runtime state, not application health' in healthy_checks_partial_c
 assert 'Application-service placement coverage is missing, empty, or incomplete' in healthy_checks_partial_coverage
 assert 'unmonitored services remain unknown for application health' in healthy_checks_partial_coverage
 assert 'Backup contents and restoreability were not checked' in healthy_checks_partial_coverage
+partial_guest_scope = health_summary_response({
+    'status': 'OK', 'online_names': ['Synthetic Guest A'],
+    'availability_summary': [{'name': 'Synthetic Probe', 'status': 'up', 'freshness': 'FRESH'}],
+    'source_observations': [{'source': 'Synthetic Proxmox', 'status': 'AVAILABLE'}],
+    'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE'},
+    'proxmox_guest_visibility': {'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS'},
+    'conflicts': [],
+})
+assert "can't confirm that the whole homelab is okay" in partial_guest_scope
+assert 'Proxmox guest visibility is selected_guests' in partial_guest_scope
+assert 'unreported guest state remains unknown' in partial_guest_scope
 failed_source_health = health_summary_response({
     'status': 'PARTIAL', 'online_names': [],
     'availability_summary': [{'name': 'Synthetic App Check', 'status': 'down', 'freshness': 'FRESH'}],
