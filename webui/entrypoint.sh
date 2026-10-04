@@ -15,7 +15,7 @@ else
     sed -i "s|</head>|<script src=\"/static/receipt-upload.js?v=$asset_version\"></script></head>|" /app/build/index.html
   fi
 fi
-# The direct Hermes Compute Fast route is optional in disposable/reconstructed
+# The direct Fast provider route is optional in disposable/reconstructed
 # environments. When configured, apply the idempotent catalog migration after
 # the persistent DB exists and before Open WebUI starts.
 if [[ -n "${HADES_FAST_OPENAI_API_BASE_URL:-}" && -f /app/backend/data/webui.db ]]; then

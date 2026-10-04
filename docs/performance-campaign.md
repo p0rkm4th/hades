@@ -106,12 +106,12 @@ to verify no-tool and tool-plus-continuation attribution fields; its timings
 must not be interpreted as provider performance.
 
 The expanded matrix was executed on 2026-09-16 in the disposable Rocky
-reconstruction guest (VM 802) against its synthetic OpenAI-compatible backend.
+reconstruction guest (HADES guest) against its synthetic OpenAI-compatible backend.
 All eight workflows emitted the bounded attribution fields and the
 multi-domain case completed without an unnecessary continuation tool loop;
 this is fixture performance evidence, not a real-model latency claim.
 
-A later destination check found that the VM 802 backend had regressed to an
+A later destination check found that the HADES guest backend had regressed to an
 older echo-only fixture, which could not produce tool calls and therefore
 could not support this matrix. The backend was replaced with the tracked
 tool-aware fixture and the matrix was rerun through a temporary read-only
@@ -150,7 +150,7 @@ meal route passes the pinned Hermes and disposable authenticated synthetic
 household UI checks, but it is not deployed; production overlay provenance
 remains unresolved. No performance improvement or production fix is claimed.
 
-A strict-host-key, read-only VM 802 check confirmed `hades-hermes.service` was
+A strict-host-key, read-only HADES guest check confirmed `hades-hermes.service` was
 active, but the bounded journal query for 03:09:30–03:13:00 UTC contained zero
 `HADES timing stage=tool|turn` records. The live delay therefore remains
 unattributed; no prompt, response, or application record was read.

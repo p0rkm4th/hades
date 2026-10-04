@@ -221,7 +221,7 @@ def prepare(values: dict[str, str], output: Path) -> None:
     credentials = {"schema": 2, "synthetic_only": True, "created_groups": created_groups, "users": {}}
     try:
         for user_id, (display_name, group_name) in USERS.items():
-            email = f"{user_id}@hades.local"
+            email = f"{user_id}@hades.example.invalid"
             password = secrets.token_urlsafe(32)
             graphql(base, token,
                     "mutation Create($user: CreateUserInput!) { createUser(user: $user) { id } }",
@@ -277,7 +277,7 @@ def remove(values: dict[str, str], output: Path) -> None:
         fail("credential file does not match the fixed reconstruction fixture IDs")
     for user_id, row in credentials["users"].items():
         expected_name, expected_group = USERS[user_id]
-        if row.get("display_name") != expected_name or row.get("group") != expected_group or row.get("email") != f"{user_id}@hades.local":
+        if row.get("display_name") != expected_name or row.get("group") != expected_group or row.get("email") != f"{user_id}@hades.example.invalid":
             fail("credential file contains a fixture identity mismatch")
     created_groups = credentials.get("created_groups", [])
     if not isinstance(created_groups, list) or any(
@@ -294,7 +294,7 @@ def remove(values: dict[str, str], output: Path) -> None:
     by_id = {user["id"]: user for user in users}
     for user_id in USERS:
         row = by_id.get(user_id)
-        if row and row.get("email") != f"{user_id}@hades.local":
+        if row and row.get("email") != f"{user_id}@hades.example.invalid":
             fail("refusing to remove a same-ID account with a different email")
     for user_id in USERS:
         if user_id in by_id:

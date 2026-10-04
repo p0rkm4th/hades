@@ -1,6 +1,6 @@
 # HADES EPSILON PHASE 3 — HOUSEHOLD SELF-SERVICE REPORT
 
-**Evidence timestamp:** 2026-09-23, America/Chicago  
+**Evidence timestamp:** 2026-09-23, America/Chicago
 **Boundary:** staged typed self-service only. No unrestricted household production creation was enabled. No Phase 3 n8n workflows were created.
 
 > **Authorization status superseded (2026-09-25):** Scotty's Owner Away policy
@@ -18,7 +18,7 @@
 | HADES | `e609fec` | `c3c8485` | `REPOSITORY VERIFIED`; local `main` remains ahead of public `origin/main`; current staged work is committed |
 | hades-infra | `bf648f5` | `bf648f5` | `REPOSITORY VERIFIED`; clean `main`, no upstream configured |
 
-The deployed VM 802 service runs from `$HADES_HOME/Hades-reconciled-b102dfd` plus the generated overlay. The exact deployed Git SHA remains `UNVERIFIED`; deployed file hashes were checked after the latest staged deployment. Hermes service is active after restart.
+The deployed HADES guest service runs from `$HADES_HOME/Hades-reconciled-b102dfd` plus the generated overlay. The exact deployed Git SHA remains `UNVERIFIED`; deployed file hashes were checked after the latest staged deployment. Hermes service is active after restart.
 
 ## Approved template catalog
 
@@ -84,7 +84,7 @@ One route collision was found and fixed during acceptance: “delete my weekly h
 - **Cross-user race/isolation:** ownership and shared run-only checks reject B’s control of A’s record — `SYNTHETIC VERIFIED`.
 - **Owner admin race semantics:** admin disable is serialized in SQLite and leaves resource state untouched — `SYNTHETIC VERIFIED`; live owner disable completed.
 - **Synthetic household load:** 11 staged records (Owner 5, A 3, B 3) admitted in a temporary SQLite store in 6.43 ms total / 0.58 ms average; no production state was used — `SYNTHETIC VERIFIED`.
-- **Live runtime baseline:** VM 802 snapshot after acceptance showed n8n `0.06% / 438.7 MiB`, Open WebUI `0.21% / 770.4 MiB`, Hindsight `0.35% / 2.096 GiB`, Agent Zero `0.12% / 1.315 GiB`; Hermes process `7.2% CPU / 2.2% memory` at capture — `LIVE VERIFIED` baseline, not a Phase 3 production execution load test.
+- **Live runtime baseline:** HADES guest snapshot after acceptance showed n8n `0.06% / 438.7 MiB`, Open WebUI `0.21% / 770.4 MiB`, Hindsight `0.35% / 2.096 GiB`, Agent Zero `0.12% / 1.315 GiB`; Hermes process `7.2% CPU / 2.2% memory` at capture — `LIVE VERIFIED` baseline, not a Phase 3 production execution load test.
 - **n8n load impact:** `DEFERRED` because Phase 3 remains staged and intentionally creates no n8n graphs. Production canary load requires Manny authorization.
 
 ## Natural-language coverage

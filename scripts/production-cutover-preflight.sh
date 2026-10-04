@@ -10,7 +10,7 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 infra_repo_dir=$(cd "$repo_dir/../hades-infra" 2>/dev/null && pwd || true)
 destination_ip=${HADES_DESTINATION_IP:?HADES_DESTINATION_IP is required}
 destination_ssh=${HADES_DESTINATION_SSH:?HADES_DESTINATION_SSH is required}
-dns_name=${HADES_CUTOVER_NAME:-hades.local}
+dns_name=${HADES_CUTOVER_NAME:-hades.example.invalid}
 webui_port=${HADES_WEBUI_PORT:-3000}
 rollback_host=${HADES_ROLLBACK_HOST:?HADES_ROLLBACK_HOST is required}
 rollback_package_root=${HADES_ROLLBACK_PACKAGE_ROOT:-/srv/hades-backups}
@@ -156,8 +156,8 @@ check 'destination source revision and cleanliness' check_destination_source
 check 'destination application containers' check_destination_runtime
 check 'destination VM onboot persistence' check_vm_persistence
 check 'destination WebUI LAN health' check_webui_health
-check 'hades.local simulated destination path' check_resolved_cutover_path
-check 'authoritative hades.local points to destination' check_authoritative_name
+check 'hades.example.invalid simulated destination path' check_resolved_cutover_path
+check 'authoritative hades.example.invalid points to destination' check_authoritative_name
 check 'independent rollback package is present and protected' check_rollback_package
 check 'protected Hindsight production export is present and verified' check_hindsight_export
 check 'rollback manifest has complete required component coverage' check_complete_rollback_manifest

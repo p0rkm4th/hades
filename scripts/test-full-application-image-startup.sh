@@ -65,7 +65,7 @@ done
 docker run -d --name "${names[0]}" --network "$network" \
   -e UID=1000 -e GID=1000 -e TZ=America/Chicago \
   -e LLDAP_LDAP_BASE_DN=dc=hades,dc=local -e LLDAP_LDAP_USER_DN=admin \
-  -e LLDAP_LDAP_USER_EMAIL=admin@hades.local \
+  -e LLDAP_LDAP_USER_EMAIL=admin@hades.example.invalid \
   -e LLDAP_JWT_SECRET_FILE=/run/secrets/jwt -e LLDAP_KEY_SEED_FILE=/run/secrets/seed \
   -e LLDAP_LDAP_USER_PASS_FILE=/run/secrets/pass \
   -v "$work/identity/jwt_secret:/run/secrets/jwt:ro,Z" \

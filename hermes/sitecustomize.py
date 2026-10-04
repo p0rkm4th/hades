@@ -513,7 +513,11 @@ def _hades_phase2_backup_response(user_text, subject, scope, phase2_session_key=
         preview_id = secrets.token_urlsafe(18)
         store.preview_put(preview_id, subject, {**preview, "display_name": "Backup Check"}, int(time.time()) + 600)
         save_pending({"preview_id": preview_id, "operation_key": automation_id, "template_id": "hades-backup-verification"})
-        return f"Backup Check\n\nTarget: {target_label}\nSchedule: every morning\nNotifications: HADES-local, only when verification state changes\nCustody: Alexandra temporary protected landing zone\n\nCreate it?"
+        custody = str(os.environ.get(
+            "HADES_EPSILON_BACKUP_CUSTODY_LABEL",
+            "operator-configured protected staging location",
+        )).strip()[:120]
+        return f"Backup Check\n\nTarget: {target_label}\nSchedule: every morning\nNotifications: HADES-local, only when verification state changes\nCustody: {custody}\n\nCreate it?"
     if create and scope != "owner":
         return "Only the owner can create a Backup Check. I have not created anything."
     if not target_records:
@@ -4724,11 +4728,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         return None
     if not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
-        r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|tartarus|hypnos|thanatos|erebus|alexandra|hermes|"
+        r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"minecraft|jellyfin)\b",
         text,
         re.IGNORECASE,
-    ):
+    ) and not _hades_configured_homelab_alias_match(text):
         return None
     workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
     if not workdir:
@@ -4802,13 +4806,21 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                 summary["online_names"] = list(dict.fromkeys(
                     [*summary.get("online_names", []), *[item["name"] for item in guest_resources if item["currently_online"]]]
                 ))
-        target_match = re.search(
-            r"\b(?:tartarus|hypnos|thanatos|erebus|alexandra|hermes)\b",
-            text,
-            re.IGNORECASE,
-        )
-        if target_match:
-            target = target_match.group(0).casefold()
+        target = _hades_configured_homelab_alias_match(text)
+        if not target:
+            named_resources = [
+                str(resource.get("name") or "").strip()
+                for resource in resources
+                if isinstance(resource, dict) and str(resource.get("name") or "").strip()
+            ]
+            matching_names = [
+                name for name in named_resources
+                if re.search(rf"(?<![\w]){re.escape(name)}(?![\w])", text, re.IGNORECASE)
+            ]
+            if len(set(matching_names)) == 1:
+                target = matching_names[0]
+        if target:
+            target = target.casefold()
             matching = [
                 resource for resource in resources
                 if target in str(resource.get("name", "")).casefold()
@@ -4877,7 +4889,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                 if observed:
                     machine = observed[0]
                     details = [
-                        f"I found {machine.get('name', target_match.group(0))} in the hardware inventory.",
+                        f"I found {machine.get('name', target)} in the hardware inventory.",
                     ]
                     if machine.get("address"):
                         details.append(f"The recorded address is {machine['address']}.")
@@ -4888,11 +4900,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                     )
                     return " ".join(details)
                 return (
-                    f"I couldn't verify {target_match.group(0)} in the live homelab sources. "
+                    f"I couldn't verify {target} in the live homelab sources. "
                     "I did not assume it was running."
                 )
             resource = matching[0]
-            name = resource.get("name") or target_match.group(0)
+            name = resource.get("name") or target
             runtime_status = resource.get("runtime_status") or "UNKNOWN"
             inventory = resource.get("inventory") or {}
             availability = resource.get("availability") or {}
@@ -5229,15 +5241,126 @@ _HADES_MEMORY_NEGATION = re.compile(
     r"\b(?:do\s+not|don't|without|never|not)\b[^.!?]{0,32}\bmemory\b",
     re.IGNORECASE,
 )
+def _hades_capability_matrix_path():
+    """Resolve the operator-owned capability matrix without storing its values in HADES."""
+    import os
+    from pathlib import Path
+
+    configured = os.environ.get("HADES_CAPABILITY_MATRIX_FILE", "").strip()
+    if configured:
+        return Path(configured)
+    hermes_home = os.environ.get("HERMES_HOME", "").strip()
+    if hermes_home:
+        profile = Path(hermes_home) / "profiles" / "hades" / "config.yaml"
+        try:
+            if profile.is_file() and not profile.is_symlink() and profile.stat().st_size <= 1_048_576:
+                match = re.search(
+                    r"(?m)^\s*HADES_CAPABILITY_MATRIX_FILE:\s*['\"]?([^'\"\s]+)",
+                    profile.read_text(encoding="utf-8"),
+                )
+                if match:
+                    return Path(match.group(1))
+        except OSError:
+            pass
+    search_roots = []
+    working_directory = os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "").strip()
+    if working_directory:
+        search_roots.append(Path(working_directory))
+    if hermes_home:
+        search_roots.append(Path(hermes_home))
+    for root in search_roots:
+        for parent in (root, *root.parents):
+            candidate = parent / "hades-infra" / "inventory" / "capability-matrix.yaml"
+            try:
+                if candidate.is_file() and not candidate.is_symlink():
+                    return candidate
+            except OSError:
+                continue
+    return None
+
+
+def _hades_configured_homelab_records():
+    """Load bounded owner-configured machine identities and display aliases."""
+    path = _hades_capability_matrix_path()
+    if path is None:
+        return []
+    try:
+        if not path.is_file() or path.is_symlink():
+            return []
+        file_stat = path.stat()
+        if file_stat.st_size > 1_048_576 or file_stat.st_mode & 0o022:
+            return []
+        raw = path.read_text(encoding="utf-8")
+        try:
+            import yaml
+            document = yaml.safe_load(raw)
+        except ImportError:
+            document = None
+        if not isinstance(document, dict):
+            document = {"machines": []}
+            for line in raw.splitlines():
+                match = re.match(r"^\s*-\s*name:\s*['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line)
+                if match:
+                    document["machines"].append({"name": match.group(1).strip()})
+        records = []
+        for machine in document.get("machines", [])[:128]:
+            if not isinstance(machine, dict):
+                continue
+            values = [machine.get("name"), machine.get("display_name")]
+            configured_aliases = machine.get("aliases", [])
+            values.extend(configured_aliases if isinstance(configured_aliases, list) else [configured_aliases])
+            aliases = []
+            for value in values:
+                if not isinstance(value, str):
+                    continue
+                name = " ".join(value.split())[:80]
+                if name and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._'-]{0,79}", name):
+                    aliases.append(name)
+            if aliases:
+                records.append({"name": aliases[0], "aliases": list(dict.fromkeys(aliases))})
+        return records
+    except (OSError, ValueError, TypeError):
+        return []
+
+
+def _hades_configured_homelab_aliases():
+    return list(dict.fromkeys(
+        alias
+        for record in _hades_configured_homelab_records()
+        for alias in record["aliases"]
+    ))
+
+
+def _hades_configured_homelab_alias_match(user_text):
+    text = str(user_text or "")
+    records = sorted(
+        _hades_configured_homelab_records(),
+        key=lambda record: max(map(len, record["aliases"])),
+        reverse=True,
+    )
+    for record in records:
+        for alias in sorted(record["aliases"], key=len, reverse=True):
+            if re.search(rf"(?<![\w]){re.escape(alias)}(?![\w])", text, re.IGNORECASE):
+                return record["name"]
+    return None
+
+
 _HADES_HOMELAB_INTENT = re.compile(
     r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|server(?:s)?|node(?:s)?|"
     r"virtual\s+machine(?:s)?|\bvm\b|container(?:s)?|sandbox(?:es)?|workload(?:s)?|"
     r"website(?:s)?|gpu(?:s)?|"
     r"ram|free\s+memory|unhealthy|host(?:s)?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
     r"nmap|discov(?:er|y)|ip(?:s)?|mac(?:s)?|what(?:['’]?s| is)\s+running|"
-    r"alexandra|erebus|tartarus|hypnos|thanatos|hermes)\b",
+    r"inventory|availability|capacity)\b",
     re.IGNORECASE,
 )
+
+
+def _hades_is_homelab_intent(user_text):
+    return bool(
+        _HADES_HOMELAB_INTENT.search(str(user_text or ""))
+        or _hades_configured_homelab_alias_match(user_text)
+    )
 _HADES_NONPERSONAL_STATE_INTENT = re.compile(
     r"\b(?:weather|forecast|temperature|search|look\s+up|research|investigate|osint|"
     r"public[_\s]+research|latest|news|web|agent\s+zero|agent0|"
@@ -6592,13 +6715,13 @@ def _hades_contextual_followup_clarification(user_text, previous_user_text):
     ):
         return None
     if re.search(
-        r"\b(?:server|homelab|proxmox|node|tartarus|hypnos|thanatos|erebus|alexandra|hermes)\b",
+        r"\b(?:server|homelab|proxmox|node)\b",
         previous,
         re.IGNORECASE,
-    ):
+    ) or _hades_is_homelab_intent(previous):
         return (
-            "Which server or node do you mean? You can name it, such as Tartarus, Hypnos, "
-            "Hermes Compute, or Alexandra. I haven't changed anything."
+            "Which server or node do you mean? Name the one you want me to check; "
+            "I haven't changed anything."
         )
     if re.search(r"\b(?:pantry|grocery|grocry|food|milk|eggs?|shopping list|recipe)\b", previous, re.IGNORECASE):
         return (
@@ -6617,7 +6740,7 @@ def _hades_household_homelab_boundary_response(user_text):
         r"\b(?:homelab|home\s+lab|servers?|computers?|machines?|nodes?|network|minecraft|hades)\b",
         text,
         re.IGNORECASE,
-    )
+    ) or _hades_configured_homelab_alias_match(text)
     if not domain:
         return None
     status = re.search(
@@ -8692,8 +8815,12 @@ try:
                     if callback:
                         callback(_spaghetti_response)
                     return {"final_response": _spaghetti_response, "messages": [{"role": "assistant", "content": _spaghetti_response}], "api_calls": 0, "completed": True}
-            if self._hades_session_scope == "owner" and re.search(r"\b(?:where|which)\b.*\b(?:deploy|place|put)\b.*\b(?:model|ai)\b|\bdeploy\s+another\s+(?:local\s+)?ai\s+model\b", _preflight_text, re.IGNORECASE):
-                _placement_response = "Observed hardware candidates include Hypnos (2× Quadro P4000, CUDA-capable in the tracked matrix) and Tartarus (4× Quadro P4000, CUDA-capable in the tracked matrix). Current per-host GPU load/VRAM and interference budget are not exposed by the approved live telemetry, so I cannot safely choose a placement. I did not deploy or change anything."
+            if self._hades_session_scope == "owner" and re.search(r"\b(?:where|which)\b.*\b(?:deploy|place|put|run|host)\b.*\b(?:model|ai)\b|\bdeploy\s+another\s+(?:local\s+)?ai\s+model\b", _preflight_text, re.IGNORECASE):
+                _placement_response = (
+                    "I can't recommend a host yet because current per-host accelerator capacity, "
+                    "active model load, and endpoint health are not all available from the "
+                    "approved live sources. I haven't deployed or changed anything."
+                )
                 callback = getattr(self, "stream_delta_callback", None)
                 if callback:
                     callback(_placement_response)
@@ -9249,8 +9376,8 @@ try:
         original_tools = getattr(self, "tools", None)
         original_valid_tool_names = getattr(self, "valid_tool_names", None)
         completion_only_model = bool(re.search(
-            # Hermes Compute's qwen3:8b lane is qualified for direct completion
-            # only.  It is also used as a degradation route when Tartarus is
+            # The configured fast provider's qwen3:8b lane is qualified for direct completion
+            # only. It is also used as a degradation route when the deep provider is
             # unavailable, so never let fallback provenance accidentally grant
             # it HADES tools.
             r"\b(?:qwen3:8b|dolphin(?:-llama3|3)?|heretic|uncensored|abliterated)\b",
@@ -9280,7 +9407,7 @@ try:
             and (
                 _HADES_LIVE_WEB_INTENT.search(current_text)
                 or _HADES_PAGE_INTENT.search(current_text)
-                or _HADES_HOMELAB_INTENT.search(current_text)
+                or _hades_is_homelab_intent(current_text)
                 or re.search(
                     r"\b(?:finance|finances|bank|csv|spend|spending|spent|budget|"
                     r"transaction|account|checking|savings|credit\s+card|money)\b|"
@@ -9676,7 +9803,7 @@ try:
                 }
         homelab_intent = bool(
             self._hades_session_scope == "owner"
-            and _HADES_HOMELAB_INTENT.search(_hades_intent_text)
+            and _hades_is_homelab_intent(_hades_intent_text)
         )
         if (
             self._hades_session_scope == "owner"
@@ -10554,7 +10681,7 @@ try:
     def _hades_apply_fast_completion_route(self, route, user_message: str):
         # Keep ordinary no-tool conversation independent from the Deep lane.
         # The fast endpoint is completion-only: tool-bearing/domain turns stay
-        # on the qualified Tartarus route until a narrow fast-tool contract is
+        # on the qualified deep-provider route until a narrow fast-tool contract is
         # proven.  This is deliberately an explicit route, not a silent
         # provider fallback, so the selected model remains observable in the
         # persisted turn metadata.
@@ -10618,7 +10745,7 @@ try:
 
     # Open WebUI production requests use Hermes' gateway runner rather than
     # HermesCLI. Patch the gateway mixin too; otherwise the UI silently keeps
-    # constructing the Tartarus agent even though the CLI resolver is routed.
+    # constructing the deep-provider agent even though the CLI resolver is routed.
     def _hades_install_gateway_route_patch():
         """Patch the gateway after Hermes finishes its circular imports."""
         import sys

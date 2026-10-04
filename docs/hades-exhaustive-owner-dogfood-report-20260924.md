@@ -1,11 +1,11 @@
 # HADES LIVE-STATE ADVISOR HANDOFF
 
 **Timestamp:** 2026-09-24 15:14 UTC / 2026-09-24 America/Chicago
-**Evidence boundary:** Fresh checks used the authenticated Open WebUI DOM, VM 802 live services, canonical Grocy, deployed Hermes, local source repositories, and bounded repository contracts. Synthetic fixtures are labelled as such. No passwords, tokens, private financial data, private memory content, destructive homelab actions, arbitrary n8n mutation, or external notification was used.
+**Evidence boundary:** Fresh checks used the authenticated Open WebUI DOM, HADES guest live services, canonical Grocy, deployed Hermes, local source repositories, and bounded repository contracts. Synthetic fixtures are labelled as such. No passwords, tokens, private financial data, private memory content, destructive homelab actions, arbitrary n8n mutation, or external notification was used.
 
 ## 1. Executive state
 
-HADES is a local-first owner/household assistant on HADES Core VM 802. The owner-facing Open WebUI and Hermes gateway are live. Current useful product surfaces are authenticated chat, canonical Grocy household reads/writes, bounded health/backup workflows, selected web/search, owner-only homelab reads, durable bounded task state, and owner-only read-only finance analysis from the explicitly authorized `bk_download.csv` statement. Homelab telemetry now composes live Proxmox, NetBox, and Uptime Kuma inputs, but guest OS/service/network-trend data remain absent.
+HADES is a local-first owner/household assistant on HADES Core HADES guest. The owner-facing Open WebUI and Hermes gateway are live. Current useful product surfaces are authenticated chat, canonical Grocy household reads/writes, bounded health/backup workflows, selected web/search, owner-only homelab reads, durable bounded task state, and owner-only read-only finance analysis from the explicitly authorized `bk_download.csv` statement. Homelab telemetry now composes live Proxmox, NetBox, and Uptime Kuma inputs, but guest OS/service/network-trend data remain absent.
 
 **Campaign result:** `LIVE VERIFIED` 15/15 useful seed workflows in one persistent authenticated owner session, plus a new combined 20/20 Owner/Household A/Household B soak across desktop, 390x844, and 320x568. That soak covered stale-tab abandonment/recovery, double-submit protection, shared Weekly history, revocation boundaries, mixed task prompts, and the repaired recipe-availability turn. Finance CSV workflows return live, owner-only historical analysis; current balances/future obligations remain unavailable. Homelab is materially improved but not a full guest/service/network diagnostic. Epsilon Phase 2 is `DOGFOOD GREEN` on the accepted happy paths; deliberate live source-outage injection is `UNVERIFIED`/`DEFERRED` because it would require disabling a production dependency or modifying the approved n8n graph, not because of an observed regression.
 
@@ -49,10 +49,10 @@ response behavior, not proof that every requested workflow is fully
 productized.
 
 **Fresh memory correction (`LIVE VERIFIED`):** the first post-auth-refresh
-probe reproduced two live defects: Tartarus-backed Hindsight extraction was
+probe reproduced two live defects: deep inference provider-backed Hindsight extraction was
 timing out, and the small extraction model could preserve a marker as an entity
 while dropping its exact value from fact text. Hindsight was moved to the
-already-running Hermes Compute local `qwen3:8b` lane, and explicit owner-memory
+already-running fast inference provider local `qwen3:8b` lane, and explicit owner-memory
 retains now attach the user-approved fact as a canonical Hindsight entity. The
 deployed overlay and generated Hindsight record were backed up before change.
 The fresh retain → genuinely new conversation → natural recall proof now
@@ -79,7 +79,7 @@ shell, Agent Zero, or automatic-remediation capability and performed no
 production enablement.
 
 **Latest provenance-recorded source:** HADES `bcd81f435c4d8a6210802ffeb64c20a0ad3adbd7`; infra `bf648f52f5ab0e4da9ebd811f9ccc6866cf5341a`. The later service-path audit below found the active generated overlay hash differs from this record.
-**Deployed revision:** Hermes `0.21.2` is `LIVE VERIFIED` active; exact loaded overlay/source identity is `STALE / CONTRADICTED` by the later audit.  
+**Deployed revision:** Hermes `0.21.2` is `LIVE VERIFIED` active; exact loaded overlay/source identity is `STALE / CONTRADICTED` by the later audit.
 **Highest-value conclusion:** HADES is advancing product value where canonical household data and bounded authority exist; the main remaining value blockers are finance authorization/data, richer homelab telemetry, and productized fresh-session/task continuity—not more infrastructure scaffolding.
 
 **Phase 2 gate snapshot:** Server Health Watch, Backup Verification, Low Inventory Summary, and Weekly Household Summary are `DOGFOOD GREEN`/`LIVE VERIFIED` on their approved happy paths, with sharing/revocation and typed failure fixtures `LIVE VERIFIED`/`REPOSITORY VERIFIED`. The combined multi-user viewport soak is `LIVE VERIFIED` from the completed 20/20 run; a later rerun exposed a harness page-closure issue and is not counted as a pass. Current P0/P1 ledger: zero observed in this campaign (`LIVE VERIFIED` bounded DOM/privacy/action evidence plus `REPOSITORY VERIFIED` contracts). Deliberate live source-outage injection remains `UNVERIFIED`/`DEFERRED` as an authority-limited evidence gap, not a Phase 2 regression.
@@ -101,15 +101,15 @@ Recent meaningful HADES commits: `0d34d62` shared-history/revocation probes, `9a
 
 | System | Current state |
 |---|---|
-| Erebus / Proxmox `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` reachable; Proxmox API path configured. Full privileged host/resource state `UNVERIFIED`. |
-| HADES Core / VM 802 `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED`; Open WebUI, Hermes, Grocy, Hindsight, SearXNG, LLDAP, Agent Zero, OCR, and n8n paths are active. |
-| Agent Zero / VM 801 | `UNVERIFIED` as a separate VM; current deployed Agent Zero runtime is container `hades-agent-zero` on VM 802. |
-| Alexandra `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` TCP reachability; ZFS/backup state `EXTERNAL-GATED` because the available noninteractive identity was rejected. Not offsite. |
-| Alexandra service guest / 803 `<PRIVATE_LAN_ADDRESS>` | `HISTORICAL EVIDENCE`; not re-probed in this campaign. |
-| Tartarus `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama on `:11437`; Deep inference role. |
-| Hypnos `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama on `:11434`; specialized/code and embedding availability. |
-| Hermes Compute `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama `:11435` and voice listener `:8766`; fast inference/voice. Distinct from Hermes Agent. |
-| Thanatos `<PRIVATE_LAN_ADDRESS>` | `HISTORICAL EVIDENCE`; current reachability not independently re-established here. |
+| hypervisor host / Proxmox `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` reachable; Proxmox API path configured. Full privileged host/resource state `UNVERIFIED`. |
+| HADES Core / HADES guest `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED`; Open WebUI, Hermes, Grocy, Hindsight, SearXNG, LLDAP, Agent Zero, OCR, and n8n paths are active. |
+| Agent Zero / configured guest | `UNVERIFIED` as a separate VM; current deployed Agent Zero runtime is container `hades-agent-zero` on HADES guest. |
+| storage host `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` TCP reachability; ZFS/backup state `EXTERNAL-GATED` because the available noninteractive identity was rejected. Not offsite. |
+| storage host service guest `<PRIVATE_LAN_ADDRESS>` | `HISTORICAL EVIDENCE`; not re-probed in this campaign. |
+| deep inference provider `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama on `:11437`; Deep inference role. |
+| specialized inference provider `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama on `:11434`; specialized/code and embedding availability. |
+| fast inference provider `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama `:11435` and voice listener `:8766`; fast inference/voice. Distinct from Hermes Agent. |
+| management host `<PRIVATE_LAN_ADDRESS>` | `HISTORICAL EVIDENCE`; current reachability not independently re-established here. |
 
 Open ports and ICMP are treated as reachability only. They do not prove OS, GPU health, workload capacity, or backup correctness.
 
@@ -117,7 +117,7 @@ Open ports and ICMP are treated as reachability only. They do not prove OS, GPU 
 
 | Capability | Live evidence and boundary |
 |---|---|
-| Open WebUI | `LIVE VERIFIED`: authenticated owner DOM at the production URL; container exposed through VM 802. |
+| Open WebUI | `LIVE VERIFIED`: authenticated owner DOM at the production URL; container exposed through HADES guest. |
 | Hermes Agent | `LIVE VERIFIED`: systemd service active, Hermes `0.21.2`; policy/tool boundary. |
 | Hindsight | `LIVE VERIFIED`: health endpoint healthy and database connected; fresh-memory correctness proven previously, latency remains a concern. |
 | SearXNG | `LIVE VERIFIED`: loopback service/root reachable; web failure boundary contract is `REPOSITORY VERIFIED`. |
@@ -126,7 +126,7 @@ Open ports and ICMP are treated as reachability only. They do not prove OS, GPU 
 | Agent Zero | `LIVE VERIFIED` runtime; delegation is owner-gated and household denial is server-side. |
 | homelab MCP/control | `REPOSITORY VERIFIED` read-only adapter; live owner reads are partial. Mutations remain unauthorized. |
 | Finance | `LIVE VERIFIED` for owner-only read-only CSV analysis; `EXTERNAL-GATED` for live Actual Budget balances/import. |
-| Voice | `LIVE VERIFIED` listener reachability at Hermes Compute `:8766`; end-to-end STT/TTS is `UNVERIFIED`. |
+| Voice | `LIVE VERIFIED` listener reachability at fast inference provider `:8766`; end-to-end STT/TTS is `UNVERIFIED`. |
 | n8n | `LIVE VERIFIED`: container and health endpoint active; arbitrary graph creation remains unauthorized. |
 | Home Assistant | `DEFERRED` / `OWNER-GATED`; no current owner-facing authorized path was enabled. |
 
@@ -134,14 +134,14 @@ Open ports and ICMP are treated as reachability only. They do not prove OS, GPU 
 
 | Route | Current evidence |
 |---|---|
-| Hades Fast | `LIVE VERIFIED`: Hermes Compute `:11435`, `qwen3:8b` available. |
-| Hades Deep | `LIVE VERIFIED`: Tartarus `:11437`, `qwen3.6:35b` available. Exact per-prompt selection `UNVERIFIED`. |
-| Code | `LIVE VERIFIED` endpoint availability: Hypnos `:11434`, `gemma4:e4b`; display binding `UNVERIFIED`. |
+| Hades Fast | `LIVE VERIFIED`: fast inference provider `:11435`, `qwen3:8b` available. |
+| Hades Deep | `LIVE VERIFIED`: deep inference provider `:11437`, `qwen3.6:35b` available. Exact per-prompt selection `UNVERIFIED`. |
+| Code | `LIVE VERIFIED` endpoint availability: specialized inference provider `:11434`, `gemma4:e4b`; display binding `UNVERIFIED`. |
 | Creative / Uncensored Writing / Security Lab | `UNVERIFIED`: current physical display-preset bindings were not proven from live endpoint inventory. |
-| Embedding | `LIVE VERIFIED`: `nomic-embed-text` available on Hypnos; exact Hindsight selection `UNVERIFIED`. |
+| Embedding | `LIVE VERIFIED`: `nomic-embed-text` available on specialized inference provider; exact Hindsight selection `UNVERIFIED`. |
 | Voice | `LIVE VERIFIED` listener; STT/TTS runtime and latency `UNVERIFIED`. |
 
-Historical assumptions remain partly true: Tartarus qwen3.6:35b on `:11437`, Hermes Compute fast on `:11435`, Hypnos specialized inference on `:11434`, and Hermes Compute voice on `:8766`. The old blanket `64K` context claim is `UNVERIFIED`.
+Historical assumptions remain partly true: deep inference provider qwen3.6:35b on `:11437`, fast inference provider fast on `:11435`, specialized inference provider specialized inference on `:11434`, and fast inference provider voice on `:8766`. The old blanket `64K` context claim is `UNVERIFIED`.
 
 ## 6. Real owner dogfood: all 15 seed workflows
 
@@ -152,7 +152,7 @@ The collector used the actual authenticated HADES UI and fresh chat isolation. T
 | 1 | List recipes and say which are makeable | Canonical Grocy returned all three live recipes, each currently makeable from stock. | `LIVE VERIFIED`; recipe inventory route repaired and expanded. |
 | 2 | Expiring food and meals | Canonical Grocy identified expired synthetic milk and recipe overlap; no write. | `LIVE VERIFIED`; no future-expiry item currently known. |
 | 3 | Spaghetti: inspect, missing items, add list | Fresh authenticated single-submit DOM turn completed with `HADES Owner Spaghetti Draft`, five invented baseline ingredients, missing shopping items, and no Stop state; canonical Grocy recipe/positions/list read-back agrees. | `LIVE VERIFIED`; no pantry stock fabricated. |
-| 4 | Full homelab status | Fresh owner DOM now lists Alexandra/Erebus plus VM 801/802/852, with live CPU and memory and bounded Proxmox disk allocations; guest OS, major services, GPU, and network trends remain explicitly unknown. | `LIVE VERIFIED` useful partial; guest OS/service/network composition `DEFERRED`. |
+| 4 | Full homelab status | Fresh owner DOM now lists storage host/hypervisor host plus configured guests, with live CPU and memory and bounded Proxmox disk allocations; guest OS, major services, GPU, and network trends remain explicitly unknown. | `LIVE VERIFIED` useful partial; guest OS/service/network composition `DEFERRED`. |
 | 5 | Network slowdown diagnosis | Returned current VM/memory evidence and explicitly disclosed absent network-health telemetry and historical trends. | `LIVE VERIFIED` honest partial; `BROKEN` as a complete diagnostic product. |
 | 6 | Best model deployment location | Refused recommendation because verified GPU/VRAM/current-load telemetry is insufficient; no deployment. | `OWNER-GATED`/telemetry-gated; safe but not useful enough. |
 | 7 | Backup coverage | Owner now has live HADES and infrastructure Backup Checks; both execute through n8n and return canonical verification state. | `LIVE VERIFIED` bounded checks; full service coverage remains incomplete. |
@@ -203,7 +203,7 @@ Fresh household DOM checks after the latest deployment explicitly denied Househo
 ## 9. Memory
 
 Hindsight health is `LIVE VERIFIED`. The production route now uses the
- dedicated Hermes Compute local extraction lane, and the fresh owner-memory
+ dedicated fast inference provider local extraction lane, and the fresh owner-memory
  proof passes after a genuinely new conversation. Exact-value preservation is
  `LIVE VERIFIED` through canonical Hindsight entities; asynchronous backlog and
  a formal latency SLO remain `DEFERRED`. No private memory content is reproduced.
@@ -218,8 +218,8 @@ Hindsight health is `LIVE VERIFIED`. The production route now uses the
 - A bounded post-deploy DOM probe launched during the Hermes restart saw Open WebUI `Server Connection Error` and no completion event; after the service stabilized (`active`, `NRestarts=0`) the same 9-turn Phase 2 matrix settled successfully. This is `LIVE VERIFIED` transient restart behavior, not a claim of graceful restart continuity.
 - Failure handlers do not broaden authority or silently guess unavailable finance/network data (`LIVE VERIFIED`/`REPOSITORY VERIFIED`).
 - Health Watch dogfood exposed and repaired three real defects: named `HADES Core` actions were falling into the broader staged-automation route, cross-worker bare confirmations could replay stale create previews, and duplicate same-resource records were ambiguous. The deployed route now gives Household A a server-side view-only denial for `run HADES Core check`; owner recipient/state selectors allow deterministic reconciliation. One duplicate created by the earlier fixture was removed through the owner UI; one canonical watch remains (`LIVE VERIFIED`). Bare `yes` confirmation across a mixed stale-preview state still merits another clean soak before calling the workflow fully green (`UNVERIFIED`).
-- A focused route regression reproduced the remaining bare-confirmation race: a stale worker-local create preview could override the current persisted share action, and the inverse stale-share/current-create sequence could also use the wrong intent. Commit `f34d51c` makes the current persisted preview authoritative for both directions; the route contract verifies no duplicate create and no stale share mutation (`REPOSITORY VERIFIED`). The current VM 802 overlay still has the older route logic, so this repair has not yet received authenticated production UI acceptance.
-- The owner-authorized spaghetti recipe/list action had a check-then-write race across Hermes workers. The route now uses a dedicated cross-process recipe lock and the shared shopping-list lock around each canonical missing-item re-read/write. A two-process synthetic Grocy API fixture now verifies one recipe, five ingredient positions, and one shopping row per missing product (`REPOSITORY VERIFIED`). The active VM 802 overlay still has the prior unlocked route; the repair is not yet deployed.
+- A focused route regression reproduced the remaining bare-confirmation race: a stale worker-local create preview could override the current persisted share action, and the inverse stale-share/current-create sequence could also use the wrong intent. Commit `f34d51c` makes the current persisted preview authoritative for both directions; the route contract verifies no duplicate create and no stale share mutation (`REPOSITORY VERIFIED`). The current HADES guest overlay still has the older route logic, so this repair has not yet received authenticated production UI acceptance.
+- The owner-authorized spaghetti recipe/list action had a check-then-write race across Hermes workers. The route now uses a dedicated cross-process recipe lock and the shared shopping-list lock around each canonical missing-item re-read/write. A two-process synthetic Grocy API fixture now verifies one recipe, five ingredient positions, and one shopping row per missing product (`REPOSITORY VERIFIED`). The active HADES guest overlay still has the prior unlocked route; the repair is not yet deployed.
 - Phase 2 live execution exposed three additional defects and all are repaired: Weekly Summary merged the health endpoint's raw `{status:true}` without a typed projection, silently omitting server state; Backup Check bare confirmations could fall through to a stale Phase 3 action when multiple old pending records existed; and latest Weekly history language fell into staged Phase 3 metadata while unrelated pending state was present. The fixed Weekly graph emits `UP`/`SOURCE_UNAVAILABLE` with freshness, confirmation recovery filters to one current uncompleted matching Phase 2 action, and ordinary Weekly history ignores unrelated pending state (`LIVE VERIFIED`).
 - A later combined-soak rerun exposed a test-harness-only defect: its top-level error handler masked the original browser failure by referencing a function-scoped `results` variable. The helper now has explicit login timeout/error reporting. A short diagnostic reached eight Owner desktop turns before a page-closure error in the combined helper's double-submit/stale-tab path; the dedicated three-viewport soak independently passed those fixtures. This is `REPOSITORY VERIFIED` harness repair plus `LIVE VERIFIED` focused fixture evidence, not a new product authorization or data-integrity defect.
 
@@ -229,7 +229,7 @@ n8n is deployed and healthy but bounded; arbitrary workflow creation is not enab
 
 ## 12. Backup/recovery
 
-Local HADES and infra Git bundles exist under the VM 802 custody path (`LIVE VERIFIED`). Backup Check coverage exists for the recorded infrastructure repository; the campaign now exposes that coverage is not equivalent to “all important services” (`LIVE VERIFIED`). Alexandra is same-homelab storage, not offsite. Off-site custody/recovery was explicitly skipped per owner instruction and is `DEFERRED`/incomplete. Fresh ZFS health, encrypted custody, and whole-site loss recovery are not claimed.
+Local HADES and infra Git bundles exist under the HADES guest custody path (`LIVE VERIFIED`). Backup Check coverage exists for the recorded infrastructure repository; the campaign now exposes that coverage is not equivalent to “all important services” (`LIVE VERIFIED`). storage host is same-homelab storage, not offsite. Off-site custody/recovery was explicitly skipped per owner instruction and is `DEFERRED`/incomplete. Fresh ZFS health, encrypted custody, and whole-site loss recovery are not claimed.
 
 ## 13. Product usability
 
@@ -305,30 +305,30 @@ priority order.
 
 1. Keep the refreshed deployed provenance in the normal deployment recorder path and verify it on each overlay restart. **Why:** this is now live-correct but must not regress. **Luna:** yes.
 2. Preserve the already accepted point-in-time Proxmox CPU, memory, bounded disk-allocation, and uptime snapshot. The remaining gap is canonical guest OS / major-service visibility and historical network or storage trends. **Next:** check whether existing read-only Proxmox/Kuma data can answer a specific user question without widening access; otherwise state those fields as unknown. Do not treat a current snapshot as a root-cause diagnosis.
-3. Deploy and verify the source repairs for cross-process Grocy recipe/list idempotency and cross-worker Health Watch confirmation on the authorized bounded routes. **Why:** two-process and route-level regressions now pass, but the active VM 802 overlay still has the old code. **Luna:** yes; preserve rollback and keep unrelated Task attention/Phase 3 routes out of scope.
+3. Deploy and verify the source repairs for cross-process Grocy recipe/list idempotency and cross-worker Health Watch confirmation on the authorized bounded routes. **Why:** two-process and route-level regressions now pass, but the active HADES guest overlay still has the old code. **Luna:** yes; preserve rollback and keep unrelated Task attention/Phase 3 routes out of scope.
 4. **Repository and authenticated synthetic UI acceptance complete; production acceptance pending.** Owner CSV analysis distinguishes the earliest/latest transaction dates, calendar-month span, months with rows, partial edge months, latest row date, and export-file modification time. Month-to-date comparison uses the same calendar-day window in the prior month and explains category/description increases without claiming causation. A disposable authenticated Alpha/Beta UI run passes with synthetic data; production deployment/live Actual acceptance remains separately gated.
 5. Re-run the fresh briefing/recap DOM test under a clean, low-load session and add a persistent continuity acceptance. **Luna:** yes.
 6. **Repository result UX improved; live acceptance pending.** The fixed result path now names the HADES and infrastructure repository backup separately, shows each latest check and artifact date, and preserves last successful evidence across later stale/missing results from up to 100 completed runs. The current automated check covers only those two Git bundles; full service-volume backup coverage and missing custody remain explicit gaps. **Luna:** yes for current read sources; Scotty required for new custody.
 7. Re-run 320x568, 390x844, desktop, stale-tab, double-submit, revocation, one-source failure, and mixed-task soak after the final deployment. **Luna:** yes.
 8. Re-prove Hindsight latency with a bounded SLO and backlog observation. **Luna:** yes.
-9. Keep off-site recovery explicitly deferred as requested; do not treat same-site Alexandra custody as disaster recovery. **Scotty required** only if this priority changes.
+9. Keep off-site recovery explicitly deferred as requested; do not treat same-site storage host custody as disaster recovery. **Scotty required** only if this priority changes.
 10. Keep JEV and unrestricted household automation deferred until the above owner workflows are useful and authorized. **Luna:** yes; no new framework required.
 
 ## 18. Proof appendix
 
-**CLAIM:** HADES repository revision.  
-**COMMAND:** `git -C $HADES_HOME/Hades rev-parse HEAD; git status --short --branch`  
+**CLAIM:** HADES repository revision.
+**COMMAND:** `git -C $HADES_HOME/Hades rev-parse HEAD; git status --short --branch`
 **RESULT:** current repository HEAD `bcd81f435c4d8a6210802ffeb64c20a0ad3adbd7`; `main` is ahead of origin by 641. The current deployed product source is the same HEAD; the working tree contains only this report refresh and one local probe-helper change.
 **CLASSIFICATION:** `REPOSITORY VERIFIED`
 
-**CLAIM:** infra repository revision.  
-**COMMAND:** `git -C $HADES_HOME/hades-infra rev-parse HEAD; git status --short --branch`  
-**RESULT:** `bf648f52f5ab0e4da9ebd811f9ccc6866cf5341a`; clean `main`, no upstream.  
+**CLAIM:** infra repository revision.
+**COMMAND:** `git -C $HADES_HOME/hades-infra rev-parse HEAD; git status --short --branch`
+**RESULT:** `bf648f52f5ab0e4da9ebd811f9ccc6866cf5341a`; clean `main`, no upstream.
 **CLASSIFICATION:** `REPOSITORY VERIFIED`
 
-**CLAIM:** VM 802 runtime.  
-**COMMAND:** `ssh scotty@<PRIVATE_LAN_ADDRESS> 'systemctl is-active hades-hermes.service; systemctl show hades-hermes.service -p WorkingDirectory'`  
-**RESULT:** `active`; `$HADES_HOME/Hades-reconciled-b102dfd`.  
+**CLAIM:** HADES guest runtime.
+**COMMAND:** `ssh scotty@<PRIVATE_LAN_ADDRESS> 'systemctl is-active hades-hermes.service; systemctl show hades-hermes.service -p WorkingDirectory'`
+**RESULT:** `active`; `$HADES_HOME/Hades-reconciled-b102dfd`.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
 **CLAIM:** current mixed-user stale-tab/abandonment soak remains stable after the Phase 2 read repair.
@@ -366,24 +366,24 @@ priority order.
 **RESULT:** Owner and authorized Household A received the bounded Weekly result; Household B received the server-side no-shared response. The prior staged-metadata response was a real routing defect and is repaired.
 **CLASSIFICATION:** `LIVE VERIFIED` routing repair.
 
-**CLAIM:** deployed overlay identity.  
-**COMMAND:** live provenance endpoint plus remote `sha256sum` of overlay and reconciled `sitecustomize.py`.  
-**RESULT:** live overlay and finance asset were copied to VM 802 and match the deployed source artifacts; provenance reports HADES `bcd81f4...`, infra `bf648f5...`, overlay `1863ed16...`, and manifest `811807...`, generated `2026-09-24T07:54:33Z`.
+**CLAIM:** deployed overlay identity.
+**COMMAND:** live provenance endpoint plus remote `sha256sum` of overlay and reconciled `sitecustomize.py`.
+**RESULT:** live overlay and finance asset were copied to HADES guest and match the deployed source artifacts; provenance reports HADES `bcd81f4...`, infra `bf648f5...`, overlay `1863ed16...`, and manifest `811807...`, generated `2026-09-24T07:54:33Z`.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** homelab owner read uses bounded live VM runtime evidence.  
-**COMMAND:** fresh authenticated owner DOM prompts for full homelab status and network diagnosis; supplemental Proxmox `cluster/resources?type=vm` GET through the existing adapter.  
-**RESULT:** owner-visible response listed Alexandra/Erebus and running VM 801 `hades-operator`, VM 802 `hades-core`, and VM 852 with current CPU, memory, and bounded disk allocation values; OS, major services, GPU, and network trends remained explicitly unknown. No control operation or mutation was called.
+**CLAIM:** homelab owner read uses bounded live VM runtime evidence.
+**COMMAND:** fresh authenticated owner DOM prompts for full homelab status and network diagnosis; supplemental Proxmox `cluster/resources?type=vm` GET through the existing adapter.
+**RESULT:** owner-visible response listed storage host/hypervisor host and running configured guest `hades-operator`, HADES guest `hades-core`, and another configured guest with current CPU, memory, and bounded disk allocation values; OS, major services, GPU, and network trends remained explicitly unknown. No control operation or mutation was called.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** household private-domain isolation.  
-**COMMAND:** fresh authenticated Household A and Household B DOM sessions at `390x844`; finance prompt for A and Scotty-private-memory prompt for B.  
-**RESULT:** A received owner-only finance denial; B received private-memory denial; neither request invoked a private read or changed state.  
+**CLAIM:** household private-domain isolation.
+**COMMAND:** fresh authenticated Household A and Household B DOM sessions at `390x844`; finance prompt for A and Scotty-private-memory prompt for B.
+**RESULT:** A received owner-only finance denial; B received private-memory denial; neither request invoked a private read or changed state.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** original recipe-chat failure corpus is repaired.  
-**COMMAND:** five fresh authenticated DOM sessions using the original prompts: makeable recipes, not-makeable recipes, saved recipes, `what recipes do we have?`, and cooking recipes.  
-**RESULT:** all five returned canonical Grocy recipe/stock output; the live catalog contained three recipes; no stock or shopping-list write occurred.  
+**CLAIM:** original recipe-chat failure corpus is repaired.
+**COMMAND:** five fresh authenticated DOM sessions using the original prompts: makeable recipes, not-makeable recipes, saved recipes, `what recipes do we have?`, and cooking recipes.
+**RESULT:** all five returned canonical Grocy recipe/stock output; the live catalog contained three recipes; no stock or shopping-list write occurred.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
 **CLAIM:** final exhaustive owner corpus settled after the latest repairs.
@@ -413,7 +413,7 @@ priority order.
 
 **CLAIM:** full homelab telemetry inputs are live.
 **COMMAND:** bounded homelab adapter read with configured Proxmox GET endpoints, NetBox read endpoint, and Uptime Kuma status page; fresh owner DOM homelab/network prompts.
-**RESULT:** source counts include Proxmox runtime, NetBox inventory, and Kuma monitor rows; Proxmox currently reports Alexandra/Erebus online and Kuma reports `service-netbox` down. Guest OS, major services, storage trends, GPU load, and network trends remain unknown.
+**RESULT:** source counts include Proxmox runtime, NetBox inventory, and Kuma monitor rows; Proxmox currently reports storage host/hypervisor host online and Kuma reports `service-netbox` down. Guest OS, major services, storage trends, GPU load, and network trends remain unknown.
 **CLASSIFICATION:** `LIVE VERIFIED` partial telemetry
 
 **CLAIM:** off-site recovery status.
@@ -428,101 +428,101 @@ priority order.
 
 **CLAIM:** bounded completion-abort recovery.
 **COMMAND:** `scripts/dom-dependency-failure.js` with one aborted completion and recovery prompt.
-**RESULT:** the aborted request rendered `Failed to fetch` and cleared the composer; recovery returned a live Tartarus response, but the Stop control was still visible at the harness's 15-second cutoff.
+**RESULT:** the aborted request rendered `Failed to fetch` and cleared the composer; recovery returned a live deep inference provider response, but the Stop control was still visible at the harness's 15-second cutoff.
 **CLASSIFICATION:** `LIVE VERIFIED` partial; `BROKEN` recovery-liveness timing at the current cutoff
 
-**CLAIM:** Open WebUI health and owner surface.  
-**COMMAND:** authenticated browser navigation and DOM prompts against the production HADES URL.  
-**RESULT:** login/session established; 15 seed turns collected; recipe, expiry, restock, briefing, and failure-recovery responses visible.  
+**CLAIM:** Open WebUI health and owner surface.
+**COMMAND:** authenticated browser navigation and DOM prompts against the production HADES URL.
+**RESULT:** login/session established; 15 seed turns collected; recipe, expiry, restock, briefing, and failure-recovery responses visible.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** Hermes version/service.  
-**COMMAND:** systemd unit executable and runtime health.  
-**RESULT:** Hermes `0.21.2`; service active.  
+**CLAIM:** Hermes version/service.
+**COMMAND:** systemd unit executable and runtime health.
+**RESULT:** Hermes `0.21.2`; service active.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** Hindsight health.  
-**COMMAND:** VM 802 health endpoint.  
-**RESULT:** healthy/database connected; fresh-memory proof exists with delayed indexing.  
+**CLAIM:** Hindsight health.
+**COMMAND:** HADES guest health endpoint.
+**RESULT:** healthy/database connected; fresh-memory proof exists with delayed indexing.
 **CLASSIFICATION:** `LIVE VERIFIED` health; latency `DEFERRED`
 
-**CLAIM:** fresh owner memory survives a genuinely new conversation.  
-**COMMAND:** `HADES_HINDSIGHT_MARKER=<harmless synthetic marker> HADES_EPSILON_DOM_WAIT_MS=120000 node scripts/dom-hindsight-alpha.js` after the persistent Hindsight route/overlay repair.  
+**CLAIM:** fresh owner memory survives a genuinely new conversation.
+**COMMAND:** `HADES_HINDSIGHT_MARKER=<harmless synthetic marker> HADES_EPSILON_DOM_WAIT_MS=120000 node scripts/dom-hindsight-alpha.js` after the persistent Hindsight route/overlay repair.
 **RESULT:** `status=PASS`, `fresh_conversation=true`, and the new marker was
 present in the natural recall response. The Hindsight container reported
-healthy/database connected; no other bank was queried.  
+healthy/database connected; no other bank was queried.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
 **CLAIM:** affected multi-user authorization discovery remains intact after the
-memory repair.  
-**COMMAND:** `HADES_EPSILON_DOM_DISCOVERY_ONLY=1 node scripts/dom-epsilon-phase2-staged.js`.  
+memory repair.
+**COMMAND:** `HADES_EPSILON_DOM_DISCOVERY_ONLY=1 node scripts/dom-epsilon-phase2-staged.js`.
 **RESULT:** 12/12 sessions settled across Owner, Household A, and Household B
-at desktop, tablet, 390x844, and 320x568; no production enablement occurred.  
+at desktop, tablet, 390x844, and 320x568; no production enablement occurred.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** Grocy canonical path.  
-**COMMAND:** live Grocy API plus owner DOM recipe/stock/expiry reads.  
-**RESULT:** three live recipes and current stock/expiry data observed; owner responses cite canonical reads and no-write behavior.  
+**CLAIM:** Grocy canonical path.
+**COMMAND:** live Grocy API plus owner DOM recipe/stock/expiry reads.
+**RESULT:** three live recipes and current stock/expiry data observed; owner responses cite canonical reads and no-write behavior.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** SearXNG path.  
-**COMMAND:** bounded loopback HTTP probe and web-failure contract.  
-**RESULT:** service reachable; failure boundary contract is green in repository evidence.  
+**CLAIM:** SearXNG path.
+**COMMAND:** bounded loopback HTTP probe and web-failure contract.
+**RESULT:** service reachable; failure boundary contract is green in repository evidence.
 **CLASSIFICATION:** `LIVE VERIFIED` path / `REPOSITORY VERIFIED` failure contract
 
-**CLAIM:** LLDAP/auth state.  
-**COMMAND:** protected LDAP auth smoke for Owner/A/B; emit only status, subject, and role.  
-**RESULT:** all HTTP 200; distinct subjects `45ed2520...`, `d5e8a4f3...`, `53c31d45...`; all role `user`.  
+**CLAIM:** LLDAP/auth state.
+**COMMAND:** protected LDAP auth smoke for Owner/A/B; emit only status, subject, and role.
+**RESULT:** all HTTP 200; distinct subjects `45ed2520...`, `d5e8a4f3...`, `53c31d45...`; all role `user`.
 **CLASSIFICATION:** `LIVE VERIFIED`; group display `UNVERIFIED`
 
-**CLAIM:** current inference endpoints/models.  
-**COMMAND:** bounded `/api/tags`/`/v1/models` probes on ports `11435`, `11437`, `11434`.  
-**RESULT:** Hermes Compute qwen3:8b; Tartarus qwen3.6:35b; Hypnos gemma4:e4b and embedding model.  
+**CLAIM:** current inference endpoints/models.
+**COMMAND:** bounded `/api/tags`/`/v1/models` probes on ports `11435`, `11437`, `11434`.
+**RESULT:** fast inference provider qwen3:8b; deep inference provider qwen3.6:35b; specialized inference provider gemma4:e4b and embedding model.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** Proxmox/topology reachability.  
-**COMMAND:** bounded ICMP/TCP checks for listed nodes and configured VM 802 path.  
-**RESULT:** VM 802 and listed inference/storage endpoints reachable where stated; reachability does not prove workload health.  
+**CLAIM:** Proxmox/topology reachability.
+**COMMAND:** bounded ICMP/TCP checks for listed nodes and configured HADES guest path.
+**RESULT:** HADES guest and listed inference/storage endpoints reachable where stated; reachability does not prove workload health.
 **CLASSIFICATION:** `LIVE VERIFIED` reachability only
 
-**CLAIM:** Alexandra ZFS health.  
-**COMMAND:** bounded noninteractive SSH read attempt for `zpool status -x`.  
-**RESULT:** host reachable but identity rejected.  
+**CLAIM:** storage host ZFS health.
+**COMMAND:** bounded noninteractive SSH read attempt for `zpool status -x`.
+**RESULT:** host reachable but identity rejected.
 **CLASSIFICATION:** `EXTERNAL-GATED` / `UNVERIFIED`
 
-**CLAIM:** Agent Zero state.  
-**COMMAND:** VM 802 container inventory and owner/household policy paths.  
-**RESULT:** container live; household delegation denied; owner route remains bounded.  
+**CLAIM:** Agent Zero state.
+**COMMAND:** HADES guest container inventory and owner/household policy paths.
+**RESULT:** container live; household delegation denied; owner route remains bounded.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** voice service state.  
-**COMMAND:** bounded HTTP probe to Hermes Compute `:8766`.  
-**RESULT:** live HTTP listener returned 404 at root; exact STT/TTS readiness not proven.  
+**CLAIM:** voice service state.
+**COMMAND:** bounded HTTP probe to fast inference provider `:8766`.
+**RESULT:** live HTTP listener returned 404 at root; exact STT/TTS readiness not proven.
 **CLASSIFICATION:** `LIVE VERIFIED` listener / `UNVERIFIED` end-to-end
 
-**CLAIM:** n8n state.  
-**COMMAND:** VM 802 container health and `/healthz`.  
-**RESULT:** container active; health response `status=ok`; arbitrary workflow creation not enabled.  
+**CLAIM:** n8n state.
+**COMMAND:** HADES guest container health and `/healthz`.
+**RESULT:** container active; health response `status=ok`; arbitrary workflow creation not enabled.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** Home Assistant state.  
-**COMMAND:** current live owner-facing capability/configuration inspection.  
-**RESULT:** no authorized owner-facing action path established.  
+**CLAIM:** Home Assistant state.
+**COMMAND:** current live owner-facing capability/configuration inspection.
+**RESULT:** no authorized owner-facing action path established.
 **CLASSIFICATION:** `DEFERRED` / `OWNER-GATED`
 
-**CLAIM:** canonical owner dogfood.  
-**COMMAND:** `HADES_DOM_FRESH_EACH=1 HADES_DOM_TURN_TIMEOUT_MS=45000 node scripts/dom-exhaustive-owner-dogfood.js` with protected owner auth and report `/tmp/hades-exhaustive-final-authorized.json`.  
-**RESULT:** 15/15 seed turns collected; canonical Grocy routes, authorized finance CSV analysis, explicit finance/telemetry boundaries, and mobile expiry route at `390x844` observed. A separate clean spaghetti turn completed with no Stop state.  
+**CLAIM:** canonical owner dogfood.
+**COMMAND:** `HADES_DOM_FRESH_EACH=1 HADES_DOM_TURN_TIMEOUT_MS=45000 node scripts/dom-exhaustive-owner-dogfood.js` with protected owner auth and report `/tmp/hades-exhaustive-final-authorized.json`.
+**RESULT:** 15/15 seed turns collected; canonical Grocy routes, authorized finance CSV analysis, explicit finance/telemetry boundaries, and mobile expiry route at `390x844` observed. A separate clean spaghetti turn completed with no Stop state.
 **CLASSIFICATION:** `LIVE VERIFIED` evidence collection; overall product closure `UNVERIFIED`
 
-**CLAIM:** failure recovery.  
-**COMMAND:** bounded authenticated DOM transport-abort fixture.  
-**RESULT:** visible `Failed to fetch`, no stale Stop state, recovery response returned.  
+**CLAIM:** failure recovery.
+**COMMAND:** bounded authenticated DOM transport-abort fixture.
+**RESULT:** visible `Failed to fetch`, no stale Stop state, recovery response returned.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** fresh briefing recap route.  
-**COMMAND:** clean authenticated DOM session, new chat, prompt `What did we learn from my morning briefing, and what needs attention first?`  
-**RESULT:** returned `HADES morning briefing refresh (bounded live sources)` with infrastructure, backup, household, expiry, and finance-boundary sections; no model-generated stale-context claim.  
+**CLAIM:** fresh briefing recap route.
+**COMMAND:** clean authenticated DOM session, new chat, prompt `What did we learn from my morning briefing, and what needs attention first?`
+**RESULT:** returned `HADES morning briefing refresh (bounded live sources)` with infrastructure, backup, household, expiry, and finance-boundary sections; no model-generated stale-context claim.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
 **CLAIM:** urgent briefing follow-up remains usable without relying on a model turn.
@@ -555,9 +555,9 @@ at desktop, tablet, 390x844, and 320x568; no production enablement occurred.
 **RESULT:** first turn returned owner-only CSV analysis; the correction returned canonical Grocy stock (`HADES Synthetic Milk`, 2 units) rather than repeating the finance answer. The deployed correction-precedence repair is active.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-**CLAIM:** targeted contracts.  
-**COMMAND:** `test-turn-liveness-contract.sh`, `test-task-store.sh`, `test-health-watch-contract.sh`, `test-web-failure-boundary.sh`, `test-epsilon-workflow-contract.sh`, `test-homelab-readonly-adapter.sh`.  
-**RESULT:** all reported successful contract assertions.  
+**CLAIM:** targeted contracts.
+**COMMAND:** `test-turn-liveness-contract.sh`, `test-task-store.sh`, `test-health-watch-contract.sh`, `test-web-failure-boundary.sh`, `test-epsilon-workflow-contract.sh`, `test-homelab-readonly-adapter.sh`.
+**RESULT:** all reported successful contract assertions.
 **CLASSIFICATION:** `REPOSITORY VERIFIED` (contract evidence, not a blanket production declaration)
 
 **CLAIM:** live Health Watch sharing, household authority, and revocation.
@@ -600,8 +600,8 @@ at desktop, tablet, 390x844, and 320x568; no production enablement occurred.
 **RESULT:** visible `Failed to fetch`, empty composer, no Stop state, and a genuinely new recovery response `Hello! How can I assist you today?`; the corrected fixture required New Chat to clear prior assistant nodes and reported `new_response: true`; no browser errors.
 **CLASSIFICATION:** `LIVE VERIFIED` corrected abort/re-entry evidence; the earlier stale-node false green is retained as a harness defect and is not counted as evidence.
 
-**CLAIM:** provenance record contents at the 07:54Z observation.  
-**COMMAND:** live `/v1/epsilon/provenance` after deployment recorder refresh.  
+**CLAIM:** provenance record contents at the 07:54Z observation.
+**COMMAND:** live `/v1/epsilon/provenance` after deployment recorder refresh.
 **RESULT:** HADES `bcd81f4...`, infra `bf648f52...`, overlay `1863ed16...`, manifest `811807...`, generated `2026-09-24T07:54:33Z`; Hermes service was active with `NRestarts=0`. The later read-only service-path audit found the effective overlay hash was `2157f732...` after the 15:07Z restart.
 **CLASSIFICATION:** historical record observation; current provenance `STALE / CONTRADICTED`
 
@@ -612,14 +612,14 @@ at desktop, tablet, 390x844, and 320x568; no production enablement occurred.
 
 ### Hindsight follow-up (2026-09-25)
 
-**CLAIM:** fresh Alpha memory recall remains reliable after a new retain.  
-**COMMAND:** one authenticated owner DOM probe retained a harmless synthetic fact, opened a genuinely new conversation, and asked a natural recall question.  
-**RESULT:** `FAIL`: recall returned a different older synthetic Alpha marker rather than the just-retained fact. The test took 70.4 seconds; recall started about 30.8 seconds after retain settled. This is a same-owner freshness failure, not evidence of cross-user disclosure. No further production Hindsight writes, retries, or deletes were attempted.  
+**CLAIM:** fresh Alpha memory recall remains reliable after a new retain.
+**COMMAND:** one authenticated owner DOM probe retained a harmless synthetic fact, opened a genuinely new conversation, and asked a natural recall question.
+**RESULT:** `FAIL`: recall returned a different older synthetic Alpha marker rather than the just-retained fact. The test took 70.4 seconds; recall started about 30.8 seconds after retain settled. This is a same-owner freshness failure, not evidence of cross-user disclosure. No further production Hindsight writes, retries, or deletes were attempted.
 **CLASSIFICATION:** `LIVE VERIFIED` reliability defect; Hindsight remains open P2.
 
-**CLAIM:** current asynchronous Hindsight backlog.  
-**COMMAND:** read-only aggregate of the pinned API stats endpoint across 13 banks; no operation details queried.  
-**RESULT:** 3 pending operations, 470 failed operations, 38 pending consolidations, and 1,118 failed consolidations. These current counts supersede earlier lower consolidation counts; failed operation stats may include parent/child batch accounting. No retries or replay were attempted.  
+**CLAIM:** current asynchronous Hindsight backlog.
+**COMMAND:** read-only aggregate of the pinned API stats endpoint across 13 banks; no operation details queried.
+**RESULT:** 3 pending operations, 470 failed operations, 38 pending consolidations, and 1,118 failed consolidations. These current counts supersede earlier lower consolidation counts; failed operation stats may include parent/child batch accounting. No retries or replay were attempted.
 **CLASSIFICATION:** `LIVE VERIFIED` aggregate backlog; cause and safe recovery remain unverified.
 
 

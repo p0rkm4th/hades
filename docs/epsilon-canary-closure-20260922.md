@@ -2,7 +2,7 @@
 
 Status: `DOGFOOD GREEN`.
 
-The approved scope is implemented and live on VM 802: typed Server Health
+The approved scope is implemented and live on HADES guest: typed Server Health
 Watch only, private localhost n8n, HADES-local notifications, owner-only
 creation/control, explicit household sharing, view-only household access,
 operation-time authorization checks, and no remediation or external

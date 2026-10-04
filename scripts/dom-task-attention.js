@@ -136,7 +136,7 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
     const isAmbiguousProvisioning = prompt === 'Make a Minecraft server and a website';
     const isWeeklyPartial = prompt === 'Show the latest weekly household summary.';
     const isComputerStatus = prompt === 'Are all the computers okay?';
-    const isTartarusStatus = prompt === 'whats tartarus doing rn';
+    const isNamedNodeStatus = prompt === 'whats deep-inference-node doing rn';
     const isCompoundServerBackupStatus = prompt === 'Are all the servers okay, and what backup coverage do I have?';
     const isFinanceComparison = prompt === 'How much am I spending eating out compared with groceries?';
     const isFinanceMonthOverMonth = prompt === 'Why was spending higher this month?';
@@ -255,18 +255,18 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
           /memory update/i.test(response)) {
         throw new Error(`${account} low-tech computer status did not use the safe live homelab route: ${response}`);
       }
-    } else if (isTartarusStatus) {
+    } else if (isNamedNodeStatus) {
       for (const expected of [
-        'I found Tartarus in the hardware inventory.',
+        'I found deep-inference-node in the hardware inventory.',
         'The recorded address is 192.0.2.69.',
         'It is listed as synthetic inference node.',
         "I don't have a current runtime check for it, so I can't say whether it's online.",
       ]) {
         if (!response.includes(expected)) throw new Error(`Alpha named-node status omitted ${expected}: ${response}`);
       }
-    } else if (prompt === 'whats hypnos doing rn') {
+    } else if (prompt === 'whats specialized-inference-node doing rn') {
       for (const expected of [
-        'the Hypnos check is responding (fresh observation).',
+        'the specialized-inference-node check is responding (fresh observation).',
         "That confirms only that this check responded; I don't have a current host workload or operating-system status.",
       ]) {
         if (!response.includes(expected)) throw new Error(`Alpha monitor-only fresh-up answer omitted ${expected}: ${response}`);
@@ -274,14 +274,14 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
       if (/Proxmox runtime status is|GPU health|workload is healthy/i.test(response)) {
         throw new Error(`Alpha monitor-only fresh-up answer overstated host health: ${response}`);
       }
-    } else if (prompt === 'whats thanatos doing rn') {
+    } else if (prompt === 'whats management-node doing rn') {
       for (const expected of [
-        'the Thanatos check is failing (fresh observation).',
+        'the management-node check is failing (fresh observation).',
         'That confirms the check failed, but not why or whether the host is powered off.',
       ]) {
         if (!response.includes(expected)) throw new Error(`Alpha monitor-only fresh-down answer omitted ${expected}: ${response}`);
       }
-      if (/Proxmox runtime status is|Thanatos is (?:offline|powered off)/i.test(response)) {
+      if (/Proxmox runtime status is|management-node is (?:offline|powered off)/i.test(response)) {
         throw new Error(`Alpha monitor-only fresh-down answer inferred host status: ${response}`);
       }
     } else if (prompt === 'whats hermes doing rn') {
@@ -376,14 +376,14 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
                 : "I can't access Scotty's finances. That information is owner-only"
             : isComputerStatus
             ? 'Repository backup freshness: HADES repository backup: healthy'
-            : isTartarusStatus
-            ? 'I found Tartarus in the hardware inventory.'
+            : isNamedNodeStatus
+            ? 'I found deep-inference-node in the hardware inventory.'
             : isCompoundServerBackupStatus
               ? 'SERVER STATUS:'
-            : prompt === 'whats hypnos doing rn'
-              ? 'the Hypnos check is responding (fresh observation).'
-              : prompt === 'whats thanatos doing rn'
-                ? 'the Thanatos check is failing (fresh observation).'
+            : prompt === 'whats specialized-inference-node doing rn'
+              ? 'the specialized-inference-node check is responding (fresh observation).'
+              : prompt === 'whats management-node doing rn'
+                ? 'the management-node check is failing (fresh observation).'
                 : prompt === 'whats hermes doing rn'
                   ? 'the Hermes check last reported up, but that observation is stale.'
             : isMediaHelp
@@ -830,12 +830,12 @@ async function verifyTaskNotification(browser) {
     } else {
       results = { attention: {}, media_help: {}, notification: await verifyTaskNotification(browser) };
       results.computer_status_alpha = await ask(browser, 'alpha', 'Are all the computers okay?');
-      results.named_node_status_alpha = await ask(browser, 'alpha', 'whats tartarus doing rn');
+      results.named_node_status_alpha = await ask(browser, 'alpha', 'whats deep-inference-node doing rn');
       results.compound_server_backup_status_alpha = await ask(
         browser, 'alpha', 'Are all the servers okay, and what backup coverage do I have?'
       );
-      results.monitor_only_fresh_up_alpha = await ask(browser, 'alpha', 'whats hypnos doing rn');
-      results.monitor_only_fresh_down_alpha = await ask(browser, 'alpha', 'whats thanatos doing rn');
+      results.monitor_only_fresh_up_alpha = await ask(browser, 'alpha', 'whats specialized-inference-node doing rn');
+      results.monitor_only_fresh_down_alpha = await ask(browser, 'alpha', 'whats management-node doing rn');
       results.monitor_only_stale_alpha = await ask(browser, 'alpha', 'whats hermes doing rn');
       results.finance_comparison_alpha = await ask(
         browser, 'alpha', 'How much am I spending eating out compared with groceries?'

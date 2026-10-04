@@ -4,7 +4,7 @@
 schema=destination-owner-acceptance/v1
 environment=REAL_DESTINATION
 destination=hades-core
-destination_endpoint=hades.local:3000
+destination_endpoint=hades.example.invalid:3000
 owner_login=NOT RUN
 existing_conversation_visible=NOT RUN
 new_conversation_model_response=NOT RUN

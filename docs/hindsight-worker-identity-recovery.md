@@ -158,7 +158,7 @@ production recovery safe. No production service or state changed.
 
 ### Aggregate-only production refresh — 2026-09-29
 
-Strict-host-key SSH to the documented VM 802 account ran
+Strict-host-key SSH to the documented HADES guest account ran
 `scripts/hindsight-aggregate-stats.py` through stdin, without copying the helper
 to the guest. All 13 bank `/stats` requests succeeded: 3 pending / 470 failed
 operations and 57 pending / 1,118 failed consolidations. No bank identifiers or

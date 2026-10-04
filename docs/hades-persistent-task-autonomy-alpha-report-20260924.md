@@ -10,7 +10,7 @@
 
 ## 2. Deployed provenance and trust closure
 
-The Hermes unit is active on VM 802. The deployed file hash matches the ending runtime payload in both `$HADES_HOME/Hades-reconciled-b102dfd` and `$HADES_HOME/generated-full/config/overlay` — `LIVE VERIFIED`. The machine-readable provenance endpoint still reports the earlier code SHA `72a5dc0`; that field is stale relative to the independently matched deployed file hash and should be refreshed by the deployment recorder — `BROKEN` provenance freshness, not an execution failure.
+The Hermes unit is active on HADES guest. The deployed file hash matches the ending runtime payload in both `$HADES_HOME/Hades-reconciled-b102dfd` and `$HADES_HOME/generated-full/config/overlay` — `LIVE VERIFIED`. The machine-readable provenance endpoint still reports the earlier code SHA `72a5dc0`; that field is stale relative to the independently matched deployed file hash and should be refreshed by the deployment recorder — `BROKEN` provenance freshness, not an execution failure.
 
 Stale automation cleanup, fresh Hindsight recall, deployment hashing, and broad homelab composition were previously evidenced. Fresh Hindsight correctness is `LIVE VERIFIED`; freshness/latency remains an active concern because the retain worker experienced a long backlog. No production dependency was intentionally stopped for outage testing; source outage contracts and a bounded browser transport failure fixture are `REPOSITORY VERIFIED` / `LIVE VERIFIED` respectively.
 

@@ -8,8 +8,8 @@ spec = importlib.util.spec_from_file_location("control", "integrations/homelab-r
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-runtime = {"node": "Alexandra", "vmid": 101, "status": "running"}
-target = {"node": "Alexandra", "vmid": 101}
+runtime = {"node": "storage-node", "vmid": 101, "status": "running"}
+target = {"node": "storage-node", "vmid": 101}
 
 gated = module.build_control_preview("restart_guest", target, runtime)
 assert gated["status"] == "OWNER_GATED"
@@ -20,9 +20,9 @@ plan = module.build_control_preview("restart_guest", target, runtime, owner_auth
 assert plan["status"] == "READY_TO_EXECUTE"
 assert plan["canonical_source"] == "Proxmox"
 
-success = module.reconcile_control_outcome(plan, {"node": "Alexandra", "vmid": 101, "status": "running"}, transport_outcome="UNKNOWN")
+success = module.reconcile_control_outcome(plan, {"node": "storage-node", "vmid": 101, "status": "running"}, transport_outcome="UNKNOWN")
 assert success == {"status": "SUCCEEDED", "canonical_source": "Proxmox", "reconciled": True}
-failed = module.reconcile_control_outcome(plan, {"node": "Alexandra", "vmid": 101, "status": "running"}, transport_outcome="FAILED")
+failed = module.reconcile_control_outcome(plan, {"node": "storage-node", "vmid": 101, "status": "running"}, transport_outcome="FAILED")
 assert failed["status"] == "SUCCEEDED"  # canonical read-back wins after a lost response
 unknown = module.reconcile_control_outcome(plan, None, transport_outcome="UNKNOWN")
 assert unknown["status"] == "OUTCOME UNKNOWN" and unknown["retry"] is False
@@ -33,9 +33,9 @@ assert wrong_readback["status"] == "OUTCOME UNKNOWN" and wrong_readback["retry"]
 
 for operation, bad_target, bad_runtime in (
     ("shell", target, runtime),
-    ("stop_guest", {"node": "Alexandra", "vmid": 101}, {**runtime, "status": "stopped"}),
+    ("stop_guest", {"node": "storage-node", "vmid": 101}, {**runtime, "status": "stopped"}),
     ("restart_guest", {"node": "Other", "vmid": 101}, runtime),
-    ("restart_guest", {"node": "Alexandra", "vmid": True}, runtime),
+    ("restart_guest", {"node": "storage-node", "vmid": True}, runtime),
 ):
     result = module.build_control_preview(operation, bad_target, bad_runtime, owner_authorized=True, confirm=True)
     assert result["status"] == "FAILED", (operation, result)

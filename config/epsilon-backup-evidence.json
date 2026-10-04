@@ -1,7 +1,7 @@
 {
   "schema": "hades-backup-evidence/v1",
-  "custody": "Alexandra temporary protected landing zone",
-  "host": "alexandra",
+  "custody": "storage-node temporary protected landing zone",
+  "host": "storage-node",
   "root": "/tank/hades-backups/manifests",
   "targets": {
     "hades-git-bundle": {

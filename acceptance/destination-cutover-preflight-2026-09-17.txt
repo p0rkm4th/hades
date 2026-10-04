@@ -8,15 +8,15 @@ passed:
   - six migrated application containers
   - VM onboot persistence
   - destination WebUI LAN health
-  - simulated hades.local destination path
-  - protected Alexandra rollback package
+  - simulated hades.example.invalid destination path
+  - protected storage host rollback package
   - protected Hindsight export and checksum
   - required rollback component coverage (LLDAP and Agent Zero remain
     protected but encryption-pending)
   - laptop source runtime preservation
 
 remaining_failures:
-  - authoritative hades.local does not yet resolve to the destination
+  - authoritative hades.example.invalid does not yet resolve to the destination
 
 summary: pass=10 fail=1
 separate_owner_gate: encrypted custody for LLDAP and Agent Zero remains

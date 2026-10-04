@@ -3,7 +3,7 @@ Date: 2026-09-16
 
 Guest:
   name: hades-fresh-reconstruction
-  Proxmox node: Erebus VMID 802
+  Proxmox node: hypervisor host VMID 802
   address: <destination-ip> (DHCP)
   OS: Rocky Linux 10.2 Red Quartz
   kernel: 6.12.0-211.54.1.el10_2.x86_64

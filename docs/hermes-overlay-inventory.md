@@ -144,7 +144,7 @@ tree. This is a manual
 post-deployment step today; the private Hermes deployment workflow has no
 tracked automated caller in this repository.
 
-## VM 802 artifact reconciliation snapshot — 2026-09-29
+## HADES guest artifact reconciliation snapshot — 2026-09-29
 
 Read-only comparison found three distinct source identities:
 
@@ -194,7 +194,7 @@ remains unchanged and deployment remains gated.
 
 ### Read-only runtime refresh — 2026-09-29
 
-Strict-host-key SSH to the documented VM 802 account refreshed the runtime
+Strict-host-key SSH to the documented HADES guest account refreshed the runtime
 identity: `hades-hermes.service` is active/running, PID `2021647`, zero
 restarts, Hermes health HTTP 200 / version `0.21.2`; listeners remain on the
 Docker bridge at `<PRIVATE_LAN_ADDRESS>:8642` and `:8643`. The deployed checkout remains
@@ -219,14 +219,14 @@ overlay. A protected HADES Git bundle is present with SHA-256
 `e5a0f0ea…`; its `main` ref is `bbb6d755…`, not the serving checkout `b102dfd`
 or current canonical HEAD `ba1168e`. These are useful historical sources, but
 they do not establish an exact rollback copy of the currently active layer.
-The separately documented Alexandra rollback package remains a distinct
+The separately documented storage host rollback package remains a distinct
 custody artifact; its existence does not reconcile the live mixed component
 map. Do not treat these VM backups as a reviewed candidate rollback package.
 The infra promotion record identifies a separate protected Hermes 0.14.0
 rollback archive (`3310c9f1…`), which was verified for the September runtime
 promotion. That is a runtime-version rollback, not an exact rollback package
 for today's Hermes 0.21.2 service plus mixed HADES overlay and assets.
-Fresh strict-host-key, read-only inspection on Alexandra reconfirmed its SHA-256
+Fresh strict-host-key, read-only inspection on storage host reconfirmed its SHA-256
 `3310c9f11ccac10d249d77b308f280aa3da905f6fcff80627476a5cabab66dd1`; the
 archive has four members and contains the prior `hades-hermes.service` unit,
 with no `sitecustomize.py`, theme, or HADES adapter. This confirms it cannot
@@ -263,13 +263,13 @@ isolation, exact Minecraft “Perfect, continue” recovery, Grocy tool scope,
 and live-overlay drift contracts pass. The full synthetic private-fixture
 install/validate/non-mutating-doctor path also passes, including the current
 six-file payload and seven-input manifest digest. These are source-bound and
-isolated acceptance results. They do not reconcile VM 802's active mixed
+isolated acceptance results. They do not reconcile HADES guest's active mixed
 artifact or provide an exact production rollback package; production remains
 read-only.
 
 ### Strict-host-key runtime recheck — 2026-09-29 (follow-up)
 
-The documented `codex` key and pinned known-hosts file still reach VM 802
+The documented `codex` key and pinned known-hosts file still reach HADES guest
 read-only. `hades-hermes.service` is active with zero recorded restarts;
 `/health` returns HTTP 200 and Hermes 0.21.2. The active overlay remains
 `d827e9dbb7373d9889e442094a169260b60293d85169866f9848378648febb1a`. The
@@ -317,7 +317,7 @@ configuration, secret, VM, or firewall changed.
 ## Required Open WebUI asset packaging fix — 2026-09-29
 
 Read-only production inventory found finance and receipt upload assets already
-present in VM 802, while the current installer did not copy them even though
+present in HADES guest, while the current installer did not copy them even though
 the Open WebUI Compose template bind-mounts them. This is a rebuild defect; it
 did not cause the supplied live Minecraft continuation failure and no production
 change was made.
@@ -355,7 +355,7 @@ extraction, and composed public research are optional/staged and disabled in
 the canonical profile until their explicit activation/acceptance gates pass.
 Synthetic fixtures are test-only; Agent Zero native A2A remains post-V1.
 
-A fresh strict-host-key, read-only parse of the effective VM 802 profile found
+A fresh strict-host-key, read-only parse of the effective HADES guest profile found
 four registered MCP servers: `grocy`, `grocy_recipe_authoring`,
 `hades-agent-zero`, and `homelab-readonly`. The `grocy` command resolves to the
 user-local `hades-grocy-mcp` executable rather than the canonical file-key
@@ -399,7 +399,7 @@ were read; production remains unchanged.
 
 ## Strict-host-key component-path reconciliation — 2026-09-29
 
-A fresh read-only VM 802 inspection resolved the active Hermes MCP profile's
+A fresh read-only HADES guest inspection resolved the active Hermes MCP profile's
 adapter paths and hashed the complete current installer file set. Secret
 values were not read. The service still runs Hermes 0.21.2 with zero restarts;
 the sole configured Proxmox template alias is `linux-sandbox`.
@@ -427,7 +427,7 @@ servers are absent. The top-level
 `$HADES_HOME/generated-full/profile/config.yaml` has SHA-256 `8eb17616…` and
 contains the older four-server list, but is not selected by the running unit.
 Earlier reports that described that top-level file as the effective profile
-are superseded by this process-argument/path check. HADES checkouts on VM 802
+are superseded by this process-argument/path check. HADES checkouts on HADES guest
 remain `b102dfd` with 18 status entries and `c3f7262` with 49. Together these
 observations show the serving process composes a generated overlay/assets and
 selected profile, two different source checkouts, and an untracked user-local
@@ -469,7 +469,7 @@ active mixed runtime. No production files or services were modified.
 A root-owned, mode-0600 snapshot now captures the active Hermes code/config
 composition at
 `$HADES_HOME/generated-full/backups/hades-runtime-rollback/20260929T184128Z/active-runtime-code-config.tar.gz`
-on VM 802. SHA-256:
+on HADES guest. SHA-256:
 `8000ca97a89635f1119318820299b38b00b4c248c1b2d943c4537b789701b759`.
 The 38,583,720-byte archive includes the active service unit, both dirty HADES
 checkouts used by the service/profile, generated config/assets/overlay/adapters,
@@ -493,7 +493,7 @@ custody or authorize deployment. No service, runtime file, VM, database,
 application volume, or firewall was changed.
 
 
-## VM 802 runtime composition and rollback audit — 2026-09-29
+## HADES guest runtime composition and rollback audit — 2026-09-29
 
 ### Active runtime identity
 
@@ -568,7 +568,7 @@ composition even though most individual files have source lineage.
 
 A fresh `git clone --no-hardlinks` of HADES `32e146a11a51906dfdd2a267d78544277f485343` produced a clean worktree with zero status entries. This supersedes the earlier `b5979cb` candidate run. The clone passed the canonical Hermes profile contract, reconstruction manifest closure, and the full synthetic private fixture: test-mode install, validator, non-mutating doctor, required-file and secret-mode checks, layer/provenance digest, and doctor rejection for a missing mounted asset or required registration. The canonical profile kept owner-gated and staged entries disabled.
 
-The same clean candidate passed the pinned Hermes Minecraft continuation contract and cross-chat confirmation runtime contract, including lost pending-state recovery, fail-closed context-free confirmation, missing conversation-ID rejection, and same-chat decline. All were synthetic; no production account, MCP call, VM, or firewall was used. The temporary clone and fixture were removed by their normal cleanup paths. This validates the current source candidate and its default profile, not VM 802's mixed overlay, private profile, Grocy venv, or production acceptance.
+The same clean candidate passed the pinned Hermes Minecraft continuation contract and cross-chat confirmation runtime contract, including lost pending-state recovery, fail-closed context-free confirmation, missing conversation-ID rejection, and same-chat decline. All were synthetic; no production account, MCP call, VM, or firewall was used. The temporary clone and fixture were removed by their normal cleanup paths. This validates the current source candidate and its default profile, not HADES guest's mixed overlay, private profile, Grocy venv, or production acceptance.
 
 ### Rollback snapshot verification
 
@@ -595,12 +595,12 @@ had a clean worktree and passed the deployed-provenance writer contract,
 Hermes Minecraft continuation contract, Epsilon provenance endpoint contract,
 and reconstruction-manifest closure contract. The provenance writer now parses
 both inline JSON-style MCP argument arrays and the block-style YAML lists used
-by the selected VM 802 profile, and rejects unsupported mappings. The exact
+by the selected HADES guest profile, and rejects unsupported mappings. The exact
 Minecraft request returns a concrete no-write plan in source acceptance;
 “Perfect, continue” recovers that plan without model or infrastructure calls.
 
 This is current-source acceptance only. It does not qualify the active mixed
-VM 802 runtime or authorize deployment. The selected production profile,
+HADES guest runtime or authorize deployment. The selected production profile,
 source checkouts, Grocy executable, receipt OCR image, and rollback boundary
 remain as recorded above; production stayed read-only.
 
@@ -618,13 +618,13 @@ an owner-gated server. The canonical profile left all owner-gated and staged
 registrations disabled.
 
 This validates the canonical installation contract on a clean source clone.
-It does not reproduce VM 802's private profile, historical MCP blobs, unlocked
+It does not reproduce HADES guest's private profile, historical MCP blobs, unlocked
 Grocy environment, or unlabelled receipt OCR image. No production state was
 changed.
 
 ### Active generated layer versus clean candidate — read-only refresh 2026-09-29
 
-The exact active generated files were rehashed on VM 802 and compared with
+The exact active generated files were rehashed on HADES guest and compared with
 Git blobs at candidate `e0128137822c5e42d9b2abeb839d89851026de6b`. The clean
 candidate's nine-input runtime layer digest is
 `744f38406fdc718cff2246a3ae31b18474fe429d83871567f49112775ff3f8de`; the live
@@ -634,7 +634,7 @@ reconstruction manifest
 `811807b9357055ba50bf629e5b4e52981e8398e10d179c762061cb3e45992b3f`. Current
 candidate manifest hashes are `0b71d225…` and `a0561d8e…` respectively.
 
-| Runtime input | Active VM 802 bytes | Clean candidate `e012813` | Comparison |
+| Runtime input | Active HADES guest bytes | Clean candidate `e012813` | Comparison |
 |---|---|---|---|
 | Hermes overlay | `d827e9dbb7373d9889e442094a169260b60293d85169866f9848378648febb1a` | `aa2867e238460282acedacd550fb57b2c23f5c6842ea18605f85f956644ea2c1` | Different; active bytes have no exact whole-file source blob |
 | Grocy launcher | Missing at `generated-full/config/adapters/grocy-mcp-launch.py`; runtime instead invokes unlocked venv executable | `8aba83116f609e451ad124af0459a0e31ac4d689667584ffccc972e69757a358` | Required canonical launcher absent |

@@ -287,7 +287,7 @@ async function withTimeout(name, fn) {
       await withTimeout('novice language rotation', async () => {
         const prompts = [
           'milk?',
-          'whats runing on tartarus',
+          'whats runing on deep-inference-node',
           'what can i cook with what we have',
           'can u check the server thing',
         ];

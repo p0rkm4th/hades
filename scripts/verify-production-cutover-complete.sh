@@ -10,7 +10,7 @@ default_infra_repo=$(cd "$repo_dir/../hades-infra" 2>/dev/null && pwd || true)
 destination_ip=${HADES_DESTINATION_IP:?HADES_DESTINATION_IP is required}
 destination_ssh=${HADES_DESTINATION_SSH:?HADES_DESTINATION_SSH is required}
 expected_guest=${HADES_DESTINATION_HOSTNAME:-hades-core}
-dns_name=${HADES_CUTOVER_NAME:-hades.local}
+dns_name=${HADES_CUTOVER_NAME:-hades.example.invalid}
 webui_port=${HADES_WEBUI_PORT:-3000}
 rollback_host=${HADES_ROLLBACK_HOST:?HADES_ROLLBACK_HOST is required}
 rollback_package_root=${HADES_ROLLBACK_PACKAGE_ROOT:-/srv/hades-backups}
@@ -137,7 +137,7 @@ check_development_checkouts_preserved() {
 
 check 'real destination acceptance record' check_acceptance
 check 'destination SSH identity is the expected homelab guest' check_destination_identity
-check 'authoritative hades.local reaches destination health' check_authoritative_destination
+check 'authoritative hades.example.invalid reaches destination health' check_authoritative_destination
 check 'independent rollback package remains protected and verifiable' check_rollback_package
 check 'protected Hindsight production export remains verified' check_hindsight_export
 check 'rollback manifest has complete required component coverage' check_complete_rollback_manifest

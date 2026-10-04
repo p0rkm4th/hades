@@ -2,7 +2,7 @@
 
 **Timestamp:** 2026-09-23 (America/Chicago; evidence captured during this session)
 
-**Evidence boundary:** This is a fresh live-state handoff, not a transcription of prior status files. Live checks were made against VM 802 (`<PRIVATE_LAN_ADDRESS>`), the owner-facing HADES URL, the three configured authenticated identities, the reachable inference nodes, local Git repositories, and the local deployment artifacts. Secrets, tokens, passwords, private memory, and private financial data are intentionally omitted. Where a claim comes from an older document or an unrepeatable fixture, it is labelled `HISTORICAL EVIDENCE`; it is not treated as live proof.
+**Evidence boundary:** This is a fresh live-state handoff, not a transcription of prior status files. Live checks were made against HADES guest (`<PRIVATE_LAN_ADDRESS>`), the owner-facing HADES URL, the three configured authenticated identities, the reachable inference nodes, local Git repositories, and the local deployment artifacts. Secrets, tokens, passwords, private memory, and private financial data are intentionally omitted. Where a claim comes from an older document or an unrepeatable fixture, it is labelled `HISTORICAL EVIDENCE`; it is not treated as live proof.
 
 ## Current handoff delta
 
@@ -22,13 +22,13 @@ The report below was captured before the final Alpha substrate work. The followi
 
 ## 1. Executive state
 
-HADES is currently a local-first owner/household assistant running on HADES Core VM 802. The owner-facing Open WebUI and Hermes gateway are live; the core containers for Hindsight, Grocy, SearXNG, Agent Zero, LLDAP, OCR, and n8n are running. The current product is useful for authenticated owner chat, household-scoped Grocy reads, bounded read-only HADES health/backup workflows, web/search surfaces, and selected owner-only tools.
+HADES is currently a local-first owner/household assistant running on HADES Core HADES guest. The owner-facing Open WebUI and Hermes gateway are live; the core containers for Hindsight, Grocy, SearXNG, Agent Zero, LLDAP, OCR, and n8n are running. The current product is useful for authenticated owner chat, household-scoped Grocy reads, bounded read-only HADES health/backup workflows, web/search surfaces, and selected owner-only tools.
 
 - **Core owner chat:** `LIVE VERIFIED` — Open WebUI is reachable and authenticated DOM prompts returned live responses.
 - **Phase 2 bounded read-only automation:** `LIVE VERIFIED` for the already accepted owner/household surfaces; n8n is running on loopback, but arbitrary workflow creation and external notifications remain outside authority.
 - **Phase 3 household self-service:** `REPOSITORY VERIFIED` and `SYNTHETIC VERIFIED` only. The approved typed catalog, ownership, quotas, sharing, revocation, and admin contracts pass local tests. A staged household UI gate is deployed, but it does not create n8n workflows or grant unrestricted production creation.
 - **Main product defect found in this audit:** `BROKEN` — the owner UI showed one normal 15-minute Core Watch plus two stale/unknown 10-minute health-watch entries. This is state hygiene/product clarity, not evidence that authorization was broadened.
-- **External recovery:** `EXTERNAL-GATED` — Alexandra is reachable at its management ports, but the available noninteractive SSH identity was not accepted; fresh ZFS/backup custody could not be independently re-read from that host.
+- **External recovery:** `EXTERNAL-GATED` — storage host is reachable at its management ports, but the available noninteractive SSH identity was not accepted; fresh ZFS/backup custody could not be independently re-read from that host.
 - **Overall:** `DAILY USABLE` for the owner’s bounded assistant workflows; `DOGFOOD USABLE` for household read-only sharing; `STAGED` for typed household automation; not yet a general autonomous household operator.
 
 **Post-audit correction:** During resumed Phase 3 acceptance, an authority projection bug was found and fixed: the Phase 2 default health resource had been implicitly granted to every household account. The deployed code now uses only explicit subject/resource grants. Fresh DOM evidence after restart shows Household B sees only Low Grocery and a Groceries-only Weekly Summary, and a server-watch request is denied without creating state — `LIVE VERIFIED` after correction. A low-inventory share/run/revoke cycle also completed through the DOM; staged records were cleared afterward.
@@ -65,21 +65,21 @@ The following addresses are current inventory references plus fresh reachability
 
 | Node | Address / identity | Current evidence and role |
 |---|---|---|
-| Erebus / Proxmox | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` reachable by ICMP; Proxmox API URL is configured in the live Hermes unit as `https://<PRIVATE_LAN_ADDRESS>:8006/api2/json`; direct node state was not privileged-read in this audit. Role: virtualization host, `UNVERIFIED` beyond reachability/configuration. |
-| HADES Core / VM 802 | `<PRIVATE_LAN_ADDRESS>`, hostname `hades-core` | `LIVE VERIFIED`; SSH, Open WebUI, Hermes, and all listed core containers active. |
-| Agent Zero / VM 801 | no fresh IP established | `UNVERIFIED` as a separate VM. The current deployed Agent Zero runtime is a container on VM 802, `hades-agent-zero`, loopback-published at `127.0.0.1:7002`. |
-| Alexandra | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` at TCP/22 and TCP/8006; noninteractive SSH identity not accepted, so current ZFS state is `EXTERNAL-GATED`. It must not be called offsite. |
-| Alexandra service guest / 803 | `<PRIVATE_LAN_ADDRESS>` | `HISTORICAL EVIDENCE` from inventory; not independently re-probed in this bounded audit. |
-| Tartarus | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama HTTP on `:11437`; role Deep inference. |
-| Hypnos | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama HTTP on `:11434`; role specialized/code inference. |
-| Hermes Compute | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama HTTP on `:11435` and voice HTTP on `:8766`; role fast inference and voice. This is distinct from Hermes Agent. |
-| Thanatos | `<PRIVATE_LAN_ADDRESS>` | `HISTORICAL EVIDENCE` inventory role and address; not independently re-probed here. |
+| hypervisor host / Proxmox | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` reachable by ICMP; Proxmox API URL is configured in the live Hermes unit as `https://<PRIVATE_LAN_ADDRESS>:8006/api2/json`; direct node state was not privileged-read in this audit. Role: virtualization host, `UNVERIFIED` beyond reachability/configuration. |
+| HADES Core / HADES guest | `<PRIVATE_LAN_ADDRESS>`, hostname `hades-core` | `LIVE VERIFIED`; SSH, Open WebUI, Hermes, and all listed core containers active. |
+| Agent Zero / configured guest | no fresh IP established | `UNVERIFIED` as a separate VM. The current deployed Agent Zero runtime is a container on HADES guest, `hades-agent-zero`, loopback-published at `127.0.0.1:7002`. |
+| storage host | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` at TCP/22 and TCP/8006; noninteractive SSH identity not accepted, so current ZFS state is `EXTERNAL-GATED`. It must not be called offsite. |
+| storage host service guest / 803 | `<PRIVATE_LAN_ADDRESS>` | `HISTORICAL EVIDENCE` from inventory; not independently re-probed in this bounded audit. |
+| deep inference provider | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama HTTP on `:11437`; role Deep inference. |
+| specialized inference provider | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama HTTP on `:11434`; role specialized/code inference. |
+| fast inference provider | `<PRIVATE_LAN_ADDRESS>` | `LIVE VERIFIED` Ollama HTTP on `:11435` and voice HTTP on `:8766`; role fast inference and voice. This is distinct from Hermes Agent. |
+| management host | `<PRIVATE_LAN_ADDRESS>` | `HISTORICAL EVIDENCE` inventory role and address; not independently re-probed here. |
 
 Generic host health is not being represented as application acceptance. In particular, reachable ICMP or an open port does not prove GPU, Proxmox, ZFS, or workload readiness.
 
 ## 4. Core services
 
-Fresh VM 802 evidence shows:
+Fresh HADES guest evidence shows:
 
 | Capability | Service/path | Boundary and state |
 |---|---|---|
@@ -104,14 +104,14 @@ Fresh `/api/tags` and `/v1/models` checks establish the following endpoints. The
 
 | Route / display | Physical node | Endpoint and model evidence | Execution / capability |
 |---|---|---|---|
-| Hades Fast | Hermes Compute, `<PRIVATE_LAN_ADDRESS>` | `:11435`, `qwen3:8b` | `LIVE VERIFIED`; Ollama exposes completion, tools, thinking. |
-| Hades Deep | Tartarus, `<PRIVATE_LAN_ADDRESS>` | `:11437`, `qwen3.6:35b` plus aliases `hades-fast`, `agent-zero-fast`, smaller models | `LIVE VERIFIED` endpoint/model inventory; actual per-prompt route selection `UNVERIFIED`. |
-| Code | Hypnos, `<PRIVATE_LAN_ADDRESS>` | `:11434`, `gemma4:e4b` available | `LIVE VERIFIED` model availability; display-preset binding `UNVERIFIED`. |
-| Creative / Uncensored Writing / Security Lab | likely Hypnos/Tartarus aliases | Current physical model/preset bindings not proven by the live endpoint inventory | `UNVERIFIED`; do not repeat old intended routing as fact. |
-| Embedding | Hypnos | `nomic-embed-text:latest` available on `:11434` | `LIVE VERIFIED` availability. Hindsight’s selected embedding path was not re-derived here. |
-| Voice STT/TTS | Hermes Compute | `<PRIVATE_LAN_ADDRESS>:8766` returned a live HTTP 404 at `/`, proving listener reachability only | `LIVE VERIFIED` listener; exact STT/TTS health and latency `UNVERIFIED`. |
+| Hades Fast | fast inference provider, `<PRIVATE_LAN_ADDRESS>` | `:11435`, `qwen3:8b` | `LIVE VERIFIED`; Ollama exposes completion, tools, thinking. |
+| Hades Deep | deep inference provider, `<PRIVATE_LAN_ADDRESS>` | `:11437`, `qwen3.6:35b` plus aliases `hades-fast`, `agent-zero-fast`, smaller models | `LIVE VERIFIED` endpoint/model inventory; actual per-prompt route selection `UNVERIFIED`. |
+| Code | specialized inference provider, `<PRIVATE_LAN_ADDRESS>` | `:11434`, `gemma4:e4b` available | `LIVE VERIFIED` model availability; display-preset binding `UNVERIFIED`. |
+| Creative / Uncensored Writing / Security Lab | likely specialized inference provider/deep inference provider aliases | Current physical model/preset bindings not proven by the live endpoint inventory | `UNVERIFIED`; do not repeat old intended routing as fact. |
+| Embedding | specialized inference provider | `nomic-embed-text:latest` available on `:11434` | `LIVE VERIFIED` availability. Hindsight’s selected embedding path was not re-derived here. |
+| Voice STT/TTS | fast inference provider | `<PRIVATE_LAN_ADDRESS>:8766` returned a live HTTP 404 at `/`, proving listener reachability only | `LIVE VERIFIED` listener; exact STT/TTS health and latency `UNVERIFIED`. |
 
-Historical assumptions are therefore only partly current: Tartarus `qwen3.6:35b` on `:11437`, Hermes Compute fast on `:11435`, Hypnos specialized endpoint on `:11434`, and Hermes Compute voice on `:8766` all remain live. A blanket “64K context” claim and every display-preset binding are `UNVERIFIED` in this handoff.
+Historical assumptions are therefore only partly current: deep inference provider `qwen3.6:35b` on `:11437`, fast inference provider fast on `:11435`, specialized inference provider specialized endpoint on `:11434`, and fast inference provider voice on `:8766` all remain live. A blanket “64K context” claim and every display-preset binding are `UNVERIFIED` in this handoff.
 
 ## 6. Real owner dogfood
 
@@ -176,16 +176,16 @@ Current classifications:
 
 ## 11. Backup/recovery
 
-Fresh VM 802 evidence found current Git rollback artifacts:
+Fresh HADES guest evidence found current Git rollback artifacts:
 
 - `$HADES_HOME/generated-full/backups/epsilon-phase2-custody/hades-latest.bundle` (1,154,798 bytes)
 - `$HADES_HOME/generated-full/backups/epsilon-phase2-custody/hades-infra-latest.bundle` (604,203 bytes)
 
 These are `LIVE VERIFIED` as files on HADES Core. The live service also exposes a configured backup evidence path and the accepted Backup Verification surface.
 
-Alexandra `<PRIVATE_LAN_ADDRESS>` answered TCP/22 and TCP/8006, but the available noninteractive `scotty` SSH identity was not accepted. Current `tank` health, latest Alexandra bundles/checksums, and encrypted custody are therefore `EXTERNAL-GATED` / `UNVERIFIED` in this run. Alexandra is same-homelab storage, not offsite custody.
+storage host `<PRIVATE_LAN_ADDRESS>` answered TCP/22 and TCP/8006, but the available noninteractive `scotty` SSH identity was not accepted. Current `tank` health, latest storage host bundles/checksums, and encrypted custody are therefore `EXTERNAL-GATED` / `UNVERIFIED` in this run. storage host is same-homelab storage, not offsite custody.
 
-Recovery conclusions: VM 802 failure has documented same-site rollback artifacts (`HISTORICAL EVIDENCE` plus live local artifacts); Erebus failure and Alexandra failure are `UNVERIFIED`; whole-site loss survival is `BROKEN` as a proven property / `EXTERNAL-GATED` until independently held encrypted custody is demonstrated.
+Recovery conclusions: HADES guest failure has documented same-site rollback artifacts (`HISTORICAL EVIDENCE` plus live local artifacts); hypervisor host failure and storage host failure are `UNVERIFIED`; whole-site loss survival is `BROKEN` as a proven property / `EXTERNAL-GATED` until independently held encrypted custody is demonstrated.
 
 ## 12. Product usability
 
@@ -236,7 +236,7 @@ Likely week-one abandonment risks are stale/duplicate automation state, unclear 
 4. Make deployed revision provenance machine-readable in the service/image metadata. **Luna:** yes. **Closure proof:** live endpoint reports a source SHA matching a checked-out artifact.
 5. Re-run a short fresh Hindsight unique-fact retain/close/new-session recall proof. **Luna:** yes. **Closure proof:** harmless marker, bank/type, recall result, cleanup.
 6. Repair homelab status composition so a concise node request returns node inventory plus blockers rather than only Core Watch. **Luna:** yes. **Closure proof:** owner DOM prompt with canonical source references.
-7. Re-establish Alexandra read access or have Scotty provide a sanctioned read-only path for ZFS/checksum evidence. **Scotty/external gate:** required if credentials/route are unavailable. **Closure proof:** fresh `zpool status -x`, dataset, bundle, checksum, and custody evidence.
+7. Re-establish storage host read access or have Scotty provide a sanctioned read-only path for ZFS/checksum evidence. **Scotty/external gate:** required if credentials/route are unavailable. **Closure proof:** fresh `zpool status -x`, dataset, bundle, checksum, and custody evidence.
 8. Verify actual Open WebUI preset-to-endpoint mappings and voice end-to-end health, without changing routing. **Luna:** yes where endpoints are available; **Scotty:** only if owner UI configuration is gated.
 9. Keep unrestricted household workflow creation disabled until the decision packet is accepted; do not build JEV yet. **Luna:** yes. **Closure proof:** staged gate remains non-mutating and the authorization decision is recorded.
 
@@ -259,20 +259,20 @@ Likely week-one abandonment risks are stale/duplicate automation state, unclear 
 **RESULT:** `/opt/hades-hermes-0.21.2/bin/hermes`; workdir `$HADES_HOME/Hades-reconciled-b102dfd`; `active`.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
-### VM 802 and core services
+### HADES guest and core services
 
-**CLAIM:** VM 802 core containers are running.
+**CLAIM:** HADES guest core containers are running.
 **COMMAND:** `ssh scotty@<PRIVATE_LAN_ADDRESS> 'docker ps --format "{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}"'`
 **RESULT:** Open WebUI `58c3ea6213a9`; Hermes host service; Hindsight `84ab276b8f50`; Agent Zero `680ab243d358`; Grocy `8449aff56e6b`; LLDAP healthy; SearXNG; n8n `9f693fd55655` healthy; OCR `20260918-r3`.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
 **CLAIM:** Hindsight health.
-**COMMAND:** `curl http://127.0.0.1:8888/health` on VM 802.
+**COMMAND:** `curl http://127.0.0.1:8888/health` on HADES guest.
 **RESULT:** `{"status":"healthy","database":"connected",...}`.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
 **CLAIM:** n8n health.
-**COMMAND:** `curl http://127.0.0.1:5678/healthz` on VM 802.
+**COMMAND:** `curl http://127.0.0.1:5678/healthz` on HADES guest.
 **RESULT:** `{"status":"ok"}`.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
@@ -292,7 +292,7 @@ Likely week-one abandonment risks are stale/duplicate automation state, unclear 
 
 **CLAIM:** current inference endpoints/models.
 **COMMAND:** GET `/api/tags` and `/v1/models` on `<PRIVATE_LAN_ADDRESS>:11435`, `<PRIVATE_LAN_ADDRESS>:11437`, `<PRIVATE_LAN_ADDRESS>:11434`.
-**RESULT:** Hermes Compute `qwen3:8b`; Tartarus `qwen3.6:35b` plus aliases; Hypnos `gemma4:e4b` plus embedding model.
+**RESULT:** fast inference provider `qwen3:8b`; deep inference provider `qwen3.6:35b` plus aliases; specialized inference provider `gemma4:e4b` plus embedding model.
 **CLASSIFICATION:** `LIVE VERIFIED`
 
 **CLAIM:** voice listener reachability.
@@ -304,15 +304,15 @@ Likely week-one abandonment risks are stale/duplicate automation state, unclear 
 
 **CLAIM:** known live network reachability.
 **COMMAND:** bounded ICMP checks for `.2`, `.3`, `.69`, `.73`, `.152`, `.156`.
-**RESULT:** reachable; `.155` was unreachable. Alexandra `.2` TCP/22 and `:8006` open.
+**RESULT:** reachable; `.155` was unreachable. storage host `.2` TCP/22 and `:8006` open.
 **CLASSIFICATION:** `LIVE VERIFIED` reachability only.
 
 **CLAIM:** local rollback bundles exist.
-**COMMAND:** `find $HADES_HOME/generated-full/backups -maxdepth 4 -type f \( -name '*.bundle' -o -name '*.sha256' \)` on VM 802.
+**COMMAND:** `find $HADES_HOME/generated-full/backups -maxdepth 4 -type f \( -name '*.bundle' -o -name '*.sha256' \)` on HADES guest.
 **RESULT:** current HADES and infra bundles in `epsilon-phase2-custody`.
 **CLASSIFICATION:** `LIVE VERIFIED` local artifacts; custody/whole-site recovery `EXTERNAL-GATED`.
 
-**CLAIM:** Alexandra ZFS health.
+**CLAIM:** storage host ZFS health.
 **COMMAND:** bounded SSH `scotty@<PRIVATE_LAN_ADDRESS> 'zpool status -x'`.
 **RESULT:** TCP reachable but available noninteractive identity not accepted.
 **CLASSIFICATION:** `EXTERNAL-GATED` / `UNVERIFIED`; no ZFS claim made.

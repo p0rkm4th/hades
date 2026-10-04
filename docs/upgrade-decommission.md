@@ -51,7 +51,7 @@ remaining owner input is authentication/acceptance and rollback approval, not
 a need to run an unattended or bulk upgrade.
 
 The 2026-09-15 candidate note below is historical. Open WebUI remains pinned at
-0.11.1; Hermes 0.21.2 was later promoted on VM 802 and is the current
+0.11.1; Hermes 0.21.2 was later promoted on HADES guest and is the current
 `config/versions.env` reconstruction pin. Hermes 0.14.0 remains a rollback
 artifact. Future promotions still require a separately qualified candidate.
 The upgrade helper

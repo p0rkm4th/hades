@@ -14,7 +14,7 @@ services:
       TZ: America/Chicago
       LLDAP_LDAP_BASE_DN: dc=hades,dc=local
       LLDAP_LDAP_USER_DN: admin
-      LLDAP_LDAP_USER_EMAIL: admin@hades.local
+      LLDAP_LDAP_USER_EMAIL: admin@hades.example.invalid
       LLDAP_JWT_SECRET_FILE: /run/secrets/lldap_jwt_secret
       LLDAP_KEY_SEED_FILE: /run/secrets/lldap_key_seed
       LLDAP_LDAP_USER_PASS_FILE: /run/secrets/lldap_admin_password

@@ -31,4 +31,4 @@ Classification:
 - review required: all other containers, volumes, images, model files, caches, staging assets, and personal files
 
 This evidence does not authorize cleanup. Laptop production remains the rollback source
-until owner acceptance, authoritative hades.local routing, and destination stability pass.
+until owner acceptance, authoritative hades.example.invalid routing, and destination stability pass.

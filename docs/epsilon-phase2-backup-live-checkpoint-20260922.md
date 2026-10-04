@@ -6,7 +6,7 @@
   `<PRIVATE_LAN_ADDRESS>:8643`; no public listener.
 - Approved targets: HADES repository bundle and infrastructure repository
   bundle.
-- Both protected artifacts were copied from Alexandra's temporary landing zone
+- Both protected artifacts were copied from storage host's temporary landing zone
   into a HADES verification cache. This cache is not an independent disaster
   recovery domain.
 - SHA-256 matched for both artifacts.

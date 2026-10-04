@@ -54,8 +54,8 @@ pveum role add HADESNodeAudit --privs Sys.Audit
 pveum role add HADESVmAudit --privs VM.Audit
 pveum acl modify / --user svc-hades-ro@pve --role HADESNodeAudit
 pveum acl modify / --token 'svc-hades-ro@pve!readonly' --role HADESNodeAudit
-pveum acl modify /vms/802 --user svc-hades-ro@pve --role HADESVmAudit
-pveum acl modify /vms/802 --token 'svc-hades-ro@pve!readonly' --role HADESVmAudit
+pveum acl modify /vms/<configured-guest-id> --user svc-hades-ro@pve --role HADESVmAudit
+pveum acl modify /vms/<configured-guest-id> --token 'svc-hades-ro@pve!readonly' --role HADESVmAudit
 ```
 
 Verify both views with `pveum user permissions <userid>` and
@@ -232,60 +232,32 @@ homelab endpoint or credential is involved.
 
 ## Current activation state
 
-The current connected-LAN discovery contract is authorized and has completed a
-real read-only scan. The result is transient review evidence and is not a
-canonical inventory update. Proxmox and NetBox are
-`AUTHORIZED / READ-ONLY`; Uptime Kuma is
-`AUTHORIZED / READ-ONLY ACCEPTED` at the published
-`hades-infrastructure` status path. Real failure, freshness, conflict, and
-write-surface acceptance remains required for every live source.
+Read sources are enabled only through protected deployment configuration and
+least-privilege credentials. Public source contains no concrete host identities,
+addresses, resource IDs, access paths, or private inventory. The protected
+operator matrix and acceptance records are maintained in `hades-infra`.
 
-**Proxmox credential correction (2026-09-27):** the privilege-separated
-Alexandra/Erebus tokens originally lacked token-side ACLs, so the approved
-`/cluster/resources` reads returned node-only rows. Restored the existing
-read-only contract with `Sys.Audit` at `/` and `VM.Audit` only at the explicitly
-approved CT 803 (`/vms/803`) and HADES VM 802 (`/vms/802`) paths. The active
-protected token inputs now return exactly one node and one approved guest row
-per PVE instance, including point-in-time CPU/memory/disk allocation/network
-counters/uptime; historical VM 800/801 and other Erebus guest rows remain
-inaccessible to these tokens. No VM write privileges or user ACLs changed.
-QEMU guest-agent OS/filesystem calls are still outside the configured contract;
-no `VM.GuestAgent.Audit` privilege was granted. The audit and exact scopes are
-recorded in [`docs/current-blockers.md`](current-blockers.md).
+Proxmox supplies hypervisor and guest runtime observations within its configured
+read scope. NetBox supplies intended inventory and topology. Uptime Kuma supplies
+availability observations. Service-native and inference APIs supply only their
+own reported state. These sources can disagree; HADES must preserve the source,
+retrieval time, and conflict rather than choosing an arbitrary green result.
 
-The owner API uses the read-only `homelab_owner_snapshot` for combined
-status-and-hardware questions. It composes the live summary with the observed
-capability matrix while preserving source authority: Proxmox supplies current
-runtime, NetBox intended inventory, Kuma observed availability, and the matrix
-only supplies supplemental hardware evidence. A GPU cannot be treated as
-available, CUDA-capable, or placeable without current runtime and acceptance
-evidence. The deployed owner profile retains separate bounded discovery tools;
-it does not expose a broad shell or homelab control plane.
-
-Owner requests for a server IP, port, endpoint, or firewall destination first
-read the bounded NetBox application-service catalog. HADES reports an endpoint
-only when one matching service record provides a single address and validated
-protocol/port mapping. It states that this is inventory, not evidence the
-service is running or externally reachable. Missing, unavailable, incomplete,
-or ambiguous records do not trigger model-based guesses or template
-provisioning, and the response states that no server or firewall change was
-made. A follow-up such as “Perfect, continue” closes against that same
-no-action result instead of falling through to a generic response. Household
-sessions cannot use this owner endpoint shortcut.
-
-References: [Proxmox API-token monitoring example](https://pve.proxmox.com/pve-docs/pve-admin-guide.pdf),
-[Proxmox token permission separation and ACL rules](https://github.com/proxmox/pve-docs/blob/master/pveum.adoc),
-[NetBox REST API authentication and read-only tokens](https://netbox.readthedocs.io/en/stable/integrations/rest-api/),
-[Uptime Kuma API documentation and stability warning](https://github.com/louislam/uptime-kuma/wiki/API-Documentation/692198f84f3675a53a8ece7eb91a6a84566ee98e).
+HADES does not query guest-agent operating-system details unless a separate
+read privilege is explicitly configured and justified. It exposes no broad shell
+or infrastructure mutation interface. Household users receive only approved
+service-level status, with private topology and owner-only infrastructure
+capabilities withheld.
 
 ## Current telemetry coverage
 
-The current Proxmox token response contains point-in-time CPU ratio, memory,
-bounded disk allocation, network counters, and uptime for the two explicitly
-approved guests and their hosts. These are current gauges only, not historical
-trends or proof of why a service feels slow. Uptime Kuma contributes only its
-intentionally published monitor observations. Guest operating-system
-identity, in-guest major-service state, actual guest filesystem free space, and
-historical network or storage trends remain unknown unless a separately
-approved canonical source supplies them. HADES must state that limit instead
-of inferring a diagnosis from a running VM or a hardware inventory row.
+Available measurements depend on the source and its current permissions. A
+point-in-time resource gauge is not a historical trend or root-cause diagnosis.
+Host operating-system state, in-guest service health, filesystem capacity,
+network trends, GPU utilization, and backup restoreability remain `UNKNOWN`
+unless a currently configured source explicitly provides that evidence.
+
+The runtime must distinguish host reachability, guest power state, service
+process state, endpoint health, and a successful functional request. Stale
+observations cannot be promoted to live truth, and one unavailable optional
+source must not erase unrelated results.

@@ -9,8 +9,8 @@ privileged operator workflow.
 The bounded synthetic qualification is recorded in
 `hades-infra/acceptance/epsilon-provider-throughput-20260921.md` and is
 reproducible with `scripts/benchmark-epsilon-providers.py`. Fast is green at
-soft concurrency three; Hypnos is reserved for specialized work because of
-cold-start latency; Tartarus Deep is not currently qualified because its
+soft concurrency three; specialized inference provider is reserved for specialized work because of
+cold-start latency; deep inference provider Deep is not currently qualified because its
 GPU/runtime state falls back to a CPU-bound worker and exceeds the 45-second
 probe budget. STT/TTS retains the accepted Delta evidence and limits.
 

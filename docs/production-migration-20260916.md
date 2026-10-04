@@ -5,11 +5,11 @@ is the rollback source; no hostname cutover or laptop cleanup has occurred.
 
 ## Destination
 
-The current destination is Erebus VM 802 (`hades-core`, `<destination-ip>`),
+The current destination is hypervisor host HADES guest (`hades-core`, `<destination-ip>`),
 selected because it has 90 GiB storage and 12 GiB RAM. The earlier
 `hades-fresh-reconstruction` label is retained only in historical acceptance
 records.
-VM 800 remains a smaller staging guest and is not being used as the production
+configured guest remains a smaller staging guest and is not being used as the production
 target.
 
 The destination currently runs the migrated application stack:
@@ -27,7 +27,7 @@ operator migration directory and includes full Open WebUI and Grocy state
 archives, full LLDAP data plus a protected secret archive, SQLite snapshots,
 the protected Hindsight export, Hermes profile, identity material, deployment
 source, versions, and selected Agent Zero/SearXNG artifacts. LLDAP secret
-encryption and full Agent Zero encrypted custody remain pending. Alexandra also
+encryption and full Agent Zero encrypted custody remain pending. storage host also
 holds current complete-history Git bundles for HADES revision `665234f` (with
 the earlier `b653825`, `64977c3`, `ef630ac`, and `fb5190d` checkpoints retained)
 and the infrastructure repository checkpoint `9bfffcf`, each with a verified
@@ -36,7 +36,7 @@ and the infrastructure repository checkpoint `9bfffcf`, each with a verified
 Rollback custody is:
 
 ```text
-host: Alexandra (`<rollback-host>`)
+host: storage host (`<rollback-host>`)
 path: /srv/hades-backups/manifests/migration-20260916/
 restore order: identity -> Open WebUI -> Hindsight -> Grocy -> Hermes -> Agent Zero/SearXNG
 source runtime: laptop, retained and not disabled
@@ -47,7 +47,7 @@ The private package contains the data archives and operator inputs; its exact
 contents and checksums remain outside Git.
 
 The current production Hindsight state is now represented by a protected
-custom-format PostgreSQL export on Alexandra. Its archive structure and
+custom-format PostgreSQL export on storage host. Its archive structure and
 checksum were verified, and the export restored successfully into a uniquely
 named temporary database with 91 catalog tables before that temporary database
 was dropped. The canonical Hindsight database was not modified. This closes
@@ -55,12 +55,12 @@ the Hindsight component backup/restore gate; the full all-component service
 restore and encrypted off-host custody remain separate requirements.
 
 The refreshed `hades-665234f.bundle` and `hades-infra-9bfffcf.bundle` are
-independently checksum-verified on Alexandra. Alexandra does not currently
+independently checksum-verified on storage host. storage host does not currently
 have the `git` executable, so semantic
 bundle verification was performed on the source workstation before transfer;
 the backup host verified the transferred bytes and manifest.
 
-On 2026-09-16, Alexandra independently verified the portable archive
+On 2026-09-16, storage host independently verified the portable archive
 checksum manifest, verified both Git bundles, extracted all six volume
 archives into a protected rehearsal directory, and passed SQLite integrity
 checks for the four SQLite snapshots. The rehearsal did not touch any live
@@ -85,8 +85,8 @@ runtime or production data.
   bridge, not the LAN.
 - Grocy's API and SearXNG JSON search returned HTTP 200.
 
-After the Erebus VM reboot, the manually launched synthetic inference backend
-was found stopped. It was replaced with two named Docker containers on VM 802:
+After the hypervisor host VM reboot, the manually launched synthetic inference backend
+was found stopped. It was replaced with two named Docker containers on HADES guest:
 `hades-synthetic-model-loopback` (`127.0.0.1:18080`) and
 `hades-synthetic-model-bridge` (`<docker-bridge-ip>:18080`). Both use the tracked
 `synthetic-openai-backend.py` fixture and `restart: unless-stopped` semantics.
@@ -98,8 +98,8 @@ model-placement decision.
 After the Agent Zero restore was repaired by correcting the migrated `.env`
 ownership to container-root/0600, the destination host became unreachable
 (`the Proxmox host and destination VM both timed out`). The laptop
-production stack and Alexandra remained outside that event. Destination
-post-repair acceptance must be resumed after Erebus returns; no cutover was
+production stack and storage host remained outside that event. Destination
+post-repair acceptance must be resumed after hypervisor host returns; no cutover was
 attempted.
 
 The resumed profile audit found laptop-specific workstation-local paths in the
@@ -126,14 +126,14 @@ no inventory writes.
 
 The adapter's owner-snapshot contract also returned `OK` and explicitly
 reported `read_only=true` and `writes_performed=false`. It identified only
-Alexandra and Erebus as currently online from Proxmox; NetBox-only hosts such
-as Hermes, Hypnos, Tartarus, and Thanatos remained inventory-only rather than
+storage host and hypervisor host as currently online from Proxmox; NetBox-only hosts such
+as Hermes, specialized inference provider, deep inference provider, and management host remained inventory-only rather than
 being promoted to live status.
 
 The control-plane source-of-truth audit found two destination-inventory gaps:
-Proxmox sees VM 802, but the current NetBox seed contains only the seven
-physical/observed records and no VM 802 intended-inventory record; Kuma's
-published page contains 11 existing monitors and does not yet include VM 802
+Proxmox sees HADES guest, but the current NetBox seed contains only the seven
+physical/observed records and no HADES guest intended-inventory record; Kuma's
+published page contains 11 existing monitors and does not yet include HADES guest
 or Open WebUI. Plan-only NetBox and Kuma updates are recorded in the private
 infrastructure repository and remain unapplied until the destination address
 reservation is authoritative. HADES has no write authority to either system.
@@ -142,7 +142,7 @@ The pre-cutover LAN reachability audit found Open WebUI bound only to VM
 loopback. The destination compose environment now binds it specifically to
 `<destination-ip>:3000`; the migrated data volume was preserved, and the LAN
 health endpoint returned HTTP 200 after restart. This prepares client
-verification without changing `hades.local` or laptop routing.
+verification without changing `hades.example.invalid` or laptop routing.
 
 After the binding change, Open WebUI returned to healthy state with the
 migrated SQLite database intact: 3 users, 25 chats, and `integrity_check=ok`.
@@ -152,13 +152,13 @@ port reachable from the client network. Grocy, Agent Zero, SearXNG, Hindsight,
 Hermes, and both synthetic model bindings remain loopback- or Docker-bridge
 scoped.
 
-The name audit still finds no `hades.local` resolution or mDNS advertiser, and
-VM 802 currently receives a DHCP address. The remaining network
+The name audit still finds no `hades.example.invalid` resolution or mDNS advertiser, and
+HADES guest currently receives a DHCP address. The remaining network
 cutover contract is therefore a stable DHCP/DNS reservation (or an explicitly
 approved equivalent) plus owner-side resolution verification; the temporary
 address is not being treated as canonical.
 
-A per-request client simulation using `hades.local` mapped to the current VM
+A per-request client simulation using `hades.example.invalid` mapped to the current VM
 address returned HTTP 200 from Open WebUI, confirming the application path
 itself is ready once the authoritative name resolves.
 
@@ -168,7 +168,7 @@ identity, exact authoritative source revision and clean checkout state,
 and verifies that the active `hades-hermes.service` working directory is that
 same verified destination checkout,
 container persistence, VM `onboot`, LAN health, simulated and authoritative
-`hades.local` routing, protected Alexandra rollback custody, and preservation
+`hades.example.invalid` routing, protected storage host rollback custody, and preservation
 of the laptop source runtime. The source revision is supplied explicitly by
 the operator; a dirty or detached destination checkout cannot pass this gate.
 
@@ -179,7 +179,7 @@ destination, rollback, and Proxmox inputs. The repository path is intentionally
 an operator input rather than a tracked host-specific default.
 
 The protected rollback inputs are explicit as well: set
-`HADES_ROLLBACK_PACKAGE_ROOT` to the Alexandra package root and
+`HADES_ROLLBACK_PACKAGE_ROOT` to the storage host package root and
 `HADES_ROLLBACK_ROOT` to its migration subtree; the preflight and final
 verifier validate both the package-level and repository-level checksum sets.
 The final verifier also requires `HADES_DESTINATION_SSH` for a read-only
@@ -189,17 +189,17 @@ The final verifier additionally requires
 `HADES_LAPTOP_CLEANUP_RECORD` pointing to the completed, secret-free
 decommission evidence record.
 
-Reservation inputs for the authoritative LAN layer are: VM 802 guest MAC,
-current DHCP address, intended hostname `hades.local`,
+Reservation inputs for the authoritative LAN layer are: HADES guest guest MAC,
+current DHCP address, intended hostname `hades.example.invalid`,
 and intended service port `3000`.
 
 The laptop resolver is Tailscale-managed (`100.100.100.100`), and direct
 queries to the observed LAN gateway addresses did not return a usable
-`hades.local` record. DNS/reservation ownership therefore remains outside the
+`hades.example.invalid` record. DNS/reservation ownership therefore remains outside the
 HADES VM and must be changed at the authoritative LAN/DNS layer before the
 normal client path can be switched.
 
-VM 802 and its guest hostname were promoted from the temporary
+HADES guest and its guest hostname were promoted from the temporary
 `hades-fresh-reconstruction` identity to `hades-core`. Hermes and all migrated
 containers remained active through the identity change; this is an internal
 destination promotion, not a DNS or client cutover.
@@ -207,7 +207,7 @@ destination promotion, not a DNS or client cutover.
 The guest DHCP profile now requests the FQDN `hades-core.attlocal.net` on
 future lease renewal. The current lease remained active;
 this does not substitute for an authoritative reservation or the required
-`hades.local` record.
+`hades.example.invalid` record.
 
 ## Acceptance defect
 
@@ -221,8 +221,8 @@ cutover.
 ## Not yet done
 
 - owner login and owner-visible chat/memory/Grocy/web acceptance
-- `hades.local` cutover and private client verification
-- full all-component live application rollback rehearsal on Alexandra (individual
+- `hades.example.invalid` cutover and private client verification
+- full all-component live application rollback rehearsal on storage host (individual
   artifact and component restore checks exist; an end-to-end service-level
   restore still requires an isolated runtime target)
 - laptop production shutdown and cleanup
@@ -234,14 +234,14 @@ authentication defect and all cutover gates above remain open.
 ## Source/runtime staging checkpoint — 2026-09-17
 
 The clean `b102dfd` candidate was promoted as the Hermes systemd service
-working directory on VM 802 after verifying its full revision and clean tree.
+working directory on HADES guest after verifying its full revision and clean tree.
 The prior service unit was preserved in a protected rollback directory with a
 checksum. Hermes restarted successfully, its private Docker-bridge health
 endpoint returned HTTP 200, and all six migrated application containers
 remained running. A bounded authenticated Hermes model request also returned
 non-empty content from the advertised `hermes-agent` model. This is a
 reversible source/runtime staging change only;
-owner acceptance, authoritative `hades.local` routing, laptop shutdown, and
+owner acceptance, authoritative `hades.example.invalid` routing, laptop shutdown, and
 cleanup were not performed.
 
 The repeatable form is
@@ -263,7 +263,7 @@ The cutover preflight treats protected, checksum-verified LLDAP and Agent Zero
 archives as sufficient for the independent rollback requirement while
 reporting their long-term encryption custody as a separate pending owner gate.
 
-VM 802 is configured with `onboot=1` on Erebus so the destination application
+HADES guest is configured with `onboot=1` on hypervisor host so the destination application
 stack is not dependent on manual VM startup after a Proxmox host reboot.
 Hermes is enabled under systemd, and all eight destination containers report
 `restart=unless-stopped` while running.
@@ -278,7 +278,7 @@ Docker bridge rather than through a host-wide listener.
 
 ## Destination checkout drift — 2026-09-17
 
-A read-only inspection of VM 802 found the destination checkout
+A read-only inspection of HADES guest found the destination checkout
 checkout detached at `c3f7262`, an ancestor of authoritative HADES `e280ed6`,
 with ten modified tracked files and an untracked pre-migration directory. The
 active `hades-hermes.service` uses that checkout as its working
@@ -306,7 +306,7 @@ no routing, service, or cleanup mutation.
 After the authorized change window, run
 [`scripts/verify-production-cutover-complete.sh`](../scripts/verify-production-cutover-complete.sh)
 with the same protected rollback inputs. It verifies the real acceptance
-record, expected `hades-core` SSH identity, normal `hades.local` health, independent rollback custody, absence of
+record, expected `hades-core` SSH identity, normal `hades.example.invalid` health, independent rollback custody, absence of
 the six laptop production containers and Hermes runtime, and preservation of
 the two development checkouts. It also requires a secret-free
 `laptop-production-decommission/v1` evidence record covering service disablement,
@@ -328,7 +328,7 @@ that owner-managed encrypted recovery has been completed.
 
 ## Deferred laptop cleanup allowlist
 
-No source cleanup is authorized until owner acceptance and `hades.local`
+No source cleanup is authorized until owner acceptance and `hades.example.invalid`
 cutover pass. The exact production runtime set identified for a later,
 reversible cleanup is:
 
@@ -344,7 +344,7 @@ The laptop HADES and `hades-infra` checkouts, SSH/Tailscale/admin tooling,
 staging containers and volumes, development assets, personal files, and
 ambiguous model/cache material are explicitly excluded until individually
 classified. Cleanup must record before/after disk usage and preserve the
-Alexandra rollback package.
+storage host rollback package.
 
 The pre-cutover laptop baseline captured on 2026-09-16 was `/home` at
 `237G/280G` used with `40G` available; all six production containers were
@@ -372,5 +372,5 @@ classification without stopping or deleting anything. Invoke it as
 unambiguous. It is preparation for a post-acceptance operator cleanup, not a
 cleanup command.
 
-Tartarus and Hypnos GPU qualification is parallel infrastructure work and is
+deep inference provider and specialized inference provider GPU qualification is parallel infrastructure work and is
 not a prerequisite for this application migration.

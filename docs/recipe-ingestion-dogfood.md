@@ -39,7 +39,7 @@ It also verifies:
 - changing a reviewed quantity invalidates the preview, and current Grocy
   state is revalidated before an apply;
 
-The private MCP profile is deployed on VM 802. An authenticated owner session
+The private MCP profile is deployed on HADES guest. An authenticated owner session
 has now completed preview → explicit confirmation → canonical Grocy read-back
 against a synthetic recipe, followed by compensating cleanup. The apply tool
 accepts either the exact signed preview object or its short-lived review token;

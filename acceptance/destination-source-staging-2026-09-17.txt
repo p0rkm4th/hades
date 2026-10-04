@@ -1,6 +1,6 @@
 capture_schema: destination-source-staging/v1
 captured_at_utc: 2026-09-17T02:29:26Z
-destination: Erebus VM 802 / <LAN-IP> / hades-core
+destination: hypervisor host HADES guest / <LAN-IP> / hades-core
 change_scope: Hermes source/runtime staging only; no DNS or normal endpoint cutover
 
 candidate:
@@ -16,8 +16,8 @@ candidate:
 rollback:
   prior_service_unit: preserved in protected destination rollback directory
   unit_checksum: verified after staging
-  alexandra_staged_unit_snapshot: PASS
-  alexandra_package_checksum: PASS
+  storage host_staged_unit_snapshot: PASS
+  storage host_package_checksum: PASS
   application_data: untouched
   laptop_production: preserved and still active
 

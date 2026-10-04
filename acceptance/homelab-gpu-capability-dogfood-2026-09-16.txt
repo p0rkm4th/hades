@@ -3,9 +3,8 @@ Date: 2026-09-16
 
 - Owner-scoped HADES API invoked the read-only compute capability tool.
 - Confirmed inventory returned six named GPU hosts:
-  Alexandra (GTX 660), Erebus (Quadro P4000), Hermes (2x RTX 2080),
-  Thanatos (RTX 2080), Hypnos (2x Quadro P4000), and Tartarus (4x Quadro
-  P4000).
+  storage host (GPU), hypervisor host (GPU), Hermes (GPU inventory),
+  management host (GPU), specialized inference provider (GPU inventory), and deep inference provider (GPU inventory).
 - HADES explicitly reported that inventory does not prove driver, VRAM, CUDA,
   container access, or current workload availability.
 - Post-restart owner dogfood repeated the query successfully and returned all

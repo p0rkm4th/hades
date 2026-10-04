@@ -13,12 +13,12 @@ creation only by the workload owner, and caches terminal canonical outcomes so
 an unknown response is never blindly retried. The live executor uses the
 existing least-privilege Proxmox broker, maps only the approved template, waits
 for asynchronous clone/start tasks, and reconciles canonical state. A
-disposable VM 854 create/read-back passed and was purged. The authenticated
+disposable disposable clone create/read-back passed and was purged. The authenticated
 owner UI now also has a bounded “show my servers” path and lifecycle adapter
 for status/start/stop/restart/delete. Inventory is least-privilege: the broker
 does not require pool-audit permission; managed guests are identified by the
 explicit `hades-managed` tag, approved node, and approved VMID range. A tagged
-VM900 was created and reconciled through the live product path, then stopped
+created test guest was created and reconciled through the live product path, then stopped
 and purged. A durable authorization-only registry now records the authenticated
 owner and explicit grants; it contains no VM runtime state or private user
 data. The owner DOM path has now passed status, explicit restart confirmation,
@@ -32,8 +32,8 @@ Restart uses a bounded graceful reboot with a confirmed stop-start fallback
 when guest-agent reboot is unreliable.
 
 The Rocky 10.2 candidate was rejected after its x86-64-v2 userspace panicked
-on Erebus's i7-5930K before cloud-init or networking. The approved template
-candidate is now Debian 12 GenericCloud on Erebus VM 853, with a derived image
+on hypervisor host's multi-core CPU before cloud-init or networking. The approved template
+candidate is now Debian 12 GenericCloud on hypervisor host approved Linux sandbox template, with a derived image
 adjustment for Proxmox's generated `eth0` cloud-init network stanza. A
 disposable clone reached SSH, completed cloud-init, and reported an active
 QEMU guest agent; it was purged after acceptance. The constrained credential
@@ -89,7 +89,7 @@ that a Minecraft template/application is installed.
 The owner repeated the two-turn Minecraft request/“Perfect, continue” flow;
 production returned a generic greeting after the approval. The local pinned
 Hermes contract passes, including transcript recovery to a read-only plan when
-pending state is lost. A strict-host-key inspection of VM 802 confirmed that
+pending state is lost. A strict-host-key inspection of HADES guest confirmed that
 active `hades-hermes.service` uses
 `$HADES_HOME/generated-full/config/overlay`; its template map contains only
 `linux-sandbox:853`, not Minecraft.
@@ -113,7 +113,7 @@ as root-owned mode 0600.
 
 This confirms a deployment artifact mismatch and leaves HADES-managed Minecraft
 creation unavailable. The chat did not create a VM, and the adapter still cannot
-verify a provisioned guest or read its IP. A separate current check on Thanatos
+verify a provisioned guest or read its IP. A separate current check on management host
 found the existing vanilla server healthy at `<PRIVATE_LAN_ADDRESS>:25565/TCP` and the
 existing Prominence II server healthy at `<PRIVATE_LAN_ADDRESS>:25566/TCP`; both LAN
 TCP connections succeeded. These services predate the chat and are not HADES

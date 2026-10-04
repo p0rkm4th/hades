@@ -10,7 +10,7 @@ The daily-use voice path is push-to-talk only:
 authenticated Open WebUI session
     → browser microphone
     → Open WebUI audio endpoint
-    → Hermes Compute <PRIVATE_LAN_ADDRESS>:8766
+    → fast inference provider <PRIVATE_LAN_ADDRESS>:8766
     → local faster-whisper tiny.en
     → authenticated HADES text turn
 ```
@@ -23,9 +23,9 @@ tool policy, and resource authorization remain authoritative.
 Runtime custody:
 
 - user service: `hades-node-local-voice.service`
-- node: Hermes Compute (`<PRIVATE_LAN_ADDRESS>`)
+- node: fast inference provider (`<PRIVATE_LAN_ADDRESS>`)
 - port: `8766`, LAN-reachable and token-protected for POST routes
-- STT: faster-whisper `tiny.en` on Hermes Compute; the runtime attempts CUDA
+- STT: faster-whisper `tiny.en` on fast inference provider; the runtime attempts CUDA
   and currently falls back to node-local CPU/int8 because `libcublas.so.12` is
   unavailable on the host
 - TTS: Piper `en_US-lessac-medium`
@@ -61,7 +61,7 @@ configuration model using the protected deployment endpoint values:
 
 - STT engine: OpenAI-compatible remote transport
 - TTS engine: OpenAI-compatible remote transport
-- remote endpoint: Hermes Compute `<PRIVATE_LAN_ADDRESS>:8766/v1`
+- remote endpoint: fast inference provider `<PRIVATE_LAN_ADDRESS>:8766/v1`
 
 Authenticated browser evidence now shows:
 

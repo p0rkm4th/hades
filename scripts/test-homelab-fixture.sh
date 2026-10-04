@@ -24,9 +24,9 @@ spec.loader.exec_module(reconcile)
 now = datetime.now(timezone.utc)
 state = {
     "/proxmox/api2/json/cluster/resources": {"data": [
-        {"type": "node", "node": "Alexandra", "status": "online"},
+        {"type": "node", "node": "storage-node", "status": "online"},
         {"type": "node", "node": "Beta", "status": "degraded"},
-        {"type": "qemu", "vmid": 101, "name": "dinner-app", "node": "Alexandra", "status": "running"},
+        {"type": "qemu", "vmid": 101, "name": "dinner-app", "node": "storage-node", "status": "running"},
         {"type": "lxc", "vmid": 102, "name": "archive", "node": "Beta", "status": "stopped"},
     ]},
     "/netbox/api/dcim/devices/?name=dinner-app": {"results": [
@@ -80,7 +80,7 @@ assert len(app_resources) == 3, app_resources
 app_runtime = next(row for row in app_resources if row["runtime"])
 app_inventory = next(row for row in app_resources if row["inventory"])
 app_monitor = next(row for row in app_resources if row["availability"])
-assert app_runtime["runtime"]["node"] == "Alexandra"
+assert app_runtime["runtime"]["node"] == "storage-node"
 assert app_runtime["runtime_status"] == "running"
 assert app_runtime["currently_online"] is True
 assert app_runtime["inventory"] is None and app_runtime["availability"] is None
@@ -104,10 +104,10 @@ assert archive_runtime["currently_online"] is False
 nodes = {row["node"]: row for row in resources if row["type"] == "node"}
 guests = {row["name"]: row for row in resources if row["type"] in {"qemu", "lxc"}}
 
-assert nodes["Alexandra"]["status"] == "online"
+assert nodes["storage-node"]["status"] == "online"
 assert nodes["Beta"]["status"] == "degraded"
 assert next(row for row in summary["resources"] if row["name"] == "Beta")["currently_online"] is False
-assert guests["dinner-app"]["node"] == "Alexandra"
+assert guests["dinner-app"]["node"] == "storage-node"
 assert guests["dinner-app"]["status"] == "running"
 assert guests["archive"]["status"] == "stopped"
 assert devices[0]["planned_node"] == "Beta"

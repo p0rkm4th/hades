@@ -56,6 +56,8 @@ check_history() {
   if [ -n "$second_safe_synthetic_address" ]; then
     matches="$(printf '%s\n' "$matches" | grep -vF "$second_safe_synthetic_address" || true)"
   fi
+  # Python's threading.local() is a common false positive for the FQDN check.
+  matches="$(printf '%s\n' "$matches" | grep -vF 'threading.local' | grep -vF 'self.local' || true)"
   if [ -n "$matches" ]; then
     local match_count
     match_count="$(printf '%s\n' "$matches" | awk 'END { print NR }')"
@@ -72,6 +74,8 @@ check_history() {
 check_history '/home/(scootz|scotty)/|/Users/[[:alnum:]_.-]+/|(^|[^0-9])(192\.168|10|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)' \
   'local paths and private-network addresses absent' '172.17.0.1' '172.18.0.1'
 check_history 'tail[a-z0-9-]+\.ts\.net' 'tailnet hostnames absent'
+check_history '(^|[^[:alnum:]_.-])([[:alnum:]-]+\.)+local([^[:alnum:]_.-]|$)|(^|[^[:alnum:]])([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}([^[:alnum:]]|$)' \
+  'private local-domain names and hardware addresses absent'
 
 credential_paths="$(git rev-list --objects "$history_ref" | awk '$2 != "config/versions.env" && tolower($2) ~ /(\.env$|\.sqlite$|\.db$|\.pem$|\.p12$|\.key$|credentials|secrets)/ {print}')"
 if [ -n "$credential_paths" ]; then

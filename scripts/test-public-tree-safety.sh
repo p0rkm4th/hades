@@ -9,7 +9,7 @@ if ! git rev-parse --verify "$tree_ref^{commit}" >/dev/null 2>&1; then
   exit 2
 fi
 
-matches="$(git grep -I -n -E '/home/(scootz|scotty)/|/Users/[[:alnum:]_.-]+/|(^|[^0-9])(192\.168|10|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)|tail[a-z0-9-]+\.ts\.net' "$tree_ref" -- . ':(exclude)scripts/public-history-audit.sh' ':(exclude)scripts/test-public-tree-safety.sh' | grep -vF '172.17.0.1' | grep -vF '172.18.0.1' || true)"
+matches="$(git grep -I -n -E '/home/(scootz|scotty)/|/Users/[[:alnum:]_.-]+/|(^|[^0-9])(192\.168|10|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)|tail[a-z0-9-]+\.ts\.net|(^|[^[:alnum:]_.-])([[:alnum:]-]+\.)+local([^[:alnum:]_.-]|$)|(^|[^[:alnum:]])([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}([^[:alnum:]]|$)' "$tree_ref" -- . ':(exclude)scripts/public-history-audit.sh' ':(exclude)scripts/test-public-tree-safety.sh' | grep -vF '172.17.0.1' | grep -vF '172.18.0.1' | grep -vF 'threading.local' | grep -vF 'self.local' || true)"
 fail=0
 if [ -n "$matches" ]; then
   match_count="$(printf '%s\n' "$matches" | awk 'END { print NR }')"

@@ -2,7 +2,7 @@
 
 > Historical evaluation record. The current deployed boundary is documented
 > in [`delta-local-voice.md`](delta-local-voice.md): node-local `runtime.py`
-> on Hermes Compute is registered with Open WebUI through authenticated
+> on fast inference provider is registered with Open WebUI through authenticated
 > OpenAI-compatible audio configuration. The provider-injected service below
 > remains a contract/test harness, not the production listener.
 

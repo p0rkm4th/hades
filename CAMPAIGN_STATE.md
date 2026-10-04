@@ -2,62 +2,48 @@
 
 This public-safe checkpoint records project direction, not deployment state.
 Private runtime details, credentials, accounts, hostnames, addresses, chat
-history, and owner data belong in the deployment environment and are never
-recorded here.
+history, and owner data belong in protected operator records.
 
-## CURRENT CAMPAIGN CHECKPOINT
+## CURRENT CAMPAIGN CHECKPOINT — 2026-10-04
 
-The first low-risk Hermes overlay extraction is commit
-`e90b101a996ad52884d85ed7ae36cc65904f631b`, now included on `main` and the
-convergence branch. It fast-forwarded from the qualified release
-`55c04702b33246593c0e852ae00fb9947c46478b`. Hosted Public CI branch
-run [`36900909782`](https://github.com/p0rkm4th/hades/actions/runs/36900909782)
-and main run [`36901194602`](https://github.com/p0rkm4th/hades/actions/runs/36901194602)
-both passed: 105/105 workflow commands, 111/111 reported steps, zero failures
-and zero skips. The local workflow-equivalent run also passed all 105 commands.
+Canonical public main and origin/main are at 62e9bc2. Public CI is green on
+that baseline. A focused sanitization and homelab-read reliability change is
+being prepared on an isolated branch; it is not yet committed, published, or
+deployed. The canonical owner checkout remains untouched.
 
-The extraction moved read-only workflow-presence reconciliation from
-`hermes/sitecustomize.py` to `integrations.automation.workflow_presence`.
-Focused reconciliation, backup recovery, and confirmation-isolation contracts
-pass. Current-tree and introduced-range safety checks pass, and Gitleaks found
-no leaks in the tree or the new commit. Ninety legacy path/address matches in
-earlier already-published history remain unchanged; no history rewrite
-occurred. All results above are repository or synthetic evidence, not owner
-acceptance or a production migration.
+The homelab integration is PARTIAL. HADES composes configured read-only
+Proxmox, NetBox, Uptime Kuma, service, and inference observations. A fresh
+owner overview reports partial coverage with source timing. Household status
+fails closed when no approved current check exists. Identity links, intended
+service records, host utilization, network trends, and independently verified
+restore coverage are incomplete. Historical reports are not current truth.
+
+This work removes concrete operator topology and historical machine inventory
+from current public documentation, resolves owner machine aliases only from
+operator-owned configuration, and keeps placement advice unknown until live
+capacity evidence is available. No host, network, hypervisor, or production
+service has been changed for this source-only work.
 
 ## CURRENT OBJECTIVE
 
-The first low-risk `hermes/sitecustomize.py` extraction is proven on main.
-Keep future decomposition incremental and contract-tested; resume owner-facing
-development using the current priority list without broad overlay rewrites.
+Make owner homelab answers grounded in current canonical sources, preserve
+freshness and conflicts, keep household output redacted, test partial-source
+failure, and maintain green Public CI. The private inventory and detailed
+acceptance evidence belong in hades-infra.
 
 ## CURRENT CONTINUATION CHECKPOINT
 
-- **First extraction commit:** `e90b101a996ad52884d85ed7ae36cc65904f631b`,
-  included on `origin/main` and the convergence branch.
-- **Promotion:** fast-forward from qualified release `55c04702b33246593c0e852ae00fb9947c46478b`.
-- **Hosted CI:** branch run `36900909782` and main run `36901194602`; each
-  completed 111/111 reported steps, including all 105 required workflow
-  commands, with zero failures or skips. Local equivalent passed 105/105.
-- **Authority:** typed pending work is subject- and server-conversation-bound.
-  Provisioning also binds operation, selected node, resources, expiry, and
-  one-time consumption; the selected node must remain approved. Cross-chat
-  confirmations fail closed. Authenticated synthetic UI acceptance traversed
-  workers A/B/A without model inference or live infrastructure writes.
-- **Public safety:** current-tree and introduced-range path/address/history
-  checks pass. Gitleaks reports no findings in the tree or new commit. Legacy
-  matches remain in already-published history; no history rewrite was done.
-- **Production / owner gates:** no production changes. Owner/runtime gates and
-  dated deployment observations remain in `docs/current-blockers.md`.
-- **Next exact action:** resume the owner-facing priority list. Keep any further
-  `sitecustomize.py` extraction to one responsibility at a time, with focused
-  contracts and full Public CI before promotion.
-
-## CURRENT HEAD
-
-The qualified release SHA and hosted evidence are recorded above. Use the Git
-ref and Actions run for the exact current main tip; do not infer qualification
-from a moving branch name.
+- Public source base: 62e9bc2, with origin/main at the same commit when this
+  checkpoint was written.
+- Worktree: isolated sanitization branch, changes uncommitted and not
+  published.
+- Homelab: partial; no claim of whole-network health, universal host
+  telemetry, complete model placement, or off-site restoreability.
+- Authority: HADES remains read-only for infrastructure; no new mutation
+  capability is part of this campaign.
+- Next exact action: finish reviewing sanitized runtime/docs/tests, run the
+  full Public CI workflow on the candidate, then publish the validated change
+  without rewriting history or deploying unreviewed artifacts.
 
 ## COMPLETED MILESTONES
 
@@ -648,7 +634,7 @@ The actual reconstruction mounts were reconciled against the historical
 production mount table. The Agent Zero restore exposed `/a0/usr/.env` being
 created as mode `0644`. Commit `fef5a52` makes the canonical installer enforce
 `0600`, and doctor/validator fail if it drifts. Guest C was repaired through
-the canonical installer; doctor and validation pass. VM 802 was checked
+the canonical installer; doctor and validation pass. HADES guest was checked
 read-only and already has the file mode `0600`; no production change occurred.
 The isolated SearXNG restore returned JSON search HTTP 200 with two results;
 Agent Zero restore UI returned HTTP 200 without any published port. Full

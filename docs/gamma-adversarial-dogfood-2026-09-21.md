@@ -20,7 +20,7 @@ Real authenticated browser sessions were used for synthetic Owner, Household A, 
 - receipt review on mobile, uncertain OCR, cancellation, and OCR outage recovery;
 - synthetic finance privacy denial and owner-only authority denial;
 - self-service server preview, confirmation, sharing, revocation, and canonical cleanup;
-- Fast chat during bounded concurrent Tartarus load;
+- Fast chat during bounded concurrent deep inference provider load;
 - Grocy, SearXNG, and OCR dependency failures with unrelated follow-up requests;
 - stale-context grocery repair so old turns cannot become a new mutation target.
 
@@ -48,7 +48,7 @@ The Agent Zero dependency row was subsequently tested at the actual Hermes bound
 
 The first attempted run exposed a harness setup issue: its New Chat helper did not always click the real New Chat link. The test was corrected to verify a blank conversation before measuring follow-up behavior. No product defect was inferred from the contaminated run.
 
-The refreshed local bundles are complete and verified. Alexandra's `/tank` mount is not available locally and the available SSH identity cannot authenticate to `<PRIVATE_LAN_ADDRESS>`, so copying this newest pair to the remote landing zone remains an infrastructure-preservation follow-up. Existing Gamma rollback custody remains documented on Alexandra.
+The refreshed local bundles are complete and verified. storage host's `/tank` mount is not available locally and the available SSH identity cannot authenticate to `<PRIVATE_LAN_ADDRESS>`, so copying this newest pair to the remote landing zone remains an infrastructure-preservation follow-up. Existing Gamma rollback custody remains documented on storage host.
 
 Owner direct dogfood remains pending and is not conflated with synthetic acceptance.
 

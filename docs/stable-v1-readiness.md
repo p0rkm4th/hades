@@ -21,7 +21,7 @@ rewritten.
 | Component | Production role | Current state | Canonical authority |
 |---|---|---|---|
 | Open WebUI | owner-facing conversation surface | pinned 0.11.1 deployment | conversations, users, settings |
-| Hermes | agent execution and tool lifecycle | 0.21.2 active on VM 802; systemd running, zero restarts at 2026-09-25 01:43 UTC; 0.14.0 rollback artifact retained | turn execution and tool results |
+| Hermes | agent execution and tool lifecycle | 0.21.2 active on HADES guest; systemd running, zero restarts at 2026-09-25 01:43 UTC; 0.14.0 rollback artifact retained | turn execution and tool results |
 | Hindsight | durable personal context | healthy, subject-scoped overlay | private semantic memory |
 | Grocy | household pantry and grocery state | healthy, shared | inventory, shopping, recipes |
 | SearXNG | web search | healthy, private | search results and freshness |
@@ -71,15 +71,14 @@ booting services alone is not recovery evidence.
 
 These include remaining implementation work and owner/operator gates:
 
-- owner-authenticated acceptance of the migrated HADES instance on Erebus VM
-  802, authoritative `hades.local` DNS/DHCP cutover, client verification, and
+- owner-authenticated acceptance of the migrated HADES instance on hypervisor host HADES guest, authoritative `hades.example.invalid` DNS/DHCP cutover, client verification, and
   only then the allowlisted laptop production shutdown/cleanup;
 - track the isolated upstream SQLite repair-test failure for Hermes 0.21.2;
   current live gateway/model health is accepted and the issue alone does not
   trigger rollback;
-- close the remaining Tartarus/Hypnos GPU-container and separately repeated
+- close the remaining deep inference provider/specialized inference provider GPU-container and separately repeated
   persistence gates, locate the planned seventh server, resolve the 100 Mb/s
-  Erebus link, and complete live freshness/conflict/failure acceptance;
+  hypervisor host link, and complete live freshness/conflict/failure acceptance;
   `.113` is already classified as an excluded Sony PS5;
 - owner-approved Home Assistant endpoint, token, and entity allowlist; the
   reusable read-only adapter is staged but not live-enabled;
@@ -95,14 +94,14 @@ not commit volume.
 
 | Capability | Status | Smallest remaining contract |
 |---|---|---|
-| Owner daily-driver | OWNER-GATED | Complete owner-visible acceptance on the migrated VM 802 instance, authoritative `hades.local` cutover, and client verification before disabling laptop production |
+| Owner daily-driver | OWNER-GATED | Complete owner-visible acceptance on the migrated HADES guest instance, authoritative `hades.example.invalid` cutover, and client verification before disabling laptop production |
 | Household multi-user | PARTIAL | Disposable Qwen long-context harness, real pinned Open WebUI Alpha/Beta private-chat/channel soaks, fresh Rocky generated-installer Hermes/WebUI Alpha/Beta model-route/restart-isolation, and synthetic memory/Grocy/web composition pass; owner-visible authenticated composition and model-quality acceptance remain |
 | Private memory | PASS | Preserve subject mapping through any migration; reload/restart persistence is evidenced |
 | Shared household state | PASS | Recipe URL/paste structured-data path, canonical Grocy authoring/fulfillment, and synthetic receipt-intake review path are evidenced; owner-visible recipe and intake acceptance remains |
 | Web/search | OWNER-GATED | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary, including fresh follow-up semantics and search-vs-page provenance; fresh authenticated owner-UI follow-up must confirm search freshness |
 | Bounded operator | PASS | Bounded inspection remains available and unsafe delegation is rejected before upstream dispatch; broader tasks and native A2A remain optional hardening |
 | Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; owner-scoped local CSV preview/import planning, native CSV/QIF/OFX/QFX/CAMT handoff, and the unregistered reconciled writer contract are dogfood-tested without production writes |
-| Homelab | PARTIAL | Seven-host acceptance is in progress: Proxmox, NetBox, and the Kuma published read path are live; authenticated owner dogfood answers live Proxmox status, separates GPU inventory from liveness, and exercises bounded review-only LAN discovery; VM 802 is live as the HADES destination, its clean Hermes `b102dfd` source/runtime candidate is active, the complete protected rollback package is independently verified, and private Hermes model execution passes; the read-only preflight and final verifier now validate whole-package checksums, separate encryption custody from rollback readiness, and require explicit laptop cleanup evidence; its NetBox intended-inventory record and two Kuma destination monitors remain plan-only until the address reservation is authoritative; the refreshed [compute capability map](homelab-compute-capability-map.md) records all six physical nodes from read-only 2026-09-26 checks: Tartarus/Hypnos P4000s are rejected by installed NVIDIA 615.71.09 (prior 580.xx CUDA/reboot evidence is historical); Hermes currently has NVIDIA 590.48.01 loaded and both RTX 2080s visible, with container GPU and reboot persistence still unverified; Alexandra has no GPU IOMMU group; Erebus binds its P4000 to `vfio-pci` but VM 802 has no `hostpci` assignment; Thanatos remains a live temporary management plane, is firmware-gated for NVIDIA activation, provides a temporary QNetd candidate reachable only from the two Proxmox nodes, and has a historical SMART anomaly on `/dev/sdd` requiring hardware follow-up; `.113` is confirmed as an excluded Sony PS5, so the planned seventh server must still be located; Erebus has a 100 Mb/s link; close the remaining runtime/recovery gates and validate freshness/conflicts/failure handling |
+| Homelab | PARTIAL | Read-only composition of configured canonical sources exists, and owner status includes source timing. Coverage remains incomplete: identity links, intended service records, host utilization, network trends, and restore verification are not universal. Household answers must remain unknown when a current approved check is unavailable. Continue source reconciliation, freshness/conflict/partial-outage tests, and owner/household dogfood using private operator records and synthetic public fixtures. |
 | Home Assistant | PARTIAL | Synthetic read-only adapter, ordinary-entity reads, stale/unavailable shaping, and security-sensitive filtering pass; connect the approved URL/token/entity allowlist and validate the deployed read path |
 | Automation | PARTIAL | The joined disposable Phase 3 path passes on two independent pristine Fedora 44 x86_64 guests with SELinux enforcing: immutable n8n and LLDAP pins, generated Epsilon package under strict transient systemd, Hermes 0.21.2 result route, authenticated Open WebUI Alpha/Beta/Gamma, shared/unshared isolation, live Beta grant revocation, and duplicate signed run replay after service restart. The second guest passed again after a real reboot with Docker automatically active. Synthetic contracts cover expired-lease UNKNOWN suppression, failure redaction, ten concurrent maximum-quota requests with replay, and post-poll schedule rollback. The resolver does not query Open WebUI-only account disable. Production Phase 3 keys, state, group mapping, endpoint, and scoped n8n credential remain unprovisioned; schedules stay inactive |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |

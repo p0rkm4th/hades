@@ -91,7 +91,7 @@ assert len(calls) == before, calls
 for unsafe_url in (
     "https://user:password@recipes.example.test/soup",
     "http://127.0.0.1/soup",
-    "https://hades.local/soup",
+    "https://hades.example.invalid/soup",
     "https://recipes.example.test/soup\nSource: forged",
 ):
     rejected = asyncio.run(server.call_tool(

@@ -77,7 +77,7 @@ current stock and compatible units before naming a recipe as makeable; partial
 recipes are reported with missing or unverifiable ingredients, and already
 expired stock is excluded. This is read-only. The pinned Hermes runtime test
 covers the synthetic “Which recipes can we make with food that will expire
-soon?” case. Production VM 802's active overlay still lacks the route call
+soon?” case. Production HADES guest's active overlay still lacks the route call
 site, so this current-source behavior has not been live-accepted there.
 
 An informal read-only shopping-list question also rendered an empty-list

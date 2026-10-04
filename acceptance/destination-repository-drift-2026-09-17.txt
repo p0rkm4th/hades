@@ -1,6 +1,6 @@
 capture_schema: destination-repository-drift/v1
 captured_at_utc: 2026-09-17T01:43:30Z
-destination: Erebus VM 802 / <LAN-IP>
+destination: hypervisor host HADES guest / <LAN-IP>
 method: read-only SSH inspection; no service restart or repository mutation
 
 authoritative_source:

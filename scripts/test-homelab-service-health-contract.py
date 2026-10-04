@@ -14,6 +14,9 @@ from pathlib import Path
 source = Path('hermes/sitecustomize.py').read_text(encoding='utf-8')
 tree = ast.parse(source)
 wanted = {
+    '_hades_capability_matrix_path', '_hades_configured_homelab_records',
+    '_hades_configured_homelab_aliases',
+    '_hades_configured_homelab_alias_match', '_hades_is_homelab_intent',
     '_hades_service_health_target', '_hades_service_monitor_response',
     '_hades_homelab_availability_groups', '_hades_direct_homelab_read',
     '_hades_endpoint_intent_before_provision',
@@ -33,6 +36,10 @@ namespace = {
     'Path': Path,
     '_hades_live_proxmox_vm_rows': lambda: [],
     '_HADES_EXPLICIT_PUBLIC_RESEARCH_INTENT': re.compile(r'(?!)'),
+    '_HADES_LIVE_WEB_INTENT': re.compile(r'\b(?:search|web)\b', re.I),
+    '_HADES_HOMELAB_INTENT': re.compile(
+        r'\b(?:homelab|server|node|computer|network|minecraft|hades)\b', re.I
+    ),
 }
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
 target = namespace['_hades_service_health_target']
@@ -144,7 +151,7 @@ dogfood_request = (
 assert endpoint_before_provision(dogfood_request) is False
 assert endpoint_before_provision('Can you spin up a Minecraft server?') is False
 assert endpoint_before_provision('What is the Minecraft server IP and port?') is True
-assert endpoint_before_provision('What is the IP address of Thanatos?') is False
+assert endpoint_before_provision('What is the IP address of management-node?') is False
 assert 'first call the read-only homelab_summary' in source
 assert 'asks_to_provision' in source
 assert 'Owner service endpoint inventory read completed without model invocation' in source
@@ -174,7 +181,7 @@ assert 'doesn\'t give one clear address and port' in endpoint_response(request, 
 }, 'owner')
 recorded = endpoint_response(request, {
     'status': 'OK', 'services': [{
-        'name': 'Minecraft Server', 'parent_name': 'Thanatos',
+        'name': 'Minecraft Server', 'parent_name': 'management-node',
         'addresses': ['192.0.2.10'], 'port_mappings': ['tcp/25565'],
     }],
 }, 'owner')
@@ -247,9 +254,35 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '"addresses": ["192.0.2.10"], "port_mappings": ["tcp/25565"]}]}}\n',
         encoding='utf-8',
     )
+    matrix_path = Path(temp_root) / 'hades-infra' / 'inventory' / 'capability-matrix.yaml'
+    matrix_path.parent.mkdir(parents=True)
+    matrix_path.write_text(
+        'machines:\n'
+        '  - name: compute-alpha\n'
+        '    aliases: ["alpha node"]\n',
+        encoding='utf-8',
+    )
     old_workdir = os.environ.get('HADES_HERMES_WORKING_DIRECTORY')
+    old_matrix = os.environ.get('HADES_CAPABILITY_MATRIX_FILE')
+    old_hermes_home = os.environ.get('HERMES_HOME')
     os.environ['HADES_HERMES_WORKING_DIRECTORY'] = temp_root
+    os.environ.pop('HADES_CAPABILITY_MATRIX_FILE', None)
+    os.environ['HERMES_HOME'] = str(Path(temp_root) / 'hermes-home')
     try:
+        assert namespace['_hades_configured_homelab_alias_match'](
+            'is alpha node healthy?'
+        ) == 'compute-alpha'
+        assert namespace['_hades_is_homelab_intent'](
+            'is compute-alpha healthy?'
+        )
+        household_named_host = household_boundary('Is compute-alpha okay?')
+        assert household_named_host and 'compute-alpha' not in household_named_host
+        assert 'can\'t verify current infrastructure status' in household_named_host
+        matrix_path.chmod(0o666)
+        assert namespace['_hades_configured_homelab_alias_match'](
+            'is compute-alpha healthy?'
+        ) is None
+        matrix_path.chmod(0o600)
         routed_up = direct_read('Is Minecraft healthy enough for tonight?', 'synthetic-owner', 'owner')
         assert "Uptime Kuma's configured check for Minecraft Server is up." in routed_up, routed_up
         routed_endpoint = direct_read(
@@ -267,6 +300,14 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Packet-loss, throughput, and historical comparison data are unavailable' in routed_network, routed_network
         assert 'cannot identify a network bottleneck or trend from this evidence' in routed_network, routed_network
     finally:
+        if old_matrix is None:
+            os.environ.pop('HADES_CAPABILITY_MATRIX_FILE', None)
+        else:
+            os.environ['HADES_CAPABILITY_MATRIX_FILE'] = old_matrix
+        if old_hermes_home is None:
+            os.environ.pop('HERMES_HOME', None)
+        else:
+            os.environ['HERMES_HOME'] = old_hermes_home
         if old_workdir is None:
             os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
         else:

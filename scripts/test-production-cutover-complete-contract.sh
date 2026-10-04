@@ -10,7 +10,7 @@ for marker in \
   'HADES_DESTINATION_SSH:?' \
   'HADES_DESTINATION_HOSTNAME:-hades-core' \
   'destination SSH identity is the expected homelab guest' \
-  'authoritative hades.local reaches destination health' \
+  'authoritative hades.example.invalid reaches destination health' \
   'independent rollback package remains protected and verifiable' \
   'rollback_package_root' \
   'sh -s --' \

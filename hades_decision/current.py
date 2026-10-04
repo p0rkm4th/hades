@@ -52,7 +52,7 @@ def _fallback_patterns() -> dict[str, re.Pattern[str]]:
         "grocy": re.compile(r"\b(?:grocy|grocery|groceries|pantry|food|recipe|cook|snacks?|missing|eggs?|milks?|bread|shopping list)\b", re.I),
         "grocy_write": re.compile(r"\b(?:add|remove|buy|bought|consume|used|put|throw|toss|mark|take)\b", re.I),
         "finance": re.compile(r"\b(?:finance|money|bank|budget|spend|spent|checking|savings|credit card)\b", re.I),
-        "homelab": re.compile(r"\b(?:server|tartarus|hypnos|erebus|proxmox|netbox|kuma|is anything down)\b", re.I),
+        "homelab": re.compile(r"\b(?:server|homelab|proxmox|netbox|kuma|is anything down)\b", re.I),
         "agent_zero": re.compile(r"\b(?:agent\s*(?:zero|0)|operator|inspect the server|ask the operator)\b", re.I),
         "ha": re.compile(r"\b(?:home assistant|temperature inside|living room|air quality|lights? on|front door|garage door|alarm)\b", re.I),
         "ambiguous": re.compile(r"\b(?:that|it|the other one|bags|thing|do it again|same thing again|restart it|share it|remove that|what about)\b", re.I),
@@ -142,7 +142,15 @@ class CurrentRulesBackend:
             "grocy": _search(p["grocy"], text) or _search(fallback["grocy"], text),
             "grocy_write": (_search(p["grocy_write"], text) or _search(fallback["grocy_write"], text)) and (_search(p["grocy"], text) or _search(fallback["grocy"], text)),
             "finance": _search(p["finance"], text),
-            "homelab": not homelab_definition and (_search(p["homelab"], text) or _search(fallback["homelab"], text)),
+            "homelab": not homelab_definition and (
+                _search(p["homelab"], text)
+                or _search(fallback["homelab"], text)
+                or bool(
+                    current
+                    and callable(getattr(current, "_hades_is_homelab_intent", None))
+                    and current._hades_is_homelab_intent(text)
+                )
+            ),
             "agent_zero": _search(p["agent_zero"], text),
             "ha": _search(p["ha"], text),
             "ambiguous": _search(p["ambiguous"], request_text),
@@ -240,10 +248,14 @@ class CurrentRulesBackend:
         )
         if not homelab_definition:
             add_domain(
-                r"\b(?:server|minecraft|proxmox|tartarus|hypnos|erebus|homelab)\b",
+                r"\b(?:server|minecraft|proxmox|homelab)\b",
                 "SELF_SERVICE" if (server_create or server_delete) else "HOMELAB" if not server_status else "SELF_SERVICE",
                 "SELF_SERVICE" if (server_create or server_delete) else "HOMELAB_READ" if server_status else "HOMELAB_READ",
             )
+            if hits["homelab"] and not re.search(
+                r"\b(?:server|minecraft|proxmox|homelab)\b", request_text, re.I
+            ):
+                domain_candidates.append((0, "HOMELAB", "HOMELAB_READ"))
         add_domain(r"\b(?:remember|recall|forget|memory)\b", "MEMORY", "MEMORY")
         domain_candidates.sort(key=lambda item: item[0])
         distinct_domains: list[tuple[str, str]] = []

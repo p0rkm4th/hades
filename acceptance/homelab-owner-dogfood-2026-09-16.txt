@@ -9,18 +9,18 @@ Result
 - HADES registered the homelab-readonly MCP server with four tools.
 - The owner request “What servers are online?” invoked
   mcp_homelab_readonly_homelab_summary.
-- The response correctly identified Alexandra and Erebus as the only
+- The response correctly identified storage host and hypervisor host as the only
   Proxmox runtime hosts with runtime_status=online.
-- It explicitly treated Hypnos and Tartarus as not observed by Proxmox rather
+- It explicitly treated specialized inference provider and deep inference provider as not observed by Proxmox rather
   than claiming they were online from inventory or memory.
 - The adapter remained read-only.
 
 Compound owner retest after runtime overlay synchronization
 - A combined “online servers plus known GPU hosts” request used the deployed
   owner catalog and live summary path.
-- It reported Alexandra and Erebus as the only Proxmox-online servers.
+- It reported storage host and hypervisor host as the only Proxmox-online servers.
 - It listed GPU-equipped hosts separately as observed inventory, including
-  Tartarus (4× Quadro P4000) and Hypnos (2× Quadro P4000), without treating
+  deep inference provider (GPU inventory) and specialized inference provider (GPU inventory), without treating
   those records as current liveness or CUDA availability.
 
 Bounded robustness finding
@@ -33,7 +33,7 @@ Bounded robustness finding
   boundary.
 
 Shorthand routing regression
-- The owner request `whats running on Alexandra?` invoked
+- The owner request `whats running on storage host?` invoked
   `mcp_homelab_readonly_homelab_summary` after homelab intent and
   memory-prefetch routing repairs.
 - The answer used current Proxmox runtime and Kuma status; stale private
@@ -42,6 +42,6 @@ Shorthand routing regression
 Hardware availability query
 - The owner request `what GPUs do I have available?` invoked both the live
   summary and compute-capabilities tools.
-- HADES reported only Alexandra (GTX 660) and Erebus (Quadro P4000) as GPUs
-  on currently online hosts, while keeping Hermes, Thanatos, Hypnos, and
-  Tartarus as inventory facts requiring current liveness/driver validation.
+- HADES reported only storage host (GPU) and hypervisor host (GPU) as GPUs
+  on currently online hosts, while keeping Hermes, management host, specialized inference provider, and
+  deep inference provider as inventory facts requiring current liveness/driver validation.

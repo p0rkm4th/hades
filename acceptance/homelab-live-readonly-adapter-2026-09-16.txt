@@ -6,9 +6,9 @@ printing protected token values or performing writes.
 
 Result:
 - adapter status: OK
-- Proxmox runtime resources: 7 rows; currently online names: Alexandra and
-  Erebus
-- NetBox inventory-only names: Hermes, Hypnos, Tartarus, Thanatos, and the
+- Proxmox runtime resources: 7 rows; currently online names: storage host and
+  hypervisor host
+- NetBox inventory-only names: Hermes, specialized inference provider, deep inference provider, management host, and the
   unresolved placeholder record for `.113`
 - Uptime Kuma: 11 monitor rows; all 11 observations were FRESH
 - observed composed resources: 18 (runtime, inventory, and availability are

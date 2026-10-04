@@ -234,7 +234,7 @@ the documented level for Hindsight, Agent Zero, SearXNG, and the Hermes
 profile: the Hindsight native procedure was exercised against an isolated
 database, while disposable Agent Zero/SearXNG launches and isolated Hermes
 profile CLI parsing passed. The current production Hindsight custom-format
-export is now captured on Alexandra and checksum-verified; encrypted custody,
+export is now captured on storage host and checksum-verified; encrypted custody,
 and a component-level isolated restore now pass. Retention, encrypted custody,
 and a complete all-component job remain operator work.
 
@@ -244,7 +244,7 @@ non-empty, mode `0600`, and passed SQLite `PRAGMA integrity_check`; it is not
 stored in Git. This replaces the previously unusable zero-byte Grocy artifact
 in the older migration-preflight set. The Hindsight export procedure and its
 isolated restore rehearsal are recorded above; the current production export
-is captured in the protected Alexandra rollback tree with its checksum sidecar.
+is captured in the protected storage host rollback tree with its checksum sidecar.
 
 The live production Open WebUI database was also copied through SQLite's
 online backup API into that private checkpoint on 2026-09-13. The copy is

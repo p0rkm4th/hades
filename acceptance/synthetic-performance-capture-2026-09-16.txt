@@ -1,7 +1,7 @@
 HADES synthetic performance attribution capture
 
 Environment
-- Disposable Rocky reconstruction guest VM 802.
+- Disposable Rocky reconstruction guest HADES guest.
 - Synthetic OpenAI-compatible backend; no owner model or production traffic.
 - Harness: scripts/test-synthetic-performance.py.
 

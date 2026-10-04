@@ -1,6 +1,6 @@
 capture_schema: destination-reconciliation-candidate/v1
 captured_at_utc: 2026-09-17T01:53:36Z
-destination: Erebus VM 802 / <LAN-IP> / hades-core
+destination: hypervisor host HADES guest / <LAN-IP> / hades-core
 method: generated authoritative Git bundle, remote hash verification, clean parallel checkout; no active service or original checkout mutation
 
 authoritative_source:
