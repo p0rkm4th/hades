@@ -20,7 +20,11 @@ backup evidence. A fresh 19-prompt owner/household dogfood found the original
 response gaps; all prompts returned and household leak checks passed. The
 composed read-only adapter and Hermes overlay were deployed with hash-guarded,
 root-only rollback. A follow-up same-scope duplicate fix also passed focused
-owner/household UI acceptance; service health remained green.
+owner/household UI acceptance; service health remained green. A fresh owner
+conversation also passed the “How do you know?” follow-up: HADES refreshed
+configured sources, reported per-source read times, and distinguished NetBox
+intent, Proxmox runtime, and Kuma probe results without promoting older
+observations to live truth.
 
 The current source tree removes private destination acceptance records and
 per-user share mappings, requires explicit destination hostname input, and uses

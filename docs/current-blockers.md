@@ -22,8 +22,11 @@ deployed with exact hash checks and root-only rollback copies. The same-scope
 follow-up changed only the overlay. Service health passed after each restart.
 Fresh owner UI checks covered duplicate guest placement, model-location
 freshness, and conservative capacity wording. Fresh household checks preserved
-redaction and owner-only placement access. This closes these candidates’
-deployment and focused UI parity checks, not the broader homelab campaign. No
+redaction and owner-only placement access. A fresh owner “How do you know?”
+follow-up refreshed configured sources, supplied per-source read times, and
+kept NetBox intended state, Proxmox runtime, and Kuma probes distinct. This
+closes these candidates’ deployment and focused UI parity checks, not the
+broader homelab campaign. No
 Proxmox, NetBox, Kuma, host, network, account, ACL, or source-access changes
 were made.
 
