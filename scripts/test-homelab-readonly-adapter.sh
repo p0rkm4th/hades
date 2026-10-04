@@ -359,7 +359,9 @@ def fixture_fetch(url, *_args, **_kwargs):
     if url == "https://netbox.example.test/api/ipam/services/":
         return {"results": [service_fixture]}
     if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
-        return {"monitors": []}
+        return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
+    if url == "https://status.example.test/api/status-page/hades-status":
+        return {"publicGroupList": [{"monitorList": [{"id": 5, "name": "monitor-alpha", "type": "ping"}]}]}
     raise AssertionError(f"unexpected synthetic adapter URL: {url}")
 server._fetch = fixture_fetch
 summary = server.homelab_summary()
@@ -407,7 +409,9 @@ def partial_fetch(url, *_args, **_kwargs):
     if url == "https://netbox.example.test/api/ipam/services/":
         return {"results": [service_fixture]}
     if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
-        return {"monitors": []}
+        return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
+    if url == "https://status.example.test/api/status-page/hades-status":
+        return {"publicGroupList": [{"monitorList": [{"id": 5, "name": "monitor-alpha", "type": "ping"}]}]}
     raise AssertionError(f"unexpected synthetic adapter URL: {url}")
 server._fetch = partial_fetch
 partial = server.homelab_summary()
@@ -419,6 +423,7 @@ assert [(row["source"], row["status"]) for row in pve_sources] == [
 ]
 assert pve_sources[0]["retrieved_at"] and pve_sources[0]["rows"] == 1
 assert pve_sources[1]["retrieved_at"] is None
+assert next(row for row in partial["source_observations"] if row["source"] == "Uptime Kuma")["rows"] == 1
 server._fetch = original_fetch
 print("PASS partial Proxmox outage preserves successful source rows and per-source freshness")
 

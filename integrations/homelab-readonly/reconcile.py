@@ -60,7 +60,8 @@ def _stable_source_key(source: str, row: dict[str, Any]) -> str:
     source_id = row.get("id")
     if source_id is not None:
         return f"{source}:{source_id}"
-    return f"{source}:unidentified"
+    label = row.get("name") or (row.get("node") if row.get("type") == "node" else "unidentified")
+    return f"{source}:name:{str(label).casefold()}"
 
 
 def _has_stable_identity(source: str, row: dict[str, Any]) -> bool:
@@ -119,15 +120,19 @@ def summarize(
         for name, count in counts.items()
         if count > 1
     }
-    stable_sources_by_name: dict[str, set[str]] = {}
+    sources_by_name: dict[str, set[str]] = {}
+    stable_names: set[str] = set()
     for source, rows in source_rows.items():
         for row in rows:
             label = row.get("name") or (row.get("node") if row.get("type") == "node" else None)
-            if label and _has_stable_identity(source, row):
-                stable_sources_by_name.setdefault(str(label).casefold(), set()).add(source)
+            if label:
+                folded = str(label).casefold()
+                sources_by_name.setdefault(folded, set()).add(source)
+                if _has_stable_identity(source, row):
+                    stable_names.add(folded)
     unlinked_names = {
-        name for name, sources in stable_sources_by_name.items()
-        if len(sources) > 1
+        name for name, sources in sources_by_name.items()
+        if len(sources) > 1 and name in stable_names
     }
 
     indexed: dict[str, dict[str, dict[str, Any]]] = {
@@ -163,7 +168,7 @@ def summarize(
                 key = f"netbox-device:{row['id']}"
             else:
                 stable = _has_stable_identity(source, row)
-                if folded not in ambiguous_names and not stable:
+                if folded not in ambiguous_names and folded not in unlinked_names and not stable:
                     key = f"name:{folded}"
                 else:
                     key = _stable_source_key(source, row)
@@ -180,8 +185,12 @@ def summarize(
                     label = f"{label} ({row['node']} {row['type']} {suffix})"
                 elif source == "netbox" and row.get("id") is not None:
                     label = f"{label} (NetBox {row['id']})"
+                elif source == "netbox":
+                    label = f"{label} (unlinked NetBox record)"
                 elif source == "kuma" and row.get("id") is not None:
                     label = f"{label} (Kuma monitor {row['id']})"
+                elif source == "kuma":
+                    label = f"{label} (unlinked Kuma monitor)"
             # A duplicated source ID is itself malformed. Preserve the first
             # row deterministically and surface the collision below.
             if key in indexed[source]:

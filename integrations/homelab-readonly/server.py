@@ -326,12 +326,13 @@ def homelab_summary() -> dict:
                 merged = dict(config_value)
                 merged.update(value)
                 value = merged
-            values.append(_normalize_kuma_status(value) if label == "Uptime Kuma" else value)
+            normalized_value = _normalize_kuma_status(value) if label == "Uptime Kuma" else value
+            values.append(normalized_value)
             source_observations.append({
                 "source": label,
                 "status": "AVAILABLE",
                 "retrieved_at": _retrieved_at(),
-                "rows": len(value.get("results", [])) if label == "NetBox" else len(value.get("monitors", [])),
+                "rows": len(normalized_value.get("results", [])) if label == "NetBox" else len(normalized_value.get("monitors", [])),
             })
             if label == "NetBox":
                 netbox_value = value

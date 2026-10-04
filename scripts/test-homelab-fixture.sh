@@ -70,30 +70,37 @@ monitors = get("/kuma/api/status-page/lab")["monitors"]
 summary = reconcile.summarize(
     {"data": resources}, {"results": devices}, {"monitors": monitors}, now=now
 )
-resource = next(row for row in summary["resources"] if row["name"] == "dinner-app")
 assert summary["authority"] == {
     "runtime": "Proxmox",
     "inventory": "NetBox",
     "availability": "Uptime Kuma",
 }
-assert resource["runtime"]["node"] == "Alexandra"
-assert resource["runtime_status"] == "running"
-assert resource["currently_online"] is True
-assert resource["inventory"]["planned_node"] == "Beta"
-assert resource["inventory"]["primary_ip"] == "192.0.2.44"
-assert resource["availability"]["status"] == "down"
-assert resource["availability_freshness"] == "STALE"
-assert resource["conflicts"]
+app_resources = [row for row in summary["resources"] if row["name"].startswith("dinner-app")]
+assert len(app_resources) == 3, app_resources
+app_runtime = next(row for row in app_resources if row["runtime"])
+app_inventory = next(row for row in app_resources if row["inventory"])
+app_monitor = next(row for row in app_resources if row["availability"])
+assert app_runtime["runtime"]["node"] == "Alexandra"
+assert app_runtime["runtime_status"] == "running"
+assert app_runtime["currently_online"] is True
+assert app_runtime["inventory"] is None and app_runtime["availability"] is None
+assert app_inventory["inventory"]["planned_node"] == "Beta"
+assert app_inventory["inventory"]["primary_ip"] == "192.0.2.44"
+assert app_monitor["availability"]["status"] == "down"
+assert app_monitor["availability_freshness"] == "STALE"
+assert all(any("no stable identity link" in conflict for conflict in row["conflicts"]) for row in app_resources)
 inventory_only = next(row for row in summary["resources"] if row["name"] == "inventory-only")
 assert inventory_only["runtime_status"] == "NOT_OBSERVED"
 assert inventory_only["currently_online"] is False
 assert inventory_only["inventory"]["primary_ip"] == "192.0.2.45"
 assert "inventory-only" in summary["inventory_only_names"]
-archive = next(row for row in summary["resources"] if row["name"] == "archive")
-assert archive["availability"]["status"] == "up"
-assert archive["availability_freshness"] == "FRESH"
-assert archive["runtime_status"] == "stopped"
-assert archive["currently_online"] is False
+archive_resources = [row for row in summary["resources"] if row["name"].startswith("archive")]
+archive_runtime = next(row for row in archive_resources if row["runtime"])
+archive_monitor = next(row for row in archive_resources if row["availability"])
+assert archive_monitor["availability"]["status"] == "up"
+assert archive_monitor["availability_freshness"] == "FRESH"
+assert archive_runtime["runtime_status"] == "stopped"
+assert archive_runtime["currently_online"] is False
 nodes = {row["node"]: row for row in resources if row["type"] == "node"}
 guests = {row["name"]: row for row in resources if row["type"] in {"qemu", "lxc"}}
 
