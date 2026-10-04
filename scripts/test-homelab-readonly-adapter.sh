@@ -948,6 +948,87 @@ linked_alias_placement = server.format_inference_inventory_response(
 )
 assert "Synthetic Inference Node A" in linked_alias_placement, linked_alias_placement
 assert "can't check current model headroom" not in linked_alias_placement, linked_alias_placement
+gpu_hardware_inventory = {
+    "status": "READABLE",
+    "endpoints": [
+        {"source_identity": "inference:compute-lane-a", "node_identity": "netbox:device:3", "identity_status": "LINKED"},
+        {"source_identity": "inference:compute-lane-b", "node_identity": "netbox:device:4", "identity_status": "LINKED"},
+    ],
+}
+gpu_hardware_summary = {
+    "resources": [
+        *live_inference_node_summary["resources"],
+        {"identity": {"canonical_id": "netbox:device:4"}, "inventory": {"name": "Synthetic Inference Node B"}},
+        {"identity": {"canonical_id": "netbox:device:5"}, "inventory": {"name": "Synthetic Inference Node C"}},
+    ],
+}
+gpu_hardware_samples = {
+    "status": "READABLE", "retrieved_at": "2026-10-04T00:45:00Z",
+    "endpoints": [
+        {"inference_id": "compute-lane-a", "status": "READABLE", "retrieved_at": "2026-10-04T00:44:59Z", "devices": [
+            {"index": i, "name": "NVIDIA Quadro P4000", "memory_total_mib": 8192,
+             "memory_free_mib": 6000, "gpu_utilization_percent": 35} for i in range(4)
+        ]},
+        {"inference_id": "compute-lane-b", "status": "READABLE", "retrieved_at": "2026-10-04T00:44:58Z", "devices": [
+            {"index": i, "name": "NVIDIA GeForce RTX 2080", "memory_total_mib": 8192,
+             "memory_free_mib": 7000, "gpu_utilization_percent": 10} for i in range(2)
+        ]},
+    ],
+}
+four_p4000_answer = server.format_gpu_hardware_target_response(
+    "What server has the four P4000s?", gpu_hardware_inventory,
+    gpu_hardware_summary, gpu_hardware_samples,
+)
+assert "Synthetic Inference Node A" in four_p4000_answer and "4 NVIDIA Quadro P4000 GPUs" in four_p4000_answer, four_p4000_answer
+assert "2026-10-04T00:44:59Z" in four_p4000_answer and "not proof that a workload completed" in four_p4000_answer, four_p4000_answer
+two_rtx_answer = server.format_gpu_hardware_target_response(
+    "Which server has two RTX 2080s?", gpu_hardware_inventory,
+    gpu_hardware_summary, gpu_hardware_samples,
+)
+assert "Synthetic Inference Node B" in two_rtx_answer and "2 NVIDIA GeForce RTX 2080 GPUs" in two_rtx_answer, two_rtx_answer
+big_gpu_box_answer = server.format_gpu_hardware_target_response(
+    "How is the big GPU box doing right now?", gpu_hardware_inventory,
+    gpu_hardware_summary, gpu_hardware_samples,
+)
+assert "Synthetic Inference Node A" in big_gpu_box_answer and "most installed GPU memory" in big_gpu_box_answer, big_gpu_box_answer
+assert "not one shared pool" in big_gpu_box_answer, big_gpu_box_answer
+assert "GPU 0 (NVIDIA Quadro P4000): 35% utilization, 6000 MiB free of 8192 MiB" in big_gpu_box_answer, big_gpu_box_answer
+assert "not proof that a workload completed" in big_gpu_box_answer, big_gpu_box_answer
+ambiguous_gpu_hardware = {
+    **gpu_hardware_inventory,
+    "endpoints": [
+        *gpu_hardware_inventory["endpoints"],
+        {"source_identity": "inference:compute-lane-c", "node_identity": "netbox:device:5", "identity_status": "LINKED"},
+    ],
+}
+ambiguous_gpu_samples = {
+    **gpu_hardware_samples,
+    "endpoints": [
+        *gpu_hardware_samples["endpoints"],
+        {"inference_id": "compute-lane-c", "status": "READABLE", "devices": [
+            {"name": "NVIDIA Quadro P4000", "memory_total_mib": 8192} for _ in range(4)
+        ]},
+    ],
+}
+ambiguous_gpu_answer = server.format_gpu_hardware_target_response(
+    "What server has the four P4000s?", ambiguous_gpu_hardware,
+    gpu_hardware_summary, ambiguous_gpu_samples,
+)
+assert "More than one linked host matches" in ambiguous_gpu_answer, ambiguous_gpu_answer
+incomplete_gpu_answer = server.format_gpu_hardware_target_response(
+    "What server has the four P4000s?", gpu_hardware_inventory,
+    gpu_hardware_summary, {**gpu_hardware_samples, "status": "PARTIAL"},
+)
+assert "can't confirm it is the only matching host" in incomplete_gpu_answer, incomplete_gpu_answer
+unlinked_gpu_inventory = {
+    "status": "READABLE", "endpoints": [{
+        "source_identity": "inference:compute-lane-a", "node_identity": None, "identity_status": "UNLINKED",
+    }],
+}
+assert "no current identity-linked GPU samples" in server.format_gpu_hardware_target_response(
+    "What server has the four P4000s?", unlinked_gpu_inventory,
+    gpu_hardware_summary, gpu_hardware_samples,
+)
 ambiguous_alias_inference = {
     **linked_alias_inference,
     "endpoints": linked_alias_inference["endpoints"] + [{

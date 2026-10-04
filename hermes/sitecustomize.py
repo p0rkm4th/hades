@@ -5826,6 +5826,25 @@ def _hades_homelab_gpu_execution_intent(text):
     return bool(state_request and (driver or gpu_execution))
 
 
+def _hades_homelab_gpu_hardware_target_intent(text):
+    """Route hardware-description questions through linked live GPU evidence."""
+    text = str(text or "")
+    model_target = bool(re.search(
+        r"\b(?:what|which)\b.{0,60}\b(?:server|machine|host|box)\b.{0,80}"
+        r"\b(?:has|with|running|using)\b.{0,45}"
+        r"\b(?:(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s*(?:x|×)?\s*)?"
+        r"(?:(?:rtx|gtx|a|h)\s*\d{3,4}s?|(?:quadro\s*)?p\s*\d{3,4}s?)\b",
+        text, re.IGNORECASE,
+    ))
+    largest_gpu_host = bool(re.search(
+        r"\b(?:how(?:['’]s|s|\s+is)|what(?:['’]s|\s+is))\b.{0,45}"
+        r"\b(?:big|biggest|large|largest)\s+(?:gpu|graphics\s+cards?)\s+"
+        r"(?:box|host|machine|server)\b",
+        text, re.IGNORECASE,
+    ))
+    return model_target or largest_gpu_host
+
+
 def _hades_homelab_gpu_execution_response(inventory, telemetry=None):
     """Separate host GPU query evidence from provider catalog observations."""
     telemetry = telemetry if isinstance(telemetry, dict) else {}
@@ -6435,6 +6454,7 @@ def _hades_direct_homelab_read(
         workdir = os.getcwd()
     resource_ranking_intent = _hades_homelab_resource_ranking_intent(text)
     gpu_execution_intent = _hades_homelab_gpu_execution_intent(text)
+    gpu_hardware_target_intent = _hades_homelab_gpu_hardware_target_intent(text)
     workload_host_target = _hades_homelab_workload_host_target(text)
     named_node_check_target = _hades_homelab_named_check_target(text)
     followup_prompt = _hades_homelab_followup_prompt(text, scope, context_text)
@@ -6498,6 +6518,8 @@ def _hades_direct_homelab_read(
     )
     if scope != "owner" and (household_private_placement_intent or household_private_capacity_intent):
         return "I can't provide internal host or address details from this account."
+    if scope != "owner" and gpu_hardware_target_intent:
+        return "I can't provide internal host or GPU hardware details from this account."
     if scope != "owner" and resource_ranking_intent:
         return "Live infrastructure resource details are available only in an owner session."
     if scope != "owner" and gpu_execution_intent:
@@ -6540,7 +6562,7 @@ def _hades_direct_homelab_read(
     _definition_question = bool(
         re.fullmatch(r"\s*what(?:'s|\s+(?:is|are))\s+.+?[?.!]*\s*", text, re.IGNORECASE)
         or re.fullmatch(r"\s*what\s+does\s+.+?\s+(?:do|mean)\s*[?.!]*\s*", text, re.IGNORECASE)
-    ) and not resource_ranking_intent and not re.search(
+    ) and not resource_ranking_intent and not gpu_hardware_target_intent and not re.search(
         r"\b(?:status|state|health|healthy|running|working|online|offline|up|down|doing|"
         r"responding|reachable|performance|slow|broken|failing|wrong|fucked|dying|trouble|okay|ok|good|changed|unavailable)\b",
         text,
@@ -6553,7 +6575,7 @@ def _hades_direct_homelab_read(
         r"\b(?:how\s+busy|how\s+much\s+load)\s+(?:is|does)\s+(?P<target2>[a-z0-9][a-z0-9 ._'’-]{0,60}?)\s*[?.!]*$",
         text, re.IGNORECASE,
     )
-    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not gpu_execution_intent and not workload_host_target and not node_load_match and not _hades_homelab_explicit_model_fit_intent(text) and not _hades_homelab_named_node_capacity_target(text) and not re.search(
+    if not broad_owner_status_intent and not provenance_intent and not ai_availability_intent and not named_node_check_target and not named_service_health_intent and not change_intent and not resource_ranking_intent and not gpu_execution_intent and not gpu_hardware_target_intent and not workload_host_target and not node_load_match and not _hades_homelab_explicit_model_fit_intent(text) and not _hades_homelab_named_node_capacity_target(text) and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
@@ -6573,7 +6595,7 @@ def _hades_direct_homelab_read(
         re.IGNORECASE,
     ):
         return None
-    inference_intent = _hades_homelab_explicit_model_fit_intent(text) or bool(re.search(
+    inference_intent = gpu_hardware_target_intent or _hades_homelab_explicit_model_fit_intent(text) or bool(re.search(
         r"\b(?:ollama|inference\s+(?:endpoints?|servers?|models?)|model\s+(?:inventory|placement|availability|endpoint)|available\s+models|which\s+(?:inference\s+)?models?|what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running))\b|"
         r"\b(?:which|what)\b.{0,35}\b(?:gpus?|graphics cards?)\b.{0,35}\b(?:free|available|capacity|memory|room|load|utili[sz]ation)\b|\bwhere\s+should\s+i\s+(?:run|host|put)\b|\b(?:what|which)\s+(?:machine|server|gpu)\b.{0,35}\b(?:should|can|has room|have room)\b.{0,45}\b(?:model|workload)\b|\b(?:can|could)\b.{0,60}\b(?:handle|fit|run|host)\b.{0,35}\b(?:another|new|\d+\s*(?:gb|b)|model|workload)\b|"
         r"\bwhere(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)\b",
@@ -6639,6 +6661,17 @@ def _hades_direct_homelab_read(
             return None
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        if gpu_hardware_target_intent:
+            inference = _hades_direct_homelab_tool_result("homelab_inference_inventory")
+            owner_snapshot = _hades_direct_homelab_tool_result("homelab_owner_snapshot")
+            summary = owner_snapshot.get("summary") if isinstance(owner_snapshot, dict) else None
+            if not isinstance(summary, dict):
+                summary = _hades_direct_homelab_tool_result("homelab_summary")
+            telemetry = _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
+            formatter = getattr(module, "format_gpu_hardware_target_response", None)
+            if not callable(formatter):
+                return "I can't safely resolve that GPU description because linked hardware telemetry support is unavailable."
+            return formatter(text, inference, summary, telemetry)
         if gpu_execution_intent and scope == "owner":
             inventory = _hades_direct_homelab_tool_result("homelab_inference_inventory")
             telemetry = _hades_direct_homelab_tool_result("homelab_gpu_telemetry")

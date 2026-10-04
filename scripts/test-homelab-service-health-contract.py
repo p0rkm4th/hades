@@ -65,6 +65,7 @@ wanted = {
     '_hades_homelab_resource_ranking_intent',
     '_hades_homelab_resource_ranking_response',
     '_hades_homelab_gpu_execution_intent',
+    '_hades_homelab_gpu_hardware_target_intent',
     '_hades_household_game_health_intent',
     '_hades_homelab_provenance_followup',
     '_hades_homelab_guest_visibility_provenance_intent',
@@ -789,6 +790,12 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '            "endpoints": [{"inference_id": "compute-lane-a", "status": "READABLE", '
         '            "devices": [{"index": 0, "memory_free_mib": 6000, "memory_total_mib": 8192, '
         '            "gpu_utilization_percent": 35}]}]}\n'
+        'def homelab_owner_snapshot():\n'
+        '    return {"summary": homelab_summary(), "compute": {"machines": [\n'
+        '        {"name": "Compute Node A", "role": "synthetic inference node"}\n'
+        '    ]}}\n'
+        'def format_gpu_hardware_target_response(text, inventory, summary, telemetry):\n'
+        '    return "GPU_HARDWARE_TARGET:Compute Node A"\n'
         'def homelab_compute_capabilities():\n'
         '    return {"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
         'def format_inference_inventory_response(user_text, inventory, summary, gpu_telemetry=None):\n'
@@ -952,6 +959,44 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert 'Live host GPU sample' in alias_activity and '6000 MiB free' in alias_activity, alias_activity
             assert 'Compute Lane A is responding' not in alias_activity, alias_activity
             assert any(call[0].endswith('homelab_gpu_telemetry') for call in registry_module.registry.calls), registry_module.registry.calls
+            assert namespace['_hades_homelab_gpu_hardware_target_intent'](
+                'What server has the four P4000s?'
+            )
+            assert namespace['_hades_homelab_gpu_hardware_target_intent'](
+                'Which server has two RTX 2080s?'
+            )
+            assert namespace['_hades_homelab_gpu_hardware_target_intent'](
+                'How is the big GPU box doing right now?'
+            )
+            assert namespace['_hades_homelab_gpu_hardware_target_intent'](
+                'hows the big gpu box'
+            )
+            registry_module.registry.calls.clear()
+            os.environ['HADES_TEST_INFERENCE_ALIAS'] = '1'
+            hardware_alias = direct_read(
+                'What server has the four P4000s?', 'synthetic-owner', 'owner'
+            )
+            assert hardware_alias == 'GPU_HARDWARE_TARGET:Compute Node A', hardware_alias
+            hardware_tools = [call[0].rsplit('__', 1)[-1] for call in registry_module.registry.calls]
+            assert hardware_tools == [
+                'homelab_inference_inventory', 'homelab_owner_snapshot', 'homelab_gpu_telemetry',
+            ], hardware_tools
+            registry_module.registry.calls.clear()
+            big_hardware_alias = direct_read(
+                'hows the big gpu box', 'synthetic-owner', 'owner'
+            )
+            assert big_hardware_alias == 'GPU_HARDWARE_TARGET:Compute Node A', big_hardware_alias
+            big_hardware_tools = [call[0].rsplit('__', 1)[-1] for call in registry_module.registry.calls]
+            assert big_hardware_tools == [
+                'homelab_inference_inventory', 'homelab_owner_snapshot', 'homelab_gpu_telemetry',
+            ], big_hardware_tools
+            registry_module.registry.calls.clear()
+            household_gpu_alias = direct_read(
+                'How is the big GPU box doing right now?', 'synthetic-household', 'household'
+            )
+            assert household_gpu_alias == 'I can\'t provide internal host or GPU hardware details from this account.', household_gpu_alias
+            assert not registry_module.registry.calls, registry_module.registry.calls
+            os.environ.pop('HADES_TEST_INFERENCE_ALIAS', None)
             issue_question = direct_read(
                 "What's wrong with Compute Node A?", 'synthetic-owner', 'owner'
             )

@@ -35,6 +35,15 @@ of truth.
   then show only that host's linked inference endpoint and GPU readings. Fresh
   owner multi-intent capacity dogfood passed with four linked-device readings
   and a no-fit-guarantee caveat; Household A/B received no host or GPU details.
+- Fresh owner natural-language dogfood found that “What server has the four
+  P4000s?” fell through to broad status and “How's the big GPU box doing?” fell
+  through to an ungrounded fallback. An un-deployed HADES candidate now resolves
+  card model/count and the qualitative “big GPU box” through complete live GPU
+  telemetry plus explicit inference-to-NetBox links, and returns current
+  per-card readings for the latter. Incomplete or ambiguous mappings fail
+  closed; Household access is denied before telemetry reads. Focused synthetic
+  adapter, routing, runtime, and public-tree-safety contracts pass. Authenticated
+  post-deployment owner/household acceptance remains open.
 - The live broad owner summary reports partial Proxmox guest visibility and an
   empty NetBox application-service catalog. Agent Zero’s configured endpoint
   returned a bounded HTTP response, which does not prove task execution.

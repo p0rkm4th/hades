@@ -468,6 +468,17 @@ unknown without live utilization and free-VRAM evidence. If a machine has no
 linked inference endpoint, HADES falls back to Proxmox runtime and NetBox role
 when present; a NetBox record alone never becomes an online claim.
 
+Owner questions that identify a GPU host by card model/count or a phrase such
+as “big GPU box” use current restricted NVIDIA telemetry and explicit
+inference-to-NetBox identity links. HADES resolves a model/count only when one
+linked host matches and all configured GPU telemetry is readable; incomplete
+or ambiguous sources remain unknown. “Big GPU box” is interpreted as the
+identity-linked host with the greatest sum of installed GPU memory reported
+across its cards. That sum is not a shared VRAM pool or a model-fit estimate.
+For a current activity question, HADES also reports per-card utilization and
+free VRAM with the check time, and says a responding NVIDIA query does not
+prove that a model generated output.
+
 Owner service-location questions use only the NetBox application-service
 catalog. HADES answers placement only when catalog coverage is complete and a
 single matching record identifies a parent device; an empty, partial, or

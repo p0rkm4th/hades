@@ -2001,6 +2001,183 @@ def resolve_inference_node_target(
     return next(iter(matches.items())) if len(matches) == 1 else None
 
 
+def format_gpu_hardware_target_response(
+    user_text: str, inventory: dict, summary: dict, gpu_telemetry: dict,
+) -> str:
+    """Resolve a hardware description only through fresh, identity-linked GPU reads."""
+    text = str(user_text or "")
+    model_match = re.search(
+        r"\b(?P<model>(?:rtx|gtx|quadro\s*)?p\s*\d{3,4}|(?:rtx|gtx|a)\s*\d{3,4})s?\b",
+        text, re.IGNORECASE,
+    )
+    qualitative_large = bool(re.search(
+        r"\b(?:big|biggest|large|largest)\b.{0,24}\b(?:gpu|graphics\s+cards?)\b.{0,24}\b(?:box|host|machine|server)\b",
+        text, re.IGNORECASE,
+    ))
+    if not model_match and not qualitative_large:
+        return "I couldn't identify a GPU hardware description in that question."
+    if not isinstance(inventory, dict) or not isinstance(summary, dict) or not isinstance(gpu_telemetry, dict):
+        return "I can't resolve that GPU hardware description because current linked telemetry is unavailable."
+
+    labels = {}
+    resources = summary.get("resources") if isinstance(summary.get("resources"), list) else []
+    for resource in resources:
+        if not isinstance(resource, dict):
+            continue
+        identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
+        inventory_row = resource.get("inventory") if isinstance(resource.get("inventory"), dict) else {}
+        canonical_id = identity.get("canonical_id")
+        label = inventory_row.get("name") or resource.get("name")
+        if isinstance(canonical_id, str) and canonical_id and isinstance(label, str) and label.strip():
+            labels[canonical_id] = " ".join(label.split())
+
+    endpoint_rows = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
+    linked = {}
+    complete = bool(endpoint_rows) and len(endpoint_rows) <= 16
+    for endpoint in endpoint_rows:
+        if not isinstance(endpoint, dict):
+            complete = False
+            continue
+        source_identity = endpoint.get("source_identity")
+        canonical_id = endpoint.get("node_identity")
+        if (
+            endpoint.get("identity_status") != "LINKED"
+            or not isinstance(source_identity, str)
+            or not source_identity.startswith("inference:")
+            or canonical_id not in labels
+        ):
+            complete = False
+            continue
+        inference_id = source_identity.removeprefix("inference:")
+        if not inference_id or inference_id in linked:
+            complete = False
+            continue
+        linked[inference_id] = (canonical_id, labels[canonical_id])
+
+    telemetry_rows = gpu_telemetry.get("endpoints") if isinstance(gpu_telemetry.get("endpoints"), list) else []
+    telemetry_by_id = {}
+    for endpoint in telemetry_rows:
+        if not isinstance(endpoint, dict):
+            complete = False
+            continue
+        inference_id = endpoint.get("inference_id")
+        if not isinstance(inference_id, str) or not inference_id or inference_id in telemetry_by_id:
+            complete = False
+            continue
+        telemetry_by_id[inference_id] = endpoint
+
+    if set(linked) != set(telemetry_by_id):
+        complete = False
+    candidates = {}
+    for inference_id, (canonical_id, label) in linked.items():
+        telemetry_endpoint = telemetry_by_id.get(inference_id)
+        if not isinstance(telemetry_endpoint, dict) or telemetry_endpoint.get("status") != "READABLE":
+            complete = False
+            continue
+        devices = telemetry_endpoint.get("devices")
+        if not isinstance(devices, list) or not devices:
+            complete = False
+            continue
+        if canonical_id in candidates:
+            complete = False
+            candidates.pop(canonical_id, None)
+            continue
+        valid_devices = [
+            device for device in devices
+            if isinstance(device, dict) and isinstance(device.get("name"), str)
+        ]
+        if len(valid_devices) != len(devices):
+            complete = False
+        candidates[canonical_id] = {
+            "label": label,
+            "devices": valid_devices,
+            "retrieved_at": str(telemetry_endpoint.get("retrieved_at") or gpu_telemetry.get("retrieved_at") or "unknown")[:80],
+        }
+    if len(candidates) != len(linked) or gpu_telemetry.get("status") != "READABLE":
+        complete = False
+
+    if not candidates:
+        return "I can't resolve that GPU hardware description because no current identity-linked GPU samples are available."
+
+    if model_match:
+        requested_model = re.sub(r"[^a-z0-9]", "", model_match.group("model").casefold())
+        requested_model = requested_model.removeprefix("quadro")
+        prefix = text[:model_match.start()]
+        count_match = re.search(
+            r"\b(?P<count>\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:x|×)?\s*$",
+            prefix, re.IGNORECASE,
+        )
+        count_words = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+                       "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+        requested_count = None
+        if count_match:
+            count_value = count_match.group("count").casefold()
+            requested_count = count_words.get(count_value, int(count_value) if count_value.isdigit() else None)
+        matches = []
+        for record in candidates.values():
+            devices = [
+                device for device in record["devices"]
+                if requested_model in re.sub(r"[^a-z0-9]", "", device["name"].casefold())
+            ]
+            if devices and (requested_count is None or len(devices) == requested_count):
+                matches.append((record, devices))
+        if not complete:
+            if matches:
+                return "I found a current identity-linked GPU match, but some configured GPU sources or identity links are incomplete, so I can't confirm it is the only matching host."
+            return "I can't safely identify that GPU model from current telemetry because some configured sources or identity links are incomplete."
+        if len(matches) != 1:
+            if matches:
+                names = ", ".join(sorted({record["label"] for record, _ in matches}))
+                return f"More than one linked host matches that GPU description ({names}); I can't choose one uniquely."
+            count_text = f"{requested_count} " if requested_count is not None else ""
+            return f"No current identity-linked GPU telemetry reports {count_text}{model_match.group('model').strip()} as requested."
+        record, devices = matches[0]
+        return (
+            f"Current NVIDIA host telemetry identifies {record['label']} with "
+            f"{len(devices)} {devices[0]['name']} GPU{'s' if len(devices) != 1 else ''}. "
+            f"Checked at {record['retrieved_at']}. This is a live hardware query, not proof that a workload completed."
+        )
+
+    if not complete:
+        return "I can't safely identify the largest GPU host because one or more configured GPU sources or identity links are incomplete."
+    ranked = []
+    for record in candidates.values():
+        totals = [device.get("memory_total_mib") for device in record["devices"]]
+        if any(not isinstance(total, int) for total in totals):
+            return "I can't compare the configured GPU hosts because installed GPU memory is missing from a current sample."
+        ranked.append((sum(totals), record))
+    maximum = max(total for total, _ in ranked)
+    largest = [record for total, record in ranked if total == maximum]
+    if len(largest) != 1:
+        names = ", ".join(sorted(record["label"] for record in largest))
+        return f"The largest reported GPU-memory totals are tied across {names}; I can't identify one big GPU box uniquely."
+    record = largest[0]
+    models = ", ".join(sorted({device["name"] for device in record["devices"]}))
+    total_gpus = len(record["devices"])
+    readings = []
+    for device in sorted(record["devices"], key=lambda item: item.get("index") if isinstance(item.get("index"), int) else -1):
+        index = device.get("index")
+        detail = f"GPU {index}" if isinstance(index, int) else "GPU"
+        model = str(device.get("name") or "").strip()
+        if model:
+            detail += f" ({model[:80]})"
+        utilization = device.get("gpu_utilization_percent")
+        detail += f": {utilization}% utilization" if isinstance(utilization, int) else ": utilization unavailable"
+        free, total = device.get("memory_free_mib"), device.get("memory_total_mib")
+        if isinstance(free, int) and isinstance(total, int):
+            detail += f", {free} MiB free of {total} MiB"
+        else:
+            detail += ", free VRAM unavailable"
+        readings.append(detail)
+    return (
+        f"If by ‘big GPU box’ you mean the linked host with the most installed GPU memory, "
+        f"current telemetry points to {record['label']}: {total_gpus} GPU{'s' if total_gpus != 1 else ''} "
+        f"({models}), {maximum} MiB across those cards. That memory is across separate devices, "
+        f"not one shared pool. Current per-card readings: {'; '.join(readings[:32])}. "
+        f"Checked at {record['retrieved_at']}. A responding NVIDIA query is not proof that a workload completed."
+    )
+
+
 def format_inference_inventory_response(
     user_text: str, inventory: dict, summary: dict, gpu_telemetry: dict | None = None,
 ) -> str:

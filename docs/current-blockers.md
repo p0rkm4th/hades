@@ -174,6 +174,16 @@ Status: **PARTIAL**
   include timestamped GPU readings with model-fit uncertainty; Household A
   receives only the generic boundary. Guest visibility and service-catalog
   coverage remain incomplete.
+- A later fresh owner dogfood exposed a natural-language hardware-target gap:
+  a card-model/count question returned broad status, while “big GPU box” fell
+  through to a generic unsupported answer despite configured live telemetry.
+  The local candidate resolves card model/count and “big GPU box” only through
+  complete current GPU reads and unique inference-to-NetBox identity links,
+  includes per-card readings for status questions, and refuses ambiguous or
+  incomplete comparisons. The household route returns an owner-hardware
+  boundary before any telemetry read. Focused adapter, route, runtime, and
+  public-tree-safety tests pass. CI and authenticated post-deployment UI
+  acceptance are still pending.
 - Owner service-placement dogfood reports the configured Agent Zero endpoint
   and its bounded HTTP reachability check separately from the empty NetBox
   application-service catalog, and explicitly disclaims task/delegation
