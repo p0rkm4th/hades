@@ -830,10 +830,64 @@ assert netbox_observation["status"] == "UNAVAILABLE" and netbox_observation["ret
 assert netbox_outage["service_catalog"]["status"] == "UNAVAILABLE"
 assert netbox_outage["availability_summary"][0]["freshness"] == "STALE"
 assert next(row for row in netbox_outage["source_observations"] if row["source"] == "Uptime Kuma")["status"] == "AVAILABLE"
+
+# Reverse the outage direction: current NetBox inventory for the previously
+# linked guest must not inherit the prior Proxmox runtime/liveness result.
+server._fetch = netbox_seed_fetch
+proxmox_seed = server.homelab_summary()
+seed_runtime_resource = next(
+    row for row in proxmox_seed["resources"]
+    if (row.get("runtime") or {}).get("vmid") == 102
+)
+assert seed_runtime_resource["runtime_status"] == "running", seed_runtime_resource
+assert seed_runtime_resource["currently_online"] is True, seed_runtime_resource
+assert seed_runtime_resource["inventory_device_id"] == 102, seed_runtime_resource
+
+def proxmox_outage_fetch(url, *_args, **_kwargs):
+    if url in {
+        "https://pve-a.example.test/cluster/resources",
+        "https://pve-b.example.test/cluster/resources",
+        "https://pve-a.example.test/access/permissions",
+        "https://pve-b.example.test/access/permissions",
+    }:
+        raise OSError("synthetic Proxmox source unavailable after prior read")
+    if url == "https://netbox.example.test/api/dcim/devices/":
+        return {"results": [seed_device]}
+    if url == "https://netbox.example.test/api/ipam/services/":
+        return {"results": []}
+    if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
+        return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
+    if url == "https://status.example.test/api/status-page/hades-status":
+        return {"publicGroupList": [{"monitorList": [{"id": 5, "name": "monitor-alpha", "type": "ping"}]}]}
+    raise AssertionError(f"unexpected synthetic Proxmox outage URL: {url}")
+
+server._fetch = proxmox_outage_fetch
+proxmox_outage = server.homelab_summary()
+assert proxmox_outage["status"] == "PARTIAL", proxmox_outage
+assert proxmox_outage["source_counts"]["proxmox_runtime_rows"] == 0
+assert proxmox_outage["online_names"] == []
+outage_inventory_resource = next(
+    row for row in proxmox_outage["resources"]
+    if row.get("inventory_device_id") == 102
+)
+assert outage_inventory_resource["runtime"] is None, outage_inventory_resource
+assert outage_inventory_resource["runtime_status"] == "NOT_OBSERVED", outage_inventory_resource
+assert outage_inventory_resource["currently_online"] is False, outage_inventory_resource
+assert outage_inventory_resource["identity"]["canonical_id"] == "netbox:device:102", outage_inventory_resource
+assert set(outage_inventory_resource["identity"]["source_identities"]) == {"netbox"}, outage_inventory_resource
+assert any(
+    row["source"] == "NetBox" and row["status"] == "AVAILABLE" and row["rows"] == 1
+    for row in proxmox_outage["source_observations"]
+), proxmox_outage["source_observations"]
+assert [
+    row["status"] for row in proxmox_outage["source_observations"]
+    if row["source"] in {"Proxmox:alpha", "Proxmox:beta"}
+] == ["UNAVAILABLE", "UNAVAILABLE"], proxmox_outage["source_observations"]
 identity_path.write_text(original_identity_links, encoding="utf-8")
 identity_path.chmod(0o600)
 server._fetch = original_fetch
 print("PASS NetBox failure drops prior linked inventory while preserving live runtime and stale Kuma state")
+print("PASS Proxmox failure preserves current linked inventory without prior runtime liveness")
 
 result = server.homelab_compute_capabilities()
 assert result["status"] == "OK"
