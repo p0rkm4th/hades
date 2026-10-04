@@ -56,6 +56,10 @@ check_history() {
   if [ -n "$second_safe_synthetic_address" ]; then
     matches="$(printf '%s\n' "$matches" | grep -vF "$second_safe_synthetic_address" || true)"
   fi
+  # These are container-internal application data paths from upstream images,
+  # not host checkout or operator home directories. Match the narrow exception
+  # also used by the current-tree safety guard.
+  matches="$(printf '%s\n' "$matches" | grep -vE '/home/[[:alnum:]_.-]+/\.(pg0|n8n|cache)(/|[^[:alnum:]_-]|$)' || true)"
   # Python's threading.local() is a common false positive for the FQDN check.
   matches="$(printf '%s\n' "$matches" | grep -vF 'threading.local' | grep -vF 'self.local' || true)"
   if [ -n "$matches" ]; then
