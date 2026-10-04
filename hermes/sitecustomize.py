@@ -4723,7 +4723,14 @@ def _hades_homelab_service_coverage_response(summary):
     if catalog_status == "OK" and catalog_coverage == "EMPTY" and catalog.get("truncated") is not True:
         parts.append("The service catalog is reachable but empty, so expected application placement cannot be compared with current checks.")
     elif catalog_status == "OK" and (catalog_coverage == "PARTIAL" or catalog.get("truncated") is True):
-        parts.append("The service catalog read is partial or truncated, so missing records cannot be treated as absent.")
+        if services:
+            service_word = "record" if len(services) == 1 else "records"
+            parts.append(
+                f"The service catalog returned {len(services)} service {service_word}, but the read is partial or truncated, "
+                "so missing records cannot be treated as absent."
+            )
+        else:
+            parts.append("The service catalog read is partial or truncated, so missing records cannot be treated as absent.")
     elif catalog_status == "OK" and catalog_coverage == "UNKNOWN":
         parts.append("The service catalog responded, but its total coverage is unknown, so I can't confirm that unlisted services are absent.")
     elif catalog_status in {"NOT_CONFIGURED", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "ERROR"}:

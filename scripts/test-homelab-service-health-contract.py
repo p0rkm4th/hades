@@ -376,9 +376,10 @@ assert 'total coverage is unknown' in coverage_without_explicit_empty_marker, co
 assert 'catalog is reachable but empty' not in coverage_without_explicit_empty_marker, coverage_without_explicit_empty_marker
 assert 'configured probes responded' in coverage_without_explicit_empty_marker, coverage_without_explicit_empty_marker
 partial_catalog_coverage = coverage_response({
-    'service_catalog': {'status': 'OK', 'coverage': 'PARTIAL', 'services': [], 'truncated': True},
+    'service_catalog': {'status': 'OK', 'coverage': 'PARTIAL', 'services': [{'name': 'Synthetic'}], 'truncated': True},
 })
 assert 'partial or truncated' in partial_catalog_coverage, partial_catalog_coverage
+assert 'returned 1 service record, but the read is partial or truncated' in partial_catalog_coverage, partial_catalog_coverage
 assert 'catalog is reachable but empty' not in partial_catalog_coverage, partial_catalog_coverage
 provenance_history = [
     {'role': 'user', 'content': "What's down?"},
@@ -452,7 +453,7 @@ unknown_placement = placement_response('Where is Agent Zero running?', {
 assert 'catalog is reachable but empty' in unknown_placement, unknown_placement
 assert 'remembered location' in unknown_placement, unknown_placement
 partial_placement = placement_response('Where is Minecraft running?', {
-    'service_catalog': {'status': 'OK', 'coverage': 'PARTIAL', 'services': [], 'truncated': True},
+    'service_catalog': {'status': 'OK', 'coverage': 'PARTIAL', 'services': [{'name': 'Synthetic'}], 'truncated': True},
 })
 assert 'partial or doesn\'t confirm complete coverage' in partial_placement, partial_placement
 assert 'remembered location' in partial_placement, partial_placement
