@@ -224,11 +224,15 @@ Protected raw responses remain outside the repository.
 
 ### Broad-status source freshness follow-up — 2026-10-04
 
-Owner broad homelab summaries now include up to six source retrieval timestamps
-when supplied by the live composition; this makes the underlying freshness
-visible without a follow-up question. Household wording and source access are
-unchanged. Focused Hermes-runtime, service-health, and diff-whitespace checks
-pass locally. This exact candidate has not passed Public CI or been deployed;
-fresh authenticated owner and household UI acceptance remains required after an
-approved rollout. The older `a87f3ba` two-file approval referred to an already
-completed and superseded deployment and does not authorize this candidate.
+The exact composed candidate adds up to six source retrieval timestamps to owner
+broad summaries and carries the previously tested owner routes for cluster-wide
+Proxmox guest status and restore-check guest presence. Household wording/source
+access remain unchanged. Focused Hermes-runtime, service-health, composer, and
+public-tree checks pass; Public CI run `37174603462` passed for HADES
+`44ac5f1950a86d335358f8f9c71572d1f96cc374`. The composed overlay SHA-256 is
+`9121a07c734b335df804a369b7cd4fe0bcaa210ad0524c19202b6c55d7e26ad6`, based on
+active SHA `d697717418e00da5693940ea9351de4faaf1affc35dedaea9ac7f49ee29277a2`.
+The combined candidate is not deployed; exact-scope owner approval and fresh
+authenticated owner/household UI acceptance remain pending. The older
+`a87f3ba` two-file approval referred to an already completed and superseded
+deployment and does not authorize this candidate.

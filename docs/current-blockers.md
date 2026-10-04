@@ -325,8 +325,11 @@ failing fresh Kuma probe, does not equate endpoint reachability with application
 readiness, preserves 15 unlinked resources, and qualifies model catalog and
 reported residency. Household A receives only the generic boundary. The broad
 answer's initial version lacked per-source retrieval timestamps in its text.
-The current review candidate adds up to six bounded source/read timestamp pairs
-to owner summaries; household responses remain unchanged. Focused Hermes-runtime
-and service-health contracts pass locally. This is not yet a production fix: the
-candidate needs Public CI and exact-candidate deployment approval, followed by
-fresh owner and household UI acceptance.
+The current composed review candidate adds up to six bounded source/read
+timestamp pairs to owner summaries and includes the tested owner routes for
+cluster-wide guest state and restore-check guest presence; household responses
+remain unchanged. HADES `44ac5f1` passed Public CI run `37174603462`, and the
+composed Hermes runtime passes locally. The composed overlay SHA-256 is
+`9121a07c…d7e26ad6` over active SHA `d6977174…e29277a2`. Deployment approval
+for this exact combined scope and fresh owner/household UI acceptance remain
+pending.
