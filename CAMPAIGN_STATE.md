@@ -5,9 +5,50 @@ private topology, account identifiers, source credentials, host paths, rollback
 locations, and raw owner-acceptance transcripts belong in protected operator
 records.
 
-## Current checkpoint — 2026-10-04
+## Current authoritative checkpoint — 2026-10-04
 
-Current code checkpoint `f55bd0a` completes the bounded broad homelab status
+Canonical public `main` is `4facab8a666431aa10a523302dc7dde72dc295a8`.
+Post-promotion Public CI run `37242218301` passed. The prior `ae15aa2` main
+also had green Public CI (`37241513751`). The only promoted delta was the
+bounded backup-status documentation update; no old homelab branch history was
+imported.
+
+Aster's integration branch `codex/inference-read-freshness-20261004` currently
+points to the same `4facab8` commit as `main`; there is no unqualified source
+candidate. NYX-001 is active as a read-only semantic lineage and architecture
+audit from `ae15aa2`, comparing the preserved reference branch
+`codex/gpu-telemetry-parity-20261004` at `345cb1b6`. Its latest known Public CI
+(run `37222211701`) failed public-history safety with 63 local-path/private-
+network findings. It is review material only; do not merge it wholesale.
+
+Live runtime provenance was rechecked read-only on 2026-10-04. Hermes is
+active with zero observed restarts since the controlled rollout. The composed
+runtime `sitecustomize.py` has SHA-256
+`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91` and mode
+`0640`. The running homelab adapter file has SHA-256
+`fe7dadebebe2345793c757ad5d3475bfbc0dbe0c9df93419c7a72ca2405d6e21`, matching
+the public `integrations/homelab-readonly/server.py` source byte-for-byte. The
+base public `hermes/sitecustomize.py` hash is
+`dec333efc0267a0e247cee525153212bfde3dcff0b630b9ef522595b37d5be84`; the
+running overlay is a separately composed artifact and is recorded as such.
+No infrastructure-source or network writes were made.
+
+Current mission: finish semantic lineage classification, close only important
+read-only reliability gaps, preserve current `main`, and continue measured
+extraction of coherent responsibilities from `sitecustomize.py` and the
+homelab MCP server. The current tree passes focused adapter, service-health,
+inference, restore-guest, capacity-routing, GPU-telemetry, and runtime-registry
+contracts. Remaining gates include independent Nyx findings/disposition,
+representative live stale/partial-source and contradiction checks, private
+infrastructure recoverability, and a first additional coherent extraction.
+
+Next exact action: review Nyx-4's NYX-001 tables against the current source and
+old-branch behavior, record Aster's dispositions, then select one bounded
+extraction with its existing contract tests.
+
+## Previous code and dogfood checkpoints — 2026-10-04
+
+The homelab code checkpoint `f55bd0a` completed the bounded broad status
 slice after owner/household dogfood and correction of a display-label conflict
 misclassification. Earlier code checkpoint `86ca48f` completes the inference
 freshness and aggregated-GPU display slice. Code checkpoint `8b28cae` separates
@@ -100,7 +141,7 @@ reported the source as unconfigured. The route now registers the same bounded
 owner-only fallback used by tool discovery. The authenticated acceptance passed
 with synthetic identities and sources.
 
-## Open work
+## Remaining homelab read-reliability work
 
 - Continue live stale/partial-source acceptance, native service-health and
   service-placement coverage, network measurements, and bounded inference

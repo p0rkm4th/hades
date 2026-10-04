@@ -5,6 +5,29 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
+## Current convergence checkpoint — 2026-10-04
+
+Canonical public `main` is `4facab8a666431aa10a523302dc7dde72dc295a8`, with
+Public CI run `37242218301` passing. The integration branch currently points
+to this same commit. It contains only the validated backup-status documentation
+update; no old branch history was promoted.
+
+The old homelab reference branch remains unsafe to promote: its latest known
+Public CI run `37222211701` failed introduced-history safety with 63 private
+path/address findings. NYX-001 is auditing its behavior against current `main`;
+source-port decisions remain pending.
+
+A read-only runtime provenance check on 2026-10-04 found the composed Hermes
+overlay at SHA-256
+`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91`, active
+with mode `0640`. The running homelab adapter SHA-256
+`fe7dadebebe2345793c757ad5d3475bfbc0dbe0c9df93419c7a72ca2405d6e21` matches
+the public server source. The overlay is a composed runtime artifact distinct
+from the base public hook file. No infrastructure-source writes occurred.
+The broader homelab campaign remains **PARTIAL** pending lineage review,
+read-only reliability gaps, private infrastructure recovery, and architecture
+extraction.
+
 ## Release baseline
 
 Code checkpoint `f55bd0a` passed Public CI run `37240583967`. Earlier
