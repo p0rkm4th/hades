@@ -324,5 +324,9 @@ Proxmox, NetBox, Kuma, identity links, and inference providers. It reports no
 failing fresh Kuma probe, does not equate endpoint reachability with application
 readiness, preserves 15 unlinked resources, and qualifies model catalog and
 reported residency. Household A receives only the generic boundary. The broad
-answer still lacks per-source retrieval timestamps in its text; preserve this
-as an owner-facing provenance gap even when the underlying read is live.
+answer's initial version lacked per-source retrieval timestamps in its text.
+The current review candidate adds up to six bounded source/read timestamp pairs
+to owner summaries; household responses remain unchanged. Focused Hermes-runtime
+and service-health contracts pass locally. This is not yet a production fix: the
+candidate needs Public CI and exact-candidate deployment approval, followed by
+fresh owner and household UI acceptance.

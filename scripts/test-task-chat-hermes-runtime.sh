@@ -496,6 +496,8 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert broad_owner_status.get("completed") is True and broad_owner_status.get("api_calls") == 0, broad_owner_status
     assert "Live inference reads:" in broad_owner_status["final_response"], broad_owner_status
     assert "do not prove generation or available GPU capacity" in broad_owner_status["final_response"], broad_owner_status
+    assert "Source read timestamps:" in broad_owner_status["final_response"], broad_owner_status
+    assert "Proxmox: 2026-10-02T14:00:00+00:00" in broad_owner_status["final_response"], broad_owner_status
     assert registry.calls[:2] == ["homelab_summary", "homelab_inference_inventory"], registry.calls
     registry.calls.clear()
     gpu_driver_owner = owner_agent.run_conversation(

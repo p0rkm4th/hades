@@ -221,3 +221,14 @@ received only the generic boundary. The owner answer uses “current”/“fresh
 wording but does not print per-source retrieval timestamps, so useful source
 provenance remains less inspectable than the underlying adapter evidence.
 Protected raw responses remain outside the repository.
+
+### Broad-status source freshness follow-up — 2026-10-04
+
+Owner broad homelab summaries now include up to six source retrieval timestamps
+when supplied by the live composition; this makes the underlying freshness
+visible without a follow-up question. Household wording and source access are
+unchanged. Focused Hermes-runtime, service-health, and diff-whitespace checks
+pass locally. This exact candidate has not passed Public CI or been deployed;
+fresh authenticated owner and household UI acceptance remains required after an
+approved rollout. The older `a87f3ba` two-file approval referred to an already
+completed and superseded deployment and does not authorize this candidate.

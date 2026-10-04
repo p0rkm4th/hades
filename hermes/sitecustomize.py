@@ -7655,6 +7655,22 @@ def _hades_direct_homelab_read(
             unlinked_count = source_counts.get("identity_unlinked_resources", 0) if isinstance(source_counts, dict) else 0
             if isinstance(unlinked_count, int) and not isinstance(unlinked_count, bool) and unlinked_count > 0:
                 response += f" {unlinked_count} Proxmox or Uptime Kuma resources have no verified cross-source identity link and remain separate."
+        if scope == "owner" and isinstance(summary, dict) and not detailed_request:
+            source_rows = summary.get("sources", [])
+            source_reads = []
+            if isinstance(source_rows, list):
+                for item in source_rows:
+                    if not isinstance(item, dict):
+                        continue
+                    source_name = " ".join(str(item.get("source") or "").split())[:80]
+                    retrieved_at = " ".join(str(item.get("retrieved_at") or "").split())[:80]
+                    if not source_name or not retrieved_at:
+                        continue
+                    source_reads.append(f"{source_name}: {retrieved_at}")
+                    if len(source_reads) >= 6:
+                        break
+            if source_reads:
+                response += " Source read timestamps: " + "; ".join(source_reads) + "."
         return response
     except Exception as exc:
         _hades_logger.warning("Direct homelab read failed (%s)", type(exc).__name__)
