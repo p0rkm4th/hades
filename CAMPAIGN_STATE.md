@@ -109,12 +109,12 @@ source configuration and an overlay candidate with a recorded rollback.
 Synthetic evidence is not live infrastructure proof. Any further production
 change requires a tested candidate, explicit scope, and rollback.
 
-### Latest authenticated follow-up acceptance — 2026-10-03
+### Historical authenticated follow-up snapshot — 2026-10-03
 
-- Latest deployed code candidate is `4a4bfdc`; Public `main` remains `c83ddd6`.
-  Public CI run `37159647718` passed. This continuation record is on a later
-  documentation-only review-branch commit; the code candidate is not merged
-  into `main`.
+- At this historical checkpoint, deployed code candidate `4a4bfdc` had passed
+  Public CI run `37159647718`; `main` was `c83ddd6`. The candidate was not
+  merged into `main`. Current deployment and review-branch state is recorded
+  above.
 - Fresh owner UI dogfood now carries named-node activity into an evidence-based
   placement follow-up. It shows only the selected host's linked GPU sample;
   a later size follow-up and explicit named-host fit question also stay scoped
@@ -136,9 +136,8 @@ change requires a tested candidate, explicit scope, and rollback.
   context is trimmed, and the adapter filters generated named-host questions
   to that host instead of listing every endpoint. Focused adapter/runtime and
   service-health contracts pass.
-- Remaining gaps are unchanged: selected-scope Proxmox visibility, empty
-  NetBox application-service catalog, an unlinked physical inference endpoint,
-  incomplete network trends and backup verification, and unverified successful
-  inference execution. Display labels from inventory currently render in
-  lowercase in some answers; this is a minor presentation issue, not an identity
-  or safety failure.
+- Gaps recorded at that historical checkpoint included selected-scope Proxmox
+  visibility, an empty NetBox application-service catalog, incomplete network
+  trends and backup verification, and unverified successful inference. Consult
+  the current status and remaining-evidence sections above for their present
+  disposition.
