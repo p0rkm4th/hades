@@ -304,4 +304,5 @@ truncated Proxmox task history now returns unknown rather than “no restore tas
 found.” The malformed/partial-history contract passes locally, including the
 composed runtime against the current deployed overlay base. This changes the
 artifact hash after the prior approval request; that earlier hash must not be
-deployed. Hosted CI for the revised commit is pending.
+deployed. Revised candidate `544cd06` passed Public CI run `37173378921`; exact
+deployment acceptance is still pending.

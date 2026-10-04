@@ -177,11 +177,13 @@ passed the composed Hermes runtime check for owner source reads, household
 redaction/no source reads, and source outage fail-closed behavior. The public
 research policy test also confirms generic Proxmox/restore questions are not
 classified as private-person requests while person-location controls remain.
-The composed-route follow-up is committed as `e4b6084`; hosted Public CI passed
-on run `37172827916`. A final read-only VM check confirms the service remains
-active/healthy and the production overlay still matches the base used for the
-composed runtime test. Production remains unchanged. Any rollout request must
-identify the exact resulting artifact and state its file scope.
+The composed-route follow-up was committed as `e4b6084`; after the partial-feed
+certainty correction, the current candidate is `544cd06` and Public CI passed
+on run `37173378921`. The updated composed Hermes artifact passes against the
+freshly read active production overlay. A final read-only VM check confirms the
+service remains active/healthy and the overlay still matches that base.
+Production remains unchanged. Any rollout request must identify the exact
+resulting artifact and state its file scope.
 
 ### Partial restore-history result handling
 
