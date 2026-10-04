@@ -381,6 +381,22 @@ partial_catalog_coverage = coverage_response({
 assert 'partial or truncated' in partial_catalog_coverage, partial_catalog_coverage
 assert 'returned 1 service record, but the read is partial or truncated' in partial_catalog_coverage, partial_catalog_coverage
 assert 'catalog is reachable but empty' not in partial_catalog_coverage, partial_catalog_coverage
+truncated_complete_catalog = coverage_response({
+    'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE', 'services': [{'name': 'Synthetic'}], 'truncated': True},
+})
+assert 'partial or truncated' in truncated_complete_catalog, truncated_complete_catalog
+empty_with_rows = coverage_response({
+    'service_catalog': {'status': 'OK', 'coverage': 'EMPTY', 'services': [{'name': 'Synthetic'}], 'truncated': False},
+})
+assert 'metadata conflicts' in empty_with_rows and 'reachable but empty' not in empty_with_rows, empty_with_rows
+complete_without_rows = coverage_response({
+    'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE', 'services': [], 'truncated': False},
+})
+assert 'conflicts with its coverage state' in complete_without_rows, complete_without_rows
+unavailable_stale_rows = coverage_response({
+    'service_catalog': {'status': 'UNAVAILABLE', 'coverage': 'COMPLETE', 'services': [{'name': 'Stale Service'}], 'truncated': False},
+})
+assert 'not currently available' in unavailable_stale_rows and 'lists 1 application service' not in unavailable_stale_rows, unavailable_stale_rows
 provenance_history = [
     {'role': 'user', 'content': "What's down?"},
     {'role': 'assistant', 'content': 'No fresh configured failures.'},
@@ -452,6 +468,14 @@ unknown_placement = placement_response('Where is Agent Zero running?', {
 })
 assert 'catalog is reachable but empty' in unknown_placement, unknown_placement
 assert 'remembered location' in unknown_placement, unknown_placement
+placement_empty_with_rows = placement_response('Where is Minecraft running?', {
+    'service_catalog': {'status': 'OK', 'coverage': 'EMPTY', 'services': [{'name': 'Minecraft'}], 'truncated': False},
+})
+assert 'contradictory completeness metadata' in placement_empty_with_rows, placement_empty_with_rows
+placement_complete_without_rows = placement_response('Where is Minecraft running?', {
+    'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE', 'services': [], 'truncated': False},
+})
+assert 'contradictory completeness metadata' in placement_complete_without_rows, placement_complete_without_rows
 partial_placement = placement_response('Where is Minecraft running?', {
     'service_catalog': {'status': 'OK', 'coverage': 'PARTIAL', 'services': [{'name': 'Synthetic'}], 'truncated': True},
 })

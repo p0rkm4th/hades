@@ -4720,7 +4720,11 @@ def _hades_homelab_service_coverage_response(summary):
     catalog_status = str(catalog.get("status") or "UNKNOWN").upper()
     catalog_coverage = str(catalog.get("coverage") or "UNKNOWN").upper()
     services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
-    if catalog_status == "OK" and catalog_coverage == "EMPTY" and catalog.get("truncated") is not True:
+    if catalog_status == "OK" and catalog_coverage == "EMPTY" and services:
+        parts.append("The service catalog metadata conflicts: it reports an empty catalog but includes records, so I can't confirm its coverage.")
+    elif catalog_status == "OK" and catalog_coverage == "COMPLETE" and not services:
+        parts.append("The service catalog reports complete coverage but returned no rows; that conflicts with its coverage state, so I can't confirm the catalog is empty.")
+    elif catalog_status == "OK" and catalog_coverage == "EMPTY" and catalog.get("truncated") is not True:
         parts.append("The service catalog is reachable but empty, so expected application placement cannot be compared with current checks.")
     elif catalog_status == "OK" and (catalog_coverage == "PARTIAL" or catalog.get("truncated") is True):
         if services:
@@ -4735,9 +4739,11 @@ def _hades_homelab_service_coverage_response(summary):
         parts.append("The service catalog responded, but its total coverage is unknown, so I can't confirm that unlisted services are absent.")
     elif catalog_status in {"NOT_CONFIGURED", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "ERROR"}:
         parts.append("The service catalog is not currently available, so expected application placement cannot be compared with current checks.")
-    elif services:
+    elif catalog_status == "OK" and catalog_coverage == "COMPLETE" and services:
         service_word = "service" if len(services) == 1 else "services"
         parts.append(f"The service catalog lists {len(services)} application {service_word}, but the catalog alone does not establish their current health.")
+    else:
+        parts.append("The service catalog status or completeness could not be confirmed, so unlisted services remain unknown.")
     visibility = summary.get("proxmox_guest_visibility") if isinstance(summary.get("proxmox_guest_visibility"), dict) else {}
     if str(visibility.get("status") or "").upper() in {"PARTIAL", "UNKNOWN"}:
         parts.append("Guest visibility is partial or unknown, so services on unreported guests remain unverified.")
@@ -4911,6 +4917,11 @@ def _hades_homelab_service_placement_response(user_text, summary):
     services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
     if status in {"NOT_CONFIGURED", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "ERROR"}:
         return "The application-service inventory is not currently available, so I can't verify service placement. I won't substitute a remembered location."
+    if status == "OK" and (
+        (coverage == "EMPTY" and services)
+        or (coverage == "COMPLETE" and not services)
+    ):
+        return "The NetBox service catalog returned contradictory completeness metadata, so I can't confirm this service's placement or absence."
     if status == "OK" and (
         coverage in {"PARTIAL", "UNKNOWN"} or catalog.get("truncated") is True
     ):
