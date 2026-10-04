@@ -163,12 +163,17 @@ Status: **PARTIAL**
   as separate/historical evidence. Household A/B receive only the generic
   infrastructure boundary. Live named-node telemetry is now verified; broader
   guest visibility and service catalog coverage remain incomplete.
-- Representative post-deployment node dogfood passes for two identity-linked
-  inference hosts, with target-only GPU readings. A third provider endpoint
-  answers catalog/residency reads, but its named physical-host query correctly
-  fails closed because the current composed inventory cannot confirm the
-  configured stable identity link. Canonical inventory visibility must be
-  reconciled before presenting host telemetry for that endpoint.
+- Representative post-deployment node dogfood now passes for identity-linked
+  inference hosts, with target-only GPU readings. Nyx-4 verified that the
+  configured provider IDs resolve to current NetBox devices; candidate
+  `09698a3` fixes the remaining owner friendly-name lookup by accepting an
+  exact provider ID only through one explicit linked identity and presenting
+  the canonical NetBox label. Ambiguous or unlinked endpoint IDs remain
+  unresolved. Public CI, focused adapter/owner-route/runtime contracts, and
+  rollback-ready deployment pass. Fresh owner activity and placement answers
+  include timestamped GPU readings with model-fit uncertainty; Household A
+  receives only the generic boundary. Guest visibility and service-catalog
+  coverage remain incomplete.
 - Owner service-placement dogfood reports the configured Agent Zero endpoint
   and its bounded HTTP reachability check separately from the empty NetBox
   application-service catalog, and explicitly disclaims task/delegation

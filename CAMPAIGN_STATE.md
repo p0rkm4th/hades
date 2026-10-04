@@ -11,21 +11,24 @@ read-only homelab view so it composes current canonical inventory, runtime,
 availability, inference, and backup sources without inventing a second source
 of truth.
 
-## Current verified status — 2026-10-03
+## Current verified status — 2026-10-04
 
-- The current homelab review-branch candidate `4a4bfdc` passed Public CI run
-  `37159647718` and is deployed. Public `main` remains at the green
-  release-convergence baseline `c83ddd6`. The earlier `a8fbb3a` named-capacity
-  candidate was superseded by later follow-up-routing fixes.
+- Review-branch candidate `09698a3` passed Public CI run `37164664971` and is
+  deployed with a root-only hash-guarded rollback. Public `main` remains at the
+  green release-convergence baseline `c83ddd6`.
 - Fixed-command, non-sudo GPU telemetry is active only in the explicitly
   approved owner deployment. Fresh persisted owner dogfood reports per-device
-  free VRAM/utilization for two identity-linked inference endpoints.
-  Samples are point-in-time; host CPU load, inference execution, and model fit
-  remain unverified. Other deployments remain unconfigured and owner-gated.
-- A fresh third inference provider catalog read succeeds, but HADES cannot currently
-  resolve its configured identity link to a named current NetBox resource, so
-  it fails closed and does not present host GPU telemetry for that endpoint.
-  Nyx-4 has been asked to inspect NetBox visibility and canonical identity.
+  free VRAM/utilization for identity-linked inference endpoints, including the
+  recently repaired friendly-name route. Samples are point-in-time; host CPU
+  load, inference execution, and model fit remain unverified. Other deployments
+  remain unconfigured and owner-gated.
+- Nyx-4 verified that the configured inference endpoint IDs have explicit
+  links to current NetBox devices. Owner dogfood found a remaining friendly-name
+  lookup gap even when the endpoint ID was stably linked. Candidate `09698a3`
+  resolves an exact provider-ID alias only through a unique linked NetBox
+  identity and always responds with the canonical NetBox label; ambiguous or
+  unlinked IDs remain unresolved. Fresh owner UI now returns the targeted live
+  GPU sample and preserves model-fit uncertainty. Household A remains generic.
 - Named-node model-capacity requests now require one stable resource identity,
   then show only that host's linked inference endpoint and GPU readings. Fresh
   owner multi-intent capacity dogfood passed with four linked-device readings
@@ -164,14 +167,12 @@ belong in this public continuation file.
   Fresh Household A dogfood returned only the generic home-computers boundary.
 - Fresh owner dogfood of named inference-host activity initially combined
   provider catalog/residency, a host probe, and historical hardware inventory
-  without live GPU data. The separately approved fixed-command telemetry is
-  now active for identity-linked hosts. Candidate `3c6504c` fetches only the
-  requested node's sample and removes contradictory “GPU not connected”
-  wording. Two linked inference hosts pass fresh persisted owner UI checks;
-  Household A/B remain generic. A third provider endpoint still fails closed
-  because its NetBox identity does not resolve in current composed inventory. Hardware role and
-  specifications remain historical; CPU load and actual inference execution
-  are not verified.
+  without live GPU data. Candidate `3c6504c` now fetches only the requested
+  node's sample; candidate `09698a3` also resolves a uniquely linked provider
+  ID used as the owner's friendly name. The latest owner UI returns the
+  target-only timestamped GPU sample. Household A/B remain generic. Hardware
+  role and specifications remain historical; CPU load and actual inference
+  execution are not verified.
 - The deployed household status boundary now uses plain language for “Why is
   everything slow?” and “Are all the computers okay?” Fresh authenticated
   Household A/B chats persisted explicit limits without owner topology or
