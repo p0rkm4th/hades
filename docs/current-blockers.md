@@ -7,10 +7,10 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-04
 
-Canonical public `main` is `4facab8a666431aa10a523302dc7dde72dc295a8`, with
-Public CI run `37242218301` passing. The integration branch currently points
-to this same commit. It contains only the validated backup-status documentation
-update; no old branch history was promoted.
+Canonical public `main` is `b17441fb08d646e8ff3178587f2ac77b45e7be34`, with
+Public CI run `37243502800` passing. The integration branch currently points
+to this same commit. The promoted commits document backup-status evidence and
+current provenance; no runtime code or old branch history was promoted.
 
 The old homelab reference branch remains unsafe to promote: its latest known
 Public CI run `37222211701` failed introduced-history safety with 63 private

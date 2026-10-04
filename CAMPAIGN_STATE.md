@@ -7,14 +7,13 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-04
 
-Canonical public `main` is `4facab8a666431aa10a523302dc7dde72dc295a8`.
-Post-promotion Public CI run `37242218301` passed. The prior `ae15aa2` main
-also had green Public CI (`37241513751`). The only promoted delta was the
-bounded backup-status documentation update; no old homelab branch history was
-imported.
+Canonical public `main` is `b17441fb08d646e8ff3178587f2ac77b45e7be34`.
+Post-promotion Public CI run `37243502800` passed. The prior `ae15aa2` main
+also had green Public CI (`37241513751`). The promoted commits add bounded backup-status evidence and current-state
+reconciliation only; no runtime code or old homelab branch history was imported.
 
 Aster's integration branch `codex/inference-read-freshness-20261004` currently
-points to the same `4facab8` commit as `main`; there is no unqualified source
+points to the same `b17441fb` commit as `main`; there is no unqualified source
 candidate. NYX-001 is active as a read-only semantic lineage and architecture
 audit from `ae15aa2`, comparing the preserved reference branch
 `codex/gpu-telemetry-parity-20261004` at `345cb1b6`. Its latest known Public CI

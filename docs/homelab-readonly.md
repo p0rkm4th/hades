@@ -251,7 +251,7 @@ homelab adapter file hash
 `fe7dadebebe2345793c757ad5d3475bfbc0dbe0c9df93419c7a72ca2405d6e21` matches
 the public `server.py` source. The runtime hook is a composed artifact and is
 not byte-identical to the base public `hermes/sitecustomize.py`. The current
-public source checkpoint is `4facab8`; it adds documentation only after the
+public source checkpoint is `b17441fb`; it adds documentation only after the
 homelab code checkpoint `f55bd0a`. This records source/runtime provenance, not
 an assertion that the remaining homelab capability gaps are closed.
 
