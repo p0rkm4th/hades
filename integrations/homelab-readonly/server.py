@@ -2005,6 +2005,14 @@ def format_gpu_hardware_target_response(
     user_text: str, inventory: dict, summary: dict, gpu_telemetry: dict,
 ) -> str:
     """Resolve a hardware description only through fresh, identity-linked GPU reads."""
+    def display_label(value: str) -> str:
+        """Improve lowercase inventory labels for prose without changing identity."""
+        label = " ".join(str(value or "").split())
+        if not label or label != label.lower():
+            return label
+        acronyms = {"ct": "CT", "gpu": "GPU", "hades": "HADES", "netbox": "NetBox", "pve": "PVE", "vm": "VM"}
+        return " ".join(acronyms.get(word, word.capitalize()) for word in label.split())
+
     text = str(user_text or "")
     model_match = re.search(
         r"\b(?P<model>(?:rtx|gtx|quadro\s*)?p\s*\d{3,4}|(?:rtx|gtx|a)\s*\d{3,4})s?\b",
@@ -2029,7 +2037,7 @@ def format_gpu_hardware_target_response(
         canonical_id = identity.get("canonical_id")
         label = inventory_row.get("name") or resource.get("name")
         if isinstance(canonical_id, str) and canonical_id and isinstance(label, str) and label.strip():
-            labels[canonical_id] = " ".join(label.split())
+            labels[canonical_id] = display_label(label)
 
     endpoint_rows = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
     linked = {}

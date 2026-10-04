@@ -981,6 +981,26 @@ four_p4000_answer = server.format_gpu_hardware_target_response(
 )
 assert "Synthetic Inference Node A" in four_p4000_answer and "4 NVIDIA Quadro P4000 GPUs" in four_p4000_answer, four_p4000_answer
 assert "2026-10-04T00:44:59Z" in four_p4000_answer and "not proof that a workload completed" in four_p4000_answer, four_p4000_answer
+lowercase_gpu_summary = {
+    "resources": [
+        *gpu_hardware_summary["resources"],
+        {"identity": {"canonical_id": "netbox:device:3"}, "inventory": {"name": "tartarus"}},
+    ],
+}
+lowercase_gpu_inventory = {
+    **gpu_hardware_inventory,
+    "endpoints": [gpu_hardware_inventory["endpoints"][0]],
+}
+lowercase_gpu_samples = {
+    **gpu_hardware_samples,
+    "endpoints": [gpu_hardware_samples["endpoints"][0]],
+}
+lowercase_gpu_answer = server.format_gpu_hardware_target_response(
+    "What server has the four P4000s?", lowercase_gpu_inventory,
+    lowercase_gpu_summary, lowercase_gpu_samples,
+)
+assert "identifies Tartarus" in lowercase_gpu_answer, lowercase_gpu_answer
+assert "tartarus" not in lowercase_gpu_answer, lowercase_gpu_answer
 two_rtx_answer = server.format_gpu_hardware_target_response(
     "Which server has two RTX 2080s?", gpu_hardware_inventory,
     gpu_hardware_summary, gpu_hardware_samples,
