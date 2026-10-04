@@ -7,12 +7,14 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` now contains the sanitized homelab candidate, fast-forwarded from
-`codex/homelab-public-sanitized-20261004`. Source snapshot
-`320e5493885a91b6631c00be8488235cd728f4af` passed Public CI run `37224426449`;
-the local homelab reader fallback fix also passed authenticated synthetic UI
-acceptance. Check current Git and CI state for checkpoint-only commits after
-that snapshot. No production deployment was performed in this follow-up.
+Public `main` is `53995a6ff4f007ed40266c6e0066a75da9c33681`, fast-forwarded
+from `codex/homelab-public-sanitized-20261004`. Public CI passed on `main`
+(run `37224563109`) and the matching candidate ref (run `37224562735`). The
+local homelab reader fallback fix passed authenticated synthetic UI
+acceptance. The active profile-selected adapter was also verified read-only
+against this source revision; that check does not prove all source semantics
+or close the broader live homelab acceptance gates. No production deployment
+was performed in this follow-up.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address
