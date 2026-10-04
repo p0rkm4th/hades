@@ -333,9 +333,11 @@ cross-`PYTHONHASHSEED` regression proves deterministic composer output, and
 the exact composed runtime covers cluster guest state, restore guest matching,
 source timestamps, and household boundaries. The deterministic composed
 overlay SHA-256 is `214c755e…ac128e8` over the last verified active base
-`d6977174…e29277a2`; the live base must be rechecked immediately before any
-installation. Exact-scope deployment approval and post-deployment owner and
-Household A/B acceptance remain pending.
+`d6977174…e29277a2`. A read-only VM 802 check has now reconfirmed that exact
+active hash, file mode/owner `0640 scotty:hades-runtime`, and active
+`hades-hermes.service`. The base still needs a final hash check immediately
+before installation. Exact-scope deployment approval and post-deployment owner
+and Household A/B acceptance remain pending.
 
 Fresh authenticated production UI dogfood reconfirmed the gap before rollout.
 The owner broad summary says the live view is partial, identifies responding

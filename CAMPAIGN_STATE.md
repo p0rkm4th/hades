@@ -14,15 +14,17 @@ of truth.
 ## Current verified status — 2026-10-04
 
 - HADES review branch `codex/homelab-protected-source-contract-20261001` is
-  pushed at `aa2adde`; Public CI run `37175954312` passed. Public `main` remains
+  pushed at `5ac41c8`; Public CI run `37176367933` passed. Public `main` remains
   at `c83ddd6` with green status checks.
 - The production candidate is the deterministic composed overlay
-  `214c755e…ac128e8`, built over the last verified active overlay
-  `d6977174…e29277a2`. It combines owner broad-source timestamps, cluster guest
-  state, and restore-check guest presence. Composed runtime tests cover those
-  routes, partial scope, timestamps, and household boundaries. Exact-scope
-  rollout approval is pending. The live base must be rechecked before any
-  installation; production remains unchanged.
+  `214c755e…ac128e8`, built over active overlay
+  `d6977174…e29277a2`. A current read-only VM 802 check reconfirmed that exact
+  base, file mode/owner `0640 scotty:hades-runtime`, and active
+  `hades-hermes.service`. The candidate combines owner broad-source timestamps,
+  cluster guest state, and restore-check guest presence. Composed runtime tests
+  cover those routes, partial scope, timestamps, and household boundaries.
+  Exact-scope rollout approval is pending; hash-check the live base again just
+  before installation. Production remains unchanged.
 - Owner-approved read-only VM audit is effective on both configured Proxmox
   sources. Nyx-4 verified complete guest enumeration without access-denied
   exclusions. This supports inventory and reported power state, not guest OS,
@@ -46,7 +48,11 @@ of truth.
   endpoints and refused to guarantee model fit. The same answer reports stale
   hardware role/capability inventory; a private checkout matrix dated 2026-10-02
   should be within the seven-day rule, so Nyx-4 is checking the deployed matrix
-  path for mismatch. Raw evidence is mode-0600 outside this repository.
+  path for mismatch. A fresh owner provenance follow-up returns per-source read
+  times and labels missing timestamps, clarifying that a completed read does
+  not make an older observation live; the initial broad answer still omits the
+  times. Household A's follow-up remains generic with no owner-source details.
+  Raw evidence is mode-0600 outside this repository.
 - No P0/P1 product regression is established by these samples. Source gaps and
   the capability-freshness mismatch remain open evidence, not an all-clear.
 
