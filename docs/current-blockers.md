@@ -236,52 +236,36 @@ Status: **PARTIAL**
 No public document in this repository is authoritative for private
 infrastructure state. Use the private inventory and live canonical sources.
 
-### Latest live follow-up evidence — 2026-10-03
+### Current live follow-up evidence — 2026-10-04
 
-Review-branch `4a4bfdc` passed Public CI run `37159647718` and was deployed to
-the explicitly approved owner runtime with root-only rollback. Fresh authenticated
-owner UI dogfood verifies named-node GPU status, comparison-winner placement
-follow-up, a size follow-up, and explicit named-host fit. Each capacity answer
-uses only the uniquely linked host's current GPU samples and does not equate
-artifact size with runtime VRAM needs. Household A/B remain topology-redacted.
-The multi-turn evidence is protected outside this repository. Public `main`
-remains at `c83ddd6`; this does not close the source-coverage blockers above.
-Some source display labels appear lowercase; this is cosmetic. Proxmox guest
-scope, NetBox service inventory, cross-source identity for 15 Proxmox/Kuma
-records, whole-network telemetry, backup contents/custody/restore verification,
-and successful inference execution remain unknown or partial. The configured
-inference endpoints are linked to current NetBox devices; the friendly-name
-lookup gap is closed by candidate `09698a3` and fresh owner UI acceptance.
+HADES review candidate `9511c75` passed Public CI run `37169928930`. Its
+composed Hermes route handles cluster-wide guest status, returns source
+read timestamps, limits complete claims to full configured scope, and routes a
+compound household status question directly to the safe boundary. Direct-route
+fixtures cover complete and partial Proxmox scopes; focused adapter/runtime and
+public-tree checks pass. The candidate is not deployed pending approval for
+that exact candidate. A fresh authenticated production owner chat reproduced
+the defect: the cluster-wide guest question was treated as a request about a
+physical host, and no guest states or source times were returned. The last
+recorded review-head CI passed at `4096f39` (run `37170321258`); later commits
+only reconcile documentation. Public `main` remains at `c83ddd6`.
 
-A fresh broad owner UI read after the approved Proxmox audit-scope update now
-sees both configured Proxmox guest scopes as complete. The summary remains
-partial because the NetBox application-service catalog is empty, 15
-Proxmox/Kuma records lack verified cross-source identity, and current Kuma
-probes do not establish application readiness. These reads do not prove
-workload execution or model capacity. Household A received no topology or
-resource detail; its first broad-summary answer promised a check instead of
-returning a direct boundary, which remains a small UX follow-up. Protected
-evidence remains in the private acceptance area.
+Both approved Proxmox audit scopes are effective and Nyx-4 verified complete
+guest enumeration with no access-denied exclusions. That gives inventory and
+reported power state, not guest OS, application, or workload health. Broad
+status is still partial: NetBox's application-service and VM records are empty,
+and some Proxmox/Kuma observations lack verified stable identity links. HADES
+reports those placement/correlation gaps rather than guessing.
 
-Fresh owner dogfood for “Which Proxmox guests are running?” was misrouted as a
-request about a specific host named “Proxmox,” despite complete guest scope.
-A separate named-host query correctly returned current running and stopped VM
-states and cautioned that guest power state does not establish application
-health. Candidate `9511c75` handles cluster-wide wording, checks every
-configured Proxmox endpoint for `ALL_GUESTS` before claiming completeness, and
-lists visible guests by running/stopped/unknown state otherwise. It reports
-Proxmox scope-read timestamps and capitalizes lowercase inventory labels for
-prose. It also routes a compound “is everything okay / what remains unknown”
-household prompt directly to the safe boundary, without a model call or source
-read. The contract exercises the full direct route with complete and partial
-two-source fixtures, verifies source timestamps and power-state caveats, and
-invalidates synthetic adapter bytecode between fixture rewrites. Focused
-synthetic and composed-runtime tests and Public CI runs `37169928930` and
-`37170243927` pass; production remains unchanged pending explicit deployment
-approval.
+Read-only inference catalogs and linked fixed-command GPU telemetry are active
+only in the approved owner deployment. Samples do not prove successful
+inference or model fit. Nyx-4 completed a scoped persistence-service correction
+and verified affected inference services remained available without restarts;
+no reboot was performed, so reboot persistence remains unverified.
 
-Other fresh owner checks report current Proxmox guest CPU/memory rankings with
-partial-scope and host/guest-overlap caveats, bounded recent task history without
-a saved before/after snapshot, and unverified services from the empty NetBox
-application-service catalog. Each response completed in about 4.4 seconds in
-one UI sample; this is not a benchmark.
+Backups are represented by configured jobs and bounded task metadata. Backup
+contents, independent off-site custody, and restoreability are not verified.
+Network diagnosis remains limited by absent loss, throughput, DNS timing, and
+long-term trend telemetry. Fresh owner/Household A/B UI evidence remains
+protected outside this public repository; recent representative household
+prompts disclosed no private topology or owner-only details.
