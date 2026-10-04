@@ -14,10 +14,9 @@ of truth.
 ## Current verified status — 2026-10-04
 
 - HADES review branch `codex/homelab-protected-source-contract-20261001` is
-  pushed at `5f896fe`. Public `main` remains at `c83ddd6`; its release-
+  pushed. Public `main` remains at `c83ddd6`; its release-
   convergence CI is green. Review head `4096f39` passed Public CI run
-  `37170321258`; runtime candidate `9511c75` passed run `37169928930`. The
-  later `5f896fe` edit only refreshed this checkpoint and has no recorded CI
+  `37170321258`; runtime candidate `9511c75` passed run `37169928930`. Later checkpoint-only documentation commits have no separate recorded CI
   status.
 - Candidate `9511c75` is not deployed. Its current composed runtime passed the
   direct Proxmox owner route for complete and partial scopes, the household
