@@ -1167,6 +1167,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 '"loaded_status": "CURRENT", "loaded_models": []}]}\n',
                 encoding='utf-8',
             )
+            Path(importlib.util.cache_from_source(str(adapter_dir / 'server.py'))).unlink(missing_ok=True)
 
         write_broad_summary([], status='PARTIAL', sources=[
             {'source': 'Proxmox', 'status': 'OK'},
@@ -1288,6 +1289,58 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert "can't check all the home computers" in household_compound, household_compound
         assert 'Proxmox' not in household_compound and 'NetBox' not in household_compound, household_compound
         assert len(registry_module.registry.calls) == before_household_compound
+        cluster_scope = {
+            'status': 'COMPLETE', 'scope': 'ALL_GUESTS',
+            'endpoints': [
+                {'source_identity': 'proxmox:site-a', 'status': 'HEALTHY', 'scope': 'ALL_GUESTS'},
+                {'source_identity': 'proxmox:site-b', 'status': 'HEALTHY', 'scope': 'ALL_GUESTS'},
+            ],
+        }
+        cluster_resources = [
+            {'name': 'Synthetic VM Alpha', 'runtime_status': 'RUNNING',
+             'runtime': {'type': 'qemu', 'vmid': 101, 'status': 'running'},
+             'identity': {'canonical_id': 'proxmox:site-a:qemu:101',
+                          'source_identities': {'proxmox': ['proxmox:site-a:qemu:101']}}},
+            {'name': 'Synthetic CT Beta', 'runtime_status': 'STOPPED',
+             'runtime': {'type': 'lxc', 'vmid': 202, 'status': 'stopped'},
+             'identity': {'canonical_id': 'proxmox:site-b:lxc:202',
+                          'source_identities': {'proxmox': ['proxmox:site-b:lxc:202']}}},
+        ]
+        proxmox_source_reads = [
+            {'source': 'Proxmox guest visibility (site-a)', 'status': 'HEALTHY',
+             'retrieved_at': '2026-10-04T01:40:00Z'},
+            {'source': 'Proxmox guest visibility (site-b)', 'status': 'HEALTHY',
+             'retrieved_at': '2026-10-04T01:40:01Z'},
+        ]
+        write_broad_summary(
+            [], resources=cluster_resources, status='OK', sources=proxmox_source_reads,
+            proxmox_guest_visibility=cluster_scope,
+        )
+        cluster_guest_answer = direct_read(
+            'Which Proxmox guests are running right now, and which are stopped?',
+            'synthetic-owner', 'owner',
+        )
+        assert 'Complete audit scope' in cluster_guest_answer, cluster_guest_answer
+        assert 'Running: Synthetic VM Alpha (VM 101).' in cluster_guest_answer, cluster_guest_answer
+        assert 'Stopped: Synthetic CT Beta (CT 202).' in cluster_guest_answer, cluster_guest_answer
+        assert '2026-10-04T01:40:00Z' in cluster_guest_answer and '2026-10-04T01:40:01Z' in cluster_guest_answer, cluster_guest_answer
+        assert 'not application or service health' in cluster_guest_answer, cluster_guest_answer
+        partial_scope = {
+            **cluster_scope, 'status': 'PARTIAL', 'scope': 'MIXED',
+            'endpoints': [cluster_scope['endpoints'][0], {
+                'source_identity': 'proxmox:site-b', 'status': 'DEGRADED', 'scope': 'ALL_GUESTS',
+            }],
+        }
+        write_broad_summary(
+            [], resources=cluster_resources, status='PARTIAL', sources=proxmox_source_reads,
+            proxmox_guest_visibility=partial_scope,
+        )
+        partial_cluster_answer = direct_read(
+            'Which Proxmox guests are running right now, and which are stopped?',
+            'synthetic-owner', 'owner',
+        )
+        assert 'Only guests visible' in partial_cluster_answer, partial_cluster_answer
+        assert 'incomplete or unknown' in partial_cluster_answer, partial_cluster_answer
         write_broad_summary([{
             'name': 'Search latency check', 'status': 'down', 'freshness': 'STALE',
         }])
