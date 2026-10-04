@@ -44,7 +44,16 @@ sys.modules.update({
     "mcp.server.stdio": mcp_stdio, "mcp.types": mcp_types,
 })
 import config
+import inference_view
 import server
+
+# The MCP server keeps compatibility aliases while pure inference presentation
+# lives in its domain view module.
+assert server._format_node_activity_fallback is inference_view._format_node_activity_fallback
+assert server._inference_resource_names is inference_view._inference_resource_names
+assert server.resolve_inference_node_target is inference_view.resolve_inference_node_target
+assert server.format_gpu_hardware_target_response is inference_view.format_gpu_hardware_target_response
+assert server.format_inference_inventory_response is inference_view.format_inference_inventory_response
 
 
 def expect_invalid(value: str) -> None:
