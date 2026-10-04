@@ -39,14 +39,15 @@ of truth.
   without restarts; no reboot was performed, so reboot persistence remains
   unverified.
 - Fresh authenticated owner dogfood returned eight timestamped GPU samples
-  across three inference endpoints and refused to guarantee model fit. The
-  hardware capability reader correctly marked its deployed input stale: a
-  private read-only comparison confirmed the configured VM input copy lags the
-  current private inventory. Nyx-4 has been assigned to refresh that existing
-  read-only input with a protected rollback and fresh owner validation. Raw
-  evidence and private hashes remain outside this repository.
-- No P0/P1 product regression is established by these samples. Source gaps and
-  the capability-freshness mismatch remain open evidence, not an all-clear.
+  across three inference endpoints and refused to guarantee model fit. Nyx-4
+  refreshed the deployed read-only capability input from the current private
+  inventory with a protected rollback; a fresh owner answer now uses the current
+  dated capability inventory, avoids stale/historical qualification, and
+  preserves uncertainty about model fit. Raw evidence and private hashes remain
+  outside this repository.
+- No P0/P1 product regression is established by these samples. Canonical-source
+  gaps and incomplete operational coverage remain open evidence, not an
+  all-clear.
 
 ## Current repository work
 
@@ -76,10 +77,12 @@ combined owner routes were still pending.
 
 ## Remaining evidence
 
-- NetBox's application-service catalog and VM records are empty; some Proxmox
-  and Kuma observations still lack verified cross-source identity. Intended
-  placement and correlation must remain unknown. Any NetBox write is separately
-  gated.
+- NetBox's application-service catalog and VM records were empty at the latest
+  source audit; some Proxmox and Kuma observations still lack verified
+  cross-source identity. Intended placement and correlation must remain unknown
+  until canonical records are reconciled and live reads confirm them. Nyx-4 is
+  assigned a bounded, evidence-backed NetBox/Kuma reconciliation; HADES itself
+  remains read-only and receives no writer credentials.
 - The configured Proxmox audit scopes are complete for current guest
   enumeration, but do not inspect guest operating systems or prove in-guest
   service health. The natural-language cluster summary, restore follow-up, and
@@ -103,6 +106,11 @@ combined owner routes were still pending.
   pushed review branch and has not been integrated into `main`. Current
   authenticated dogfood covers representative prompts only. Protected
   acceptance evidence remains outside this public repository.
+
+The deployed capability-matrix refresh and fresh owner acceptance supersede
+the earlier stale-input finding above. Network-wide host/package/image currency
+and natural backup-timer evidence remain in progress in the private operations
+handoff; do not infer fleet currency from the source inventory.
 
 ## Repository and deployment authority
 

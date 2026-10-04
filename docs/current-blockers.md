@@ -408,3 +408,22 @@ some observations remain unlinked. Proxmox guest power state does not prove
 in-guest health; GPU samples do not prove successful inference or model fit;
 backup task history does not prove contents, independent custody, or
 restoreability. These unknowns remain explicit in owner answers.
+
+### Current operational follow-up — 2026-10-04
+
+Nyx-4 refreshed the existing deployed capability-matrix input from the current
+private inventory with a root-only rollback copy. Fresh authenticated owner
+acceptance now uses its current dated hardware/capability data and does not
+describe the role inventory as stale or historical; model-fit uncertainty
+remains explicit. Private file hashes, paths, and raw responses are recorded
+only in `hades-infra`.
+
+The latest read-only NetBox/Kuma audit found that canonical service and
+monitoring records still need reconciliation for HADES Core and two household
+Minecraft deployments. Source-backed placement evidence and the safe object
+creation sequence are documented privately. Under the owner's standing
+authorization for this campaign, Nyx-4 is continuing the narrow reconciliation
+with pre/post reads and rollback evidence; HADES's own source integrations
+remain read-only. Network-wide OS/package/image currency and the naturally
+scheduled Alexandra backup result are also still being checked. No network-wide
+“up to date” or backup-restorable claim is made until those checks finish.
