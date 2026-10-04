@@ -6477,6 +6477,22 @@ def _hades_direct_homelab_tool_result(tool_name, arguments=None):
                 None,
             )
         if registered_name is None:
+            # The deterministic answer route may run before tool-definition
+            # reconciliation registers the local adapter fallback. Reuse the
+            # exact same bounded, owner-only fallback rather than turning an
+            # available repository adapter into NOT_CONFIGURED.
+            try:
+                _hades_register_homelab_fallback_tools()
+                registered_name = next(
+                    (name for name in tool_names[tool_name] if registry.get_entry(name)),
+                    None,
+                )
+            except Exception as fallback_error:
+                _hades_logger.warning(
+                    "Homelab local adapter fallback failed: %s",
+                    type(fallback_error).__name__,
+                )
+        if registered_name is None:
             _log_homelab_read("NOT_CONFIGURED")
             return {
                 "status": "NOT_CONFIGURED",
