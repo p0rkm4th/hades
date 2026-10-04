@@ -86,7 +86,24 @@ boundary_guard = next(
         for child in ast.walk(node)
     )
 )
-assert ast.unparse(boundary_guard.test) == "self._hades_session_scope == 'household'"
+assert ast.unparse(boundary_guard.test) == (
+    "getattr(self, '_hades_session_scope', '') == 'household'"
+)
+early_memory_call = next(
+    node for node in ast.walk(run_conversation)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == '_hades_direct_memory_response'
+)
+server_status_assignment = next(
+    node for node in ast.walk(run_conversation)
+    if isinstance(node, ast.Assign)
+    and any(
+        isinstance(target, ast.Name) and target.id == '_server_status_turn'
+        for target in node.targets
+    )
+)
+assert early_memory_call.lineno < boundary_call.lineno < server_status_assignment.lineno
 assert any(
     isinstance(node, ast.Return)
     and isinstance(node.value, ast.Dict)

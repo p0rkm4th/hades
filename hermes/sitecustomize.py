@@ -8017,6 +8017,23 @@ try:
                 "api_calls": 0,
                 "completed": True,
             }
+        if getattr(self, "_hades_session_scope", "") == "household":
+            household_status_response = _hades_household_homelab_boundary_response(
+                _server_text
+            )
+            if household_status_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(household_status_response)
+                _hades_logger.info(
+                    "Household homelab status request answered fail-closed without model or tool invocation"
+                )
+                return {
+                    "final_response": household_status_response,
+                    "messages": [{"role": "assistant", "content": household_status_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         # Typed household automation lifecycle language must reach the Phase 3
         # policy route before the separate managed-server control adapter. In
         # particular, "delete my weekly household summary" contains "delete"
@@ -9346,23 +9363,6 @@ try:
                 "api_calls": 0,
                 "completed": True,
             }
-        if self._hades_session_scope == "household":
-            household_status_response = _hades_household_homelab_boundary_response(
-                current_text
-            )
-            if household_status_response:
-                callback = getattr(self, "stream_delta_callback", None)
-                if callback:
-                    callback(household_status_response)
-                _hades_logger.info(
-                    "Household homelab status request answered fail-closed without model or tool invocation"
-                )
-                return {
-                    "final_response": household_status_response,
-                    "messages": [{"role": "assistant", "content": household_status_response}],
-                    "api_calls": 0,
-                    "completed": True,
-                }
         # Provisioning starts with a deterministic, read-only preflight. This
         # keeps a small local model from inventing a web/terminal answer or a
         # VM target before the user has seen the approved catalog. The actual
