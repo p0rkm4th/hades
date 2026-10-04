@@ -134,6 +134,10 @@ complete_core_index = {"proxmox_guest_inventory": {
 index_answer = core_guest_index("Where is HADES running?", complete_core_index)
 assert "synthetic-core-node (VM 200) is stopped" in index_answer, index_answer
 assert "synthetic-core-node (VM 202) is running" in index_answer, index_answer
+assert "VM 200) is stopped in Proxmox source pve-alpha (read at current-guest-index-time)" in index_answer, index_answer
+assert "VM 202) is running in Proxmox source pve-alpha (read at current-guest-index-time)" in index_answer, index_answer
+assert "Multiple guests with a HADES Core name appear in this Proxmox source" in index_answer, index_answer
+assert "inventory alone doesn't verify which guest serves the HADES application" in index_answer, index_answer
 assert "current-guest-index-time" in index_answer, index_answer
 duplicate_source_index = {"proxmox_guest_inventory": {
     "status": "COMPLETE", "endpoints": [
