@@ -7,22 +7,24 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` is `6a04e9c82a2740cb66f897cd007d6679b662b2f0`, fast-forwarded
-from `codex/inference-read-freshness-20261004`. Public CI passed for the code
-candidate (run `37227907387`) and current docs checkpoint (run `37228838517`).
-The source labels ambiguous HADES guest matches per Proxmox scope, exposes
-source read times, timestamps provider model-location answers, and discloses
-when another configured inference provider is unavailable. Focused tests also
-cover sequential Proxmox runtime/backup outages.
+Public `main` is `8e4a804a575c7e5035bc9feab2a0f26aa72857b2`, fast-forwarded
+from `codex/inference-read-freshness-20261004`. Public CI passed for the initial
+source candidate (run `37227907387`) and same-scope placement follow-up (run
+`37230088761`). Owner answers now show source read times for multiple matching
+HADES guests, including same-scope matches, and state that guest inventory
+alone does not prove which guest serves the application. Model-location output
+includes provider-read time and partial-source coverage. Synthetic tests also
+cover sequential Proxmox runtime and backup outages.
 
 The composed Hermes overlay and profile-selected read-only adapter were
-deployed with exact hash checks and root-only rollback copies. Service health
-passed after one restart. Fresh owner UI checks covered HADES guest placement,
-model-location freshness, and conservative model-capacity wording. Fresh
-household UI checks preserved redaction and owner-only placement access. This
-closes this candidate’s deployment and focused UI parity check, not the broader
-homelab campaign. No Proxmox, NetBox, Kuma, host, network, account, ACL, or
-source-access changes were made.
+deployed with exact hash checks and root-only rollback copies. The same-scope
+follow-up changed only the overlay. Service health passed after each restart.
+Fresh owner UI checks covered duplicate guest placement, model-location
+freshness, and conservative capacity wording. Fresh household checks preserved
+redaction and owner-only placement access. This closes these candidates’
+deployment and focused UI parity checks, not the broader homelab campaign. No
+Proxmox, NetBox, Kuma, host, network, account, ACL, or source-access changes
+were made.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address
@@ -55,8 +57,6 @@ Remaining work:
 
 - exercise stale-source and partial-source-outage behavior against live and
   synthetic feeds without promoting cached data to live truth;
-- clarify same-name guest matches within one Proxmox scope and harden the
-  private overlay builder input hash before the next composition;
 - verify contradictory Proxmox/NetBox/Kuma observations remain visible;
 - reconcile stable identity links and service placements;
 - qualify backup coverage separately from local copies, contents, and restore

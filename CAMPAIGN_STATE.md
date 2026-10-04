@@ -8,17 +8,19 @@ records.
 ## Current checkpoint — 2026-10-04
 
 Public `main` is at
-`6a04e9c82a2740cb66f897cd007d6679b662b2f0`, fast-forwarded from
+`8e4a804a575c7e5035bc9feab2a0f26aa72857b2`, fast-forwarded from
 `codex/inference-read-freshness-20261004`. Hosted Public CI passed for code
-revision `e939b3caac8760291f610d2d428795956257ccb4` (run `37227907387`) and the
-latest docs checkpoint (run `37228838517`). The code adds visible provider-read
-times and partial-provider caveats to model-location answers, source IDs/read
-times and ambiguity wording to cross-source HADES guest placement, and
-sequential outage regressions for Proxmox runtime and backup evidence. A fresh
-19-prompt owner/household dogfood found these response gaps; all prompts
-returned and household leak checks passed. The private overlay and matching
-read-only adapter were then deployed with hash-guarded, root-only rollback;
-service health and fresh owner/household UI acceptance passed.
+revision `e939b3caac8760291f610d2d428795956257ccb4` (run `37227907387`), the
+source-attribution follow-up `8e4a804` (branch run `37230026776`; main run
+`37230088761`), and intervening documentation checkpoints. The source adds
+provider-read timestamps and partial-provider caveats to model-location
+answers, and source/time attribution plus conservative ambiguity wording to
+HADES guest placement. Synthetic outage regressions cover Proxmox runtime and
+backup evidence. A fresh 19-prompt owner/household dogfood found the original
+response gaps; all prompts returned and household leak checks passed. The
+composed read-only adapter and Hermes overlay were deployed with hash-guarded,
+root-only rollback. A follow-up same-scope duplicate fix also passed focused
+owner/household UI acceptance; service health remained green.
 
 The current source tree removes private destination acceptance records and
 per-user share mappings, requires explicit destination hostname input, and uses
@@ -53,9 +55,8 @@ with synthetic identities and sources.
 
 - Continue live stale/partial-source acceptance, native service-health and
   service-placement coverage, network measurements, and bounded inference
-  capacity checks.
-- Review whether same-name guest matches within one Proxmox scope need clearer
-  owner wording; pin the private overlay builder input hash before reuse.
+  capacity checks; Nyx-4 is independently reviewing the same-scope response
+  against the exact source commit.
 - Complete backup-custody, reboot, and end-to-end restore evidence before
   claiming recovery readiness.
 - Keep infrastructure reads read-only; write authority is outside this
