@@ -1304,6 +1304,87 @@ assert "No Backup Check exists yet." in actual_compound_status["final_response"]
 assert "can't verify host, VM, service, or household-data backup coverage" in actual_compound_status["final_response"], actual_compound_status
 actual_proxmox_backup_read = hades._hades_direct_proxmox_backup_read
 actual_homelab_tool_result = hades._hades_direct_homelab_tool_result
+actual_restore_guest_state_read = hades._hades_direct_backup_restore_guest_state_read
+restore_tool_calls = []
+def synthetic_restore_guest_tool_result(tool_name, arguments=None):
+    restore_tool_calls.append((tool_name, arguments))
+    if tool_name == "homelab_recent_activity":
+        return {
+            "status": "READABLE",
+            "source_status": {"proxmox": "READABLE", "netbox": "READABLE"},
+            "endpoints": [{
+                "source_id": "site-a", "status": "HEALTHY", "scope": "ALL_GUESTS",
+                "retrieved_at": "2026-10-04T01:40:02Z",
+                "events": [
+                    {"guest_id": "804", "task_type": "vzrestore", "status": "OK"},
+                    {"guest_id": "804", "task_type": "vzdestroy", "status": "OK"},
+                    {"guest_id": "911", "task_type": "qmrestore", "status": "OK"},
+                ],
+            }],
+        }
+    if tool_name == "homelab_summary":
+        return {
+            "status": "PARTIAL",
+            "proxmox_guest_visibility": {
+                "status": "COMPLETE", "scope": "ALL_GUESTS",
+                "endpoints": [{
+                    "source_identity": "proxmox:site-a", "status": "HEALTHY",
+                    "scope": "ALL_GUESTS",
+                }],
+            },
+            "sources": [{
+                "source": "Proxmox guest visibility (site-a)",
+                "retrieved_at": "2026-10-04T01:40:03Z",
+            }],
+            "resources": [{
+                "name": "Synthetic restored VM", "runtime_status": "RUNNING",
+                "runtime": {"type": "qemu", "vmid": 911, "status": "running"},
+                "identity": {"source_identities": {"proxmox": ["proxmox:site-a:qemu:911"]}},
+            }],
+        }
+    raise AssertionError(f"unexpected restore-state tool {tool_name}")
+hades._hades_direct_homelab_tool_result = synthetic_restore_guest_tool_result
+backup_fallback_calls = []
+def unexpected_backup_fallback(*args, **kwargs):
+    backup_fallback_calls.append((args, kwargs))
+    return "WRONG BACKUP CHECK ROUTE"
+hades._hades_direct_proxmox_backup_read = unexpected_backup_fallback
+hades._hades_phase2_backup_response = unexpected_backup_fallback
+restore_state_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-restore-guest-current-state",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+restore_state_answer = restore_state_agent.run_conversation(
+    "Did the recent backup restore checks leave any temporary guests present or running right now?",
+    conversation_history=[],
+)
+assert restore_state_answer.get("completed") is True and restore_state_answer.get("api_calls") == 0, restore_state_answer
+assert "container 804 is absent from the current complete guest inventory" in restore_state_answer["final_response"], restore_state_answer
+assert "VM 911 is present and Proxmox reports it running" in restore_state_answer["final_response"], restore_state_answer
+assert restore_tool_calls == [
+    ("homelab_recent_activity", {"window_hours": 168}),
+    ("homelab_summary", None),
+], restore_tool_calls
+assert backup_fallback_calls == [], backup_fallback_calls
+household_restore_state_agent = agent_class(
+    gateway_session_key=f"hades-user-{beta}", session_id="synthetic-household-restore-guest-current-state",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+household_restore_state_answer = household_restore_state_agent.run_conversation(
+    "Did the recent backup restore checks leave any temporary guests present or running right now?",
+    conversation_history=[],
+)
+assert household_restore_state_answer.get("completed") is True and household_restore_state_answer.get("api_calls") == 0, household_restore_state_answer
+assert "guest 804" not in household_restore_state_answer["final_response"]
+assert "Proxmox" not in household_restore_state_answer["final_response"]
+assert restore_tool_calls == [
+    ("homelab_recent_activity", {"window_hours": 168}),
+    ("homelab_summary", None),
+], restore_tool_calls
+hades._hades_direct_homelab_tool_result = actual_homelab_tool_result
+hades._hades_direct_backup_restore_guest_state_read = actual_restore_guest_state_read
+hades._hades_direct_proxmox_backup_read = actual_proxmox_backup_read
+hades._hades_phase2_backup_response = actual_backup_read
 backup_tool_calls = []
 def synthetic_scoped_backup_tool_result(tool_name):
     backup_tool_calls.append(tool_name)

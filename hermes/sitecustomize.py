@@ -7808,6 +7808,181 @@ def _hades_direct_proxmox_backup_read(
         return _compose("I couldn't verify Proxmox backup status just now; I haven't changed or started a backup.")
 
 
+def _hades_backup_restore_guest_state_intent(user_text):
+    """Recognize owner questions about current guests left by restore checks."""
+    text = str(user_text or "")
+    return bool(
+        re.search(r"\b(?:backup|restore|recovery)\b", text, re.IGNORECASE)
+        and re.search(r"\b(?:restore|restored|recovery)\b", text, re.IGNORECASE)
+        and re.search(
+            r"\b(?:temporary|temp|clone|clones|guest|guests|vm|vms|container|containers)\b",
+            text, re.IGNORECASE,
+        )
+        and re.search(
+            r"\b(?:still|remain|remaining|left|present|exist|running|stopped|currently|right\s+now)\b",
+            text, re.IGNORECASE,
+        )
+    )
+
+
+def _hades_backup_restore_guest_state_response(activity, summary):
+    """Join recent restore tasks to current Proxmox guest rows by stable ID."""
+    if not isinstance(activity, dict) or not isinstance(summary, dict):
+        return "I couldn't verify whether recent backup restore guests remain present."
+
+    activity_endpoints = activity.get("endpoints")
+    activity_endpoints = activity_endpoints if isinstance(activity_endpoints, list) else []
+    visibility = summary.get("proxmox_guest_visibility")
+    visibility_endpoints = visibility.get("endpoints") if isinstance(visibility, dict) else []
+    visibility_endpoints = visibility_endpoints if isinstance(visibility_endpoints, list) else []
+    scope_by_source = {}
+    for endpoint in visibility_endpoints:
+        if not isinstance(endpoint, dict):
+            continue
+        identity = str(endpoint.get("source_identity") or "")
+        match = re.fullmatch(r"proxmox:([A-Za-z0-9._-]{1,80})", identity)
+        if match:
+            scope_by_source[match.group(1)] = (
+                endpoint.get("status") == "HEALTHY"
+                and str(endpoint.get("scope") or "").upper() == "ALL_GUESTS"
+            )
+
+    source_rows = summary.get("sources")
+    source_rows = source_rows if isinstance(source_rows, list) else []
+    guest_read_times = [
+        str(row.get("retrieved_at"))[:80]
+        for row in source_rows if isinstance(row, dict)
+        and str(row.get("source") or "").startswith("Proxmox guest visibility")
+        and row.get("retrieved_at")
+    ]
+    activity_read_times = [
+        str(endpoint.get("retrieved_at"))[:80]
+        for endpoint in activity_endpoints if isinstance(endpoint, dict)
+        and endpoint.get("retrieved_at")
+    ]
+
+    restore_guests = {}
+    task_history_complete = bool(activity_endpoints)
+    for endpoint in activity_endpoints:
+        if not isinstance(endpoint, dict):
+            task_history_complete = False
+            continue
+        if (
+            endpoint.get("status") != "HEALTHY"
+            or str(endpoint.get("scope") or "").upper() != "ALL_GUESTS"
+            or endpoint.get("truncated") is True
+        ):
+            task_history_complete = False
+        source_id = endpoint.get("source_id")
+        if not isinstance(source_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,80}", source_id):
+            task_history_complete = False
+            continue
+        events = endpoint.get("events")
+        for event in events if isinstance(events, list) else []:
+            if not isinstance(event, dict):
+                continue
+            task_type = str(event.get("task_type") or "").casefold()
+            if task_type not in {"qmrestore", "vzrestore"}:
+                continue
+            guest_id = str(event.get("guest_id") or "")
+            if not re.fullmatch(r"[1-9][0-9]{0,19}", guest_id):
+                continue
+            kind = "qemu" if task_type == "qmrestore" else "lxc"
+            task_time = event.get("endtime") or event.get("starttime") or 0
+            if isinstance(task_time, bool) or not isinstance(task_time, (int, float)):
+                task_time = 0
+            key = (source_id, kind, guest_id)
+            previous = restore_guests.get(key)
+            if previous is None or task_time > previous[1]:
+                restore_guests[key] = (str(event.get("status") or "UNKNOWN").upper(), task_time)
+
+    if not restore_guests:
+        source_status = activity.get("source_status")
+        proxmox_status = source_status.get("proxmox") if isinstance(source_status, dict) else None
+        if not activity_endpoints or str(proxmox_status or "").upper() in {
+            "SOURCE_UNAVAILABLE", "NOT_CONFIGURED",
+        }:
+            return "I couldn't read recent Proxmox restore-task history, so I can't identify which guests to check."
+        return (
+            "I found no archived Proxmox restore task in the last seven days. "
+            "That doesn't identify older restore guests or prove their current state."
+        )
+
+    resources = summary.get("resources")
+    resources = resources if isinstance(resources, list) else []
+    rows_by_identity = {}
+    for resource in resources:
+        if not isinstance(resource, dict):
+            continue
+        identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
+        source_identities = identity.get("source_identities") if isinstance(identity.get("source_identities"), dict) else {}
+        proxmox_ids = source_identities.get("proxmox")
+        if not isinstance(proxmox_ids, list):
+            continue
+        for source_identity in proxmox_ids:
+            if isinstance(source_identity, str) and source_identity.startswith("proxmox:"):
+                rows_by_identity.setdefault(source_identity, []).append(resource)
+
+    parts = []
+    for (source_id, kind, guest_id), (task_status, _task_time) in sorted(restore_guests.items()):
+        guest_type = "VM" if kind == "qemu" else "container"
+        source_identity = f"proxmox:{source_id}:{kind}:{guest_id}"
+        matches = rows_by_identity.get(source_identity, [])
+        if len(matches) == 1:
+            resource = matches[0]
+            runtime = resource.get("runtime") or resource.get("runtime_detail") or {}
+            state = str(resource.get("runtime_status") or (
+                runtime.get("status") if isinstance(runtime, dict) else ""
+            ) or "UNKNOWN").upper()
+            if state == "RUNNING":
+                parts.append(f"{guest_type} {guest_id} is present and Proxmox reports it running.")
+            elif state == "STOPPED":
+                parts.append(f"{guest_type} {guest_id} is present and Proxmox reports it stopped.")
+            else:
+                parts.append(f"{guest_type} {guest_id} is present, but its current power state is unknown.")
+        elif len(matches) > 1:
+            parts.append(f"{guest_type} {guest_id} has multiple current records, so I can't resolve its state safely.")
+        elif scope_by_source.get(source_id) is True:
+            parts.append(f"{guest_type} {guest_id} is absent from the current complete guest inventory.")
+        else:
+            parts.append(f"I can't tell whether {guest_type} {guest_id} remains; current guest visibility for its source is incomplete or unknown.")
+        if task_status in {"RUNNING", "ERROR", "UNKNOWN"}:
+            parts.append(f"Its latest archived restore-task status is {task_status.casefold()}.")
+
+    if not task_history_complete:
+        parts.append("Restore-task history is partial or truncated, so other recent restore guests may be unaccounted for.")
+    parts.append("This activity window is limited to the last seven days; older restore operations were not checked.")
+
+    parts.append(
+        "This check joins archived restore tasks to current Proxmox inventory by source ID and guest ID; "
+        "it does not verify guest boot, operating-system, or application health."
+    )
+    if activity_read_times:
+        parts.append("Restore-task reads completed at " + "; ".join(activity_read_times[:4]) + ".")
+    else:
+        parts.append("Restore-task read timestamps were not reported.")
+    if guest_read_times:
+        parts.append("Current guest-inventory reads completed at " + "; ".join(guest_read_times[:4]) + ".")
+    else:
+        parts.append("Current guest-inventory read timestamps were not reported.")
+    return " ".join(parts)
+
+
+def _hades_direct_backup_restore_guest_state_read(user_text, subject, scope):
+    """Read current inventory and recent tasks for owner restore-clone questions."""
+    if scope != "owner" or not subject or not _hades_backup_restore_guest_state_intent(user_text):
+        return None
+    try:
+        activity = _hades_direct_homelab_tool_result(
+            "homelab_recent_activity", {"window_hours": 168},
+        )
+        summary = _hades_direct_homelab_tool_result("homelab_summary")
+    except Exception as exc:
+        _hades_logger.warning("Owner restore guest state read failed: %s", type(exc).__name__)
+        return "I couldn't verify whether recent backup restore guests remain present."
+    return _hades_backup_restore_guest_state_response(activity, summary)
+
+
 def _hades_endpoint_intent_before_provision(user_text):
     """Route endpoint-only questions to inventory, preserving explicit create intent."""
     text = str(user_text or "")
@@ -11865,6 +12040,24 @@ try:
                 return {
                     "final_response": recipe_servings_response,
                     "messages": [{"role": "assistant", "content": recipe_servings_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            backup_restore_guest_state = _hades_direct_backup_restore_guest_state_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if backup_restore_guest_state:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(backup_restore_guest_state)
+                _hades_logger.info(
+                    "Owner restore guest-state reconciliation completed without model invocation"
+                )
+                return {
+                    "final_response": backup_restore_guest_state,
+                    "messages": [{"role": "assistant", "content": backup_restore_guest_state}],
                     "api_calls": 0,
                     "completed": True,
                 }

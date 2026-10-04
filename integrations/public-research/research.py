@@ -538,7 +538,7 @@ _HIGH_RISK_PERSON_ATTRIBUTE = (
 )
 _NAMED_PERSON_SENSITIVE_ATTRIBUTE = (
     r"\b(?:home|house|residen(?:ce|tial)|address|whereabouts|current\s+location|location|hotel|apartment|"
-    r"unit\s+(?:number|#)|room\s+(?:number|#)|stay(?:ing)?|lodg(?:e|ing)|sleep(?:ing)?|liv(?:e|ing)|schedule|routine|after\s+work|right\s+now|"
+    r"unit\s+(?:number|#)|room\s+(?:number|#)|stay(?:ing)?|lodg(?:e|ing)|sleep(?:ing)?|liv(?:e|ing)|schedule|routine|after\s+work|"
     r"phone|cell|mobile|telephone|email|contact|date\s+of\s+birth|birth\s+date|birthday|"
     r"social\s+security\s+(?:number|no\.?|#)|SSN|passport\s+(?:number|no\.?|#)|"
     r"driver'?s\s+license\s+(?:number|no\.?|#)|national\s+ID\s+(?:number|no\.?|#)|salary|earnings?|income|wages?|pay|compensation|"

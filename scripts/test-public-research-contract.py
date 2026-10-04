@@ -1226,6 +1226,13 @@ assert not module.is_explicit_private_person_query(
 assert not module.is_explicit_private_person_query(
     "What machine should host another AI model right now? Consider current health, available GPU memory, and what is already running, and tell me what is not connected."
 )
+for infrastructure_status_query in (
+    "Which Proxmox guests are running right now, and which are stopped?",
+    "Did the recent backup restore checks leave any temporary guests present or running right now?",
+):
+    assert not module.is_explicit_private_person_query(infrastructure_status_query), infrastructure_status_query
+assert module.is_explicit_private_person_query("Where is Alex Example right now?")
+assert module.is_explicit_private_person_query("Is my neighbor's VM still running right now?")
 
 for public_support_request in (
     "What support services are available for survivors of domestic violence in Example City?",

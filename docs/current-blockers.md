@@ -269,3 +269,21 @@ Network diagnosis remains limited by absent loss, throughput, DNS timing, and
 long-term trend telemetry. Fresh owner/Household A/B UI evidence remains
 protected outside this public repository; recent representative household
 prompts disclosed no private topology or owner-only details.
+
+### Current review branch follow-up
+
+Fresh authenticated owner dogfood found that asking whether recent restore
+checks left temporary guests present was routed to HADES repository backup
+status instead of current Proxmox guest inventory. The owner-only source route
+and regression coverage are now implemented on the review branch. It joins
+bounded restore tasks to current guest rows by stable Proxmox source and guest
+IDs, qualifies partial visibility as unknown, and does not claim guest or
+application health. The generic-infrastructure/private-person classifier false
+positive encountered by this route is also fixed, with named-person location
+controls retained.
+
+Focused contracts and the Hermes runtime route test pass. This fix remains
+repository/synthetic verified only; production is unchanged and the exact
+candidate still needs Public CI, review, and separately authorized deployment
+acceptance. Backup contents, restoreability, and older or truncated task history
+remain outside what this route can establish.

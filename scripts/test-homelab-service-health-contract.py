@@ -42,6 +42,8 @@ wanted = {
     '_hades_endpoint_continuation_response',
     '_hades_direct_owner_location',
     '_hades_direct_proxmox_backup_read',
+    '_hades_backup_restore_guest_state_intent',
+    '_hades_backup_restore_guest_state_response',
     '_hades_homelab_name_key',
     '_hades_homelab_display_label',
     '_hades_homelab_named_machine_records',
@@ -593,6 +595,67 @@ partial_cluster_response = namespace['_hades_homelab_workloads_on_host_response'
 )
 assert 'Only guests visible' in partial_cluster_response, partial_cluster_response
 assert 'incomplete or unknown' in partial_cluster_response, partial_cluster_response
+
+restore_guest_question = (
+    'Did the recent backup restore checks leave any temporary guests '
+    'present or running right now?'
+)
+assert namespace['_hades_backup_restore_guest_state_intent'](restore_guest_question)
+assert not namespace['_hades_backup_restore_guest_state_intent'](
+    'Please restore my VM from backup now.'
+)
+restore_activity = {
+    'status': 'READABLE',
+    'source_status': {'proxmox': 'READABLE', 'netbox': 'READABLE'},
+    'endpoints': [{
+        'source_id': 'site-a', 'status': 'HEALTHY', 'scope': 'ALL_GUESTS',
+        'retrieved_at': '2026-10-04T01:40:02Z',
+        'events': [
+            {'guest_id': '804', 'task_type': 'vzrestore', 'status': 'OK'},
+            {'guest_id': '804', 'task_type': 'vzdestroy', 'status': 'OK'},
+            {'guest_id': '911', 'task_type': 'qmrestore', 'status': 'OK'},
+        ],
+    }],
+}
+restore_summary = {
+    'status': 'PARTIAL',
+    'proxmox_guest_visibility': {
+        'status': 'COMPLETE', 'scope': 'ALL_GUESTS',
+        'endpoints': [{'source_identity': 'proxmox:site-a', 'status': 'HEALTHY', 'scope': 'ALL_GUESTS'}],
+    },
+    'sources': [{'source': 'Proxmox guest visibility (site-a)', 'retrieved_at': '2026-10-04T01:40:03Z'}],
+    'resources': [{
+        'name': 'Synthetic restored VM', 'runtime_status': 'RUNNING',
+        'runtime': {'type': 'qemu', 'vmid': 911, 'status': 'running'},
+        'identity': {'source_identities': {'proxmox': ['proxmox:site-a:qemu:911']}},
+    }],
+}
+restore_answer = namespace['_hades_backup_restore_guest_state_response'](
+    restore_activity, restore_summary,
+)
+assert 'container 804 is absent from the current complete guest inventory' in restore_answer, restore_answer
+assert 'VM 911 is present and Proxmox reports it running' in restore_answer, restore_answer
+assert '2026-10-04T01:40:02Z' in restore_answer and '2026-10-04T01:40:03Z' in restore_answer, restore_answer
+
+partial_restore_summary = {
+    **restore_summary,
+    'proxmox_guest_visibility': {
+        'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
+        'endpoints': [{'source_identity': 'proxmox:site-a', 'status': 'DEGRADED', 'scope': 'SELECTED_GUESTS'}],
+    },
+    'resources': [],
+}
+partial_restore_answer = namespace['_hades_backup_restore_guest_state_response'](
+    restore_activity, partial_restore_summary,
+)
+assert "can't tell whether container 804 remains" in partial_restore_answer, partial_restore_answer
+assert 'container 804 is absent' not in partial_restore_answer, partial_restore_answer
+
+unavailable_restore_answer = namespace['_hades_backup_restore_guest_state_response'](
+    {'status': 'SOURCE_UNAVAILABLE', 'endpoints': [], 'source_status': {'proxmox': 'SOURCE_UNAVAILABLE'}},
+    restore_summary,
+)
+assert 'couldn\'t read recent Proxmox restore-task history' in unavailable_restore_answer, unavailable_restore_answer
 
 host_workloads = workloads_on_host('What is running on Runtime Node A?', [
     {'name': 'Runtime Node A', 'runtime_status': 'online',

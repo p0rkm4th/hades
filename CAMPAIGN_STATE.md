@@ -141,3 +141,26 @@ change requires a tested candidate, explicit scope, and rollback.
   trends and backup verification, and unverified successful inference. Consult
   the current status and remaining-evidence sections above for their present
   disposition.
+
+### Proxmox restore follow-up routing — 2026-10-03
+
+A fresh owner follow-up asking whether recent backup restore checks left temporary
+Proxmox guests present was routed to repository Backup Check status instead of
+current guest inventory. The earlier cluster-wide guest question also exposed a
+separate production route defect, already captured by the current review
+candidate. Source code now adds an owner-only bounded route that joins recent
+restore task guest IDs to current Proxmox inventory by stable source and guest
+identity. It reports current presence/power state only when inventory scope is
+complete, preserves unknown for partial scope, and states that task history and
+guest health are bounded. A public-research privacy false positive on generic
+infrastructure prompts was fixed while named-person current-location requests
+remain refused.
+
+Focused public-research, homelab service-health, deterministic decision API,
+direct MCP routing, overlay composition, Python compilation, and Hermes runtime
+contracts pass. The Hermes runtime test confirms the restore follow-up reads
+recent Proxmox activity plus current inventory for an owner, does not fall back
+to repository backup status, and performs no privileged reads for a household
+user. These are repository/synthetic contract results; the new code has not
+been deployed or owner-dogfooded. Production remains unchanged pending approval
+of the exact new candidate.
