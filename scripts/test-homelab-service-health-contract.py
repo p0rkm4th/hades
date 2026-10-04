@@ -20,6 +20,7 @@ wanted = {
     '_hades_service_endpoint_response',
     '_hades_endpoint_continuation_response',
     '_hades_direct_owner_location',
+    '_hades_household_homelab_boundary_response',
 }
 functions = [
     node for node in tree.body
@@ -42,6 +43,62 @@ endpoint_before_provision = namespace['_hades_endpoint_intent_before_provision']
 endpoint_response = namespace['_hades_service_endpoint_response']
 endpoint_continuation = namespace['_hades_endpoint_continuation_response']
 direct_owner_location = namespace['_hades_direct_owner_location']
+household_boundary = namespace['_hades_household_homelab_boundary_response']
+
+household_health = household_boundary('Are all the computers okay? Is Minecraft working?')
+assert household_health == (
+    "I can't verify the computers' live status from this account, so I can't say whether everything is okay. "
+    "I can't confirm that Minecraft is online from an approved live status check."
+), household_health
+household_topology = household_boundary(
+    'Which computer is having trouble, and where does HADES run?'
+)
+assert "can't verify the computers' live status" in household_topology, household_topology
+assert "can't share internal host or network details" in household_topology, household_topology
+assert all(
+    secret not in household_topology
+    for secret in ('Proxmox', 'NetBox', '192.168.', 'mcp__')
+)
+household_minecraft = household_boundary('Is the Minecraft server online?')
+assert household_minecraft == (
+    "I can't confirm that Minecraft is online from an approved live status check."
+), household_minecraft
+assert household_boundary('What does Minecraft do?') is None
+assert household_boundary('Can you help me pick a Minecraft skin?') is None
+run_conversation = next(
+    node for node in ast.walk(tree)
+    if isinstance(node, ast.FunctionDef) and node.name == '_hades_run_conversation'
+)
+boundary_call = next(
+    node for node in ast.walk(run_conversation)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == '_hades_household_homelab_boundary_response'
+)
+assert boundary_call
+boundary_guard = next(
+    node for node in ast.walk(run_conversation)
+    if isinstance(node, ast.If)
+    and any(
+        isinstance(child, ast.Call)
+        and isinstance(child.func, ast.Name)
+        and child.func.id == '_hades_household_homelab_boundary_response'
+        for child in ast.walk(node)
+    )
+)
+assert ast.unparse(boundary_guard.test) == "self._hades_session_scope == 'household'"
+assert any(
+    isinstance(node, ast.Return)
+    and isinstance(node.value, ast.Dict)
+    and any(
+        isinstance(key, ast.Constant)
+        and key.value == 'api_calls'
+        and isinstance(value, ast.Constant)
+        and value.value == 0
+        for key, value in zip(node.value.keys, node.value.values)
+    )
+    for node in ast.walk(boundary_guard)
+)
 
 # A generalized public build must not repeat the previous private deployment's
 # machine, node, or address. An owner may supply an explicit private description.

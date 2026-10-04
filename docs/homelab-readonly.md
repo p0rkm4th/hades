@@ -21,6 +21,12 @@ Hindsight may supply remembered labels or locations, but live status always
 comes from the relevant canonical system. HADES must report stale, unavailable,
 or partial data rather than infer health.
 
+Household users do not receive owner topology or raw homelab source output. If
+there is no explicitly approved household-safe live status source for a
+request, HADES must answer with an explicit unknown before model or memory
+fallback; it must not claim computers or services are healthy from remembered
+conversation content or expose internal MCP/tool names.
+
 ## Credential-independent preparation
 
 Before any future integration is enabled, run

@@ -6610,6 +6610,59 @@ def _hades_contextual_followup_clarification(user_text, previous_user_text):
     return None
 
 
+def _hades_household_homelab_boundary_response(user_text):
+    """Fail closed without leaking household memory or tool internals."""
+    text = str(user_text or "")
+    domain = re.search(
+        r"\b(?:homelab|home\s+lab|servers?|computers?|machines?|nodes?|network|minecraft|hades)\b",
+        text,
+        re.IGNORECASE,
+    )
+    if not domain:
+        return None
+    status = re.search(
+        r"\b(?:okay|ok|well|working|healthy|health|status|down|up|running|online|offline|"
+        r"trouble|wrong|broken|slow|available|alive|doing|responding|reachable|"
+        r"can\s+we\s+use|which\s+.*(?:trouble|problem)|what\s+changed)\b",
+        text,
+        re.IGNORECASE,
+    )
+    location = re.search(
+        r"\b(?:where\b.{0,60}\b(?:run|running|hosted|located|live)|"
+        r"which\s+(?:computer|server|machine|node)\b.{0,60}\b(?:run|running|hosted|located|live))",
+        text,
+        re.IGNORECASE,
+    )
+    if not status and not location:
+        return None
+
+    parts = []
+    aggregate_status = re.search(
+        r"\b(?:computers?|machines?|nodes?|homelab|home\s+lab|network)\b",
+        text,
+        re.IGNORECASE,
+    )
+    if aggregate_status:
+        parts.append(
+            "I can't verify the computers' live status from this account, so I can't say whether everything is okay."
+        )
+    elif (
+        re.search(r"\bservers?\b", text, re.IGNORECASE)
+        and not re.search(r"\bminecraft\b", text, re.IGNORECASE)
+    ):
+        parts.append("I can't verify the server's live status from this account.")
+    if re.search(r"\bminecraft\b", text, re.IGNORECASE):
+        parts.append("I can't confirm that Minecraft is online from an approved live status check.")
+    if location:
+        parts.append("I can't share internal host or network details from this account.")
+    if not parts:
+        parts.append(
+            "I can't verify current infrastructure status from this account, "
+            "so I won't guess from remembered information."
+        )
+    return " ".join(parts)
+
+
 try:
     import json
     import logging
@@ -9293,6 +9346,23 @@ try:
                 "api_calls": 0,
                 "completed": True,
             }
+        if self._hades_session_scope == "household":
+            household_status_response = _hades_household_homelab_boundary_response(
+                current_text
+            )
+            if household_status_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(household_status_response)
+                _hades_logger.info(
+                    "Household homelab status request answered fail-closed without model or tool invocation"
+                )
+                return {
+                    "final_response": household_status_response,
+                    "messages": [{"role": "assistant", "content": household_status_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         # Provisioning starts with a deterministic, read-only preflight. This
         # keeps a small local model from inventing a web/terminal answer or a
         # VM target before the user has seen the approved catalog. The actual
