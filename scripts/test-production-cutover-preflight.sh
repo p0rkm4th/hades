@@ -26,6 +26,7 @@ for marker in \
   'encrypted custody remains pending:' \
   'HADES_DESTINATION_IP:?' \
   'HADES_DESTINATION_VMID:?' \
+  'HADES_DESTINATION_HOSTNAME:?' \
   'HADES_ROLLBACK_HOST:?' \
   'HADES_PROXMOX_HOST:?' \
   'HADES_DESTINATION_REPO:?' \

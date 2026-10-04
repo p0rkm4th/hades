@@ -303,3 +303,12 @@ The runtime must distinguish host reachability, guest power state, service
 process state, endpoint health, and a successful functional request. Stale
 observations cannot be promoted to live truth, and one unavailable optional
 source must not erase unrelated results.
+
+### HADES Core guest identity
+
+If the Proxmox guest running HADES uses a deployment-specific name, provide
+that name through the protected `HADES_CORE_PROXMOX_GUEST_NAMES` environment
+variable (comma-separated when aliases are needed). Do not commit real guest
+names to source or fixtures. Without an explicit match in the current guest
+inventory, placement remains unknown; HADES does not infer the guest from an
+IP address or a historical label.

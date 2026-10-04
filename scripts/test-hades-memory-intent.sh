@@ -88,7 +88,7 @@ assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The servic
 assert overlay._hades_should_skip_automatic_memory("HADES_TASK_NOTIFICATION_FEED_V1", '{"version":1,"tasks":[]}') is True
 assert overlay._hades_nonpersonal_state_turn("Is Minecraft healthy enough for tonight?") is True
 assert overlay._hades_should_skip_automatic_memory("Is Minecraft healthy enough for tonight?", "Uptime Kuma's configured check is up.") is True
-assert overlay._hades_should_skip_automatic_memory("Are all the computers okay?", "The live status is hades-core only.") is True
+assert overlay._hades_should_skip_automatic_memory("Are all the computers okay?", "The live status is synthetic-core-node only.") is True
 assert overlay._hades_should_skip_automatic_memory("Why does the network feel slow?", "No current network telemetry is available.") is True
 for public_research_turn in (
     'Research the public launch date of Synthetic Product.',

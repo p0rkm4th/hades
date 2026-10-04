@@ -40,6 +40,7 @@ wanted = {
     '_hades_homelab_guest_index_host_target',
     '_hades_homelab_guest_index_workloads_on_host_response',
     '_hades_resolve_homelab_adapter_path',
+    '_hades_homelab_core_guest_name_keys',
     '_hades_homelab_core_vm_placement_intent',
     '_hades_homelab_core_vm_placement_index_response',
     '_hades_homelab_core_vm_placement_response',
@@ -97,6 +98,7 @@ workloads_on_host_response = namespace['_hades_homelab_guest_index_workloads_on_
 resolve_homelab_adapter_path = namespace['_hades_resolve_homelab_adapter_path']
 core_placement_intent = namespace['_hades_homelab_core_vm_placement_intent']
 core_placement_response = namespace['_hades_homelab_core_vm_placement_response']
+os.environ['HADES_CORE_PROXMOX_GUEST_NAMES'] = 'synthetic-core-node'
 agent_zero_placement = namespace['_hades_agent_zero_runtime_placement_response']
 direct_agent_zero_placement = namespace['_hades_direct_homelab_agent_zero_placement_read']
 gpu_execution_intent = namespace['_hades_homelab_gpu_execution_intent']
@@ -319,19 +321,19 @@ core_placement = core_placement_response({
             'status': 'COMPLETE', 'visibility_scope': 'ALL_GUESTS',
             'retrieved_at': 'synthetic-core-read', 'truncated': False,
             'guests': [{
-                'name': 'HADES Core', 'guest_type': 'qemu', 'guest_id': '202',
+            'name': 'synthetic-core-node', 'guest_type': 'qemu', 'guest_id': '202',
                 'node': 'Synthetic Hypervisor', 'status': 'RUNNING',
             }],
         }],
     },
 })
-assert 'HADES Core (VM 202) is running on Synthetic Hypervisor' in core_placement, core_placement
+assert 'synthetic-core-node (VM 202) is running on Synthetic Hypervisor' in core_placement, core_placement
 assert 'does not verify HADES application health' in core_placement, core_placement
 partial_core_placement = core_placement_response({
     'proxmox_guest_inventory': {
         'status': 'PARTIAL', 'endpoints': [{
             'status': 'PARTIAL', 'visibility_scope': 'SELECTED_GUESTS',
-            'guests': [{'name': 'hades-core', 'guest_type': 'qemu', 'guest_id': '202',
+            'guests': [{'name': 'synthetic-core-node', 'guest_type': 'qemu', 'guest_id': '202',
                         'node': 'Synthetic Hypervisor', 'status': 'RUNNING'}],
         }],
     },

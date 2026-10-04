@@ -493,14 +493,12 @@ synthetic household soak, but it has not been run through authenticated Alpha,
 Beta, and Gamma sessions on Guest B. Guest-level backup/destroy/restore also
 remains open; overall installation/rebuild is still `PARTIAL`.
 
-On 2026-09-16, the actual-image composition was also rerun on the
-non-production `hades-core` destination staging guest from HADES revision
-`0667aa0`. Its 40-GiB disk accommodated the pinned image set; all seven
-disposable containers reached the expected readiness checks, Alpha persistence
-and Beta private-chat denial survived an Open WebUI restart, and cleanup
-retained no containers or networks. This strengthens destination composition
-evidence, but is not a fresh-guest installer run, restored production state,
-or cutover acceptance.
+A non-production destination guest also passed an actual-image composition
+rehearsal for a pinned component subset. Disposable containers reached their
+readiness checks, synthetic persistence and household isolation survived an
+Open WebUI restart, and cleanup retained no containers or networks. This is
+composition evidence only; it is not a fresh-guest installer run, restored
+production state, or cutover acceptance.
 
 The clean Hindsight reconstruction contract uses API port 8888 and control
 plane port 9999 inside the image. The generated template now keeps those

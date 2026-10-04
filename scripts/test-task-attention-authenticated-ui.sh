@@ -164,7 +164,7 @@ cat >"$homelab_root/integrations/homelab-readonly/server.py" <<'PY'
 def homelab_summary():
     return {
         "status": "OK",
-        "online_names": ["hades-core"],
+        "online_names": ["synthetic-core-node"],
         "inventory_only_names": [],
         "availability_summary": [
             {"name": "Minecraft Server", "status": "up", "freshness": "FRESH"},
@@ -178,10 +178,10 @@ def homelab_summary():
         "conflicts": [],
         "errors": [],
         "resources": [{
-            "name": "hades-core",
+            "name": "synthetic-core-node",
             "runtime_status": "running",
             "currently_online": True,
-            "runtime": {"name": "hades-core", "vmid": 202, "status": "running"},
+            "runtime": {"name": "synthetic-core-node", "vmid": 202, "status": "running"},
         }, {
             "name": "Minecraft Server",
             "runtime_status": "NOT_OBSERVED",
@@ -232,6 +232,7 @@ YAML
 docker volume create "$volume" >/dev/null
 
 export HERMES_HOME="$work/hermes"
+export HADES_CORE_PROXMOX_GUEST_NAMES=synthetic-core-node
 hermes_bin=$(readlink -f "$(command -v hermes)")
 export HADES_HERMES_EXECUTABLE="$hermes_bin"
 hermes_python=${HADES_HERMES_PYTHON:-"$(dirname "$hermes_bin")/python3.11"}
@@ -338,7 +339,7 @@ if os.environ.get("HADES_TASK_ATTENTION_WEEKLY_PARTIAL") == "1":
     partial_weekly = compose_summary(
         {
             "grocy.household": ("Groceries", fail_grocy),
-            "hades-core.health": ("Servers", lambda: "All servers look okay."),
+            "synthetic-core-node.health": ("Servers", lambda: "All servers look okay."),
             "backup.evidence": ("Backups", lambda: "Last verified backup is healthy."),
         },
         lambda _resource: True,

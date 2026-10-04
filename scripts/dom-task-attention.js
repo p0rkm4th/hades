@@ -183,7 +183,7 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
     } else if (isCompoundServerBackupStatus) {
       for (const expected of [
         'SERVER STATUS:',
-        'Live Proxmox currently reports: hades-core.',
+        'Live Proxmox currently reports: synthetic-core-node.',
         'BACKUP COVERAGE:',
         'Your Backup Checks:',
         'Backup Check (HADES repository) — enabled',
@@ -193,7 +193,7 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
       }
     } else if (isDetailedHomelab) {
       for (const expected of [
-        'Live Proxmox currently reports: hades-core.',
+        'Live Proxmox currently reports: synthetic-core-node.',
         "Uptime Kuma's configured probes failed: Search",
         'Jellyfin (last reported down; stale)',
         "Uptime Kuma's configured probes responded for: Minecraft Server",
@@ -250,7 +250,7 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
         throw new Error(`${account} month-over-month finance request was not denied as owner-only: ${response}`);
       }
     } else if (isComputerStatus) {
-      if (!response.includes('Live Proxmox currently reports: hades-core.') ||
+      if (!response.includes('Live Proxmox currently reports: synthetic-core-node.') ||
           !response.includes('Repository backup freshness: HADES repository backup: healthy; last successful check') ||
           /memory update/i.test(response)) {
         throw new Error(`${account} low-tech computer status did not use the safe live homelab route: ${response}`);
@@ -300,14 +300,14 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
       }
     } else if (isMorningBriefing) {
       if (!response.includes('HADES morning briefing (bounded live sources):') ||
-          !response.includes('Live Proxmox currently reports: hades-core.')) {
+          !response.includes('Live Proxmox currently reports: synthetic-core-node.')) {
         throw new Error(`${account} morning briefing omitted the synthetic live source: ${response}`);
       }
     } else if (isFreshBriefingRecap) {
       for (const expected of [
         'HADES morning briefing refresh (bounded live sources):',
         'I refreshed the live sources instead of relying on a stale prior conversation',
-        'Live Proxmox currently reports: hades-core.',
+        'Live Proxmox currently reports: synthetic-core-node.',
         'Alpha synthetic dinner plan is waiting for your approval.',
       ]) {
         if (!response.includes(expected)) {

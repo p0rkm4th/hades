@@ -34,6 +34,7 @@ import sys
 import run_agent
 import sitecustomize as hades
 import threading
+os.environ["HADES_CORE_PROXMOX_GUEST_NAMES"] = "synthetic-core-node"
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from integrations.task import TaskStatus, TaskStore
@@ -227,7 +228,7 @@ server_overview = owner_server_agent.run_conversation(
     "Is everything okay with the servers?", conversation_history=[]
 )
 assert server_overview.get("completed") is True and server_overview.get("api_calls") == 0, server_overview
-assert "Live Proxmox currently reports: hades-core." in server_overview["final_response"], server_overview
+assert "Live Proxmox currently reports: synthetic-core-node." in server_overview["final_response"], server_overview
 assert "memory update" not in server_overview["final_response"].casefold(), server_overview
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
@@ -247,7 +248,7 @@ for index, prompt in enumerate((
     )
     variant = variant_agent.run_conversation(prompt, conversation_history=[])
     assert variant.get("completed") is True and variant.get("api_calls") == 0, (prompt, variant)
-    assert "Live Proxmox currently reports: hades-core." in variant["final_response"], (prompt, variant)
+    assert "Live Proxmox currently reports: synthetic-core-node." in variant["final_response"], (prompt, variant)
     assert "memory update" not in variant["final_response"].casefold(), (prompt, variant)
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 
@@ -310,7 +311,7 @@ ranking_answer = ranking_agent.run_conversation(
     "What's the most loaded server?", conversation_history=[]
 )
 assert ranking_answer.get("completed") is True and ranking_answer.get("api_calls") == 0, ranking_answer
-assert "hades-core at 94.0%" in ranking_answer["final_response"], ranking_answer
+assert "synthetic-core-node at 94.0%" in ranking_answer["final_response"], ranking_answer
 assert "host and guest readings are separate" in ranking_answer["final_response"], ranking_answer
 
 # A definition request should stay conversational instead of consulting the
@@ -336,7 +337,7 @@ assert "HADES-managed server" not in definition.get("final_response", ""), defin
 compound_calls = {"infrastructure": 0, "backup": 0}
 def compound_infrastructure(*_args, **_kwargs):
     compound_calls["infrastructure"] += 1
-    return "Live Proxmox reports synthetic-hades-core running."
+    return "Live Proxmox reports synthetic-synthetic-core-node running."
 def compound_backup(*_args, **_kwargs):
     compound_calls["backup"] += 1
     return "Your Backup Checks: HADES repository — enabled."
@@ -351,7 +352,7 @@ compound_status = compound_agent.run_conversation(
     conversation_history=[],
 )
 assert compound_status.get("completed") is True and compound_status.get("api_calls") == 0, compound_status
-assert "SERVER STATUS:" in compound_status["final_response"] and "synthetic-hades-core running" in compound_status["final_response"], compound_status
+assert "SERVER STATUS:" in compound_status["final_response"] and "synthetic-synthetic-core-node running" in compound_status["final_response"], compound_status
 assert "BACKUP COVERAGE:" in compound_status["final_response"] and "HADES repository — enabled" in compound_status["final_response"], compound_status
 assert compound_calls == {"infrastructure": 1, "backup": 1}, compound_calls
 assert hades._hades_direct_homelab_backup_compound(
@@ -377,7 +378,7 @@ actual_compound_status = actual_compound_agent.run_conversation(
     conversation_history=[],
 )
 assert actual_compound_status.get("completed") is True and actual_compound_status.get("api_calls") == 0, actual_compound_status
-assert "Live Proxmox currently reports: hades-core." in actual_compound_status["final_response"], actual_compound_status
+assert "Live Proxmox currently reports: synthetic-core-node." in actual_compound_status["final_response"], actual_compound_status
 assert "No Backup Check exists yet." in actual_compound_status["final_response"], actual_compound_status
 hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
@@ -468,7 +469,7 @@ blocker_summary = blockers_agent.run_conversation(
     "Are there any blockers in the homelab?", conversation_history=[]
 )
 assert blocker_summary.get("completed") is True and blocker_summary.get("api_calls") == 0, blocker_summary
-assert "Live Proxmox currently reports: hades-core." in blocker_summary["final_response"], blocker_summary
+assert "Live Proxmox currently reports: synthetic-core-node." in blocker_summary["final_response"], blocker_summary
 assert "No blocker was reported by the configured live sources." in blocker_summary["final_response"], blocker_summary
 assert "HADES Core runtime is running." in blocker_summary["final_response"], blocker_summary
 
@@ -486,7 +487,7 @@ network_diagnosis = network_agent.run_conversation(
 )
 assert network_diagnosis.get("completed") is True and network_diagnosis.get("api_calls") == 0, network_diagnosis
 network_text = network_diagnosis["final_response"]
-assert "Live Proxmox currently reports: hades-core." in network_text, network_text
+assert "Live Proxmox currently reports: synthetic-core-node." in network_text, network_text
 assert "CPU 94.0%" in network_text, network_text
 assert "Uptime Kuma's configured probes failed: Search latency check." in network_text, network_text
 assert "Fresh configured-probe response-time samples: Router ping: 84 ms." in network_text, network_text
@@ -579,11 +580,11 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
     (adapter / "server.py").write_text(
         (
         'def homelab_summary():\n'
-        '    resources = [{"name": "hades-core", "runtime_status": "running",\n'
+        '    resources = [{"name": "synthetic-core-node", "runtime_status": "running",\n'
         '                  "currently_online": True,\n'
         '                  "identity": {"canonical_id": "netbox:device:42"},\n'
         '                  "inventory": {"name": "Compute Alpha", "role": "inference"},\n'
-        '                  "runtime": {"name": "hades-core", "vmid": 202, "status": "running",\n'
+        '                  "runtime": {"name": "synthetic-core-node", "vmid": 202, "status": "running",\n'
         '                              "cpu": 0.94, "mem": 32212254720, "maxmem": 34359738368,\n'
         '                              "disk": 85899345920, "maxdisk": 96636764160}}]\n'
         '    if __import__("os").environ.get("HADES_TEST_HOMELAB_deep_node_MONITOR") == "1":\n'
@@ -596,7 +597,7 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '                          "conflicts": []})\n'
         '    return {\n'
         '        "status": "OK",\n'
-        '        "online_names": ["hades-core"],\n'
+        '        "online_names": ["synthetic-core-node"],\n'
         '        "inventory_only_names": [],\n'
         '        "availability_summary": ([{"name": "Search latency check", "status": "down", "freshness": "FRESH"},\n'
         '                                  {"name": "Router ping", "status": "up", "freshness": "FRESH", "ping_ms": 84}]\n'

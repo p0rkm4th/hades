@@ -44,15 +44,15 @@ assert resource["identity"]["link_status"] == "NAME_MATCH_ONLY"
 assert result["source_counts"]["identity_unlinked_resources"] == 0
 assert result["authority"]["runtime"] == "Proxmox"
 vm_result = module.summarize(
-    {"data": [{"type": "qemu", "vmid": 102, "name": "hades-core", "node": "hypervisor-alpha", "status": "running"}]},
+    {"data": [{"type": "qemu", "vmid": 102, "name": "synthetic-core-node", "node": "hypervisor-alpha", "status": "running"}]},
     {"results": []},
     {"monitors": []},
 )
 vm_resource = vm_result["resources"][0]
-assert vm_result["online_names"] == ["hades-core"]
+assert vm_result["online_names"] == ["synthetic-core-node"]
 assert vm_result["inventory_only_names"] == []
 assert vm_resource["runtime"] == {
-    "name": "hades-core", "node": "hypervisor-alpha", "type": "qemu", "vmid": 102, "status": "running"
+    "name": "synthetic-core-node", "node": "hypervisor-alpha", "type": "qemu", "vmid": 102, "status": "running"
 }
 assert vm_resource["inventory"] is None
 assert vm_resource["currently_online"] is True
@@ -65,8 +65,8 @@ future = module.summarize(
 assert future["resources"][0]["availability_freshness"] == "UNKNOWN"
 duplicate_guest_names = module.summarize(
     {"data": [
-        {"type": "qemu", "vmid": 100, "name": "hades-core", "node": "hypervisor-alpha", "status": "stopped"},
-        {"type": "qemu", "vmid": 102, "name": "hades-core", "node": "hypervisor-alpha", "status": "running"},
+        {"type": "qemu", "vmid": 100, "name": "synthetic-core-node", "node": "hypervisor-alpha", "status": "stopped"},
+        {"type": "qemu", "vmid": 102, "name": "synthetic-core-node", "node": "hypervisor-alpha", "status": "running"},
     ]},
     {"results": []},
     {"monitors": []},
@@ -433,7 +433,7 @@ os.environ.update({
 })
 original_fetch = server._fetch
 runtime_fixture = {
-    "type": "qemu", "vmid": 102, "name": "hades-core", "node": "hypervisor-alpha",
+    "type": "qemu", "vmid": 102, "name": "synthetic-core-node", "node": "hypervisor-alpha",
     "status": "running", "cpu": 0.25, "maxcpu": 16, "mem": 1073741824,
     "maxmem": 8589934592, "disk": 10737418240, "maxdisk": 53687091200,
     "uptime": 3600, "unrelated_secret_like_field": "must-not-escape",
@@ -469,9 +469,9 @@ server._fetch = fixture_fetch
 summary = server.homelab_summary()
 assert summary["status"] == "OK", summary
 assert summary["source_counts"]["proxmox_runtime_rows"] == 2, summary
-runtime_row = next(row for row in summary["resources"] if row["name"] == "hades-core")
+runtime_row = next(row for row in summary["resources"] if row["name"] == "synthetic-core-node")
 assert runtime_row["runtime"] == {
-    "name": "hades-core", "node": "hypervisor-alpha", "type": "qemu", "vmid": 102,
+    "name": "synthetic-core-node", "node": "hypervisor-alpha", "type": "qemu", "vmid": 102,
     "status": "running", "cpu": 0.25, "maxcpu": 16,
     "mem": 1073741824, "maxmem": 8589934592,
     "disk": 10737418240, "maxdisk": 53687091200, "uptime": 3600,
@@ -503,7 +503,7 @@ assert guest_index["endpoints"][0]["nodes"] == [{
 assert guest_index["endpoints"][0]["guests"] == [{
     "source_identity": "proxmox:synthetic:qemu:102",
     "node_identity": "proxmox:synthetic:node:hypervisor-alpha", "guest_type": "qemu",
-    "guest_id": "102", "name": "hades-core", "node": "hypervisor-alpha",
+    "guest_id": "102", "name": "synthetic-core-node", "node": "hypervisor-alpha",
     "status": "RUNNING",
 }], guest_index
 assert "192.0.2" not in str(guest_index)
@@ -644,7 +644,7 @@ def activity_fetch(url, *_args, **_kwargs):
     if url.endswith("/cluster/resources"):
         return {"data": [
             {"type": "node", "node": "hypervisor-alpha"},
-            {"type": "qemu", "vmid": 102, "name": "hades-core"},
+            {"type": "qemu", "vmid": 102, "name": "synthetic-core-node"},
         ]}
     if "/nodes/hypervisor-alpha/tasks?" in url:
         return {"data": [
@@ -688,7 +688,7 @@ def partial_fetch(url, *_args, **_kwargs):
             raise OSError("synthetic endpoint unavailable on the repeated read")
         return {"data": [{
             "id": "qemu/102", "type": "qemu", "vmid": 102,
-            "name": "hades-core", "node": "alpha", "status": "running",
+            "name": "synthetic-core-node", "node": "alpha", "status": "running",
         }]}
     if url == "https://pve-b.example.test/cluster/resources":
         raise OSError("synthetic endpoint timeout")
@@ -750,7 +750,7 @@ def netbox_outage_fetch(url, *_args, **_kwargs):
     if url == "https://pve-a.example.test/cluster/resources":
         return {"data": [{
             "id": "qemu/102", "type": "qemu", "vmid": 102,
-            "name": "hades-core", "node": "alpha", "status": "running",
+            "name": "synthetic-core-node", "node": "alpha", "status": "running",
         }]}
     if url == "https://pve-a.example.test/access/permissions":
         return {"data": {"/vms/102": {"VM.Audit": 1}}}
@@ -775,12 +775,12 @@ identity_path.write_text(json.dumps({"links": [
     {"source_identity": "proxmox:alpha:qemu:102", "netbox_device_id": 102},
 ]}), encoding="utf-8")
 identity_path.chmod(0o600)
-seed_device = {"id": 102, "name": "hades-core", "role": "application"}
+seed_device = {"id": 102, "name": "synthetic-core-node", "role": "application"}
 def netbox_seed_fetch(url, *_args, **_kwargs):
     if url == "https://pve-a.example.test/cluster/resources":
         return {"data": [{
             "id": "qemu/102", "type": "qemu", "vmid": 102,
-            "name": "hades-core", "node": "alpha", "status": "running",
+            "name": "synthetic-core-node", "node": "alpha", "status": "running",
         }]}
     if url == "https://pve-b.example.test/cluster/resources":
         return {"data": []}
@@ -815,7 +815,7 @@ netbox_outage = server.homelab_summary()
 assert netbox_outage["status"] == "PARTIAL", netbox_outage
 assert netbox_outage["source_counts"]["netbox_inventory_rows"] == 0
 assert netbox_outage["source_counts"]["proxmox_runtime_rows"] == 1
-assert "hades-core" in netbox_outage["online_names"]
+assert "synthetic-core-node" in netbox_outage["online_names"]
 outage_resource = next(
     row for row in netbox_outage["resources"]
     if (row.get("runtime") or {}).get("vmid") == 102

@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
 from pathlib import Path
+
+os.environ["HADES_CORE_PROXMOX_GUEST_NAMES"] = "synthetic-core-node"
 
 
 hermes_source = Path("hermes/sitecustomize.py").read_text(encoding="utf-8")
@@ -17,6 +20,7 @@ helper_names = {
     "_hades_homelab_guest_inventory_intent",
     "_hades_homelab_guest_inventory_response",
     "_hades_direct_homelab_guest_inventory_read",
+    "_hades_homelab_core_guest_name_keys",
     "_hades_homelab_core_vm_placement_intent",
     "_hades_homelab_core_vm_placement_index_response",
     "_hades_homelab_core_vm_placement_response",
@@ -70,6 +74,7 @@ def registry_read(tool_name, arguments=None):
 
 
 namespace = {
+    "os": os,
     "re": re,
     "_hades_logger": Logger(),
     "_hades_direct_homelab_tool_result": registry_read,
@@ -107,11 +112,11 @@ assert not dispatch_calls, dispatch_calls
 dispatch_calls.clear()
 summary["proxmox_guest_inventory"]["endpoints"][0]["guests"].append({
     "source_identity": "proxmox:alpha:qemu:202", "guest_type": "qemu",
-    "guest_id": "202", "name": "HADES Core", "node": "Synthetic Hypervisor",
+    "guest_id": "202", "name": "synthetic-core-node", "node": "Synthetic Hypervisor",
     "status": "RUNNING",
 })
 core_answer = core_placement_read("Where is HADES Core running?", "owner-1", "owner")
-assert "HADES Core (VM 202) is running on Synthetic Hypervisor" in core_answer, core_answer
+assert "synthetic-core-node (VM 202) is running on Synthetic Hypervisor" in core_answer, core_answer
 assert dispatch_calls == [("homelab_summary", None)], dispatch_calls
 dispatch_calls.clear()
 complete_core_index = {"proxmox_guest_inventory": {
@@ -119,20 +124,20 @@ complete_core_index = {"proxmox_guest_inventory": {
         "source_id": "pve-alpha", "status": "COMPLETE",
         "visibility_scope": "ALL_GUESTS", "truncated": False,
         "retrieved_at": "current-guest-index-time", "guests": [
-            {"name": "hades-core", "guest_type": "qemu", "guest_id": "200",
+            {"name": "synthetic-core-node", "guest_type": "qemu", "guest_id": "200",
              "node": "Synthetic Hypervisor", "status": "STOPPED"},
-            {"name": "hades-core", "guest_type": "qemu", "guest_id": "202",
+            {"name": "synthetic-core-node", "guest_type": "qemu", "guest_id": "202",
              "node": "Synthetic Hypervisor", "status": "RUNNING"},
         ],
     }],
 }}
 index_answer = core_guest_index("Where is HADES running?", complete_core_index)
-assert "hades-core (VM 200) is stopped" in index_answer, index_answer
-assert "hades-core (VM 202) is running" in index_answer, index_answer
+assert "synthetic-core-node (VM 200) is stopped" in index_answer, index_answer
+assert "synthetic-core-node (VM 202) is running" in index_answer, index_answer
 assert "current-guest-index-time" in index_answer, index_answer
 assert core_guest_index("What's running?", complete_core_index) is None
 assert core_guest_index("Where is HADES running?", {"resources": [
-    {"name": "hades-core", "runtime_status": "running"},
+    {"name": "synthetic-core-node", "runtime_status": "running"},
 ]}) is None, "incumbent adapters without a guest index must retain their legacy route"
 assert core_placement_read("Where is HADES Core running?", "household-1", "household") is None
 assert not dispatch_calls, dispatch_calls

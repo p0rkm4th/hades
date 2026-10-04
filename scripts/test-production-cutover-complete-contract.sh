@@ -8,7 +8,7 @@ script="$repo_dir/scripts/verify-production-cutover-complete.sh"
 for marker in \
   'real destination acceptance record' \
   'HADES_DESTINATION_SSH:?' \
-  'HADES_DESTINATION_HOSTNAME:-hades-core' \
+  'HADES_DESTINATION_HOSTNAME:?HADES_DESTINATION_HOSTNAME is required' \
   'destination SSH identity is the expected homelab guest' \
   'authoritative hades.example.invalid reaches destination health' \
   'independent rollback package remains protected and verifiable' \

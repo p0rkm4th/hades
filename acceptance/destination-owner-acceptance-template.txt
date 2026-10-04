@@ -3,7 +3,7 @@
 # Do not put passwords or tokens here.
 schema=destination-owner-acceptance/v1
 environment=REAL_DESTINATION
-destination=hades-core
+destination=DESTINATION_HOSTNAME
 destination_endpoint=hades.example.invalid:3000
 owner_login=NOT RUN
 existing_conversation_visible=NOT RUN

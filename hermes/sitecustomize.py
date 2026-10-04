@@ -5411,6 +5411,15 @@ def _hades_homelab_core_vm_placement_intent(user_text):
     ))
 
 
+def _hades_homelab_core_guest_name_keys():
+    configured_names = [
+        item.strip() for item in str(os.environ.get("HADES_CORE_PROXMOX_GUEST_NAMES", "")).split(",")
+        if item.strip()
+    ]
+    names = configured_names or ["HADES", "HADES Core", "HADES VM", "HADES Core VM"]
+    return {re.sub(r"[^a-z0-9]+", "", name.casefold()) for name in names}
+
+
 def _hades_homelab_core_vm_placement_index_response(summary):
     """Resolve HADES Core placement only from a current guest inventory read."""
     inventory = summary.get("proxmox_guest_inventory") if isinstance(summary, dict) else None
@@ -5423,6 +5432,7 @@ def _hades_homelab_core_vm_placement_index_response(summary):
                 and str(endpoint.get("visibility_scope") or "").upper() == "ALL_GUESTS"
                 and endpoint.get("truncated") is not True for endpoint in endpoints)
     )
+    matching_name_keys = _hades_homelab_core_guest_name_keys()
     matches = []
     for endpoint in endpoints:
         if not isinstance(endpoint, dict):
@@ -5432,7 +5442,7 @@ def _hades_homelab_core_vm_placement_index_response(summary):
             if not isinstance(row, dict):
                 continue
             name_key = re.sub(r"[^a-z0-9]+", "", str(row.get("name") or "").casefold())
-            if name_key in {"hades", "hadescore", "hadesvm", "hadescorevm"}:
+            if name_key in matching_name_keys:
                 matches.append(row)
     if not matches:
         if complete:
@@ -6111,7 +6121,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
                 response += " Some sources are unavailable, so unreported nodes remain unknown."
             elif not down and not conflicts and not unknown and not errors:
                 response += " No blocker was reported by the configured live sources."
-            core = resources_by_name.get("hades-core") or resources_by_name.get("HADES Core")
+            matching_name_keys = _hades_homelab_core_guest_name_keys()
+            core = next((item for name, item in resources_by_name.items()
+                         if re.sub(r"[^a-z0-9]+", "", name.casefold()) in matching_name_keys), None)
             if core:
                 response += f" HADES Core runtime is {core.get('runtime_status', 'UNKNOWN')}."
             response += " Inference-worker health was not independently verified by this read."

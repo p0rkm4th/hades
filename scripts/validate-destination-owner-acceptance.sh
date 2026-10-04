@@ -2,6 +2,7 @@
 set -euo pipefail
 
 record=${1:?usage: validate-destination-owner-acceptance.sh RECORD}
+expected_guest=${HADES_DESTINATION_HOSTNAME:?HADES_DESTINATION_HOSTNAME is required}
 [[ -f "$record" ]] || { echo "FAIL acceptance record not found: $record"; exit 1; }
 
 required_keys=(
@@ -40,7 +41,7 @@ for key in "${required_keys[@]}"; do
       [[ "$value" == REAL_DESTINATION ]] || { echo 'FAIL record is not REAL_DESTINATION'; exit 1; }
       ;;
     destination)
-      [[ "$value" == hades-core ]] || { echo 'FAIL destination'; exit 1; }
+      [[ "$value" == "$expected_guest" ]] || { echo 'FAIL destination does not match configured destination'; exit 1; }
       ;;
     destination_endpoint)
       [[ "$value" == hades.example.invalid:3000 ]] || { echo 'FAIL destination endpoint'; exit 1; }
