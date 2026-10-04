@@ -282,17 +282,19 @@ application health. The generic-infrastructure/private-person classifier false
 positive encountered by this route is also fixed, with named-person location
 controls retained.
 
-Focused contracts and the Hermes runtime route test pass. This fix remains
-repository/synthetic verified only; production is unchanged and the exact
-candidate still needs Public CI, review, and separately authorized deployment
-acceptance. Backup contents, restoreability, and older or truncated task history
-remain outside what this route can establish.
+Focused contracts and the Hermes runtime route test pass. Candidate `e4b6084`
+passed Public CI run `37172827916`, and the composed artifact passed against a
+fresh read-only copy of the active production overlay. Production is unchanged;
+exact-candidate deployment acceptance remains separate. Backup contents,
+restoreability, and older or truncated task history remain outside what this
+route can establish.
 
 A deployment-shape review found that the initial restore-state implementation
 was outside the closure copied by the active-overlay composer. The route is now
 inside the composed homelab read path, with an earlier owner-only restore
 preflight ahead of the generic backup fallback and a household denial before
 source dispatch. The focused composer and composed Hermes runtime contracts
-pass against a fresh read-only copy of the current production overlay. This follow-up is now committed on the review branch; hosted CI for its exact
-revision is pending. No production file was changed. The previously posted
-`ac95286` CI success covers the preceding revision only.
+pass against a fresh read-only copy of the current production overlay. This
+follow-up is committed as `e4b6084` and passed Public CI run `37172827916`. No
+production file was changed. The preceding `ac95286` CI success covered the
+earlier source revision.
