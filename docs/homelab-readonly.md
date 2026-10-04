@@ -99,6 +99,10 @@ Use the protected identity-link file to join `inference:<endpoint-id>` to a
 canonical numeric NetBox device ID. Unlinked inference endpoints remain
 separate source observations; display names and addresses are not join keys.
 Missing or stale links do not make an endpoint healthy or identify its host.
+For owner questions, an exact configured inference endpoint ID may resolve as
+a lookup alias only when that endpoint is linked to exactly one current NetBox
+device. Responses use the canonical NetBox label; ambiguous and unlinked IDs
+remain unresolved and never become inventory names.
 
 For example, a private deployment may configure a JSON array like:
 

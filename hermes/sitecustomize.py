@@ -6709,27 +6709,30 @@ def _hades_direct_homelab_read(
             )) or placement_intent
             node_gpu_telemetry_intent = False
             if (node_activity_intent or named_node_capacity_target) and scope == "owner":
-                node_target_key = _hades_homelab_name_key(
-                    named_node_capacity_target or _hades_homelab_target_from_question(text)
+                requested_node = named_node_capacity_target or _hades_homelab_target_from_question(text)
+                resolve_node = getattr(module, "resolve_inference_node_target", None)
+                resolved_node = (
+                    resolve_node(requested_node, inference, summary)
+                    if callable(resolve_node) and requested_node else None
                 )
-                resources = summary.get("resources", []) if isinstance(summary, dict) else []
-                target_identities = set()
-                for resource in resources if isinstance(resources, list) else []:
-                    if not isinstance(resource, dict):
-                        continue
-                    inventory_record = resource.get("inventory") if isinstance(resource.get("inventory"), dict) else {}
-                    label = inventory_record.get("name") or resource.get("name")
-                    identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
-                    canonical_id = identity.get("canonical_id")
-                    if node_target_key and _hades_homelab_name_key(label) == node_target_key and canonical_id:
-                        target_identities.add(canonical_id)
-                inference_endpoints = inference.get("endpoints", []) if isinstance(inference, dict) else []
-                node_gpu_telemetry_intent = any(
-                    isinstance(endpoint, dict)
-                    and endpoint.get("node_identity") in target_identities
-                    and str(endpoint.get("source_identity") or "").startswith("inference:")
-                    for endpoint in inference_endpoints if isinstance(inference_endpoints, list)
-                )
+                if resolved_node is None and requested_node and not callable(resolve_node):
+                    # Older test/deployment adapters have no provider-ID alias
+                    # resolver. Preserve exact canonical-label routing while
+                    # requiring the current adapter for linked-ID aliases.
+                    target_key = _hades_homelab_name_key(requested_node)
+                    exact_matches = []
+                    for resource in summary.get("resources", []) if isinstance(summary, dict) else []:
+                        if not isinstance(resource, dict):
+                            continue
+                        inventory_record = resource.get("inventory") if isinstance(resource.get("inventory"), dict) else {}
+                        identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
+                        label = inventory_record.get("name") or resource.get("name")
+                        canonical_id = identity.get("canonical_id")
+                        if target_key and canonical_id and _hades_homelab_name_key(label) == target_key:
+                            exact_matches.append((canonical_id, label))
+                    if len(exact_matches) == 1:
+                        resolved_node = exact_matches[0]
+                node_gpu_telemetry_intent = resolved_node is not None
             gpu_telemetry = (
                 _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
                 if (gpu_intent or node_gpu_telemetry_intent) and scope == "owner" else None

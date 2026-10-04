@@ -770,12 +770,30 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         '"name": "Minecraft Server", "parent_name": "Test Host", '
         '"addresses": ["192.0.2.10"], "port_mappings": ["tcp/25565"]}]}}\n'
         'def homelab_inference_inventory():\n'
+        '    import os\n'
+        '    if os.environ.get("HADES_TEST_INFERENCE_ALIAS") == "1":\n'
+        '        return {"status": "READABLE", "endpoints": [{"status": "READABLE", '
+        '                "source_identity": "inference:compute-lane-a", '
+        '                "node_identity": "netbox:device:7", "identity_status": "LINKED", '
+        '                "models": [{"name": "sample:small"}], "loaded_models": [], '
+        '                "loaded_status": "CURRENT"}]}\n'
         '    return {"status": "READABLE", "endpoints": [{"status": "READABLE", '
         '            "node_identity": "netbox:device:7", "models": [{"name": "sample:small"}], '
         '            "loaded_models": [{"name": "sample:small"}]}]}\n'
+        'def resolve_inference_node_target(target, inventory, summary):\n'
+        '    if target.casefold() == "compute lane a" and inventory.get("endpoints", [{}])[0].get("identity_status") == "LINKED":\n'
+        '        return ("netbox:device:7", "Compute Node A")\n'
+        '    return None\n'
+        'def homelab_gpu_telemetry():\n'
+        '    return {"status": "READABLE", "retrieved_at": "2026-10-04T00:00:00Z", '
+        '            "endpoints": [{"inference_id": "compute-lane-a", "status": "READABLE", '
+        '            "devices": [{"index": 0, "memory_free_mib": 6000, "memory_total_mib": 8192, '
+        '            "gpu_utilization_percent": 35}]}]}\n'
         'def homelab_compute_capabilities():\n'
         '    return {"machines": [{"name": "Compute Node A", "role": "synthetic inference node"}]}\n'
         'def format_inference_inventory_response(user_text, inventory, summary, gpu_telemetry=None):\n'
+        '    if "compute lane a" in user_text.casefold() and gpu_telemetry:\n'
+        '        return "The inference endpoint linked to Compute Node A is responding. Live host GPU sample (checked 2026-10-04T00:00:00Z): GPU 0 has 6000 MiB free of 8192 MiB at 35% utilization."\n'
         '    if "compare current model residency" in user_text.casefold():\n'
         '        return "Compute Node A: provider reports loaded sample:small; Compute Node B: loaded state unknown; I can\'t tell which host has more capacity without live free-VRAM data."\n'
         '    if "host another model" in user_text.casefold() or "host a 20 gb model" in user_text.casefold():\n'
@@ -922,6 +940,18 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 context_text=followup_context + 'What about Compute Node A?',
             )
             assert 'sample:small is listed at Compute Node A' in named_followup, named_followup
+            os.environ['HADES_TEST_INFERENCE_ALIAS'] = '1'
+            registry_module.registry.calls.clear()
+            try:
+                alias_activity = direct_read(
+                    "What's Compute Lane A doing right now?", 'synthetic-owner', 'owner'
+                )
+            finally:
+                os.environ.pop('HADES_TEST_INFERENCE_ALIAS', None)
+            assert 'inference endpoint linked to Compute Node A is responding' in alias_activity, alias_activity
+            assert 'Live host GPU sample' in alias_activity and '6000 MiB free' in alias_activity, alias_activity
+            assert 'Compute Lane A is responding' not in alias_activity, alias_activity
+            assert any(call[0].endswith('homelab_gpu_telemetry') for call in registry_module.registry.calls), registry_module.registry.calls
             issue_question = direct_read(
                 "What's wrong with Compute Node A?", 'synthetic-owner', 'owner'
             )

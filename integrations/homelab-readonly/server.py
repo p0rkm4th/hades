@@ -1957,6 +1957,50 @@ def _inference_monitor_is_linked_to_target(
     return bool(target_canonical_ids & monitor_canonical_ids)
 
 
+def resolve_inference_node_target(
+    target: str, inventory: dict, summary: dict,
+) -> tuple[str, str] | None:
+    """Resolve a canonical device label or unique linked endpoint ID alias.
+
+    Provider IDs are accepted as lookup aliases only when the endpoint has an
+    explicit stable NetBox identity link. The returned display label always
+    comes from NetBox; the provider ID never becomes a second inventory name.
+    """
+    target_key = re.sub(r"[^a-z0-9]+", "", str(target or "").casefold())
+    if not target_key or not isinstance(inventory, dict) or not isinstance(summary, dict):
+        return None
+    resource_names = {}
+    for resource in summary.get("resources", []) if isinstance(summary.get("resources"), list) else []:
+        if not isinstance(resource, dict):
+            continue
+        identity = resource.get("identity")
+        inventory_record = resource.get("inventory")
+        if not isinstance(identity, dict) or not isinstance(inventory_record, dict):
+            continue
+        canonical = identity.get("canonical_id")
+        label = inventory_record.get("name") or resource.get("name")
+        if isinstance(canonical, str) and canonical and isinstance(label, str) and label.strip():
+            resource_names[canonical] = " ".join(label.split())
+    matches = {}
+    for identity, label in resource_names.items():
+        if re.sub(r"[^a-z0-9]+", "", label.casefold()) == target_key:
+            matches[identity] = label
+    endpoints = inventory.get("endpoints", [])
+    for endpoint in endpoints if isinstance(endpoints, list) else []:
+        if not isinstance(endpoint, dict) or endpoint.get("identity_status") != "LINKED":
+            continue
+        identity = endpoint.get("node_identity")
+        source_identity = endpoint.get("source_identity")
+        if not isinstance(identity, str) or identity not in resource_names:
+            continue
+        if not isinstance(source_identity, str) or not source_identity.startswith("inference:"):
+            continue
+        alias_key = re.sub(r"[^a-z0-9]+", "", source_identity.removeprefix("inference:").casefold())
+        if alias_key == target_key:
+            matches[identity] = resource_names[identity]
+    return next(iter(matches.items())) if len(matches) == 1 else None
+
+
 def format_inference_inventory_response(
     user_text: str, inventory: dict, summary: dict, gpu_telemetry: dict | None = None,
 ) -> str:
@@ -2192,15 +2236,11 @@ def format_inference_inventory_response(
             return response + " Model runtime memory also depends on quantization, context, KV cache, and workload."
 
     if node_activity and not placement_intent:
-        requested_node = re.sub(r"[^a-z0-9]+", "", (node_activity.group("target") or node_activity.group("issue_target")).casefold())
-        matching_nodes = [
-            (identity, label) for identity, label in resource_names.items()
-            if isinstance(label, str)
-            and re.sub(r"[^a-z0-9]+", "", label.casefold()) == requested_node
-        ]
-        if len(matching_nodes) != 1:
+        requested_node = node_activity.group("target") or node_activity.group("issue_target")
+        resolved_node = resolve_inference_node_target(requested_node, inventory, summary)
+        if resolved_node is None:
             return _format_node_activity_fallback(user_text, summary, inventory)
-        node_identity, label = matching_nodes[0]
+        node_identity, label = resolved_node
         linked = [
             endpoint for endpoint in endpoints[:16]
             if isinstance(endpoint, dict) and endpoint.get("node_identity") == node_identity
@@ -2282,18 +2322,13 @@ def format_inference_inventory_response(
         placement_endpoints = endpoints[:16]
         if named_target_match:
             requested_target = named_target_match.group("target") or named_target_match.group("followup_target")
-            requested_name = re.sub(r"[^a-z0-9]+", "", requested_target.casefold())
-            matched_resources = [
-                (identity, label) for identity, label in resource_names.items()
-                if isinstance(label, str)
-                and re.sub(r"[^a-z0-9]+", "", label.casefold()) == requested_name
-            ]
-            if len(matched_resources) != 1:
+            resolved_node = resolve_inference_node_target(requested_target, inventory, summary)
+            if resolved_node is None:
                 return (
                     f"I can't check current model headroom for {requested_target.strip()}: "
                     "the name does not resolve to exactly one stable inventory identity."
                 )
-            requested_node_identity, requested_node_label = matched_resources[0]
+            requested_node_identity, requested_node_label = resolved_node
             placement_endpoints = [
                 endpoint for endpoint in placement_endpoints
                 if isinstance(endpoint, dict) and endpoint.get("node_identity") == requested_node_identity

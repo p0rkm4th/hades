@@ -914,6 +914,66 @@ assert "Live host GPU sample (checked 2026-10-03T20:00:00Z)" in live_synthetic_i
 assert "GPU 0 (Synthetic Quadro): 6000 MiB free of 8192 MiB, 35% utilization" in live_synthetic_inference_node_activity, live_synthetic_inference_node_activity
 assert "this read does not measure host CPU utilization" in live_synthetic_inference_node_activity, live_synthetic_inference_node_activity
 assert "does not measure host CPU/GPU utilization" not in live_synthetic_inference_node_activity, live_synthetic_inference_node_activity
+linked_alias_inference = {
+    "status": "READABLE",
+    "endpoints": [{
+        "source_identity": "inference:compute-lane-a",
+        "node_identity": "netbox:device:3", "identity_status": "LINKED",
+        "status": "READABLE", "loaded_status": "CURRENT",
+        "models": [{"name": "sample:small"}],
+    }],
+}
+assert server.resolve_inference_node_target(
+    "Compute Lane A", linked_alias_inference, live_inference_node_summary,
+) == ("netbox:device:3", "Synthetic Inference Node A")
+linked_alias_activity = server.format_inference_inventory_response(
+    "What's Compute Lane A doing right now?", linked_alias_inference,
+    live_inference_node_summary, {
+        "status": "READABLE", "retrieved_at": "2026-10-04T00:00:00Z",
+        "endpoints": [{
+            "inference_id": "compute-lane-a", "status": "READABLE",
+            "devices": [{
+                "index": 0, "name": "Synthetic Quadro", "memory_free_mib": 6000,
+                "memory_total_mib": 8192, "gpu_utilization_percent": 35,
+            }],
+        }],
+    },
+)
+assert "inference endpoint linked to Synthetic Inference Node A is responding" in linked_alias_activity, linked_alias_activity
+assert "Live host GPU sample (checked 2026-10-04T00:00:00Z)" in linked_alias_activity, linked_alias_activity
+assert "Compute Lane A is responding" not in linked_alias_activity, linked_alias_activity
+linked_alias_placement = server.format_inference_inventory_response(
+    "Could Compute Lane A host a new model?", linked_alias_inference,
+    live_inference_node_summary,
+)
+assert "Synthetic Inference Node A" in linked_alias_placement, linked_alias_placement
+assert "can't check current model headroom" not in linked_alias_placement, linked_alias_placement
+ambiguous_alias_inference = {
+    **linked_alias_inference,
+    "endpoints": linked_alias_inference["endpoints"] + [{
+        "source_identity": "inference:compute-lane-a",
+        "node_identity": "netbox:device:4", "identity_status": "LINKED",
+        "status": "READABLE",
+    }],
+}
+assert server.resolve_inference_node_target(
+    "Compute Lane A", ambiguous_alias_inference, {
+        "resources": live_inference_node_summary["resources"] + [{
+            "identity": {"canonical_id": "netbox:device:4"},
+            "inventory": {"name": "Synthetic Inference Node B"},
+        }],
+    },
+) is None
+unlinked_alias_inference = {
+    "status": "READABLE",
+    "endpoints": [{
+        "source_identity": "inference:compute-lane-a",
+        "node_identity": None, "identity_status": "UNLINKED", "status": "READABLE",
+    }],
+}
+assert server.resolve_inference_node_target(
+    "Compute Lane A", unlinked_alias_inference, live_inference_node_summary,
+) is None
 stale_synthetic_inference_node_a_activity = server.format_inference_inventory_response(
     "What's Synthetic Inference Node A doing right now?", unlinked_inference, {
         "availability_summary": [{
