@@ -13,7 +13,7 @@ of truth.
 
 ## Current verified status — 2026-10-04
 
-- Latest pushed review head is `bf242b2`; Public CI run `37170243927` passes.
+- Latest pushed review head is `4096f39`; Public CI run `37170321258` passes.
   Runtime candidate `9511c75` passed Public CI run `37169928930`.
   The immediately preceding run correctly rejected a private topology name in
   a synthetic test label; that fixture is now generic and the public-tree
