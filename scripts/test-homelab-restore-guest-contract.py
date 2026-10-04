@@ -135,6 +135,41 @@ index_answer = core_guest_index("Where is HADES running?", complete_core_index)
 assert "synthetic-core-node (VM 200) is stopped" in index_answer, index_answer
 assert "synthetic-core-node (VM 202) is running" in index_answer, index_answer
 assert "current-guest-index-time" in index_answer, index_answer
+duplicate_source_index = {"proxmox_guest_inventory": {
+    "status": "COMPLETE", "endpoints": [
+        {
+            "source_id": "pve-alpha", "status": "COMPLETE",
+            "visibility_scope": "ALL_GUESTS", "truncated": False,
+            "retrieved_at": "alpha-read-time", "guests": [{
+                "name": "synthetic-core-node", "guest_type": "qemu", "guest_id": "802",
+                "node": "Hypervisor Alpha", "status": "STOPPED",
+            }],
+        },
+        {
+            "source_id": "pve-beta", "status": "COMPLETE",
+            "visibility_scope": "ALL_GUESTS", "truncated": False,
+            "retrieved_at": "beta-read-time", "guests": [{
+                "name": "synthetic-core-node", "guest_type": "qemu", "guest_id": "802",
+                "node": "Hypervisor Beta", "status": "RUNNING",
+            }],
+        },
+    ],
+}}
+duplicate_source_answer = core_guest_index("Where is HADES running?", duplicate_source_index)
+assert "synthetic-core-node (VM 802) is stopped in Proxmox source pve-alpha (read at alpha-read-time) on Hypervisor Alpha" in duplicate_source_answer, duplicate_source_answer
+assert "synthetic-core-node (VM 802) is running in Proxmox source pve-beta (read at beta-read-time) on Hypervisor Beta" in duplicate_source_answer, duplicate_source_answer
+assert "guest IDs are source-local" in duplicate_source_answer, duplicate_source_answer
+assert "don't identify which guest hosts the HADES application" in duplicate_source_answer, duplicate_source_answer
+assert "192.168." not in duplicate_source_answer, duplicate_source_answer
+untimed_duplicate_index = {
+    "proxmox_guest_inventory": {
+        **duplicate_source_index["proxmox_guest_inventory"],
+        "endpoints": [dict(endpoint) for endpoint in duplicate_source_index["proxmox_guest_inventory"]["endpoints"]],
+    },
+}
+untimed_duplicate_index["proxmox_guest_inventory"]["endpoints"][1].pop("retrieved_at")
+untimed_duplicate_answer = core_guest_index("Where is HADES running?", untimed_duplicate_index)
+assert "Proxmox source pve-beta (read time unavailable)" in untimed_duplicate_answer, untimed_duplicate_answer
 assert core_guest_index("What's running?", complete_core_index) is None
 assert core_guest_index("Where is HADES running?", {"resources": [
     {"name": "synthetic-core-node", "runtime_status": "running"},

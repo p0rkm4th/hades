@@ -5434,32 +5434,45 @@ def _hades_homelab_core_vm_placement_index_response(summary):
     )
     matching_name_keys = _hades_homelab_core_guest_name_keys()
     matches = []
-    for endpoint in endpoints:
+    for endpoint_index, endpoint in enumerate(endpoints):
         if not isinstance(endpoint, dict):
             continue
+        source_id = " ".join(
+            str(endpoint.get("source_id") or f"endpoint-{endpoint_index + 1}").split()
+        )[:80]
+        source_read_at = " ".join(str(endpoint.get("retrieved_at") or "").split())[:64]
         rows = endpoint.get("guests") if isinstance(endpoint.get("guests"), list) else []
         for row in rows:
             if not isinstance(row, dict):
                 continue
             name_key = re.sub(r"[^a-z0-9]+", "", str(row.get("name") or "").casefold())
             if name_key in matching_name_keys:
-                matches.append(row)
+                matches.append((row, source_id, source_read_at))
     if not matches:
         if complete:
             return "The current complete Proxmox guest inventory has no guest with a HADES Core name. I can't infer where the application is hosted from this read."
         return "I can't verify HADES Core placement because current Proxmox guest inventory is incomplete or unavailable."
     placements = []
-    for row in matches[:8]:
+    multiple_sources = len({source_id for _row, source_id, _read_at in matches}) > 1
+    for row, source_id, source_read_at in matches[:8]:
         guest_type = "VM" if row.get("guest_type") == "qemu" else "CT" if row.get("guest_type") == "lxc" else "guest"
         guest_id = str(row.get("guest_id") or "unknown ID")
         name = " ".join(str(row.get("name") or "HADES Core guest").split())[:100]
         state = str(row.get("status") or "UNKNOWN").casefold()
         node = " ".join(str(row.get("node") or "").split())[:100]
         placement = f"{name} ({guest_type} {guest_id}) is {state}"
+        if multiple_sources:
+            placement += f" in Proxmox source {source_id}"
+            placement += f" (read at {source_read_at})" if source_read_at else " (read time unavailable)"
         placements.append(placement + (f" on {node}" if node else "; its Proxmox node was not reported"))
     if len(matches) > 8:
         placements.append(f"{len(matches) - 8} additional matching guests were omitted")
     response = "Proxmox reports " + "; ".join(placements) + "."
+    if multiple_sources:
+        response += (
+            " Multiple matching guests appear across separate Proxmox source scopes; guest IDs are source-local, "
+            "so matching names and IDs alone don't identify which guest hosts the HADES application."
+        )
     if not complete:
         response += " Guest visibility is incomplete, so other matching guests may be unreported."
     response += " This is guest placement and power state only; it does not verify HADES application health."
