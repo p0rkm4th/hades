@@ -7,8 +7,10 @@ records.
 
 ## Current checkpoint — 2026-10-04
 
-Code checkpoint `86ca48f` completes the current inference freshness and
-aggregated-GPU display slice. Earlier code checkpoint `8b28cae` separates
+Current code checkpoint `f55bd0a` completes the bounded broad homelab status
+slice after owner/household dogfood and correction of a display-label conflict
+misclassification. Earlier code checkpoint `86ca48f` completes the inference
+freshness and aggregated-GPU display slice. Code checkpoint `8b28cae` separates
 hardware-observation freshness; checkpoint `07b0055` added NetBox pagination
 completeness and contradictory-coverage handling. Public CI run `37236639218`
 passed for the earlier source checkpoint. The adapter
@@ -31,6 +33,21 @@ health limitations. Household game-server status remains unknown without
 leaking owner topology. Hermes and WebUI health passed after rollout. The
 freshness, answer-formatting, and aggregate-count defects are closed; the
 broader live homelab reliability campaign remains partial.
+
+Fresh owner dogfood then found that “Is everything okay with the homelab?”
+fell through to a long inventory answer. The owner route now returns a bounded
+health summary: fresh configured availability checks, Proxmox guest power
+state with its application-health limitation, incomplete service placement,
+unmonitored services, and backup-content/restoreability limits. A fresh owner
+follow-up distinguishes shared display labels from cross-source conflicts.
+The first deployed formatter candidate called duplicate labels a source
+disagreement; owner dogfood caught this, hash-guarded rollback restored the
+previous overlay, and the corrected candidate was deployed after the conflict
+classification was fixed. Fresh owner/household UI checks pass; Household A
+still receives no internal topology and HADES correctly cannot confirm game
+server health without an approved current check. Public CI run `37240583967`
+passed at `f55bd0a`. This closes the broad-summary wording slice, not the
+broader live homelab reliability campaign.
 
 A first private composition attempt removed adjacent helpers and caused an
 owner-chat error. Hash-guarded rollback restored both prior files and health.
@@ -66,7 +83,9 @@ telemetry. Owner output distinguishes source timing, stale observations,
 source disagreement, and unknown runtime state. Household summaries remain
 redacted. Synthetic adapter coverage seeds a stable Proxmox-to-NetBox identity
 link, then makes NetBox unavailable; live runtime remains while the prior
-inventory identity disappears, and stale Kuma data stays stale.
+inventory identity disappears, and stale Kuma data stays stale. Owner broad
+status now avoids a raw inventory dump and distinguishes fresh probes from
+guest power state, service-coverage gaps, and backup limits.
 
 Authenticated synthetic UI acceptance exposed a registration gap: deterministic
 owner routes could run before the local read-only adapter fallback was
@@ -79,8 +98,9 @@ with synthetic identities and sources.
 
 - Continue live stale/partial-source acceptance, native service-health and
   service-placement coverage, network measurements, and bounded inference
-  capacity checks. Nyx-4's read-only review of the corrected private composer
-  passed; further owner dogfood remains open.
+  capacity checks. The broad owner summary still does not query backup
+  schedule/task status, and the current game-server health source remains
+  unconfigured.
 - Complete backup-custody, reboot, and end-to-end restore evidence before
   claiming recovery readiness.
 - Keep infrastructure reads read-only; write authority is outside this

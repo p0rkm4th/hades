@@ -7,7 +7,7 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` is at `86ca48f`; Public CI run `37238630968` passed. Earlier
+Public `main` is at `f55bd0a`; Public CI run `37240583967` passed. Earlier
 source checkpoint `07b0055` adds NetBox pagination completeness and
 contradictory-coverage handling. HADES calls the service catalog
 complete or empty only when `count`, `next`, and `results` agree; missing pages
@@ -42,6 +42,19 @@ redaction and unknown game-server status. These specific defects are closed.
 The wider homelab reliability campaign remains **PARTIAL** pending live-source
 failure/conflict checks, service-native health and placement coverage, network
 measurements, and backup/recovery evidence.
+
+The owner question “Is everything okay with the homelab?” now returns a
+bounded status summary instead of a guest inventory dump. It distinguishes
+fresh configured checks from guest power state and keeps incomplete service
+placement, unmonitored application health, and backup-content/restoreability
+unknown. Follow-up dogfood correctly identifies duplicate display labels as
+separate stable identities rather than a source disagreement; an initial
+candidate that misclassified these labels was rolled back before the corrected
+candidate passed owner and household checks. Public CI passed at `f55bd0a`
+(run `37240583967`). The broader homelab campaign remains **PARTIAL**. The
+summary does not query backup schedule/task status, and network measurement,
+service-native checks, stale-source acceptance, and synthetic restore evidence
+remain open.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address
