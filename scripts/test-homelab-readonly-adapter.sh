@@ -631,8 +631,53 @@ selected_backup = server.homelab_backup_status()["endpoints"][0]
 assert selected_backup["task_scope"] == "SELECTED_GUESTS"
 assert [task["guest_id"] for task in selected_backup["tasks"]] == ["102"]
 assert selected_backup["tasks_status"] == "PARTIAL"
+
+# A later read after a successful observation must not retain stale backup
+# evidence when the Proxmox source becomes unavailable.
+def sequential_backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/backup"):
+        return {"data": [{"id": "nightly-sequential", "schedule": "02:00", "enabled": 1}]}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+    if "/nodes/hypervisor-alpha/tasks?" in url:
+        return {"data": [{"id": "102", "status": "OK", "endtime": 1700000300}]}
+    raise AssertionError(f"unexpected sequential backup URL: {url}")
+
+server._fetch = sequential_backup_fetch
+sequential_success = server.homelab_backup_status()
+assert sequential_success["endpoints"][0]["jobs"][0]["id"] == "nightly-sequential"
+assert sequential_success["endpoints"][0]["tasks"][0]["guest_id"] == "102"
+assert sequential_success["status"] == "READABLE"
+
+def unavailable_backup_fetch(url, *_args, **_kwargs):
+    raise OSError("synthetic source outage")
+
+server._fetch = unavailable_backup_fetch
+sequential_outage = server.homelab_backup_status()
+outage_endpoint = sequential_outage["endpoints"][0]
+assert sequential_outage["status"] == "SOURCE_UNAVAILABLE"
+assert outage_endpoint["status"] == "UNAVAILABLE"
+assert outage_endpoint["jobs_status"] == "UNAVAILABLE"
+assert outage_endpoint["tasks_status"] == "UNAVAILABLE"
+assert outage_endpoint["task_scope"] == "UNKNOWN"
+assert outage_endpoint["jobs"] == []
+assert outage_endpoint["tasks"] == []
+assert outage_endpoint["unattributed_tasks"] == []
+assert sequential_outage["retrieved_at"] != sequential_success["retrieved_at"]
+assert outage_endpoint["retrieved_at"] != sequential_success["endpoints"][0]["retrieved_at"]
+outage_text = server.format_homelab_backup_status(sequential_outage)
+assert "backup-job configuration is unavailable" in outage_text
+assert "Archived vzdump task history is unavailable" in outage_text
+assert "doesn't verify backup contents" in outage_text
+assert "off-site custody, or restoreability" in outage_text
+assert sequential_outage["retrieved_at"] in outage_text
+assert "nightly-sequential" not in outage_text
+assert "guest 102" not in outage_text
 server._fetch = original_fetch
 print("PASS Proxmox backup task history is filtered to effective VM.Audit scope")
+print("PASS sequential Proxmox backup outage clears stale jobs/tasks and reports current unknown scope")
 
 # Recent activity composes bounded Proxmox task history with NetBox record
 # timestamps, preserves partial scope, and avoids claiming a complete log.
