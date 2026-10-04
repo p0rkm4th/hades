@@ -182,3 +182,14 @@ on run `37172827916`. A final read-only VM check confirms the service remains
 active/healthy and the production overlay still matches the base used for the
 composed runtime test. Production remains unchanged. Any rollout request must
 identify the exact resulting artifact and state its file scope.
+
+### Partial restore-history result handling
+
+A final response audit found that the no-match branch could say no recent
+restore task was found even when a Proxmox task endpoint was partial, truncated,
+unavailable, or had a malformed event list. The route now reports that recent
+restore history cannot establish whether there are matching guests unless all
+relevant task feeds are complete. A regression covers empty partial/truncated
+history. Focused homelab, privacy, composer, clean Hermes runtime, and composed
+runtime checks pass locally. This changes the composed artifact; hosted CI and
+a new exact-candidate review are pending. Production remains unchanged.

@@ -7870,6 +7870,13 @@ def _hades_backup_restore_guest_state_response(activity, summary):
 
     restore_guests = {}
     task_history_complete = bool(activity_endpoints)
+    activity_source_status = activity.get("source_status")
+    proxmox_activity_status = (
+        str(activity_source_status.get("proxmox") or "").upper()
+        if isinstance(activity_source_status, dict) else ""
+    )
+    if proxmox_activity_status and proxmox_activity_status != "READABLE":
+        task_history_complete = False
     for endpoint in activity_endpoints:
         if not isinstance(endpoint, dict):
             task_history_complete = False
@@ -7885,7 +7892,10 @@ def _hades_backup_restore_guest_state_response(activity, summary):
             task_history_complete = False
             continue
         events = endpoint.get("events")
-        for event in events if isinstance(events, list) else []:
+        if not isinstance(events, list):
+            task_history_complete = False
+            continue
+        for event in events:
             if not isinstance(event, dict):
                 continue
             task_type = str(event.get("task_type") or "").casefold()
@@ -7910,6 +7920,11 @@ def _hades_backup_restore_guest_state_response(activity, summary):
             "SOURCE_UNAVAILABLE", "NOT_CONFIGURED",
         }:
             return "I couldn't read recent Proxmox restore-task history, so I can't identify which guests to check."
+        if not task_history_complete:
+            return (
+                "Proxmox restore-task history is partial, truncated, or unavailable for part of the configured scope. "
+                "I can't tell whether recent restore checks left guests to inspect."
+            )
         return (
             "I found no archived Proxmox restore task in the last seven days. "
             "That doesn't identify older restore guests or prove their current state."

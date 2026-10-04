@@ -298,3 +298,10 @@ pass against a fresh read-only copy of the current production overlay. This
 follow-up is committed as `e4b6084` and passed Public CI run `37172827916`. No
 production file was changed. The preceding `ac95286` CI success covered the
 earlier source revision.
+
+A subsequent source audit closed one more false-certainty case: empty partial or
+truncated Proxmox task history now returns unknown rather than “no restore task
+found.” The malformed/partial-history contract passes locally, including the
+composed runtime against the current deployed overlay base. This changes the
+artifact hash after the prior approval request; that earlier hash must not be
+deployed. Hosted CI for the revised commit is pending.

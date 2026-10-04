@@ -658,6 +658,19 @@ unavailable_restore_answer = namespace['_hades_backup_restore_guest_state_respon
 )
 assert 'couldn\'t read recent Proxmox restore-task history' in unavailable_restore_answer, unavailable_restore_answer
 
+partial_empty_restore_answer = namespace['_hades_backup_restore_guest_state_response'](
+    {
+        'status': 'PARTIAL', 'source_status': {'proxmox': 'PARTIAL', 'netbox': 'READABLE'},
+        'endpoints': [{
+            'source_id': 'site-a', 'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
+            'truncated': True, 'events': [],
+        }],
+    },
+    restore_summary,
+)
+assert 'history is partial, truncated, or unavailable' in partial_empty_restore_answer, partial_empty_restore_answer
+assert 'I found no archived Proxmox restore task' not in partial_empty_restore_answer, partial_empty_restore_answer
+
 host_workloads = workloads_on_host('What is running on Runtime Node A?', [
     {'name': 'Runtime Node A', 'runtime_status': 'online',
      'identity': {'source_identities': {'proxmox': ['proxmox:site-a:node:pve-a']}},
