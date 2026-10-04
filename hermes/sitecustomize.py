@@ -4949,6 +4949,10 @@ def _hades_homelab_workloads_on_host_response(
     if not target_text:
         return None
     target = _hades_homelab_name_key(target_text)
+    if target in {"proxmox", "proxmox cluster", "the proxmox cluster", "pve", "pve cluster"}:
+        return _hades_homelab_all_proxmox_guests_response(
+            resources, summary_status, source_results, guest_visibility,
+        )
     rows = resources if isinstance(resources, list) else []
     hosts = []
     for row in rows:
@@ -5072,6 +5076,75 @@ def _hades_homelab_workloads_on_host_response(
         if not unavailable and not degraded and not unconfigured:
             response += " Other source state is partial or unknown, so I can't verify related inventory or services."
     return response
+
+
+def _hades_homelab_all_proxmox_guests_response(
+    resources, summary_status="UNKNOWN", source_results=None,
+    guest_visibility=None,
+):
+    """Summarize current guest power state across configured Proxmox sources."""
+    coverage = guest_visibility if isinstance(guest_visibility, dict) else {}
+    endpoints = coverage.get("endpoints") if isinstance(coverage.get("endpoints"), list) else []
+    complete = bool(
+        endpoints
+        and coverage.get("status") == "COMPLETE"
+        and coverage.get("scope") == "ALL_GUESTS"
+        and all(
+            isinstance(endpoint, dict)
+            and endpoint.get("status") == "HEALTHY"
+            and endpoint.get("scope") == "ALL_GUESTS"
+            for endpoint in endpoints
+        )
+    )
+    guests = []
+    seen = set()
+    for row in resources if isinstance(resources, list) else []:
+        if not isinstance(row, dict):
+            continue
+        runtime = row.get("runtime") or row.get("runtime_detail") or {}
+        if not isinstance(runtime, dict) or runtime.get("type") not in {"qemu", "lxc"}:
+            continue
+        identity = row.get("identity") if isinstance(row.get("identity"), dict) else {}
+        source_identities = identity.get("source_identities") if isinstance(identity.get("source_identities"), dict) else {}
+        proxmox_ids = source_identities.get("proxmox")
+        if not isinstance(proxmox_ids, list) or not proxmox_ids or any(
+            not isinstance(value, str) or not value.startswith("proxmox:") for value in proxmox_ids
+        ):
+            continue
+        stable_key = identity.get("canonical_id") or tuple(sorted(proxmox_ids))
+        if stable_key in seen:
+            continue
+        seen.add(stable_key)
+        state = str(row.get("runtime_status") or runtime.get("status") or "UNKNOWN").strip().upper()
+        guest_type = "VM" if runtime.get("type") == "qemu" else "CT"
+        vmid = runtime.get("vmid")
+        suffix = f" {vmid}" if isinstance(vmid, int) and not isinstance(vmid, bool) else ""
+        label = str(row.get("name") or "Unnamed guest").strip()[:100]
+        guests.append((state, f"{label} ({guest_type}{suffix})"))
+
+    if not endpoints:
+        return "I can't verify the configured Proxmox guest sources right now, so I can't list current guest power states."
+    states = {
+        "RUNNING": [label for state, label in guests if state == "RUNNING"],
+        "STOPPED": [label for state, label in guests if state == "STOPPED"],
+        "UNKNOWN": [label for state, label in guests if state not in {"RUNNING", "STOPPED"}],
+    }
+    scope_text = (
+        "Complete audit scope across the configured Proxmox sources"
+        if complete else
+        "Only guests visible to the configured Proxmox reads; the combined guest scope is incomplete or unknown"
+    )
+    parts = [scope_text + "."]
+    if not guests and complete:
+        parts.append("Proxmox reports no VM or container guests.")
+    for state, heading in (("RUNNING", "Running"), ("STOPPED", "Stopped"), ("UNKNOWN", "State unknown")):
+        labels = states[state]
+        if labels:
+            parts.append(f"{heading}: " + "; ".join(labels[:20]) + (f"; and {len(labels) - 20} more" if len(labels) > 20 else "."))
+    if not complete and not guests:
+        parts.append("No visible guest rows were returned; that does not establish an empty cluster.")
+    parts.append("This is VM/container power state, not application or service health.")
+    return " ".join(parts)
 
 
 def _hades_positive_homelab_control_request(user_text):

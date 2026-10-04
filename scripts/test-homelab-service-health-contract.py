@@ -30,6 +30,7 @@ wanted = {
     '_hades_direct_homelab_tool_result',
     '_hades_homelab_recent_activity_response',
     '_hades_homelab_workloads_on_host_response',
+    '_hades_homelab_all_proxmox_guests_response',
     '_hades_homelab_workload_host_target',
     '_hades_homelab_core_vm_placement_response',
     '_hades_endpoint_intent_before_provision',
@@ -541,6 +542,46 @@ assert namespace['_hades_homelab_workload_host_target'](
     'Which VMs or containers are currently running on Runtime Node A?'
 ) == 'Runtime Node A'
 assert namespace['_hades_homelab_workload_host_target']('What is running?') is None
+cluster_guest_question = 'Which Proxmox guests are running right now, and which are stopped?'
+assert namespace['_hades_homelab_workload_host_target'](cluster_guest_question) == 'Proxmox'
+cluster_guest_resources = [
+    {
+        'name': 'Synthetic VM Alpha', 'runtime_status': 'RUNNING',
+        'runtime': {'type': 'qemu', 'vmid': 101, 'status': 'running'},
+        'identity': {'canonical_id': 'proxmox:site-a:qemu:101',
+                     'source_identities': {'proxmox': ['proxmox:site-a:qemu:101']}},
+    },
+    {
+        'name': 'Synthetic CT Beta', 'runtime_status': 'STOPPED',
+        'runtime': {'type': 'lxc', 'vmid': 202, 'status': 'stopped'},
+        'identity': {'canonical_id': 'proxmox:site-b:lxc:202',
+                     'source_identities': {'proxmox': ['proxmox:site-b:lxc:202']}},
+    },
+]
+complete_cluster_scope = {
+    'status': 'COMPLETE', 'scope': 'ALL_GUESTS',
+    'endpoints': [
+        {'source_identity': 'proxmox:site-a', 'status': 'HEALTHY', 'scope': 'ALL_GUESTS'},
+        {'source_identity': 'proxmox:site-b', 'status': 'HEALTHY', 'scope': 'ALL_GUESTS'},
+    ],
+}
+cluster_guest_response = namespace['_hades_homelab_workloads_on_host_response'](
+    cluster_guest_question, cluster_guest_resources, 'OK', [], complete_cluster_scope,
+)
+assert 'Complete audit scope' in cluster_guest_response, cluster_guest_response
+assert 'Running: Synthetic VM Alpha (VM 101).' in cluster_guest_response, cluster_guest_response
+assert 'Stopped: Synthetic CT Beta (CT 202).' in cluster_guest_response, cluster_guest_response
+assert 'not application or service health' in cluster_guest_response, cluster_guest_response
+partial_cluster_scope = {
+    **complete_cluster_scope, 'status': 'PARTIAL', 'scope': 'MIXED',
+    'endpoints': [complete_cluster_scope['endpoints'][0],
+                  {'source_identity': 'proxmox:site-b', 'status': 'DEGRADED', 'scope': 'ALL_GUESTS'}],
+}
+partial_cluster_response = namespace['_hades_homelab_workloads_on_host_response'](
+    cluster_guest_question, cluster_guest_resources, 'PARTIAL', [], partial_cluster_scope,
+)
+assert 'Only guests visible' in partial_cluster_response, partial_cluster_response
+assert 'incomplete or unknown' in partial_cluster_response, partial_cluster_response
 
 host_workloads = workloads_on_host('What is running on Runtime Node A?', [
     {'name': 'Runtime Node A', 'runtime_status': 'online',
