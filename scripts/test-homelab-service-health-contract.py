@@ -260,6 +260,7 @@ for prompt in (
     'Is everything okay?', 'Is everything okay with the homelab?',
     'Is everything okay with my homelab?', 'Is everything okay with our homelab?',
     'Is everything okay with the homelab right now?', 'Is everything okay right now?',
+    'Is everything okay with the homelab? Which parts can you verify and what remains unknown?',
     'Are all the computers okay?', 'Anything dying?', "Why's everything slow?",
     'Why does the network feel slow?', 'Why does Wi-Fi feel slow?',
     'Which live homelab observations cannot you confidently match to the same machine?',
@@ -345,6 +346,12 @@ household_safe_status = namespace['_hades_household_safe_status_response']
 assert 'I can\'t diagnose why everything is slow' in household_safe_status('Why is everything slow?')
 assert 'I can\'t diagnose whole-home network speed' in household_safe_status('Why is Wi-Fi slow?')
 assert 'I can\'t check all the home computers' in household_safe_status('Are all the computers okay?')
+assert namespace['_hades_broad_homelab_status_intent'](
+    'Is everything okay with the homelab? Which parts can you verify and what remains unknown?'
+)
+assert 'I can\'t check all the home computers' in household_safe_status(
+    'Is everything okay with the homelab? Which parts can you verify and what remains unknown?'
+)
 assert 'Proxmox' not in household_safe_status('Why is everything slow?')
 assert '192.0.2.' not in household_safe_status('Why is everything slow?')
 assert target('Why is the NetBox monitor down?') == (['netbox'], 'netbox')
@@ -1267,6 +1274,20 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         my_homelab_ok = direct_read('Is everything okay with my homelab?', 'synthetic-owner', 'owner')
         assert 'Live inference reads: Test Fast API responding (1 catalog models; 0 reported loaded)' in my_homelab_ok, my_homelab_ok
         assert 'do not prove generation or available GPU capacity' in my_homelab_ok, my_homelab_ok
+        compound_homelab_ok = direct_read(
+            'Is everything okay with the homelab? Which parts can you verify and what remains unknown?',
+            'synthetic-owner', 'owner',
+        )
+        assert 'The live homelab view is partial.' in compound_homelab_ok, compound_homelab_ok
+        assert 'Live inference reads: Test Fast API responding' in compound_homelab_ok, compound_homelab_ok
+        before_household_compound = len(registry_module.registry.calls)
+        household_compound = direct_read(
+            'Is everything okay with the homelab? Which parts can you verify and what remains unknown?',
+            'synthetic-household', 'household',
+        )
+        assert "can't check all the home computers" in household_compound, household_compound
+        assert 'Proxmox' not in household_compound and 'NetBox' not in household_compound, household_compound
+        assert len(registry_module.registry.calls) == before_household_compound
         write_broad_summary([{
             'name': 'Search latency check', 'status': 'down', 'freshness': 'STALE',
         }])

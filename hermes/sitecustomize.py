@@ -5867,6 +5867,14 @@ def _hades_broad_homelab_status_intent(text):
         or _hades_homelab_service_coverage_intent(text)
     ):
         return True
+    compound_status = bool(
+        re.search(r"\b(?:homelab|home\s+lab|home\s+infrastructure)\b", str(text or ""), re.IGNORECASE)
+        and re.search(r"\b(?:verify|confirm|check|see)\b", str(text or ""), re.IGNORECASE)
+        and re.search(r"\b(?:unknown|unverified|can't\s+verify|cannot\s+verify|what\s+remains)\b", str(text or ""), re.IGNORECASE)
+        and re.search(r"\b(?:okay|status|what|which|how|everything)\b", str(text or ""), re.IGNORECASE)
+    )
+    if compound_status:
+        return True
     return bool(re.search(
         r"^\s*(?:what\s+can\s+(?:you|hades)\s+(?:currently\s+)?(?:see|verify|check)\s+(?:about|in)\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|infrastructure)(?:.{0,100}\bwhat\s+(?:can['’]?t|cannot|can\s+(?:you\s+)?not)\s+(?:you\s+)?(?:see|verify|check))?|"
         r"is\s+everything\s+(?:okay|ok|all\s+right|good)(?:\s+with\s+(?:(?:the|my|our)\s+)?(?:homelab|home\s+lab|servers?|computers?|machines?))?|"

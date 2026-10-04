@@ -742,6 +742,18 @@ if os.environ.get("HADES_COMPOSED_HOMELAB_ONLY") == "1":
     assert not registry.calls, registry.calls
 
     registry.calls.clear()
+    household_compound_summary = household_agent.run_conversation(
+        "Is everything okay with the homelab? Which parts can you verify and what remains unknown?",
+        conversation_history=[],
+    )
+    assert household_compound_summary.get("completed") is True, household_compound_summary
+    assert household_compound_summary.get("api_calls") == 0, household_compound_summary
+    assert "can't check all the home computers" in household_compound_summary["final_response"].casefold(), household_compound_summary
+    for private_detail in ("Proxmox", "NetBox", "Uptime Kuma", "VM 802", "Synthetic Node B"):
+        assert private_detail.casefold() not in household_compound_summary["final_response"].casefold(), household_compound_summary
+    assert not registry.calls, registry.calls
+
+    registry.calls.clear()
     household_capability_discovery = household_agent.run_conversation(
         capability_discovery_question, conversation_history=[]
     )
