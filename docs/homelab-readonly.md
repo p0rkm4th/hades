@@ -201,9 +201,10 @@ NetBox service coverage follows its paginated `count`, `next`, and `results`
 fields. HADES reports a catalog as complete only when those fields are valid,
 `next` is null, the result count matches `count`, and every returned record is
 projected. A known next page, count mismatch, or malformed row makes coverage
-partial; missing results or invalid pagination metadata leaves coverage unknown. Placement
-answers do not infer that an unlisted service is absent from partial or unknown
-coverage. The existing NetBox token needs read-only permission to view
+partial; missing results or invalid pagination metadata leaves coverage
+unknown. Contradictory status, coverage, and row combinations are surfaced as
+inconsistent. Placement answers do not infer that an unlisted service is absent
+from partial or unknown coverage. The existing NetBox token needs read-only permission to view
 application services for this optional catalog; when unavailable, the host/VM
 summary still works and reports the service catalog as unavailable.
 The adapter accepts the documented base inputs above and derives only bounded
