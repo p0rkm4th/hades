@@ -278,6 +278,7 @@ unknown = module.project_netbox_services(
 )
 assert unknown["coverage"] == "UNKNOWN" and unknown["services"] == [], unknown
 for malformed in (
+    {"count": 0, "next": None},
     {"count": 0, "results": []},
     {"next": None, "results": []},
     {"count": "0", "next": None, "results": []},

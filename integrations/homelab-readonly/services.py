@@ -73,6 +73,7 @@ def project_netbox_services(
     devices = _rows(devices_payload, "devices")
     service_document = services_payload if isinstance(services_payload, dict) else {}
     raw_service_rows = service_document.get("results", [])
+    explicit_results_list = "results" in service_document and isinstance(raw_service_rows, list)
     service_count = service_document.get("count")
     next_page = service_document.get("next")
     by_id: dict[str, dict[str, Any]] = {}
@@ -141,6 +142,7 @@ def project_netbox_services(
     has_complete_pagination_metadata = (
         "count" in service_document
         and "next" in service_document
+        and explicit_results_list
         and valid_count
     )
     count_mismatch = valid_count and service_count != len(raw_service_rows)
