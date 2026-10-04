@@ -236,9 +236,11 @@ artifact size with runtime VRAM needs. Household A/B remain topology-redacted.
 The multi-turn evidence is protected outside this repository. Public `main`
 remains at `c83ddd6`; this does not close the source-coverage blockers above.
 Some source display labels appear lowercase; this is cosmetic. Proxmox guest
-scope, NetBox service inventory, an unresolved provider-to-host identity link,
-whole-network telemetry, backup contents/custody/restore verification, and
-successful inference execution remain unknown or partial.
+scope, NetBox service inventory, cross-source identity for 15 Proxmox/Kuma
+records, whole-network telemetry, backup contents/custody/restore verification,
+and successful inference execution remain unknown or partial. The configured
+inference endpoints are linked to current NetBox devices; the friendly-name
+lookup gap is closed by candidate `09698a3` and fresh owner UI acceptance.
 
 A fresh broad owner UI read after this deployment confirms the same partial
 state: configured APIs respond, Proxmox guest visibility remains selected-scope,
