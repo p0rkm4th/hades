@@ -7,11 +7,14 @@ records.
 
 ## Current checkpoint — 2026-10-04
 
-Public `main` is `54984ed4cd048576452a12b1a3591ff2854d6c5b`; hosted Public CI
-passed on main in run `37224308799`. The sanitized homelab candidate was
-fast-forwarded from `codex/homelab-public-sanitized-20261004`. The source adds
-a read-only local-adapter fallback for deterministic owner routes. Focused
-authenticated Open WebUI/Hermes Task-attention acceptance passed after the fix.
+Public `main` contains the sanitized homelab candidate; source snapshot
+`320e5493885a91b6631c00be8488235cd728f4af` passed hosted Public CI in run
+`37224426449`. The candidate was fast-forwarded from
+`codex/homelab-public-sanitized-20261004`. The source adds a read-only
+local-adapter fallback for deterministic owner routes. Focused authenticated
+Open WebUI/Hermes Task-attention acceptance passed after the fix. Check current
+Git and CI state before promotion because checkpoint-only commits may advance
+the source SHA.
 
 The current source tree removes private destination acceptance records and
 per-user share mappings, requires explicit destination hostname input, and uses
