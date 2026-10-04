@@ -13,7 +13,8 @@ of truth.
 
 ## Current verified status — 2026-10-04
 
-- Latest pushed code candidate is `9511c75`; Public CI run `37169928930` passes.
+- Latest pushed review head is `bf242b2`; Public CI run `37170243927` passes.
+  Runtime candidate `9511c75` passed Public CI run `37169928930`.
   The immediately preceding run correctly rejected a private topology name in
   a synthetic test label; that fixture is now generic and the public-tree
   safety guard passes. Public `main` remains at `c83ddd6`.
@@ -40,6 +41,12 @@ of truth.
   Focused synthetic and composed runtime checks plus Public CI pass; the
   combined two-file rollout awaits owner decision. Production is unchanged by
   this candidate.
+- The current Proxmox contract now exercises the full direct owner route, not
+  only its formatter: complete two-source scope returns running/stopped guests
+  and both read timestamps; one degraded source downgrades the answer to the
+  visible subset. The fixture loader also invalidates generated Python bytecode
+  after rewriting its synthetic adapter, preventing tests from observing stale
+  payloads.
 - HADES review branch `codex/homelab-protected-source-contract-20261001` is
   pushed at `348c08b`; Public CI run `37165321007` passed. Runtime candidate
   `09698a3` remains the latest recorded runtime deployment with a root-only

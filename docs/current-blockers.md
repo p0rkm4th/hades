@@ -273,8 +273,11 @@ lists visible guests by running/stopped/unknown state otherwise. It reports
 Proxmox scope-read timestamps and capitalizes lowercase inventory labels for
 prose. It also routes a compound “is everything okay / what remains unknown”
 household prompt directly to the safe boundary, without a model call or source
-read. Focused synthetic and composed-runtime tests and Public CI run
-`37169928930` pass; production remains unchanged pending explicit deployment
+read. The contract exercises the full direct route with complete and partial
+two-source fixtures, verifies source timestamps and power-state caveats, and
+invalidates synthetic adapter bytecode between fixture rewrites. Focused
+synthetic and composed-runtime tests and Public CI runs `37169928930` and
+`37170243927` pass; production remains unchanged pending explicit deployment
 approval.
 
 Other fresh owner checks report current Proxmox guest CPU/memory rankings with
