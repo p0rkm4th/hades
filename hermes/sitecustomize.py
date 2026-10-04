@@ -5020,6 +5020,20 @@ def _hades_homelab_workloads_on_host_response(
         if host_source_prefix and guest_source_prefix == host_source_prefix and host_key and runtime.get("node") == host_key:
             guests.append(row)
     response = f"Proxmox currently reports {host_name} {host_state.casefold()}"
+    matching_source_time = next((
+        str(item.get("retrieved_at"))
+        for item in source_results if isinstance(item, dict)
+        and str(item.get("source") or "").startswith("Proxmox guest visibility")
+        and host_source_prefix
+        and str(item.get("source") or "").casefold().endswith(
+            f"({host_source_prefix.removeprefix('proxmox:').casefold()})"
+        )
+        and item.get("retrieved_at")
+    ), None) if isinstance(source_results, list) else None
+    if matching_source_time:
+        response += f" (guest-scope read at {matching_source_time})"
+    else:
+        response += " (guest-scope read timestamp not reported)"
     if not host_source_prefix:
         response += ". I can't correlate guests to this Proxmox source with one stable endpoint identity."
     elif guests:
@@ -5111,7 +5125,9 @@ def _hades_homelab_all_proxmox_guests_response(
             not isinstance(value, str) or not value.startswith("proxmox:") for value in proxmox_ids
         ):
             continue
-        stable_key = identity.get("canonical_id") or tuple(sorted(proxmox_ids))
+        stable_key = identity.get("canonical_id")
+        if not isinstance(stable_key, (str, int)) or not stable_key:
+            stable_key = tuple(sorted(proxmox_ids))
         if stable_key in seen:
             continue
         seen.add(stable_key)
@@ -5143,6 +5159,16 @@ def _hades_homelab_all_proxmox_guests_response(
             parts.append(f"{heading}: " + "; ".join(labels[:20]) + (f"; and {len(labels) - 20} more" if len(labels) > 20 else "."))
     if not complete and not guests:
         parts.append("No visible guest rows were returned; that does not establish an empty cluster.")
+    check_times = [
+        str(item.get("retrieved_at"))[:80]
+        for item in source_results if isinstance(item, dict)
+        and str(item.get("source") or "").startswith("Proxmox guest visibility")
+        and item.get("retrieved_at")
+    ] if isinstance(source_results, list) else []
+    if check_times:
+        parts.append("Proxmox guest-scope reads completed at " + "; ".join(check_times[:8]) + ".")
+    else:
+        parts.append("Proxmox guest-scope read timestamps were not reported.")
     parts.append("This is VM/container power state, not application or service health.")
     return " ".join(parts)
 

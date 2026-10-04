@@ -566,11 +566,15 @@ complete_cluster_scope = {
     ],
 }
 cluster_guest_response = namespace['_hades_homelab_workloads_on_host_response'](
-    cluster_guest_question, cluster_guest_resources, 'OK', [], complete_cluster_scope,
+    cluster_guest_question, cluster_guest_resources, 'OK', [
+        {'source': 'Proxmox guest visibility (site-a)', 'retrieved_at': '2026-10-04T01:40:00Z'},
+        {'source': 'Proxmox guest visibility (site-b)', 'retrieved_at': '2026-10-04T01:40:01Z'},
+    ], complete_cluster_scope,
 )
 assert 'Complete audit scope' in cluster_guest_response, cluster_guest_response
 assert 'Running: Synthetic VM Alpha (VM 101).' in cluster_guest_response, cluster_guest_response
 assert 'Stopped: Synthetic CT Beta (CT 202).' in cluster_guest_response, cluster_guest_response
+assert '2026-10-04T01:40:00Z' in cluster_guest_response and '2026-10-04T01:40:01Z' in cluster_guest_response, cluster_guest_response
 assert 'not application or service health' in cluster_guest_response, cluster_guest_response
 partial_cluster_scope = {
     **complete_cluster_scope, 'status': 'PARTIAL', 'scope': 'MIXED',
@@ -604,8 +608,11 @@ right_now_host_workloads = workloads_on_host(
     {'name': 'Dinner VM', 'runtime_status': 'running',
      'identity': {'source_identities': {'proxmox': ['proxmox:site-a:qemu:101']}},
      'runtime': {'type': 'qemu', 'node': 'pve-a', 'vmid': 101, 'status': 'running'}},
-], 'PARTIAL')
+], 'PARTIAL', [
+    {'source': 'Proxmox guest visibility (site-a)', 'retrieved_at': '2026-10-04T01:40:00Z'},
+])
 assert 'Dinner VM (VM 101, running)' in right_now_host_workloads, right_now_host_workloads
+assert 'guest-scope read at 2026-10-04T01:40:00Z' in right_now_host_workloads, right_now_host_workloads
 selected_guest_coverage = {
     'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
     'endpoints': [{
