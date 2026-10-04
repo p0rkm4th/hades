@@ -7,10 +7,11 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` is `619d1da1ef050a05b8b8aeab1bf7c4c97462c22e`, fast-forwarded
-from `codex/inference-read-freshness-20261004`. Public CI passed for the initial
-source candidate (run `37227907387`), same-scope placement code (main run
-`37230088761`), and current docs checkpoint (main run `37230575891`). Owner answers now show source read times for multiple matching
+The homelab code checkpoint on public `main` is
+`8e4a804a575c7e5035bc9feab2a0f26aa72857b2`; documentation checkpoints
+`619d1da` and `22ae967` followed it. Public CI passed for the initial source
+candidate (run `37227907387`), same-scope placement code (main run
+`37230088761`), and docs checkpoint `22ae967` (main run `37230783833`). Owner answers now show source read times for multiple matching
 HADES guests, including same-scope matches, and state that guest inventory
 alone does not prove which guest serves the application. Model-location output
 includes provider-read time and partial-source coverage. Synthetic tests also
