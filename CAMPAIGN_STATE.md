@@ -280,6 +280,7 @@ owner summary.
 The latest fresh before-rollout production chats still reproduce the two owner
 routing defects on the active base: cluster-wide guest state is treated as a
 physical-host query, and restore-check guest presence falls back to HADES
-repository Backup Check status. Household A receives only the generic boundary
-for both questions. The deterministic overlay candidate contains the tested
-owner routes; protected raw evidence remains mode 0600 outside the repository.
+repository Backup Check status. Household A and B receive only the generic
+boundary for both questions, without host or guest details. The deterministic
+overlay candidate contains the tested owner routes; protected raw evidence
+remains mode 0600 outside the repository.

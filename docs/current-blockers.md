@@ -372,6 +372,7 @@ A separate fresh before-rollout comparison reconfirmed both pending owner-route
 defects on the active production base. The cluster-wide guest question is
 misread as a query about a physical Proxmox host, and the restore-check guest
 question falls through to HADES repository Backup Check status. Household A
-receives the expected generic boundary for both. Protected raw responses are
-mode 0600 outside the public tree. These are the exact routes included in the
+and Household B receive the expected generic boundary for both, with no
+Proxmox, host, or guest details disclosed. Protected raw responses are mode
+0600 outside the public tree. These are the exact routes included in the
 deterministic candidate; deployment approval remains pending.
