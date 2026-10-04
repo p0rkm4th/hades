@@ -318,3 +318,11 @@ no websocket terminal marker was emitted, so the prior 90-second harness
 measurements are not valid latency observations. Protected raw evidence is
 outside the public tree. The production correction remains gated on approval of
 the current exact overlay candidate.
+
+A new owner “Is everything okay?” dogfood returns a bounded partial view across
+Proxmox, NetBox, Kuma, identity links, and inference providers. It reports no
+failing fresh Kuma probe, does not equate endpoint reachability with application
+readiness, preserves 15 unlinked resources, and qualifies model catalog and
+reported residency. Household A receives only the generic boundary. The broad
+answer still lacks per-source retrieval timestamps in its text; preserve this
+as an owner-facing provenance gap even when the underlying read is live.

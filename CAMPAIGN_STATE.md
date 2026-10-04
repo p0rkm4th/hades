@@ -210,3 +210,14 @@ normalized response content matches. Stable-render response samples were
 90-second harness timings are invalid and not treated as application latency.
 Raw responses remain in mode-0600 `/tmp` evidence, outside this repository.
 Production remains on the previous overlay pending exact-candidate approval.
+
+The fresh owner broad-status prompt returns a partial live view composed from
+Proxmox, NetBox, Uptime Kuma, identity links, and inference providers. It says no
+fresh configured Kuma probe is failing, distinguishes endpoint reachability
+from application readiness, leaves 15 unlinked observations separate, and
+qualifies provider catalog/residency as insufficient evidence of generation or
+free GPU capacity. Fresh owner and Household A turns persisted; Household A
+received only the generic boundary. The owner answer uses “current”/“fresh”
+wording but does not print per-source retrieval timestamps, so useful source
+provenance remains less inspectable than the underlying adapter evidence.
+Protected raw responses remain outside the repository.
