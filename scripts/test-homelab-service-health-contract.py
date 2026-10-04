@@ -190,6 +190,20 @@ assert 'power/runtime state, not application health' in healthy_checks_partial_c
 assert 'Application-service placement coverage is missing, empty, or incomplete' in healthy_checks_partial_coverage
 assert 'unmonitored services remain unknown for application health' in healthy_checks_partial_coverage
 assert 'Backup contents and restoreability were not checked' in healthy_checks_partial_coverage
+duplicate_label_summary = health_summary_response({
+    'status': 'OK', 'online_names': ['Synthetic Guest'],
+    'availability_summary': [{'name': 'Synthetic Probe', 'status': 'up', 'freshness': 'FRESH'}],
+    'source_observations': [{'source': 'Synthetic Proxmox', 'status': 'AVAILABLE'}],
+    'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE'},
+    'proxmox_guest_visibility': {'status': 'COMPLETE', 'scope': 'ALL_GUESTS'},
+    'conflicts': [
+        {'name': 'Synthetic Guest (VM 800)', 'reasons': ['Display label is shared by multiple records; they remain separate by stable source identity']},
+        {'name': 'Synthetic Guest (VM 802)', 'reasons': ['Display label is shared by multiple records; they remain separate by stable source identity']},
+    ],
+})
+assert 'Sources disagree about' not in duplicate_label_summary, duplicate_label_summary
+assert 'Some records share display labels' in duplicate_label_summary, duplicate_label_summary
+assert 'Some configured homelab evidence needs attention' not in duplicate_label_summary, duplicate_label_summary
 partial_guest_scope = health_summary_response({
     'status': 'OK', 'online_names': ['Synthetic Guest A'],
     'availability_summary': [{'name': 'Synthetic Probe', 'status': 'up', 'freshness': 'FRESH'}],

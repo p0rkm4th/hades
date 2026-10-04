@@ -4716,8 +4716,22 @@ def _hades_homelab_health_summary_response(summary):
     unknown = groups["unknown"]
     online = summary.get("online_names", [])
     online_count = len(online) if isinstance(online, list) else 0
-    conflicts = summary.get("conflicts", [])
-    conflicts = conflicts if isinstance(conflicts, list) else []
+    raw_conflicts = summary.get("conflicts", [])
+    raw_conflicts = raw_conflicts if isinstance(raw_conflicts, list) else []
+    conflicts = []
+    label_collisions = []
+    for row in raw_conflicts:
+        if not isinstance(row, dict):
+            continue
+        reasons = row.get("reasons") if isinstance(row.get("reasons"), list) else []
+        only_label_collision = bool(reasons) and all(
+            str(reason).casefold().startswith(("display label is shared", "display name is ambiguous"))
+            for reason in reasons
+        )
+        if only_label_collision:
+            label_collisions.append(row)
+        else:
+            conflicts.append(row)
     source_rows = summary.get("source_observations") or summary.get("sources") or []
     source_rows = source_rows if isinstance(source_rows, list) else []
     unavailable = [
@@ -4762,6 +4776,8 @@ def _hades_homelab_health_summary_response(summary):
         ]
         if labels:
             parts.append("Sources disagree about " + ", ".join(labels) + ".")
+    if label_collisions:
+        parts.append("Some records share display labels but remain separate by stable source identity.")
     if guest_scope_incomplete:
         parts.append(
             f"Proxmox guest visibility is {guest_visibility_scope.casefold()}; unreported guest state remains unknown."
