@@ -6,10 +6,10 @@ history, and owner data belong in protected operator records.
 
 ## CURRENT CAMPAIGN CHECKPOINT — 2026-10-04
 
-Canonical public main and origin/main are at 62e9bc2. Public CI is green on
-that baseline. A focused sanitization and homelab-read reliability change is
-being prepared on an isolated branch; it is not yet committed, published, or
-deployed. The canonical owner checkout remains untouched.
+Sanitized public main is at c2a5214 and its hosted Public CI run 37184996549
+passed. The focused source and documentation changes are published. They have
+not been deployed to the live HADES runtime. The canonical owner checkout
+remains untouched.
 
 The homelab integration is PARTIAL. HADES composes configured read-only
 Proxmox, NetBox, Uptime Kuma, service, and inference observations. A fresh
@@ -18,11 +18,13 @@ fails closed when no approved current check exists. Identity links, intended
 service records, host utilization, network trends, and independently verified
 restore coverage are incomplete. Historical reports are not current truth.
 
-This work removes concrete operator topology and historical machine inventory
+This change removes concrete operator topology and historical machine inventory
 from current public documentation, resolves owner machine aliases only from
 operator-owned configuration, and keeps placement advice unknown until live
-capacity evidence is available. No host, network, hypervisor, or production
-service has been changed for this source-only work.
+capacity evidence is available. The authenticated production connection name
+was not resolvable from this execution path, so no runtime deployment or live
+UI acceptance was attempted. No host, network, hypervisor, or production
+service has been changed.
 
 ## CURRENT OBJECTIVE
 
