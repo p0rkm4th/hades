@@ -7,43 +7,17 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-04
 
-Canonical public `main` is `b17441fb08d646e8ff3178587f2ac77b45e7be34`.
-Post-promotion Public CI run `37243502800` passed. The prior `ae15aa2` main
-also had green Public CI (`37241513751`). The promoted commits add bounded backup-status evidence and current-state
-reconciliation only; no runtime code or old homelab branch history was imported.
+Canonical public `main` is `c16071a54fdc750fb939a47b1bad0fcea5308e3e`; Public CI run `37243849629` passed. Aster's short-lived integration branch `codex/inference-read-freshness-20261004` is at candidate `cd7a551bb617ecf3fb7dadae04ef53762909a173`, a direct descendant of that main. Candidate Public CI run `37245402704` passed. Current-tree safety and introduced-range history safety passed. The candidate moves six pure inference/GPU presentation helpers from the MCP adapter into `integrations/homelab-readonly/inference_view.py`; the six function ASTs are unchanged, and the adapter retains compatibility imports. The candidate has not been deployed.
 
-Aster's integration branch `codex/inference-read-freshness-20261004` currently
-points to the same `b17441fb` commit as `main`; there is no unqualified source
-candidate. NYX-001 is active as a read-only semantic lineage and architecture
-audit from `ae15aa2`, comparing the preserved reference branch
-`codex/gpu-telemetry-parity-20261004` at `345cb1b6`. Its latest known Public CI
-(run `37222211701`) failed public-history safety with 63 local-path/private-
-network findings. It is review material only; do not merge it wholesale.
+NYX-001 is complete and accepted: the old `codex/gpu-telemetry-parity-20261004` line is review-only, not an integration base. Its behavior is already on current main or superseded by stronger current contracts; its NetBox service projection has weaker pagination/coverage handling. Its last recorded full-history CI failed with 63 private-path/network findings. No old branch code or history is imported. NYX-002 is a review-only adversarial audit of the inference-view extraction and is pending.
 
-Live runtime provenance was rechecked read-only on 2026-10-04. Hermes is
-active with zero observed restarts since the controlled rollout. The composed
-runtime `sitecustomize.py` has SHA-256
-`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91` and mode
-`0640`. The running homelab adapter file has SHA-256
-`fe7dadebebe2345793c757ad5d3475bfbc0dbe0c9df93419c7a72ca2405d6e21`, matching
-the public `integrations/homelab-readonly/server.py` source byte-for-byte. The
-base public `hermes/sitecustomize.py` hash is
-`dec333efc0267a0e247cee525153212bfde3dcff0b630b9ef522595b37d5be84`; the
-running overlay is a separately composed artifact and is recorded as such.
-No infrastructure-source or network writes were made.
+Last recorded read-only runtime provenance (2026-10-04): the composed Hermes overlay SHA-256 is `1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91`, mode `0640`; the active adapter SHA-256 is `fe7dadebebe2345793c757ad5d3475bfbc0dbe0c9df93419c7a72ca2405d6e21`, matching the pre-extraction `server.py` at `c16071a`. The candidate adapter is not active. No infrastructure, source-permission, network, host, or driver writes were made.
 
-Current mission: finish semantic lineage classification, close only important
-read-only reliability gaps, preserve current `main`, and continue measured
-extraction of coherent responsibilities from `sitecustomize.py` and the
-homelab MCP server. The current tree passes focused adapter, service-health,
-inference, restore-guest, capacity-routing, GPU-telemetry, and runtime-registry
-contracts. Remaining gates include independent Nyx findings/disposition,
-representative live stale/partial-source and contradiction checks, private
-infrastructure recoverability, and a first additional coherent extraction.
+Current measured concentration: `hermes/sitecustomize.py` 12,887 lines, 218 AST function nodes, 173 `_hades*` functions, including 50 homelab-named functions; the homelab MCP adapter is now 2,098 lines and 40 function nodes, with 946 lines in the new six-function pure view module. The adapter extraction is source-only and awaiting adversarial review and deployed owner/household acceptance.
 
-Next exact action: review Nyx-4's NYX-001 tables against the current source and
-old-branch behavior, record Aster's dispositions, then select one bounded
-extraction with its existing contract tests.
+The homelab campaign remains **PARTIAL**. Synthetic freshness, partial-source, identity, conflict, service-health, backup-claim, inference/GPU, household-privacy, and runtime-registry contracts pass. Remaining evidence includes deployed stale/partial-source and contradiction dogfood, service-native health/placement, network trends, backup artifact/restoreability, and ordinary-user outage acceptance. The encrypted private-infra snapshot was restored and verified for bytes and modes, but resides on the same `/home` filesystem; independent-device/off-host custody remains open.
+
+Next exact action: receive and disposition NYX-002; if no material regression is found, complete the hash-guarded adapter rollout and fresh owner/household acceptance, then promote the qualified current-main descendant. Continue one bounded extraction at a time and keep `main` green.
 
 ## Previous code and dogfood checkpoints — 2026-10-04
 

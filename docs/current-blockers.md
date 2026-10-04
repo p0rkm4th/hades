@@ -7,26 +7,13 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-04
 
-Canonical public `main` is `b17441fb08d646e8ff3178587f2ac77b45e7be34`, with
-Public CI run `37243502800` passing. The integration branch currently points
-to this same commit. The promoted commits document backup-status evidence and
-current provenance; no runtime code or old branch history was promoted.
+Canonical public `main` is `c16071a54fdc750fb939a47b1bad0fcea5308e3e`, with Public CI run `37243849629` passing. Aster's branch `codex/inference-read-freshness-20261004` points to `cd7a551bb617ecf3fb7dadae04ef53762909a173`, a direct main descendant; candidate Public CI run `37245402704` passed, including current-tree and introduced-history checks. The candidate is not deployed.
 
-The old homelab reference branch remains unsafe to promote: its latest known
-Public CI run `37222211701` failed introduced-history safety with 63 private
-path/address findings. NYX-001 is auditing its behavior against current `main`;
-source-port decisions remain pending.
+NYX-001 is complete and accepted. No code or history from `codex/gpu-telemetry-parity-20261004` was imported. Its recorded history-safety run failed with 63 private-path/network findings, and the branch's NetBox service projection is weaker than main's pagination/completeness handling. NYX-002 is reviewing the pure inference-view extraction.
 
-A read-only runtime provenance check on 2026-10-04 found the composed Hermes
-overlay at SHA-256
-`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91`, active
-with mode `0640`. The running homelab adapter SHA-256
-`fe7dadebebe2345793c757ad5d3475bfbc0dbe0c9df93419c7a72ca2405d6e21` matches
-the public server source. The overlay is a composed runtime artifact distinct
-from the base public hook file. No infrastructure-source writes occurred.
-The broader homelab campaign remains **PARTIAL** pending lineage review,
-read-only reliability gaps, private infrastructure recovery, and architecture
-extraction.
+The candidate moves six AST-identical pure inference/GPU response helpers into `inference_view.py`; focused adapter, inference, service-health, capacity, GPU telemetry, restore, and Hermes owner/household routing checks pass. The active adapter remains the previously verified `c16071a` artifact and the candidate has not been rolled out. Last recorded runtime hashes remain in `CAMPAIGN_STATE.md`; no live recheck or deployment occurred with this candidate.
+
+The broader homelab campaign remains **PARTIAL** pending deployed stale/partial-source and contradiction dogfood, native application-health and service-placement coverage, network trends, backup artifact/restoreability evidence, and ordinary-user outage acceptance. Private recovery is verified for the recorded encrypted snapshot's bytes and modes, but its custody is on the same `/home` filesystem, not an independent device.
 
 ## Release baseline
 

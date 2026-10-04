@@ -244,16 +244,17 @@ least-privilege credentials. Public source contains no concrete host identities,
 addresses, resource IDs, access paths, or private inventory. The protected
 operator matrix and acceptance records are maintained in `hades-infra`.
 
-Read-only deployment provenance was checked on 2026-10-04: the composed runtime
-hook is active at SHA-256
-`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91`; the live
-homelab adapter file hash
+Read-only deployment provenance was last checked on 2026-10-04: the composed
+runtime hook is SHA-256
+`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91`; the
+active homelab adapter SHA-256
 `fe7dadebebe2345793c757ad5d3475bfbc0dbe0c9df93419c7a72ca2405d6e21` matches
-the public `server.py` source. The runtime hook is a composed artifact and is
-not byte-identical to the base public `hermes/sitecustomize.py`. The current
-public source checkpoint is `b17441fb`; it adds documentation only after the
-homelab code checkpoint `f55bd0a`. This records source/runtime provenance, not
-an assertion that the remaining homelab capability gaps are closed.
+the pre-extraction `server.py` on main `c16071a`. The runtime hook is composed
+and is not byte-identical to the base public hook. Candidate `cd7a551` passes
+Public CI but is not deployed; it moves six AST-identical pure response helpers
+into `inference_view.py`. NYX-001 is accepted; NYX-002 review is pending. This
+is source/runtime provenance, not a claim that open homelab capability gaps
+are closed.
 
 Proxmox supplies hypervisor and guest runtime observations within its configured
 read scope. When the effective-permissions endpoint is readable, HADES reports
