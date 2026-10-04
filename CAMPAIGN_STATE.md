@@ -13,9 +13,8 @@ of truth.
 
 ## Current verified status — 2026-10-04
 
-- HADES review branch `codex/homelab-protected-source-contract-20261001` is
-  pushed at `5ac41c8`; Public CI run `37176367933` passed. Public `main` remains
-  at `c83ddd6` with green status checks.
+- The latest verified review baseline is `002c758`; Public CI run `37176811125`
+  passed. Public `main` remains at `c83ddd6` with green status checks.
 - The production candidate is the deterministic composed overlay
   `214c755e…ac128e8`, built over active overlay
   `d6977174…e29277a2`. A current read-only VM 802 check reconfirmed that exact
