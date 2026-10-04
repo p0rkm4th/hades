@@ -7,22 +7,22 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` is `e939b3caac8760291f610d2d428795956257ccb4`, fast-forwarded
-from `codex/inference-read-freshness-20261004`. Public CI passed on the
-matching candidate ref (run `37227907387`) before promotion. The new source
-labels ambiguous HADES guest matches per Proxmox scope, exposes source read
-times, timestamps provider model-location answers, and discloses when another
-configured inference provider is unavailable. Focused tests cover these
-changes and sequential Proxmox runtime/backup outages.
+Public `main` is `6a04e9c82a2740cb66f897cd007d6679b662b2f0`, fast-forwarded
+from `codex/inference-read-freshness-20261004`. Public CI passed for the code
+candidate (run `37227907387`) and current docs checkpoint (run `37228838517`).
+The source labels ambiguous HADES guest matches per Proxmox scope, exposes
+source read times, timestamps provider model-location answers, and discloses
+when another configured inference provider is unavailable. Focused tests also
+cover sequential Proxmox runtime/backup outages.
 
-The current production UI dogfood used the previously deployed overlay and
-adapter; it exposed the HADES placement ambiguity and missing model-location
-timestamp fixed in this source. Those fixes are not yet deployed. Compose the
-Hermes overlay against the exact active artifact, deploy with hash-guarded
-rollback, update the profile-selected adapter with protected rollback, then
-repeat owner and household acceptance. Source `main` being green alone does
-not close live runtime parity or the broader homelab gates. No production
-deployment has occurred for this candidate.
+The composed Hermes overlay and profile-selected read-only adapter were
+deployed with exact hash checks and root-only rollback copies. Service health
+passed after one restart. Fresh owner UI checks covered HADES guest placement,
+model-location freshness, and conservative model-capacity wording. Fresh
+household UI checks preserved redaction and owner-only placement access. This
+closes this candidate’s deployment and focused UI parity check, not the broader
+homelab campaign. No Proxmox, NetBox, Kuma, host, network, account, ACL, or
+source-access changes were made.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address
@@ -42,16 +42,21 @@ filesystem capacity, and backup restoreability remain unknown unless a current
 source explicitly provides them. Household status remains unknown when no
 approved household-safe live check is configured.
 
-A synthetic NetBox outage test now seeds a stable Proxmox-to-NetBox link before
+A synthetic NetBox outage test seeds a stable Proxmox-to-NetBox link before
 withdrawing NetBox. The adapter retains current Proxmox runtime and removes the
 prior inventory identity, while a stale Kuma observation remains stale. A
 separate authenticated UI test found and fixed local read-only adapter fallback
-registration for deterministic owner routes; the post-fix UI acceptance passed.
+registration for deterministic owner routes; the post-fix UI acceptance
+passed. The current deployed owner UI also distinguishes guest power/placement
+from application health and reports provider read times; household leak checks
+passed.
 
 Remaining work:
 
 - exercise stale-source and partial-source-outage behavior against live and
   synthetic feeds without promoting cached data to live truth;
+- clarify same-name guest matches within one Proxmox scope and harden the
+  private overlay builder input hash before the next composition;
 - verify contradictory Proxmox/NetBox/Kuma observations remain visible;
 - reconcile stable identity links and service placements;
 - qualify backup coverage separately from local copies, contents, and restore

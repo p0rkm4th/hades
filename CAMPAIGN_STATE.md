@@ -8,16 +8,17 @@ records.
 ## Current checkpoint — 2026-10-04
 
 Public `main` is at
-`e939b3caac8760291f610d2d428795956257ccb4`, fast-forwarded from
-`codex/inference-read-freshness-20261004`. Hosted Public CI passed on the
-candidate ref (run `37227907387`) before the same commit was fast-forwarded to
-`main`. This source adds visible provider-read times and partial-provider
-caveats to model-location answers, source IDs/read times and ambiguity wording
-to cross-source HADES guest placement, and sequential outage regressions for
-Proxmox runtime and backup evidence. A fresh 19-prompt owner/household dogfood
-found these response gaps; all prompts returned and household leak checks
-passed. The source changes are not yet composed into the active production
-Hermes overlay or MCP adapter; post-deployment dogfood remains required.
+`6a04e9c82a2740cb66f897cd007d6679b662b2f0`, fast-forwarded from
+`codex/inference-read-freshness-20261004`. Hosted Public CI passed for code
+revision `e939b3caac8760291f610d2d428795956257ccb4` (run `37227907387`) and the
+latest docs checkpoint (run `37228838517`). The code adds visible provider-read
+times and partial-provider caveats to model-location answers, source IDs/read
+times and ambiguity wording to cross-source HADES guest placement, and
+sequential outage regressions for Proxmox runtime and backup evidence. A fresh
+19-prompt owner/household dogfood found these response gaps; all prompts
+returned and household leak checks passed. The private overlay and matching
+read-only adapter were then deployed with hash-guarded, root-only rollback;
+service health and fresh owner/household UI acceptance passed.
 
 The current source tree removes private destination acceptance records and
 per-user share mappings, requires explicit destination hostname input, and uses
@@ -27,8 +28,9 @@ history is not rewritten; older reachable commits retain previously published
 private identifiers. Do not claim historical erasure or merge from an older
 candidate ref.
 
-No Proxmox, NetBox, Kuma, host, driver, guest, network, account, or production
-runtime changes were made during this campaign checkpoint.
+The deployment changed only the composed Hermes overlay and profile-selected
+read-only HADES adapter. No Proxmox, NetBox, Kuma, host, driver, guest, network,
+account, source ACL, or source-access configuration changed.
 
 ## Homelab read reliability
 
@@ -49,13 +51,12 @@ with synthetic identities and sources.
 
 ## Open work
 
-- Verify hosted Public CI for the local-adapter registration fix.
 - Continue live stale/partial-source acceptance, native service-health and
   service-placement coverage, network measurements, and bounded inference
   capacity checks.
+- Review whether same-name guest matches within one Proxmox scope need clearer
+  owner wording; pin the private overlay builder input hash before reuse.
 - Complete backup-custody, reboot, and end-to-end restore evidence before
   claiming recovery readiness.
-- Reconcile the candidate with `main` only after engineering acceptance; the
-  public main baseline and prior published history require separate review.
 - Keep infrastructure reads read-only; write authority is outside this
   campaign.

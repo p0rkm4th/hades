@@ -129,6 +129,6 @@ disabled; see
 
 ## Current next action
 
-The first low-risk extraction from `hermes/sitecustomize.py` is complete on `main`: read-only workflow-presence reconciliation now belongs to `integrations.automation.workflow_presence`. Its focused regression and both hosted Public CI runs passed; see [`../CAMPAIGN_STATE.md`](../CAMPAIGN_STATE.md). Keep future extraction incremental and contract-tested. Production migration, real household onboarding, encrypted off-host custody, and the owner/UI gates above remain separate.
+The first low-risk extraction from `hermes/sitecustomize.py` is complete on `main`, and the current homelab freshness/source-attribution candidate is deployed with focused owner and household UI acceptance; see [`../CAMPAIGN_STATE.md`](../CAMPAIGN_STATE.md). Remaining live-source, service-health, network, backup/restore, and partial-outage evidence is tracked in [`current-blockers.md`](current-blockers.md). Keep future extraction incremental and contract-tested. Production migration, real household onboarding, and encrypted off-host custody remain separate.
 
 Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).
