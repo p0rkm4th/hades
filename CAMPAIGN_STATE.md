@@ -233,8 +233,21 @@ composer now sorts emitted functions and global assignments; a regression
 composes under two hash seeds and compares exact bytes. Two builds from the same
 base now produce identical output. Deterministic overlay SHA-256 is
 `214c755eeaf414d26a1be6d8609c8dd4d1760215ea2b3489763eecda5ac128e8`, based on
-active SHA `d697717418e00da5693940ea9351de4faaf1affc35dedaea9ac7f49ee29277a2`.
-The combined candidate is not deployed; the composer fix needs Public CI, after
-which exact-scope owner approval and fresh authenticated owner/household UI
-acceptance remain pending. Previous approval requests named nondeterministic
-artifact hashes and must not be used.
+last verified active SHA `d697717418e00da5693940ea9351de4faaf1affc35dedaea9ac7f49ee29277a2`.
+The candidate's composed runtime covers all three owner routes and household
+boundaries. HADES `e7fb6a1f9f712688d2fd5437acf8443b89b6b21a` passed Public CI
+run `37175267641`. Exact-scope deployment approval and fresh owner/Household A/B
+acceptance remain pending; the live active base must be rechecked before
+installation. Previous approval requests named nondeterministic artifact
+hashes and must not be used.
+
+Fresh owner/Household A production dogfood reconfirmed the current behavior.
+The owner broad answer remains partial, omits source retrieval timestamps,
+keeps 15 cross-source identity observations unlinked, and explicitly separates
+probe reachability from application readiness. Household A received a generic
+computer-status boundary and an honest "no current check" answer for the game
+server. Four-prompt protected raw evidence is mode 0600 at
+`/tmp/aster6-homelab-summary-ui-20261003.json`; it is not committed. No runtime
+configuration was changed. Nyx-4 has a read-only assignment to verify whether
+the empty NetBox application-service catalog is expected or a missing canonical
+record; no NetBox/Kuma mutation was requested.

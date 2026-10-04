@@ -328,10 +328,20 @@ answer's initial version lacked per-source retrieval timestamps in its text.
 The current composed review candidate adds up to six bounded source/read
 timestamp pairs to owner summaries and includes the tested owner routes for
 cluster-wide guest state and restore-check guest presence; household responses
-remain unchanged. HADES `44ac5f1` passed Public CI run `37174603462`, and the
-composed Hermes runtime passes locally. A reproducibility defect in composer
-ordering was then fixed and now has a cross-`PYTHONHASHSEED` byte-equality
-contract. The deterministic composed overlay SHA-256 is
-`214c755e…ac128e8` over active SHA `d6977174…e29277a2`. Public CI for the
-composer correction and deployment approval for this exact combined scope are
-pending; fresh owner/household UI acceptance follows deployment.
+remain unchanged. HADES `e7fb6a1` passed Public CI run `37175267641`. A
+cross-`PYTHONHASHSEED` regression proves deterministic composer output, and
+the exact composed runtime covers cluster guest state, restore guest matching,
+source timestamps, and household boundaries. The deterministic composed
+overlay SHA-256 is `214c755e…ac128e8` over the last verified active base
+`d6977174…e29277a2`; the live base must be rechecked immediately before any
+installation. Exact-scope deployment approval and post-deployment owner and
+Household A/B acceptance remain pending.
+
+Fresh authenticated production UI dogfood reconfirmed the gap before rollout.
+The owner broad summary says the live view is partial, identifies responding
+source categories, leaves 15 cross-source identities unlinked, and distinguishes
+probe response from application readiness; it still omits per-source read
+timestamps. Household A receives a generic computer-status boundary, and its
+game-server check says no current check is available rather than calling the
+service healthy. Protected four-prompt evidence is mode 0600 outside the public
+tree. No source or infrastructure configuration was changed.
