@@ -4696,9 +4696,79 @@ def _hades_broad_homelab_status_intent(text):
     """Recognize short owner questions that ask for a whole-lab status read."""
     return bool(re.search(
         r"^\s*(?:what(?:['’]s|\s+is)\s+(?:down|degraded|wrong|broken|fucked)|"
-        r"anything\s+(?:down|dying|wrong|broken))\s*[?.!]*\s*$",
+        r"anything\s+(?:down|dying|wrong|broken)|"
+        r"is\s+everything\s+(?:okay|ok|alright|all\s+right|healthy|good)"
+        r"(?:\s+with\s+(?:the\s+)?(?:homelab|home\s+lab|lab))?|"
+        r"is\s+the\s+(?:homelab|home\s+lab|lab)\s+(?:okay|ok|alright|all\s+right|healthy|good)|"
+        r"how(?:['’]s|\s+is)\s+(?:the\s+)?(?:homelab|home\s+lab|lab)\s+doing)\s*[?.!]*\s*$",
         str(text or ""), re.IGNORECASE,
     ))
+
+
+def _hades_homelab_health_summary_response(summary):
+    """Summarize live coverage without treating power or probes as app health."""
+    if not isinstance(summary, dict):
+        return "I couldn't verify current homelab status because the live summary was unavailable."
+    availability = summary.get("availability_summary", [])
+    groups = _hades_homelab_availability_groups(availability)
+    down = groups["down"]
+    up = groups["up"]
+    unknown = groups["unknown"]
+    online = summary.get("online_names", [])
+    online_count = len(online) if isinstance(online, list) else 0
+    conflicts = summary.get("conflicts", [])
+    conflicts = conflicts if isinstance(conflicts, list) else []
+    source_rows = summary.get("source_observations") or summary.get("sources") or []
+    source_rows = source_rows if isinstance(source_rows, list) else []
+    unavailable = [
+        row for row in source_rows
+        if isinstance(row, dict)
+        and str(row.get("status") or "UNKNOWN").upper()
+        not in {"AVAILABLE", "READABLE", "HEALTHY", "OK", "COMPLETE"}
+    ]
+    catalog = summary.get("service_catalog")
+    catalog = catalog if isinstance(catalog, dict) else {}
+    catalog_status = str(catalog.get("status") or "UNKNOWN").upper()
+    catalog_coverage = str(catalog.get("coverage") or "UNKNOWN").upper()
+
+    if down or conflicts:
+        parts = ["Some configured homelab evidence needs attention."]
+    elif unavailable or summary.get("status") != "OK":
+        parts = ["I can't confirm that the whole homelab is okay; source coverage is partial or unavailable."]
+    else:
+        parts = ["No failure is reported by fresh configured availability checks."]
+
+    if down:
+        parts.append("Failing configured checks: " + ", ".join(down[:4]) + ".")
+    else:
+        parts.append("No fresh configured probe is reporting a failure.")
+    if up:
+        parts.append(f"{len(up)} configured availability check(s) responded in this live read.")
+    if unknown:
+        parts.append(f"{len(unknown)} configured check(s) are stale or unknown.")
+    if online_count:
+        parts.append(
+            f"Proxmox reports {online_count} guest(s) running; this is power/runtime state, not application health."
+        )
+    if conflicts:
+        labels = [
+            " ".join(str(row.get("name") or "Unnamed resource").split())[:80]
+            for row in conflicts[:3] if isinstance(row, dict)
+        ]
+        if labels:
+            parts.append("Sources disagree about " + ", ".join(labels) + ".")
+    if unavailable:
+        labels = [
+            " ".join(str(row.get("source") or "A configured source").split())[:64]
+            for row in unavailable[:3]
+        ]
+        parts.append("Could not verify " + ", ".join(labels) + " in this read.")
+    if catalog_status != "OK" or catalog_coverage not in {"COMPLETE", "EMPTY"} or catalog_coverage == "EMPTY":
+        parts.append("Application-service placement coverage is missing, empty, or incomplete.")
+    if unknown or not availability or catalog_coverage != "COMPLETE":
+        parts.append("Some unmonitored services remain unknown for application health.")
+    parts.append("Backup contents and restoreability were not checked in this summary.")
+    return " ".join(parts)
 
 
 def _hades_homelab_service_coverage_intent(text):
@@ -6107,17 +6177,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         if down:
             response += " Uptime Kuma's configured probes failed: " + ", ".join(down) + "."
         if _hades_broad_homelab_status_intent(text):
-            unknown = monitor_groups["unknown"]
-            if down:
-                response = "Current configured checks reporting a failure: " + ", ".join(down[:6]) + ". "
-            else:
-                response = "No fresh configured probe is reporting a failure. "
-            if unknown:
-                response += "Current status is unverified for: " + ", ".join(
-                    item["name"] for item in unknown[:6]
-                ) + ". "
-            response += "Probe results cover configured checks only; unmonitored services remain unknown."
-            return response
+            return _hades_homelab_health_summary_response(summary)
         if detailed_request:
             runtime_details = [
                 (item.get("runtime_detail") or item.get("runtime")) for item in resources

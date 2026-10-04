@@ -39,6 +39,7 @@ wanted = {
     '_hades_service_health_target', '_hades_service_monitor_response',
     '_hades_homelab_availability_groups',
     '_hades_broad_homelab_status_intent',
+    '_hades_homelab_health_summary_response',
     '_hades_homelab_service_coverage_intent',
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_provenance_followup', '_hades_homelab_provenance_response',
@@ -96,6 +97,7 @@ target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 groups = namespace['_hades_homelab_availability_groups']
 broad_status_intent = namespace['_hades_broad_homelab_status_intent']
+health_summary_response = namespace['_hades_homelab_health_summary_response']
 coverage_intent = namespace['_hades_homelab_service_coverage_intent']
 coverage_response = namespace['_hades_homelab_service_coverage_response']
 provenance_followup = namespace['_hades_homelab_provenance_followup']
@@ -163,8 +165,40 @@ assert coverage_intent('What homelab applications remain unknown?')
 assert not coverage_intent('Is Minecraft working?')
 assert broad_status_intent("What's down?")
 assert namespace['_hades_is_homelab_intent']("What's down?")
-assert not broad_status_intent('Is everything okay with the homelab?')
+assert broad_status_intent('Is everything okay with the homelab?')
+assert broad_status_intent('How is the lab doing?')
+assert namespace['_hades_is_homelab_intent']('Is everything okay with the homelab?')
 assert not broad_status_intent('What changed since yesterday?')
+healthy_checks_partial_coverage = health_summary_response({
+    'status': 'OK',
+    'online_names': ['Synthetic Guest A', 'Synthetic Guest B'],
+    'availability_summary': [
+        {'name': 'Synthetic Web Probe', 'status': 'up', 'freshness': 'FRESH'},
+        {'name': 'Synthetic Old Probe', 'status': 'up', 'freshness': 'STALE'},
+    ],
+    'source_observations': [
+        {'source': 'Synthetic Proxmox', 'status': 'AVAILABLE', 'retrieved_at': 'now'},
+        {'source': 'Synthetic NetBox', 'status': 'AVAILABLE', 'retrieved_at': 'now'},
+    ],
+    'service_catalog': {'status': 'OK', 'coverage': 'EMPTY', 'services': []},
+    'conflicts': [],
+})
+assert 'No failure is reported by fresh configured availability checks' in healthy_checks_partial_coverage
+assert '2 guest(s) running' in healthy_checks_partial_coverage
+assert 'power/runtime state, not application health' in healthy_checks_partial_coverage
+assert 'Application-service placement coverage is missing, empty, or incomplete' in healthy_checks_partial_coverage
+assert 'unmonitored services remain unknown for application health' in healthy_checks_partial_coverage
+assert 'Backup contents and restoreability were not checked' in healthy_checks_partial_coverage
+failed_source_health = health_summary_response({
+    'status': 'PARTIAL', 'online_names': [],
+    'availability_summary': [{'name': 'Synthetic App Check', 'status': 'down', 'freshness': 'FRESH'}],
+    'source_observations': [{'source': 'Synthetic NetBox', 'status': 'UNAVAILABLE'}],
+    'service_catalog': {'status': 'UNAVAILABLE', 'coverage': 'UNKNOWN'},
+    'conflicts': [],
+})
+assert 'Some configured homelab evidence needs attention' in failed_source_health
+assert 'Failing configured checks: Synthetic App Check' in failed_source_health
+assert 'Could not verify Synthetic NetBox' in failed_source_health
 assert guest_inventory_intent('What VMs are running?')
 assert guest_inventory_intent('List all Proxmox containers')
 assert not guest_inventory_intent('Are all VMs visible?')
@@ -893,6 +927,19 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         owner_down = direct_read("What's down?", 'synthetic-owner', 'owner')
         assert 'No fresh configured probe is reporting a failure' in owner_down, owner_down
         assert 'unmonitored services remain unknown' in owner_down, owner_down
+        owner_overall = direct_read(
+            'Is everything okay with the homelab?', 'synthetic-owner', 'owner'
+        )
+        assert 'Some configured homelab evidence needs attention' in owner_overall, owner_overall
+        assert 'Sources disagree about Synthetic Node' in owner_overall, owner_overall
+        assert 'Backup contents and restoreability were not checked' in owner_overall, owner_overall
+        assert 'Live Proxmox currently reports:' not in owner_overall, owner_overall
+        household_overall = direct_read(
+            'Is everything okay with the homelab?', 'synthetic-household', 'household'
+        )
+        assert household_overall == household_boundary(
+            'Is everything okay with the homelab?'
+        ), household_overall
         assert direct_read("What's down?", 'synthetic-household', 'household') == household_boundary(
             "What's down?"
         )
