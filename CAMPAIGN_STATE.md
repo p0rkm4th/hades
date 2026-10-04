@@ -104,9 +104,10 @@ with synthetic identities and sources.
 
 - Continue live stale/partial-source acceptance, native service-health and
   service-placement coverage, network measurements, and bounded inference
-  capacity checks. The broad owner summary still does not query backup
-  schedule/task status, and the current game-server health source remains
-  unconfigured.
+  capacity checks. A separate owner backup query returns bounded configured
+  job/task records with explicit attribution and restoreability limits, but
+  coverage and recovery remain open. The current game-server health source
+  remains unconfigured.
 - Complete backup-custody, reboot, and end-to-end restore evidence before
   claiming recovery readiness.
 - Keep infrastructure reads read-only; write authority is outside this

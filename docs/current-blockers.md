@@ -56,6 +56,12 @@ summary does not query backup schedule/task status, and network measurement,
 service-native checks, stale-source acceptance, and synthetic restore evidence
 remain open.
 
+A separate fresh owner backup query returns bounded configured Proxmox
+job/task evidence and repository-check status, but does not establish expected
+guest coverage, backup contents, off-site custody, or restoreability. It
+preserves unknown guest attribution, and a fresh household check withholds
+private backup details. Backup recovery remains open.
+
 Fresh owner/household network-slow dogfood returns configured-probe timing
 samples only and explicitly declines a network-wide diagnosis. Packet loss,
 throughput, DNS timing, and historical comparison are not currently available,
