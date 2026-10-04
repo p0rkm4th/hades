@@ -7,28 +7,28 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-The homelab code checkpoint on public `main` is
-`8e4a804a575c7e5035bc9feab2a0f26aa72857b2`; documentation checkpoints
-`619d1da` and `22ae967` followed it. Public CI passed for the initial source
-candidate (run `37227907387`), same-scope placement code (main run
-`37230088761`), and docs checkpoint `22ae967` (main run `37230783833`). Owner answers now show source read times for multiple matching
-HADES guests, including same-scope matches, and state that guest inventory
-alone does not prove which guest serves the application. Model-location output
-includes provider-read time and partial-source coverage. Synthetic tests also
-cover sequential Proxmox runtime and backup outages.
+Public `main` is at `5ed8c8d`; source checkpoint `07b0055` adds NetBox
+pagination completeness and contradictory-coverage handling. Public CI passed
+on the documented tip (run `37234655212`). HADES calls the service catalog
+complete or empty only when `count`, `next`, and `results` agree; missing pages
+and malformed or contradictory metadata remain partial or unknown. Focused
+synthetic source and response contracts pass.
 
-The composed Hermes overlay and profile-selected read-only adapter were
-deployed with exact hash checks and root-only rollback copies. The same-scope
-follow-up changed only the overlay. Service health passed after each restart.
-Fresh owner UI checks covered duplicate guest placement, model-location
-freshness, and conservative capacity wording. Fresh household checks preserved
-redaction and owner-only placement access. A fresh owner “How do you know?”
-follow-up refreshed configured sources, supplied per-source read times, and
-kept NetBox intended state, Proxmox runtime, and Kuma probes distinct. This
-closes these candidates’ deployment and focused UI parity checks, not the
-broader homelab campaign. No
-Proxmox, NetBox, Kuma, host, network, account, ACL, or source-access changes
-were made.
+A first private overlay composition accidentally removed adjacent helpers. The
+hash-guarded rollback restored the prior overlay and adapter, and a fresh owner
+chat confirmed recovery. The corrected composition changes only the intended
+coverage and placement functions; the bundle's AST/fallback tests and Nyx-4's
+independent read-only review passed. The revised adapter and overlay are now
+active with Hermes and WebUI healthy. Fresh owner UI acceptance reported the
+empty service catalog with probe-health caveats, refused to infer Minecraft
+placement, and retained the bounded Agent Zero endpoint response. Household A
+was denied internal host/address details with no topology leak. No source
+permissions or infrastructure settings changed.
+
+This closes the NetBox completeness slice, not the broader homelab campaign.
+The deployed read layer still needs representative stale/partial live-source
+checks, service-native application health, source-conflict dogfood, network
+measurements, backup/recovery evidence, and broader normal-user dogfood.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address

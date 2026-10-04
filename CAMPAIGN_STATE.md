@@ -7,24 +7,26 @@ records.
 
 ## Current checkpoint — 2026-10-04
 
-The homelab code checkpoint is `8e4a804a575c7e5035bc9feab2a0f26aa72857b2`
-on `main`; documentation checkpoints `619d1da` and `22ae967` followed it.
-Public CI passed for code revision `e939b3caac8760291f610d2d428795956257ccb4` (run `37227907387`), the
-source-attribution follow-up `8e4a804` (branch run `37230026776`; main run
-`37230088761`), and subsequent documentation updates through `22ae967` (run
-`37230783833` passed on main). The source adds
-provider-read timestamps and partial-provider caveats to model-location
-answers, and source/time attribution plus conservative ambiguity wording to
-HADES guest placement. Synthetic outage regressions cover Proxmox runtime and
-backup evidence. A fresh 19-prompt owner/household dogfood found the original
-response gaps; all prompts returned and household leak checks passed. The
-composed read-only adapter and Hermes overlay were deployed with hash-guarded,
-root-only rollback. A follow-up same-scope duplicate fix also passed focused
-owner/household UI acceptance; service health remained green. A fresh owner
-conversation also passed the “How do you know?” follow-up: HADES refreshed
-configured sources, reported per-source read times, and distinguished NetBox
-intent, Proxmox runtime, and Kuma probe results without promoting older
-observations to live truth.
+Public `main` is at `5ed8c8d`; source checkpoint `07b0055` added explicit
+NetBox pagination completeness and contradictory-coverage handling. Public CI
+passed on the source and documented tip (main run `37234655212`). The adapter
+requires valid `count`, `next`, and `results` metadata before calling a
+service catalog complete or empty; missing pages and malformed/contradictory
+metadata remain partial or unknown. Focused synthetic contracts pass.
+
+A first private composition attempt removed adjacent helpers and caused an
+owner-chat error. Hash-guarded rollback restored both prior files and health.
+The corrected function-scoped overlay composition passed its protected
+synthetic review and was deployed with the matching adapter module. Fresh
+owner UI checks now distinguish the explicitly empty NetBox catalog from
+unknown coverage, refuse remembered Minecraft placement, and retain the
+bounded Agent Zero endpoint answer. Household A received no internal host or
+address details. Hermes and Open WebUI health checks passed after restart.
+
+The change updates only HADES read-only runtime code. No Proxmox, NetBox, Kuma,
+host, driver, guest, network, account, source ACL, or source-access
+configuration changed. Private hashes, rollback paths, and raw owner/household
+transcripts remain in protected operator records.
 
 The current source tree removes private destination acceptance records and
 per-user share mappings, requires explicit destination hostname input, and uses
@@ -59,8 +61,8 @@ with synthetic identities and sources.
 
 - Continue live stale/partial-source acceptance, native service-health and
   service-placement coverage, network measurements, and bounded inference
-  capacity checks; Nyx-4 is independently reviewing the same-scope response
-  against the exact source commit.
+  capacity checks. Nyx-4's read-only review of the corrected private composer
+  passed; further owner dogfood remains open.
 - Complete backup-custody, reboot, and end-to-end restore evidence before
   claiming recovery readiness.
 - Keep infrastructure reads read-only; write authority is outside this
