@@ -7,13 +7,11 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` remains at `b903ad331dc0269becf46600bf29db8931707fef` at the
-last reconciliation. The sanitized homelab candidate is on
-`codex/homelab-public-sanitized-20261004`. Sanitized candidate `21809b5`
-passed Public CI run `37224039987`. The local homelab reader fallback fix also
-passed authenticated synthetic UI acceptance. Check exact branch head and run
-status before promotion. No production deployment was performed in this
-follow-up.
+Public `main` is now `54984ed4cd048576452a12b1a3591ff2854d6c5b`; hosted Public
+CI passed in run `37224308799`. The sanitized candidate was fast-forwarded from
+`codex/homelab-public-sanitized-20261004`. The local homelab reader fallback
+fix passed authenticated synthetic UI acceptance. No production deployment
+was performed in this follow-up.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address
