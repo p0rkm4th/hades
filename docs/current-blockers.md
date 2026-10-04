@@ -7,9 +7,9 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` is at `5ed8c8d`; source checkpoint `07b0055` adds NetBox
-pagination completeness and contradictory-coverage handling. Public CI passed
-on the documented tip (run `37234655212`). HADES calls the service catalog
+Public `main` is at `86ca48f`; Public CI run `37238630968` passed. Earlier
+source checkpoint `07b0055` adds NetBox pagination completeness and
+contradictory-coverage handling. HADES calls the service catalog
 complete or empty only when `count`, `next`, and `results` agree; missing pages
 and malformed or contradictory metadata remain partial or unknown. Focused
 synthetic source and response contracts pass.
@@ -30,14 +30,18 @@ The deployed read layer still needs representative stale/partial live-source
 checks, service-native application health, source-conflict dogfood, network
 measurements, backup/recovery evidence, and broader normal-user dogfood.
 
-Fresh owner dogfood also found a status/freshness conflation for the hardware
-capability matrix: a successful read was phrased as `ok` despite the
-observation age. Source read status and data freshness are now separate; the
-matrix's explicit timestamp is evaluated against a seven-day freshness window,
-with regression contracts. Public CI passed at `8b28cae`, and a fresh owner UI
-check verified the corrected role/freshness path. Household game-server status
-remains explicitly unknown with no topology leak. This closes the formatter
-regression; repeated telemetry caveats remain a P2 wording issue.
+Fresh owner dogfood found a status/freshness conflation for the hardware
+capability matrix and a duplicated GPU count in aggregate inventory labels.
+Source read status and data freshness are now separate; the matrix timestamp is
+evaluated against a seven-day window, and aggregate strings such as `4x Quadro
+P4000` are preserved without a second inferred count. The owner response keeps
+provider-residency and host-health limitations while distinguishing recorded
+inventory from timestamped GPU samples. Public CI run `37238630968` passed at
+`86ca48f`; fresh owner and household UI checks passed, including household
+redaction and unknown game-server status. These specific defects are closed.
+The wider homelab reliability campaign remains **PARTIAL** pending live-source
+failure/conflict checks, service-native health and placement coverage, network
+measurements, and backup/recovery evidence.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address

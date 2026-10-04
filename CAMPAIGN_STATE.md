@@ -7,10 +7,11 @@ records.
 
 ## Current checkpoint — 2026-10-04
 
-Code checkpoint `8b28cae` separates hardware-observation freshness; earlier
-checkpoint `07b0055` added NetBox pagination completeness and
-contradictory-coverage handling. Public CI run `37236639218` passed for the
-code checkpoint. The adapter
+Code checkpoint `86ca48f` completes the current inference freshness and
+aggregated-GPU display slice. Earlier code checkpoint `8b28cae` separates
+hardware-observation freshness; checkpoint `07b0055` added NetBox pagination
+completeness and contradictory-coverage handling. Public CI run `37236639218`
+passed for the earlier source checkpoint. The adapter
 requires valid `count`, `next`, and `results` metadata before calling a
 service catalog complete or empty; missing pages and malformed/contradictory
 metadata remain partial or unknown. Focused synthetic contracts pass.
@@ -21,11 +22,15 @@ adapter now classifies `observed_at` independently using the documented
 seven-day window (`FRESH`, `STALE`, or `UNKNOWN`), while retaining `status=OK`
 solely for read success. Hermes consumes only the explicit freshness field.
 Focused synthetic tests cover the age boundary, invalid/future timestamps, and
-the status/freshness separation. Public CI passed, and a fresh owner UI answer
-now uses the current seven-day classification without calling a successful
-read `ok`; household game-server status remains unknown without leaking owner
-topology. Hermes and WebUI health passed after rollout. The owner answer still
-repeats some telemetry caveats, a P2 wording issue.
+the status/freshness separation. Public CI run `37238630968` passed at
+`86ca48f`. A fresh owner UI answer uses the seven-day classification without
+calling a successful read `ok`, preserves the aggregate `4x Quadro P4000`
+label, and distinguishes timestamped GPU telemetry from recorded hardware
+inventory. The answer also retains provider-residency, generation, and host
+health limitations. Household game-server status remains unknown without
+leaking owner topology. Hermes and WebUI health passed after rollout. The
+freshness, answer-formatting, and aggregate-count defects are closed; the
+broader live homelab reliability campaign remains partial.
 
 A first private composition attempt removed adjacent helpers and caused an
 owner-chat error. Hash-guarded rollback restored both prior files and health.
