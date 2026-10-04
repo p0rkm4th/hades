@@ -13,7 +13,7 @@ of truth.
 
 ## Current verified status — 2026-10-04
 
-- Latest pushed review branch is `775c15a`; Public CI run `37168603772` passes.
+- Latest pushed review branch is `721bd0b`; Public CI run `37169132747` passes.
   The immediately preceding run correctly rejected a private topology name in
   a synthetic test label; that fixture is now generic and the public-tree
   safety guard passes. Public `main` remains at `c83ddd6`.
@@ -28,11 +28,16 @@ of truth.
   its first broad-summary turn promised a read-only check instead of returning
   a direct boundary response. This is a household UX follow-up, not an observed
   disclosure. Raw acceptance remains in private mode-0600 evidence.
-- `40054cb` remains the active VM 802 runtime candidate for GPU hardware-name
-  questions. Candidate `775c15a` improves lowercase host-label presentation;
-  Public CI and focused tests pass, and a one-file rollback-backed production
-  rollout is awaiting owner decision. Production is unchanged by this cosmetic
-  candidate.
+- `40054cb` remains active on VM 802 for GPU hardware-name questions. Fresh
+  owner dogfood found a cluster-wide guest question was misread as a request
+  about a host literally named “Proxmox”; a direct named-host question returned
+  current running/stopped guests correctly. Candidate `721bd0b` recognizes the
+  cluster wording, lists running/stopped/unknown guests only from configured
+  Proxmox identities, and claims a complete view only when all configured
+  endpoint scopes are `ALL_GUESTS`. It also includes the lowercase display-label
+  correction from `775c15a`. Synthetic and composed runtime checks plus Public
+  CI pass; the combined two-file rollout awaits owner decision. Production is
+  unchanged by this candidate.
 - HADES review branch `codex/homelab-protected-source-contract-20261001` is
   pushed at `348c08b`; Public CI run `37165321007` passed. Runtime candidate
   `09698a3` remains the latest recorded runtime deployment with a root-only
