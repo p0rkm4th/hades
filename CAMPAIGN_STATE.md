@@ -276,3 +276,10 @@ A's matching freshness follow-up stayed at the generic boundary without
 privileged source reads. This validates the existing on-demand provenance path
 while the pending combined overlay makes those times visible in the initial
 owner summary.
+
+The latest fresh before-rollout production chats still reproduce the two owner
+routing defects on the active base: cluster-wide guest state is treated as a
+physical-host query, and restore-check guest presence falls back to HADES
+repository Backup Check status. Household A receives only the generic boundary
+for both questions. The deterministic overlay candidate contains the tested
+owner routes; protected raw evidence remains mode 0600 outside the repository.
