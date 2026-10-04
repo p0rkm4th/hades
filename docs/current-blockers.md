@@ -21,8 +21,8 @@ Status: **PARTIAL**
   health, private-infrastructure redaction, and plain-language boundaries for
   whole-home speed and computer-status questions. Sensitive prior assistant
   turns are removed from household model context before routing or fallback.
-  A full live homelab summary remains partial because Proxmox guest visibility
-  and NetBox application-service coverage are incomplete.
+  A full live homelab summary remains partial because NetBox application-
+  service coverage is incomplete and cross-source identity links are missing.
 - An optional provider-native reader now queries Ollama model catalogs and
   residency plus OpenAI-compatible model catalogs, preserving endpoint
   identity and partial/unavailable states. Deployed HADES owner dogfood
@@ -253,13 +253,15 @@ and successful inference execution remain unknown or partial. The configured
 inference endpoints are linked to current NetBox devices; the friendly-name
 lookup gap is closed by candidate `09698a3` and fresh owner UI acceptance.
 
-A fresh broad owner UI read after this deployment confirms the same partial
-state: configured APIs respond, Proxmox guest visibility remains selected-scope,
-the NetBox application-service catalog is empty, current Kuma probes report no
-failures, and 15 Proxmox/Kuma records still lack verified cross-source identity.
-The answer does not infer all-clear, app readiness, workload execution, or model
-capacity from those responses. Protected evidence remains in the private
-acceptance area.
+A fresh broad owner UI read after the approved Proxmox audit-scope update now
+sees both configured Proxmox guest scopes as complete. The summary remains
+partial because the NetBox application-service catalog is empty, 15
+Proxmox/Kuma records lack verified cross-source identity, and current Kuma
+probes do not establish application readiness. These reads do not prove
+workload execution or model capacity. Household A received no topology or
+resource detail; its first broad-summary answer promised a check instead of
+returning a direct boundary, which remains a small UX follow-up. Protected
+evidence remains in the private acceptance area.
 
 Other fresh owner checks report current Proxmox guest CPU/memory rankings with
 partial-scope and host/guest-overlap caveats, bounded recent task history without

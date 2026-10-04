@@ -13,6 +13,26 @@ of truth.
 
 ## Current verified status — 2026-10-04
 
+- Latest pushed review branch is `775c15a`; Public CI run `37168603772` passes.
+  The immediately preceding run correctly rejected a private topology name in
+  a synthetic test label; that fixture is now generic and the public-tree
+  safety guard passes. Public `main` remains at `c83ddd6`.
+- The owner-approved Proxmox audit-scope update is complete on both configured
+  sources. Nyx-4 verified token-effective read-only VM audit, full guest
+  enumeration, and no access-denial exclusions. Fresh owner UI now sees both
+  Proxmox scopes as responding and complete. The broad answer remains partial
+  because NetBox's intended-service catalog is empty and 15 Proxmox/Kuma
+  observations lack verified cross-source identity links.
+- Fresh post-scope owner summary completed in about 4.6 seconds and preserved
+  those unknowns. Household A received no private topology or resource detail;
+  its first broad-summary turn promised a read-only check instead of returning
+  a direct boundary response. This is a household UX follow-up, not an observed
+  disclosure. Raw acceptance remains in private mode-0600 evidence.
+- `40054cb` remains the active VM 802 runtime candidate for GPU hardware-name
+  questions. Candidate `775c15a` improves lowercase host-label presentation;
+  Public CI and focused tests pass, and a one-file rollback-backed production
+  rollout is awaiting owner decision. Production is unchanged by this cosmetic
+  candidate.
 - HADES review branch `codex/homelab-protected-source-contract-20261001` is
   pushed at `348c08b`; Public CI run `37165321007` passed. Runtime candidate
   `09698a3` remains the latest recorded runtime deployment with a root-only
