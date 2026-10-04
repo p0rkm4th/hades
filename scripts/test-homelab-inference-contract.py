@@ -70,8 +70,9 @@ expect_invalid(json.dumps([
 # that its hardware observations are current.
 with tempfile.TemporaryDirectory(prefix="hades-capability-matrix-") as temp_dir:
     matrix_path = Path(temp_dir) / "matrix.json"
+    matrix_observed_at = server.datetime.now(server.timezone.utc).isoformat()
     matrix_path.write_text(json.dumps({
-        "observed_at": "2026-10-02T00:00:00Z",
+        "observed_at": matrix_observed_at,
         "machines": [{"name": "Compute Alpha", "gpus": ["Synthetic GPU"]}],
     }), encoding="utf-8")
     previous_matrix = os.environ.get("HADES_CAPABILITY_MATRIX_FILE")
@@ -84,8 +85,13 @@ with tempfile.TemporaryDirectory(prefix="hades-capability-matrix-") as temp_dir:
         else:
             os.environ["HADES_CAPABILITY_MATRIX_FILE"] = previous_matrix
 assert hardware["status"] == "OK"
-assert hardware["freshness"] == "HISTORICAL"
-assert hardware["observed_at"] == "2026-10-02T00:00:00Z"
+assert hardware["freshness"] == "FRESH"
+assert hardware["observed_at"] == matrix_observed_at
+fixed_now = server.datetime(2026, 10, 10, tzinfo=server.timezone.utc)
+assert server._capability_matrix_freshness("2026-10-03", now=fixed_now) == "FRESH"
+assert server._capability_matrix_freshness("2026-10-02", now=fixed_now) == "STALE"
+assert server._capability_matrix_freshness("2026-10-11", now=fixed_now) == "UNKNOWN"
+assert server._capability_matrix_freshness("not-a-date", now=fixed_now) == "UNKNOWN"
 
 os.environ["HADES_INFERENCE_ENDPOINTS_JSON"] = json.dumps([
     {"id": "fast-lane", "url": "http://inference.example.test:11434"},

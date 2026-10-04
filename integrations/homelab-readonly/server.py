@@ -7,7 +7,7 @@ import os
 import re
 import ssl
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote, urlencode, urljoin, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
@@ -883,6 +883,24 @@ def homelab_summary() -> dict:
     return result
 
 
+def _capability_matrix_freshness(observed_at: object, *, now: datetime | None = None) -> str:
+    """Classify observed hardware facts with the bounded seven-day freshness window."""
+    if not isinstance(observed_at, str) or not observed_at.strip():
+        return "UNKNOWN"
+    try:
+        observed = datetime.fromisoformat(observed_at.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return "UNKNOWN"
+    if observed.tzinfo is None:
+        observed = observed.replace(tzinfo=timezone.utc)
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    if observed > current:
+        return "UNKNOWN"
+    return "FRESH" if current - observed <= timedelta(days=7) else "STALE"
+
+
 def homelab_compute_capabilities() -> dict:
     """Return observed hardware facts without claiming live availability."""
     from config import capability_matrix_file
@@ -938,10 +956,8 @@ def homelab_compute_capabilities() -> dict:
         rows.append(row)
     return {
         "status": "OK",
-        # A successful file read says nothing about when the recorded facts
-        # were last verified. This tracked matrix is historical context until
-        # it has a separately maintained freshness contract.
-        "freshness": "HISTORICAL",
+        # Keep successful source access separate from observed-data freshness.
+        "freshness": _capability_matrix_freshness(document.get("observed_at")),
         "source": "tracked observed capability matrix",
         "availability_not_provided": True,
         "observed_at": document.get("observed_at"),
