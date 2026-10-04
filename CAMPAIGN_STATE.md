@@ -13,7 +13,7 @@ of truth.
 
 ## Current verified status — 2026-10-04
 
-- Latest pushed code candidate is `2a35c7d`; Public CI run `37169497196` passes.
+- Latest pushed code candidate is `9511c75`; Public CI run `37169928930` passes.
   The immediately preceding run correctly rejected a private topology name in
   a synthetic test label; that fixture is now generic and the public-tree
   safety guard passes. Public `main` remains at `c83ddd6`.
@@ -35,9 +35,11 @@ of truth.
   cluster wording, lists running/stopped/unknown guests only from configured
   Proxmox identities, and claims a complete view only when all configured
   endpoint scopes are `ALL_GUESTS`. It includes the lowercase display-label
-  correction and reports the Proxmox scope-read timestamps. Synthetic and
-  composed runtime checks plus Public CI pass; the combined two-file rollout
-  awaits owner decision. Production is unchanged by this candidate.
+  correction, reports Proxmox scope-read timestamps, and closes the compound
+  household-summary route that previously fell through to a model promise.
+  Focused synthetic and composed runtime checks plus Public CI pass; the
+  combined two-file rollout awaits owner decision. Production is unchanged by
+  this candidate.
 - HADES review branch `codex/homelab-protected-source-contract-20261001` is
   pushed at `348c08b`; Public CI run `37165321007` passed. Runtime candidate
   `09698a3` remains the latest recorded runtime deployment with a root-only

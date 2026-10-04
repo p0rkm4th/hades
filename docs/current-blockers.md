@@ -267,12 +267,14 @@ Fresh owner dogfood for “Which Proxmox guests are running?” was misrouted as
 request about a specific host named “Proxmox,” despite complete guest scope.
 A separate named-host query correctly returned current running and stopped VM
 states and cautioned that guest power state does not establish application
-health. Candidate `2a35c7d` handles cluster-wide wording, checks every
+health. Candidate `9511c75` handles cluster-wide wording, checks every
 configured Proxmox endpoint for `ALL_GUESTS` before claiming completeness, and
 lists visible guests by running/stopped/unknown state otherwise. It reports
 Proxmox scope-read timestamps and capitalizes lowercase inventory labels for
-prose. Focused synthetic and composed-runtime tests and Public CI run
-`37169497196` pass; production remains unchanged pending explicit deployment
+prose. It also routes a compound “is everything okay / what remains unknown”
+household prompt directly to the safe boundary, without a model call or source
+read. Focused synthetic and composed-runtime tests and Public CI run
+`37169928930` pass; production remains unchanged pending explicit deployment
 approval.
 
 Other fresh owner checks report current Proxmox guest CPU/memory rankings with
