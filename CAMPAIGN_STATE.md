@@ -8,15 +8,16 @@ records.
 ## Current checkpoint — 2026-10-04
 
 Public `main` is at
-`23a20530d02c3352c380e4962d037362e31d957d`, fast-forwarded from
-`codex/homelab-public-sanitized-20261004`. Hosted Public CI passed on both
-the candidate ref (run `37226018698`) and the same commit is now on `main`.
-The source adds a read-only local-adapter fallback for deterministic owner
-routes and a sequential Proxmox-outage regression proving current linked
-NetBox inventory does not inherit previous runtime liveness. Focused
-authenticated Open WebUI/Hermes Task-attention acceptance passed after the
-fallback fix. Public `main` and the candidate ref currently resolve to the
-same commit; recheck Git and CI before the next promotion or deployment.
+`e939b3caac8760291f610d2d428795956257ccb4`, fast-forwarded from
+`codex/inference-read-freshness-20261004`. Hosted Public CI passed on the
+candidate ref (run `37227907387`) before the same commit was fast-forwarded to
+`main`. This source adds visible provider-read times and partial-provider
+caveats to model-location answers, source IDs/read times and ambiguity wording
+to cross-source HADES guest placement, and sequential outage regressions for
+Proxmox runtime and backup evidence. A fresh 19-prompt owner/household dogfood
+found these response gaps; all prompts returned and household leak checks
+passed. The source changes are not yet composed into the active production
+Hermes overlay or MCP adapter; post-deployment dogfood remains required.
 
 The current source tree removes private destination acceptance records and
 per-user share mappings, requires explicit destination hostname input, and uses
@@ -27,7 +28,7 @@ private identifiers. Do not claim historical erasure or merge from an older
 candidate ref.
 
 No Proxmox, NetBox, Kuma, host, driver, guest, network, account, or production
-runtime changes were made during this sanitization and fallback repair.
+runtime changes were made during this campaign checkpoint.
 
 ## Homelab read reliability
 

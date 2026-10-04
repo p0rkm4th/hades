@@ -7,17 +7,22 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` is `23a20530d02c3352c380e4962d037362e31d957d`, fast-forwarded
-from `codex/homelab-public-sanitized-20261004`. Public CI passed on the
-matching candidate ref (run `37226018698`) before that commit was fast-forwarded
-to `main`. The local homelab reader fallback fix passed authenticated
-synthetic UI acceptance. A new sequential Proxmox-outage regression also
-proves current linked NetBox identity remains without carrying forward prior
-runtime liveness. The active profile-selected adapter was verified read-only
-against the previous source revision; because the promoted code change here is
-test-only, that provenance remains byte-current. It does not prove all source
-semantics or close the broader live homelab acceptance gates. No production
-deployment was performed in this follow-up.
+Public `main` is `e939b3caac8760291f610d2d428795956257ccb4`, fast-forwarded
+from `codex/inference-read-freshness-20261004`. Public CI passed on the
+matching candidate ref (run `37227907387`) before promotion. The new source
+labels ambiguous HADES guest matches per Proxmox scope, exposes source read
+times, timestamps provider model-location answers, and discloses when another
+configured inference provider is unavailable. Focused tests cover these
+changes and sequential Proxmox runtime/backup outages.
+
+The current production UI dogfood used the previously deployed overlay and
+adapter; it exposed the HADES placement ambiguity and missing model-location
+timestamp fixed in this source. Those fixes are not yet deployed. Compose the
+Hermes overlay against the exact active artifact, deploy with hash-guarded
+rollback, update the profile-selected adapter with protected rollback, then
+repeat owner and household acceptance. Source `main` being green alone does
+not close live runtime parity or the broader homelab gates. No production
+deployment has occurred for this candidate.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address
