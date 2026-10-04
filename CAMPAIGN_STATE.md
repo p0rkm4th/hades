@@ -8,14 +8,15 @@ records.
 ## Current checkpoint — 2026-10-04
 
 Public `main` is at
-`53995a6ff4f007ed40266c6e0066a75da9c33681`, fast-forwarded from
+`23a20530d02c3352c380e4962d037362e31d957d`, fast-forwarded from
 `codex/homelab-public-sanitized-20261004`. Hosted Public CI passed on both
-`main` (run `37224563109`) and the candidate ref (run `37224562735`). The
-source adds a read-only local-adapter fallback for deterministic owner routes
-and reconciles the sanitized campaign checkpoint. Focused authenticated Open
-WebUI/Hermes Task-attention acceptance passed after the fallback fix. Public
-`main` and the candidate ref currently resolve to the same commit; recheck Git
-and CI before the next promotion or deployment.
+the candidate ref (run `37226018698`) and the same commit is now on `main`.
+The source adds a read-only local-adapter fallback for deterministic owner
+routes and a sequential Proxmox-outage regression proving current linked
+NetBox inventory does not inherit previous runtime liveness. Focused
+authenticated Open WebUI/Hermes Task-attention acceptance passed after the
+fallback fix. Public `main` and the candidate ref currently resolve to the
+same commit; recheck Git and CI before the next promotion or deployment.
 
 The current source tree removes private destination acceptance records and
 per-user share mappings, requires explicit destination hostname input, and uses

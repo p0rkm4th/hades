@@ -7,14 +7,17 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Release baseline
 
-Public `main` is `53995a6ff4f007ed40266c6e0066a75da9c33681`, fast-forwarded
-from `codex/homelab-public-sanitized-20261004`. Public CI passed on `main`
-(run `37224563109`) and the matching candidate ref (run `37224562735`). The
-local homelab reader fallback fix passed authenticated synthetic UI
-acceptance. The active profile-selected adapter was also verified read-only
-against this source revision; that check does not prove all source semantics
-or close the broader live homelab acceptance gates. No production deployment
-was performed in this follow-up.
+Public `main` is `23a20530d02c3352c380e4962d037362e31d957d`, fast-forwarded
+from `codex/homelab-public-sanitized-20261004`. Public CI passed on the
+matching candidate ref (run `37226018698`) before that commit was fast-forwarded
+to `main`. The local homelab reader fallback fix passed authenticated
+synthetic UI acceptance. A new sequential Proxmox-outage regression also
+proves current linked NetBox identity remains without carrying forward prior
+runtime liveness. The active profile-selected adapter was verified read-only
+against the previous source revision; because the promoted code change here is
+test-only, that provenance remains byte-current. It does not prove all source
+semantics or close the broader live homelab acceptance gates. No production
+deployment was performed in this follow-up.
 
 Previously published history is preserved and still contains older private
 identifiers. Current-tree sanitization and the introduced-range path/address
