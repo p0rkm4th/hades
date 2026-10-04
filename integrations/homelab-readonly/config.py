@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
-from urllib.parse import urljoin
+import json
+import re
+from urllib.parse import urljoin, urlsplit
 
 
 def _split(name: str) -> list[str]:
@@ -100,3 +102,55 @@ def netbox_services_spec() -> tuple[str, str]:
 def capability_matrix_file() -> str:
     """Return the optional local, observed hardware capability manifest."""
     return os.environ.get("HADES_CAPABILITY_MATRIX_FILE", "").strip()
+
+
+def gpu_telemetry_config_file() -> str:
+    """Return the optional protected fixed-command SSH telemetry profile."""
+    return os.environ.get("HADES_GPU_TELEMETRY_CONFIG_FILE", "").strip()
+
+
+def inference_endpoint_specs() -> tuple[dict[str, str], ...]:
+    """Read explicitly configured provider-native inference descriptors."""
+    raw = os.environ.get("HADES_INFERENCE_ENDPOINTS_JSON", "").strip()
+    if not raw:
+        return ()
+    if len(raw) > 32768:
+        raise ValueError("inference endpoint configuration exceeds bounded size")
+    try:
+        entries = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError("inference endpoint configuration is invalid JSON") from exc
+    if not isinstance(entries, list) or len(entries) > 16:
+        raise ValueError("inference endpoint configuration must be a list of at most 16 entries")
+    result: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) - {"id", "provider", "url", "token_file", "ca_file"}:
+            raise ValueError("inference endpoint entry has unsupported fields")
+        source_id = entry.get("id")
+        provider = entry.get("provider", "ollama")
+        endpoint = entry.get("url")
+        token_file = entry.get("token_file", "")
+        ca_file = entry.get("ca_file", "")
+        if not isinstance(source_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", source_id) or source_id in seen:
+            raise ValueError("inference endpoint IDs must be valid and unique")
+        if not isinstance(provider, str) or provider not in {"ollama", "openai-compatible"}:
+            raise ValueError("inference endpoint provider must be ollama or openai-compatible")
+        if not isinstance(endpoint, str) or len(endpoint) > 2048:
+            raise ValueError("inference endpoint URL is invalid")
+        if not isinstance(token_file, str) or len(token_file) > 4096 or not isinstance(ca_file, str) or len(ca_file) > 4096:
+            raise ValueError("inference endpoint credential or CA path is invalid")
+        parsed = urlsplit(endpoint)
+        try:
+            parsed.port
+        except ValueError as exc:
+            raise ValueError("inference endpoint URL port is invalid") from exc
+        if (parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username
+                or parsed.password or parsed.query or parsed.fragment):
+            raise ValueError("inference endpoint URL must be HTTP(S) without credentials, query, or fragment")
+        if token_file and parsed.scheme != "https":
+            raise ValueError("inference endpoint credentials require HTTPS")
+        seen.add(source_id)
+        result.append({"id": source_id, "provider": provider, "url": endpoint.rstrip("/"),
+                       "token_file": token_file, "ca_file": ca_file})
+    return tuple(result)

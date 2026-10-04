@@ -16,5 +16,5 @@ contract plus a synthetic Actual-shaped read fixture. The fixture proves that
 accounts and transactions are filtered at operation time after share and
 revocation, including old-session reads. It is not wired into the owner-gated
 production Actual adapter until an explicit Actual budget/account scope and
-protected synthetic deployment fixture are selected. No real Scotty finance
+protected synthetic deployment fixture are selected. No real the owner finance
 data is used.

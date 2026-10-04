@@ -6,11 +6,11 @@ The disposable contract test exercises the owner-equivalent flow against a
 fake canonical Grocy transport:
 
 ```text
-Scotty: grab this recipe https://recipes.example.test/tacos
+Owner: grab this recipe https://recipes.example.test/tacos
 HADES: previewed Weeknight Tacos; ground beef and salsa match Grocy; confirm?
-Scotty: import it
+Owner: import it
 HADES: requires explicit confirmation; no write performed
-Scotty: yes, import it
+Owner: yes, import it
 HADES: recipe created and read back from Grocy
 ```
 

@@ -30,11 +30,37 @@ if not (overlay_dir / "sitecustomize.py").is_file():
     raise SystemExit(f"FAIL HADES overlay directory has no sitecustomize.py: {overlay_dir}")
 child = r'''import os
 import json
+import sys
 import run_agent
 import sitecustomize as hades
 import threading
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from integrations.task import TaskStatus, TaskStore
+
+# Production reads must go through Hermes' registered MCP handler so the
+# server's protected child-process configuration is preserved. This runtime
+# contract substitutes only that dispatch boundary with the synthetic adapter.
+def synthetic_homelab_tool_result(tool_name, arguments=None):
+    adapter = Path(os.environ["HADES_HERMES_WORKING_DIRECTORY"]) / "integrations" / "homelab-readonly" / "server.py"
+    if str(adapter.parent) not in sys.path:
+        sys.path.insert(0, str(adapter.parent))
+    spec = __import__("importlib.util", fromlist=["spec_from_file_location"]).spec_from_file_location(
+        "synthetic_homelab_registry", adapter
+    )
+    module = __import__("importlib.util", fromlist=["module_from_spec"]).module_from_spec(spec)
+    spec.loader.exec_module(module)
+    readers = {
+        "homelab_summary": module.homelab_summary,
+        "homelab_compute_capabilities": module.homelab_compute_capabilities,
+        "homelab_inference_inventory": module.homelab_inference_inventory,
+        "homelab_gpu_telemetry": module.homelab_gpu_telemetry,
+        "homelab_backup_status": module.homelab_backup_status,
+        "homelab_recent_activity": module.homelab_recent_activity,
+    }
+    return readers[tool_name]()
+
+hades._hades_direct_homelab_tool_result = synthetic_homelab_tool_result
 
 store = TaskStore(os.environ["HADES_TASK_STATE_FILE"])
 owner, beta = "synthetic-owner", "synthetic-beta"
@@ -42,6 +68,70 @@ store.create(task_id="task-owner-approval01", actor_subject_id=owner, goal="Prep
 store.create(task_id="task-beta-failed0001", actor_subject_id=beta, goal="Review Beta's private plan", status=TaskStatus.FAILED)
 agent_class = run_agent.AIAgent
 assert getattr(agent_class.run_conversation, "__name__", "") == "_hades_run_conversation", "HADES hook did not patch the Hermes agent runtime"
+assert hades._hades_is_homelab_intent("Which models are available?"), "inference catalog question missed the live homelab route"
+assert hades._hades_is_homelab_intent("Where should I run another model?"), "model placement question missed the live homelab route"
+assert hades._hades_is_homelab_intent("What changed since yesterday?"), "recent activity question missed the live homelab route"
+node_followup_history = [
+    {"role": "user", "content": "What is wrong with deep-inference-node?"},
+    {"role": "assistant", "content": "I checked the current inference host."},
+]
+assert hades._hades_homelab_inference_followup_prompt(
+    "What about specialized-inference-node?", "owner", node_followup_history,
+) == "What is specialized-inference-node doing right now?"
+placement_followup_history = [
+    {"role": "user", "content": "Which one has more room?"},
+    {"role": "assistant", "content": "Responding inference endpoints: A; the largest free-memory reading was 8000 MiB."},
+]
+assert hades._hades_homelab_inference_followup_prompt(
+    "Could I put another model there?", "owner", placement_followup_history,
+) == "Where should I run another model?"
+assert hades._hades_homelab_inference_followup_prompt(
+    "What about a 20 GB one?", "owner", placement_followup_history,
+) == "Can a 20 GB model fit?"
+assert hades._hades_homelab_inference_followup_prompt(
+    "What about specialized-inference-node?", "household", node_followup_history,
+) == "What about specialized-inference-node?"
+proxmox_backup_answer = hades._hades_direct_proxmox_backup_status(
+    "What is the Proxmox backup status?", owner, "owner"
+)
+assert "synthetic Proxmox backup report" in proxmox_backup_answer, proxmox_backup_answer
+assert hades._hades_direct_proxmox_backup_status(
+    "What is the Proxmox backup status?", beta, "household"
+) is None
+activity_answer = hades._hades_direct_homelab_recent_activity(
+    "What changed since yesterday?", owner, "owner"
+)
+assert "synthetic recent homelab activity" in activity_answer, activity_answer
+assert hades._hades_direct_homelab_recent_activity(
+    "What changed since yesterday?", beta, "household"
+) is None
+model_location_answer = hades._hades_direct_homelab_inference_read(
+    "Where's model-a:8b?", owner, "owner"
+)
+assert model_location_answer.startswith("model-a:8b is listed by Compute Alpha"), model_location_answer
+model_fit_answer = hades._hades_direct_homelab_inference_read(
+    "Can this handle a 20 GB model?", owner, "owner"
+)
+assert "Current point-in-time GPU readings" in model_fit_answer, model_fit_answer
+assert "8000 MiB free" in model_fit_answer and "not a fit guarantee" in model_fit_answer, model_fit_answer
+working_homelab_reader = hades._hades_direct_homelab_tool_result
+hades._hades_direct_homelab_tool_result = lambda *_args, **_kwargs: {
+    "status": "NOT_CONFIGURED",
+    "errors": ["The configured read-only homelab tool is unavailable."],
+}
+assert hades._hades_direct_homelab_inference_read(
+    "Can this handle a 20 GB model?", owner, "owner"
+) is None
+hades._hades_direct_homelab_tool_result = working_homelab_reader
+assert hades._hades_direct_homelab_inference_read(
+    "Where's model-a:8b?", beta, "household"
+) is None
+assert hades._hades_direct_proxmox_backup_status(
+    "Restore that Proxmox backup", owner, "owner"
+) is None
+assert hades._hades_phase2_backup_freshness_response(
+    "What is the Proxmox backup status?", owner, "owner"
+) is None
 def fixture_source(label):
     def respond(text="", *_args, **_kwargs):
         if label == "expiry" and not __import__("re").search(
@@ -64,6 +154,21 @@ kwargs = {
     "skip_context_files": True, "skip_memory": True,
     "skip_background_review": True, "load_soul_identity": False,
 }
+saved_finance_guidance = hades._hades_direct_finance_guidance
+saved_phase2_backup = hades._hades_phase2_backup_response
+hades._hades_direct_finance_guidance = lambda *_args, **_kwargs: None
+hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
+model_location_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-model-location",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+model_location = model_location_agent.run_conversation(
+    "Where's model-a:8b?", conversation_history=[]
+)
+assert model_location.get("completed") is True and model_location.get("api_calls") == 0, model_location
+assert model_location["final_response"].startswith("model-a:8b is listed by Compute Alpha"), model_location
+hades._hades_direct_finance_guidance = saved_finance_guidance
+hades._hades_phase2_backup_response = saved_phase2_backup
 results = {}
 for subject in (owner, beta):
     chunks = []
@@ -145,6 +250,68 @@ for index, prompt in enumerate((
     assert "Live Proxmox currently reports: hades-core." in variant["final_response"], (prompt, variant)
     assert "memory update" not in variant["final_response"].casefold(), (prompt, variant)
     assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
+
+down_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-what-is-down",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+down_answer = down_agent.run_conversation("What's down?", conversation_history=[])
+assert down_answer.get("completed") is True and down_answer.get("api_calls") == 0, down_answer
+assert "No fresh configured probe is reporting a failure" in down_answer["final_response"], down_answer
+assert "unmonitored services remain unknown" in down_answer["final_response"], down_answer
+provenance_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-provenance",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+provenance_history = [
+    {"role": "user", "content": "What's down?"},
+    {"role": "assistant", "content": down_answer["final_response"]},
+    {"role": "user", "content": "How do you know that?"},
+]
+provenance_answer = provenance_agent.run_conversation(
+    "How do you know that?", conversation_history=provenance_history
+)
+assert provenance_answer.get("completed") is True and provenance_answer.get("api_calls") == 0, provenance_answer
+assert "Synthetic Proxmox: readable" in provenance_answer["final_response"], provenance_answer
+conflict_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-homelab-conflicts",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+conflict_answer = conflict_agent.run_conversation(
+    "Do any sources disagree?", conversation_history=[]
+)
+assert conflict_answer.get("completed") is True and conflict_answer.get("api_calls") == 0, conflict_answer
+assert "no linked-record conflicts" in conflict_answer["final_response"], conflict_answer
+assert "unlinked or unreported records remain unknown" in conflict_answer["final_response"], conflict_answer
+visibility_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-guest-visibility",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+visibility_answer = visibility_agent.run_conversation(
+    "Are all VMs visible?", conversation_history=[]
+)
+assert visibility_answer.get("completed") is True and visibility_answer.get("api_calls") == 0, visibility_answer
+assert "selected guests only" in visibility_answer["final_response"], visibility_answer
+placement_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-service-placement",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+placement_answer = placement_agent.run_conversation(
+    "Where is NetBox running?", conversation_history=[]
+)
+assert placement_answer.get("completed") is True and placement_answer.get("api_calls") == 0, placement_answer
+assert "application-service catalog is reachable but empty" in placement_answer["final_response"], placement_answer
+assert "remembered location" in placement_answer["final_response"], placement_answer
+ranking_agent = agent_class(
+    gateway_session_key=f"hades-user-{owner}", session_id="synthetic-resource-ranking",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+ranking_answer = ranking_agent.run_conversation(
+    "What's the most loaded server?", conversation_history=[]
+)
+assert ranking_answer.get("completed") is True and ranking_answer.get("api_calls") == 0, ranking_answer
+assert "hades-core at 94.0%" in ranking_answer["final_response"], ranking_answer
+assert "host and guest readings are separate" in ranking_answer["final_response"], ranking_answer
 
 # A definition request should stay conversational instead of consulting the
 # managed guest inventory. Instrument the real Hermes shortcut loader.
@@ -395,6 +562,9 @@ print("PASS physical-node wording uses a fresh monitor as reachability evidence 
 print("PASS detailed homelab blocker summary remains deterministic when optional availability has no rows")
 print("PASS network-slowness question combines synthetic Proxmox and Kuma evidence, states missing network trends, and makes zero model calls")
 print("PASS ambiguous household entertainment-device trouble gets a plain-language clarification for owner and household without task changes or model calls")
+print("PASS Proxmox backup status uses the owner-only live source, skips repository-check fallback, and rejects restore actions")
+print("PASS recent homelab activity uses bounded live sources, has natural intent routing, and remains owner-only")
+print("PASS model-location owner route resolves stable host identity without exposing details to household")
 '''
 
 with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
@@ -407,10 +577,13 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
     adapter = homelab / "integrations" / "homelab-readonly"
     adapter.mkdir(parents=True, mode=0o700)
     (adapter / "server.py").write_text(
+        (
         'def homelab_summary():\n'
         '    resources = [{"name": "hades-core", "runtime_status": "running",\n'
         '                  "currently_online": True,\n'
-        '                  "runtime": {"name": "hades-core", "vmid": 802, "status": "running",\n'
+        '                  "identity": {"canonical_id": "netbox:device:42"},\n'
+        '                  "inventory": {"name": "Compute Alpha", "role": "inference"},\n'
+        '                  "runtime": {"name": "hades-core", "vmid": 202, "status": "running",\n'
         '                              "cpu": 0.94, "mem": 32212254720, "maxmem": 34359738368,\n'
         '                              "disk": 85899345920, "maxdisk": 96636764160}}]\n'
         '    if __import__("os").environ.get("HADES_TEST_HOMELAB_deep_node_MONITOR") == "1":\n'
@@ -429,11 +602,35 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         '                                  {"name": "Router ping", "status": "up", "freshness": "FRESH", "ping_ms": 84}]\n'
         '                                if __import__("os").environ.get("HADES_TEST_HOMELAB_BOTTLENECK") == "1" else []),\n'
         '        "conflicts": [],\n'
+        '        "proxmox_guest_visibility": {"status": "PARTIAL", "scope": "SELECTED_GUESTS"},\n'
+        '        "service_catalog": {"status": "OK", "coverage": "EMPTY", "services": []},\n'
+        '        "source_observations": [{"source": "Synthetic Proxmox", "status": "READABLE", "retrieved_at": "synthetic-freshness-time"}],\n'
         '        "errors": [],\n'
         '        "resources": resources,\n'
         '    }\n'
         'def homelab_compute_capabilities():\n'
-        '    return {"machines": []}\n',
+        '    return {"machines": []}\n'
+        'def homelab_backup_status():\n'
+        '    return {"status": "READABLE"}\n'
+        'def format_homelab_backup_status(_report):\n'
+        '    return "synthetic Proxmox backup report with restore limits"\n'
+        'def homelab_recent_activity(_window_hours=24):\n'
+        '    return {"status": "READABLE"}\n'
+        'def format_homelab_recent_activity(_report):\n'
+        '    return "synthetic recent homelab activity with bounded history"\n'
+        'def homelab_inference_inventory():\n'
+        '    return {"status": "READABLE", "endpoints": [{"id": "fast-lane", "source_identity": "inference:fast-lane", "node_identity": "netbox:device:42", "identity_status": "LINKED", "status": "READABLE", "models": [{"name": "model-a:8b"}], "loaded_status": "CURRENT", "loaded_models": [{"name": "model-a:8b"}]}]}\n'
+        'def homelab_gpu_telemetry():\n'
+        '    return {"status": "READABLE", "retrieved_at": "2026-10-04T12:00:00Z", "endpoints": [{"inference_id": "fast-lane", "status": "READABLE", "devices": [{"index": 0, "memory_free_mib": 8000, "memory_total_mib": 16000, "gpu_utilization_percent": 25}]}]}\n'
+        'def format_inference_inventory_response(text, _inventory, summary, _gpu=None):\n'
+        '    if "deep-inference-node" in text:\n'
+        '        return "I found deep-inference-node in the hardware inventory. The recorded address is 192.0.2.69. It is listed as synthetic inference node. I don\'t have a current runtime check for it, so I can\'t say whether it\'s online."\n'
+        '    if "20 gb model" in text.lower():\n'
+        '        free = _gpu["endpoints"][0]["devices"][0]["memory_free_mib"]\n'
+        '        return "Current point-in-time GPU readings: " + str(free) + " MiB free; a sample is not a fit guarantee."\n'
+        '    name = summary["resources"][0]["inventory"]["name"]\n'
+        '    return "model-a:8b is listed by " + name + ". Stable link verified; generation not tested."\n'
+        ),
         encoding="utf-8",
     )
     capability_matrix = root / "capability-matrix.yaml"
@@ -441,7 +638,9 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
         "machines:\n"
         "  - name: deep-inference-node\n"
         "    address: 192.0.2.69\n"
-        "    role: synthetic inference node\n",
+        "    role: synthetic inference node\n"
+        "  - name: specialized-inference-node\n"
+        "    role: synthetic specialized inference node\n",
         encoding="utf-8",
     )
     script = root / "probe.py"

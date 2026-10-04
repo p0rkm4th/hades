@@ -13,6 +13,8 @@ for marker in (
     'HADES_NETBOX_TOKEN_FILE',
     'HADES_KUMA_TOKEN_FILE',
     'HADES_CAPABILITY_MATRIX_FILE',
+    'HADES_GPU_TELEMETRY_CONFIG_FILE',
+    'HADES_INFERENCE_ENDPOINTS_JSON',
     'HADES_DISCOVERY_ALLOWED_NETWORKS',
 ):
     if marker not in profile and marker not in env:

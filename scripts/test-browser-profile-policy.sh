@@ -14,7 +14,7 @@ assert policy.select_profile("household") == {"allowed": True, "profile": "anony
 assert policy.select_profile("household", "owner", owner_authorized=True)["allowed"] is False
 assert policy.select_profile("owner", "owner")["allowed"] is False
 assert policy.select_profile("owner", "owner", owner_authorized=True) == {"allowed": True, "profile": "owner"}
-assert policy.select_profile("owner", "scotty-browser")["allowed"] is False
+assert policy.select_profile("owner", "owner-browser-profile")["allowed"] is False
 assert policy.select_profile("owner", "owner", owner_authorized="true")["allowed"] is False
 assert policy.select_profile("owner", "owner", owner_authorized=1)["allowed"] is False
 assert policy.select_profile("owner", {"profile": "owner"})["allowed"] is False

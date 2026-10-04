@@ -238,7 +238,14 @@ addresses, resource IDs, access paths, or private inventory. The protected
 operator matrix and acceptance records are maintained in `hades-infra`.
 
 Proxmox supplies hypervisor and guest runtime observations within its configured
-read scope. NetBox supplies intended inventory and topology. Uptime Kuma supplies
+read scope. When the effective-permissions endpoint is readable, HADES reports
+whether guest visibility is cluster-wide or selected-scope; unavailable ACL
+evidence stays `UNKNOWN` and must not be inferred from the returned guest rows.
+The scope read is read-only and does not expand permissions. A broad `/vms`
+inventory response alone is not proof that every guest was visible to the token;
+explicit exclusions remain partial coverage rather than being presented as a
+complete cluster view.
+NetBox supplies intended inventory and topology. Uptime Kuma supplies
 availability observations. Service-native and inference APIs supply only their
 own reported state. These sources can disagree; HADES must preserve the source,
 retrieval time, and conflict rather than choosing an arbitrary green result.
@@ -253,9 +260,44 @@ capabilities withheld.
 
 Available measurements depend on the source and its current permissions. A
 point-in-time resource gauge is not a historical trend or root-cause diagnosis.
+For configured Proxmox sources, the adapter may expose the node rows returned
+by the existing read-only cluster-resource feed, including online node CPU
+fraction and memory used/total. These rows carry the Proxmox source identity
+and retrieval timestamp, are explicitly a bounded observed sample rather than
+a complete node inventory, and are omitted when source identity or freshness
+is missing. Owner answers must keep host/node readings separate from guest,
+GPU, and process load; household users do not receive host metrics.
 Host operating-system state, in-guest service health, filesystem capacity,
 network trends, GPU utilization, and backup restoreability remain `UNKNOWN`
 unless a currently configured source explicitly provides that evidence.
+
+### Provider inventory and live GPU telemetry
+
+Provider-native model inventory is optional and owner-only. Configure
+`HADES_INFERENCE_ENDPOINTS_JSON` as a JSON list of endpoint records with a
+stable `id`, `url`, and optional `provider` (`ollama` by default or
+`openai-compatible`), `token_file`, and `ca_file`. Keep this deployment-specific
+value and any token or CA material outside the public repository. Token-bearing
+endpoints must use HTTPS. Ollama catalog and loaded-model reads are separate
+observations; OpenAI-compatible catalogs do not provide a standard residency
+read. Neither path sends a generation request.
+
+Live GPU utilization/free-VRAM is a separate optional owner-only source,
+configured through `HADES_GPU_TELEMETRY_CONFIG_FILE`. Its protected profile
+contains only pre-approved endpoint IDs, hostnames, a dedicated non-sudo SSH
+identity, and pinned `known_hosts`; the adapter accepts no caller-supplied host
+or command and invokes the fixed `hades-gpu-telemetry-v1` command. Each remote
+account must enforce the documented ForceCommand contract. Missing, stale,
+partial, or unavailable data remains unknown/partial. GPU readings are
+point-in-time headroom evidence, not a model-fit guarantee; artifact size,
+quantization, context, KV cache, and runtime behavior still matter.
+
+The Hermes owner route exposes provider inventory and GPU telemetry only for
+owner homelab turns. Capacity/placement questions use one combined read that
+preserves Proxmox/NetBox/availability, hardware, provider, and GPU source
+results independently. Household users do not receive these infrastructure
+tools. Provider and GPU reads cannot mutate endpoints or hosts. Validate the
+profile and run the synthetic contracts before activating private endpoints.
 
 The runtime must distinguish host reachability, guest power state, service
 process state, endpoint health, and a successful functional request. Stale

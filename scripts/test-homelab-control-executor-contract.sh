@@ -68,12 +68,12 @@ state = {"status": "stopped", "deleted": False}
 def fake_request(path, method="GET", params=None):
     requests.append((path, method, params))
     if path == "pools/hades-managed":
-        return {"data": {"members": [{"type": "qemu", "node": "core-node", "vmid": 9200}, {"type": "qemu", "node": "core-node", "vmid": 853}]}}
-    if path in {"nodes/core-node/qemu/9200/status/current", "nodes/core-node/qemu/853/status/current"}:
+        return {"data": {"members": [{"type": "qemu", "node": "core-node", "vmid": 9200}, {"type": "qemu", "node": "core-node", "vmid": 753}]}}
+    if path in {"nodes/core-node/qemu/9200/status/current", "nodes/core-node/qemu/753/status/current"}:
         return {"data": {"status": state["status"]}}
     if path == "nodes/core-node/qemu/9200/config":
         return {"data": {"name": "test-sandbox", "tags": "hades-managed"}}
-    if path == "nodes/core-node/qemu/853/config":
+    if path == "nodes/core-node/qemu/753/config":
         return {"data": {"name": "template", "template": 1, "tags": "hades-managed"}}
     if path.endswith("/status/start"):
         state["status"] = "running"
@@ -102,7 +102,7 @@ start_result = module.manage_guest({"node": "core-node", "vmid": 9200}, "start",
 assert start_result["status"] == "SUCCEEDED", start_result
 delete_preview = module.manage_guest({"node": "core-node", "vmid": 9200}, "delete", owner_confirmed=False)
 assert delete_preview["status"] == "CONFIRMATION_REQUIRED", delete_preview
-template_result = module.manage_guest({"node": "core-node", "vmid": 853}, "status")
+template_result = module.manage_guest({"node": "core-node", "vmid": 753}, "status")
 assert template_result["status"] == "FAILED", template_result
 stop_result = module.manage_guest({"node": "core-node", "vmid": 9200}, "stop", owner_confirmed=True)
 assert stop_result["status"] == "SUCCEEDED", stop_result

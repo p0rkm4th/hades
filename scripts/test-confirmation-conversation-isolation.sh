@@ -147,6 +147,10 @@ with tempfile.TemporaryDirectory() as root:
         node for node in tree.body
         if isinstance(node, ast.FunctionDef) and node.name == "_hades_pending_record_is_current"
     )
+    restore_guest_intent_function = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "_hades_backup_restore_guest_state_intent"
+    )
     backup_namespace = {
         "os": os,
         "re": __import__("re"),
@@ -155,7 +159,11 @@ with tempfile.TemporaryDirectory() as root:
         "_HADES_PENDING_PHASE2": {},
         "_hades_health_watch_state_path": lambda: path,
     }
-    exec(compile(ast.Module(body=[pending_record_function, backup_function], type_ignores=[]), "sitecustomize.py", "exec"), backup_namespace)
+    exec(compile(ast.Module(body=[pending_record_function, restore_guest_intent_function, backup_function], type_ignores=[]), "sitecustomize.py", "exec"), backup_namespace)
+    assert backup_namespace["_hades_phase2_backup_response"](
+        "Are temporary guests from the backup restore still running?",
+        owner, "owner", first_chat,
+    ) is None, "restore-state read must not be treated as a Backup Check lifecycle command"
     recovery_worker.pending_put(
         f"session:{owner}:{first_chat}", owner,
         {"template_id": "hades-backup-verification", "action": "run"},

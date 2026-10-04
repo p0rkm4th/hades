@@ -143,6 +143,13 @@ def summarize(
     unlinked: set[str] = set()
     related_inventory_ids: dict[str, int] = {}
     missing_link_targets: set[str] = set()
+    proxmox_linked_netbox_ids = {
+        linked_id
+        for row in source_rows["proxmox"]
+        if isinstance(row.get("source_identity"), str)
+        and (linked_id := identity_links.get(row["source_identity"])) is not None
+        and isinstance(linked_id, int) and not isinstance(linked_id, bool)
+    }
     for source, rows in source_rows.items():
         for row in rows:
             label_value = row.get("name") or (row.get("node") if row.get("type") == "node" else None)
@@ -176,7 +183,19 @@ def summarize(
                         ambiguous.add(key)
                     if folded in unlinked_names:
                         unlinked.add(key)
-            has_explicit_link = source in {"proxmox", "kuma"} and linked_id is not None
+            # A Proxmox-to-NetBox link identifies the same host on both sides.
+            # Mark the NetBox row as linked too; otherwise its matching name
+            # is incorrectly reported as an unresolved conflict. Kuma links
+            # identify a monitor's parent host, not the monitor itself.
+            has_explicit_link = (
+                (source == "proxmox" and linked_id is not None)
+                or (
+                    source == "netbox"
+                    and isinstance(row.get("id"), int)
+                    and not isinstance(row.get("id"), bool)
+                    and row["id"] in proxmox_linked_netbox_ids
+                )
+            )
             if folded in ambiguous_names or (folded in unlinked_names and not has_explicit_link):
                 if folded in unlinked_names and not has_explicit_link:
                     unlinked.add(key)
@@ -212,21 +231,51 @@ def summarize(
         planned = inventory.get(key)
         monitor = observed.get(key)
         name = labels[key]
+        source_identities: dict[str, list[str]] = {}
+        proxmox_identity = current.get("source_identity") if current else None
+        netbox_id = planned.get("id") if planned else None
+        kuma_identity = monitor.get("source_identity") if monitor else None
+        if isinstance(proxmox_identity, str) and proxmox_identity:
+            source_identities["proxmox"] = [proxmox_identity]
+        if isinstance(netbox_id, int) and not isinstance(netbox_id, bool) and netbox_id > 0:
+            source_identities["netbox"] = [f"netbox:device:{netbox_id}"]
+        if isinstance(kuma_identity, str) and kuma_identity:
+            source_identities["kuma"] = [kuma_identity]
+        related_device_id = related_inventory_ids.get(key)
+        canonical_id = (
+            f"netbox:device:{netbox_id}"
+            if key.startswith("netbox-device:")
+            and isinstance(netbox_id, int) and not isinstance(netbox_id, bool) and netbox_id > 0
+            else None
+        )
+        identity = {
+            "canonical_id": canonical_id,
+            "source_identities": source_identities,
+            "link_status": (
+                "STABLE" if canonical_id else
+                "LINK_TARGET_MISSING" if key in missing_link_targets else
+                "RELATED_PARENT" if related_device_id is not None else
+                "NAME_MATCH_ONLY" if sum(
+                    value is not None for value in (current, planned, monitor)
+                ) > 1 else
+                "SOURCE_LOCAL"
+            ),
+        }
         conflicts: list[str] = (
-            ["Display name is ambiguous; source records remain separate pending a stable identity link"]
+            ["Display label is shared by multiple records; they remain separate by stable source identity"]
             if key in ambiguous else []
         )
         if key in unlinked:
             conflicts.append("Another source has the same display name, but no stable identity link confirms it is the same resource")
         if key in missing_link_targets:
             conflicts.append("Configured stable identity link points to a NetBox device not returned by the current inventory read")
-        related_device_id = related_inventory_ids.get(key)
         if related_device_id is not None and related_device_id not in netbox_ids:
             conflicts.append("Configured monitor parent link points to a NetBox device not returned by the current inventory read")
         if current and planned and current.get("node") and planned.get("planned_node") and current["node"] != planned["planned_node"]:
             conflicts.append("NetBox intended node differs from Proxmox runtime node")
         resources.append({
             "name": name,
+            "identity": identity,
             "runtime": _compact(
                 current,
                 ("name", "node", "type", "vmid", "status", "cpu", "maxcpu", "mem", "maxmem", "disk", "maxdisk", "uptime"),
@@ -299,6 +348,12 @@ def summarize(
             "netbox_inventory_rows": len(inventory_rows),
             "kuma_monitor_rows": len(availability_rows),
             "composed_resources": len(resources),
+            # Count Proxmox/Kuma source-local records lacking a verified
+            # cross-source identity. A NetBox device's own stable ID does not
+            # make it an unlinked runtime/monitor record.
+            "identity_unlinked_resources": sum(
+                1 for key in unlinked if key in runtime or key in observed
+            ),
         },
         "availability_summary": availability_summary,
         "conflicts": conflicts,

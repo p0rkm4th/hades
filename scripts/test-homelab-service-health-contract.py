@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import json
 import os
 import re
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+import yaml
 
 
 source = Path('hermes/sitecustomize.py').read_text(encoding='utf-8')
@@ -18,7 +20,35 @@ wanted = {
     '_hades_configured_homelab_aliases',
     '_hades_configured_homelab_alias_match', '_hades_is_homelab_intent',
     '_hades_service_health_target', '_hades_service_monitor_response',
-    '_hades_homelab_availability_groups', '_hades_direct_homelab_read',
+    '_hades_homelab_availability_groups',
+    '_hades_broad_homelab_status_intent',
+    '_hades_homelab_service_coverage_intent',
+    '_hades_homelab_service_coverage_response',
+    '_hades_homelab_provenance_followup', '_hades_homelab_provenance_response',
+    '_hades_homelab_conflict_intent', '_hades_homelab_conflict_response',
+    '_hades_homelab_guest_visibility_intent',
+    '_hades_homelab_guest_visibility_response',
+    '_hades_homelab_service_placement_intent',
+    '_hades_homelab_service_placement_response',
+    '_hades_homelab_resource_ranking_intent',
+    '_hades_homelab_resource_ranking_response',
+    '_hades_homelab_node_metrics_ranking_response',
+    '_hades_homelab_proxmox_node_load_response',
+    '_hades_homelab_proxmox_node_load_target',
+    '_hades_homelab_guest_inventory_intent',
+    '_hades_homelab_guest_inventory_response',
+    '_hades_homelab_guest_index_host_target',
+    '_hades_homelab_guest_index_workloads_on_host_response',
+    '_hades_resolve_homelab_adapter_path',
+    '_hades_homelab_core_vm_placement_intent',
+    '_hades_homelab_core_vm_placement_index_response',
+    '_hades_homelab_core_vm_placement_response',
+    '_hades_agent_zero_runtime_placement_response',
+    '_hades_direct_homelab_agent_zero_placement_read',
+    '_hades_homelab_gpu_execution_intent',
+    '_hades_homelab_gpu_execution_response',
+    '_hades_direct_homelab_gpu_execution_read',
+    '_hades_direct_homelab_read',
     '_hades_endpoint_intent_before_provision',
     '_hades_service_endpoint_response',
     '_hades_endpoint_continuation_response',
@@ -34,6 +64,8 @@ namespace = {
     're': re,
     'os': os,
     'Path': Path,
+    '_hades_agent_zero_available': lambda: True,
+    '_hades_logger': type('Logger', (), {'warning': lambda *_args, **_kwargs: None})(),
     '_hades_live_proxmox_vm_rows': lambda: [],
     '_HADES_EXPLICIT_PUBLIC_RESEARCH_INTENT': re.compile(r'(?!)'),
     '_HADES_LIVE_WEB_INTENT': re.compile(r'\b(?:search|web)\b', re.I),
@@ -45,12 +77,487 @@ exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'e
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
 groups = namespace['_hades_homelab_availability_groups']
+broad_status_intent = namespace['_hades_broad_homelab_status_intent']
+coverage_intent = namespace['_hades_homelab_service_coverage_intent']
+coverage_response = namespace['_hades_homelab_service_coverage_response']
+provenance_followup = namespace['_hades_homelab_provenance_followup']
+provenance_response = namespace['_hades_homelab_provenance_response']
+conflict_intent = namespace['_hades_homelab_conflict_intent']
+conflict_response = namespace['_hades_homelab_conflict_response']
+guest_visibility_intent = namespace['_hades_homelab_guest_visibility_intent']
+guest_visibility_response = namespace['_hades_homelab_guest_visibility_response']
+placement_intent = namespace['_hades_homelab_service_placement_intent']
+placement_response = namespace['_hades_homelab_service_placement_response']
+ranking_intent = namespace['_hades_homelab_resource_ranking_intent']
+ranking_response = namespace['_hades_homelab_resource_ranking_response']
+guest_inventory_intent = namespace['_hades_homelab_guest_inventory_intent']
+guest_inventory_response = namespace['_hades_homelab_guest_inventory_response']
+workload_host_target = namespace['_hades_homelab_guest_index_host_target']
+workloads_on_host_response = namespace['_hades_homelab_guest_index_workloads_on_host_response']
+resolve_homelab_adapter_path = namespace['_hades_resolve_homelab_adapter_path']
+core_placement_intent = namespace['_hades_homelab_core_vm_placement_intent']
+core_placement_response = namespace['_hades_homelab_core_vm_placement_response']
+agent_zero_placement = namespace['_hades_agent_zero_runtime_placement_response']
+direct_agent_zero_placement = namespace['_hades_direct_homelab_agent_zero_placement_read']
+gpu_execution_intent = namespace['_hades_homelab_gpu_execution_intent']
+gpu_execution_response = namespace['_hades_homelab_gpu_execution_response']
+direct_gpu_execution = namespace['_hades_direct_homelab_gpu_execution_read']
 direct_read = namespace['_hades_direct_homelab_read']
 endpoint_before_provision = namespace['_hades_endpoint_intent_before_provision']
 endpoint_response = namespace['_hades_service_endpoint_response']
 endpoint_continuation = namespace['_hades_endpoint_continuation_response']
 direct_owner_location = namespace['_hades_direct_owner_location']
 household_boundary = namespace['_hades_household_homelab_boundary_response']
+
+with tempfile.TemporaryDirectory(prefix='hades-active-adapter-path-') as temp_root:
+    root = Path(temp_root)
+    selected = root / 'generated' / 'integrations' / 'homelab-readonly' / 'server.py'
+    selected.parent.mkdir(parents=True)
+    selected.write_text('# selected synthetic adapter\n', encoding='utf-8')
+    decoy_root = root / 'working-copy'
+    decoy = decoy_root / 'integrations' / 'homelab-readonly' / 'server.py'
+    decoy.parent.mkdir(parents=True)
+    decoy.write_text('# decoy synthetic adapter\n', encoding='utf-8')
+    profile = root / 'profile' / 'profiles' / 'hades' / 'config.yaml'
+    profile.parent.mkdir(parents=True)
+    profile.write_text(json.dumps({'mcp_servers': {'homelab-readonly': {
+        'args': [str(selected)],
+    }}}), encoding='utf-8')
+    old_root = os.environ.get('HADES_INTEGRATIONS_ROOT')
+    old_workdir = os.environ.get('HADES_HERMES_WORKING_DIRECTORY')
+    os.environ['HADES_INTEGRATIONS_ROOT'] = str(root)
+    os.environ['HADES_HERMES_WORKING_DIRECTORY'] = str(decoy_root)
+    try:
+        assert resolve_homelab_adapter_path() == selected
+    finally:
+        if old_root is None:
+            os.environ.pop('HADES_INTEGRATIONS_ROOT', None)
+        else:
+            os.environ['HADES_INTEGRATIONS_ROOT'] = old_root
+        if old_workdir is None:
+            os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
+        else:
+            os.environ['HADES_HERMES_WORKING_DIRECTORY'] = old_workdir
+
+assert coverage_intent('Which services can you not verify?')
+assert coverage_intent('What homelab applications remain unknown?')
+assert not coverage_intent('Is Minecraft working?')
+assert broad_status_intent("What's down?")
+assert namespace['_hades_is_homelab_intent']("What's down?")
+assert not broad_status_intent('Is everything okay with the homelab?')
+assert not broad_status_intent('What changed since yesterday?')
+assert guest_inventory_intent('What VMs are running?')
+assert guest_inventory_intent('List all Proxmox containers')
+assert not guest_inventory_intent('Are all VMs visible?')
+assert not guest_inventory_intent('Is VM 202 running?')
+assert workload_host_target("What's running on Synthetic Hypervisor right now?") == 'Synthetic Hypervisor'
+assert workload_host_target('Which guests are on Synthetic Hypervisor?') == 'Synthetic Hypervisor'
+assert workload_host_target("What's running on Proxmox?") == 'Proxmox'
+host_inventory = {'proxmox_guest_inventory': {'status': 'COMPLETE', 'endpoints': [{
+    'source_id': 'synthetic', 'status': 'COMPLETE',
+    'visibility_status': 'COMPLETE', 'visibility_scope': 'ALL_GUESTS',
+    'node_inventory_status': 'OBSERVED', 'truncated': False,
+    'retrieved_at': 'synthetic-host-read',
+    'nodes': [{'source_identity': 'proxmox:synthetic:node:hypervisor-a',
+               'node': 'hypervisor-a', 'name': 'Synthetic Hypervisor', 'status': 'ONLINE'}],
+    'guests': [
+        {'source_identity': 'proxmox:synthetic:qemu:102',
+         'node_identity': 'proxmox:synthetic:node:hypervisor-a', 'guest_type': 'qemu',
+         'guest_id': '102', 'name': 'Synthetic VM', 'status': 'RUNNING'},
+        {'source_identity': 'proxmox:synthetic:lxc:203',
+         'node_identity': 'proxmox:synthetic:node:other', 'guest_type': 'lxc',
+         'guest_id': '203', 'name': 'Other CT', 'status': 'STOPPED'},
+    ],
+}]}}
+host_answer = workloads_on_host_response("What's running on Synthetic Hypervisor?", host_inventory, 'owner')
+assert 'Synthetic Hypervisor as ONLINE' in host_answer, host_answer
+assert 'Synthetic VM VM 102 (RUNNING)' in host_answer, host_answer
+assert 'Other CT' not in host_answer, host_answer
+assert 'do not establish application health' in host_answer, host_answer
+assert workloads_on_host_response("What's running on Synthetic Hypervisor?", host_inventory, 'household') is not None
+assert 'Complete effective VM.Audit scope' in workloads_on_host_response(
+    "What's running on Proxmox?", host_inventory, 'owner'
+)
+host_inventory['proxmox_guest_inventory']['endpoints'][0]['guests'] = []
+host_inventory['proxmox_guest_inventory']['endpoints'][0]['visibility_scope'] = 'SELECTED_GUESTS'
+partial_host_answer = workloads_on_host_response("What's running on Synthetic Hypervisor?", host_inventory, 'owner')
+assert 'does not establish that the node is empty' in partial_host_answer, partial_host_answer
+assert core_placement_intent('Where is HADES Core running?')
+assert core_placement_intent('Which host is running HADES?')
+assert not core_placement_intent('How is HADES doing?')
+assert gpu_execution_intent('Is the NVIDIA driver responding?')
+assert gpu_execution_intent('Are the GPUs executing processes?')
+assert gpu_execution_intent('Are the GPUs working?')
+assert not gpu_execution_intent('Which GPUs are installed?')
+gpu_execution_answer = gpu_execution_response({
+    'status': 'READABLE', 'retrieved_at': 'synthetic-provider-read',
+    'endpoints': [{
+        'source_identity': 'inference:fast-lane', 'status': 'READABLE',
+        'loaded_status': 'CURRENT', 'loaded_models': [{'name': 'synthetic-model'}],
+    }],
+}, {
+    'status': 'PARTIAL', 'retrieved_at': 'synthetic-gpu-read',
+    'endpoints': [
+        {'inference_id': 'fast-lane', 'status': 'READABLE', 'devices': [{
+            'index': 0, 'name': 'Synthetic GPU', 'gpu_utilization_percent': 92,
+            'memory_free_mib': 2048, 'memory_total_mib': 16384,
+        }]},
+        {'inference_id': 'deep-lane', 'status': 'UNAVAILABLE'},
+    ],
+})
+assert 'NVIDIA query responded' in gpu_execution_answer, gpu_execution_answer
+assert '92% utilization' in gpu_execution_answer and '2048 MiB free' in gpu_execution_answer, gpu_execution_answer
+assert 'Telemetry was unavailable for: deep-lane' in gpu_execution_answer, gpu_execution_answer
+assert 'not proof that a requested workload completed' in gpu_execution_answer, gpu_execution_answer
+assert 'provider reports resident model(s): synthetic-model' in gpu_execution_answer, gpu_execution_answer
+assert 'no generation request was made' in gpu_execution_answer, gpu_execution_answer
+assert 'driver health, GPU execution' in gpu_execution_answer, gpu_execution_answer
+unknown_gpu_answer = gpu_execution_response(
+    {'status': 'NOT_CONFIGURED', 'endpoints': []},
+    {'status': 'NOT_CONFIGURED', 'endpoints': []},
+)
+assert 'driver health and actual GPU execution are unknown' in unknown_gpu_answer, unknown_gpu_answer
+old_agent_zero_url = os.environ.get('AGENT_ZERO_URL')
+os.environ['AGENT_ZERO_URL'] = 'http://127.0.0.1:7002/api/private-check'
+try:
+    gpu_registry_calls = []
+    namespace['_hades_direct_homelab_tool_result'] = lambda name: (
+        gpu_registry_calls.append(name)
+        or ({'status': 'READABLE', 'endpoints': []} if name == 'homelab_inference_inventory'
+            else {'status': 'NOT_CONFIGURED', 'endpoints': []})
+    )
+    direct_gpu_answer = direct_gpu_execution(
+        'Is the NVIDIA driver responding?', 'synthetic-owner', 'owner'
+    )
+    assert 'driver health and actual GPU execution are unknown' in direct_gpu_answer, direct_gpu_answer
+    assert gpu_registry_calls == ['homelab_gpu_telemetry', 'homelab_inference_inventory'], gpu_registry_calls
+    gpu_registry_calls.clear()
+    assert direct_gpu_execution(
+        'Is the NVIDIA driver responding?', 'synthetic-household', 'household'
+    ) is None
+    assert not gpu_registry_calls, gpu_registry_calls
+    agent_zero_answer = agent_zero_placement(
+        'Where is Agent Zero running?',
+        {'status': 'OK', 'coverage': 'EMPTY'}, 'owner',
+    )
+    assert 'loopback port 7002 on the HADES host' in agent_zero_answer, agent_zero_answer
+    assert 'endpoint returned an HTTP response' in agent_zero_answer, agent_zero_answer
+    assert 'catalog is reachable but empty' in agent_zero_answer, agent_zero_answer
+    assert 'not Agent Zero delegation or task execution' in agent_zero_answer, agent_zero_answer
+    assert '/api/private-check' not in agent_zero_answer, agent_zero_answer
+    assert agent_zero_placement(
+        'Where is Agent Zero running?', {'status': 'OK', 'coverage': 'EMPTY'}, 'household'
+    ) is None
+    agent_zero_registry_calls = []
+    namespace['_hades_direct_homelab_tool_result'] = lambda name: (
+        agent_zero_registry_calls.append(name)
+        or {'service_catalog': {'status': 'OK', 'coverage': 'EMPTY'}}
+    )
+    direct_agent_zero_answer = direct_agent_zero_placement(
+        'Where is Agent Zero running?', 'synthetic-owner', 'owner'
+    )
+    assert 'loopback port 7002 on the HADES host' in direct_agent_zero_answer, direct_agent_zero_answer
+    assert agent_zero_registry_calls == ['homelab_summary'], agent_zero_registry_calls
+    agent_zero_registry_calls.clear()
+    assert direct_agent_zero_placement(
+        'Where is Agent Zero running?', 'synthetic-household', 'household'
+    ) is None
+    assert not agent_zero_registry_calls, agent_zero_registry_calls
+    os.environ.pop('AGENT_ZERO_URL', None)
+    unconfigured_agent_zero = agent_zero_placement(
+        'Where is Agent Zero running?', {'status': 'OK', 'coverage': 'EMPTY'}, 'owner'
+    )
+    assert 'no explicit Agent Zero endpoint configured' in unconfigured_agent_zero, unconfigured_agent_zero
+    assert "catalog is reachable but empty" in unconfigured_agent_zero, unconfigured_agent_zero
+    intended_agent_zero = agent_zero_placement(
+        'Where is Agent Zero running?',
+        {'status': 'OK', 'coverage': 'COMPLETE', 'services': [
+            {'name': 'Agent Zero', 'parent_name': 'Synthetic Host'},
+        ]}, 'owner',
+    )
+    assert 'NetBox lists Agent Zero on Synthetic Host as intended placement' in intended_agent_zero, intended_agent_zero
+    ambiguous_agent_zero = agent_zero_placement(
+        'Where is Agent Zero running?',
+        {'status': 'OK', 'coverage': 'COMPLETE', 'services': [
+            {'name': 'Agent Zero', 'parent_name': 'Synthetic Host A'},
+            {'name': 'Agent Zero', 'parent_name': 'Synthetic Host B'},
+        ]}, 'owner',
+    )
+    assert 'placement is ambiguous' in ambiguous_agent_zero, ambiguous_agent_zero
+    os.environ['AGENT_ZERO_URL'] = 'not a url'
+    invalid_agent_zero = agent_zero_placement(
+        'Where is Agent Zero running?', {'status': 'UNKNOWN'}, 'owner'
+    )
+    assert 'configured Agent Zero endpoint is invalid' in invalid_agent_zero, invalid_agent_zero
+finally:
+    if old_agent_zero_url is None:
+        os.environ.pop('AGENT_ZERO_URL', None)
+    else:
+        os.environ['AGENT_ZERO_URL'] = old_agent_zero_url
+complete_guest_state = guest_inventory_response({
+    'proxmox_guest_inventory': {
+        'status': 'COMPLETE', 'endpoints': [{
+            'source_id': 'synthetic', 'status': 'COMPLETE',
+            'visibility_status': 'COMPLETE', 'visibility_scope': 'ALL_GUESTS',
+            'retrieved_at': 'synthetic-guest-read', 'truncated': False,
+            'guests': [
+                {'source_identity': 'proxmox:synthetic:qemu:102', 'guest_type': 'qemu',
+                 'guest_id': '102', 'name': 'Synthetic VM', 'node': 'Synthetic Node', 'status': 'RUNNING'},
+                {'source_identity': 'proxmox:synthetic:lxc:203', 'guest_type': 'lxc',
+                 'guest_id': '203', 'name': 'Synthetic CT', 'node': 'Synthetic Node', 'status': 'STOPPED'},
+            ],
+        }],
+    },
+})
+assert 'Complete effective VM.Audit scope' in complete_guest_state, complete_guest_state
+assert 'Synthetic VM (VM 102) on Synthetic Node' in complete_guest_state, complete_guest_state
+assert 'Synthetic CT (CT 203) on Synthetic Node' in complete_guest_state, complete_guest_state
+assert 'not application or service health' in complete_guest_state, complete_guest_state
+core_placement = core_placement_response({
+    'proxmox_guest_inventory': {
+        'status': 'COMPLETE', 'endpoints': [{
+            'status': 'COMPLETE', 'visibility_scope': 'ALL_GUESTS',
+            'retrieved_at': 'synthetic-core-read', 'truncated': False,
+            'guests': [{
+                'name': 'HADES Core', 'guest_type': 'qemu', 'guest_id': '202',
+                'node': 'Synthetic Hypervisor', 'status': 'RUNNING',
+            }],
+        }],
+    },
+})
+assert 'HADES Core (VM 202) is running on Synthetic Hypervisor' in core_placement, core_placement
+assert 'does not verify HADES application health' in core_placement, core_placement
+partial_core_placement = core_placement_response({
+    'proxmox_guest_inventory': {
+        'status': 'PARTIAL', 'endpoints': [{
+            'status': 'PARTIAL', 'visibility_scope': 'SELECTED_GUESTS',
+            'guests': [{'name': 'hades-core', 'guest_type': 'qemu', 'guest_id': '202',
+                        'node': 'Synthetic Hypervisor', 'status': 'RUNNING'}],
+        }],
+    },
+})
+assert 'other matching guests may be unreported' in partial_core_placement, partial_core_placement
+assert 'no guest with a HADES Core name' in core_placement_response({
+    'proxmox_guest_inventory': {'status': 'COMPLETE', 'endpoints': [{
+        'status': 'COMPLETE', 'visibility_scope': 'ALL_GUESTS', 'guests': [],
+    }]},
+}), "a complete inventory without HADES Core must not invent placement"
+partial_guest_state = guest_inventory_response({
+    'proxmox_guest_inventory': {'status': 'PARTIAL', 'endpoints': [{
+        'source_id': 'synthetic', 'status': 'PARTIAL', 'visibility_scope': 'SELECTED_GUESTS',
+        'guests': [], 'truncated': False,
+    }]},
+})
+assert 'does not establish an empty cluster' in partial_guest_state, partial_guest_state
+coverage = coverage_response({
+    'service_catalog': {'status': 'OK', 'coverage': 'EMPTY', 'services': []},
+    'proxmox_guest_visibility': {'status': 'PARTIAL'},
+    'availability_summary': [
+        {'name': 'synthetic-web-probe', 'status': 'up', 'freshness': 'FRESH'},
+        {'name': 'synthetic-stale-probe', 'status': 'up', 'freshness': 'STALE'},
+    ],
+    'retrieved_at': '2026-10-04T12:00:00Z',
+})
+assert 'catalog is reachable but empty' in coverage, coverage
+assert 'services on unreported guests remain unverified' in coverage, coverage
+assert 'configured probes responded' in coverage, coverage
+assert 'does not confirm application login or workload readiness' in coverage, coverage
+assert 'synthetic-stale-probe' in coverage, coverage
+assert '2026-10-04T12:00:00Z' in coverage, coverage
+coverage_without_explicit_empty_marker = coverage_response({
+    'service_catalog': {'status': 'OK', 'services': [], 'truncated': False},
+    'availability_summary': [
+        {'name': 'synthetic-host-probe', 'status': 'up', 'freshness': 'FRESH'},
+    ],
+})
+assert 'service catalog is reachable but empty' in coverage_without_explicit_empty_marker, coverage_without_explicit_empty_marker
+assert 'configured probes responded' in coverage_without_explicit_empty_marker, coverage_without_explicit_empty_marker
+provenance_history = [
+    {'role': 'user', 'content': "What's down?"},
+    {'role': 'assistant', 'content': 'No fresh configured failures.'},
+    {'role': 'user', 'content': 'How do you know that?'},
+]
+assert provenance_followup('How do you know that?', provenance_history)
+assert not provenance_followup('How do you know that?', [])
+provenance = provenance_response({'source_observations': [
+    {'source': 'Synthetic Proxmox', 'status': 'READABLE', 'retrieved_at': '2026-10-04T12:00:00Z'},
+    {'source': 'Synthetic NetBox', 'status': 'UNAVAILABLE'},
+]})
+assert 'Synthetic Proxmox: readable; read at 2026-10-04T12:00:00Z' in provenance, provenance
+assert 'Synthetic NetBox: unavailable; read time unavailable' in provenance, provenance
+assert 'not proof that older observations remain live' in provenance, provenance
+assert conflict_intent('Do any sources disagree?')
+assert namespace['_hades_is_homelab_intent']('Do any sources disagree?')
+conflict = conflict_response({'conflicts': [{
+    'name': 'Synthetic Node',
+    'reasons': ['NetBox intended node differs from Proxmox runtime node'],
+}]})
+assert 'Synthetic Node: NetBox intended node differs from Proxmox runtime node' in conflict, conflict
+assert 'kept those records separate' in conflict, conflict
+assert 'does not prove inventory coverage is complete' in conflict_response({'conflicts': []})
+label_collision_only = conflict_response({'conflicts': [{
+    'name': 'Synthetic Guest (node qemu 100)',
+    'reasons': ['Display label is shared by multiple records; they remain separate by stable source identity'],
+}]})
+assert 'no cross-source inventory disagreement' in label_collision_only, label_collision_only
+assert 'Shared display labels remain separate by stable source identity' in label_collision_only, label_collision_only
+assert 'inventory/runtime disagreements' not in label_collision_only, label_collision_only
+mixed_conflicts = conflict_response({'conflicts': [
+    {'name': 'Synthetic Guest', 'reasons': [
+        'Display label is shared by multiple records; they remain separate by stable source identity',
+    ]},
+    {'name': 'Synthetic Host', 'reasons': [
+        'NetBox intended node differs from Proxmox runtime node',
+    ]},
+]})
+assert 'inventory/runtime disagreements: Synthetic Host' in mixed_conflicts, mixed_conflicts
+assert 'Shared display labels remain separate by stable source identity: Synthetic Guest' in mixed_conflicts, mixed_conflicts
+assert guest_visibility_intent('Are all VMs visible?')
+assert namespace['_hades_is_homelab_intent']('Are all VMs visible?')
+complete_visibility = guest_visibility_response({
+    'proxmox_guest_visibility': {'status': 'COMPLETE', 'scope': 'ALL_GUESTS'},
+    'source_observations': [{
+        'source': 'Proxmox guest visibility:synthetic', 'status': 'COMPLETE',
+        'retrieved_at': '2026-10-04T12:00:00Z',
+    }],
+})
+assert 'all guests in scope' in complete_visibility, complete_visibility
+assert 'effective-permission data' in complete_visibility, complete_visibility
+assert '2026-10-04T12:00:00Z' in complete_visibility, complete_visibility
+partial_visibility = guest_visibility_response({
+    'proxmox_guest_visibility': {'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS'}
+})
+assert 'selected guests only' in partial_visibility, partial_visibility
+assert placement_intent('Where is Agent Zero running?')
+assert namespace['_hades_is_homelab_intent']('Where is Agent Zero running?')
+intended_placement = placement_response('Where is Minecraft Server running?', {
+    'service_catalog': {'status': 'OK', 'services': [{
+        'name': 'Minecraft Server', 'parent_name': 'Synthetic Host',
+    }]},
+})
+assert 'NetBox lists Minecraft Server on Synthetic Host' in intended_placement, intended_placement
+assert 'does not establish whether the service is currently running or healthy' in intended_placement
+unknown_placement = placement_response('Where is Agent Zero running?', {
+    'service_catalog': {'status': 'OK', 'coverage': 'EMPTY', 'services': []},
+})
+assert 'catalog is reachable but empty' in unknown_placement, unknown_placement
+assert 'remembered location' in unknown_placement, unknown_placement
+assert ranking_intent("What's the most loaded server?")
+assert ranking_intent('What is using the most resources?')
+assert namespace['_hades_is_homelab_intent']("What's the most loaded server?")
+ranking = ranking_response({
+    'resources': [
+        {'name': 'Synthetic CPU Host', 'currently_online': True,
+         'runtime': {'status': 'running', 'cpu': 0.9, 'mem': 8 * 1024**3, 'maxmem': 16 * 1024**3}},
+        {'name': 'Synthetic Memory Host', 'currently_online': True,
+         'runtime': {'status': 'running', 'cpu': 0.5, 'mem': 15 * 1024**3, 'maxmem': 20 * 1024**3}},
+        {'name': 'Synthetic Status Only Host', 'runtime_status': 'online'},
+        {'name': 'Synthetic Conflicting Host', 'currently_online': False,
+         'runtime_status': 'running',
+         'runtime': {'status': 'running', 'cpu': 0.99, 'mem': 19 * 1024**3, 'maxmem': 20 * 1024**3}},
+        {'name': 'Synthetic Conflicting Stopped Host', 'currently_online': True,
+         'runtime_status': 'stopped',
+         'runtime': {'status': 'stopped', 'cpu': 0.98, 'mem': 18 * 1024**3, 'maxmem': 20 * 1024**3}},
+        {'name': 'Synthetic Offline', 'currently_online': False,
+         'runtime': {'status': 'stopped', 'cpu': 0.99, 'mem': 19 * 1024**3, 'maxmem': 20 * 1024**3}},
+    ],
+    'source_observations': [{'source': 'Proxmox synthetic', 'retrieved_at': 'synthetic-read-time'}],
+})
+assert 'Synthetic CPU Host at 90.0%' in ranking, ranking
+assert 'Synthetic Memory Host at 15.0 / 20.0 GiB (75.0%)' in ranking, ranking
+assert 'Synthetic Offline' not in ranking
+assert 'Synthetic Conflicting Host at 99.0%' not in ranking
+assert 'Synthetic Conflicting Stopped Host at 98.0%' not in ranking
+assert 'host and guest readings are separate' in ranking
+assert 'This compares 3 currently online Proxmox runtime record(s)' in ranking, ranking
+assert 'conflicting current-status fields was excluded' in ranking, ranking
+assert 'Proxmox source read completed at synthetic-read-time' in ranking
+status_without_metrics = ranking_response({
+    'resources': [{'name': 'Synthetic Online Without Metrics', 'currently_online': True}]
+})
+assert 'records are online, but they contain no comparable CPU or memory readings' in status_without_metrics
+unknown_runtime_status = ranking_response({
+    'resources': [{'name': 'Synthetic Unknown Status', 'runtime_status': 'UNKNOWN'}]
+})
+assert 'no rows with an explicit online/running status' in unknown_runtime_status
+assert 'this does not establish that no machines are online' in unknown_runtime_status
+synthetic_node_metrics = {
+    'status': 'READABLE', 'endpoints': [{
+        'status': 'AVAILABLE', 'truncated': False, 'nodes': [
+            {'name': 'Synthetic Node A', 'status': 'ONLINE', 'cpu_fraction': 0.25,
+             'memory_used_bytes': 8 * 1024**3, 'memory_total_bytes': 16 * 1024**3,
+             'observed_at': 'synthetic-node-time-a'},
+            {'name': 'Synthetic Node B', 'node': 'synthetic-node-b',
+             'status': 'ONLINE', 'cpu_fraction': 0.75,
+             'memory_used_bytes': 6 * 1024**3, 'memory_total_bytes': 12 * 1024**3,
+             'observed_at': 'synthetic-node-time-b'},
+            {'name': 'Synthetic Offline Node', 'status': 'OFFLINE', 'cpu_fraction': 0.99,
+             'memory_used_bytes': 19 * 1024**3, 'memory_total_bytes': 20 * 1024**3},
+        ],
+    }],
+}
+node_metric_ranking = ranking_response({
+    'resources': [], 'proxmox_node_metrics': synthetic_node_metrics,
+})
+assert 'Synthetic Node B at 75.0%' in node_metric_ranking, node_metric_ranking
+assert 'Synthetic Offline Node' not in node_metric_ranking
+assert 'synthetic-node-time-b' in node_metric_ranking
+assert 'host/node sample(s) only' in node_metric_ranking
+assert 'Guest readings are separate' in node_metric_ranking
+unknown_node_metrics = ranking_response({
+    'resources': [], 'proxmox_node_metrics': {'status': 'UNKNOWN', 'endpoints': []},
+})
+assert 'status and load are unknown; I can\'t rank host load' in unknown_node_metrics
+assert 'because' not in unknown_node_metrics
+missing_timestamp_metrics = ranking_response({
+    'resources': [], 'proxmox_node_metrics': {'status': 'UNKNOWN', 'endpoints': [{
+        'status': 'UNKNOWN', 'error_code': 'MISSING_SOURCE_TIMESTAMP', 'nodes': [],
+    }]},
+})
+assert 'because a source read timestamp is missing' in missing_timestamp_metrics
+node_load_response = namespace['_hades_homelab_proxmox_node_load_response']
+node_load_target = namespace['_hades_homelab_proxmox_node_load_target']
+assert node_load_target('How loaded is Synthetic Compute Alpha right now?') == 'Synthetic Compute Alpha'
+assert node_load_target('How much CPU is on Synthetic Node B?') == 'Synthetic Node B'
+assert node_load_target('What is Synthetic Node B load like?') == 'Synthetic Node B'
+assert node_load_target('What models are available?') is None
+specific_node_load = node_load_response(
+    {'proxmox_node_metrics': synthetic_node_metrics}, 'synthetic-node-b'
+)
+assert 'synthetic-node-b online' in specific_node_load, specific_node_load
+assert 'Host CPU reading is 75.0%' in specific_node_load, specific_node_load
+assert 'Host memory is 6.0 / 12.0 GiB' in specific_node_load, specific_node_load
+assert 'sampled at synthetic-node-time-b' in specific_node_load, specific_node_load
+assert 'guest readings may overlap' in specific_node_load, specific_node_load
+assert node_load_response(
+    {'proxmox_node_metrics': synthetic_node_metrics}, 'Synthetic Offline Node'
+).endswith('current host load is unverified.')
+linked_host = {
+    'proxmox_node_metrics': {'status': 'READABLE', 'endpoints': [{
+        'status': 'AVAILABLE', 'nodes': [{
+            'name': 'synthetic-compute-alpha (NetBox 2)', 'node': 'pve-node-1', 'status': 'ONLINE',
+            'cpu_fraction': 0.1, 'observed_at': 'linked-host-time',
+        }],
+    }]},
+}
+assert 'Proxmox reports Synthetic Compute Alpha online' in node_load_response(linked_host, 'Synthetic Compute Alpha')
+unmatched_host = node_load_response(linked_host, 'Unlisted Node')
+assert 'no current Proxmox node sample uniquely matched that machine' in unmatched_host
+linked_host['proxmox_node_metrics']['endpoints'][0]['nodes'].append({
+    'name': 'synthetic-compute-alpha (NetBox 3)', 'node': 'pve-node-2', 'status': 'ONLINE',
+    'cpu_fraction': 0.2, 'observed_at': 'second-linked-host-time',
+})
+assert 'multiple Proxmox node records match' in node_load_response(linked_host, 'Synthetic Compute Alpha')
+direct_read_fn = next(
+    node for node in functions
+    if isinstance(node, ast.FunctionDef) and node.name == '_hades_direct_homelab_read'
+)
+assert any(
+    isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == '_hades_homelab_proxmox_node_load_response'
+    for node in ast.walk(direct_read_fn)
+), 'direct named host load intent must reach the explicit Proxmox node-load response'
 
 household_health = household_boundary('Are all the computers okay? Is Minecraft working?')
 assert household_health == (
@@ -268,7 +775,106 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
     os.environ['HADES_HERMES_WORKING_DIRECTORY'] = temp_root
     os.environ.pop('HADES_CAPABILITY_MATRIX_FILE', None)
     os.environ['HERMES_HOME'] = str(Path(temp_root) / 'hermes-home')
+    def synthetic_registry_read(tool_name, _args=None):
+        if tool_name != 'homelab_summary':
+            return {'status': 'UNKNOWN', 'machines': []}
+        adapter_path = adapter_dir / 'server.py'
+        spec = importlib.util.spec_from_file_location('synthetic_service_registry', adapter_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        summary = module.homelab_summary()
+        summary.setdefault('resources', []).append({
+            'name': 'Synthetic Host', 'currently_online': True,
+            'runtime': {
+                'status': 'running', 'cpu': 0.9,
+                'mem': 8 * 1024**3, 'maxmem': 16 * 1024**3,
+            },
+        })
+        summary['source_observations'] = [
+            {'source': 'Synthetic Proxmox', 'status': 'READABLE', 'retrieved_at': 'synthetic-freshness-time'},
+            {'source': 'Proxmox synthetic', 'status': 'READABLE', 'retrieved_at': 'synthetic-proxmox-time'},
+        ]
+        summary['conflicts'] = [{
+            'name': 'Synthetic Node',
+            'reasons': ['NetBox intended node differs from Proxmox runtime node'],
+        }]
+        summary['proxmox_guest_visibility'] = {
+            'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS',
+        }
+        summary['proxmox_guest_inventory'] = {'status': 'COMPLETE', 'endpoints': [{
+            'source_id': 'synthetic', 'status': 'COMPLETE',
+            'visibility_status': 'COMPLETE', 'visibility_scope': 'ALL_GUESTS',
+            'node_inventory_status': 'OBSERVED', 'truncated': False,
+            'retrieved_at': 'synthetic-host-read',
+            'nodes': [{'source_identity': 'proxmox:synthetic:node:synthetic-hypervisor',
+                       'node': 'synthetic-hypervisor', 'name': 'Synthetic Hypervisor', 'status': 'ONLINE'}],
+            'guests': [{'source_identity': 'proxmox:synthetic:qemu:902',
+                        'node_identity': 'proxmox:synthetic:node:synthetic-hypervisor',
+                        'guest_type': 'qemu', 'guest_id': '902', 'name': 'Guested App',
+                        'status': 'RUNNING'}],
+        }]}
+        return summary
+
+    namespace['_hades_direct_homelab_tool_result'] = synthetic_registry_read
     try:
+        owner_coverage = direct_read(
+            'Which services can you not verify?', 'synthetic-owner', 'owner'
+        )
+        assert 'application services' in owner_coverage, owner_coverage
+        assert 'No configured service-check observations' in owner_coverage, owner_coverage
+        assert direct_read(
+            'Which services can you not verify?', 'synthetic-household', 'household'
+        ) is None
+        assert 'only in an owner session' in direct_read(
+            'What VMs are running?', 'synthetic-household', 'household'
+        )
+        owner_down = direct_read("What's down?", 'synthetic-owner', 'owner')
+        assert 'No fresh configured probe is reporting a failure' in owner_down, owner_down
+        assert 'unmonitored services remain unknown' in owner_down, owner_down
+        assert direct_read("What's down?", 'synthetic-household', 'household') == household_boundary(
+            "What's down?"
+        )
+        owner_provenance = direct_read(
+            'How do you know that?', 'synthetic-owner', 'owner',
+            conversation_history=provenance_history,
+        )
+        assert 'Synthetic Proxmox: readable; read at synthetic-freshness-time' in owner_provenance, owner_provenance
+        owner_conflicts = direct_read(
+            'Do any sources disagree?', 'synthetic-owner', 'owner'
+        )
+        assert 'Synthetic Node: NetBox intended node differs from Proxmox runtime node' in owner_conflicts, owner_conflicts
+        assert direct_read(
+            'Do any sources disagree?', 'synthetic-household', 'household'
+        ) is None
+        owner_scope = direct_read('Are all VMs visible?', 'synthetic-owner', 'owner')
+        assert 'selected guests only' in owner_scope, owner_scope
+        household_scope = direct_read(
+            'Are all VMs visible?', 'synthetic-household', 'household'
+        )
+        assert 'internal guest inventory or permission details' in household_scope, household_scope
+        host_workloads = direct_read(
+            "What's running on Synthetic Hypervisor?", 'synthetic-owner', 'owner'
+        )
+        assert 'Guested App VM 902 (RUNNING)' in host_workloads, host_workloads
+        assert direct_read(
+            "What's running on Synthetic Hypervisor?", 'synthetic-household', 'household'
+        ).startswith('Detailed host and guest placement is available only in an owner session.'), 'household host details leaked'
+        owner_placement = direct_read(
+            'Where is Minecraft Server running?', 'synthetic-owner', 'owner'
+        )
+        assert 'NetBox lists Minecraft Server on Test Host' in owner_placement, owner_placement
+        household_placement = direct_read(
+            'Where is Minecraft Server running?', 'synthetic-household', 'household'
+        )
+        assert 'only in an owner session' in household_placement, household_placement
+        owner_rank = direct_read(
+            "What's the most loaded server?", 'synthetic-owner', 'owner'
+        )
+        assert 'Synthetic Host at 90.0%' in owner_rank and 'Proxmox source read' in owner_rank, owner_rank
+        household_rank = direct_read(
+            "What's the most loaded server?", 'synthetic-household', 'household'
+        )
+        assert 'only in an owner session' in household_rank, household_rank
         assert namespace['_hades_configured_homelab_alias_match'](
             'is alpha node healthy?'
         ) == 'compute-alpha'
@@ -327,3 +933,30 @@ assert monitor_groups['up'] == ['Minecraft Server'], monitor_groups
 assert monitor_groups['down'] == ['Search'], monitor_groups
 assert {item['name'] for item in monitor_groups['unknown']} == {'Jellyfin', 'LLDAP', 'Malformed'}, monitor_groups
 print('PASS broad homelab summaries distinguish current probe failures from stale/unknown checks')
+
+agent_method = next(
+    node for node in ast.walk(tree)
+    if isinstance(node, ast.FunctionDef) and node.name == "_hades_run_conversation"
+)
+agent_zero_route_lines = [
+    node.lineno for node in ast.walk(agent_method)
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    and node.func.id == "_hades_direct_homelab_agent_zero_placement_read"
+]
+gpu_execution_route_lines = [
+    node.lineno for node in ast.walk(agent_method)
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    and node.func.id == "_hades_direct_homelab_gpu_execution_read"
+]
+generic_route_lines = [
+    node.lineno for node in ast.walk(agent_method)
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    and node.func.id == "_hades_direct_homelab_read"
+]
+assert (
+    agent_zero_route_lines and gpu_execution_route_lines and generic_route_lines
+    and min(agent_zero_route_lines) < max(generic_route_lines)
+    and min(gpu_execution_route_lines) < max(generic_route_lines)
+)
+print('PASS owner Agent Zero placement uses the bounded endpoint route before generic model/tool handling')
+print('PASS owner GPU execution questions distinguish fixed-command driver telemetry from provider residency')

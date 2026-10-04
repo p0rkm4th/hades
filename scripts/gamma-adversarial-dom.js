@@ -125,7 +125,7 @@ async function run() {
       ['ownerB', 'remember my test color is cobalt'],
       ['ownerB', 'what was the thing i said'],
       ['householdB', 'ask Agent Zero to inspect the server'],
-      ['householdA', 'show me Scotty private checking'],
+      ['householdA', 'show me the owner’s private checking'],
       ['ownerA', 'show my servers'],
       ['householdMobile', 'is the server thing working'],
     ];

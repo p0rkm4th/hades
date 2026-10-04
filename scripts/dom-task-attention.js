@@ -246,7 +246,7 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
           if (!response.includes(expected)) throw new Error(`Alpha month-over-month finance answer omitted ${expected}: ${response}`);
         }
         if (response.includes('$2,500.00')) throw new Error(`month-over-month finance answer included income: ${response}`);
-      } else if (!response.includes("I can't access Scotty's finances. That information is owner-only")) {
+      } else if (!response.includes("I can't access the owner's finances. That information is owner-only")) {
         throw new Error(`${account} month-over-month finance request was not denied as owner-only: ${response}`);
       }
     } else if (isComputerStatus) {
@@ -373,7 +373,7 @@ async function ask(browser, account, prompt = 'What needs my attention?') {
             : isFinanceMonthOverMonth
               ? account === 'alpha'
                 ? 'CSV finance comparison (owner-only, read-only)'
-                : "I can't access Scotty's finances. That information is owner-only"
+                : "I can't access the owner's finances. That information is owner-only"
             : isComputerStatus
             ? 'Repository backup freshness: HADES repository backup: healthy'
             : isNamedNodeStatus

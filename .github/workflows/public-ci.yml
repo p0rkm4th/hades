@@ -25,7 +25,7 @@ jobs:
         run: python -m pip install --disable-pip-version-check --no-input PyYAML==6.0.3
 
       - name: Compile public Python adapters
-        run: python -m py_compile hermes/sitecustomize.py integrations/public-research/research.py integrations/public-research/server.py integrations/browser-access/proxy.py integrations/browser-access/research_reader.py webui/task_notification_compat.py webui/receipt_upload_compat.py webui/finance_upload_compat.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-public-research-contract.py scripts/test-browser-network-pinning.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py scripts/test-homelab-service-health-contract.py scripts/test-receipt-ocr-concurrent-apply.py scripts/test-receipt-ocr-owner-boundary.py
+        run: python -m py_compile hermes/sitecustomize.py integrations/public-research/research.py integrations/public-research/server.py integrations/browser-access/proxy.py integrations/browser-access/research_reader.py webui/task_notification_compat.py webui/receipt_upload_compat.py webui/finance_upload_compat.py integrations/agent-zero-mcp/server.py integrations/grocy-recipe-authoring/server.py integrations/actual-finance-readonly/server.py scripts/test-public-research-contract.py scripts/test-browser-network-pinning.py scripts/test-ollama-long-dogfood.py scripts/test-synthetic-performance.py scripts/test-homelab-service-health-contract.py scripts/test-homelab-runtime-registry-bridge.py scripts/test-homelab-restore-guest-contract.py scripts/test-receipt-ocr-concurrent-apply.py scripts/test-receipt-ocr-owner-boundary.py
 
       - name: Check public JavaScript adapter
         run: node --check integrations/actual-finance-readonly/actual_client.js
@@ -42,6 +42,16 @@ jobs:
         run: python scripts/test-homelab-service-health-contract.py
       - name: Check canonical homelab read-source composition
         run: bash scripts/test-homelab-readonly-adapter.sh
+      - name: Test restricted GPU telemetry contract
+        run: python3 scripts/test-homelab-gpu-telemetry.py
+      - name: Test provider-native inference catalog contract
+        run: python3 scripts/test-homelab-inference-contract.py
+      - name: Check owner-only homelab capacity routing
+        run: python3 scripts/test-homelab-capacity-routing.py
+      - name: Check homelab reads preserve MCP child configuration
+        run: python3 scripts/test-homelab-runtime-registry-bridge.py
+      - name: Check restore guest evidence joins
+        run: python3 scripts/test-homelab-restore-guest-contract.py
 
       - name: Check mixed-domain composition boundary
         run: bash scripts/test-composition-boundary.sh

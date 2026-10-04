@@ -48,7 +48,7 @@ source for HADES users.
 
 ## Product authorization and implementation gate
 
-Scotty's Owner Away policy authorizes a bounded canary for four typed,
+the Owner Away policy authorizes a bounded canary for four typed,
 read-only templates: Server Health Watch, Low Inventory Summary, Weekly
 Household Summary, and Backup Verification. This supersedes the older separate
 Manny/Orc approval gate for those templates only. It does not authorize

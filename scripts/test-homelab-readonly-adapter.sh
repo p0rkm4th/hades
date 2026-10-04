@@ -28,6 +28,7 @@ assert result["source_counts"] == {
     "netbox_inventory_rows": 1,
     "kuma_monitor_rows": 1,
     "composed_resources": 1,
+    "identity_unlinked_resources": 0,
 }
 assert result["availability_summary"] == [{"name": "dinner-app", "status": "down", "freshness": "STALE"}]
 assert result["answer_contract"]["writes_performed"] is False
@@ -38,6 +39,9 @@ assert resource["inventory"]["planned_node"] == "Beta"
 assert resource["availability"]["status"] == "down"
 assert resource["availability_freshness"] == "STALE"
 assert resource["conflicts"]
+assert resource["identity"]["canonical_id"] is None
+assert resource["identity"]["link_status"] == "NAME_MATCH_ONLY"
+assert result["source_counts"]["identity_unlinked_resources"] == 0
 assert result["authority"]["runtime"] == "Proxmox"
 vm_result = module.summarize(
     {"data": [{"type": "qemu", "vmid": 102, "name": "hades-core", "node": "hypervisor-alpha", "status": "running"}]},
@@ -73,6 +77,10 @@ assert {
     (row["runtime"]["vmid"], row["runtime_status"], bool(row["conflicts"]))
     for row in duplicate_guest_names["resources"]
 } == {(100, "stopped", True), (102, "running", True)}
+assert all(
+    any("remain separate by stable source identity" in conflict for conflict in row["conflicts"])
+    for row in duplicate_guest_names["resources"]
+)
 linked_identity = module.summarize(
     {"data": [{
         "id": "node/alpha", "type": "node", "node": "alpha", "name": "alpha",
@@ -90,16 +98,79 @@ linked_identity = module.summarize(
 host = next(row for row in linked_identity["resources"] if row["inventory"])
 monitor = next(row for row in linked_identity["resources"] if row["availability"])
 assert host["runtime_status"] == "online" and host["inventory"]["id"] == 41
+assert host["identity"] == {
+    "canonical_id": "netbox:device:41",
+    "source_identities": {
+        "proxmox": ["proxmox:alpha:node:alpha"],
+        "netbox": ["netbox:device:41"],
+    },
+    "link_status": "STABLE",
+}, host
 assert host["availability"] is None
 assert monitor["runtime"] is None and monitor["availability"]["status"] == "down"
 assert monitor["related_inventory_device_id"] == 41
+assert monitor["identity"]["canonical_id"] is None
+assert monitor["identity"]["source_identities"] == {"kuma": ["kuma:monitor:9"]}
+assert monitor["identity"]["link_status"] == "RELATED_PARENT"
+linked_same_label = module.summarize(
+    {"data": [{
+        "id": "node/alpha", "type": "node", "node": "alpha", "name": "alpha",
+        "status": "online", "source_identity": "proxmox:alpha:node:alpha",
+    }]},
+    {"results": [{"id": 41, "name": "alpha"}]},
+    None,
+    identity_links={"proxmox:alpha:node:alpha": 41},
+)
+assert len(linked_same_label["resources"]) == 1, linked_same_label["resources"]
+assert linked_same_label["resources"][0]["identity"]["canonical_id"] == "netbox:device:41"
+assert linked_same_label["resources"][0]["conflicts"] == [], linked_same_label["resources"][0]
+assert linked_same_label["conflicts"] == [], linked_same_label["conflicts"]
+assert linked_same_label["source_counts"]["identity_unlinked_resources"] == 0
 unlinked_same_label = module.summarize(
-    {"data": [{"id": "qemu/900", "type": "qemu", "vmid": 900, "node": "alpha", "name": "same-label", "status": "running"}]},
+    {"data": [{"id": "qemu/900", "type": "qemu", "vmid": 900, "node": "alpha", "name": "same-label", "status": "running", "source_identity": "proxmox:alpha:qemu:900"}]},
     {"results": [{"id": 42, "name": "same-label"}]},
     None,
 )
 assert unlinked_same_label["source_counts"]["composed_resources"] == 2
 assert all(any("no stable identity link" in conflict for conflict in row["conflicts"]) for row in unlinked_same_label["resources"])
+assert unlinked_same_label["source_counts"]["identity_unlinked_resources"] == 1
+assert any(row["identity"]["canonical_id"] is None for row in unlinked_same_label["resources"])
+assert any(row["identity"]["canonical_id"] == "netbox:device:42" for row in unlinked_same_label["resources"])
+assert any(row["identity"]["source_identities"].get("proxmox") == ["proxmox:alpha:qemu:900"] for row in unlinked_same_label["resources"])
+linked_host_duplicate_inventory = module.summarize(
+    {"data": [{
+        "id": "node/alpha", "type": "node", "node": "alpha", "name": "alpha",
+        "status": "online", "source_identity": "proxmox:alpha:node:alpha",
+    }]},
+    {"results": [{"id": 41, "name": "alpha"}, {"id": 42, "name": "alpha"}]},
+    None,
+    identity_links={"proxmox:alpha:node:alpha": 41},
+)
+linked_inventory_rows = {
+    row["identity"]["source_identities"].get("netbox", [None])[0]: row
+    for row in linked_host_duplicate_inventory["resources"]
+    if row["identity"]["source_identities"].get("netbox")
+}
+assert linked_inventory_rows["netbox:device:41"]["identity"]["canonical_id"] == "netbox:device:41"
+assert linked_inventory_rows["netbox:device:41"]["conflicts"] == []
+assert any("no stable identity link" in item for item in linked_inventory_rows["netbox:device:42"]["conflicts"])
+assert linked_host_duplicate_inventory["source_counts"]["identity_unlinked_resources"] == 0
+kuma_parent_name_collision = module.summarize(
+    None,
+    {"results": [{"id": 43, "name": "shared-host-label"}]},
+    {"monitors": [{
+        "id": "77", "source_identity": "kuma:monitor:77", "name": "shared-host-label",
+        "status": "up", "last_updated": "2026-09-14T11:59:00+00:00",
+    }]},
+    identity_links={"kuma:monitor:77": 43},
+)
+assert len(kuma_parent_name_collision["resources"]) == 2
+assert all(any("no stable identity link" in item for item in row["conflicts"])
+           for row in kuma_parent_name_collision["resources"])
+kuma_collision_monitor = next(
+    row for row in kuma_parent_name_collision["resources"] if row["availability"]
+)
+assert kuma_collision_monitor["identity"]["link_status"] == "RELATED_PARENT"
 inventory_only = module.summarize(
     {"data": []},
     {"results": [{"name": "compute-alpha"}]},
@@ -266,6 +337,30 @@ root = Path("integrations/homelab-readonly").resolve()
 sys.path.insert(0, str(root))
 import server
 
+assert server._proxmox_permissions_url(
+    "https://pve.example.test:8006/api2/json/cluster/resources"
+) == "https://pve.example.test:8006/api2/json/access/permissions"
+assert server._proxmox_guest_visibility({"data": {
+    "/vms": {"VM.Audit": 1},
+}}) == {"status": "COMPLETE", "scope": "ALL_GUESTS", "scoped_guest_count": None}
+assert server._proxmox_guest_visibility({"data": {
+    "/": {"VM.Audit": 1}, "/vms/102": {"VM.Audit": 1, "NoAccess": 1},
+}}) == {"status": "PARTIAL", "scope": "ALL_GUESTS_WITH_EXCLUSIONS", "scoped_guest_count": None}
+assert server._proxmox_guest_visibility({"data": {
+    "/vms/101": {"VM.Audit": 1}, "/vms/102": {"VM.Audit": 1},
+}}) == {"status": "PARTIAL", "scope": "SELECTED_GUESTS", "scoped_guest_count": 2}
+assert server._proxmox_guest_visibility({"data": {
+    "/pool/inference": {"VM.Audit": 1},
+}}) == {"status": "PARTIAL", "scope": "SELECTED_GUESTS", "scoped_guest_count": None}
+assert server._proxmox_guest_visibility({"data": {}}) == {
+    "status": "PARTIAL", "scope": "NO_GUEST_AUDIT", "scoped_guest_count": 0,
+}
+assert server._aggregate_proxmox_guest_visibility([
+    {"status": "COMPLETE", "scope": "ALL_GUESTS"},
+    {"status": "UNKNOWN", "scope": "UNKNOWN"},
+]) == {"status": "UNKNOWN", "scope": "MIXED"}
+print("PASS effective Proxmox guest visibility distinguishes cluster-wide, selected, and unknown scope")
+
 os.environ.update({
     "HADES_UPTIME_KUMA_URL": "https://status.example.test",
     "HADES_UPTIME_KUMA_STATUS_SLUG": "hades-status",
@@ -343,6 +438,11 @@ runtime_fixture = {
     "maxmem": 8589934592, "disk": 10737418240, "maxdisk": 53687091200,
     "uptime": 3600, "unrelated_secret_like_field": "must-not-escape",
 }
+node_fixture = {
+    "id": "node/hypervisor-alpha", "type": "node", "node": "hypervisor-alpha",
+    "name": "hypervisor-alpha", "status": "online", "cpu": 0.375,
+    "mem": 4 * 1024**3, "maxmem": 16 * 1024**3,
+}
 device_fixture = {
     "id": 75, "name": "service-host-alpha", "primary_ip4": {"address": "192.0.2.75/24"},
 }
@@ -353,7 +453,9 @@ service_fixture = {
 }
 def fixture_fetch(url, *_args, **_kwargs):
     if url == "https://pve.example.test/cluster/resources":
-        return {"data": [runtime_fixture]}
+        return {"data": [node_fixture, runtime_fixture]}
+    if url == "https://pve.example.test/access/permissions":
+        return {"data": {"/vms": {"VM.Audit": 1}}}
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": [device_fixture]}
     if url == "https://netbox.example.test/api/ipam/services/":
@@ -366,7 +468,7 @@ def fixture_fetch(url, *_args, **_kwargs):
 server._fetch = fixture_fetch
 summary = server.homelab_summary()
 assert summary["status"] == "OK", summary
-assert summary["source_counts"]["proxmox_runtime_rows"] == 1, summary
+assert summary["source_counts"]["proxmox_runtime_rows"] == 2, summary
 runtime_row = next(row for row in summary["resources"] if row["name"] == "hades-core")
 assert runtime_row["runtime"] == {
     "name": "hades-core", "node": "hypervisor-alpha", "type": "qemu", "vmid": 102,
@@ -375,11 +477,95 @@ assert runtime_row["runtime"] == {
     "disk": 10737418240, "maxdisk": 53687091200, "uptime": 3600,
 }, runtime_row
 assert runtime_row["currently_online"] is True
+assert isinstance(runtime_row["identity"], dict)
+assert "link_status" in runtime_row["identity"]
 assert summary["source_counts"]["netbox_service_rows"] == 1
 assert summary["service_catalog"]["retrieved_at"]
 assert {row["source"] for row in summary["source_observations"]} == {
-    "Proxmox:synthetic", "NetBox", "Uptime Kuma",
+    "Proxmox:synthetic", "Proxmox guest visibility (synthetic)", "NetBox", "Uptime Kuma",
 }
+assert summary["proxmox_guest_visibility"] == {
+    "status": "COMPLETE", "scope": "ALL_GUESTS",
+    "endpoints": [{"status": "COMPLETE", "scope": "ALL_GUESTS", "scoped_guest_count": None}],
+    "read_only": True,
+}
+assert summary["sources"] == summary["source_observations"]
+assert isinstance(summary["source_counts"]["identity_unlinked_resources"], int)
+guest_index = summary["proxmox_guest_inventory"]
+assert guest_index["status"] == "COMPLETE", guest_index
+assert guest_index["endpoints"][0]["source_id"] == "synthetic"
+assert guest_index["endpoints"][0]["status"] == "COMPLETE"
+assert guest_index["endpoints"][0]["node_inventory_status"] == "OBSERVED"
+assert guest_index["endpoints"][0]["nodes"] == [{
+    "source_identity": "proxmox:synthetic:node:hypervisor-alpha",
+    "node": "hypervisor-alpha", "name": "hypervisor-alpha", "status": "ONLINE",
+}], guest_index
+assert guest_index["endpoints"][0]["guests"] == [{
+    "source_identity": "proxmox:synthetic:qemu:102",
+    "node_identity": "proxmox:synthetic:node:hypervisor-alpha", "guest_type": "qemu",
+    "guest_id": "102", "name": "hades-core", "node": "hypervisor-alpha",
+    "status": "RUNNING",
+}], guest_index
+assert "192.0.2" not in str(guest_index)
+node_metrics = summary["proxmox_node_metrics"]
+assert node_metrics["status"] == "READABLE", node_metrics
+assert node_metrics["writes_performed"] is False
+node_sample = node_metrics["endpoints"][0]["nodes"][0]
+assert node_sample == {
+    "source_identity": "proxmox:synthetic:node:hypervisor-alpha",
+    "node": "hypervisor-alpha",
+    "name": "hypervisor-alpha", "status": "ONLINE",
+    "observed_at": next(row["retrieved_at"] for row in summary["source_observations"]
+                         if row["source"] == "Proxmox:synthetic"),
+    "canonical_id": None,
+    "identity_status": "UNLINKED",
+    "cpu_fraction": 0.375,
+    "memory_used_bytes": 4 * 1024**3,
+    "memory_total_bytes": 16 * 1024**3,
+}, node_sample
+linked_node_metrics = server._project_proxmox_node_metrics(
+    ("synthetic",), {"synthetic": [node_fixture]},
+    [{"source": "Proxmox:synthetic", "status": "AVAILABLE", "retrieved_at": "synthetic-time"}],
+    [], {"proxmox:synthetic:node:hypervisor-alpha": 75},
+)
+linked_node = linked_node_metrics["endpoints"][0]["nodes"][0]
+assert linked_node["canonical_id"] == "netbox:device:75", linked_node
+assert linked_node["identity_status"] == "LINKED", linked_node
+missing_node_timestamp = server._project_proxmox_node_metrics(
+    ("synthetic",), {"synthetic": [node_fixture]},
+    [{"source": "Proxmox:synthetic", "status": "AVAILABLE"}], [],
+)
+assert missing_node_timestamp["status"] == "UNKNOWN", missing_node_timestamp
+assert missing_node_timestamp["endpoints"][0]["error_code"] == "MISSING_SOURCE_TIMESTAMP"
+assert missing_node_timestamp["endpoints"][0]["nodes"] == []
+unstable_node_source = server._project_proxmox_node_metrics(
+    ("",), {"endpoint-1": [node_fixture]},
+    [{"source": "Proxmox:endpoint-1", "status": "AVAILABLE", "retrieved_at": "synthetic-time"}], [],
+)
+assert unstable_node_source["status"] == "UNKNOWN", unstable_node_source
+assert unstable_node_source["endpoints"][0]["source_id"] is None
+assert unstable_node_source["endpoints"][0]["error_code"] == "UNSTABLE_SOURCE_IDENTITY"
+assert unstable_node_source["endpoints"][0]["nodes"] == []
+large_guest_index = server._project_proxmox_guest_index(
+    ("synthetic",),
+    {"synthetic": [{
+        "source_identity": f"proxmox:synthetic:qemu:{guest_id}",
+        "type": "qemu", "vmid": guest_id, "status": "stopped",
+    } for guest_id in range(1, 514)]},
+    [{"source": "Proxmox:synthetic", "status": "AVAILABLE", "retrieved_at": "synthetic-time"}],
+    [{"coverage": {"status": "COMPLETE", "scope": "ALL_GUESTS"}}],
+)
+assert large_guest_index["status"] == "PARTIAL"
+assert large_guest_index["endpoints"][0]["truncated"] is True
+assert len(large_guest_index["endpoints"][0]["guests"]) == 512
+assert large_guest_index["endpoints"][0]["node_inventory_status"] == "UNKNOWN"
+unstable_guest_index = server._project_proxmox_guest_index(
+    ("",), {"endpoint-1": []},
+    [{"source": "Proxmox:endpoint-1", "status": "AVAILABLE", "retrieved_at": "synthetic-time"}],
+    [{"coverage": {"status": "COMPLETE", "scope": "ALL_GUESTS"}}],
+)
+assert unstable_guest_index["status"] == "PARTIAL", unstable_guest_index
+assert unstable_guest_index["endpoints"][0]["status"] == "PARTIAL"
 assert summary["service_catalog"]["services"] == [{
     "name": "Minecraft Java", "parent_type": "device", "parent_name": "service-host-alpha",
     "addresses": ["192.0.2.75"], "address_source": "NetBox parent primary IP",
@@ -390,20 +576,126 @@ assert "unrelated_secret_like_field" not in str(summary)
 server._fetch = original_fetch
 print("PASS homelab MCP summary retains bounded runtime telemetry without unrelated upstream fields")
 
+# Proxmox backup evidence is read-only, scope-filtered, bounded, and distinct
+# from proof of artifact contents or restoreability.
+assert "homelab_backup_status" in {tool.name for tool in server.TOOLS}
+def backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/backup"):
+        return {"data": [{"id": "nightly", "schedule": "02:00", "storage": "backup-store", "enabled": 1}]}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+    if "/nodes/hypervisor-alpha/tasks?" in url:
+        return {"data": [
+            {"id": "102", "status": "OK", "starttime": 1700000000, "endtime": 1700000300, "upid": "UPID:must-not-escape"},
+            {"id": "103", "status": "ERROR: private failure detail", "endtime": 1700000200},
+            {"status": "OK", "endtime": 1700000100},
+        ]}
+    raise AssertionError(f"unexpected synthetic backup URL: {url}")
+
+server._fetch = backup_fetch
+backup_report = server.homelab_backup_status()
+assert backup_report["status"] == "READABLE", backup_report
+backup_endpoint = backup_report["endpoints"][0]
+assert backup_endpoint["jobs_status"] == "HEALTHY"
+assert backup_endpoint["tasks_status"] == "HEALTHY"
+assert backup_endpoint["task_scope"] == "ALL_GUESTS"
+assert {task["status"] for task in backup_endpoint["tasks"]} == {"OK", "ERROR"}
+assert len(backup_endpoint["unattributed_tasks"]) == 1
+assert "UPID:" not in json.dumps(backup_report)
+assert "private-user" not in json.dumps(backup_report)
+assert "private failure detail" not in json.dumps(backup_report)
+backup_text = server.format_homelab_backup_status(backup_report)
+assert "doesn't verify backup contents" in backup_text
+assert backup_report["retrieved_at"] in backup_text
+assert backup_report["formatted_summary"] == backup_text
+print("PASS Proxmox backup reads disclose scope/freshness and avoid artifact/restore claims")
+
+def selected_backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms/102": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/backup"):
+        return {"data": []}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+    if "/nodes/hypervisor-alpha/tasks?" in url:
+        return {"data": [
+            {"id": "102", "status": "OK", "endtime": 1700000300},
+            {"id": "103", "status": "OK", "endtime": 1700000200},
+        ]}
+    raise AssertionError(f"unexpected selected-scope backup URL: {url}")
+
+server._fetch = selected_backup_fetch
+selected_backup = server.homelab_backup_status()["endpoints"][0]
+assert selected_backup["task_scope"] == "SELECTED_GUESTS"
+assert [task["guest_id"] for task in selected_backup["tasks"]] == ["102"]
+assert selected_backup["tasks_status"] == "PARTIAL"
+server._fetch = original_fetch
+print("PASS Proxmox backup task history is filtered to effective VM.Audit scope")
+
+# Recent activity composes bounded Proxmox task history with NetBox record
+# timestamps, preserves partial scope, and avoids claiming a complete log.
+from datetime import datetime, timezone
+activity_now = datetime.now(timezone.utc).isoformat()
+def activity_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/resources"):
+        return {"data": [
+            {"type": "node", "node": "hypervisor-alpha"},
+            {"type": "qemu", "vmid": 102, "name": "hades-core"},
+        ]}
+    if "/nodes/hypervisor-alpha/tasks?" in url:
+        return {"data": [
+            {"id": "102", "type": "qmstart", "status": "OK", "starttime": int(datetime.now().timestamp())},
+            {"id": "999", "type": "qmstop", "status": "OK", "starttime": int(datetime.now().timestamp())},
+            {"id": "102", "type": "qmstart", "status": "OK", "starttime": 1},
+        ]}
+    if url.startswith("https://netbox.example.test/api/dcim/devices/?"):
+        return {"count": 1, "results": [{"id": 75, "name": "service-host-alpha", "last_updated": activity_now}]}
+    if url.startswith("https://netbox.example.test/api/ipam/services/?"):
+        return {"count": 1, "results": [{"id": 21, "name": "Minecraft Java", "last_updated": activity_now}]}
+    raise AssertionError(f"unexpected synthetic activity URL: {url}")
+
+server._fetch = activity_fetch
+activity = server.homelab_recent_activity(24)
+assert activity["status"] == "READABLE", activity
+activity_endpoint = activity["endpoints"][0]
+assert activity_endpoint["scope"] == "ALL_GUESTS", activity_endpoint
+assert {(row["guest_id"], row["task_type"]) for row in activity_endpoint["events"]} == {
+    ("102", "qmstart"), ("999", "qmstop"),
+}, activity_endpoint
+assert {row["object_type"] for row in activity["netbox"]["objects"]} == {"device", "service"}
+activity_text = server.format_homelab_recent_activity(activity)
+assert "Recent recorded activity" in activity_text and "complete homelab change log" in activity_text
+assert "private" not in activity_text.casefold()
+server._fetch = original_fetch
+print("PASS recent activity composes scoped Proxmox tasks and NetBox timestamps without claiming a complete change log")
+
 # A failed independent Proxmox endpoint must not discard rows retrieved from
 # another endpoint, and the summary must preserve per-source retrieval status.
 os.environ.update({
     "HADES_PROXMOX_RESOURCES_URLS": "https://pve-a.example.test/cluster/resources,https://pve-b.example.test/cluster/resources",
     "HADES_PROXMOX_SOURCE_IDS": "alpha,beta",
 })
+alpha_resource_reads = 0
 def partial_fetch(url, *_args, **_kwargs):
+    global alpha_resource_reads
     if url == "https://pve-a.example.test/cluster/resources":
+        alpha_resource_reads += 1
+        if alpha_resource_reads > 1:
+            raise OSError("synthetic endpoint unavailable on the repeated read")
         return {"data": [{
             "id": "qemu/102", "type": "qemu", "vmid": 102,
             "name": "hades-core", "node": "alpha", "status": "running",
         }]}
     if url == "https://pve-b.example.test/cluster/resources":
         raise OSError("synthetic endpoint timeout")
+    if url == "https://pve-a.example.test/access/permissions":
+        return {"data": {"/vms/102": {"VM.Audit": 1}}}
+    if url == "https://pve-b.example.test/access/permissions":
+        raise OSError("synthetic permission read timeout")
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": [device_fixture]}
     if url == "https://netbox.example.test/api/ipam/services/":
@@ -417,15 +709,131 @@ server._fetch = partial_fetch
 partial = server.homelab_summary()
 assert partial["status"] == "PARTIAL", partial
 assert any((row["runtime"] or {}).get("vmid") == 102 for row in partial["resources"])
-pve_sources = [row for row in partial["source_observations"] if row["source"].startswith("Proxmox:")]
+pve_sources = [row for row in partial["source_observations"]
+               if row["source"].startswith("Proxmox:") and "guest visibility" not in row["source"]]
 assert [(row["source"], row["status"]) for row in pve_sources] == [
     ("Proxmox:alpha", "AVAILABLE"), ("Proxmox:beta", "UNAVAILABLE"),
 ]
 assert pve_sources[0]["retrieved_at"] and pve_sources[0]["rows"] == 1
 assert pve_sources[1]["retrieved_at"] is None
+assert partial["proxmox_guest_visibility"]["status"] == "PARTIAL"
+assert partial["proxmox_guest_visibility"]["scope"] == "MIXED"
+partial_node_metrics = partial["proxmox_node_metrics"]
+assert partial_node_metrics["status"] == "PARTIAL", partial_node_metrics
+assert [row["status"] for row in partial_node_metrics["endpoints"]] == ["AVAILABLE", "UNAVAILABLE"]
+assert partial_node_metrics["endpoints"][0]["node_inventory_status"] == "UNKNOWN"
+partial_guest_sources = {
+    row["source_id"]: row for row in partial["proxmox_guest_inventory"]["endpoints"]
+}
+assert partial_guest_sources["alpha"]["status"] == "PARTIAL", partial_guest_sources
+assert partial_guest_sources["beta"]["status"] == "UNAVAILABLE", partial_guest_sources
+assert partial_guest_sources["alpha"]["guests"][0]["source_identity"] == "proxmox:alpha:qemu:102"
 assert next(row for row in partial["source_observations"] if row["source"] == "Uptime Kuma")["rows"] == 1
+current_after_outage = server.homelab_summary()
+assert current_after_outage["status"] == "PARTIAL", current_after_outage
+assert current_after_outage["source_counts"]["proxmox_runtime_rows"] == 0
+assert current_after_outage["online_names"] == []
+assert not any(
+    (row.get("runtime") or {}).get("vmid") == 102
+    for row in current_after_outage["resources"]
+)
+latest_pve_sources = [row for row in current_after_outage["source_observations"]
+                      if row["source"].startswith("Proxmox:") and "guest visibility" not in row["source"]]
+assert [row["status"] for row in latest_pve_sources] == ["UNAVAILABLE", "UNAVAILABLE"]
+assert all(row["retrieved_at"] is None for row in latest_pve_sources)
+assert any(row["source"] == "Uptime Kuma" and row["status"] == "AVAILABLE"
+           for row in current_after_outage["source_observations"])
 server._fetch = original_fetch
-print("PASS partial Proxmox outage preserves successful source rows and per-source freshness")
+print("PASS partial Proxmox outage preserves successful rows and does not promote a prior read")
+
+def netbox_outage_fetch(url, *_args, **_kwargs):
+    if url == "https://pve-a.example.test/cluster/resources":
+        return {"data": [{
+            "id": "qemu/102", "type": "qemu", "vmid": 102,
+            "name": "hades-core", "node": "alpha", "status": "running",
+        }]}
+    if url == "https://pve-a.example.test/access/permissions":
+        return {"data": {"/vms/102": {"VM.Audit": 1}}}
+    if url in {
+        "https://pve-b.example.test/cluster/resources",
+        "https://pve-b.example.test/access/permissions",
+        "https://netbox.example.test/api/dcim/devices/",
+        "https://netbox.example.test/api/ipam/services/",
+    }:
+        raise OSError("synthetic canonical source unavailable")
+    if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
+        return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
+    if url == "https://status.example.test/api/status-page/hades-status":
+        return {"publicGroupList": [{"monitorList": [{"id": 5, "name": "monitor-alpha", "type": "ping"}]}]}
+    raise AssertionError(f"unexpected synthetic outage URL: {url}")
+
+# Seed a matching NetBox inventory row through its explicit stable identity
+# link, then fail NetBox while Proxmox remains current. This proves a prior
+# inventory join is not retained across summary calls after source failure.
+original_identity_links = identity_path.read_text(encoding="utf-8")
+identity_path.write_text(json.dumps({"links": [
+    {"source_identity": "proxmox:alpha:qemu:102", "netbox_device_id": 102},
+]}), encoding="utf-8")
+identity_path.chmod(0o600)
+seed_device = {"id": 102, "name": "hades-core", "role": "application"}
+def netbox_seed_fetch(url, *_args, **_kwargs):
+    if url == "https://pve-a.example.test/cluster/resources":
+        return {"data": [{
+            "id": "qemu/102", "type": "qemu", "vmid": 102,
+            "name": "hades-core", "node": "alpha", "status": "running",
+        }]}
+    if url == "https://pve-b.example.test/cluster/resources":
+        return {"data": []}
+    if url in {
+        "https://pve-a.example.test/access/permissions",
+        "https://pve-b.example.test/access/permissions",
+    }:
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url == "https://netbox.example.test/api/dcim/devices/":
+        return {"results": [seed_device]}
+    if url == "https://netbox.example.test/api/ipam/services/":
+        return {"results": []}
+    if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
+        return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
+    if url == "https://status.example.test/api/status-page/hades-status":
+        return {"publicGroupList": [{"monitorList": [{"id": 5, "name": "monitor-alpha", "type": "ping"}]}]}
+    raise AssertionError(f"unexpected synthetic NetBox seed URL: {url}")
+
+server._fetch = netbox_seed_fetch
+netbox_seed = server.homelab_summary()
+seed_resource = next(
+    row for row in netbox_seed["resources"]
+    if (row.get("runtime") or {}).get("vmid") == 102
+)
+assert seed_resource["identity"]["canonical_id"] == "netbox:device:102", seed_resource
+assert seed_resource["inventory_device_id"] == 102, seed_resource
+
+# NetBox is now unavailable; the Proxmox guest stays live and Kuma keeps its
+# old heartbeat. No inventory from the successful prior call may survive.
+server._fetch = netbox_outage_fetch
+netbox_outage = server.homelab_summary()
+assert netbox_outage["status"] == "PARTIAL", netbox_outage
+assert netbox_outage["source_counts"]["netbox_inventory_rows"] == 0
+assert netbox_outage["source_counts"]["proxmox_runtime_rows"] == 1
+assert "hades-core" in netbox_outage["online_names"]
+outage_resource = next(
+    row for row in netbox_outage["resources"]
+    if (row.get("runtime") or {}).get("vmid") == 102
+)
+assert outage_resource["runtime"]["status"] == "running", outage_resource
+assert outage_resource["inventory_device_id"] is None, outage_resource
+assert outage_resource["identity"]["canonical_id"] is None, outage_resource
+assert outage_resource["identity"]["link_status"] == "LINK_TARGET_MISSING", outage_resource
+assert any("not returned by the current inventory read" in item for item in outage_resource["conflicts"]), outage_resource
+netbox_observation = next(row for row in netbox_outage["source_observations"] if row["source"] == "NetBox")
+assert netbox_observation["status"] == "UNAVAILABLE" and netbox_observation["retrieved_at"] is None
+assert netbox_outage["service_catalog"]["status"] == "UNAVAILABLE"
+assert netbox_outage["availability_summary"][0]["freshness"] == "STALE"
+assert next(row for row in netbox_outage["source_observations"] if row["source"] == "Uptime Kuma")["status"] == "AVAILABLE"
+identity_path.write_text(original_identity_links, encoding="utf-8")
+identity_path.chmod(0o600)
+server._fetch = original_fetch
+print("PASS NetBox failure drops prior linked inventory while preserving live runtime and stale Kuma state")
 
 result = server.homelab_compute_capabilities()
 assert result["status"] == "OK"

@@ -181,7 +181,7 @@ def homelab_summary():
             "name": "hades-core",
             "runtime_status": "running",
             "currently_online": True,
-            "runtime": {"name": "hades-core", "vmid": 802, "status": "running"},
+            "runtime": {"name": "hades-core", "vmid": 202, "status": "running"},
         }, {
             "name": "Minecraft Server",
             "runtime_status": "NOT_OBSERVED",

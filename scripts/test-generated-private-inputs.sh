@@ -92,7 +92,7 @@ grep -q 'integrations/grocy-mcp/launch.py' "$fixture/private/profile/config.yaml
 grep -q 'GROCY_API_KEY_FILE: "${HADES_GROCY_API_KEY_FILE}"' "$fixture/private/profile/config.yaml"
 ! grep -q 'GROCY_API_KEY:' "$fixture/private/profile/config.yaml"
 ! grep -q '^GROCY_API_KEY=' "$fixture/private/profile/hermes.env"
-! grep -R -E '/home/scootz|172\.18\.0\.1:11434|192\.168\.[0-9]+\.[0-9]+|ollama-host:11434' "$fixture/private/profile" >/dev/null
+! grep -R -E '/home/[[:alnum:]_.-]+|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]+\.[0-9]+(:[0-9]+)?|192\.168\.[0-9]+\.[0-9]+|https?://[^/[:space:]]+:11434' "$fixture/private/profile" >/dev/null
 api_key=$(sed -n 's/^HADES_HERMES_API_KEY=//p' "$fixture/private/operator.env")
 test -n "$api_key"
 grep -qx "API_SERVER_KEY=$api_key" "$fixture/private/profile/hermes.env"

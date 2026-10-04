@@ -11,7 +11,7 @@ assert 'Household finance request denied before model invocation' in source
 assert "and owner_finance_request" in source
 assert "and not _hades_is_meal_budget_intent(current_text)" in source
 assert "and not _hades_is_meal_budget_intent(user_message)" in source
-assert "I can't access Scotty's " in source and 'finances. That information is owner-only' in source
+assert "I can't access the owner's " in source and 'finances. That information is owner-only' in source
 assert 'api_calls": 0' in source
 assert 'spend|spending|spent' in source
 finance = re.compile(r'\b(?:finance|finances|spend|spending|spent|budget|transaction|account|money|cost|paid|expense|expenses)\b', re.I)

@@ -192,6 +192,14 @@ def _hades_phase2_backup_freshness_response(user_text, subject, scope):
     text = str(user_text or "")
     if not _hades_is_backup_freshness_intent(text):
         return None
+    # Explicit Proxmox/homelab backup questions belong to the current
+    # infrastructure source. Never answer those from HADES repository-check
+    # records just because a Phase 2 check happens to exist.
+    if re.search(
+        r"\b(?:proxmox|vzdump|homelab|homlab|home\s+lab|(?:vm|guest)\s+backups?)\b",
+        text, re.IGNORECASE,
+    ):
+        return None
     if not subject or scope not in {"owner", "household"}:
         return "I couldn't verify this HADES session, so I couldn't read backup status."
     try:
@@ -293,6 +301,10 @@ def _hades_phase2_backup_response(user_text, subject, scope, phase2_session_key=
     """Owner-only Backup Check route; promotion uses the shared typed lifecycle."""
     text = str(user_text or "")
     if text.lstrip().startswith("### Task:"):
+        return None
+    # A restore-clone state question is an infrastructure read, not a request
+    # to create, run, or change the repository Backup Check lifecycle.
+    if _hades_backup_restore_guest_state_intent(text):
         return None
     backup_intent = bool(re.search(r"\b(?:backup|backups|bakup|bakups)\b", text, re.IGNORECASE))
     lowered = text.casefold()
@@ -4680,7 +4692,1009 @@ def _hades_homelab_availability_groups(availability):
     return groups
 
 
-def _hades_direct_homelab_read(user_text, subject="", scope=""):
+def _hades_broad_homelab_status_intent(text):
+    """Recognize short owner questions that ask for a whole-lab status read."""
+    return bool(re.search(
+        r"^\s*(?:what(?:['’]s|\s+is)\s+(?:down|degraded|wrong|broken|fucked)|"
+        r"anything\s+(?:down|dying|wrong|broken))\s*[?.!]*\s*$",
+        str(text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_service_coverage_intent(text):
+    """Recognize owner requests for services HADES cannot currently verify."""
+    return bool(re.search(
+        r"\b(?:which|what|list|show|tell)\b.{0,80}\b(?:homelab|home\s+lab|infrastructure)\b.{0,100}\b(?:services?|applications?|endpoints?)\b.{0,80}\b(?:verify|confirm|check|unknown|unavailable|down|health|working)\b|"
+        r"\b(?:which|what|list|show|tell)\b.{0,60}\b(?:services?|applications?|endpoints?)\b.{0,80}\b(?:can(?:not|'t)|unable\s+to|unverified|unknown|unavailable|down|verify|confirm|check)\b|"
+        r"\b(?:homelab|home\s+lab|infrastructure)\b.{0,80}\b(?:services?|applications?|endpoints?)\b.{0,80}\b(?:can't|cannot|unable|unverified|unknown|unavailable)\b",
+        str(text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_service_coverage_response(summary):
+    """Explain coverage gaps without treating a responding probe as app health."""
+    if not isinstance(summary, dict):
+        return "I couldn't read the current homelab service-check summary."
+    parts = []
+    catalog = summary.get("service_catalog") if isinstance(summary.get("service_catalog"), dict) else {}
+    catalog_status = str(catalog.get("status") or "UNKNOWN").upper()
+    catalog_coverage = str(catalog.get("coverage") or "UNKNOWN").upper()
+    services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
+    if catalog_status == "OK" and (
+        catalog_coverage == "EMPTY"
+        or (not services and catalog.get("truncated") is not True)
+    ):
+        parts.append("The service catalog is reachable but empty, so expected application placement cannot be compared with current checks.")
+    elif catalog_status in {"NOT_CONFIGURED", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "ERROR"}:
+        parts.append("The service catalog is not currently available, so expected application placement cannot be compared with current checks.")
+    elif services:
+        parts.append(f"The service catalog lists {len(services)} application services, but the catalog alone does not establish their current health.")
+    visibility = summary.get("proxmox_guest_visibility") if isinstance(summary.get("proxmox_guest_visibility"), dict) else {}
+    if str(visibility.get("status") or "").upper() in {"PARTIAL", "UNKNOWN"}:
+        parts.append("Guest visibility is partial or unknown, so services on unreported guests remain unverified.")
+    availability = summary.get("availability_summary") if isinstance(summary.get("availability_summary"), list) else []
+    groups = _hades_homelab_availability_groups(availability)
+    if groups["down"]:
+        parts.append("Fresh configured probes are failing for: " + ", ".join(groups["down"][:8]) + ".")
+    if groups["unknown"]:
+        parts.append("Current probe state is unknown or stale for: " + ", ".join(
+            item["name"] for item in groups["unknown"][:8]
+        ) + ".")
+    if groups["up"]:
+        parts.append(f"{len(groups['up'])} configured probes responded, but that does not confirm application login or workload readiness.")
+    if not availability:
+        parts.append("No configured service-check observations were returned.")
+    if summary.get("retrieved_at"):
+        parts.append(f"The source read completed at {str(summary['retrieved_at'])[:80]}.")
+    return " ".join(parts) or "I don't have enough current service evidence to identify coverage."
+
+
+def _hades_homelab_provenance_followup(user_text, conversation_history=None):
+    if not re.search(
+        r"\b(?:how\s+do\s+you\s+know(?:\s+that)?|what(?:['’]s|\s+is)\s+the\s+source|"
+        r"when\s+was\s+that\s+checked|when\s+did\s+you\s+check|"
+        r"is\s+that\s+(?:netbox|live)|source\s+provenance)\b",
+        str(user_text or ""), re.IGNORECASE,
+    ):
+        return False
+    rows = conversation_history if isinstance(conversation_history, list) else []
+    current = " ".join(str(user_text or "").split()).casefold()
+    for row in reversed(rows):
+        if not isinstance(row, dict) or row.get("role") != "user":
+            continue
+        content = " ".join(str(row.get("content") or "").split())
+        if content.casefold() == current:
+            continue
+        return _hades_is_homelab_intent(content)
+    return False
+
+
+def _hades_homelab_provenance_response(summary):
+    rows = (
+        summary.get("sources") or summary.get("source_observations") or []
+        if isinstance(summary, dict) else []
+    )
+    sources = [
+        row for row in rows if isinstance(row, dict) and row.get("source")
+    ] if isinstance(rows, list) else []
+    if not sources:
+        return "I refreshed the homelab view, but the current source reads did not include provenance details."
+    details = []
+    for row in sources[:8]:
+        name = " ".join(str(row.get("source") or "").split())[:100]
+        status = " ".join(str(row.get("status") or "UNKNOWN").replace("_", " ").lower().split())
+        stamp = " ".join(str(row.get("retrieved_at") or "").split())[:64]
+        details.append(f"{name}: {status}; " + (f"read at {stamp}" if stamp else "read time unavailable"))
+    return (
+        "I refreshed the configured homelab sources for this answer. "
+        + "; ".join(details)
+        + ". These are source-read times, not proof that older observations remain live. "
+        "NetBox describes intended inventory, Proxmox reports runtime state, and configured probes report availability; those sources are not interchangeable."
+    )
+
+
+def _hades_homelab_conflict_intent(text):
+    return bool(re.search(
+        r"\b(?:source\s+conflicts?|conflicts?|contradictions?|disagreements?|mismatches?)\b|"
+        r"\b(?:sources?|netbox|proxmox|kuma)\b.{0,45}\b(?:disagree|contradict|conflict|mismatch)\b|"
+        r"\b(?:intended|planned)\b.{0,30}\b(?:observed|runtime)\b",
+        str(text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_conflict_response(summary):
+    conflicts = summary.get("conflicts", []) if isinstance(summary, dict) else []
+    if not isinstance(conflicts, list) or not conflicts:
+        return (
+            "The current bounded source read reported no linked-record conflicts. "
+            "That does not prove inventory coverage is complete; unlinked or unreported records remain unknown."
+        )
+    details = []
+    label_collisions = []
+    for item in conflicts[:8]:
+        if not isinstance(item, dict):
+            continue
+        name = " ".join(str(item.get("name") or "Unnamed resource").split())[:100]
+        reasons = item.get("reasons") if isinstance(item.get("reasons"), list) else []
+        clean_reasons = [
+            " ".join(str(reason).split())[:180]
+            for reason in reasons[:4] if isinstance(reason, str) and reason.strip()
+        ]
+        if clean_reasons and all(
+            reason.casefold().startswith(("display label is shared", "display name is ambiguous"))
+            for reason in clean_reasons
+        ):
+            label_collisions.append(f"{name}: {clean_reasons[0]}")
+        else:
+            details.append(f"{name}: {'; '.join(clean_reasons) or 'sources do not align'}")
+    if not details and not label_collisions:
+        return "The source read reported conflict rows in an unreadable form; I can't safely summarize them."
+    if details:
+        response = (
+            "The current sources report these inventory/runtime disagreements: "
+            + ". ".join(details)
+            + ". I kept those records separate instead of choosing one source as universal truth."
+        )
+    else:
+        response = "I found no cross-source inventory disagreement among the records compared in this read."
+    if label_collisions:
+        response += " Shared display labels remain separate by stable source identity: " + ". ".join(label_collisions) + "."
+    return response
+
+
+def _hades_homelab_guest_visibility_intent(text):
+    return bool(
+        re.search(r"\b(?:guests?|vms?|virtual\s+machines?|containers?)\b", str(text or ""), re.IGNORECASE)
+        and re.search(
+            r"\b(?:all|every|complete|completeness|scope|visible|visibility|permissions?|audit|coverage)\b",
+            str(text or ""), re.IGNORECASE,
+        )
+    )
+
+
+def _hades_homelab_guest_visibility_response(summary):
+    visibility = summary.get("proxmox_guest_visibility") if isinstance(summary, dict) else None
+    if not isinstance(visibility, dict):
+        return "I couldn't verify current Proxmox guest-visibility scope."
+    status = str(visibility.get("status") or "UNKNOWN").upper()
+    scope = str(visibility.get("scope") or "UNKNOWN").upper()
+    if status == "COMPLETE" and scope == "ALL_GUESTS":
+        answer = "The latest read-only permission checks report all guests in scope at each configured Proxmox source."
+    elif status == "PARTIAL" and scope == "SELECTED_GUESTS":
+        answer = "The permission checks show selected guests only; HADES cannot verify other guest state."
+    elif status == "PARTIAL" and scope == "ALL_GUESTS_WITH_EXCLUSIONS":
+        answer = "The permission checks show broad guest scope with explicit exclusions, so the guest view is not complete."
+    elif status == "PARTIAL" and scope == "NO_GUEST_AUDIT":
+        answer = "At least one configured Proxmox source has no guest-audit visibility, so HADES cannot verify all guest state."
+    elif status == "PARTIAL" or scope == "MIXED":
+        answer = "Configured Proxmox guest-visibility scopes are mixed or incomplete, so HADES cannot claim a complete guest view."
+    elif status == "NOT_CONFIGURED":
+        answer = "Proxmox guest-visibility checks are not configured, so HADES cannot verify guest scope."
+    else:
+        answer = "HADES could not verify effective Proxmox permissions, so it cannot confirm complete guest visibility."
+    answer += " This comes from read-only effective-permission data, not from assuming the returned guest list is exhaustive."
+    rows = summary.get("source_observations") or summary.get("sources") or []
+    times = [
+        " ".join(str(row.get("retrieved_at") or "").split())[:64]
+        for row in rows if isinstance(row, dict)
+        and str(row.get("source") or "").startswith("Proxmox guest visibility")
+        and row.get("retrieved_at")
+    ] if isinstance(rows, list) else []
+    if times:
+        answer += " Permission-scope reads completed at " + ", ".join(times[:4]) + "."
+    return answer
+
+
+def _hades_homelab_service_placement_intent(text):
+    return bool(re.search(
+        r"\bwhere(?:['’]s|\s+is)\s+.{1,100}\s+(?:running|hosted|located|live)\b|"
+        r"\bwhere\s+does\s+.{1,100}\s+(?:run|live)\b",
+        str(text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_service_placement_response(user_text, summary):
+    catalog = summary.get("service_catalog") if isinstance(summary, dict) else None
+    if not isinstance(catalog, dict):
+        return "I couldn't read the current application-service inventory, so I can't verify where that service is intended to run."
+    status = str(catalog.get("status") or "UNKNOWN").upper()
+    coverage = str(catalog.get("coverage") or "UNKNOWN").upper()
+    services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
+    if status in {"NOT_CONFIGURED", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "ERROR"}:
+        return "The application-service inventory is not currently available, so I can't verify service placement. I won't substitute a remembered location."
+    requested = re.search(
+        r"\bwhere(?:['’]s|\s+is)\s+(?P<name>.+?)\s+(?:running|hosted|located|live)\b|"
+        r"\bwhere\s+does\s+(?P<does>.+?)\s+(?:run|live)\b",
+        str(user_text or ""), re.IGNORECASE,
+    )
+    target = " ".join(str((requested.group("name") or requested.group("does")) if requested else "").split()).strip(" ?.!`")
+    matches = [
+        row for row in services if isinstance(row, dict) and row.get("name")
+        and (str(row["name"]).casefold() in str(user_text or "").casefold()
+             or (target and str(row["name"]).casefold() == target.casefold()))
+    ]
+    if len(matches) > 1:
+        names = ", ".join(" ".join(str(row.get("name") or "").split())[:80] for row in matches[:5])
+        return f"I found multiple matching service records: {names}. Which service do you mean?"
+    if not matches:
+        if coverage == "EMPTY" or (status == "OK" and not services):
+            return "The application-service catalog is reachable but empty, so I can't verify where that service is intended to run. I won't substitute a remembered location."
+        if target:
+            return f"The current application-service inventory has no matching record for {target[:100]}, so I can't verify its placement. I won't substitute a remembered location."
+        return "The current application-service inventory has no matching record, so I can't verify service placement. I won't substitute a remembered location."
+    row = matches[0]
+    name = " ".join(str(row.get("name") or "the service").split())[:100]
+    parent = " ".join(str(row.get("parent_name") or "").split())[:100]
+    if not parent:
+        return f"NetBox lists {name}, but its intended parent host is not recorded. This inventory does not establish where the service is currently running."
+    return f"NetBox lists {name} on {parent} as intended placement. That inventory does not establish whether the service is currently running or healthy."
+
+
+def _hades_homelab_resource_ranking_intent(text):
+    return bool(re.search(
+        r"\b(?:what(?:['’]s|\s+is)\s+(?:the\s+)?(?:most|highest)\s+(?:loaded|used)|"
+        r"which\s+(?:server|machine|host|node)\s+(?:is\s+)?(?:the\s+)?most\s+(?:loaded|used)|"
+        r"what(?:['’]s|\s+is)\s+using\s+the\s+most\s+resources?|"
+        r"(?:highest|most)\s+(?:cpu|memory|ram)\s+(?:use|usage|utili[sz]ation))\b",
+        str(text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_resource_ranking_response(summary):
+    node_metrics = summary.get("proxmox_node_metrics") if isinstance(summary, dict) else None
+    if isinstance(node_metrics, dict):
+        return _hades_homelab_node_metrics_ranking_response(node_metrics)
+    resources = summary.get("resources", []) if isinstance(summary, dict) else []
+    if not isinstance(resources, list):
+        resources = []
+    cpu_rows = []
+    memory_rows = []
+    online_records = []
+    status_conflict = False
+    for item in resources[:256]:
+        if not isinstance(item, dict):
+            continue
+        runtime = item.get("runtime") or item.get("runtime_detail")
+        runtime = runtime if isinstance(runtime, dict) else {}
+        runtime_status = str(item.get("runtime_status") or runtime.get("status") or "").casefold()
+        currently_online = item.get("currently_online")
+        runtime_positive = runtime_status in {"running", "online"}
+        runtime_negative = runtime_status in {"stopped", "offline"}
+        if (currently_online is False and runtime_positive) or (currently_online is True and runtime_negative):
+            status_conflict = True
+            continue
+        if currently_online is False or runtime_negative:
+            continue
+        if currently_online is not True and not runtime_positive:
+            continue
+        name = " ".join(str(item.get("name") or runtime.get("name") or "Unnamed runtime").split())[:100]
+        online_records.append(name)
+        cpu = runtime.get("cpu")
+        if isinstance(cpu, (int, float)) and not isinstance(cpu, bool) and 0 <= cpu <= 1:
+            cpu_rows.append((float(cpu) * 100, name))
+        memory, maximum = runtime.get("mem"), runtime.get("maxmem")
+        if (
+            isinstance(memory, (int, float)) and not isinstance(memory, bool)
+            and isinstance(maximum, (int, float)) and not isinstance(maximum, bool)
+            and 0 <= memory <= maximum and maximum > 0
+        ):
+            memory_rows.append((float(memory) / float(maximum), float(memory), float(maximum), name))
+    if not online_records:
+        response = (
+            "The current Proxmox metrics read returned no rows with an explicit online/running status, "
+            "so I can't rank server load; this does not establish that no machines are online."
+        )
+        if status_conflict:
+            response += " A record with conflicting current-status fields was excluded from the ranking."
+        return response
+    parts = []
+    if cpu_rows:
+        usage, name = max(cpu_rows)
+        parts.append(f"Highest current Proxmox CPU reading: {name} at {usage:.1f}% among {len(cpu_rows)} online records with CPU data")
+    if memory_rows:
+        ratio, memory, maximum, name = max(memory_rows)
+        gib = 1024 ** 3
+        parts.append(
+            f"Highest current Proxmox memory use: {name} at {memory / gib:.1f} / {maximum / gib:.1f} GiB "
+            f"({ratio * 100:.1f}%) among {len(memory_rows)} online records with valid memory data"
+        )
+    if not parts:
+        return "The current Proxmox records are online, but they contain no comparable CPU or memory readings."
+    parts.append(
+        f"This compares {len(online_records)} currently online Proxmox runtime record(s); "
+        "host and guest readings are separate and may overlap. "
+        "It does not measure process-level use, guest filesystem use, GPU load, or inference hosts not represented in Proxmox"
+    )
+    if status_conflict:
+        parts.append("A record with conflicting current-status fields was excluded from the ranking.")
+    observations = summary.get("source_observations") or summary.get("sources") or []
+    proxmox_rows = [
+        row for row in observations if isinstance(row, dict)
+        and str(row.get("source") or "").casefold().startswith("proxmox")
+        and row.get("retrieved_at")
+    ] if isinstance(observations, list) else []
+    if proxmox_rows:
+        parts.append("Proxmox source read completed at " + str(proxmox_rows[0]["retrieved_at"])[:64])
+    return ". ".join(parts) + "."
+
+
+def _hades_homelab_node_metrics_ranking_response(node_metrics):
+    """Rank only current Proxmox host/node samples, separate from guests."""
+    import math
+
+    endpoints = node_metrics.get("endpoints") if isinstance(node_metrics.get("endpoints"), list) else []
+    online_nodes = []
+
+    def finite_number(value):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        try:
+            converted = float(value)
+        except (OverflowError, TypeError, ValueError):
+            return None
+        return converted if math.isfinite(converted) else None
+
+    for endpoint in endpoints:
+        if not isinstance(endpoint, dict) or str(endpoint.get("status") or "").upper() != "AVAILABLE":
+            continue
+        nodes = endpoint.get("nodes") if isinstance(endpoint.get("nodes"), list) else []
+        for node in nodes:
+            if not isinstance(node, dict) or str(node.get("status") or "").upper() != "ONLINE":
+                continue
+            name = " ".join(str(node.get("name") or "Unnamed Proxmox node").split())[:100]
+            cpu = finite_number(node.get("cpu_fraction"))
+            cpu_percent = cpu * 100 if cpu is not None and 0 <= cpu <= 1 else None
+            used = finite_number(node.get("memory_used_bytes"))
+            total = finite_number(node.get("memory_total_bytes"))
+            memory = (used, total) if used is not None and total is not None and 0 <= used <= total and total > 0 else None
+            online_nodes.append((name, cpu_percent, memory, node.get("observed_at")))
+
+    if not online_nodes:
+        if str(node_metrics.get("status") or "UNKNOWN").upper() == "UNKNOWN":
+            error_codes = {
+                str(endpoint.get("error_code") or "").upper()
+                for endpoint in endpoints if isinstance(endpoint, dict)
+            }
+            if "MISSING_SOURCE_TIMESTAMP" in error_codes:
+                return (
+                    "Current Proxmox host/node status and load are unknown because a source read "
+                    "timestamp is missing; I can't rank host load."
+                )
+            if "UNSTABLE_SOURCE_IDENTITY" in error_codes:
+                return (
+                    "Current Proxmox host/node status and load are unknown because a source identity "
+                    "is unstable; I can't rank host load."
+                )
+            return (
+                "Current Proxmox host/node status and load are unknown; I can't rank host load."
+            )
+        return (
+            "The Proxmox metrics read returned no observed online host/node samples, "
+            "so I can't rank host load; this does not establish that no machines are online."
+        )
+    parts = []
+    cpu_rows = [row for row in online_nodes if row[1] is not None]
+    memory_rows = [row for row in online_nodes if row[2] is not None]
+    if cpu_rows:
+        highest = max(row[1] for row in cpu_rows)
+        leaders = [row for row in cpu_rows if abs(row[1] - highest) < 1e-9]
+        labels = ", ".join(sorted(row[0] for row in leaders)[:4])
+        checked = sorted({str(row[3]) for row in leaders if row[3]})
+        timestamp = f" (sampled {', '.join(checked)})" if checked else ""
+        parts.append(
+            f"Highest current Proxmox host CPU reading: {labels} at {highest:.1f}%{timestamp} "
+            f"among {len(cpu_rows)} observed online nodes with valid CPU data."
+        )
+    else:
+        parts.append("No comparable current Proxmox host CPU values were returned.")
+    if memory_rows:
+        ratios = [(row[2][0] / row[2][1], row) for row in memory_rows]
+        highest = max(ratio for ratio, _row in ratios)
+        leaders = [row for ratio, row in ratios if abs(ratio - highest) < 1e-9]
+        labels = ", ".join(sorted(row[0] for row in leaders)[:4])
+        if len(leaders) == 1:
+            used, total = leaders[0][2]
+            detail = f"{used / (1024 ** 3):.1f} / {total / (1024 ** 3):.1f} GiB"
+        else:
+            detail = f"{highest * 100:.1f}% (tied)"
+        checked = sorted({str(row[3]) for row in leaders if row[3]})
+        timestamp = f" (sampled {', '.join(checked)})" if checked else ""
+        parts.append(
+            f"Highest current Proxmox host memory use: {labels} at {detail} "
+            f"({highest * 100:.1f}%){timestamp} among {len(memory_rows)} observed online nodes with valid memory data."
+        )
+    else:
+        parts.append("No comparable current Proxmox host memory values were returned.")
+    parts.append(
+        f"This ranks {len(online_nodes)} observed online Proxmox host/node sample(s) only. "
+        "Guest readings are separate and may overlap; this does not measure GPU load or process-level use."
+    )
+    state = str(node_metrics.get("status") or "UNKNOWN").upper()
+    if state in {"PARTIAL", "UNAVAILABLE", "UNKNOWN"} or any(
+        endpoint.get("truncated") is True for endpoint in endpoints if isinstance(endpoint, dict)
+    ):
+        parts.append("One or more Proxmox node feeds were unavailable, unknown, or truncated; this is not a complete host ranking.")
+    return " ".join(parts)
+
+
+def _hades_homelab_proxmox_node_load_response(summary, target):
+    """Answer a named host-load question from a unique current node identity."""
+    import math
+
+    node_metrics = summary.get("proxmox_node_metrics") if isinstance(summary, dict) else None
+    if not isinstance(node_metrics, dict):
+        return None
+    target_key = re.sub(r"[^a-z0-9]+", "", str(target or "").casefold())
+    if not target_key:
+        return None
+    def identity_keys(value):
+        keys = {re.sub(r"[^a-z0-9]+", "", str(value or "").casefold())}
+        # Reconciled NetBox display labels can append an ordinal to separate
+        # duplicate inventory names. Treat the base name as an alias only;
+        # the normal unique-match check below still fails closed on collisions.
+        base = re.sub(r"\s+\([^()]{1,40}\)\s*$", "", str(value or "")).strip()
+        if base and base != value:
+            keys.add(re.sub(r"[^a-z0-9]+", "", base.casefold()))
+        return keys
+    matches = [
+        node for endpoint in node_metrics.get("endpoints", [])
+        if isinstance(endpoint, dict) and endpoint.get("status") == "AVAILABLE"
+        for node in endpoint.get("nodes", []) if isinstance(node, dict)
+        and target_key in identity_keys(node.get("name")) | identity_keys(node.get("node"))
+    ]
+    if len(matches) > 1:
+        return f"I can't verify current load for {str(target)[:100]}: multiple Proxmox node records match that name."
+    if not matches:
+        return (
+            f"I can't verify current load for {str(target)[:100]}: no current Proxmox node sample "
+            "uniquely matched that machine."
+        )
+    node = matches[0]
+    label = (
+        " ".join(str(target).split())[:100]
+        if target_key in identity_keys(node.get("name")) | identity_keys(node.get("node"))
+        else " ".join(str(node.get("name") or target).split())[:100]
+    )
+    state = str(node.get("status") or "UNKNOWN").upper()
+    observed_at = str(node.get("observed_at") or "time unavailable")[:80]
+    if state != "ONLINE":
+        return f"Proxmox node status for {label} is {state.casefold()} as of {observed_at}; current host load is unverified."
+    parts = [f"Proxmox reports {label} online; node metrics sampled at {observed_at}."]
+    cpu = node.get("cpu_fraction")
+    if isinstance(cpu, (int, float)) and not isinstance(cpu, bool) and math.isfinite(float(cpu)) and 0 <= cpu <= 1:
+        parts.append(f"Host CPU reading is {float(cpu) * 100:.1f}%.")
+    used, total = node.get("memory_used_bytes"), node.get("memory_total_bytes")
+    if (
+        isinstance(used, int) and not isinstance(used, bool) and used >= 0
+        and isinstance(total, int) and not isinstance(total, bool) and total > 0 and used <= total
+    ):
+        parts.append(f"Host memory is {used / (1024 ** 3):.1f} / {total / (1024 ** 3):.1f} GiB.")
+    if len(parts) == 1:
+        parts.append("No comparable current host CPU or memory values were returned.")
+    parts.append("These are host/node readings; guest readings may overlap. GPU and process-level use are separate.")
+    return " ".join(parts)
+
+
+def _hades_homelab_proxmox_node_load_target(text):
+    """Extract a bounded named-host target from a direct load question."""
+    patterns = (
+        r"\bhow\s+(?:loaded|busy)\s+is\s+(?P<target>[a-z0-9][a-z0-9 ._'’\-]{0,60}?)"
+        r"(?:\s+(?:right\s+)?now)?\s*[?.!]*$",
+        r"\bhow\s+much\s+(?:load|cpu|memory|ram)\s+is\s+on\s+(?P<target>[a-z0-9][a-z0-9 ._'’\-]{0,60}?)"
+        r"(?:\s+(?:right\s+)?now)?\s*[?.!]*$",
+        r"\bwhat(?:['’]s|\s+is)\s+(?P<target>[a-z0-9][a-z0-9 ._'’\-]{0,60}?)\s+"
+        r"(?:load|cpu|memory|ram)\s*(?:like)?\s*[?.!]*$",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, str(text or ""), re.IGNORECASE)
+        if match:
+            target = " ".join(match.group("target").split()).strip(" .?!,'’")
+            if target:
+                return target
+    return None
+
+
+def _hades_homelab_guest_index_host_target(user_text):
+    """Extract a named Proxmox host from a bounded guest-inventory question."""
+    text = str(user_text or "")
+    patterns = (
+        r"\bwhat(?:['’]s|\s+is)\s+running\s+on\s+(?P<target>[a-z0-9][a-z0-9 ._'’\-]{0,60}?)"
+        r"(?:\s+(?:right\s+)?now)?\s*[?.!]*$",
+        r"\b(?:which|what)\s+(?:guests?|vms?|virtual\s+machines?|containers?|cts)\b"
+        r"[^?.!]{0,80}?\b(?:on|at)\s+(?P<target>[a-z0-9][a-z0-9 ._'’\-]{0,60}?)"
+        r"(?:\s+(?:right\s+)?now)?\s*[?.!]*$",
+        r"\b(?:which|what)\s+(?P<target>[a-z0-9][a-z0-9 ._'’\-]{0,60}?)"
+        r"\s+(?:guests?|vms?|virtual\s+machines?|containers?|cts)\b",
+        r"\b(?:list|show)\s+(?P<target>[a-z0-9][a-z0-9 ._'’\-]{0,60}?)"
+        r"\s+(?:guests?|vms?|virtual\s+machines?|containers?|cts)\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            target = " ".join(match.group("target").split()).strip(" .?!,'’")
+            if target:
+                return target
+    return None
+
+
+def _hades_homelab_guest_index_workloads_on_host_response(text, summary, scope):
+    """List current Proxmox guests on one exactly matched node for owners."""
+    text = str(text or "")
+    target_text = _hades_homelab_guest_index_host_target(text)
+    if not target_text:
+        return None
+    if scope != "owner":
+        return "Detailed host and guest placement is available only in an owner session."
+    inventory = summary.get("proxmox_guest_inventory") if isinstance(summary, dict) else None
+    target_key = re.sub(r"[^a-z0-9]+", "", target_text.casefold())
+    if target_key in {"proxmox", "proxmoxcluster", "pve", "pvecluster"}:
+        return _hades_homelab_guest_inventory_response(summary)
+    endpoints = inventory.get("endpoints") if isinstance(inventory, dict) else None
+    if not isinstance(endpoints, list) or not endpoints:
+        return "I can't verify current Proxmox node or guest placement from the configured sources."
+    matches = []
+    for endpoint in endpoints:
+        if not isinstance(endpoint, dict):
+            continue
+        source_id = str(endpoint.get("source_id") or "")
+        nodes = endpoint.get("nodes") if isinstance(endpoint.get("nodes"), list) else []
+        for node in nodes[:128]:
+            if not isinstance(node, dict):
+                continue
+            identity = node.get("source_identity")
+            key = str(node.get("node") or "")
+            name = str(node.get("name") or "")
+            if (identity != f"proxmox:{source_id}:node:{key}"
+                    or not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", key)):
+                continue
+            if target_key in {
+                re.sub(r"[^a-z0-9]+", "", str(candidate).casefold())
+                for candidate in (key, name) if candidate
+            }:
+                matches.append((endpoint, node))
+    unique = {(str(node.get("source_identity")), id(endpoint)): (endpoint, node)
+              for endpoint, node in matches}
+    matches = list(unique.values())
+    if len(matches) != 1:
+        return "I can't identify exactly one observed current Proxmox node for that name; host placement is unknown or ambiguous."
+    endpoint, node = matches[0]
+    source_id = str(endpoint.get("source_id") or "")
+    node_identity = node.get("source_identity")
+    rows = endpoint.get("guests") if isinstance(endpoint.get("guests"), list) else []
+    guests = [row for row in rows[:512] if isinstance(row, dict)
+              and row.get("node_identity") == node_identity]
+    node_name = " ".join(str(node.get("name") or node.get("node") or "Proxmox node").split())[:100]
+    node_state = str(node.get("status") or "UNKNOWN").upper()
+    complete = bool(
+        str(endpoint.get("node_inventory_status") or "").upper() == "OBSERVED"
+        and str(endpoint.get("status") or "").upper() == "COMPLETE"
+        and str(endpoint.get("visibility_status") or "").upper() == "COMPLETE"
+        and str(endpoint.get("visibility_scope") or "").upper() == "ALL_GUESTS"
+        and endpoint.get("truncated") is not True
+    )
+    labels = []
+    for row in guests:
+        kind = "VM" if row.get("guest_type") == "qemu" else "CT" if row.get("guest_type") == "lxc" else "guest"
+        guest_id = str(row.get("guest_id") or "unknown ID")[:24]
+        label = " ".join(str(row.get("name") or "").split())[:100]
+        state = str(row.get("status") or "UNKNOWN").upper()
+        labels.append(f"{label + ' ' if label else ''}{kind} {guest_id} ({state})")
+    response = f"Proxmox reports node {node_name} as {node_state}. "
+    if labels:
+        response += "Visible guests: " + "; ".join(labels[:20]) + (f"; and {len(labels) - 20} more." if len(labels) > 20 else ".")
+    elif complete:
+        response += "The complete current guest inventory shows no VM/container guests on this node."
+    else:
+        response += "No matching visible guest rows were returned; node guest inventory is incomplete, so this does not establish that the node is empty."
+    if not complete and labels:
+        response += " Guest visibility or node coverage is incomplete, so additional guests may be unreported."
+    retrieved_at = str(endpoint.get("retrieved_at") or "")[:64]
+    response += f" Proxmox source {source_id} was read at {retrieved_at}." if retrieved_at else " The Proxmox read timestamp was not reported."
+    response += " Node state and VM/container power state do not establish application health."
+    return response
+
+
+def _hades_homelab_guest_inventory_intent(text):
+    """Recognize a request to list current VM/container power states."""
+    text = str(text or "")
+    if re.search(r"\b(?:visible|visibility|permissions?|audit|coverage|scope)\b|\bcan\s+(?:you|hades)\s+see\b", text, re.IGNORECASE):
+        return False
+    guest_plural = re.search(r"\b(?:vms|virtual\s+machines|guests|containers|cts)\b", text, re.IGNORECASE)
+    question = re.search(r"\b(?:what|which|list|show|inventory)\b", text, re.IGNORECASE)
+    state_or_collection = re.search(
+        r"\b(?:all|every|running|stopped|power\s+state|status|currently|right\s+now)\b",
+        text, re.IGNORECASE,
+    )
+    return bool(guest_plural and question and state_or_collection)
+
+
+def _hades_homelab_guest_inventory_response(summary):
+    """List bounded current guest states without treating partial scope as empty."""
+    inventory = summary.get("proxmox_guest_inventory") if isinstance(summary, dict) else None
+    endpoints = inventory.get("endpoints") if isinstance(inventory, dict) else None
+    if not isinstance(endpoints, list) or not endpoints:
+        return "I can't verify configured Proxmox guest sources right now, so I can't list current guest power states."
+    complete = bool(
+        str(inventory.get("status") or "").upper() == "COMPLETE"
+        and all(
+            isinstance(endpoint, dict)
+            and str(endpoint.get("status") or "").upper() == "COMPLETE"
+            and str(endpoint.get("visibility_status") or "").upper() == "COMPLETE"
+            and str(endpoint.get("visibility_scope") or "").upper() == "ALL_GUESTS"
+            and endpoint.get("truncated") is not True
+            for endpoint in endpoints
+        )
+    )
+    guests = {}
+    ambiguous = set()
+    for endpoint in endpoints:
+        if not isinstance(endpoint, dict):
+            continue
+        source_id = str(endpoint.get("source_id") or "")
+        rows = endpoint.get("guests") if isinstance(endpoint.get("guests"), list) else []
+        for row in rows[:512]:
+            if not isinstance(row, dict):
+                continue
+            identity = row.get("source_identity")
+            kind = row.get("guest_type")
+            guest_id = str(row.get("guest_id") or "")
+            if (
+                not isinstance(identity, str)
+                or not re.fullmatch(rf"proxmox:{re.escape(source_id)}:(?:qemu|lxc):[1-9][0-9]{{0,19}}", identity)
+                or kind not in {"qemu", "lxc"}
+                or not re.fullmatch(r"[1-9][0-9]{0,19}", guest_id)
+            ):
+                continue
+            if identity in guests:
+                ambiguous.add(identity)
+            else:
+                guests[identity] = row
+    if ambiguous:
+        for identity in ambiguous:
+            guests[identity] = {"guest_type": "unknown", "guest_id": identity.rsplit(":", 1)[-1], "status": "UNKNOWN"}
+    states = {"RUNNING": [], "STOPPED": [], "UNKNOWN": []}
+    for row in guests.values():
+        kind = "VM" if row.get("guest_type") == "qemu" else "CT" if row.get("guest_type") == "lxc" else "guest"
+        guest_id = str(row.get("guest_id") or "")
+        name = " ".join(str(row.get("name") or "").split())[:100]
+        label = f"{name} ({kind} {guest_id})" if name else f"{kind} {guest_id}"
+        node = " ".join(str(row.get("node") or "").split())[:100]
+        if node:
+            label += f" on {node}"
+        state = str(row.get("status") or "UNKNOWN").upper()
+        states[state if state in {"RUNNING", "STOPPED"} else "UNKNOWN"].append(label)
+    parts = [
+        "Complete effective VM.Audit scope covers every configured Proxmox source."
+        if complete else
+        "This lists only guests visible in the configured Proxmox reads; combined guest scope is incomplete or unknown."
+    ]
+    if not guests and complete:
+        parts.append("Proxmox reports no VM or container guests.")
+    elif not guests:
+        parts.append("No visible guest rows were returned; that does not establish an empty cluster.")
+    for state, heading in (("RUNNING", "Running"), ("STOPPED", "Stopped"), ("UNKNOWN", "State unknown")):
+        labels = states[state]
+        if labels:
+            parts.append(f"{heading}: " + "; ".join(labels[:20]) + (f"; and {len(labels) - 20} more" if len(labels) > 20 else "."))
+    times = [str(row.get("retrieved_at"))[:64] for row in endpoints if isinstance(row, dict) and row.get("retrieved_at")]
+    if times:
+        parts.append("Proxmox guest reads completed at " + "; ".join(times[:8]) + ".")
+    else:
+        parts.append("Proxmox guest-read timestamps were not reported.")
+    parts.append("This is VM/container power state, not application or service health.")
+    return " ".join(parts)
+
+
+def _hades_direct_homelab_guest_inventory_read(user_text, subject, scope):
+    """Read bounded Proxmox guest inventory for an authenticated owner."""
+    if not _hades_homelab_guest_inventory_intent(user_text):
+        return None
+    if scope != "owner":
+        return "Detailed Proxmox VM and container inventory is available only in an owner session."
+    if not subject:
+        return "I couldn't verify this owner session, so I can't read Proxmox guest inventory."
+    try:
+        summary = _hades_direct_homelab_tool_result("homelab_summary")
+    except Exception as exc:
+        _hades_logger.warning("Owner Proxmox guest inventory read failed: %s", type(exc).__name__)
+        return "I couldn't verify current Proxmox guest inventory from the configured read-only sources."
+    return _hades_homelab_guest_inventory_response(summary)
+
+
+def _hades_homelab_core_vm_placement_intent(user_text):
+    """Recognize explicit owner questions about the HADES Core Proxmox guest."""
+    return bool(re.search(
+        r"\bwhere(?:['’]s|\s+is)\s+(?:the\s+)?hades(?:\s+core)?(?:\s+vm)?\s+(?:running|hosted|located|live)\b|"
+        r"\bwhere\s+does\s+hades(?:\s+core)?\s+run\b|"
+        r"\b(?:which|what)\s+(?:machine|server|host)\s+(?:is\s+)?(?:running|hosting)\s+(?:the\s+)?hades(?:\s+core)?\b",
+        str(user_text or ""), re.IGNORECASE,
+    ))
+
+
+def _hades_homelab_core_vm_placement_index_response(summary):
+    """Resolve HADES Core placement only from a current guest inventory read."""
+    inventory = summary.get("proxmox_guest_inventory") if isinstance(summary, dict) else None
+    endpoints = inventory.get("endpoints") if isinstance(inventory, dict) else None
+    if not isinstance(endpoints, list) or not endpoints:
+        return "I can't verify HADES Core placement in the current Proxmox runtime inventory."
+    complete = bool(
+        str(inventory.get("status") or "").upper() == "COMPLETE"
+        and all(isinstance(endpoint, dict) and str(endpoint.get("status") or "").upper() == "COMPLETE"
+                and str(endpoint.get("visibility_scope") or "").upper() == "ALL_GUESTS"
+                and endpoint.get("truncated") is not True for endpoint in endpoints)
+    )
+    matches = []
+    for endpoint in endpoints:
+        if not isinstance(endpoint, dict):
+            continue
+        rows = endpoint.get("guests") if isinstance(endpoint.get("guests"), list) else []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            name_key = re.sub(r"[^a-z0-9]+", "", str(row.get("name") or "").casefold())
+            if name_key in {"hades", "hadescore", "hadesvm", "hadescorevm"}:
+                matches.append(row)
+    if not matches:
+        if complete:
+            return "The current complete Proxmox guest inventory has no guest with a HADES Core name. I can't infer where the application is hosted from this read."
+        return "I can't verify HADES Core placement because current Proxmox guest inventory is incomplete or unavailable."
+    placements = []
+    for row in matches[:8]:
+        guest_type = "VM" if row.get("guest_type") == "qemu" else "CT" if row.get("guest_type") == "lxc" else "guest"
+        guest_id = str(row.get("guest_id") or "unknown ID")
+        name = " ".join(str(row.get("name") or "HADES Core guest").split())[:100]
+        state = str(row.get("status") or "UNKNOWN").casefold()
+        node = " ".join(str(row.get("node") or "").split())[:100]
+        placement = f"{name} ({guest_type} {guest_id}) is {state}"
+        placements.append(placement + (f" on {node}" if node else "; its Proxmox node was not reported"))
+    if len(matches) > 8:
+        placements.append(f"{len(matches) - 8} additional matching guests were omitted")
+    response = "Proxmox reports " + "; ".join(placements) + "."
+    if not complete:
+        response += " Guest visibility is incomplete, so other matching guests may be unreported."
+    response += " This is guest placement and power state only; it does not verify HADES application health."
+    times = [str(row.get("retrieved_at"))[:64] for row in endpoints if isinstance(row, dict) and row.get("retrieved_at")]
+    if times:
+        response += " Guest inventory reads completed at " + "; ".join(times[:8]) + "."
+    return response
+
+
+def _hades_homelab_core_vm_placement_response(summary):
+    """Keep the existing owner route name as a thin compatibility wrapper."""
+    return _hades_homelab_core_vm_placement_index_response(summary)
+
+
+def _hades_homelab_core_vm_placement_guest_index_response(user_text, summary):
+    """Use the complete guest index when a composed adapter supplies it.
+
+    Return None for incumbent adapters without this optional field so their
+    established bounded resource route can remain active. Once an index is
+    present, incomplete scope must stay unknown rather than falling through to
+    the compact, potentially truncated resource list.
+    """
+    if not _hades_homelab_core_vm_placement_intent(user_text):
+        return None
+    inventory = summary.get("proxmox_guest_inventory") if isinstance(summary, dict) else None
+    if not isinstance(inventory, dict):
+        return None
+    return _hades_homelab_core_vm_placement_index_response(summary)
+
+
+def _hades_direct_homelab_core_vm_placement_read(user_text, subject, scope):
+    """Read HADES Core guest placement from the registered summary tool."""
+    if scope != "owner" or not subject or not _hades_homelab_core_vm_placement_intent(user_text):
+        return None
+    try:
+        summary = _hades_direct_homelab_tool_result("homelab_summary")
+    except Exception as exc:
+        _hades_logger.warning("Owner HADES Core placement read failed: %s", type(exc).__name__)
+        return "I couldn't verify HADES Core placement from the configured read-only sources."
+    return _hades_homelab_core_vm_placement_response(summary)
+
+
+def _hades_agent_zero_runtime_placement_response(user_text, service_catalog, scope=""):
+    """Describe configured Agent Zero reachability without claiming execution."""
+    if (
+        scope != "owner"
+        or not _hades_homelab_service_placement_intent(user_text)
+        or not re.search(r"\bagent\s*zero\b|\bagent0\b", str(user_text or ""), re.IGNORECASE)
+    ):
+        return None
+    configured_url = str(os.environ.get("AGENT_ZERO_URL") or "").strip()
+    catalog = service_catalog if isinstance(service_catalog, dict) else {}
+    coverage = str(catalog.get("coverage") or "UNKNOWN").upper()
+    catalog_status = str(catalog.get("status") or "UNKNOWN").upper()
+    services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
+    matching_services = [
+        row for row in services if isinstance(row, dict)
+        and re.search(r"\bagent\s*zero\b|\bagent0\b", str(row.get("name") or ""), re.IGNORECASE)
+    ]
+    if len(matching_services) > 1:
+        inventory = "NetBox has multiple Agent Zero application-service records, so intended placement is ambiguous."
+    elif len(matching_services) == 1 and matching_services[0].get("parent_name"):
+        inventory = (
+            f"NetBox lists Agent Zero on {' '.join(str(matching_services[0]['parent_name']).split())[:100]} as intended placement."
+        )
+    elif len(matching_services) == 1:
+        inventory = "NetBox lists Agent Zero, but its intended parent host is not recorded."
+    elif catalog_status == "OK" and coverage == "EMPTY":
+        inventory = "NetBox's application-service catalog is reachable but empty, so intended placement is not recorded there."
+    elif catalog_status == "OK" and coverage == "COMPLETE":
+        inventory = "NetBox has no matching Agent Zero application-service record, so intended placement is not recorded there."
+    else:
+        inventory = "NetBox application-service placement is unavailable or incomplete."
+    if not configured_url:
+        return (
+            "HADES has no explicit Agent Zero endpoint configured for a current reachability check. "
+            f"{inventory} I can't verify that Agent Zero is currently running."
+        )
+    try:
+        from urllib.parse import urlsplit
+        parsed = urlsplit(configured_url)
+        hostname = parsed.hostname or ""
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError:
+        return f"HADES's configured Agent Zero endpoint is invalid, so current reachability can't be checked. {inventory}"
+    if parsed.scheme not in {"http", "https"} or not hostname or not re.fullmatch(
+        r"[A-Za-z0-9.:%-]{1,253}", hostname
+    ):
+        return f"HADES's configured Agent Zero endpoint is invalid, so current reachability can't be checked. {inventory}"
+    import ipaddress
+    try:
+        local_endpoint = hostname.casefold() == "localhost" or ipaddress.ip_address(hostname).is_loopback
+    except ValueError:
+        local_endpoint = hostname.casefold() == "localhost"
+    host_label = f"[{hostname}]" if ":" in hostname and not hostname.startswith("[") else hostname
+    endpoint = f"loopback port {port}" if local_endpoint else f"{host_label}:{port}"
+    try:
+        responding = bool(_hades_agent_zero_available())
+    except Exception:
+        responding = False
+    from datetime import datetime, timezone
+    checked_at = datetime.now(timezone.utc).isoformat()
+    status = (
+        "The configured endpoint returned an HTTP response to HADES's bounded read-only probe."
+        if responding else
+        "HADES's bounded read-only probe could not reach the configured endpoint."
+    )
+    connector = (
+        f"HADES is configured to reach Agent Zero through {endpoint} on the HADES host."
+        if local_endpoint else
+        f"HADES is configured to reach Agent Zero at {endpoint}."
+    )
+    return (
+        f"{connector} {status} {inventory} This verifies endpoint reachability only, not Agent Zero delegation or task execution. "
+        f"Checked at {checked_at}."
+    )
+
+
+def _hades_direct_homelab_agent_zero_placement_read(user_text, subject, scope):
+    """Answer owner Agent Zero placement from protected config and a live probe."""
+    if scope != "owner" or not subject:
+        return None
+    if not _hades_homelab_service_placement_intent(user_text) or not re.search(
+        r"\bagent\s*zero\b|\bagent0\b", str(user_text or ""), re.IGNORECASE,
+    ):
+        return None
+    try:
+        summary = _hades_direct_homelab_tool_result("homelab_summary")
+    except Exception as exc:
+        _hades_logger.warning("Owner Agent Zero placement read failed: %s", type(exc).__name__)
+        return "I couldn't verify Agent Zero's configured endpoint or current reachability."
+    catalog = summary.get("service_catalog") if isinstance(summary, dict) else None
+    return _hades_agent_zero_runtime_placement_response(user_text, catalog, scope)
+
+
+def _hades_homelab_gpu_execution_intent(text):
+    """Identify owner questions about NVIDIA driver/GPU execution evidence."""
+    text = str(text or "")
+    driver = re.search(r"\b(?:nvidia|drivers?|cuda)\b", text, re.IGNORECASE)
+    gpu_execution = (
+        re.search(r"\b(?:gpus?|graphics\s+cards?)\b", text, re.IGNORECASE)
+        and re.search(
+            r"\b(?:execution|executing|process(?:es)?|utili[sz]ation|utili[sz]ed|using|compute\s+load|working|healthy|status|responding|loaded|active|running)\b",
+            text, re.IGNORECASE,
+        )
+    )
+    state_request = re.search(
+        r"\b(?:verify|check|status|health|healthy|working|running|active|loaded|execution|executing|utili[sz]ation|utili[sz]ed|responding)\b",
+        text, re.IGNORECASE,
+    )
+    return bool(state_request and (driver or gpu_execution))
+
+
+def _hades_homelab_gpu_execution_response(inventory, telemetry=None):
+    """Separate host NVIDIA query evidence from provider catalog observations."""
+    telemetry = telemetry if isinstance(telemetry, dict) else {}
+    telemetry_endpoints = telemetry.get("endpoints") if isinstance(telemetry.get("endpoints"), list) else []
+    readable_rows = []
+    unavailable_rows = []
+    for endpoint in telemetry_endpoints[:16]:
+        if not isinstance(endpoint, dict):
+            continue
+        inference_id = str(endpoint.get("inference_id") or "configured endpoint")
+        if endpoint.get("status") != "READABLE":
+            unavailable_rows.append(inference_id)
+            continue
+        devices = endpoint.get("devices") if isinstance(endpoint.get("devices"), list) else []
+        if not devices:
+            unavailable_rows.append(inference_id)
+            continue
+        for device in devices[:32]:
+            if not isinstance(device, dict):
+                continue
+            detail = f"{inference_id} GPU {device.get('index')}: NVIDIA query responded"
+            model = str(device.get("name") or "").strip()
+            if model:
+                detail += f" ({model[:80]})"
+            utilization = device.get("gpu_utilization_percent")
+            free, total = device.get("memory_free_mib"), device.get("memory_total_mib")
+            detail += f", {utilization}% utilization" if isinstance(utilization, int) and not isinstance(utilization, bool) else ", utilization unavailable"
+            if isinstance(free, int) and not isinstance(free, bool) and isinstance(total, int) and not isinstance(total, bool):
+                detail += f", {free} MiB free of {total} MiB"
+            readable_rows.append(detail)
+    if readable_rows:
+        checked_at = str(telemetry.get("retrieved_at") or "check time unavailable")[:80]
+        response = (
+            "Live host telemetry: " + "; ".join(readable_rows[:24])
+            + f". Read at {checked_at}. A responding NVIDIA query confirms the driver interface answered; utilization is a point-in-time signal, not proof that a requested workload completed."
+        )
+        if unavailable_rows or str(telemetry.get("status") or "").upper() == "PARTIAL":
+            response += " Telemetry was unavailable for: " + ", ".join(unavailable_rows[:16] or ["one or more configured endpoints"]) + "."
+    else:
+        response = (
+            "Host NVIDIA driver health and actual GPU execution are unknown because "
+            "live host-driver and GPU-process telemetry are not configured or currently unavailable."
+        )
+    if not isinstance(inventory, dict):
+        return response + " I couldn't read configured inference-provider status either."
+    endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
+    reports = []
+    for endpoint in endpoints[:16]:
+        if not isinstance(endpoint, dict):
+            continue
+        identity = str(endpoint.get("source_identity") or "").removeprefix("inference:")
+        label = " ".join(re.sub(r"[._-]+", " ", identity).split())[:80] or "Configured provider"
+        state = str(endpoint.get("status") or "UNKNOWN").upper()
+        detail = f"{label}: provider API responding" if state in {"READABLE", "HEALTHY", "OK"} else (
+            f"{label}: provider read is partial" if state in {"PARTIAL", "DEGRADED"}
+            else f"{label}: provider API status {state.casefold()}"
+        )
+        loaded_status = str(endpoint.get("loaded_status") or "UNKNOWN").upper()
+        loaded = endpoint.get("loaded_models") if isinstance(endpoint.get("loaded_models"), list) else []
+        names = [" ".join(str(model.get("name") or "").split())[:128]
+                 for model in loaded[:8] if isinstance(model, dict) and model.get("name")]
+        if loaded_status == "CURRENT":
+            detail += "; provider reports " + ("resident model(s): " + ", ".join(names) if names else "no models resident")
+        elif loaded_status == "UNSUPPORTED":
+            detail += "; provider does not expose a residency check"
+        else:
+            detail += "; residency is unknown"
+        reports.append(detail)
+    if reports:
+        response += " Current configured provider observations: " + "; ".join(reports) + "."
+    else:
+        response += f" Configured inference-provider observations are {str(inventory.get('status') or 'UNKNOWN').casefold()}; no endpoint details were returned."
+    retrieved_at = str(inventory.get("retrieved_at") or "").strip()
+    if retrieved_at:
+        response += f" Provider inventory was read at {retrieved_at[:80]}."
+    return response + " Provider catalog or residency responses do not verify driver health, GPU execution, or successful generation; no generation request was made."
+
+
+def _hades_direct_homelab_gpu_execution_read(user_text, subject, scope):
+    """Read restricted NVIDIA telemetry and provider state for owner questions."""
+    if scope != "owner" or not subject or not _hades_homelab_gpu_execution_intent(user_text):
+        return None
+    try:
+        telemetry = _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
+        inventory = _hades_direct_homelab_tool_result("homelab_inference_inventory")
+    except Exception as exc:
+        _hades_logger.warning("Owner GPU execution read failed: %s", type(exc).__name__)
+        return "I couldn't verify current NVIDIA telemetry or inference-provider status."
+    return _hades_homelab_gpu_execution_response(inventory, telemetry)
+
+
+def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_history=None):
     """Answer simple owner homelab-status questions from canonical read sources.
 
     These questions are safe to answer without a model round trip.  That matters
@@ -4723,17 +5737,44 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         r"responding|reachable|performance|slow|broken|failing|wrong|unavailable)\b",
         text,
         re.IGNORECASE,
-    )
+    ) and not _hades_homelab_resource_ranking_intent(text)
     if _definition_question:
         return None
+    if _hades_homelab_guest_visibility_intent(text) and scope != "owner":
+        return "I can't provide internal guest inventory or permission details from this account."
+    if _hades_homelab_service_placement_intent(text) and scope != "owner":
+        return "Detailed service placement is available only in an owner session."
+    if _hades_homelab_resource_ranking_intent(text) and scope != "owner":
+        return "Detailed infrastructure load information is available only in an owner session."
+    node_load_target = _hades_homelab_proxmox_node_load_target(text)
+    if node_load_target and scope != "owner":
+        return "Detailed infrastructure load information is available only in an owner session."
+    if _hades_homelab_guest_inventory_intent(text):
+        if scope != "owner":
+            return "Detailed Proxmox VM and container inventory is available only in an owner session."
+        if not subject:
+            return "I couldn't verify this owner session, so I can't read Proxmox guest inventory."
     if not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
-        r"node|computers?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
+        r"node|computers?|guests?|containers?|running\s+on|what\s+is\s+on|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"minecraft|jellyfin)\b",
         text,
         re.IGNORECASE,
-    ) and not _hades_configured_homelab_alias_match(text):
+    ) and not _hades_configured_homelab_alias_match(text) and not (
+        scope == "owner" and (
+            _hades_homelab_service_coverage_intent(text)
+            or _hades_broad_homelab_status_intent(text)
+            or _hades_homelab_provenance_followup(text, conversation_history)
+            or _hades_homelab_conflict_intent(text)
+            or _hades_homelab_guest_visibility_intent(text)
+            or _hades_homelab_service_placement_intent(text)
+            or _hades_homelab_resource_ranking_intent(text)
+            or node_load_target
+        )
+    ):
         return None
+    if _hades_broad_homelab_status_intent(text) and scope != "owner":
+        return _hades_household_homelab_boundary_response(text)
     workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip()
     if not workdir:
         # The generated service already runs from the reconciled repository;
@@ -4743,30 +5784,32 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
     if not workdir:
         return None
     try:
-        from pathlib import Path
-        import importlib.util
-
-        adapter = Path(workdir) / "integrations" / "homelab-readonly" / "server.py"
-        if not adapter.is_file():
-            # Hermes may change cwd during gateway bootstrap. Use only the
-            # explicitly configured installed integration root as fallback.
-            configured_root = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
-            if not configured_root:
-                return None
-            deployed_root = Path(configured_root)
-            candidate = deployed_root / "integrations" / "homelab-readonly" / "server.py"
-            if candidate.is_file():
-                adapter = candidate
-        if not adapter.is_file():
+        summary = _hades_direct_homelab_tool_result("homelab_summary")
+        if not isinstance(summary, dict):
             return None
-        if str(adapter.parent) not in __import__("sys").path:
-            __import__("sys").path.insert(0, str(adapter.parent))
-        spec = importlib.util.spec_from_file_location("hades_direct_homelab", adapter)
-        if spec is None or spec.loader is None:
-            return None
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        summary = module.homelab_summary()
+        if node_load_target:
+            if not subject:
+                return "I couldn't verify this owner session, so I can't read host load."
+            node_load_response = _hades_homelab_proxmox_node_load_response(summary, node_load_target)
+            if node_load_response:
+                return node_load_response
+        host_workload_response = _hades_homelab_guest_index_workloads_on_host_response(text, summary, scope)
+        if host_workload_response:
+            if scope == "owner" and not subject:
+                return "I couldn't verify this owner session, so I can't read host and guest placement."
+            return host_workload_response
+        if scope == "owner" and _hades_homelab_service_coverage_intent(text):
+            return _hades_homelab_service_coverage_response(summary)
+        if scope == "owner" and _hades_homelab_provenance_followup(text, conversation_history):
+            return _hades_homelab_provenance_response(summary)
+        if scope == "owner" and _hades_homelab_conflict_intent(text):
+            return _hades_homelab_conflict_response(summary)
+        if _hades_homelab_guest_visibility_intent(text):
+            return _hades_homelab_guest_visibility_response(summary)
+        if _hades_homelab_service_placement_intent(text):
+            return _hades_homelab_service_placement_response(text, summary)
+        if _hades_homelab_resource_ranking_intent(text):
+            return _hades_homelab_resource_ranking_response(summary)
         endpoint_response = _hades_service_endpoint_response(
             text,
             summary.get("service_catalog") if isinstance(summary, dict) else None,
@@ -4868,7 +5911,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
                 if matrix_path:
                     os.environ["HADES_CAPABILITY_MATRIX_FILE"] = matrix_path
                 try:
-                    compute = module.homelab_compute_capabilities()
+                    compute = _hades_direct_homelab_tool_result("homelab_compute_capabilities")
                 finally:
                     if previous_matrix is None:
                         os.environ.pop("HADES_CAPABILITY_MATRIX_FILE", None)
@@ -5010,6 +6053,18 @@ def _hades_direct_homelab_read(user_text, subject="", scope=""):
         down = monitor_groups["down"]
         if down:
             response += " Uptime Kuma's configured probes failed: " + ", ".join(down) + "."
+        if _hades_broad_homelab_status_intent(text):
+            unknown = monitor_groups["unknown"]
+            if down:
+                response = "Current configured checks reporting a failure: " + ", ".join(down[:6]) + ". "
+            else:
+                response = "No fresh configured probe is reporting a failure. "
+            if unknown:
+                response += "Current status is unverified for: " + ", ".join(
+                    item["name"] for item in unknown[:6]
+                ) + ". "
+            response += "Probe results cover configured checks only; unmonitored services remain unknown."
+            return response
         if detailed_request:
             runtime_details = [
                 (item.get("runtime_detail") or item.get("runtime")) for item in resources
@@ -5101,6 +6156,521 @@ def _hades_direct_homelab_write_guidance(user_text):
     )
 
 
+def _hades_direct_proxmox_backup_status(user_text, subject, scope):
+    """Read owner-scoped Proxmox vzdump configuration and archived tasks."""
+    text = str(user_text or "")
+    if scope != "owner" or not subject:
+        return None
+    if not re.search(
+        r"\b(?:proxmox|vzdump|homelab|homlab|home\s+lab)\b.{0,50}\bbackups?\b|"
+        r"\bbackups?\b.{0,50}\b(?:proxmox|vzdump|homelab|homlab|home\s+lab)\b",
+        text, re.IGNORECASE,
+    ):
+        return None
+    if re.search(
+        r"\b(?:run|create|schedule|pause|resume|delete|remove|edit|change|fix|repair|"
+        r"restart|reboot|start|stop|deploy|provision|restore|mount)\b",
+        text, re.IGNORECASE,
+    ):
+        return None
+    try:
+        from pathlib import Path
+        import importlib.util
+
+        workdir = os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "").strip() or os.getcwd()
+        adapter = Path(workdir) / "integrations" / "homelab-readonly" / "server.py"
+        if not adapter.is_file():
+            configured_root = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
+            if configured_root:
+                candidate = Path(configured_root) / "integrations" / "homelab-readonly" / "server.py"
+                if candidate.is_file():
+                    adapter = candidate
+        if not adapter.is_file():
+            return "I couldn't verify Proxmox backup status because the read-only source adapter is unavailable."
+        if str(adapter.parent) not in __import__("sys").path:
+            __import__("sys").path.insert(0, str(adapter.parent))
+        spec = importlib.util.spec_from_file_location("hades_direct_proxmox_backup", adapter)
+        if spec is None or spec.loader is None:
+            return "I couldn't verify Proxmox backup status because the read-only source adapter is unavailable."
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = _hades_direct_homelab_tool_result("homelab_backup_status")
+        return module.format_homelab_backup_status(report)
+    except Exception as exc:
+        _hades_logger.warning("Direct Proxmox backup read failed: %s", type(exc).__name__)
+        return "I couldn't verify current Proxmox backup status from the configured read-only sources."
+
+
+def _hades_direct_homelab_recent_activity(user_text, subject, scope):
+    """Answer explicit owner recent-change questions from bounded live sources."""
+    text = str(user_text or "")
+    if scope != "owner" or not subject or not re.search(
+        r"\b(?:what\s+changed|recent\s+(?:activity|changes?)|activity\s+(?:since|in\s+the\s+last)|changes?\s+since\s+yesterday)\b",
+        text, re.IGNORECASE,
+    ):
+        return None
+    if re.search(r"\b(?:change|edit|fix|restart|reboot|deploy|update|remove|delete|create)\b", text, re.IGNORECASE):
+        return None
+    try:
+        from pathlib import Path
+        import importlib.util
+
+        workdir = os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "").strip() or os.getcwd()
+        adapter = Path(workdir) / "integrations" / "homelab-readonly" / "server.py"
+        if not adapter.is_file():
+            configured_root = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
+            if configured_root:
+                adapter = Path(configured_root) / "integrations" / "homelab-readonly" / "server.py"
+        if not adapter.is_file():
+            return "I couldn't verify recent homelab activity because the read-only source adapter is unavailable."
+        if str(adapter.parent) not in __import__("sys").path:
+            __import__("sys").path.insert(0, str(adapter.parent))
+        spec = importlib.util.spec_from_file_location("hades_direct_homelab_activity", adapter)
+        if spec is None or spec.loader is None:
+            return "I couldn't verify recent homelab activity because the read-only source adapter is unavailable."
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        report = _hades_direct_homelab_tool_result("homelab_recent_activity")
+        return module.format_homelab_recent_activity(report)
+    except Exception as exc:
+        _hades_logger.warning("Direct homelab activity read failed: %s", type(exc).__name__)
+        return "I couldn't verify recent homelab activity from the configured read-only sources."
+
+
+def _hades_backup_restore_guest_state_intent(user_text):
+    """Recognize owner questions asking whether temporary restore guests remain."""
+    text = str(user_text or "")
+    return bool(
+        re.search(r"\b(?:backup|restore|recovery)\b", text, re.IGNORECASE)
+        and re.search(r"\b(?:restore|restored|recovery|recovered)\b", text, re.IGNORECASE)
+        and re.search(r"\b(?:temporary|temp|clone|clones|guest|guests|vm|vms|container|containers)\b", text, re.IGNORECASE)
+        and re.search(r"\b(?:still|remain|remaining|left|present|exist|running|stopped|currently|right\s+now)\b", text, re.IGNORECASE)
+    )
+
+
+def _hades_backup_restore_guest_state_response(activity, summary):
+    """Compare bounded restore task evidence with a complete current guest index."""
+    if not isinstance(activity, dict) or not isinstance(summary, dict):
+        return "I couldn't verify whether recent restore guests remain present."
+    activity_endpoints = activity.get("endpoints") if isinstance(activity.get("endpoints"), list) else []
+    source_status = activity.get("source_status") if isinstance(activity.get("source_status"), dict) else {}
+    history_complete = bool(activity_endpoints) and str(source_status.get("proxmox") or "").upper() == "READABLE"
+    for endpoint in activity_endpoints:
+        if not isinstance(endpoint, dict):
+            history_complete = False
+            continue
+        if (
+            str(endpoint.get("status") or "").upper() != "HEALTHY"
+            or str(endpoint.get("scope") or "").upper() != "ALL_GUESTS"
+            or endpoint.get("truncated") is True
+        ):
+            history_complete = False
+
+    recent_restores = {}
+    for endpoint in activity_endpoints:
+        if not isinstance(endpoint, dict):
+            continue
+        source_id = endpoint.get("source_id")
+        if not isinstance(source_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,80}", source_id):
+            history_complete = False
+            continue
+        events = endpoint.get("events")
+        if not isinstance(events, list):
+            history_complete = False
+            continue
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            task_type = str(event.get("task_type") or "").casefold()
+            if task_type not in {"qmrestore", "vzrestore"}:
+                continue
+            guest_id = str(event.get("guest_id") or "")
+            if not re.fullmatch(r"[1-9][0-9]{0,19}", guest_id):
+                continue
+            guest_type = "qemu" if task_type == "qmrestore" else "lxc"
+            event_time = event.get("endtime") or event.get("starttime") or 0
+            if isinstance(event_time, bool) or not isinstance(event_time, (int, float)):
+                event_time = 0
+            key = (source_id, guest_type, guest_id)
+            previous = recent_restores.get(key)
+            if previous is None or event_time > previous[1]:
+                recent_restores[key] = (str(event.get("status") or "UNKNOWN").upper(), event_time)
+
+    if not recent_restores:
+        if not history_complete:
+            return (
+                "Proxmox restore-task history is unavailable, partial, truncated, or not fully visible. "
+                "I can't determine whether recent restore guests remain to be checked."
+            )
+        return (
+            "I found no archived Proxmox restore task in the last seven days. "
+            "Older restore operations and guests created outside that window were not checked."
+        )
+
+    inventory = summary.get("proxmox_guest_inventory")
+    inventory_endpoints = inventory.get("endpoints") if isinstance(inventory, dict) else None
+    inventory_endpoints = inventory_endpoints if isinstance(inventory_endpoints, list) else []
+    inventory_by_source = {
+        str(endpoint.get("source_id")): endpoint
+        for endpoint in inventory_endpoints
+        if isinstance(endpoint, dict) and isinstance(endpoint.get("source_id"), str)
+    }
+    read_times = []
+    parts = []
+    for (source_id, guest_type, guest_id), (task_status, _event_time) in sorted(recent_restores.items()):
+        endpoint = inventory_by_source.get(source_id)
+        entries = endpoint.get("guests") if isinstance(endpoint, dict) else []
+        entries = entries if isinstance(entries, list) else []
+        identity = f"proxmox:{source_id}:{guest_type}:{guest_id}"
+        matches = [row for row in entries if isinstance(row, dict) and row.get("source_identity") == identity]
+        label = f"VM {guest_id}" if guest_type == "qemu" else f"container {guest_id}"
+        current_scope_complete = bool(
+            isinstance(endpoint, dict)
+            and str(endpoint.get("status") or "").upper() == "COMPLETE"
+            and str(endpoint.get("visibility_status") or "").upper() == "COMPLETE"
+            and str(endpoint.get("visibility_scope") or "").upper() == "ALL_GUESTS"
+            and endpoint.get("truncated") is not True
+        )
+        if len(matches) == 1:
+            state = str(matches[0].get("status") or "UNKNOWN").upper()
+            if state in {"RUNNING", "STOPPED"}:
+                parts.append(f"{label} is present and Proxmox currently reports it {state.casefold()}.")
+            else:
+                parts.append(f"{label} is present, but its current power state is unknown.")
+        elif len(matches) > 1:
+            parts.append(f"{label} has duplicate current records, so I can't resolve its state safely.")
+        elif current_scope_complete:
+            parts.append(f"{label} is absent from the current complete guest inventory.")
+        else:
+            parts.append(f"I can't tell whether {label} remains; current guest inventory for its source is incomplete or unknown.")
+        if task_status in {"RUNNING", "ERROR", "UNKNOWN"}:
+            parts.append(f"Its latest archived restore task is {task_status.casefold()}.")
+        if isinstance(endpoint, dict) and endpoint.get("retrieved_at"):
+            read_times.append(str(endpoint["retrieved_at"])[:64])
+
+    if not history_complete:
+        parts.append("Restore-task history is incomplete, so other recent restore guests may be unaccounted for.")
+    parts.append("The task window is limited to the last seven days; older restore operations were not checked.")
+    parts.append("This checks Proxmox guest presence and power state only; it does not verify boot, operating-system, or application health.")
+    activity_times = [str(row.get("retrieved_at"))[:64] for row in activity_endpoints if isinstance(row, dict) and row.get("retrieved_at")]
+    if activity_times:
+        parts.append("Restore-task reads completed at " + ", ".join(activity_times[:4]) + ".")
+    if read_times:
+        parts.append("Current guest inventory reads completed at " + ", ".join(read_times[:4]) + ".")
+    return " ".join(parts)
+
+
+def _hades_direct_backup_restore_guest_state_read(user_text, subject, scope):
+    """Read bounded recent restore tasks and current guest inventory for owners."""
+    if scope != "owner" or not subject or not _hades_backup_restore_guest_state_intent(user_text):
+        return None
+    try:
+        activity = _hades_direct_homelab_tool_result(
+            "homelab_recent_activity", {"window_hours": 168},
+        )
+        summary = _hades_direct_homelab_tool_result("homelab_summary")
+    except Exception as exc:
+        _hades_logger.warning("Owner restore guest state read failed: %s", type(exc).__name__)
+        return "I couldn't verify whether recent restore guests remain present."
+    return _hades_backup_restore_guest_state_response(activity, summary)
+
+
+
+
+def _hades_direct_homelab_tool_result(tool_name, arguments=None):
+    """Read through Hermes' registered MCP handler and preserve its config env.
+
+    The homelab MCP environment belongs to its child process. Calling the
+    adapter directly from the Hermes parent loses protected token-file inputs
+    and can turn live questions into stale or incomplete answers.
+    """
+    tool_names = {
+        "homelab_summary": (
+            "mcp__homelab_readonly__homelab_summary",
+            "mcp_homelab_readonly_homelab_summary",
+        ),
+        "homelab_owner_snapshot": (
+            "mcp__homelab_readonly__homelab_owner_snapshot",
+            "mcp_homelab_readonly_homelab_owner_snapshot",
+        ),
+        "homelab_backup_status": (
+            "mcp__homelab_readonly__homelab_backup_status",
+            "mcp_homelab_readonly_homelab_backup_status",
+        ),
+        "homelab_recent_activity": (
+            "mcp__homelab_readonly__homelab_recent_activity",
+            "mcp_homelab_readonly_homelab_recent_activity",
+        ),
+        "homelab_compute_capabilities": (
+            "mcp__homelab_readonly__homelab_compute_capabilities",
+            "mcp_homelab_readonly_homelab_compute_capabilities",
+        ),
+        "homelab_inference_inventory": (
+            "mcp__homelab_readonly__homelab_inference_inventory",
+            "mcp_homelab_readonly_homelab_inference_inventory",
+        ),
+        "homelab_gpu_telemetry": (
+            "mcp__homelab_readonly__homelab_gpu_telemetry",
+            "mcp_homelab_readonly_homelab_gpu_telemetry",
+        ),
+    }
+    if tool_name not in tool_names:
+        return {"status": "UNKNOWN", "errors": ["Unsupported homelab read request."]}
+    read_started = time.perf_counter()
+    discovery_ms = 0.0
+    dispatch_ms = 0.0
+
+    def _log_homelab_read(status):
+        safe_status = str(status or "UNKNOWN").upper()
+        if safe_status not in {
+            "HEALTHY", "READABLE", "PARTIAL", "UNAVAILABLE", "SOURCE_UNAVAILABLE",
+            "NOT_CONFIGURED", "CONFIGURATION_ERROR", "UNKNOWN",
+        }:
+            safe_status = "OTHER"
+        _hades_logger.info(
+            "Homelab MCP read completed: tool=%s status=%s discovery_ms=%.1f "
+            "dispatch_ms=%.1f total_ms=%.1f",
+            tool_name,
+            safe_status,
+            discovery_ms,
+            dispatch_ms,
+            (time.perf_counter() - read_started) * 1000,
+        )
+
+    try:
+        from tools.registry import registry
+        registered_name = next(
+            (name for name in tool_names[tool_name] if registry.get_entry(name)),
+            None,
+        )
+        if registered_name is None:
+            # A deterministic HADES route can run before Hermes has asked the
+            # model for its tool definitions. MCP tools are discovered lazily,
+            # so initialize only this explicitly configured read-only server
+            # before deciding that the capability is unavailable.
+            try:
+                from tools.mcp_tool_discovery import discover_mcp_tools
+                discovery_started = time.perf_counter()
+                discover_mcp_tools(["homelab-readonly"])
+            except Exception as discovery_error:
+                _hades_logger.warning(
+                    "Homelab MCP discovery failed: %s",
+                    type(discovery_error).__name__,
+                )
+            finally:
+                if "discovery_started" in locals():
+                    discovery_ms = (time.perf_counter() - discovery_started) * 1000
+            registered_name = next(
+                (name for name in tool_names[tool_name] if registry.get_entry(name)),
+                None,
+            )
+        if registered_name is None:
+            _log_homelab_read("NOT_CONFIGURED")
+            return {
+                "status": "NOT_CONFIGURED",
+                "sources": [{
+                    "source": "HADES read-only homelab MCP",
+                    "status": "NOT_CONFIGURED",
+                    "observation_scope": "source_read",
+                }],
+                "errors": ["The configured read-only homelab tool is unavailable."],
+            }
+        else:
+            tool_arguments = arguments if isinstance(arguments, dict) else {}
+            dispatch_started = time.perf_counter()
+            result = registry.dispatch(registered_name, tool_arguments)
+            dispatch_ms = (time.perf_counter() - dispatch_started) * 1000
+        # Hermes MCP handlers wrap adapter JSON in a JSON result envelope.
+        for _ in range(2):
+            if isinstance(result, str):
+                if len(result) > 2 * 1024 * 1024:
+                    raise ValueError("homelab result exceeded its bound")
+                try:
+                    result = json.loads(result)
+                except ValueError:
+                    _log_homelab_read("SOURCE_UNAVAILABLE")
+                    return {"status": "SOURCE_UNAVAILABLE", "errors": ["The homelab tool returned an unreadable result."]}
+            if isinstance(result, dict) and "error" in result:
+                _log_homelab_read("SOURCE_UNAVAILABLE")
+                return {"status": "SOURCE_UNAVAILABLE", "errors": ["The configured homelab source read failed."]}
+            if isinstance(result, dict) and isinstance(result.get("result"), (str, dict)):
+                result = result["result"]
+                continue
+            break
+        if not isinstance(result, dict):
+            _log_homelab_read("SOURCE_UNAVAILABLE")
+            return {"status": "SOURCE_UNAVAILABLE", "errors": ["The homelab tool returned an unsupported result."]}
+        # Older adapters may include local paths in errors. Preserve failure
+        # visibility without returning credential paths to the user.
+        errors = result.get("errors")
+        if isinstance(errors, list):
+            result["errors"] = [
+                "A configured homelab source could not be read."
+                if isinstance(error, str) and ("/" in error or "token" in error.casefold())
+                else error
+                for error in errors
+            ]
+        _log_homelab_read(result.get("status"))
+        return result
+    except Exception as exc:
+        _hades_logger.warning(
+            "Homelab MCP read failed: tool=%s error=%s total_ms=%.1f",
+            tool_name, type(exc).__name__, (time.perf_counter() - read_started) * 1000,
+        )
+        return {"status": "SOURCE_UNAVAILABLE", "errors": ["The configured homelab source read failed."]}
+
+def _hades_resolve_homelab_adapter_path():
+    """Resolve pure formatters from the active Hermes MCP profile first."""
+    configured_root = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
+    if configured_root:
+        profile_path = Path(configured_root) / "profile" / "profiles" / "hades" / "config.yaml"
+        if profile_path.is_file():
+            try:
+                import yaml
+                document = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError, UnicodeError):
+                document = None
+            servers = document.get("mcp_servers") if isinstance(document, dict) else None
+            server = servers.get("homelab-readonly") if isinstance(servers, dict) else None
+            args = server.get("args") if isinstance(server, dict) else None
+            configured_paths = [
+                arg for arg in args if isinstance(arg, str)
+                and "homelab-readonly" in arg
+                and arg.rstrip("/").endswith("server.py")
+            ] if isinstance(args, list) else []
+            if len(configured_paths) == 1:
+                candidate = Path(os.path.expandvars(configured_paths[0])).expanduser()
+                if not candidate.is_absolute():
+                    candidate = Path(configured_root) / candidate
+                if candidate.is_file():
+                    return candidate
+                _hades_logger.warning("Configured read-only homelab adapter path is unavailable")
+                return None
+
+    workdir = str(os.environ.get("HADES_HERMES_WORKING_DIRECTORY", "")).strip() or os.getcwd()
+    if workdir:
+        candidate = Path(workdir) / "integrations" / "homelab-readonly" / "server.py"
+        if candidate.is_file():
+            return candidate
+    if configured_root:
+        candidate = Path(configured_root) / "integrations" / "homelab-readonly" / "server.py"
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _hades_direct_homelab_inference_read(user_text, subject, scope):
+    """Format provider models and GPU observations using stable host links."""
+    text = str(user_text or "")
+    if scope != "owner" or not subject:
+        return None
+    named_node = _hades_configured_homelab_alias_match(text)
+    named_node_activity = bool(named_node and re.search(
+        r"\b(?:what(?:['’]s|s|\s+is)|how(?:['’]s|s|\s+is))\b.{0,60}\b(?:doing|running|loaded|busy|loaded)\b",
+        text, re.IGNORECASE,
+    ))
+    inference_intent = bool(re.search(
+        r"\b(?:ollama|inference|available\s+models?|which\s+(?:inference\s+)?models?|"
+        r"what\s+(?:inference\s+)?models?\s+(?:are\s+)?(?:available|installed|loaded|running)|"
+        r"(?:can|could)\s+(?:we|i)\s+use\s+(?:the\s+)?(?:ai|artificial intelligence)|"
+        r"(?:is|are)\s+(?:the\s+)?(?:ai|artificial intelligence)\b.{0,50}\b(?:working|available|online|up|down|healthy|responding)|"
+        r"where(?:['’]s|\s+is)\s+[a-z0-9._-]+(?::[a-z0-9._-]+|\s+\d+(?:\.\d+)?b)|"
+        r"which\s+(?:what\s+)?gpus?\b.{0,50}\b(?:free|available|capacity|memory|room|load)|"
+        r"where\s+should\s+i\s+(?:run|host|put)|"
+        r"(?:can|could)\s+(?:this|it|we|i|(?:the\s+)?(?:homelab|system|hades))\b.{0,70}\b(?:fit|run|host|handle)\b.{0,35}\b(?:model|workload|\d+\s*(?:gb|gib))|"
+        r"which\s+(?:one|host|machine|server)\s+(?:has|have)\s+more\s+(?:room|capacity)|"
+        r"(?:will|would|can|could)\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+model\b.{0,50}\b(?:fit|run|work)|"
+        r"(?:what|which)\s+(?:machine|server|gpu)\b.{0,50}\b(?:host|run|fit)\b.{0,40}\bmodel)\b",
+        text, re.IGNORECASE,
+    )) or named_node_activity
+    if not inference_intent:
+        return None
+    if re.search(r"\b(?:run|create|start|stop|restart|deploy|delete|remove|change|update|install)\b", text, re.IGNORECASE):
+        return None
+    try:
+        from pathlib import Path
+        import importlib.util
+
+        adapter = _hades_resolve_homelab_adapter_path()
+        if adapter is None or not adapter.is_file():
+            return "I couldn't verify current model or GPU details because the read-only source adapter is unavailable."
+        if str(adapter.parent) not in __import__("sys").path:
+            __import__("sys").path.insert(0, str(adapter.parent))
+        spec = importlib.util.spec_from_file_location("hades_direct_homelab_inference", adapter)
+        if spec is None or spec.loader is None:
+            return "I couldn't verify current model or GPU details because the read-only source adapter is unavailable."
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        placement = bool(re.search(
+            r"\b(?:where\s+should\s+i|which\s+(?:machine|server|gpu)|(?:can|could)\s+(?:this|it|we|i|(?:the\s+)?(?:homelab|system|hades)))\b.{0,100}\b(?:model|workload|fit|host|room|capacity)\b|"
+            r"\b(?:will|would|can|could)\s+(?:a\s+)?\d+(?:\.\d+)?\s*(?:gb|gib)\s+model\b.{0,50}\b(?:fit|run|work)|"
+            r"\bwhich\s+(?:one\s+)?(?:has\s+)?more\s+room\b",
+            text, re.IGNORECASE,
+        ))
+        need_telemetry = placement or bool(re.search(r"\b(?:gpu|free\s+vram|utili[sz]ation|how\s+loaded)\b", text, re.IGNORECASE)) or named_node_activity
+        readers = {"inference": "homelab_inference_inventory", "summary": "homelab_summary"}
+        if placement or named_node_activity:
+            readers["hardware"] = "homelab_compute_capabilities"
+        if need_telemetry:
+            readers["gpu_telemetry"] = "homelab_gpu_telemetry"
+        # Hermes dispatch owns one stdio MCP session per server. Keep these
+        # reads sequential rather than interleaving calls on that session.
+        values = {
+            name: _hades_direct_homelab_tool_result(tool_name)
+            for name, tool_name in readers.items()
+        }
+        unavailable = {
+            "The configured read-only homelab tool is unavailable."
+        }
+        if any(
+            isinstance(values.get(name), dict)
+            and unavailable.intersection(values[name].get("errors", []))
+            for name in ("summary", "inference")
+        ):
+            return None
+        if not isinstance(values.get("summary"), dict) or not isinstance(values.get("inference"), dict):
+            # Preserve the ordinary Hermes tool path if the registered read-only
+            # MCP surface is unavailable; never fall back to the parent process'
+            # copy of the adapter, which may not have its protected child env.
+            return None
+        summary = values.get("summary") if isinstance(values.get("summary"), dict) else {}
+        hardware = values.get("hardware") if isinstance(values.get("hardware"), dict) else {}
+        summary["capability_machines"] = hardware.get("machines", [])
+        summary["capability_freshness"] = hardware.get("freshness", hardware.get("status", "UNKNOWN"))
+        summary["capability_observed_at"] = hardware.get("observed_at")
+        if named_node_activity:
+            target_key = re.sub(r"[^a-z0-9]+", "", str(named_node).casefold())
+            matching_resources = []
+            for resource in summary.get("resources", []) if isinstance(summary.get("resources"), list) else []:
+                if not isinstance(resource, dict):
+                    continue
+                inventory_record = resource.get("inventory") if isinstance(resource.get("inventory"), dict) else {}
+                identity = resource.get("identity") if isinstance(resource.get("identity"), dict) else {}
+                label = inventory_record.get("name") or resource.get("name")
+                canonical_id = identity.get("canonical_id")
+                if target_key and canonical_id and re.sub(r"[^a-z0-9]+", "", str(label or "").casefold()) == target_key:
+                    matching_resources.append(canonical_id)
+            inference = values.get("inference") if isinstance(values.get("inference"), dict) else {}
+            linked_endpoints = [
+                endpoint for endpoint in inference.get("endpoints", [])
+                if isinstance(endpoint, dict) and endpoint.get("identity_status") == "LINKED"
+                and endpoint.get("node_identity") in matching_resources
+            ]
+            if len(matching_resources) != 1 or len(linked_endpoints) != 1:
+                # Let the existing homelab path answer from runtime, monitor,
+                # and hardware evidence without assigning a nearby provider.
+                return None
+        return module.format_inference_inventory_response(
+            text,
+            values.get("inference"),
+            summary,
+            values.get("gpu_telemetry"),
+        )
+    except Exception as exc:
+        _hades_logger.warning("Direct homelab inference read failed: %s", type(exc).__name__)
+        return "I couldn't verify current model or GPU details from the configured read-only sources."
+
+
 def _hades_direct_homelab_backup_compound(user_text, subject, scope, phase2_session_key=""):
     """Compose explicit owner read-only infrastructure and backup questions."""
     text = str(user_text or "")
@@ -5137,6 +6707,9 @@ def _hades_direct_homelab_backup_compound(user_text, subject, scope, phase2_sess
         sections.append("BACKUP COVERAGE:\n" + backup_coverage)
     else:
         sections.append("BACKUP COVERAGE: I couldn't verify the current Backup Checks.")
+    proxmox_backup = _hades_direct_proxmox_backup_status(text, subject, scope)
+    if proxmox_backup:
+        sections.append("PROXMOX BACKUP STATUS:\n" + proxmox_backup)
     return "\n\n".join(sections)
 
 
@@ -5348,7 +6921,12 @@ def _hades_configured_homelab_alias_match(user_text):
 _HADES_HOMELAB_INTENT = re.compile(
     r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|server(?:s)?|node(?:s)?|"
     r"virtual\s+machine(?:s)?|\bvm\b|container(?:s)?|sandbox(?:es)?|workload(?:s)?|"
-    r"website(?:s)?|gpu(?:s)?|"
+    r"website(?:s)?|gpu(?:s)?|inference|ollama|"
+    r"(?:proxmox|homelab|home\s+lab)\s+backups?|"
+    r"(?:what\s+changed|recent\s+(?:activity|changes?)|changes?\s+since\s+yesterday)|"
+    r"(?:which|what)\s+(?:ai\s+)?models?\s+(?:are\s+)?(?:available|running|loaded)|"
+    r"where\s+should\s+i\s+(?:run|host|put)\s+(?:another\s+|a\s+)?(?:ai\s+)?model|"
+    r"which\s+(?:machine|server|gpu|box)\b.{0,40}\b(?:host|run|fit|get)\b.{0,40}\bmodel|"
     r"ram|free\s+memory|unhealthy|host(?:s)?|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
     r"nmap|discov(?:er|y)|ip(?:s)?|mac(?:s)?|what(?:['’]?s| is)\s+running|"
     r"inventory|availability|capacity)\b",
@@ -5360,6 +6938,11 @@ def _hades_is_homelab_intent(user_text):
     return bool(
         _HADES_HOMELAB_INTENT.search(str(user_text or ""))
         or _hades_configured_homelab_alias_match(user_text)
+        or _hades_broad_homelab_status_intent(user_text)
+        or _hades_homelab_conflict_intent(user_text)
+        or _hades_homelab_guest_visibility_intent(user_text)
+        or _hades_homelab_service_placement_intent(user_text)
+        or _hades_homelab_resource_ranking_intent(user_text)
     )
 _HADES_NONPERSONAL_STATE_INTENT = re.compile(
     r"\b(?:weather|forecast|temperature|search|look\s+up|research|investigate|osint|"
@@ -5380,7 +6963,12 @@ def _hades_nonpersonal_state_turn(user_text):
     if _hades_service_health_target(user_text):
         return True
     return bool(
-        _HADES_SHARED_MEMORY_INTENT.search(user_text)
+        _hades_homelab_conflict_intent(user_text)
+        or _hades_homelab_guest_visibility_intent(user_text)
+        or _hades_homelab_service_placement_intent(user_text)
+        or _hades_homelab_resource_ranking_intent(user_text)
+        or _hades_broad_homelab_status_intent(user_text)
+        or _HADES_SHARED_MEMORY_INTENT.search(user_text)
         or _HADES_GROCY_ACTION_INTENT.search(user_text)
         or _HADES_GROCY_ITEM_FRAGMENT.search(user_text)
         or _HADES_NONPERSONAL_STATE_INTENT.search(user_text)
@@ -6507,6 +8095,49 @@ def _hades_previous_user_message(conversation_history):
     return ""
 
 
+def _hades_homelab_inference_followup_prompt(user_message, scope, conversation_history):
+    """Resolve a small set of owner homelab follow-ups against current reads.
+
+    History selects the target or question shape only. The caller still reads
+    current canonical sources, so prior assistant text is never reused as
+    operational truth.
+    """
+    current = str(user_message or "").strip()
+    if scope != "owner" or not current or not isinstance(conversation_history, list):
+        return current
+    previous_user = _hades_previous_user_message(conversation_history)
+    target = _hades_configured_homelab_alias_match(current)
+    if (
+        target
+        and previous_user
+        and _hades_is_homelab_intent(previous_user)
+        and re.match(r"\s*(?:what\s+about|sorry[, ]+|i\s+meant\s+)", current, re.IGNORECASE)
+    ):
+        return f"What is {target} doing right now?"
+
+    assistant_text = "\n".join(
+        str(message.get("content") or "")
+        for message in conversation_history[-8:]
+        if isinstance(message, dict) and message.get("role") == "assistant"
+    )
+    recent_placement = bool(
+        re.search(r"responding inference endpoints", assistant_text, re.IGNORECASE)
+        and re.search(r"free-memory reading", assistant_text, re.IGNORECASE)
+    )
+    if recent_placement and re.search(
+        r"\b(?:could|can)\s+i\s+(?:put|run|host)\s+(?:another|a)\s+(?:ai\s+)?model\s+there\b",
+        current, re.IGNORECASE,
+    ):
+        return "Where should I run another model?"
+    size = re.search(
+        r"\bwhat\s+about\s+(?:a\s+)?(?P<size>\d+(?:\.\d+)?)\s*(?P<unit>gb|gib)\s+(?:one|model)\b",
+        current, re.IGNORECASE,
+    )
+    if recent_placement and size:
+        return f"Can a {size.group('size')} {size.group('unit')} model fit?"
+    return current
+
+
 def _hades_preemptive_grocy_offer_decline(user_message, conversation_history):
     """Acknowledge a short refusal of the immediately preceding list offer.
 
@@ -6871,8 +8502,13 @@ try:
                 definitions = _hades_registry.get_definitions(
                     {
                         "mcp_homelab_readonly_homelab_summary",
+                        "mcp_homelab_readonly_homelab_recent_activity",
+                        "mcp_homelab_readonly_homelab_backup_status",
                         "mcp_homelab_readonly_homelab_owner_snapshot",
                         "mcp_homelab_readonly_homelab_compute_capabilities",
+                        "mcp_homelab_readonly_homelab_inference_capacity",
+                        "mcp_homelab_readonly_homelab_inference_inventory",
+                        "mcp_homelab_readonly_homelab_gpu_telemetry",
                         "mcp_homelab_readonly_homelab_discovery_scan",
                         "mcp_homelab_readonly_homelab_discovery_candidates",
                     },
@@ -6997,6 +8633,18 @@ try:
                 "parameters": {"type": "object", "properties": {}},
                 "call": lambda _args: module.homelab_summary(),
             },
+            "mcp_homelab_readonly_homelab_backup_status": {
+                "description": "Owner-only Proxmox vzdump schedules and bounded archived tasks, filtered by effective VM.Audit visibility; no artifact/restore claims and no writes.",
+                "parameters": {"type": "object", "properties": {}},
+                "call": lambda _args: module.homelab_backup_status(),
+            },
+            "mcp_homelab_readonly_homelab_recent_activity": {
+                "description": "Owner-only bounded Proxmox guest task and NetBox inventory-update history for a 1–168 hour window. Uses effective VM.Audit scope, reports partial coverage, and is not a complete change log. Read-only.",
+                "parameters": {"type": "object", "properties": {
+                    "window_hours": {"type": "integer", "minimum": 1, "maximum": 168},
+                }},
+                "call": lambda args: module.homelab_recent_activity((args or {}).get("window_hours", 24)),
+            },
             "mcp_homelab_readonly_homelab_owner_snapshot": {
                 "description": "For compound owner questions about current homelab status and hardware, read the live Proxmox/NetBox/Uptime Kuma summary together with the observed compute capability matrix. Proxmox is the only liveness authority; hardware inventory never implies online status. Read-only, no writes.",
                 "parameters": {"type": "object", "properties": {}},
@@ -7006,6 +8654,21 @@ try:
                 "description": "Read confirmed observed CPU, RAM, and GPU hardware inventory. This tool does not provide liveness: never label a machine online from it; use Proxmox runtime for that. It does not claim CUDA, VRAM, or control authority.",
                 "parameters": {"type": "object", "properties": {}},
                 "call": lambda _args: module.homelab_compute_capabilities(),
+            },
+            "mcp_homelab_readonly_homelab_inference_capacity": {
+                "description": "Owner-only combined current read of Proxmox/NetBox/availability, hardware inventory, inference catalogs, and live GPU telemetry; preserves per-source status and does not estimate fit.",
+                "parameters": {"type": "object", "properties": {}},
+                "call": lambda _args: module.homelab_inference_capacity(),
+            },
+            "mcp_homelab_readonly_homelab_inference_inventory": {
+                "description": "Owner-only read of configured inference model catalogs and supported loaded-model state; no generation or mutation.",
+                "parameters": {"type": "object", "properties": {}},
+                "call": lambda _args: module.homelab_inference_inventory(),
+            },
+            "mcp_homelab_readonly_homelab_gpu_telemetry": {
+                "description": "Owner-only live GPU utilization/free-VRAM query via strict-host-key fixed-command SSH; no caller host or command, no writes.",
+                "parameters": {"type": "object", "properties": {}},
+                "call": lambda _args: module.homelab_gpu_telemetry(),
             },
             "mcp_homelab_readonly_homelab_discovery_scan": {
                 "description": "Run bounded, review-only TCP discovery inside the configured authorized LAN scope.",
@@ -8670,7 +10333,7 @@ try:
             )
         ):
             denial = (
-                "I can help with shared household tasks, but I can't access Scotty's "
+                "I can help with shared household tasks, but I can't access the owner's "
                 "finances. That information is owner-only, and nothing was changed."
             )
             callback = getattr(self, "stream_delta_callback", None)
@@ -8685,7 +10348,7 @@ try:
             }
         if (
             getattr(self, "_hades_session_scope", "") == "household"
-            and re.search(r"\b(?:scotty|owner|private|personal)\b", str(user_message or ""), re.IGNORECASE)
+            and re.search(r"\b(?:owner|private|personal)\b", str(user_message or ""), re.IGNORECASE)
             and re.search(r"\b(?:memory|remember|recall|hindsight|fact|marker)\b", str(user_message or ""), re.IGNORECASE)
         ):
             denial = (
@@ -8737,7 +10400,7 @@ try:
         )) and not _hades_is_meal_budget_intent(user_message)
         if _early_finance_request and self._hades_session_scope == "household":
             _early_finance_denial = (
-                "I can help with shared household tasks, but I can't access Scotty's "
+                "I can help with shared household tasks, but I can't access the owner's "
                 "finances. That information is owner-only, and nothing was changed."
             )
             callback = getattr(self, "stream_delta_callback", None)
@@ -8978,6 +10641,22 @@ try:
                     "api_calls": 0,
                     "completed": True,
                 }
+            direct_proxmox_backup_response = _hades_direct_proxmox_backup_status(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if direct_proxmox_backup_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_proxmox_backup_response)
+                _hades_logger.info("Owner Proxmox backup read completed without model invocation")
+                return {
+                    "final_response": direct_proxmox_backup_response,
+                    "messages": [{"role": "assistant", "content": direct_proxmox_backup_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
             direct_backup_response = _hades_phase2_backup_response(
                 user_message, getattr(self, "_hades_subject", ""),
                 self._hades_session_scope, _phase2_session_key,
@@ -9167,10 +10846,125 @@ try:
         # Broad homelab composition must win over the narrower Server Health
         # Watch inventory route for requests that name nodes/Core/blockers.
         if self._hades_session_scope == "owner":
+            direct_gpu_execution_response = _hades_direct_homelab_gpu_execution_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if direct_gpu_execution_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_gpu_execution_response)
+                _hades_logger.info("Owner GPU execution evidence read completed without model invocation")
+                return {
+                    "final_response": direct_gpu_execution_response,
+                    "messages": [{"role": "assistant", "content": direct_gpu_execution_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            direct_inference_response = _hades_direct_homelab_inference_read(
+                _hades_homelab_inference_followup_prompt(
+                    user_message, self._hades_session_scope, _hades_history,
+                ),
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if direct_inference_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_inference_response)
+                _hades_logger.info("Owner inference inventory read completed without model invocation")
+                return {
+                    "final_response": direct_inference_response,
+                    "messages": [{"role": "assistant", "content": direct_inference_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            direct_agent_zero_placement_response = _hades_direct_homelab_agent_zero_placement_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if direct_agent_zero_placement_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_agent_zero_placement_response)
+                _hades_logger.info("Owner Agent Zero placement read completed without model invocation")
+                return {
+                    "final_response": direct_agent_zero_placement_response,
+                    "messages": [{"role": "assistant", "content": direct_agent_zero_placement_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            direct_core_placement_response = _hades_direct_homelab_core_vm_placement_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if direct_core_placement_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_core_placement_response)
+                _hades_logger.info("Owner HADES Core placement read completed without model invocation")
+                return {
+                    "final_response": direct_core_placement_response,
+                    "messages": [{"role": "assistant", "content": direct_core_placement_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            direct_guest_inventory_response = _hades_direct_homelab_guest_inventory_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if direct_guest_inventory_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_guest_inventory_response)
+                _hades_logger.info("Owner Proxmox guest inventory read completed without model invocation")
+                return {
+                    "final_response": direct_guest_inventory_response,
+                    "messages": [{"role": "assistant", "content": direct_guest_inventory_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            direct_restore_guest_response = _hades_direct_backup_restore_guest_state_read(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if direct_restore_guest_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_restore_guest_response)
+                _hades_logger.info("Owner restore guest-state read completed without model invocation")
+                return {
+                    "final_response": direct_restore_guest_response,
+                    "messages": [{"role": "assistant", "content": direct_restore_guest_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            direct_activity_response = _hades_direct_homelab_recent_activity(
+                user_message,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if direct_activity_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_activity_response)
+                _hades_logger.info("Owner recent homelab activity read completed without model invocation")
+                return {
+                    "final_response": direct_activity_response,
+                    "messages": [{"role": "assistant", "content": direct_activity_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
             direct_homelab_response = _hades_direct_homelab_read(
                 user_message,
                 getattr(self, "_hades_subject", ""),
                 self._hades_session_scope,
+                conversation_history=_hades_history,
             )
             if direct_homelab_response:
                 callback = getattr(self, "stream_delta_callback", None)
@@ -9567,7 +11361,7 @@ try:
             and not _hades_is_meal_budget_intent(current_text)
         ):
             denial = (
-                "I can help with shared household tasks, but I can't access Scotty's "
+                "I can help with shared household tasks, but I can't access the owner's "
                 "finances. That information is owner-only, and nothing was changed."
             )
             callback = getattr(self, "stream_delta_callback", None)
@@ -9938,6 +11732,40 @@ try:
                         re.IGNORECASE,
                     )
                 )
+                live_capacity_intent = bool(re.search(
+                    r"\b(?:gpu|gpus|vr[ae]m|inference|model(?:s)?|placement|capacity|headroom|fit|free memory|loaded)\b",
+                    homelab_request_text, re.IGNORECASE,
+                ))
+                live_backup_intent = bool(re.search(
+                    r"\b(?:proxmox|vzdump|homelab|homlab|home\s+lab)\b.{0,50}\bbackups?\b|"
+                    r"\bbackups?\b.{0,50}\b(?:proxmox|vzdump|homelab|homlab|home\s+lab)\b",
+                    homelab_request_text, re.IGNORECASE,
+                ))
+                live_activity_intent = bool(re.search(
+                    r"\b(?:what\s+changed|recent\s+(?:activity|changes?)|activity\s+(?:since|in\s+the\s+last)|changes?\s+since\s+yesterday)\b",
+                    homelab_request_text, re.IGNORECASE,
+                ))
+                if live_capacity_intent:
+                    homelab_tools = [
+                        tool for tool in homelab_tools
+                        if tool.get("function", {}).get("name", "").endswith(
+                            "homelab_inference_capacity"
+                        )
+                    ]
+                elif live_backup_intent:
+                    homelab_tools = [
+                        tool for tool in homelab_tools
+                        if tool.get("function", {}).get("name", "").endswith(
+                            "homelab_backup_status"
+                        )
+                    ]
+                elif live_activity_intent:
+                    homelab_tools = [
+                        tool for tool in homelab_tools
+                        if tool.get("function", {}).get("name", "").endswith(
+                            "homelab_recent_activity"
+                        )
+                    ]
                 if simple_status:
                     summary_tools = [
                         tool for tool in homelab_tools
@@ -10105,9 +11933,15 @@ try:
                 "mcp_homelab_readonly_homelab_summary before answering. Use "
                 "Proxmox runtime for online status, NetBox only for intended "
                 "inventory, and Uptime Kuma only for observed availability. "
-                "If the request also asks about GPUs or hardware capability, "
-                "call mcp_homelab_readonly_homelab_compute_capabilities after "
-                "the summary. Do not answer from memory and do not claim a "
+                "For GPU, model-inventory, loaded-model, or placement questions, "
+                "call the combined homelab_inference_capacity read, which "
+                "preserves the individual summary, hardware, provider, and GPU "
+                "sources; use the observed capability matrix only for installed "
+                "hardware. Provider catalogs do not prove "
+                "generation, and free VRAM is a point-in-time observation, not a "
+                "model-fit guarantee. If a source is missing or unavailable, say "
+                "so and do not fall back to historical values as live. Do not "
+                "answer from memory and do not claim a "
                 "write or control operation."
             )
             self.ephemeral_system_prompt = "\n\n".join(
@@ -10118,13 +11952,32 @@ try:
             # text instead.  Require a function call only for this already
             # owner-authorized, intent-narrowed path; this cannot grant a
             # household or write capability and prevents invented liveness.
+            capacity_intent = bool(re.search(
+                r"\b(?:gpu|gpus|vr[ae]m|inference|model(?:s)?|placement|capacity|headroom|fit|free memory|loaded)\b",
+                " ".join((str(user_message or ""), str(_hades_intent_text or ""))),
+                re.IGNORECASE,
+            ))
+            backup_intent = bool(re.search(
+                r"\b(?:proxmox|vzdump|homelab|homlab|home\s+lab)\b.{0,50}\bbackups?\b|"
+                r"\bbackups?\b.{0,50}\b(?:proxmox|vzdump|homelab|homlab|home\s+lab)\b",
+                " ".join((str(user_message or ""), str(_hades_intent_text or ""))),
+                re.IGNORECASE,
+            ))
+            activity_intent = bool(re.search(
+                r"\b(?:what\s+changed|recent\s+(?:activity|changes?)|activity\s+(?:since|in\s+the\s+last)|changes?\s+since\s+yesterday)\b",
+                " ".join((str(user_message or ""), str(_hades_intent_text or ""))),
+                re.IGNORECASE,
+            ))
             self.request_overrides = {
                 **original_request_overrides,
-                "tool_choice": {
+                "tool_choice": "required" if capacity_intent or backup_intent or activity_intent else {
                     "type": "function",
-                    "function": {
-                        "name": "mcp_homelab_readonly_homelab_summary",
-                    },
+                    "function": {"name": (
+                        "mcp_homelab_readonly_homelab_inference_capacity" if capacity_intent else
+                        "mcp_homelab_readonly_homelab_backup_status" if backup_intent else
+                        "mcp_homelab_readonly_homelab_recent_activity" if activity_intent else
+                        "mcp_homelab_readonly_homelab_summary"
+                    )},
                 },
             }
         if control_intent and self._hades_session_scope == "owner":
