@@ -97,6 +97,11 @@ of truth.
   WebSocket-only completion condition and timed out; the corrected UI harness
   accepted the newly rendered completed response in 4.5 seconds. This was a
   harness correction, not a product change.
+- Fresh Household A/B everyday-language dogfood asked which computer was having
+  trouble and whether the AI service was usable. The first received only the
+  plain home-computer boundary; the second reported responding availability
+  checks without promising that a prompt would succeed. Neither answer exposed
+  private infrastructure details.
 
 The private coordination note and protected evidence paths are recorded in
 `hades-infra`; no private topology, credentials, or live endpoint details
