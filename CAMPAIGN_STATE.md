@@ -263,4 +263,10 @@ was told generation was not tested; its game-server health remained unknown
 because no current check was available. Protected evidence is mode 0600 outside
 the repository. Nyx-4's private coordination request now includes checking the
 capability freshness and current Kuma monitor records; no source writes have
-been made.
+been made. A new owner follow-up to the broad summary returned retrieval times
+for readable sources, labeled missing source timestamps, and clarified that a
+read-completion timestamp does not make an older observation live. Household
+A's matching freshness follow-up stayed at the generic boundary without
+privileged source reads. This validates the existing on-demand provenance path
+while the pending combined overlay makes those times visible in the initial
+owner summary.

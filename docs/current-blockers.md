@@ -357,3 +357,11 @@ not tested. Household A's game-server answer remained unknown because no current
 check is configured. Protected evidence is mode 0600 outside the public tree.
 Nyx-4 was asked to verify the capability inventory freshness and the canonical
 service/Kuma records; no infrastructure writes were made.
+
+A fresh provenance follow-up confirmed that an owner can ask when the broad
+answer was checked and receive per-source retrieval times, plus an explicit
+warning that retrieval time does not make an older observation live. Two
+summary rows had no retrieval time and were labeled accordingly. The initial
+broad response still omits those times, which is the pending overlay change.
+Household A's follow-up stayed at the generic home-computer boundary and did not
+read or reveal owner-only sources.
