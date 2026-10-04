@@ -2595,8 +2595,14 @@ def format_inference_inventory_response(
                     facts.append(f"recorded GPUs: {len(gpu_names)} × " + ", ".join(gpu_names))
             if facts:
                 observed_at = str(summary.get("capability_observed_at") or "time unavailable")[:80]
-                result += " Recorded hardware inventory (" + observed_at + "): " + "; ".join(facts) + "."
-                result += " This inventory is historical/observed context, not a live host measurement."
+                freshness = str(summary.get("capability_freshness") or "UNKNOWN").upper()
+                if freshness not in {"FRESH", "STALE", "UNKNOWN"}:
+                    freshness = "UNKNOWN"
+                result += (
+                    f" Recorded hardware inventory (observed {observed_at}; "
+                    f"freshness {freshness.casefold()}): " + "; ".join(facts)
+                    + "; this is not live utilization."
+                )
         telemetry_rows = gpu_telemetry.get("endpoints", []) if isinstance(gpu_telemetry, dict) else []
         inference_id = str(endpoint.get("source_identity") or "").removeprefix("inference:")
         telemetry_matches = [
@@ -2604,10 +2610,12 @@ def format_inference_inventory_response(
             and row.get("inference_id") == inference_id
         ] if isinstance(telemetry_rows, list) else []
         per_device_utilization_reported = False
+        gpu_sample_state = "MISSING"
         if len(telemetry_matches) == 1:
             sample = telemetry_matches[0]
             checked_at = str(sample.get("retrieved_at") or gpu_telemetry.get("retrieved_at") or "time unavailable")[:80]
             if sample.get("status") == "READABLE":
+                gpu_sample_state = "READABLE"
                 devices = sample.get("devices") if isinstance(sample.get("devices"), list) else []
                 readings = []
                 for device in devices[:16]:
@@ -2625,18 +2633,24 @@ def format_inference_inventory_response(
                 if readings:
                     result += f" Live host GPU sample ({checked_at}): " + "; ".join(readings) + "."
             else:
+                gpu_sample_state = "UNAVAILABLE"
                 result += f" Live GPU telemetry was unavailable at {checked_at}."
-        return (
-            result
-            + " The inference endpoint and any displayed GPU telemetry reader responded at their stated sample times; "
-            "this does not establish overall host or service health."
-            + " Provider-reported residency does not prove GPU execution or a successful generation. "
-            + (
-                "This read reports point-in-time per-device GPU utilization; host CPU load and sustained utilization are not measured."
+        caveats = [
+            "These source-specific point-in-time observations do not prove a successful generation or overall host health."
+        ]
+        if endpoint.get("loaded_status") == "CURRENT":
+            caveats.append("Provider-reported residency does not prove GPU execution.")
+        if gpu_sample_state == "READABLE":
+            caveats.append(
+                "Host CPU load and sustained utilization are not measured."
                 if per_device_utilization_reported
-                else "This read does not include per-device GPU utilization; host CPU load and sustained utilization are not measured."
+                else "This GPU sample returned no per-device utilization; host CPU load and sustained utilization are not measured."
             )
-        )
+        elif gpu_sample_state == "UNAVAILABLE":
+            caveats.append("Host CPU load and sustained utilization are not measured.")
+        else:
+            caveats.append("No linked live GPU sample was available; host CPU load and sustained utilization are not measured.")
+        return result + " " + " ".join(caveats)
 
     if placement_intent:
         candidates = []

@@ -214,6 +214,7 @@ summary["capability_machines"] = [{
     "ram_gib": 64, "gpus": ["Quadro P4000", "Quadro P4000"],
 }]
 summary["capability_observed_at"] = "synthetic-matrix-time"
+summary["capability_freshness"] = "FRESH"
 assert server.resolve_inference_node_target("Compute Alpha", inventory, summary) == (
     "netbox:device:42", "Compute Alpha",
 )
@@ -272,9 +273,10 @@ assert "Compute Alpha GPU 0: 8000 MiB free" in gpu_answer, gpu_answer
 assert "doesn't guarantee a model will fit" in gpu_answer
 linked_hardware = {
     "status": "READABLE", "endpoints": [{
-        "id": "fast-lane", "source_identity": "inference:fast-lane",
-        "node_identity": "netbox:device:42", "identity_status": "LINKED",
-        "status": "READABLE", "checked_at": "synthetic-provider-time",
+    "id": "fast-lane", "source_identity": "inference:fast-lane",
+    "node_identity": "netbox:device:42", "identity_status": "LINKED",
+    "status": "READABLE", "checked_at": "synthetic-provider-time",
+    "loaded_status": "CURRENT", "loaded_models": [{"name": "model-a:8b"}],
     }],
 }
 linked_telemetry = {
@@ -302,14 +304,34 @@ assert "not proof that a workload completed" in big_gpu_answer, big_gpu_answer
 node_activity_answer = server.format_inference_inventory_response(
     "What's Compute Alpha doing?", linked_hardware, summary, linked_telemetry,
 )
-assert "Recorded hardware inventory (synthetic-matrix-time)" in node_activity_answer, node_activity_answer
+assert "Recorded hardware inventory (observed synthetic-matrix-time; freshness fresh)" in node_activity_answer, node_activity_answer
 assert "role: deep inference" in node_activity_answer and "RAM: 64 GiB" in node_activity_answer
-assert "historical/observed context, not a live host measurement" in node_activity_answer
+assert "this is not live utilization" in node_activity_answer
 assert "Live host GPU sample (synthetic-endpoint-time)" in node_activity_answer, node_activity_answer
 assert "Provider API read at synthetic-provider-time" in node_activity_answer
-assert "does not establish overall host or service health" in node_activity_answer
-assert "point-in-time per-device GPU utilization" in node_activity_answer
-assert "host CPU load and sustained utilization are not measured" in node_activity_answer
+assert "do not prove a successful generation or overall host health" in node_activity_answer
+assert "Provider-reported residency does not prove GPU execution" in node_activity_answer
+assert "Host CPU load and sustained utilization are not measured" in node_activity_answer
+assert node_activity_answer.count("Host CPU load") == 1, node_activity_answer
+without_residency = dict(linked_hardware, endpoints=[{
+    key: value for key, value in linked_hardware["endpoints"][0].items()
+    if key not in {"loaded_status", "loaded_models"}
+}])
+without_residency_answer = server.format_inference_inventory_response(
+    "What's Compute Alpha doing?", without_residency, summary, linked_telemetry,
+)
+assert "Provider-reported residency does not prove GPU execution" not in without_residency_answer
+stale_inventory_answer = server.format_inference_inventory_response(
+    "What's Compute Alpha doing?", linked_hardware,
+    dict(summary, capability_freshness="STALE", capability_observed_at="2026-09-01"),
+    linked_telemetry,
+)
+assert "freshness stale" in stale_inventory_answer
+unknown_inventory_answer = server.format_inference_inventory_response(
+    "What's Compute Alpha doing?", linked_hardware,
+    dict(summary, capability_freshness="READABLE"), linked_telemetry,
+)
+assert "freshness unknown" in unknown_inventory_answer
 assert "does not measure host CPU/GPU utilization" not in node_activity_answer
 without_utilization = dict(linked_telemetry, endpoints=[dict(
     linked_telemetry["endpoints"][0], devices=[{
@@ -320,7 +342,7 @@ without_utilization = dict(linked_telemetry, endpoints=[dict(
 no_utilization_answer = server.format_inference_inventory_response(
     "What's Compute Alpha doing?", linked_hardware, summary, without_utilization,
 )
-assert "does not include per-device GPU utilization" in no_utilization_answer
+assert "This GPU sample returned no per-device utilization" in no_utilization_answer
 ambiguous_capabilities = dict(summary, capability_machines=[
     summary["capability_machines"][0], dict(summary["capability_machines"][0]),
 ])
