@@ -306,3 +306,15 @@ composed runtime against the current deployed overlay base. This changes the
 artifact hash after the prior approval request; that earlier hash must not be
 deployed. Revised candidate `544cd06` passed Public CI run `37173378921`; exact
 deployment acceptance is still pending.
+
+Fresh-chat production dogfood on VM 802 again reproduced both owner routing
+failures: cluster guest-state wording is treated as a physical-host query, and
+the restore follow-up returns repository Backup Check status. Household A
+received generic boundaries for both the restore question and broad health
+question, with no private detail detected. The owner restore response matched
+chat history after normalizing rendered Markdown whitespace/list markers; the
+initial mismatch was in the test harness. Stable-render samples were 3.7–4.5 s;
+no websocket terminal marker was emitted, so the prior 90-second harness
+measurements are not valid latency observations. Protected raw evidence is
+outside the public tree. The production correction remains gated on approval of
+the current exact overlay candidate.

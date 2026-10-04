@@ -195,3 +195,18 @@ relevant task feeds are complete. A regression covers empty partial/truncated
 history. Focused homelab, privacy, composer, clean Hermes runtime, and composed
 runtime checks pass locally. This changes the composed artifact; hosted CI and
 a new exact-candidate review are pending. Production remains unchanged.
+
+### Fresh production owner/household baseline — 2026-10-03 CDT
+
+A fresh-chat owner/Household A baseline on VM 802 reproduced both known owner
+routing defects: the cluster guest-state question still receives a physical-host
+answer, and the restore follow-up still reaches repository Backup Check status.
+Both fresh Household A questions received generic infrastructure boundaries;
+no private topology detail matched the protected acceptance filter. The owner
+restore response is present in chat history; the initially false persistence
+check was a Markdown-versus-rendered whitespace mismatch, and the formatting-
+normalized response content matches. Stable-render response samples were
+3.7–4.5 seconds. The websocket completion marker was absent, so earlier
+90-second harness timings are invalid and not treated as application latency.
+Raw responses remain in mode-0600 `/tmp` evidence, outside this repository.
+Production remains on the previous overlay pending exact-candidate approval.
