@@ -369,7 +369,24 @@ os.environ["HADES_CAPABILITY_MATRIX_FILE"] = str(matrix_path)
 root = Path("integrations/homelab-readonly").resolve()
 sys.path.insert(0, str(root))
 import backup_view
+import activity_view
 import server
+
+def assert_activity_view_parity(report):
+    assert activity_view.format_recent_activity(report, server._bounded_text) == server.format_homelab_recent_activity(report)
+
+for activity_view_case in (
+    None,
+    {"status": "READABLE"},
+    {"status": "NOT_CONFIGURED", "endpoints": []},
+    {"status": "INVALID_REQUEST", "endpoints": []},
+    {"status": "SOURCE_UNAVAILABLE", "endpoints": []},
+    {"status": "READABLE", "window_hours": 24, "source_status": {"proxmox": "READABLE", "netbox": "READABLE"}, "endpoints": [{"events": []}], "netbox": {"objects": []}},
+    {"status": "PARTIAL", "window_hours": 12, "source_status": {"proxmox": "PARTIAL", "netbox": "SOURCE_UNAVAILABLE"}, "endpoints": [{"events": []}], "netbox": {"objects": []}},
+    {"status": "PARTIAL", "source_status": {"proxmox": "READABLE", "netbox": "PARTIAL"}, "endpoints": [{"events": [{"starttime": 1, "guest_id": "102", "node": "alpha", "task_type": "qmstart", "status": "OK"}]}], "netbox": {"objects": [{"object_type": "device", "name": "beta", "last_updated": "2026-10-05T11:00:00Z"}]}},
+    {"status": "READABLE", "source_status": {"proxmox": "READABLE", "netbox": "NOT_CONFIGURED"}, "endpoints": [{"events": [{"starttime": i, "guest_id": str(i)} for i in range(10)]}], "netbox": {"objects": []}},
+):
+    assert_activity_view_parity(activity_view_case)
 
 def assert_backup_view_parity(report):
     assert backup_view.format_backup_status(report, server._bounded_text) == server.format_homelab_backup_status(report)
@@ -762,6 +779,7 @@ assert {(row["guest_id"], row["task_type"]) for row in activity_endpoint["events
 }, activity_endpoint
 assert {row["object_type"] for row in activity["netbox"]["objects"]} == {"device", "service"}
 activity_text = server.format_homelab_recent_activity(activity)
+assert activity_view.format_recent_activity(activity, server._bounded_text) == activity_text
 assert "Recent recorded activity" in activity_text and "complete homelab change log" in activity_text
 assert "private" not in activity_text.casefold()
 server._fetch = original_fetch
