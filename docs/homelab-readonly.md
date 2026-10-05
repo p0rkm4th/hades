@@ -9,13 +9,37 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Public HADES `main` is `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`; Public CI
-run `37252630983` passed. The canonical summary retains the monitor source's
-`last_updated` value as `observed_at`; response freshness remains a separate
-field. This source change is not deployed. Runtime overlay and adapter hashes
-are kept in the protected operator record and must be rechecked before a
-rollout. The current active composition is not assumed to match repository
-source.
+Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` and its CI run
+`37254848424` passed. The homelab source baseline at `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`
+preserves Kuma `last_updated` as `availability_summary[].observed_at`, separate
+from freshness. The Aster candidate at `7de443d7b8bf3416c2a1287167edd5387b5303ab` passed
+Public CI run `37261433008` after the earlier pure backup-summary formatter
+extraction. It adds a provenance check comparing the profile-selected
+generated adapter's full Python module set and bytes with tracked source, plus
+a fail-closed household response for private infrastructure-detail requests;
+all 117 hosted CI steps passed. Nyx review and promotion are pending. Neither
+change is deployed.
+
+The active runtime package is mixed: its adapter entry module matches tracked
+source but its reconciliation sibling does not. A direct read-only call in the
+active adapter environment reached Proxmox sources, NetBox, and Uptime Kuma
+with complete guest-audit coverage. The NetBox application-service catalog
+was empty, so current service placement remains unknown. The same direct call
+marked availability fresh while omitting `observed_at`; this does not satisfy
+the tracked monitor-time contract. It is source/adapter evidence, not
+owner-UI acceptance or functional-service health. In authenticated owner UI
+dogfood, the system disclosed source timestamps, current GPU samples, and fit
+uncertainty, while leaving Agent Zero placement unknown. Household A/B status
+answers stayed abstract, but a private-inventory request reached the model and
+produced an unsupported promise to query owner sources without returning host
+data. The candidate adds a deterministic early denial; fresh live verification
+after deployment is required. Preserve the separate deployment-local overlay
+while resolving package parity. Exact runtime hashes and rollback details
+remain in protected operator records.
+
+The old GPU telemetry branch is review-only and has not been merged. Its
+Public CI run `37222211701` failed the public-history check. Current review is
+comparing contracts and architecture rather than importing its tree.
 
 The read layer remains **PARTIAL**: synthetic contracts and prior targeted
 owner/household dogfood do not establish live stale-source, contradiction,

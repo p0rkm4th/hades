@@ -7,49 +7,72 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-Public `main` is `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`; Public CI run
-[37252630983](https://github.com/p0rkm4th/hades/actions/runs/37252630983)
-completed successfully. The source checkpoint preserves Kuma observation time
-as `observed_at` in the canonical compact summary; the owner named-monitor
-response labels it as observation time and treats freshness separately. This
-checkpoint is not deployed. The active runtime is a deployment-local
-composition, and source/runtime parity remains unverified for this change.
+Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
+[37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
+passed on that exact commit. Aster's short-lived integration branch and its
+remote are at `7de443d7b8bf3416c2a1287167edd5387b5303ab`; Public CI
+[37261433008](https://github.com/p0rkm4th/hades/actions/runs/37261433008)
+passed on that exact candidate across all 117 steps. Five documentation edits
+remain uncommitted and are not covered by that CI run. The primary local
+checkout is preserved and is not the integration base.
 
-The older `codex/gpu-telemetry-parity-20261004` ref remains review-only; no
-code or history has been imported wholesale. NYX-010 rechecked the earlier
-NYX-001 classification against current `main`; its semantic dispositions are
-unchanged and the old branch still has no accepted unique behavior to port.
-NYX-008 accepted the source-level incomplete-conflict and named-monitor review.
-That was static source review, not live failure dogfood. NYX-009 completed a
-fresh read-only backup metadata pass. NYX-011 found one unnecessary
-protected-custody detail; Aster removed it.
-The clean-lineage replacement candidate `d3b14c53` passed Public CI run
-`37254383967`; NYX-012 is rechecking this exact candidate. It remains unpromoted.
+The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
+candidate. Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
+failed at `Check public history`; Aster and Nyx are classifying semantic
+differences separately. Its final tree also removes Kuma `observed_at` and
+NetBox pagination-coverage semantics that current main and focused tests
+preserve. No wholesale import is planned. Its duplicated inference view code
+is less complete than main's freshness/provenance behavior, and deleting the
+extracted view modules concentrates more code in the MCP server.
 
-The prior inference-view extraction remains deployed according to the last
-protected rollout record. The later pure `homelab_views.py` extraction remains
-in source but is not deployed. Existing owner/household dogfood covers source
-provenance, bounded change history, and denial of private topology requests;
-those targeted results do not close live stale/partial/contradiction tests,
-native application health/placement, network trends, backup artifact or restore
-verification, normal-user outage acceptance, or independent-device custody.
-NYX-009 found the latest observed guest backup tasks successful through Oct 4;
-Oct 5 local runs were pending at read time. A weekly application archive
-completed on Oct 5 UTC, its sidecar matched, and an embedded database archive
-passed structural listing; full application restore remains unproven. Synthetic
-file-level dataset restore and several historical stopped-clone restore checks
-are documented. Copies remain in the same homelab failure domain, and fresh
-artifact/restore checks remain open for other components. The campaign remains
-**PARTIAL**. No current-turn runtime, host, network,
-source-ACL, or backup mutation occurred.
+A fresh source/test comparison found two additional old-line regressions.
+Its named service-health helper removes the owner-scope guard, and its route
+calls that helper without passing scope; the old contract tests the household
+boundary separately but does not exercise a household service-health call.
+Current main passes scope and asserts the household helper path returns no
+owner detail. This is a regression in the old tree, not evidence that a live
+household user received private topology. The old NetBox projection also drops
+pagination completeness, while its service-placement fallback treats an
+`OK` response with no rows and no explicit coverage as a confirmed empty
+catalog. Current main retains `UNKNOWN` unless coverage is explicitly
+complete/empty; its focused adapter tests pass complete, empty, partial, and
+unknown cases. The old branch's focused tests omit several of main's
+unavailable-Kuma and missing-service-identity cases.
 
-**Next:** complete NYX-012 review of the clean-lineage candidate, then promote
-only after its main CI run passes; recheck backup task and snapshot metadata
-after the pending local schedules; verify
-active runtime provenance before any deployment decision; then take the
-smallest remaining evidence-backed adapter extraction or source-completeness
-fix. The dirty primary checkout is preserved; use the clean worktree based on
-public `main` for integration.
+Homelab main preserves Kuma `last_updated` as `observed_at`, independent of
+freshness. The active runtime package remains mixed: its adapter entry module
+matches tracked source while its reconciliation sibling differs. A direct
+read-only adapter call reached Proxmox, NetBox, and Kuma with complete guest
+audit coverage, but the service catalog was empty and the call omitted
+`observed_at` despite reporting fresh availability. Placement therefore
+remains unknown, and live adapter evidence is not owner-UI or application
+health acceptance. The active deployment-local overlay must be preserved.
+
+The candidate at `10dd2fd1` extracts the pure backup formatter; its focused
+contract and hosted CI pass, with Nyx review pending. Commit `d0c74306` adds a
+provenance guard comparing the profile-selected generated homelab adapter's
+complete Python module set and bytes with the clean tracked package. Commit
+`7de443d7` adds a deterministic household denial for infrastructure inventory
+and administrative-detail prompts. Focused contracts, public safety, and
+hosted CI run `37261433008` pass. Neither change is deployed. A live household
+UI prompt exposed the intent-classification gap; no concrete host data was
+returned, and fresh post-deployment UI verification remains open. Runtime
+package parity and monitor observation-time output also remain open.
+
+Prior targeted owner/household dogfood, synthetic failure contracts, and
+backup metadata inspection remain bounded historical evidence. Full
+application restore, independent-device/off-host custody, live outage and
+contradiction acceptance, native service-health/placement coverage, network
+trends, and normal-user outage acceptance remain open. The homelab campaign is
+**PARTIAL**. Exact runtime hashes, private topology, rollback paths, and raw
+acceptance transcripts remain in protected operator records.
+
+**Next:** finish Nyx's old-line, package-guard, and household-privacy reviews;
+reconcile and CI-qualify the five current-state documents; promote only a small
+reviewed current-main descendant. Then deploy the reviewed household boundary
+fix with hash-guarded rollback, recheck household denial/safe status in the live
+UI, and verify coherent runtime package parity plus `observed_at`. No
+runtime deployment has been made during this checkpoint.
 
 ## Historical release baseline and prior evidence
 

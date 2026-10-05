@@ -1,10 +1,9 @@
 # HADES stable-v1 readiness
 
 This is a readiness record for the deployment, not an installer or a new
-runtime layer. The operational observations below were last rechecked
-read-only on 2026-09-25; this release-convergence campaign did not recheck or
-change production. Treat those entries as dated evidence, not a fresh live
-probe.
+runtime layer. Most component observations below were last rechecked read-only
+on 2026-09-25; the homelab-specific evidence has a separate 2026-10-05
+checkpoint. Treat each observation as dated evidence, not a fresh live probe.
 
 ## Engineering release convergence (2026-10-01)
 
@@ -101,7 +100,7 @@ not commit volume.
 | Web/search | OWNER-GATED | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary, including fresh follow-up semantics and search-vs-page provenance; fresh authenticated owner-UI follow-up must confirm search freshness |
 | Bounded operator | PASS | Bounded inspection remains available and unsafe delegation is rejected before upstream dispatch; broader tasks and native A2A remain optional hardening |
 | Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; owner-scoped local CSV preview/import planning, native CSV/QIF/OFX/QFX/CAMT handoff, and the unregistered reconciled writer contract are dogfood-tested without production writes |
-| Homelab | PARTIAL | Public `main` `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9` passed Public CI run `37252630983`. Source preserves Kuma observation time as `observed_at` separately from source freshness; this checkpoint is not deployed. The inference-view extraction remains deployed per the last protected rollout record; pure `homelab_views.py` remains source-only. NYX-008 accepted static monitor/conflict source review; NYX-010 found no lineage disposition change against current `main`. NYX-009 found recent scheduled tasks successful through Oct 4 and an Oct 5 UTC application archive with a matching sidecar and structurally valid embedded database listing; full application restore is not proven. Synthetic dataset restore and selected historical stopped-clone checks exist, but copies remain in one homelab failure domain. Live stale/partial/contradiction, native service health/placement, network trends, remaining restoreability, normal-user outage acceptance, and independent-device custody remain open. |
+| Homelab | PARTIAL | Public `main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed CI `37254848424`; source retains Kuma `last_updated` as `observed_at`, explicit NetBox coverage, and owner-scope checks for named service health. Candidate `7de443d7b8bf3416c2a1287167edd5387b5303ab` passed CI `37261433008` (117 steps), adding generated-package provenance and a fail-closed household detail denial; Nyx review and promotion remain pending, and neither change is deployed. Aster's current source review confirms the older GPU-parity line also drops the service-health scope guard and NetBox completeness metadata; this is an old-tree regression, not evidence of a live disclosure. Active runtime is still mixed and its direct adapter output reports fresh availability without `observed_at`; the NetBox service catalog was empty, so placement is unknown. Live owner UI dogfood returned source timestamps, GPU telemetry/uncertainty, and unknown Agent Zero placement. Household status answers stayed abstract; inventory prompts exposed an intent gap that candidate source now denies, pending live retest. This does not constitute full owner-UI or functional-service acceptance. Inference-view extraction remains deployed per protected rollout record; pure `homelab_views.py` remains source-only. Synthetic restore evidence does not prove full application restore or independent-device custody. Live outage/conflict, service placement/health, network trends, restoreability, normal-user outage acceptance, and independent-device/off-host recovery remain open. |
 | Home Assistant | PARTIAL | Synthetic read-only adapter, ordinary-entity reads, stale/unavailable shaping, and security-sensitive filtering pass; connect the approved URL/token/entity allowlist and validate the deployed read path |
 | Automation | PARTIAL | The joined disposable Phase 3 path passes on two independent pristine Fedora 44 x86_64 guests with SELinux enforcing: immutable n8n and LLDAP pins, generated Epsilon package under strict transient systemd, Hermes 0.21.2 result route, authenticated Open WebUI Alpha/Beta/Gamma, shared/unshared isolation, live Beta grant revocation, and duplicate signed run replay after service restart. The second guest passed again after a real reboot with Docker automatically active. Synthetic contracts cover expired-lease UNKNOWN suppression, failure redaction, ten concurrent maximum-quota requests with replay, and post-poll schedule rollback. The resolver does not query Open WebUI-only account disable. Production Phase 3 keys, state, group mapping, endpoint, and scoped n8n credential remain unprovisioned; schedules stay inactive |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
@@ -129,16 +128,16 @@ disabled; see
 
 ## Current next action
 
-Public `main` is `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9` with successful
-Public CI run `37252630983`. The clean-lineage documentation candidate
-`d3b14c53` passed run `37254383967`; it is not promoted, and NYX-012 is
-rechecking it. The Kuma observation-time preservation change is source-validated
-but not deployed; the active overlay still requires compatibility review.
-NYX-008 accepted static source review, NYX-009 completed the bounded backup
-metadata pass, and NYX-010 revalidated the old-branch disposition against
-current `main`. Reconcile
-exact runtime behavior before considering deployment, keep current `main`
-canonical, and continue only the smallest evidence-backed read-only gap. No
-whole-branch promotion is permitted.
+Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI run
+`37254848424` passed. The Aster candidate is at
+`7de443d7b8bf3416c2a1287167edd5387b5303ab`, with Public CI run `37261433008`
+passing all 117 steps. It adds a generated homelab package provenance guard
+and a deterministic household denial for owner-only infrastructure inventory
+requests. Nyx's package, privacy, and old-line reviews remain pending; five
+documentation edits are uncommitted and need review/CI. Promote only a small
+reviewed current-main descendant. The live adapter package remains mixed and
+its output omits `observed_at`; the household fix is not deployed and requires
+post-deployment UI verification. Preserve the deployment-local overlay while
+reconciling package parity. The old GPU telemetry line remains review-only.
 
 Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).
