@@ -82,6 +82,51 @@ assert "cannot be attributed to a specific guest" in partial_result
 assert "read is partial" in partial_result
 assert "doesn't verify backup contents" in partial_result
 
+malformed_only = {
+    "status": "PARTIAL",
+    "retrieved_at": "2026-10-05T12:02:00+00:00",
+    "endpoints": [{
+        "source_id": "delta",
+        "status": "PARTIAL",
+        "jobs_status": "PARTIAL",
+        "tasks_status": "PARTIAL",
+        "task_scope": "ALL_GUESTS",
+        "jobs": [],
+        "tasks": [],
+        "unattributed_tasks": [],
+        "malformed_job_rows": 1,
+        "malformed_task_rows": 1,
+    }],
+}
+malformed_only_result = backup_view.format_backup_status(malformed_only, bounded_text)
+assert "whether any jobs are configured is unknown" in malformed_only_result
+assert "configured backup-job feed contained 1 malformed row(s)" in malformed_only_result
+assert "Archived vzdump task history is incomplete" in malformed_only_result
+assert "archived task feed contained 1 malformed row(s)" in malformed_only_result
+assert "reports no configured vzdump jobs" not in malformed_only_result
+assert "No archived vzdump task appears" not in malformed_only_result
+
+mixed_rows = {
+    "status": "PARTIAL",
+    "endpoints": [{
+        "source_id": "epsilon",
+        "status": "PARTIAL",
+        "jobs_status": "PARTIAL",
+        "tasks_status": "PARTIAL",
+        "task_scope": "ALL_GUESTS",
+        "jobs": [{"id": "visible-job"}],
+        "tasks": [{"status": "OK", "guest_id": "102"}],
+        "unattributed_tasks": [],
+        "malformed_job_rows": 1,
+        "malformed_task_rows": 1,
+    }],
+}
+mixed_rows_result = backup_view.format_backup_status(mixed_rows, bounded_text)
+assert "at least 1 visible configured vzdump job(s)" in mixed_rows_result
+assert "latest visible archived vzdump task for guest 102 reported OK" in mixed_rows_result
+assert mixed_rows_result.count("malformed row(s)") == 2
+assert "reports no configured vzdump jobs" not in mixed_rows_result
+
 unavailable = {
     "status": "SOURCE_UNAVAILABLE",
     "retrieved_at": None,

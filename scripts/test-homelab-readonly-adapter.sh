@@ -713,6 +713,80 @@ assert backup_report["retrieved_at"] in backup_text
 assert backup_report["formatted_summary"] == backup_text
 print("PASS Proxmox backup reads disclose scope/freshness and avoid artifact/restore claims")
 
+def malformed_backup_rows_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/backup"):
+        return {"data": [None]}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+    if "/nodes/hypervisor-alpha/tasks?" in url:
+        return {"data": [None]}
+    raise AssertionError(f"unexpected synthetic malformed-backup URL: {url}")
+
+server._fetch = malformed_backup_rows_fetch
+malformed_backup_report = server.homelab_backup_status()
+malformed_backup_endpoint = malformed_backup_report["endpoints"][0]
+assert malformed_backup_report["status"] == "PARTIAL", malformed_backup_report
+assert malformed_backup_endpoint["jobs_status"] == "PARTIAL", malformed_backup_endpoint
+assert malformed_backup_endpoint["tasks_status"] == "PARTIAL", malformed_backup_endpoint
+assert malformed_backup_endpoint["malformed_job_rows"] == 1
+assert malformed_backup_endpoint["malformed_task_rows"] == 1
+malformed_backup_text = server.format_homelab_backup_status(malformed_backup_report)
+assert_backup_view_parity(malformed_backup_report)
+assert "whether any jobs are configured is unknown" in malformed_backup_text
+assert "task history is incomplete" in malformed_backup_text
+assert "reports no configured vzdump jobs" not in malformed_backup_text
+assert "No archived vzdump task appears" not in malformed_backup_text
+
+def mixed_backup_rows_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/backup"):
+        return {"data": [{"id": "nightly-visible"}, None]}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+    if "/nodes/hypervisor-alpha/tasks?" in url:
+        return {"data": [{"id": "102", "status": "OK", "endtime": 1700000300}, None]}
+    raise AssertionError(f"unexpected synthetic mixed-backup URL: {url}")
+
+server._fetch = mixed_backup_rows_fetch
+mixed_backup_report = server.homelab_backup_status()
+mixed_backup_endpoint = mixed_backup_report["endpoints"][0]
+assert mixed_backup_report["status"] == "PARTIAL", mixed_backup_report
+assert mixed_backup_endpoint["jobs_status"] == "PARTIAL", mixed_backup_endpoint
+assert mixed_backup_endpoint["tasks_status"] == "PARTIAL", mixed_backup_endpoint
+assert [job["id"] for job in mixed_backup_endpoint["jobs"]] == ["nightly-visible"]
+assert [task["guest_id"] for task in mixed_backup_endpoint["tasks"]] == ["102"]
+mixed_backup_text = server.format_homelab_backup_status(mixed_backup_report)
+assert_backup_view_parity(mixed_backup_report)
+assert "at least 1 visible configured vzdump job(s)" in mixed_backup_text
+assert "1 malformed row(s)" in mixed_backup_text
+assert "reports no configured vzdump jobs" not in mixed_backup_text
+print("PASS malformed and mixed Proxmox backup rows preserve valid evidence as PARTIAL")
+
+def over_limit_backup_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/backup"):
+        return {"data": []}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+    if "/nodes/hypervisor-alpha/tasks?" in url:
+        return {"data": [
+            {"id": "102", "status": "OK", "endtime": 1700000000 + index}
+            for index in range(21)
+        ]}
+    raise AssertionError(f"unexpected synthetic over-limit-backup URL: {url}")
+
+server._fetch = over_limit_backup_fetch
+over_limit_backup_report = server.homelab_backup_status()
+over_limit_backup_endpoint = over_limit_backup_report["endpoints"][0]
+assert over_limit_backup_endpoint["tasks_status"] == "PARTIAL", over_limit_backup_endpoint
+assert over_limit_backup_endpoint["tasks_truncated"] is True, over_limit_backup_endpoint
+assert len(over_limit_backup_endpoint["tasks"]) == 20
+print("PASS over-limit per-node backup task responses remain partial")
+
 def selected_backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/access/permissions"):
         return {"data": {"/vms/102": {"VM.Audit": 1}}}

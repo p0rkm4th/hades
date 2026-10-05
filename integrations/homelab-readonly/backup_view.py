@@ -32,9 +32,23 @@ def format_backup_status(
         if jobs_status in {"HEALTHY", "PARTIAL"}:
             jobs = endpoint.get("jobs") if isinstance(endpoint.get("jobs"), list) else []
             if jobs:
-                sentences.append(f"Proxmox {source_id} reports {len(jobs)} configured vzdump job(s).")
+                if jobs_status == "PARTIAL":
+                    sentences.append(
+                        f"Proxmox {source_id} reports at least {len(jobs)} visible configured vzdump job(s) in an incomplete listing."
+                    )
+                else:
+                    sentences.append(f"Proxmox {source_id} reports {len(jobs)} configured vzdump job(s).")
+            elif jobs_status == "PARTIAL":
+                sentences.append(
+                    f"Proxmox {source_id} configured vzdump job listing is incomplete; whether any jobs are configured is unknown."
+                )
             else:
                 sentences.append(f"Proxmox {source_id} reports no configured vzdump jobs.")
+            malformed_job_rows = endpoint.get("malformed_job_rows")
+            if isinstance(malformed_job_rows, int) and not isinstance(malformed_job_rows, bool) and malformed_job_rows > 0:
+                sentences.append(
+                    f"The configured backup-job feed contained {malformed_job_rows} malformed row(s); job coverage is incomplete."
+                )
         else:
             sentences.append(f"Proxmox {source_id} backup-job configuration is {jobs_status.casefold()}.")
         if tasks_status in {"HEALTHY", "PARTIAL"}:
@@ -71,6 +85,11 @@ def format_backup_status(
                 sentences.append("Archived vzdump task history is incomplete.")
         else:
             sentences.append(f"Archived vzdump task history is {tasks_status.casefold()}.")
+        malformed_task_rows = endpoint.get("malformed_task_rows")
+        if isinstance(malformed_task_rows, int) and not isinstance(malformed_task_rows, bool) and malformed_task_rows > 0:
+            sentences.append(
+                f"The archived task feed contained {malformed_task_rows} malformed row(s); task history is incomplete."
+            )
         if task_scope == "SELECTED_GUESTS":
             count_text = (
                 f"{visible_guest_count} selected guest(s)"

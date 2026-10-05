@@ -1259,8 +1259,11 @@ def homelab_backup_status() -> dict:
             continue
         api_base = urlunsplit((parsed.scheme, parsed.netloc, path[:-len(suffix)], "", ""))
         jobs = []
+        malformed_job_rows = 0
         tasks = []
         unattributed_tasks = []
+        malformed_task_rows = 0
+        task_pages_truncated = False
         jobs_status = "UNAVAILABLE"
         tasks_status = "UNAVAILABLE"
         jobs_truncated = False
@@ -1286,6 +1289,7 @@ def homelab_backup_status() -> dict:
             jobs_truncated = len(raw_jobs) > 64
             for raw in raw_jobs[:64]:
                 if not isinstance(raw, dict):
+                    malformed_job_rows += 1
                     continue
                 item = {}
                 for key in ("id", "schedule", "storage", "node", "mode"):
@@ -1306,7 +1310,7 @@ def homelab_backup_status() -> dict:
                 if isinstance(enabled, (bool, int)) and enabled in {0, 1, False, True}:
                     item["enabled"] = bool(enabled)
                 jobs.append(item)
-            jobs_status = "PARTIAL" if jobs_truncated else "HEALTHY"
+            jobs_status = "PARTIAL" if jobs_truncated or malformed_job_rows else "HEALTHY"
         except (OSError, ValueError, UnicodeError) as exc:
             error_codes.append(_source_error_code(exc))
 
@@ -1346,10 +1350,13 @@ def homelab_backup_status() -> dict:
                         normalized = []
                         unattributed = []
                         excluded_rows = 0
+                        malformed_rows = 0
+                        page_truncated = len(data) > 20
                         allowed_ids = set(task_scope.get("guest_ids") or [])
                         denied_ids = set(task_scope.get("excluded_guest_ids") or [])
                         for row in data[:20]:
                             if not isinstance(row, dict):
+                                malformed_rows += 1
                                 continue
                             raw_guest_id = row.get("id")
                             if raw_guest_id is None or raw_guest_id == "":
@@ -1402,18 +1409,27 @@ def homelab_backup_status() -> dict:
                                     item["endtime"], timezone.utc,
                                 ).isoformat()
                             normalized.append(item)
-                        return "HEALTHY", normalized, unattributed, None, excluded_rows
+                        state = "PARTIAL" if malformed_rows or page_truncated else "HEALTHY"
+                        return (
+                            state, normalized, unattributed, None, excluded_rows,
+                            malformed_rows, page_truncated,
+                        )
                     except (OSError, ValueError, UnicodeError, OverflowError) as exc:
-                        return "UNAVAILABLE", [], [], _source_error_code(exc), 0
+                        return "UNAVAILABLE", [], [], _source_error_code(exc), 0, 0, False
 
                 with ThreadPoolExecutor(max_workers=min(8, len(nodes))) as pool:
                     task_reads = list(pool.map(read_tasks, nodes))
-                task_states = [state for state, _, _, _, _ in task_reads]
+                task_states = [state for state, _, _, _, _, _, _ in task_reads]
                 excluded_task_rows = 0
-                for state, node_tasks, node_unattributed, error, excluded_rows in task_reads:
+                for (
+                    state, node_tasks, node_unattributed, error, excluded_rows,
+                    malformed_rows, page_truncated,
+                ) in task_reads:
                     tasks.extend(node_tasks)
                     unattributed_tasks.extend(node_unattributed)
                     excluded_task_rows += excluded_rows
+                    malformed_task_rows += malformed_rows
+                    task_pages_truncated = task_pages_truncated or page_truncated
                     if error:
                         error_codes.append(error)
                 tasks.sort(key=lambda row: row.get("endtime", row.get("starttime", 0)), reverse=True)
@@ -1425,7 +1441,8 @@ def homelab_backup_status() -> dict:
                 scope_is_partial = task_scope.get("scope") != "ALL_GUESTS"
                 tasks_status = "PARTIAL" if (
                     scope_is_partial or excluded_task_rows or nodes_truncated
-                    or tasks_truncated or "UNAVAILABLE" in task_states
+                    or tasks_truncated or task_pages_truncated or malformed_task_rows
+                    or "PARTIAL" in task_states or "UNAVAILABLE" in task_states
                 ) else "HEALTHY"
                 if task_states and all(state == "UNAVAILABLE" for state in task_states):
                     tasks_status = "UNAVAILABLE"
@@ -1452,8 +1469,10 @@ def homelab_backup_status() -> dict:
             "jobs": jobs,
             "tasks": tasks[:80],
             "unattributed_tasks": unattributed_tasks[:80],
+            "malformed_job_rows": malformed_job_rows,
+            "malformed_task_rows": malformed_task_rows,
             "jobs_truncated": jobs_truncated,
-            "tasks_truncated": tasks_truncated or nodes_truncated,
+            "tasks_truncated": tasks_truncated or task_pages_truncated or nodes_truncated,
             "error_codes": sorted(set(error_codes)),
         })
     states = [row["status"] for row in endpoints]
