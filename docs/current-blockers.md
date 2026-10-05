@@ -15,7 +15,7 @@ Current main includes extracted Proxmox host-load/guest views and Kuma normaliza
 
 Homelab remains **PARTIAL** for owner-facing live use. Current-main runtime byte parity and fresh authenticated owner/household acceptance remain unverified. The narrow seven-chat result is on an older adapter revision and is historical evidence only. No production deployment or source ACL change occurred. No old-branch history was imported; NYX-001 semantic classification is complete and the unsafe/obsolete remote ref has been deleted, with the local evidence worktree retained. NYX-007 response-boundary tests and NYX-008 pure view extraction are on green main.
 
-No independent encrypted off-host recovery destination or recipient is configured. The owner confirms there is no off-site backup now; no recovery artifact was created. This remains an owner-managed gate, not a reconstruction or live-source pass.
+No independent encrypted off-host recovery destination or recipient is configured. The owner confirms no off-site backup is available now and considers this acceptable; no recovery artifact was created. Record this as a known recovery limitation, separate from the homelab read-source campaign.
 
 Last protected read-only production provenance is dated 2026-10-05 and remains
 the source for the historical composition statements below. Aster
