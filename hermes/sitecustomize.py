@@ -8445,12 +8445,31 @@ def _hades_household_homelab_boundary_response(user_text):
     """Fail closed without leaking household memory or tool internals."""
     text = str(user_text or "")
     domain = re.search(
-        r"\b(?:homelab|home\s+lab|servers?|computers?|machines?|nodes?|network|minecraft|hades)\b",
+        r"\b(?:homelab|home\s+lab|servers?|computers?|machines?|nodes?|network|"
+        r"minecraft|hades|proxmox|netbox|uptime\s+kuma|vms?|guests?|gpus?)\b",
         text,
         re.IGNORECASE,
     ) or _hades_configured_homelab_alias_match(text)
     if not domain:
         return None
+    private_detail = re.search(
+        r"\b(?:"
+        r"(?:private|internal)\s+(?:hostnames?|(?:ip\s+)?addresses?|topology)|"
+        r"(?:ip|ipv4|ipv6)\s+addresses?|"
+        r"proxmox\s+(?:(?:vm|guest)\s+)?ids?|(?:vm|guest)\s+(?:ids?|identifiers?)|vmids?|"
+        r"(?:admin(?:istrative)?|management)\s+services?|"
+        r"(?:server|host|node|vm|guest|infrastructure)\s+inventory|"
+        r"(?:gpu|gpus)\s+(?:placement|inventory|availability|utilization|usage|memory|vram)|"
+        r"(?:which|what)\s+(?:gpus?|gpu\s+devices?)\b.{0,60}\b"
+        r"(?:free|available|loaded|busy|utilization|usage|placement|memory|vram)|"
+        r"(?:list|show|dump|enumerate|give)\b.{0,80}\b"
+        r"(?:all|every)\s+(?:servers?|hosts?|nodes?|machines?|vms?|guests?|gpus?)"
+        r")\b",
+        text,
+        re.IGNORECASE,
+    )
+    if private_detail:
+        return "I can't provide private infrastructure inventory or administrative details from this account."
     status = re.search(
         r"\b(?:okay|ok|well|working|healthy|health|status|down|up|running|online|offline|"
         r"trouble|wrong|broken|slow|available|alive|doing|responding|reachable|"

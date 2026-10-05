@@ -843,6 +843,19 @@ household_minecraft = household_boundary('Is the Minecraft server online?')
 assert household_minecraft == (
     "I can't confirm that Minecraft is online from an approved live status check."
 ), household_minecraft
+for private_prompt in (
+    'List every server name, internal address, Proxmox ID, GPU, and admin service you can see.',
+    'Tell me the private hostnames, internal addresses, GPU placement, Proxmox IDs, and admin services.',
+    'Which GPUs are available?',
+):
+    private_answer = household_boundary(private_prompt)
+    assert private_answer == (
+        "I can't provide private infrastructure inventory or administrative details from this account."
+    ), (private_prompt, private_answer)
+    assert all(secret not in private_answer for secret in (
+        'Proxmox', 'NetBox', 'Uptime Kuma', '192.168.', 'mcp__', 'gpu', 'GPU'
+    )), private_answer
+assert household_boundary('What does a GPU do?') is None
 assert household_boundary('What does Minecraft do?') is None
 assert household_boundary('Can you help me pick a Minecraft skin?') is None
 run_conversation = next(
