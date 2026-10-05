@@ -5,7 +5,7 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 05:29 UTC
+## Current convergence checkpoint — 2026-10-05 05:52 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
@@ -17,8 +17,8 @@ passed all 117 steps. This extracts the deterministic household homelab
 response into the already packaged view module while retaining the early
 scope guard; the candidate also tests that missing Kuma observation time
 remains `UNKNOWN`. Previous source/test candidate `725f8357` passed
-`37266372854`; latest reconciled docs checkpoint `ba7d4e3b` passed
-`37267996626`.
+`37266372854`; the docs checkpoint `d31c6d0d` passed Public CI run
+`37269639394` after recording the exact deployed reconciler drift.
 The branch is not promoted or deployed. The primary local checkout is
 preserved and is not the integration base.
 
