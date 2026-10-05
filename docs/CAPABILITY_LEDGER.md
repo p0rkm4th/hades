@@ -7,9 +7,9 @@ state checks remain in the private acceptance record.
 Last reviewed: 2026-10-05
 
 
-## Current homelab source checkpoint — 2026-10-05 10:51 UTC
+## Current homelab source checkpoint — 2026-10-05 10:55 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Current code checkpoint `4ab862a37aa28ad4b73a76720d65b96a57591251` includes NYX-069/072/074 household host-detail denials and zero-dispatch regression coverage; focused runtime and service-health contracts, exact Public CI `37299052704`, current-tree safety, and introduced-history safety pass. A live deployment inspection confirms adapter package/module drift and missing process environment markers, so runtime parity is not accepted. Overlay composition identity spans installer, doctor, validator, and deployed provenance. Private infra recovery/custody remains owner-gated; owner/household live acceptance remains open. No promotion or rollout has occurred.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Candidate branch docs checkpoint `3de137a922aa888b68dc36598aba3c10154e96e2` passed exact Public CI `37299469882`; code checkpoint `4ab862a37aa28ad4b73a76720d65b96a57591251` passed `37299052704`. NYX-069/072/074 household host-detail denials require zero-dispatch regressions. Current-tree and introduced-history safety pass through the docs checkpoint. Live deployment inspection confirms adapter package/module drift and missing process environment markers, so runtime parity is not accepted. Private infra recovery/custody remains owner-gated; owner/household live acceptance remains open. No promotion or rollout has occurred.
 
 ## Gamma transition
 

@@ -1,8 +1,8 @@
 # HADES stable-v1 readiness
 
-## Current homelab engineering checkpoint — 2026-10-05 10:51 UTC
+## Current homelab engineering checkpoint — 2026-10-05 10:55 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Candidate code checkpoint `4ab862a37aa28ad4b73a76720d65b96a57591251` includes the NYX-074 curly-quote/parenthesis host-detail correction; focused runtime and service-health tests, exact Public CI `37299052704`, current-tree safety, and introduced-history safety pass. Live deployment inspection found source/runtime package drift and unset process markers, so deployment provenance is not accepted. Private source+records+runtime restoration remains unproven and independent custody is owner-gated. Live source acceptance and owner/household dogfood remain open. No promotion or rollout has occurred.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Candidate docs checkpoint `3de137a922aa888b68dc36598aba3c10154e96e2` passed CI `37299469882`; code checkpoint `4ab862a37aa28ad4b73a76720d65b96a57591251` passed `37299052704`. NYX-074 host-detail denial passes focused runtime and service-health contracts; public-tree and introduced-history safety pass through the docs checkpoint. Live deployment inspection found source/runtime package drift and unset process markers, so deployment provenance is not accepted. Private source+records+runtime restoration remains unproven and independent custody is owner-gated. Live source acceptance and owner/household dogfood remain open. No promotion or rollout has occurred.
 
 This is a readiness record for the deployment, not an installer or a new
 runtime layer. Most component observations below were last rechecked read-only
@@ -130,7 +130,7 @@ LLDAP membership, but neither is deployed or connected to n8n. Keep schedules
 disabled; see
 [`automation-boundary.md`](automation-boundary.md).
 
-## Current next action — 2026-10-05 10:51 UTC
+## Current next action — 2026-10-05 10:55 UTC
 
 Complete NYX-075's deployment-composition review, then reconcile the active adapter and overlay with the candidate through the manifest-bound composition path, verify the process environment contract, and validate rollback before owner/household dogfood. Keep the old GPU telemetry line review-only. Do not claim recovery readiness until private source/records/runtime restoration and owner-selected independent custody gates are resolved.
 
