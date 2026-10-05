@@ -9,6 +9,8 @@ import re
 from pathlib import Path
 
 os.environ["HADES_CORE_PROXMOX_GUEST_NAMES"] = "synthetic-core-node"
+os.environ["HADES_HERMES_WORKING_DIRECTORY"] = str(Path.cwd().resolve())
+os.environ.pop("HADES_INTEGRATIONS_ROOT", None)
 
 
 hermes_source = Path("hermes/sitecustomize.py").read_text(encoding="utf-8")
