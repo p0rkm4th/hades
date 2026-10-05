@@ -274,6 +274,7 @@ validate_hermes_profile_parent() {
 }
 validate_hermes_working_directory() {
   local path=${HADES_HERMES_WORKING_DIRECTORY:-} walk mode other source_file view_source
+  local package_root expected_modules runtime_modules package_directories module directory source_module runtime_module
   [[ -n "$path" ]] || return 0
   [[ "$path" == /* && -d "$path" && ! -L "$path" ]] ||
     fail 'HADES_HERMES_WORKING_DIRECTORY must be an existing absolute non-symlink directory'
@@ -283,11 +284,43 @@ validate_hermes_working_directory() {
   view_source="$path/integrations/homelab_views.py"
   [[ -f "$view_source" && ! -L "$view_source" ]] ||
     fail 'Hermes working directory is missing the tracked homelab view module'
+  [[ -d "$path/integrations" && ! -L "$path/integrations" ]] ||
+    fail 'Hermes working directory has no real integrations directory'
+  package_root="$path/integrations/homelab-readonly"
+  [[ -d "$package_root" && ! -L "$package_root" ]] ||
+    fail 'Hermes working directory is missing the homelab read-only package'
+  [[ -z "$(find "$package_root" -type l -print -quit)" ]] ||
+    fail 'Hermes homelab package must not contain symlinks'
+  [[ -z "$(find "$package_root" -name '*.py' ! -type f -print -quit)" ]] ||
+    fail 'Hermes homelab package contains a non-regular Python module'
+  expected_modules=$(git -C "$repo_dir" ls-files -- integrations/homelab-readonly | \
+    sed -n '/\.py$/s@^integrations/homelab-readonly/@@p' | LC_ALL=C sort) ||
+    fail 'could not inspect tracked homelab package modules'
+  runtime_modules=$(find "$package_root" -type f -name '*.py' -printf '%P\n' | LC_ALL=C sort) ||
+    fail 'could not inspect Hermes working-directory homelab package'
+  [[ -n "$expected_modules" && "$expected_modules" == "$runtime_modules" ]] ||
+    fail 'Hermes working-directory homelab package module set differs from the tracked source'
+  grep -Fxq 'server.py' <<<"$expected_modules" ||
+    fail 'tracked homelab read-only package is missing server.py'
+  while IFS= read -r module; do
+    source_module="$repo_dir/integrations/homelab-readonly/$module"
+    runtime_module="$package_root/$module"
+    [[ -f "$source_module" && ! -L "$source_module" && -f "$runtime_module" && ! -L "$runtime_module" ]] ||
+      fail "Hermes homelab package module is missing or linked: $module"
+    cmp -s "$source_module" "$runtime_module" ||
+      fail "Hermes working-directory homelab package differs from tracked source: $module"
+  done <<<"$expected_modules"
   if id "$HADES_HERMES_RUNTIME_USER" >/dev/null 2>&1; then
     runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -x "$path" &&
+      runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -x "$path/integrations" &&
+      runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -x "$package_root" &&
       runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -r "$source_file" &&
       runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -r "$view_source" ||
       fail "Hermes runtime cannot traverse or read its working directory: $path; use a service-accessible checkout such as /opt/hades"
+    while IFS= read -r module; do
+      runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -r "$package_root/$module" ||
+        fail "Hermes runtime cannot read its homelab package module: $package_root/$module"
+    done <<<"$expected_modules"
     return 0
   fi
   # On a first install the service account is created only after preflight.
@@ -303,6 +336,21 @@ validate_hermes_working_directory() {
       fail "Hermes working directory is not traversable by its future service account: $walk; use a service-accessible checkout such as /opt/hades"
     walk=$(dirname "$walk")
   done
+  walk="$path/integrations"
+  mode=$(stat -c '%a' "$walk")
+  other=${mode: -1}
+  [[ "$other" =~ ^[0-7]$ ]] && (( (8#$other & 1) == 1 )) ||
+    fail "Hermes homelab package directory is not traversable by its future service account: $walk"
+  package_directories=$(find "$package_root" -type d -printf '%P\n') ||
+    fail 'could not inspect Hermes working-directory homelab package directories'
+  while IFS= read -r directory; do
+    walk="$package_root"
+    [[ -z "$directory" ]] || walk="$package_root/$directory"
+    mode=$(stat -c '%a' "$walk")
+    other=${mode: -1}
+    [[ "$other" =~ ^[0-7]$ ]] && (( (8#$other & 1) == 1 )) ||
+      fail "Hermes homelab package directory is not traversable by its future service account: $walk"
+  done <<<"$package_directories"
   mode=$(stat -c '%a' "$view_source")
   other=${mode: -1}
   [[ "$other" =~ ^[0-7]$ ]] && (( (8#$other & 4) == 4 )) ||
@@ -311,6 +359,13 @@ validate_hermes_working_directory() {
   other=${mode: -1}
   [[ "$other" =~ ^[0-7]$ ]] && (( (8#$other & 4) == 4 )) ||
     fail "Hermes working-directory source is not readable by its future service account: $source_file"
+  while IFS= read -r module; do
+    runtime_module="$package_root/$module"
+    mode=$(stat -c '%a' "$runtime_module")
+    other=${mode: -1}
+    [[ "$other" =~ ^[0-7]$ ]] && (( (8#$other & 4) == 4 )) ||
+      fail "Hermes homelab package module is not readable by its future service account: $runtime_module"
+  done <<<"$expected_modules"
 }
 validate_synthetic_secret_contract() {
   [[ -d "$HADES_IDENTITY_SECRETS_DIR" ]] || fail "missing identity secret directory: $HADES_IDENTITY_SECRETS_DIR"
