@@ -10,9 +10,9 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-The public repository is at `a4edcea68c398b6d237f476f542c480c4ebf57fe` on
+The public repository is at `7bf554fe65c840d5926dc86199b6ad122f42d507` on
 `main`; post-promotion Public CI run
-[37335957136](https://github.com/p0rkm4th/hades/actions/runs/37335957136)
+[37337091814](https://github.com/p0rkm4th/hades/actions/runs/37337091814)
 passed. The homelab code baseline is
 `0e468fff97567d4f85e4e50d76d2d039d58403ec`, with post-promotion CI run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
@@ -67,6 +67,12 @@ and authenticated live acceptance remain open; preserve the dirty checkout and
 compose any deployment from an exact reviewed bundle. The current provenance
 writer only attests path-backed MCP files tracked inside the clean HADES
 checkout; it cannot yet attest the full tree of an external generated bundle.
+The selected bundle's entrypoint matches a tracked historical HADES source
+revision, but its entrypoint and `reconcile.py` differ from current `main`,
+current `activity_view.py` and `backup_view.py` are missing, and other files
+match current sources. This is a mixed-version package rather than a coherent
+revision. A future package-tree digest would establish configured disk bytes,
+not which code a running MCP process has already imported.
 
 These changes are undeployed and provide no new live homelab evidence. The last
 protected production inspection on 2026-10-05 showed an active Hermes process,

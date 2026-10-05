@@ -7,9 +7,9 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-The public repository is at `a4edcea68c398b6d237f476f542c480c4ebf57fe` on
+The public repository is at `7bf554fe65c840d5926dc86199b6ad122f42d507` on
 `main`; post-promotion Public CI run
-[37335957136](https://github.com/p0rkm4th/hades/actions/runs/37335957136)
+[37337091814](https://github.com/p0rkm4th/hades/actions/runs/37337091814)
 passed. The homelab code baseline is `0e468fff97567d4f85e4e50d76d2d039d58403ec`
 with its post-promotion Public CI passing in run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737).
@@ -65,10 +65,16 @@ claim that the active generated root lacked the adapter package was inaccurate:
 the protected package exists but is inaccessible to the unprivileged SSH
 account. No deployed files or host configuration changed. Runtime parity and
 feature parity remain unproven; a reviewed package-complete composition is
-required before deployment or runtime acceptance. The current deployed-
-provenance writer accepts path-backed MCP source only from the clean tracked
-HADES checkout, so it cannot yet produce a complete tree identity for an
-external generated adapter bundle.
+required before deployment or runtime acceptance. The selected bundle's
+`server.py` matches a tracked historical HADES source revision, while its
+`server.py` and `reconcile.py` differ from current `main`; the current
+`activity_view.py` and `backup_view.py` modules are absent from that bundle.
+Other files match current tracked sources, so this is a mixed-version package,
+not one reproducible Git revision. The deployed-provenance writer accepts
+path-backed MCP source only from the clean tracked HADES checkout, so it cannot
+yet produce a complete tree identity for an external generated adapter bundle.
+That identity would still attest configured disk bytes, not what a process
+already loaded in memory.
 
 Private-infra recovery remains owner-managed: the checkout is dirty, no
 independent encrypted off-host target has been specified, and the owner confirms
