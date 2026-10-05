@@ -7,9 +7,9 @@ state checks remain in the private acceptance record.
 Last reviewed: 2026-10-05
 
 
-## Current homelab source checkpoint — 2026-10-05 09:00 UTC
+## Current homelab source checkpoint — 2026-10-05 09:04 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Source/test candidate `ea606bac` includes NYX-043/045 backup truth fixes, NYX-046/047 summary projection extraction, NYX-050 parity review, and NYX-051 direct edge-case coverage. Adapter, service-health, manifest-closure, install/deployed-provenance, doctor drift, syntax, diff, and public safety checks pass. The code-bearing checkpoint `aad6b425` passed exact CI `37286488393`; docs checkpoint `3fa22934` passed exact CI run `37286719025`. NYX-048 confirmed current private infra source state has no independent recovery artifact; an authorized off-host target and recipient are pending. Backup task history still does not prove artifacts, custody, or restoreability. Production remains unchanged.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Aster checkpoint candidate `cbdbb399` is 73 commits ahead of main; its preceding checkpoint `df99ea5b` passed exact Public CI `37287324153`, and hosted CI for the added NYX-054 regression is pending. The code/test candidate includes NYX-043/045 backup truth fixes, NYX-046/047 summary projection extraction, NYX-051 direct edge-case coverage, and NYX-054's sequential Kuma heartbeat/config failure cases. The homelab adapter suite and public-safety checks pass locally. NYX-053 found no concrete stale-cache defect. Independent private-infra recovery and production/runtime owner acceptance remain open. Backup task history still does not prove artifact validity, custody, or restoreability. Production remains unchanged.
 
 ## Gamma transition
 
