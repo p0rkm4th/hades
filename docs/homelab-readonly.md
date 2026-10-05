@@ -284,27 +284,33 @@ the intended inventory source, Kuma is reported as stale availability
 observation, and writes return `405`. It is exercised in public CI; no real
 homelab endpoint or credential is involved.
 
-## Current activation state
+## Deployment provenance and runtime parity
 
 Read sources are enabled only through protected deployment configuration and
 least-privilege credentials. Public source contains no concrete host identities,
 addresses, resource IDs, access paths, or private inventory. The protected
 operator matrix and acceptance records are maintained in `hades-infra`.
 
-Read-only deployment provenance was rechecked after the 2026-10-05 adapter
-rollout. Active `server.py` SHA-256 is `3c14a4bd22d4da57f773365860ecb24d7823360470bf0601ec65c52889d5e659` and active
-`inference_view.py` SHA-256 is `90cfb99901ab1c8b0cfd994eec88ebf730940f1dc7ee445d8533e9167d011a00`; both are mode `0640` with the HADES
-runtime owner/group and match reviewed candidate `6bc6063702f73665a9cf666ca14cf7057d5924e4`. Hermes was
-active and its configured health endpoint returned HTTP 200 after one restart.
-The adapter rollout made no Hermes overlay or source-access change. The last
-separately recorded composed overlay hash is
-`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91`; it is a
-composed runtime artifact, not the base public `sitecustomize.py`. Candidate
-`6bc6063702f73665a9cf666ca14cf7057d5924e4` passed Public CI `37245877931` and NYX-002 review. Seven fresh
-authenticated owner/household chats passed with zero turn errors; household
-topology checks were false. The candidate has not yet been promoted to public
-main. These are source/runtime and targeted dogfood facts; remaining campaign
-gaps stay open.
+The earlier 2026-10-05 inference-view rollout record documents a successful
+two-file installation, Hermes health recovery, and seven targeted owner and
+household conversations. Its candidate `6bc6063702f73665a9cf666ca14cf7057d5924e4`
+is now an ancestor of public `main`. That rollout checked only `server.py` and
+`inference_view.py`; it did not establish parity for every sibling module in
+the generated adapter package. The separately composed Hermes overlay was
+unchanged by that adapter rollout.
+
+A later read-only audit compared the complete active adapter directory with
+the tracked source package and found mixed provenance: `server.py` matched the
+then-current public source, but `reconcile.py` differed and `backup_view.py`
+was absent. A direct adapter call returned Kuma observations marked fresh
+without `observed_at`, contrary to the tracked contract. The current source
+candidate `f700e892cd3628deeeadb1dd6b375517a9cc07de` adds a provenance check
+over the complete generated Python package, but it is not deployed. Until a
+coherent package is installed and rechecked, runtime package parity and live
+monitor-timestamp behavior remain unverified/failing. Preserve the
+deployment-local overlay during that repair. The bounded chats from the earlier
+rollout are targeted evidence, not full homelab acceptance; outage, conflict,
+native service health, network trend, and restoreability gates remain open.
 
 
 Proxmox supplies hypervisor and guest runtime observations within its configured
