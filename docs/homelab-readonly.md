@@ -28,10 +28,10 @@ changed-provider-module rejection fixture), and a fail-closed household
 response for private infrastructure-detail requests. The five-document NYX-018 reconciliation at `aa0fabe7` passed Public CI
 `37272481910`. NYX-018's old-line
 classification is accepted with no port recommended. NYX-017's authenticated
-hostile-household no-dispatch review is accepted; its new runtime regression
-and corrected partial-source contradiction assertion pass locally but remain
-uncommitted and have no hosted CI. NYX-026 found the stale review-status text
-in the readiness docs. Package/provenance and provider reviews plus main
+hostile-household no-dispatch review is accepted; its runtime regression and
+corrected partial-source contradiction assertion are in `2e62ffde`, which
+passed exact Public CI `37273578676`. NYX-026's stale review-status finding is
+corrected. Package/provenance and provider reviews plus main
 promotion remain pending. These candidate changes are not deployed.
 
 The fresh 2026-10-05 active-profile package comparison found the deployed

@@ -76,10 +76,10 @@ identity mapping, and composition in the server. The package-provenance
 fixture now covers the added provider sibling. Focused contracts, public
 safety, and hosted CI runs `37264553916`, `37264554854`, and `37265041968`
 pass. Neither change is deployed. NYX-018 lineage and NYX-017 no-dispatch
-reviews are accepted. The new hostile-household runtime regression and
-corrected partial-source contradiction assertion pass locally but remain
-uncommitted and have no hosted CI yet. NYX-026 identified stale review status
-in the docs; this uncommitted update corrects it. Package/provenance and
+reviews are accepted. The hostile-household runtime regression and corrected
+partial-source contradiction assertion are committed in `2e62ffde` and exact
+Public CI `37273578676` passed. NYX-026's stale review-status finding is
+corrected in that checkpoint. Package/provenance and
 provider reviews remain pending in the protected coordination record. A live household
 UI prompt exposed the intent-classification gap; no concrete host data was
 returned, and fresh post-deployment UI verification remains open. Runtime
