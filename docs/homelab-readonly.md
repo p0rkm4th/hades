@@ -13,8 +13,8 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 ## Current source and runtime checkpoint
 
 **Current repository checkpoint (2026-10-05):** public `main` is
-`c0a1171603d7ca06c7c389e4e5a89de21020daa9`. Current-main Public CI
-[37386340801](https://github.com/p0rkm4th/hades/actions/runs/37386340801)
+`3a43d146561033e04f27ed171954607b85c92c9a`. Current-main Public CI
+[37386827640](https://github.com/p0rkm4th/hades/actions/runs/37386827640)
 passes. An earlier main run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810)
 failed the public-history audit because its range contained one private local
 checkout path from an earlier checkpoint commit. It is absent from the current
@@ -32,7 +32,7 @@ credentials and labels. This does not prove current-main runtime/package
 parity. A fresh strict-key host inspection found Hermes active, but its selected
 adapter tree has 10 Python modules versus 14 in current main: four expected
 modules are absent and two files are byte-different. Overlay/package
-provenance remains unverified. No package rollout or source ACL change
+provenance remains incomplete. NYX-119 also found and Aster fixed a writer race that could mix process identities or file snapshots; focused tests pass and Nyx re-review confirms the P1 race is closed. The record classifies current-disk bytes only and does not establish in-memory code; hosted CI is pending. No package rollout or source ACL change
 occurred. The bounded acceptance harness and synthetic redaction contract are
 in main. The old GPU parity remote ref is deleted; its preserved local source
 tip has failed public-history safety and is not an integration base. Prior

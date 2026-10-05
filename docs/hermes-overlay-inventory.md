@@ -108,19 +108,22 @@ The writer checks that `--source-repo` and `--infra-repo` are clean Git
 worktrees at exactly `--hades-sha` and `--infra-sha`; it records both Git tree
 hashes. The deployed TaskStore and reconstruction manifest must match files
 from the HADES source revision.
-It checks that the service is active and matches `--hermes-executable` to the
-running process. For units with `HADES_HERMES_EXECUTABLE`, it also checks that
-the path matches the unit and that its live `--version` output contains the
-claimed version. For the legacy `python -m hermes_cli.main` unit, it verifies
-that exact module entrypoint and reads the `hermes-agent` package version from
-the same interpreter. The provenance record includes the resolved executable
-path, SHA-256, and runtime kind. It also checks that `--overlay` is the
-`sitecustomize.py` selected by that unit's effective `PYTHONPATH`. It refuses
-to write a record when the supplied path differs. It also hashes the deployed
-TaskStore source so task-route behavior has an artifact identity. The required
-`--hermes-profile` must resolve to `HERMES_HOME/profiles/<name>/config.yaml`,
-where `<name>` is selected by the running Hermes process's `-p` or `--profile`
-argument. Only its SHA-256 is added to the record; profile contents, private
+It checks that the service is active, captures one `MainPID`, and reads that
+process's command line, start time, and environment together. Profile and
+overlay paths are resolved from that same process snapshot. Before writing,
+it rechecks the service PID/start time and the source/deployment hashes; a
+restart or changed artifact during capture fails closed. Files are opened
+without following a final symlink and rejected if metadata changes while read.
+For units with `HADES_HERMES_EXECUTABLE`, it also checks that the path matches
+the captured process environment and that its live `--version` output contains
+the claimed version. For the legacy `python -m hermes_cli.main` unit, it
+verifies that exact module entrypoint and reads the `hermes-agent` package
+version using the captured process `PYTHONPATH`. The provenance record
+includes the resolved executable path, SHA-256, and runtime kind. It checks
+that `--overlay` is the `sitecustomize.py` selected by the captured process
+`PYTHONPATH`, and it refuses a different supplied path. Profile bytes are read
+once; that exact text snapshot is both hashed and parsed to identify MCP
+registrations. Only the profile SHA-256 is recorded; profile contents, private
 endpoints, and secret references are not returned. The complete record is
 written only to the selected mode-`0600` output file; stdout contains a fixed
 success line rather than the record or private fields. This distinguishes
@@ -129,7 +132,12 @@ settings. The record's private `mcp_runtime` list identifies enabled local MCP
 source paths and hashes, external executable hashes, and HTTP endpoint hashes.
 It fails if a local script is outside the clean HADES checkout or differs from
 the claimed revision. The provenance endpoint exposes only the aggregate
-`mcp_runtime_sha256`; it does not return private endpoint values. An HTTP
+`mcp_runtime_sha256`; it does not return private endpoint values. The record classification is `tested-source-and-current-disk-artifact-identity`.
+These checks bind a stable disk/process-configuration snapshot; they do not
+prove the already-running Python process's in-memory code objects equal current
+disk bytes. Serialize provenance capture with deployment activation; a narrow
+point-in-time race remains after the final check. A verified restart and runtime
+acceptance are still required. An HTTP
 endpoint hash identifies the configured destination but does not attest the
 service image behind that destination; container identity must still be
 verified separately. When Epsilon is packaged, pass its generated package

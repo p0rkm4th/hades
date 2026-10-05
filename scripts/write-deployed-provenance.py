@@ -8,8 +8,8 @@ import hashlib
 import json
 import os
 import re
-import shlex
 import shutil
+import stat
 import subprocess
 import tempfile
 from datetime import datetime, timezone
@@ -17,9 +17,41 @@ from pathlib import Path
 
 
 def digest(path: Path) -> str:
-    if not path.is_file() or path.is_symlink():
-        raise SystemExit(f"regular file required: {path}")
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return hashlib.sha256(read_regular_file(path, "regular file required")).hexdigest()
+
+
+def read_regular_file(path: Path, error: str) -> bytes:
+    """Read one stable regular-file snapshot without following a final symlink."""
+    descriptor = None
+    try:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode):
+            raise OSError("not a regular file")
+        chunks: list[bytes] = []
+        while True:
+            chunk = os.read(descriptor, 1024 * 1024)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        after = os.fstat(descriptor)
+        before_identity = (
+            before.st_dev, before.st_ino, before.st_size,
+            before.st_mtime_ns, before.st_ctime_ns,
+        )
+        after_identity = (
+            after.st_dev, after.st_ino, after.st_size,
+            after.st_mtime_ns, after.st_ctime_ns,
+        )
+        contents = b"".join(chunks)
+        if before_identity != after_identity or len(contents) != after.st_size:
+            raise OSError("file changed while being read")
+        return contents
+    except (OSError, RuntimeError, ValueError):
+        raise SystemExit(error) from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
 
 
 def verify_source_checkout(source_repo: Path, claimed_sha: str, label: str) -> str:
@@ -49,7 +81,7 @@ def verify_source_checkout(source_repo: Path, claimed_sha: str, label: str) -> s
     return git("rev-parse", "HEAD^{tree}")
 
 
-def active_environment(service: str) -> dict[str, str]:
+def require_service_active(service: str) -> None:
     active = subprocess.run(
         ["systemctl", "is-active", "--quiet", service],
         check=False,
@@ -58,37 +90,9 @@ def active_environment(service: str) -> dict[str, str]:
     )
     if active.returncode != 0:
         raise SystemExit(f"Hermes service is not active: {service}")
-    result = subprocess.run(
-        ["systemctl", "show", "--property=Environment", "--value", service],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise SystemExit(f"could not read effective environment for service: {service}")
-    environment = {}
-    for item in shlex.split(result.stdout):
-        if "=" in item:
-            key, value = item.split("=", 1)
-            environment[key] = value
-    return environment
 
 
-def active_overlay(service: str) -> Path:
-    environment = active_environment(service)
-    pythonpath = environment.get("PYTHONPATH", "")
-    if not pythonpath:
-        raise SystemExit(f"service has no effective PYTHONPATH: {service}")
-    for entry in pythonpath.split(os.pathsep):
-        candidate = Path(entry) / "sitecustomize.py"
-        if candidate.exists():
-            if not candidate.is_file() or candidate.is_symlink():
-                raise SystemExit("effective Hermes sitecustomize must be a regular non-symlink file")
-            return candidate
-    raise SystemExit("effective Hermes PYTHONPATH contains no sitecustomize.py")
-
-
-def running_process_arguments(service: str) -> list[str]:
+def service_main_pid(service: str) -> int:
     result = subprocess.run(
         ["systemctl", "show", "--property=MainPID", "--value", service],
         check=False,
@@ -100,40 +104,71 @@ def running_process_arguments(service: str) -> list[str]:
     pid = int(result.stdout.strip())
     if pid <= 1:
         raise SystemExit("active Hermes service has no valid MainPID")
+    return pid
+
+
+def process_start_time(pid: int) -> str:
     try:
-        command_line = (Path("/proc") / str(pid) / "cmdline").read_bytes().split(b"\0")
+        value = (Path("/proc") / str(pid) / "stat").read_text(encoding="ascii")
+        end_command = value.rfind(")")
+        fields_after_command = value[end_command + 2:].split()
+        # /proc/<pid>/stat field 22 (starttime); field 3 starts at index zero.
+        if end_command < 0 or len(fields_after_command) <= 19:
+            raise ValueError("truncated process stat")
+        return fields_after_command[19]
+    except (OSError, UnicodeError, ValueError):
+        raise SystemExit("active Hermes process identity could not be verified") from None
+
+
+def running_process_snapshot(service: str) -> tuple[int, str, list[str], dict[str, str]]:
+    """Capture argv and environment from one stable systemd MainPID."""
+    require_service_active(service)
+    pid = service_main_pid(service)
+    started = process_start_time(pid)
+    try:
+        process_root = Path("/proc") / str(pid)
+        command_line = (process_root / "cmdline").read_bytes().split(b"\0")
         arguments = [item.decode("utf-8", errors="strict") for item in command_line if item]
-    except (OSError, UnicodeError, RuntimeError):
-        raise SystemExit("active Hermes process command line could not be verified") from None
-    if not arguments:
-        raise SystemExit("active Hermes process has an empty command line")
-    return arguments
-
-
-def running_process_environment(service: str) -> dict[str, str]:
-    result = subprocess.run(
-        ["systemctl", "show", "--property=MainPID", "--value", service],
-        check=False, capture_output=True, text=True,
-    )
-    if result.returncode != 0 or not result.stdout.strip().isdigit():
-        raise SystemExit("active Hermes service has no verifiable MainPID")
-    pid = int(result.stdout.strip())
-    try:
-        items = (Path("/proc") / str(pid) / "environ").read_bytes().split(b"\0")
-        environment = {}
+        items = (process_root / "environ").read_bytes().split(b"\0")
+        environment: dict[str, str] = {}
         for item in items:
             if b"=" not in item:
                 continue
             key, value = item.split(b"=", 1)
             environment[key.decode("utf-8", errors="strict")] = value.decode("utf-8", errors="strict")
-        return environment
     except (OSError, UnicodeError, RuntimeError):
-        raise SystemExit("running Hermes process environment could not be read for source resolution") from None
+        raise SystemExit("active Hermes process arguments and environment could not be verified") from None
+    if not arguments:
+        raise SystemExit("active Hermes process has an empty command line")
+    if process_start_time(pid) != started or service_main_pid(service) != pid:
+        raise SystemExit("Hermes service process changed during provenance capture")
+    require_service_active(service)
+    return pid, started, arguments, environment
+
+
+def verify_process_snapshot_current(service: str, pid: int, started: str) -> None:
+    require_service_active(service)
+    if service_main_pid(service) != pid or process_start_time(pid) != started:
+        raise SystemExit("Hermes service process changed during provenance capture")
+
+
+def active_overlay(environment: dict[str, str]) -> Path:
+    """Resolve the overlay using PYTHONPATH from the captured Hermes process."""
+    pythonpath = environment.get("PYTHONPATH", "")
+    if not pythonpath:
+        raise SystemExit("running Hermes process has no verifiable PYTHONPATH")
+    for entry in pythonpath.split(os.pathsep):
+        candidate = Path(entry) / "sitecustomize.py"
+        if candidate.exists():
+            if not candidate.is_file() or candidate.is_symlink():
+                raise SystemExit("effective Hermes sitecustomize must be a regular non-symlink file")
+            return candidate
+    raise SystemExit("running Hermes PYTHONPATH contains no sitecustomize.py")
 
 
 def verify_selected_profile(
     arguments: list[str], environment: dict[str, str], supplied_profile: Path
-) -> str:
+) -> tuple[str, str]:
     """Bind the profile file hash to the profile name used by the live process."""
     selected_name = ""
     for index, argument in enumerate(arguments):
@@ -157,7 +192,14 @@ def verify_selected_profile(
         same_profile = False
     if not same_profile:
         raise SystemExit("Hermes profile argument differs from the active process profile")
-    return digest(supplied_profile)
+    profile_bytes = read_regular_file(
+        supplied_profile, "Hermes profile must be a stable regular non-symlink file"
+    )
+    try:
+        profile_text = profile_bytes.decode("utf-8", errors="strict")
+    except UnicodeError:
+        raise SystemExit("Hermes profile must be valid UTF-8") from None
+    return hashlib.sha256(profile_bytes).hexdigest(), profile_text
 
 
 def profile_server_blocks(profile: str) -> dict[str, str]:
@@ -301,7 +343,7 @@ def homelab_package_identity(package_root: Path, selected_script: Path, source_r
         if expected_bytes.returncode != 0:
             raise SystemExit("homelab package source bytes could not be read from HADES Git")
         expected_sha = hashlib.sha256(expected_bytes.stdout).hexdigest()
-        actual_sha = hashlib.sha256(external.read_bytes()).hexdigest()
+        actual_sha = digest(external)
         if actual_sha != expected_sha:
             raise SystemExit("homelab package source differs from the clean HADES Git tree")
         file_records.append({"path": relative, "sha256": actual_sha})
@@ -329,9 +371,18 @@ def mcp_runtime_identity(
     environment: dict[str, str],
     source_repo: Path,
     homelab_package_root: Path | None = None,
+    profile_text: str | None = None,
 ) -> tuple[list[dict[str, object]], str]:
     """Bind active MCP registrations to source bytes without emitting private values."""
-    registrations = profile_server_blocks(profile_path.read_text(encoding="utf-8"))
+    if profile_text is None:
+        profile_bytes = read_regular_file(
+            profile_path, "selected Hermes profile must be a stable regular file"
+        )
+        try:
+            profile_text = profile_bytes.decode("utf-8", errors="strict")
+        except UnicodeError:
+            raise SystemExit("selected Hermes profile must be valid UTF-8") from None
+    registrations = profile_server_blocks(profile_text)
     repo = source_repo.resolve(strict=True)
     records: list[dict[str, object]] = []
     homelab_package_used = False
@@ -438,14 +489,25 @@ def verify_running_executable(arguments: list[str], executable: Path, module_run
         raise SystemExit("running Hermes process differs from the configured service executable")
 
 
-def verify_hermes_version(executable: Path, version: str, module_runtime: bool) -> str:
+def verify_hermes_version(
+    executable: Path,
+    version: str,
+    module_runtime: bool,
+    process_environment: dict[str, str],
+) -> str:
     if module_runtime:
+        version_environment = dict(os.environ)
+        if "PYTHONPATH" in process_environment:
+            version_environment["PYTHONPATH"] = process_environment["PYTHONPATH"]
+        else:
+            version_environment.pop("PYTHONPATH", None)
         result = subprocess.run(
             [str(executable), "-c", "import importlib.metadata; print(importlib.metadata.version('hermes-agent'))"],
             check=False,
             capture_output=True,
             text=True,
             timeout=30,
+            env=version_environment,
         )
     else:
         result = subprocess.run(
@@ -510,9 +572,8 @@ def main() -> int:
             raise SystemExit(f"{name} must be a Git SHA")
     source_tree_sha256 = verify_source_checkout(args.source_repo, args.hades_sha, "HADES")
     infra_tree_sha256 = verify_source_checkout(args.infra_repo, args.infra_sha, "hades-infra")
-    service_environment = active_environment(args.service)
-    configured_executable = service_environment.get("HADES_HERMES_EXECUTABLE", "")
-    process_arguments = running_process_arguments(args.service)
+    process_pid, process_started, process_arguments, process_environment = running_process_snapshot(args.service)
+    configured_executable = process_environment.get("HADES_HERMES_EXECUTABLE", "")
     module_runtime = not configured_executable
     if module_runtime:
         if not (len(process_arguments) > 2 and process_arguments[1:3] == ["-m", "hermes_cli.main"]):
@@ -522,13 +583,15 @@ def main() -> int:
     if not args.hermes_executable.is_file() or not os.access(args.hermes_executable, os.X_OK):
         raise SystemExit("running Hermes executable must be an executable regular file")
     verify_running_executable(process_arguments, args.hermes_executable, module_runtime)
-    verify_hermes_version(args.hermes_executable, args.hermes_version, module_runtime)
-    hermes_profile_sha256 = verify_selected_profile(
-        process_arguments, service_environment, args.hermes_profile
+    verify_hermes_version(
+        args.hermes_executable, args.hermes_version, module_runtime, process_environment
     )
-    runtime_environment = {**service_environment, **running_process_environment(args.service)}
+    hermes_profile_sha256, hermes_profile_text = verify_selected_profile(
+        process_arguments, process_environment, args.hermes_profile
+    )
     mcp_runtime, mcp_runtime_sha256 = mcp_runtime_identity(
-        args.hermes_profile, runtime_environment, args.source_repo, args.homelab_package_root
+        args.hermes_profile, process_environment, args.source_repo,
+        args.homelab_package_root, profile_text=hermes_profile_text,
     )
     source_repo = args.source_repo.resolve()
     for supplied, relative, label in (
@@ -540,13 +603,50 @@ def main() -> int:
             raise SystemExit(f"source repository is missing the committed {label}")
         if not supplied.is_file() or supplied.is_symlink() or digest(supplied) != digest(expected):
             raise SystemExit(f"deployed {label} does not match the claimed source revision")
-    selected_overlay = active_overlay(args.service)
+    selected_overlay = active_overlay(process_environment)
     if not args.overlay.is_file() or args.overlay.is_symlink():
         raise SystemExit(f"regular overlay file required: {args.overlay}")
     if args.overlay.resolve() != selected_overlay.resolve():
         raise SystemExit(
             "overlay argument differs from the active service PYTHONPATH sitecustomize.py"
         )
+    overlay_sha256 = digest(args.overlay)
+    task_store_sha256 = digest(args.task_store)
+    manifest_sha256 = digest(args.manifest)
+    hermes_executable_sha256 = digest(args.hermes_executable.resolve())
+    epsilon_manifest_sha256 = digest(args.epsilon_manifest) if args.epsilon_manifest is not None else None
+
+    # Recheck the process identity and every source/deployment artifact before
+    # writing. This rejects restart and replacement races during collection.
+    verify_process_snapshot_current(args.service, process_pid, process_started)
+    if digest(args.hermes_profile) != hermes_profile_sha256:
+        raise SystemExit("Hermes profile changed during provenance capture")
+    if digest(args.overlay) != overlay_sha256:
+        raise SystemExit("Hermes overlay changed during provenance capture")
+    if digest(args.task_store) != task_store_sha256 or digest(args.manifest) != manifest_sha256:
+        raise SystemExit("deployed HADES source artifact changed during provenance capture")
+    if digest(args.hermes_executable.resolve()) != hermes_executable_sha256:
+        raise SystemExit("Hermes executable changed during provenance capture")
+    if args.epsilon_manifest is not None and digest(args.epsilon_manifest) != epsilon_manifest_sha256:
+        raise SystemExit("Epsilon runtime manifest changed during provenance capture")
+    current_mcp_runtime, current_mcp_runtime_sha256 = mcp_runtime_identity(
+        args.hermes_profile, process_environment, args.source_repo,
+        args.homelab_package_root, profile_text=hermes_profile_text,
+    )
+    if current_mcp_runtime != mcp_runtime or current_mcp_runtime_sha256 != mcp_runtime_sha256:
+        raise SystemExit("MCP runtime artifacts changed during provenance capture")
+    if verify_source_checkout(args.source_repo, args.hades_sha, "HADES") != source_tree_sha256:
+        raise SystemExit("HADES source checkout changed during provenance capture")
+    if verify_source_checkout(args.infra_repo, args.infra_sha, "hades-infra") != infra_tree_sha256:
+        raise SystemExit("hades-infra source checkout changed during provenance capture")
+    for supplied, relative, label in (
+        (args.task_store, Path("integrations/task/store.py"), "TaskStore"),
+        (args.manifest, Path("config/reconstruction-manifest.json"), "reconstruction manifest"),
+    ):
+        if digest(supplied) != digest(source_repo / relative):
+            raise SystemExit(f"deployed {label} changed during provenance capture")
+    verify_process_snapshot_current(args.service, process_pid, process_started)
+
     artifact = {
         "schema": "hades/deployed-provenance/v1",
         "hades_sha": args.hades_sha,
@@ -556,19 +656,19 @@ def main() -> int:
         "hermes_version": args.hermes_version,
         "hermes_runtime_kind": "python-module" if module_runtime else "configured-executable",
         "hermes_executable": str(args.hermes_executable.resolve()),
-        "hermes_executable_sha256": digest(args.hermes_executable.resolve()),
-        "overlay_sha256": digest(args.overlay),
+        "hermes_executable_sha256": hermes_executable_sha256,
+        "overlay_sha256": overlay_sha256,
         "hermes_profile_sha256": hermes_profile_sha256,
         "mcp_runtime": mcp_runtime,
         "mcp_runtime_sha256": mcp_runtime_sha256,
-        "task_store_sha256": digest(args.task_store),
-        "manifest_sha256": digest(args.manifest),
+        "task_store_sha256": task_store_sha256,
+        "manifest_sha256": manifest_sha256,
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
         "deployment_path": args.deployment_path,
-        "classification": "tested-source-and-deployment-artifact-identity",
+        "classification": "tested-source-and-current-disk-artifact-identity",
     }
-    if args.epsilon_manifest is not None:
-        artifact["epsilon_package_manifest_sha256"] = digest(args.epsilon_manifest)
+    if epsilon_manifest_sha256 is not None:
+        artifact["epsilon_package_manifest_sha256"] = epsilon_manifest_sha256
     args.output.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(prefix=".hades-provenance-", dir=args.output.parent, text=True)
     try:

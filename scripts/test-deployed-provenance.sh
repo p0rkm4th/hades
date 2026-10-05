@@ -2,7 +2,7 @@
 set -euo pipefail
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-printf 'overlay fixture\n' > "$tmp/overlay"
+printf '# synthetic overlay fixture\npass\n' > "$tmp/overlay"
 printf 'manifest fixture\n' > "$tmp/manifest"
 printf 'task store fixture\n' > "$tmp/task-store.py"
 printf 'epsilon package fixture\n' > "$tmp/phase3-runtime-manifest.json"
@@ -39,7 +39,7 @@ SH
 chmod 700 "$tmp/active/hermes"
 mkdir -p "$tmp/hermes-home/profiles/hades"
 printf 'mcp_servers:\n  grocy:\n    enabled: true\n    command: python3\n    args:\n      - "${HADES_HERMES_WORKING_DIRECTORY}/integrations/grocy-mcp/launch.py"\n    test_private_value: synthetic-not-for-provenance\n  receipt-ocr-gateway:\n    enabled: true\n    url: "${HADES_TEST_PRIVATE_ENDPOINT}"\n' > "$tmp/hermes-home/profiles/hades/config.yaml"
-python3 - "$PWD/scripts/write-deployed-provenance.py" <<'PY'
+python3 - "$PWD/scripts/write-deployed-provenance.py" "$tmp" <<'PY'
 import importlib.util
 import sys
 spec = importlib.util.spec_from_file_location("deployed_provenance", sys.argv[1])
@@ -53,6 +53,29 @@ except SystemExit:
     pass
 else:
     raise AssertionError("unsupported args mapping should fail closed")
+
+from pathlib import Path
+target = Path(sys.argv[2]) / "racing-file"
+assert target.parent == Path(sys.argv[2])
+target.write_bytes(b"a" * (1024 * 1024 + 16))
+original_read = module.os.read
+changed = False
+def replace_during_read(fd, size):
+    global changed
+    data = original_read(fd, size)
+    if not changed:
+        changed = True
+        target.write_bytes(b"b" * (1024 * 1024 + 16))
+    return data
+module.os.read = replace_during_read
+try:
+    module.read_regular_file(target, "stable read required")
+except SystemExit:
+    pass
+else:
+    raise AssertionError("file mutation during snapshot read was accepted")
+finally:
+    module.os.read = original_read
 PY
 python3 - "$PWD/scripts/write-deployed-provenance.py" "$source_repo" "$tmp" <<'PY'
 import importlib.util
@@ -193,7 +216,10 @@ EOF
 ln -s "$(command -v python3)" "$tmp/active/python"
 export HADES_HERMES_WORKING_DIRECTORY="$source_repo"
 export HADES_TEST_PRIVATE_ENDPOINT='http://private.example.invalid:8765/mcp'
-"$tmp/active/hermes" -p hades service-runner &
+env PYTHONPATH="$tmp/active:$module_root" \
+  HERMES_HOME="$tmp/hermes-home" \
+  HADES_HERMES_EXECUTABLE="$tmp/active/hermes" \
+  "$tmp/active/hermes" -p hades service-runner &
 service_pid=$!
 sleep 0.05
 export HADES_TEST_MAIN_PID="$service_pid"
@@ -205,8 +231,17 @@ case "$1" in
   is-active) exit 0 ;;
   show)
     case "$2" in
-      --property=MainPID) printf '%s\n' "$HADES_TEST_MAIN_PID" ;;
-      --property=Environment) printf 'PYTHONPATH=%s HADES_HERMES_EXECUTABLE=%s HERMES_HOME=%s\n' "$HADES_TEST_PYTHONPATH" "$HADES_TEST_HERMES_EXECUTABLE" "$HADES_TEST_HERMES_HOME" ;;
+      --property=MainPID)
+        count=0
+        [[ ! -f "$HADES_TEST_PID_CALLS" ]] || count=$(cat "$HADES_TEST_PID_CALLS")
+        count=$((count + 1))
+        printf '%s\n' "$count" > "$HADES_TEST_PID_CALLS"
+        if [[ -n "${HADES_TEST_PID_SWITCH_AT:-}" && "$count" -ge "$HADES_TEST_PID_SWITCH_AT" ]]; then
+          printf '%s\n' "$HADES_TEST_ALTERNATE_PID"
+        else
+          printf '%s\n' "$HADES_TEST_MAIN_PID"
+        fi
+        ;;
       *) exit 2 ;;
     esac
     ;;
@@ -215,9 +250,11 @@ esac
 SH
 chmod 700 "$tmp/bin/systemctl"
 export PATH="$tmp/bin:$PATH"
-export HADES_TEST_PYTHONPATH="$tmp/active:$module_root"
-export HADES_TEST_HERMES_EXECUTABLE="$tmp/active/hermes"
-export HADES_TEST_HERMES_HOME="$tmp/hermes-home"
+export HADES_TEST_PID_CALLS="$tmp/systemctl-mainpid-calls"
+# The process imported the original overlay before this file replacement. The
+# writer may attest the stable current disk bytes, but must not classify them
+# as proof of the already-loaded Python code object.
+printf '# replaced after process start\npass\n' > "$tmp/active/sitecustomize.py"
 python scripts/write-deployed-provenance.py \
   --output "$tmp/provenance.json" \
   --hades-sha "$hades_sha" \
@@ -249,8 +286,36 @@ assert artifact.stat().st_mode & 0o777 == 0o600
 value = json.loads(artifact.read_text())
 assert value["deployment_path"] == "/srv/hades"
 assert value["mcp_runtime"]
+assert value["classification"] == "tested-source-and-current-disk-artifact-identity"
 print("PASS protected provenance is persisted while stdout stays redacted")
 PY
+sleep 60 &
+other_pid=$!
+printf '0\n' > "$HADES_TEST_PID_CALLS"
+export HADES_TEST_ALTERNATE_PID="$other_pid"
+export HADES_TEST_PID_SWITCH_AT=2
+if python scripts/write-deployed-provenance.py \
+  --output "$tmp/restart-race-provenance.json" \
+  --hades-sha "$hades_sha" \
+  --source-repo "$source_repo" \
+  --infra-sha "$infra_sha" \
+  --infra-repo "$infra_repo" \
+  --hermes-version 0.21.2 \
+  --hermes-executable "$tmp/active/hermes" \
+  --overlay "$tmp/active/sitecustomize.py" \
+  --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+  --task-store "$source_repo/integrations/task/store.py" \
+  --manifest "$source_repo/config/reconstruction-manifest.json" \
+  --deployment-path /srv/hades \
+  --service hades-hermes.service >/dev/null 2>&1; then
+  echo 'FAIL provenance writer accepted a MainPID change during capture' >&2
+  exit 1
+fi
+unset HADES_TEST_PID_SWITCH_AT HADES_TEST_ALTERNATE_PID
+kill "$other_pid" 2>/dev/null || true
+wait "$other_pid" 2>/dev/null || true
+test ! -e "$tmp/restart-race-provenance.json"
+printf '0\n' > "$HADES_TEST_PID_CALLS"
 if python scripts/write-deployed-provenance.py \
   --output "$tmp/wrong-provenance.json" \
   --hades-sha "$hades_sha" \
@@ -456,8 +521,10 @@ fi
 kill "$other_pid" 2>/dev/null || true
 wait "$other_pid" 2>/dev/null || true
 test ! -e "$tmp/mismatched-running-process.json"
-export PYTHONPATH="$module_root"
-"$tmp/active/python" -m hermes_cli.main -p hades &
+env PYTHONPATH="$tmp/active:$module_root" \
+  HERMES_HOME="$tmp/hermes-home" \
+  HADES_HERMES_EXECUTABLE='' \
+  "$tmp/active/python" -m hermes_cli.main -p hades &
 module_pid=$!
 sleep 0.05
 export HADES_TEST_MAIN_PID="$module_pid"
@@ -539,7 +606,10 @@ PY
 mkdir -p "$tmp/external-homelab-package"
 cp -a "$source_repo/integrations/homelab-readonly/." "$tmp/external-homelab-package/"
 printf 'mcp_servers:\n  homelab-readonly:\n    enabled: true\n    command: python3\n    args:\n      - %s/server.py\n' "$tmp/external-homelab-package" > "$tmp/hermes-home/profiles/hades/config.yaml"
-"$tmp/active/python" -m hermes_cli.main -p hades &
+env PYTHONPATH="$tmp/active:$module_root" \
+  HERMES_HOME="$tmp/hermes-home" \
+  HADES_HERMES_EXECUTABLE='' \
+  "$tmp/active/python" -m hermes_cli.main -p hades &
 module_pid=$!
 sleep 0.05
 export HADES_TEST_MAIN_PID="$module_pid"
