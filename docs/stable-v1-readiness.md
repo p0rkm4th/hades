@@ -101,7 +101,7 @@ not commit volume.
 | Web/search | OWNER-GATED | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary, including fresh follow-up semantics and search-vs-page provenance; fresh authenticated owner-UI follow-up must confirm search freshness |
 | Bounded operator | PASS | Bounded inspection remains available and unsafe delegation is rejected before upstream dispatch; broader tasks and native A2A remain optional hardening |
 | Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; owner-scoped local CSV preview/import planning, native CSV/QIF/OFX/QFX/CAMT handoff, and the unregistered reconciled writer contract are dogfood-tested without production writes |
-| Homelab | PARTIAL | Public `main` `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9` passed Public CI run `37252630983`. Source preserves Kuma observation time as `observed_at` separately from source freshness; this checkpoint is not deployed. The inference-view extraction remains deployed per the last protected rollout record; pure `homelab_views.py` remains source-only. NYX-008 monitor/conflict review, NYX-009 backup evidence audit, and NYX-010 current-base lineage recheck are pending. Live stale/partial/contradiction, native service health/placement, network trends, restore evidence, normal-user outage acceptance, and independent-device custody remain open. |
+| Homelab | PARTIAL | Public `main` `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9` passed Public CI run `37252630983`. Source preserves Kuma observation time as `observed_at` separately from source freshness; this checkpoint is not deployed. The inference-view extraction remains deployed per the last protected rollout record; pure `homelab_views.py` remains source-only. NYX-008 accepted static monitor/conflict source review; NYX-010 found no lineage disposition change against current `main`. NYX-009 found recent scheduled tasks successful through Oct 4 and an Oct 5 UTC application archive with a matching sidecar and structurally valid embedded database listing; full application restore is not proven. Synthetic dataset restore and selected historical stopped-clone checks exist, but copies remain in one homelab failure domain. Live stale/partial/contradiction, native service health/placement, network trends, remaining restoreability, normal-user outage acceptance, and independent-device custody remain open. |
 | Home Assistant | PARTIAL | Synthetic read-only adapter, ordinary-entity reads, stale/unavailable shaping, and security-sensitive filtering pass; connect the approved URL/token/entity allowlist and validate the deployed read path |
 | Automation | PARTIAL | The joined disposable Phase 3 path passes on two independent pristine Fedora 44 x86_64 guests with SELinux enforcing: immutable n8n and LLDAP pins, generated Epsilon package under strict transient systemd, Hermes 0.21.2 result route, authenticated Open WebUI Alpha/Beta/Gamma, shared/unshared isolation, live Beta grant revocation, and duplicate signed run replay after service restart. The second guest passed again after a real reboot with Docker automatically active. Synthetic contracts cover expired-lease UNKNOWN suppression, failure redaction, ten concurrent maximum-quota requests with replay, and post-poll schedule rollback. The resolver does not query Open WebUI-only account disable. Production Phase 3 keys, state, group mapping, endpoint, and scoped n8n credential remain unprovisioned; schedules stay inactive |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
@@ -130,11 +130,16 @@ disabled; see
 ## Current next action
 
 Public `main` is `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9` with successful
-Public CI run `37252630983`. The Kuma observation-time preservation change is
+Public CI run `37252630983`. Docs checkpoint `85fa9934` passed run `37253674535`; NYX-011’s custody-detail
+correction is in `cac23756`, which passed run `37254073685`. NYX-012 recheck is
+pending. The Kuma
+observation-time preservation change is
 source-validated but not deployed; the active overlay still requires
-compatibility review. NYX-008, NYX-009, and NYX-010 findings are pending.
-Reconcile exact runtime behavior before considering deployment, keep the
-current-main lineage canonical, and continue only the smallest evidence-backed
-read-only gap. No whole-branch promotion is permitted.
+compatibility review. NYX-008 accepted static source review, NYX-009 completed the bounded backup
+metadata pass, and NYX-010 revalidated the old-branch disposition against
+current `main`. NYX-012 is rechecking the custody-detail correction. Reconcile
+exact runtime behavior before considering deployment, keep current `main`
+canonical, and continue only the smallest evidence-backed read-only gap. No
+whole-branch promotion is permitted.
 
 Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).

@@ -16,10 +16,14 @@ checkpoint is not deployed. The active runtime is a deployment-local
 composition, and source/runtime parity remains unverified for this change.
 
 The older `codex/gpu-telemetry-parity-20261004` ref remains review-only; no
-code or history has been imported wholesale. NYX-001 was accepted against an
-earlier main base, so a bounded current-main recheck is active. NYX-008 is
-reviewing incomplete conflict and service-monitor semantics; NYX-009 is
-independently auditing backup evidence and custody. Their findings are pending.
+code or history has been imported wholesale. NYX-010 rechecked the earlier
+NYX-001 classification against current `main`; its semantic dispositions are
+unchanged and the old branch still has no accepted unique behavior to port.
+NYX-008 accepted the source-level incomplete-conflict and named-monitor review.
+That was static source review, not live failure dogfood. NYX-009 completed a
+fresh read-only backup metadata pass. NYX-011 found one unnecessary protected
+custody detail in the public checkpoint. It was removed in candidate `cac23756`,
+which passed Public CI run `37254073685`; the targeted NYX-012 recheck is pending.
 
 The prior inference-view extraction remains deployed according to the last
 protected rollout record. The later pure `homelab_views.py` extraction remains
@@ -28,13 +32,21 @@ provenance, bounded change history, and denial of private topology requests;
 those targeted results do not close live stale/partial/contradiction tests,
 native application health/placement, network trends, backup artifact or restore
 verification, normal-user outage acceptance, or independent-device custody.
-The campaign remains **PARTIAL**. No current-turn runtime, host, network,
+NYX-009 found the latest observed guest backup tasks successful through Oct 4;
+Oct 5 local runs were pending at read time. A weekly application archive
+completed on Oct 5 UTC, its sidecar matched, and an embedded database archive
+passed structural listing; full application restore remains unproven. Synthetic
+file-level dataset restore and several historical stopped-clone restore checks
+are documented. Copies remain in the same homelab failure domain, and fresh
+artifact/restore checks remain open for other components. The campaign remains
+**PARTIAL**. No current-turn runtime, host, network,
 source-ACL, or backup mutation occurred.
 
-**Next:** receive NYX-008/009 evidence and the current-base NYX-010 lineage
-recheck; then resolve the smallest generic source-completeness/monitor gap that
-remains and continue current-source dogfood only after runtime composition is
-safe. The dirty primary checkout is preserved; use the clean worktree based on
+**Next:** complete NYX-012 review of the corrected checkpoint claims; recheck
+backup task and snapshot metadata after the pending local schedules; verify
+active runtime provenance before any deployment decision; then take the
+smallest remaining evidence-backed adapter extraction or source-completeness
+fix. The dirty primary checkout is preserved; use the clean worktree based on
 public `main` for integration.
 
 ## Historical release baseline and prior evidence

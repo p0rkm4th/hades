@@ -19,9 +19,14 @@ source.
 
 The read layer remains **PARTIAL**: synthetic contracts and prior targeted
 owner/household dogfood do not establish live stale-source, contradiction,
-native service-health, network-trend, or restoreability acceptance. Backup job
-or task evidence does not prove artifact validation, independent custody, or a
-successful restore. Unknown and incomplete source coverage must remain explicit.
+native service-health, or network-trend acceptance. A read-only backup metadata
+pass observed recent guest jobs successful through Oct 4 and an Oct 5 UTC weekly
+application archive with a matching sidecar and structurally valid embedded
+database listing. That does not prove a full application restore. Synthetic
+file-level dataset restore and selected historical stopped-clone checks exist;
+all observed backup copies remain inside one homelab failure domain. Other
+artifact/restore checks and independent-device/off-site custody remain open.
+Unknown and incomplete source coverage must remain explicit.
 
 ## Authority boundaries
 
