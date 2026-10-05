@@ -5055,160 +5055,17 @@ def _hades_homelab_resource_ranking_response(summary):
 
 
 def _hades_homelab_node_metrics_ranking_response(node_metrics):
-    """Rank only current Proxmox host/node samples, separate from guests."""
-    import math
-
-    endpoints = node_metrics.get("endpoints") if isinstance(node_metrics.get("endpoints"), list) else []
-    online_nodes = []
-
-    def finite_number(value):
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            return None
-        try:
-            converted = float(value)
-        except (OverflowError, TypeError, ValueError):
-            return None
-        return converted if math.isfinite(converted) else None
-
-    for endpoint in endpoints:
-        if not isinstance(endpoint, dict) or str(endpoint.get("status") or "").upper() != "AVAILABLE":
-            continue
-        nodes = endpoint.get("nodes") if isinstance(endpoint.get("nodes"), list) else []
-        for node in nodes:
-            if not isinstance(node, dict) or str(node.get("status") or "").upper() != "ONLINE":
-                continue
-            name = " ".join(str(node.get("name") or "Unnamed Proxmox node").split())[:100]
-            cpu = finite_number(node.get("cpu_fraction"))
-            cpu_percent = cpu * 100 if cpu is not None and 0 <= cpu <= 1 else None
-            used = finite_number(node.get("memory_used_bytes"))
-            total = finite_number(node.get("memory_total_bytes"))
-            memory = (used, total) if used is not None and total is not None and 0 <= used <= total and total > 0 else None
-            online_nodes.append((name, cpu_percent, memory, node.get("observed_at")))
-
-    if not online_nodes:
-        if str(node_metrics.get("status") or "UNKNOWN").upper() == "UNKNOWN":
-            error_codes = {
-                str(endpoint.get("error_code") or "").upper()
-                for endpoint in endpoints if isinstance(endpoint, dict)
-            }
-            if "MISSING_SOURCE_TIMESTAMP" in error_codes:
-                return (
-                    "Current Proxmox host/node status and load are unknown because a source read "
-                    "timestamp is missing; I can't rank host load."
-                )
-            if "UNSTABLE_SOURCE_IDENTITY" in error_codes:
-                return (
-                    "Current Proxmox host/node status and load are unknown because a source identity "
-                    "is unstable; I can't rank host load."
-                )
-            return (
-                "Current Proxmox host/node status and load are unknown; I can't rank host load."
-            )
-        return (
-            "The Proxmox metrics read returned no observed online host/node samples, "
-            "so I can't rank host load; this does not establish that no machines are online."
-        )
-    parts = []
-    cpu_rows = [row for row in online_nodes if row[1] is not None]
-    memory_rows = [row for row in online_nodes if row[2] is not None]
-    if cpu_rows:
-        highest = max(row[1] for row in cpu_rows)
-        leaders = [row for row in cpu_rows if abs(row[1] - highest) < 1e-9]
-        labels = ", ".join(sorted(row[0] for row in leaders)[:4])
-        checked = sorted({str(row[3]) for row in leaders if row[3]})
-        timestamp = f" (sampled {', '.join(checked)})" if checked else ""
-        parts.append(
-            f"Highest current Proxmox host CPU reading: {labels} at {highest:.1f}%{timestamp} "
-            f"among {len(cpu_rows)} observed online nodes with valid CPU data."
-        )
-    else:
-        parts.append("No comparable current Proxmox host CPU values were returned.")
-    if memory_rows:
-        ratios = [(row[2][0] / row[2][1], row) for row in memory_rows]
-        highest = max(ratio for ratio, _row in ratios)
-        leaders = [row for ratio, row in ratios if abs(ratio - highest) < 1e-9]
-        labels = ", ".join(sorted(row[0] for row in leaders)[:4])
-        if len(leaders) == 1:
-            used, total = leaders[0][2]
-            detail = f"{used / (1024 ** 3):.1f} / {total / (1024 ** 3):.1f} GiB"
-        else:
-            detail = f"{highest * 100:.1f}% (tied)"
-        checked = sorted({str(row[3]) for row in leaders if row[3]})
-        timestamp = f" (sampled {', '.join(checked)})" if checked else ""
-        parts.append(
-            f"Highest current Proxmox host memory use: {labels} at {detail} "
-            f"({highest * 100:.1f}%){timestamp} among {len(memory_rows)} observed online nodes with valid memory data."
-        )
-    else:
-        parts.append("No comparable current Proxmox host memory values were returned.")
-    parts.append(
-        f"This ranks {len(online_nodes)} observed online Proxmox host/node sample(s) only. "
-        "Guest readings are separate and may overlap; this does not measure GPU load or process-level use."
-    )
-    state = str(node_metrics.get("status") or "UNKNOWN").upper()
-    if state in {"PARTIAL", "UNAVAILABLE", "UNKNOWN"} or any(
-        endpoint.get("truncated") is True for endpoint in endpoints if isinstance(endpoint, dict)
-    ):
-        parts.append("One or more Proxmox node feeds were unavailable, unknown, or truncated; this is not a complete host ranking.")
-    return " ".join(parts)
+    """Preserve the Hermes hook while delegating pure host-load rendering."""
+    return getattr(
+        _hades_load_homelab_views(), "_hades_homelab_node_metrics_ranking_response"
+    )(node_metrics)
 
 
 def _hades_homelab_proxmox_node_load_response(summary, target):
-    """Answer a named host-load question from a unique current node identity."""
-    import math
-
-    node_metrics = summary.get("proxmox_node_metrics") if isinstance(summary, dict) else None
-    if not isinstance(node_metrics, dict):
-        return None
-    target_key = re.sub(r"[^a-z0-9]+", "", str(target or "").casefold())
-    if not target_key:
-        return None
-    def identity_keys(value):
-        keys = {re.sub(r"[^a-z0-9]+", "", str(value or "").casefold())}
-        # Reconciled NetBox display labels can append an ordinal to separate
-        # duplicate inventory names. Treat the base name as an alias only;
-        # the normal unique-match check below still fails closed on collisions.
-        base = re.sub(r"\s+\([^()]{1,40}\)\s*$", "", str(value or "")).strip()
-        if base and base != value:
-            keys.add(re.sub(r"[^a-z0-9]+", "", base.casefold()))
-        return keys
-    matches = [
-        node for endpoint in node_metrics.get("endpoints", [])
-        if isinstance(endpoint, dict) and endpoint.get("status") == "AVAILABLE"
-        for node in endpoint.get("nodes", []) if isinstance(node, dict)
-        and target_key in identity_keys(node.get("name")) | identity_keys(node.get("node"))
-    ]
-    if len(matches) > 1:
-        return f"I can't verify current load for {str(target)[:100]}: multiple Proxmox node records match that name."
-    if not matches:
-        return (
-            f"I can't verify current load for {str(target)[:100]}: no current Proxmox node sample "
-            "uniquely matched that machine."
-        )
-    node = matches[0]
-    label = (
-        " ".join(str(target).split())[:100]
-        if target_key in identity_keys(node.get("name")) | identity_keys(node.get("node"))
-        else " ".join(str(node.get("name") or target).split())[:100]
-    )
-    state = str(node.get("status") or "UNKNOWN").upper()
-    observed_at = str(node.get("observed_at") or "time unavailable")[:80]
-    if state != "ONLINE":
-        return f"Proxmox node status for {label} is {state.casefold()} as of {observed_at}; current host load is unverified."
-    parts = [f"Proxmox reports {label} online; node metrics sampled at {observed_at}."]
-    cpu = node.get("cpu_fraction")
-    if isinstance(cpu, (int, float)) and not isinstance(cpu, bool) and math.isfinite(float(cpu)) and 0 <= cpu <= 1:
-        parts.append(f"Host CPU reading is {float(cpu) * 100:.1f}%.")
-    used, total = node.get("memory_used_bytes"), node.get("memory_total_bytes")
-    if (
-        isinstance(used, int) and not isinstance(used, bool) and used >= 0
-        and isinstance(total, int) and not isinstance(total, bool) and total > 0 and used <= total
-    ):
-        parts.append(f"Host memory is {used / (1024 ** 3):.1f} / {total / (1024 ** 3):.1f} GiB.")
-    if len(parts) == 1:
-        parts.append("No comparable current host CPU or memory values were returned.")
-    parts.append("These are host/node readings; guest readings may overlap. GPU and process-level use are separate.")
-    return " ".join(parts)
+    """Preserve the Hermes hook while delegating pure named-host rendering."""
+    return getattr(
+        _hades_load_homelab_views(), "_hades_homelab_proxmox_node_load_response"
+    )(summary, target)
 
 
 def _hades_homelab_proxmox_node_load_target(text):

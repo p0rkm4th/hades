@@ -29,6 +29,8 @@ assert set(view_functions) == {
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_provenance_response',
     '_hades_homelab_conflict_response',
+    '_hades_homelab_node_metrics_ranking_response',
+    '_hades_homelab_proxmox_node_load_response',
 }
 assert not any(isinstance(node, (ast.Import, ast.ImportFrom)) for node in view_tree.body)
 assert all(
@@ -750,6 +752,7 @@ synthetic_node_metrics = {
         ],
     }],
 }
+view_module = namespace['_hades_load_homelab_views']()
 node_metric_ranking = ranking_response({
     'resources': [], 'proxmox_node_metrics': synthetic_node_metrics,
 })
@@ -763,14 +766,48 @@ unknown_node_metrics = ranking_response({
 })
 assert 'status and load are unknown; I can\'t rank host load' in unknown_node_metrics
 assert 'because' not in unknown_node_metrics
+assert view_module._hades_homelab_node_metrics_ranking_response(
+    {'status': 'UNKNOWN', 'endpoints': []}
+) == unknown_node_metrics
 missing_timestamp_metrics = ranking_response({
     'resources': [], 'proxmox_node_metrics': {'status': 'UNKNOWN', 'endpoints': [{
         'status': 'UNKNOWN', 'error_code': 'MISSING_SOURCE_TIMESTAMP', 'nodes': [],
     }]},
 })
 assert 'because a source read timestamp is missing' in missing_timestamp_metrics
+missing_timestamp_node_metrics = {
+    'status': 'UNKNOWN', 'endpoints': [{
+        'status': 'UNKNOWN', 'error_code': 'MISSING_SOURCE_TIMESTAMP', 'nodes': [],
+    }],
+}
+assert view_module._hades_homelab_node_metrics_ranking_response(
+    missing_timestamp_node_metrics
+) == missing_timestamp_metrics
+partial_node_metrics = {
+    'status': 'PARTIAL', 'endpoints': [
+        {'status': 'AVAILABLE', 'truncated': True, 'nodes': [{
+            'name': 'Synthetic Partial Node', 'status': 'ONLINE',
+            'cpu_fraction': float('nan'), 'memory_used_bytes': 9,
+            'memory_total_bytes': 8, 'observed_at': 'synthetic-partial-time',
+        }]},
+        {'status': 'UNAVAILABLE', 'nodes': []},
+    ],
+}
+partial_ranking = ranking_response({
+    'resources': [], 'proxmox_node_metrics': partial_node_metrics,
+})
+assert 'not a complete host ranking' in partial_ranking
+assert 'nan%' not in partial_ranking
+assert view_module._hades_homelab_node_metrics_ranking_response(
+    partial_node_metrics
+) == partial_ranking
 node_load_response = namespace['_hades_homelab_proxmox_node_load_response']
 node_load_target = namespace['_hades_homelab_proxmox_node_load_target']
+assert view_module._hades_homelab_node_metrics_ranking_response(
+    synthetic_node_metrics
+) == ranking_response({
+    'resources': [], 'proxmox_node_metrics': synthetic_node_metrics,
+})
 assert node_load_target('How loaded is Synthetic Compute Alpha right now?') == 'Synthetic Compute Alpha'
 assert node_load_target('How much CPU is on Synthetic Node B?') == 'Synthetic Node B'
 assert node_load_target('What is Synthetic Node B load like?') == 'Synthetic Node B'
@@ -778,14 +815,21 @@ assert node_load_target('What models are available?') is None
 specific_node_load = node_load_response(
     {'proxmox_node_metrics': synthetic_node_metrics}, 'synthetic-node-b'
 )
+assert view_module._hades_homelab_proxmox_node_load_response(
+    {'proxmox_node_metrics': synthetic_node_metrics}, 'synthetic-node-b'
+) == specific_node_load
 assert 'synthetic-node-b online' in specific_node_load, specific_node_load
 assert 'Host CPU reading is 75.0%' in specific_node_load, specific_node_load
 assert 'Host memory is 6.0 / 12.0 GiB' in specific_node_load, specific_node_load
 assert 'sampled at synthetic-node-time-b' in specific_node_load, specific_node_load
 assert 'guest readings may overlap' in specific_node_load, specific_node_load
-assert node_load_response(
+offline_node_load = node_load_response(
     {'proxmox_node_metrics': synthetic_node_metrics}, 'Synthetic Offline Node'
-).endswith('current host load is unverified.')
+)
+assert offline_node_load.endswith('current host load is unverified.')
+assert view_module._hades_homelab_proxmox_node_load_response(
+    {'proxmox_node_metrics': synthetic_node_metrics}, 'Synthetic Offline Node'
+) == offline_node_load
 linked_host = {
     'proxmox_node_metrics': {'status': 'READABLE', 'endpoints': [{
         'status': 'AVAILABLE', 'nodes': [{
@@ -797,11 +841,17 @@ linked_host = {
 assert 'Proxmox reports Synthetic Compute Alpha online' in node_load_response(linked_host, 'Synthetic Compute Alpha')
 unmatched_host = node_load_response(linked_host, 'Unlisted Node')
 assert 'no current Proxmox node sample uniquely matched that machine' in unmatched_host
+assert view_module._hades_homelab_proxmox_node_load_response(
+    linked_host, 'Unlisted Node'
+) == unmatched_host
 linked_host['proxmox_node_metrics']['endpoints'][0]['nodes'].append({
     'name': 'synthetic-compute-alpha (NetBox 3)', 'node': 'pve-node-2', 'status': 'ONLINE',
     'cpu_fraction': 0.2, 'observed_at': 'second-linked-host-time',
 })
 assert 'multiple Proxmox node records match' in node_load_response(linked_host, 'Synthetic Compute Alpha')
+assert view_module._hades_homelab_proxmox_node_load_response(
+    linked_host, 'Synthetic Compute Alpha'
+) == node_load_response(linked_host, 'Synthetic Compute Alpha')
 direct_read_fn = next(
     node for node in functions
     if isinstance(node, ast.FunctionDef) and node.name == '_hades_direct_homelab_read'

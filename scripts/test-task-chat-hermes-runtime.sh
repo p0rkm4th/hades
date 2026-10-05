@@ -282,8 +282,9 @@ conflict_answer = conflict_agent.run_conversation(
     "Do any sources disagree?", conversation_history=[]
 )
 assert conflict_answer.get("completed") is True and conflict_answer.get("api_calls") == 0, conflict_answer
-assert "no linked-record conflicts" in conflict_answer["final_response"], conflict_answer
-assert "unlinked or unreported records remain unknown" in conflict_answer["final_response"], conflict_answer
+assert "I can't confirm whether the sources disagree" in conflict_answer["final_response"], conflict_answer
+assert "Proxmox guest visibility is partial or unknown" in conflict_answer["final_response"], conflict_answer
+assert "does not establish that the sources agree" in conflict_answer["final_response"], conflict_answer
 visibility_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-guest-visibility",
     stream_delta_callback=lambda _chunk: None, **kwargs,
