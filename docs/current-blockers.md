@@ -5,9 +5,9 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 09:00 UTC
+## Current convergence checkpoint — 2026-10-05 09:04 UTC
 
-Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact CI `37254848424` passed. Source/test candidate `ea606bac` includes NYX-043/045 backup truth fixes, the bounded `summary_view.py` extraction, and NYX-051 direct coverage. The code-bearing checkpoint `aad6b425` passed exact Public CI `37286488393`; docs checkpoint `3fa22934` passed exact CI run `37286719025`. Focused contracts, package provenance/closure, doctor drift, and public-safety checks pass. Production/runtime parity and owner/household validation remain open. NYX-048 confirmed a P1: current private infra source state lacks an independent recoverable copy; no authorized off-host destination/recipient is documented, and owner input is pending. Preserve its dirty checkout.
+Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact CI `37254848424` passed. Active Aster candidate is `codex/aster-homelab-clean-candidate-20261005`, based on `cbdbb399` (73 commits ahead of main), with current docs and hosted CI pending. A prior pushed checkpoint branch contains one superseded documentation commit that fails introduced-history safety due to a private local-worktree path; its tip is corrected, and no public history was rewritten. The active candidate excludes that commit and preserves the safe source/test work. Code includes NYX-043/045 backup truth fixes, `summary_view.py` extraction, NYX-051 direct coverage, and the sequential Kuma outage regression. The adapter suite and syntax checks pass locally. NYX-053 found no concrete freshness defect; NYX-054 closes its identified test gap. Production/runtime parity and owner/household validation remain open. Private infra independent recovery remains a P1; keep its dirty checkout intact while owner-approved destination and recipient are unresolved.
 
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
@@ -77,13 +77,7 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 **PARTIAL**. Exact runtime hashes, private topology, rollback paths, and raw
 acceptance transcripts remain in protected operator records.
 
-**Next:** await exact CI for the current docs checkpoint (`bd7a5e30`, run `37287079415`); then continue owner/runtime acceptance. Resolve the protected recovery destination/recipient before creating an independent private-state artifact. Main promotion and deployment remain open.
-Prepare a coherent full-package deployment only after
-review and promotion. Then deploy the
-reviewed household boundary fix with hash-guarded rollback, recheck household
-denial and safe status in the live UI, and verify coherent runtime package
-parity plus `observed_at`. No runtime deployment has been made during this
-checkpoint.
+**Next:** complete exact hosted CI for the NYX-054 candidate; continue source/runtime parity and owner/household acceptance. Resolve the protected recovery destination and encryption recipient before creating an independent private-state artifact. No source candidate is promoted or deployed; prepare deployment only after all candidate qualification gates pass.
 
 ## Historical release baseline and prior evidence
 

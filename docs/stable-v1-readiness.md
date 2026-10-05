@@ -1,8 +1,8 @@
 # HADES stable-v1 readiness
 
-## Current homelab engineering checkpoint — 2026-10-05 09:00 UTC
+## Current homelab engineering checkpoint — 2026-10-05 09:04 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Source/test candidate `ea606bac` includes NYX-043 schedule validation, NYX-045 malformed/truncated task-history coverage, NYX-046/047 summary-view extraction/tests, and NYX-051 direct boundary cases. The code-bearing checkpoint `aad6b425` passed exact Public CI `37286488393`; docs checkpoint `3fa22934` passed exact CI run `37286719025`. Production parity, owner/household acceptance, and independent private recovery proof remain open. NYX-048 confirmed no independent current-state recovery copy exists; preserve the private checkout until an approved destination and encryption recipient are specified. No promotion/deployment occurred.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Active candidate branch `codex/aster-homelab-clean-candidate-20261005` starts from `cbdbb399`, 73 commits ahead of main; its docs checkpoint and hosted CI are pending. A previous pushed branch contains a superseded documentation commit that fails introduced-history safety due to a private local-worktree path; the active candidate excludes that commit and preserves the safe source/test work. Code includes NYX-043/045 backup truth corrections, NYX-046/047 summary-view extraction/tests, NYX-051 direct boundary cases, and NYX-054 sequential Kuma outage coverage. Production parity and owner/household acceptance remain open. NYX-053 found no concrete stale-cache defect. Independent private recovery remains a P1 pending owner-approved destination and recipient. No promotion or deployment occurred.
 
 This is a readiness record for the deployment, not an installer or a new
 runtime layer. Most component observations below were last rechecked read-only
@@ -130,23 +130,13 @@ LLDAP membership, but neither is deployed or connected to n8n. Keep schedules
 disabled; see
 [`automation-boundary.md`](automation-boundary.md).
 
-## Current next action — 2026-10-05 05:29 UTC
+## Current next action — 2026-10-05 09:04 UTC
 
-Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI run
-`37254848424` passed. The Aster source/test candidate
-`7b14df854d94c75ba08f697c6cacb37891258ecc` passed exact-SHA run
-`37267763664` (117 steps), including household response-view extraction and
-missing-observation-time freshness coverage. Earlier candidate `725f8357`
-passed `37266372854`; docs checkpoint `ba7d4e3b` passed `37267996626`.
-Provider extraction `f700e892` passed duplicate runs `37264553916` and
-`37264554854`. The candidate contains the
-generated homelab package provenance guard, deterministic household denial,
-and an extracted provider-native read-only inference catalog boundary; the
-new provider sibling is covered by a package-digest mutation test. NYX-018 old-line classification and NYX-017 no-dispatch review are accepted. The hostile-household regression and corrected partial-source contradiction assertion are included in `2e62ffde`, which passed exact Public CI `37273578676`; NYX-032 closed the package-identity bypass in source and exact CI `37276510518` passed on `32d6a6a9`; NYX-033 accepted the provider boundary and found a separate authenticated-redirect P1; NYX-034 is integrated in candidate `1684f787`, which passed exact Public CI `37277326937`. NYX-035 installer closure is integrated as `b8258e87`; code/status checkpoint passed Public CI `37278311508`. NYX-036 package-drift detection is integrated locally as `57d4c14e`; exact Public CI `37280194670` passed for `3dac7d2f`. Nyx found and fixed the active-process false-PASS in `9d225dfc`; focused tests pass locally; the later code-bearing checkpoint `aad6b425` passed exact Public CI run `37286488393`. Deployment and promotion remain open. The
-candidate is not promoted or deployed. A fresh adapter read returned 11 rows
-marked fresh but no `observed_at`, and its module set differs from current main
-only in `reconcile.py`; the household fix requires post-deployment
-UI verification. Preserve the deployment-local overlay while reconciling
-package parity. The old GPU telemetry line remains review-only.
+The exact main CI and preceding candidate CI results are recorded above. Wait
+for exact hosted CI on the NYX-054 candidate, then continue source/runtime parity
+and representative owner/household acceptance. The last recorded runtime
+inspection found package parity and Kuma observation-time gaps; it is not a
+fresh probe. The old GPU telemetry line remains review-only. Do not promote or
+deploy until candidate qualification and current acceptance evidence pass.
 
 Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).
