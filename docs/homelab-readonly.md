@@ -25,9 +25,11 @@ backup-summary formatter extraction, the provider-native read-only inference
 catalog boundary, a provenance check comparing the profile-selected generated
 adapter's full Python module set and bytes with tracked source (including a
 changed-provider-module rejection fixture), and a fail-closed household
-response for private infrastructure-detail requests. Relevant Nyx
-reviews and main promotion are pending. These candidate changes are not
-deployed.
+response for private infrastructure-detail requests. The latest docs branch
+head `eba6363e` passed Public CI `37270035266`. NYX-018's old-line
+classification is accepted with no port recommended. Remaining exact
+package/provenance and privacy/extraction reviews plus main promotion are
+pending. These candidate changes are not deployed.
 
 The fresh 2026-10-05 active-profile package comparison found the deployed
 Python module set matches current public `main` except that `reconcile.py`
@@ -52,9 +54,11 @@ after deployment is required. Preserve the separate deployment-local overlay
 while resolving package parity. Exact runtime hashes and rollback details
 remain in protected operator records.
 
-The old GPU telemetry branch is review-only and has not been merged. Its
-Public CI run `37222211701` failed the public-history check. Current review is
-comparing contracts and architecture rather than importing its tree.
+The old GPU telemetry branch is an unsafe historical reference and has not
+been merged. Its Public CI run `37222211701` failed the public-history check;
+NYX-018 confirmed no safe unique feature should be ported and the current guard
+finds one branch-only host-local path in its history. The path value is omitted
+here. Do not use that branch as a development base.
 
 The read layer remains **PARTIAL**: synthetic contracts and prior targeted
 owner/household dogfood do not establish live stale-source, contradiction,

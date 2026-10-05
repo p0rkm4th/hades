@@ -19,13 +19,17 @@ scope guard; the candidate also tests that missing Kuma observation time
 remains `UNKNOWN`. Previous source/test candidate `725f8357` passed
 `37266372854`; the docs checkpoint `d31c6d0d` passed Public CI run
 `37269639394` after recording the exact deployed reconciler drift.
+Latest documentation-only branch head `eba6363e7452a97e6225194314a84e3ade980811`
+passed exact Public CI run [37270035266](https://github.com/p0rkm4th/hades/actions/runs/37270035266).
 The branch is not promoted or deployed. The primary local checkout is
 preserved and is not the integration base.
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
 candidate. Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
-failed at `Check public history`; Aster has completed a preliminary semantic
-classification and awaits Nyx's independent challenge. Its final tree removes
+failed at `Check public history`; NYX-018 independently reviewed and accepted
+Aster's semantic classification. No unique safe behavior merits porting. The
+current guard reports one actual branch-only host-local path in historical
+commit `ed1d5351` (the value is omitted here). Its final tree removes
 Kuma `observed_at` and NetBox pagination-coverage semantics that current main
 and focused tests preserve. No wholesale import is planned. Its duplicated
 inference view code is less complete than main's freshness/provenance behavior,
@@ -71,9 +75,9 @@ read-only inference catalog parsing while retaining credential/TLS transport,
 identity mapping, and composition in the server. The package-provenance
 fixture now covers the added provider sibling. Focused contracts, public
 safety, and hosted CI runs `37264553916`, `37264554854`, and `37265041968`
-pass. Neither change is deployed. Nyx's independent old-line review and
-relevant package/privacy reviews remain pending in the protected coordination
-record. A live household
+pass. Neither change is deployed. NYX-018 is accepted; relevant package,
+provider, and privacy/extraction reviews remain pending in the protected
+coordination record. A live household
 UI prompt exposed the intent-classification gap; no concrete host data was
 returned, and fresh post-deployment UI verification remains open. Runtime
 package parity and monitor observation-time output also remain open.
@@ -86,7 +90,7 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 **PARTIAL**. Exact runtime hashes, private topology, rollback paths, and raw
 acceptance transcripts remain in protected operator records.
 
-**Next:** finish Nyx's old-line, package-guard, provider-boundary, and
+**Next:** finish the package-guard, provider-boundary, and
 household-privacy/extraction reviews, including NYX-017 against the exact
 `7b14df85` candidate. Prepare a coherent full-package deployment only after
 review and promotion. Then deploy the
