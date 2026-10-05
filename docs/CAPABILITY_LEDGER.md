@@ -7,9 +7,9 @@ state checks remain in the private acceptance record.
 Last reviewed: 2026-10-05
 
 
-## Current homelab source checkpoint — 2026-10-05 08:41 UTC
+## Current homelab source checkpoint — 2026-10-05 08:52 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Candidate `b3e64752` includes NYX-043 schedule and NYX-045 task-history fixes plus NYX-046/047 pure summary projection extraction and boundary tests. Adapter, service-health, manifest-closure, install/deployed-provenance, doctor package-drift, syntax, diff, and public safety checks pass. The integrated code/docs checkpoint `69feb409` passed exact Public CI `37285067916`. Backup task history still does not prove artifacts, independent custody, or restoreability; private recovery evidence remains unaudited. NYX-042 schedule issues are fixed locally; artifact validation, custody, and restoreability remain explicitly unclaimed. Production is unchanged; the running Hermes process lacks the configured working-directory variable, and deployed adapter/source parity remains unresolved.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Candidate `ea606bac` includes NYX-043 schedule and NYX-045 task-history fixes plus NYX-046/047 summary projection extraction, NYX-050 parity review, and NYX-051 direct edge-case coverage. Adapter, service-health, manifest-closure, install/deployed-provenance, doctor package-drift, syntax, diff, and public safety checks pass. Prior checkpoint `0ea70879` passed exact Public CI `37285252410`; exact CI for `ea606bac` is pending. NYX-048 confirmed that current private infra source state has no independent recovery artifact; an authorized off-host target and recipient are pending. Backup task history still does not prove artifacts, custody, or restoreability. Production is unchanged; the running Hermes process lacks the configured working-directory variable, and deployed adapter/source parity remains unresolved.
 
 ## Gamma transition
 
