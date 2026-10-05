@@ -7,17 +7,17 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05
 
-Canonical public `main` is `df304c25dd12fb6dcf70a0369993abac5912bf01`; post-promotion Public CI run `37247310779` passed. Aster's branch `codex/inference-read-freshness-20261004` is aligned with main and clean. Code candidate `6bc6063702f73665a9cf666ca14cf7057d5924e4` passed Public CI `37245877931`, and docs/promotion checkpoint `df304c25` is now on main. NYX-001 and NYX-002 are complete and accepted. NYX-003 recommends re-scoping the next pure view extraction to a neutral module because one status classifier is used by both owner summaries and a household-safe route. The old homelab branch remains review-only; no branch code/history was imported.
+Canonical public `main` is `a9a52f0cbbb09fb2a0117f69632902b0aeb7e0e9`; Public CI run `37247728530` passed. Candidate `6b7d102c01705b87eb9abd4cf1df47fe1d9d9132` extracts re-scoped homelab views; candidate Public CI `37248837792` passed and NYX-004 review is pending. NYX-001/002 are accepted, and NYX-003's re-scope is implemented: the availability classifier is shared with a household-safe route, so the extracted module has a neutral name and the hook retains all identity gates, route order, and owner-only dispatch. The old homelab branch remains review-only; no branch code/history was imported.
 
-The promoted change moves six AST-identical inference/GPU response helpers to `inference_view.py`, preserves all former adapter aliases, and has no source-reading or configuration dependency in the view module. Post-deploy, the two active adapter files matched the reviewed candidate hashes, mode/ownership remained `0640 scotty:hades-runtime`, Hermes was active, and health returned HTTP 200. Seven fresh authenticated chats passed with zero errors: four owner inference/GPU/activity checks and three household checks, each household answer passing the topology-leak guard. No overlay or infrastructure-source settings changed.
+The promoted change moves six AST-identical inference/GPU response helpers to `inference_view.py`, preserves all former adapter aliases, and has no source-reading or configuration dependency in the view module. Post-deploy, the two active adapter files matched the reviewed candidate hashes, mode/ownership remained `0640 scotty:hades-runtime`, Hermes was active, and health returned HTTP 200. Seven fresh authenticated chats passed with zero errors: four owner inference/GPU/activity checks and three household checks, each household answer passing the topology-leak guard. No overlay or infrastructure-source settings changed. The current candidate moves a separate five-function pure presentation group to `integrations/homelab_views.py`; it has not been deployed.
 
 The wider homelab campaign remains **PARTIAL** pending stale/partial-source and contradiction dogfood, native application-health and service-placement coverage, network trends, backup artifact/restoreability evidence, and ordinary-user outage acceptance. The encrypted private-infra snapshot restores bytes and modes but is on the same `/home` filesystem; independent-device custody is still open.
 
-The next extraction is design-approved only after re-scoping: keep the shared
-availability classifier neutral and preserve all identity gates, route order,
-and owner-only dispatch in `sitecustomize.py`. Add a wrapper-to-view golden
-contract, unrelated-working-directory import check, and household
-non-invocation assertion before moving the four owner summary renderers.
+The candidate packages `homelab_views.py` beside the installed Hermes overlay
+and includes it in the installer, validator, doctor, and source/runtime digest.
+Its test pins byte-for-byte outputs, loads the module from a configured root
+while CWD is unrelated, and confirms household routes do not invoke owner
+renderers. Candidate CI `37248837792` passed; NYX-004 recheck remains pending before promotion.
 
 ## Historical release baseline and prior evidence
 
