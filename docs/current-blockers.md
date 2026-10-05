@@ -7,7 +7,7 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05
 
-Canonical public `main` is `9c8324408578c1d7cd5b65c880afa9a146c4a68c`; post-promotion Public CI run `37249668974` passed. The re-scoped homelab-view extraction is promoted. NYX-001/002/003/004 reviews are accepted; the availability classifier is shared with a household-safe route, while identity gates, route order, and owner-only dispatch remain in the hook. The old homelab branch remains review-only; no branch code/history was imported.
+Canonical public `main` is `0a21667c65e30a0beeea663c76c8821ae1b4fb6a`; Public CI run `37250073029` passed. The re-scoped homelab-view extraction is promoted. NYX-001/002/003/004 reviews are accepted; NYX-005 recommends a re-scope before runtime composition. The availability classifier is shared with a household-safe route, while identity gates, route order, and owner-only dispatch remain in the hook. The old homelab branch remains review-only; no branch code/history was imported.
 
 The promoted change moves six AST-identical inference/GPU response helpers to `inference_view.py`, preserves all former adapter aliases, and has no source-reading or configuration dependency in the view module. Post-deploy, the two active adapter files matched the reviewed candidate hashes, mode/ownership remained `0640 scotty:hades-runtime`, Hermes was active, and health returned HTTP 200. Seven fresh authenticated chats passed with zero errors: four owner inference/GPU/activity checks and three household checks, each household answer passing the topology-leak guard. No overlay or infrastructure-source settings changed. The promoted source also moves a separate five-function pure presentation group to `integrations/homelab_views.py`; it has not been deployed because the active overlay is deployment-local and needs a compatibility review.
 
@@ -27,8 +27,9 @@ response covers source failures, partial scope, identity-link gaps, and
 freshness; an effective-permission guest-visibility route lacks a tracked
 equivalent; and the active service-monitor signature/behavior and direct-reader
 intent order differ. A private synthetic differential harness is the next
-step. Any future rollout must preserve or explicitly retire these semantics,
-then validate the exact composed bytes before installation.
+step. NYX-006 is assigned to build that private synthetic differential
+harness. Any future rollout must preserve or explicitly retire these
+semantics, then validate the exact composed bytes before installation.
 
 ## Historical release baseline and prior evidence
 
