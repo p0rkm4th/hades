@@ -729,6 +729,75 @@ assert projection_inputs == projection_inputs_before
 server._fetch = original_fetch
 print("PASS homelab summary caps optional detail while preserving authorities, source counts, and canonical views")
 
+# The pure summary projection handles absent and empty lists consistently,
+# preserves caller-supplied truncation metadata, and never mutates its input.
+import summary_view
+
+absent_summary_input = {"authority": {"runtime": "Proxmox"}}
+absent_summary_before = copy.deepcopy(absent_summary_input)
+absent_summary = summary_view.project_summary_response(absent_summary_input, [])
+assert absent_summary["resources"] == []
+assert "online_names" not in absent_summary
+assert "inventory_only_names" not in absent_summary
+assert "availability_summary" not in absent_summary
+assert not any(key.endswith("_truncated") for key in absent_summary)
+assert absent_summary_input == absent_summary_before
+
+empty_summary_input = {
+    "resources": [], "online_names": [], "inventory_only_names": [],
+    "availability_summary": [],
+    "resources_truncated": {"returned": 0, "total": 7, "reason": "upstream bound"},
+    "online_names_truncated": {"returned": 0, "total": 30},
+    "inventory_only_names_truncated": {"returned": 0, "total": 15},
+    "availability_summary_truncated": {"returned": 0, "total": 15},
+}
+empty_summary_before = copy.deepcopy(empty_summary_input)
+empty_summary = summary_view.project_summary_response(empty_summary_input, [])
+for field in ("resources", "online_names", "inventory_only_names", "availability_summary"):
+    assert empty_summary[field] == []
+for field in (
+    "resources_truncated", "online_names_truncated",
+    "inventory_only_names_truncated", "availability_summary_truncated",
+):
+    assert empty_summary[field] == empty_summary_before[field]
+assert empty_summary_input == empty_summary_before
+
+error_summary_input = {"resources": [], "errors": ["existing report error"]}
+provided_errors = ["source unavailable"]
+error_summary_before = copy.deepcopy(error_summary_input)
+error_summary = summary_view.project_summary_response(error_summary_input, provided_errors)
+assert error_summary["errors"] == ["source unavailable"]
+provided_errors.append("later caller mutation")
+assert error_summary["errors"] == ["source unavailable"]
+assert error_summary_input == error_summary_before
+preserved_errors = summary_view.project_summary_response(error_summary_input, [])
+assert preserved_errors["errors"] == ["existing report error"]
+assert error_summary_input == error_summary_before
+
+overflow_summary_input = {
+    "resources": [{"name": f"node-{index}", "inventory": {"id": index}}
+                  for index in range(5)],
+    "online_names": [f"online-{index}" for index in range(25)],
+    "inventory_only_names": [f"inventory-{index}" for index in range(13)],
+    "availability_summary": [{"name": f"availability-{index}"} for index in range(13)],
+}
+overflow_summary_before = copy.deepcopy(overflow_summary_input)
+overflow_summary = summary_view.project_summary_response(overflow_summary_input, [])
+assert len(overflow_summary["resources"]) == 4
+assert overflow_summary["resources_truncated"]["total"] == 5
+assert len(overflow_summary["online_names"]) == 24
+assert overflow_summary["online_names_truncated"] == {"returned": 24, "total": 25}
+assert len(overflow_summary["inventory_only_names"]) == 12
+assert overflow_summary["inventory_only_names_truncated"] == {"returned": 12, "total": 13}
+assert len(overflow_summary["availability_summary"]) == 12
+assert overflow_summary["availability_summary_truncated"] == {"returned": 12, "total": 13}
+assert overflow_summary_input == overflow_summary_before
+assert len(overflow_summary_input["resources"]) == 5
+assert len(overflow_summary_input["online_names"]) == 25
+assert "resources_truncated" not in overflow_summary_input
+assert "online_names_truncated" not in overflow_summary_input
+print("PASS direct summary projection handles absent/empty lists, metadata, error overlays, and input immutability")
+
 # Proxmox backup evidence is read-only, scope-filtered, bounded, and distinct
 # from proof of artifact contents or restoreability.
 assert "homelab_backup_status" in {tool.name for tool in server.TOOLS}
