@@ -1,8 +1,8 @@
 # HADES stable-v1 readiness
 
-## Current homelab engineering checkpoint — 2026-10-05 09:18 UTC
+## Current homelab engineering checkpoint — 2026-10-05 09:32 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Active candidate branch `codex/aster-homelab-clean-candidate-20261005` contains source/test commit `cbdbb399` and validated checkpoint `40be64b1`, 73 and 74 commits ahead of main respectively; exact Public CI `37288863179` passed all 117 reported steps at `40be64b1`, with current-tree and introduced-history safety passing. A docs-only status refresh follows, with no code changes. A previous pushed branch retains a superseded documentation commit that fails introduced-history safety; the active branch excludes it without rewriting public history. Code includes NYX-043/045 backup truth corrections, NYX-046/047 summary-view extraction/tests, NYX-051 direct boundary cases, and NYX-054 sequential Kuma outage coverage. Production parity and owner/household acceptance remain open. NYX-053 found no concrete stale-cache defect; NYX-055 found no household source-failure leak; NYX-056 independent review is accepted. Independent private recovery remains a P1 pending owner-approved destination and recipient. No promotion or deployment occurred.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Active candidate branch `codex/aster-homelab-clean-candidate-20261005` contains source/test commit `cbdbb399` and validated checkpoint `40be64b1`, 73 and 74 commits ahead of main respectively; exact Public CI `37289583277` passed for the latest docs-only head `2895c7df`, 75 commits ahead. Current-tree and introduced-history safety passed at code checkpoint `40be64b1`; the latest commit changes documentation only. A previous pushed branch retains a superseded documentation commit that fails introduced-history safety; the active branch excludes it without rewriting public history. Code includes NYX-043/045 backup truth corrections, NYX-046/047 summary-view extraction/tests, NYX-051 direct boundary cases, and NYX-054 sequential Kuma outage coverage. Production parity and owner/household acceptance remain open. NYX-053 found no concrete stale-cache defect; NYX-055 found no household source-failure leak; NYX-056 independent review is accepted. NYX-058 overlay-composer implementation `7bbba6e6` is reviewed with focused tests passing; integration remains pending. NYX-059 private-infra recovery audit is active. Independent private recovery remains a P1 pending owner-approved destination and recipient. No promotion or deployment occurred.
 
 This is a readiness record for the deployment, not an installer or a new
 runtime layer. Most component observations below were last rechecked read-only
@@ -130,12 +130,13 @@ LLDAP membership, but neither is deployed or connected to n8n. Keep schedules
 disabled; see
 [`automation-boundary.md`](automation-boundary.md).
 
-## Current next action — 2026-10-05 09:18 UTC
+## Current next action — 2026-10-05 09:32 UTC
 
 The exact main and candidate CI results are recorded above. NYX-056 has
 independently confirmed the candidate's current-tree and introduced-history
-safety; continue source/runtime parity and representative owner/household
-acceptance. The last recorded runtime
+safety. Integrate NYX-058’s reviewed composer and define the overlay-preserving
+rollout contract; continue source/runtime parity and representative
+owner/household acceptance. NYX-059 is auditing recovery independently. The last recorded runtime
 inspection found package parity and Kuma observation-time gaps; it is not a
 fresh probe. The old GPU telemetry line remains review-only. Do not promote or
 deploy until candidate qualification and current acceptance evidence pass.
