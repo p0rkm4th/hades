@@ -7,14 +7,16 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-05 UTC
 
-**Live reconciliation for this Aster epoch:** canonical `origin/main` is
-`4859acef7af95ff4611af83e8e1777a4fe355f6b` and its Public CI run
-[37322096365](https://github.com/p0rkm4th/hades/actions/runs/37322096365)
-passed. Candidate commit `9e11ff92f503fefeaaf24b30c478857bdd1b29f4`
-(`Extract pure Proxmox host-load views`) is on the current-main descendant
-branch; its Public CI run [37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706)
-passed. Do not treat it as main or deployed until promotion and runtime
-acceptance are verified. Local public-tree safety, the homelab service-health contract,
+**Live reconciliation for this Aster epoch:** current `main` contains
+`8f3209757f4c2cd4170bab9829285021f45b728b`, a fast-forward descendant of
+`4859acef7af95ff4611af83e8e1777a4fe355f6b`. Implementation commit
+`9e11ff92f503fefeaaf24b30c478857bdd1b29f4` (`Extract pure Proxmox host-load
+views`) passed candidate Public CI run
+[37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706);
+the full code+docs commit passed run
+[37324964236](https://github.com/p0rkm4th/hades/actions/runs/37324964236).
+Post-promotion CI run [37325121388](https://github.com/p0rkm4th/hades/actions/runs/37325121388)
+passed. The promoted change is not deployed. Local public-tree safety, the homelab service-health contract,
 and the Hermes task-chat runtime contract pass. NYX-003 reviewed the change
 and found no P1/P2 issue. Two pure host-load renderers now live in
 `integrations/homelab_views.py`; small Hermes compatibility wrappers preserve
@@ -40,7 +42,7 @@ Private-infra recovery remains an owner-managed limitation: the checkout is dirt
 
 **Repository state:** public `origin/main` is canonical. The dirty primary checkout and old parallel worktrees are preserved; this integration branch is the only active Aster implementation line. No private topology, credentials, or raw acceptance transcripts belong in public docs.
 
-**Next exact actions:** run the sanitized documentation and current candidate through Public CI, then fast-forward only this current-main descendant to `main` if that run passes and main remains unchanged. Verify post-promotion Public CI. Keep the read layer **PARTIAL**: obtain fresh authenticated owner/household acceptance and establish a reproducible current-main runtime composition before any deployment. Do not attempt private recovery transfer until the owner supplies an independent encrypted destination and public recipient.
+**Next exact actions:** verify post-promotion CI for `8f3209757f4c2cd4170bab9829285021f45b728b`; commit and push this checkpoint correction, then verify CI for that documentation revision. Keep the read layer **PARTIAL**: obtain fresh authenticated owner/household acceptance and establish a reproducible current-main runtime composition before any deployment. Do not attempt private recovery transfer until the owner supplies an independent encrypted destination and public recipient.
 
 ## Previous code and dogfood checkpoints — 2026-10-04
 

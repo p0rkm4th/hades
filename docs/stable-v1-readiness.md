@@ -129,14 +129,17 @@ disabled; see
 
 ## Current next action
 
-For the homelab architecture slice, canonical main is
-`4859acef7af95ff4611af83e8e1777a4fe355f6b` and Public CI run
-[37322096365](https://github.com/p0rkm4th/hades/actions/runs/37322096365)
-passed. Candidate `9e11ff92f503fefeaaf24b30c478857bdd1b29f4` moves two pure
+For the homelab architecture slice, current main contains
+`8f3209757f4c2cd4170bab9829285021f45b728b`, fast-forwarded from
+`4859acef7af95ff4611af83e8e1777a4fe355f6b`. Implementation commit
+`9e11ff92f503fefeaaf24b30c478857bdd1b29f4` moves two pure
 Proxmox host-load renderers to `integrations/homelab_views.py`; NYX-003 found
 no P1/P2 issue and focused safety/service-health/runtime checks pass. Candidate
-CI [37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706)
-passed for the source commit. This is not deployed or fresh owner acceptance. Private
+Candidate and code+docs CI runs
+[37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706) and
+[37324964236](https://github.com/p0rkm4th/hades/actions/runs/37324964236)
+passed; post-promotion CI [37325121388](https://github.com/p0rkm4th/hades/actions/runs/37325121388)
+also passed. This is not deployed or fresh owner acceptance. Private
 encrypted off-host recovery remains an owner-managed limitation: no independent
 destination has been specified.
 

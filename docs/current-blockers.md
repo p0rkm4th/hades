@@ -7,11 +7,13 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-Reconciled current main is `4859acef7af95ff4611af83e8e1777a4fe355f6b`
-(Public CI [37322096365](https://github.com/p0rkm4th/hades/actions/runs/37322096365)
-passed). Candidate `9e11ff92f503fefeaaf24b30c478857bdd1b29f4` extracts only
-the pure host-load renderers into the existing view module; CI run
-[37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706)
+Current main contains `8f3209757f4c2cd4170bab9829285021f45b728b`, a
+fast-forward descendant of `4859acef7af95ff4611af83e8e1777a4fe355f6b`.
+The host-load view extraction at `9e11ff92f503fefeaaf24b30c478857bdd1b29f4`
+and combined code/docs revision passed Public CI runs
+[37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706) and
+[37324964236](https://github.com/p0rkm4th/hades/actions/runs/37324964236).
+Post-promotion run [37325121388](https://github.com/p0rkm4th/hades/actions/runs/37325121388)
 passed. NYX-003 found no P1/P2 issue. Local safety, service-health,
 and Hermes runtime checks pass. The candidate is not yet in main or deployed.
 Partial Proxmox guest visibility is now asserted to preserve uncertainty rather
@@ -30,7 +32,7 @@ Fresh read-only provenance confirms the production Hermes process is active, has
 
 Private-infra recovery also remains gated: the current checkout is dirty, and independent encrypted off-host custody and restore proof are not established. The owner confirms there is no off-site backup at this time. Treat private-infra recovery as a known owner-managed limitation; do not represent same-host copies as independent recovery.
 
-**Next:** run Public CI on the documentation-reconciled candidate; if it passes and `main` has not advanced, fast-forward this current-main descendant and verify main CI. Keep the read layer PARTIAL and undeployed until current-main runtime composition and fresh authenticated owner/household acceptance are established. Independent private recovery remains an owner gate.
+**Next:** verify post-promotion Public CI, then validate this checkpoint correction. Keep the read layer PARTIAL and undeployed until current-main runtime composition and fresh authenticated owner/household acceptance are established. Independent private recovery remains an owner gate.
 
 ## Historical release baseline and prior evidence
 

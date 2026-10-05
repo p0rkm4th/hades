@@ -9,17 +9,20 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Current source reconciliation: `origin/main` is
-`4859acef7af95ff4611af83e8e1777a4fe355f6b` with Public CI run
-[37322096365](https://github.com/p0rkm4th/hades/actions/runs/37322096365)
-passing. Candidate `9e11ff92f503fefeaaf24b30c478857bdd1b29f4` extracts the
+Current source reconciliation: `main` contains
+`8f3209757f4c2cd4170bab9829285021f45b728b`, fast-forwarded from
+`4859acef7af95ff4611af83e8e1777a4fe355f6b`. Implementation commit
+`9e11ff92f503fefeaaf24b30c478857bdd1b29f4` extracts the
 two pure Proxmox host-load response renderers into the existing
 `integrations/homelab_views.py`; Hermes retains the compatibility hooks,
 owner routing, authorization, and all live source reads. NYX-003 found no
 P1/P2 issue. Focused public-tree safety, service-health, and task-chat runtime
 checks pass, including a fail-closed assertion for partial guest visibility.
-Candidate Public CI [37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706)
-passed for the source commit. This source change has not been deployed and provides no new
+Candidate and code+docs CI runs
+[37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706) and
+[37324964236](https://github.com/p0rkm4th/hades/actions/runs/37324964236)
+passed; post-promotion CI [37325121388](https://github.com/p0rkm4th/hades/actions/runs/37325121388)
+also passed. This source change has not been deployed and provides no new
 live behavioral evidence.
 
 Homelab code checkpoint `8ae97d13c9b31db715e56c6c2b622ff40ae0ff82`; Public CI run [37321354100](https://github.com/p0rkm4th/hades/actions/runs/37321354100) passed. This version includes the reviewed Proxmox backup response and recent-activity view extractions. NYX-002/004 found no material P1/P2 issue; focused direct-view and adapter-parity checks pass. The adapter regression sequences a successful Kuma read and a subsequent Kuma outage while Proxmox returns a changed guest state; it verifies a fresh Proxmox fetch and UNKNOWN availability without reusing Kuma's prior result. NYX-011 reviewed the test, and the focused adapter script passes. The CI service-health contract also requires household denial to return before direct homelab readers and includes a synthetic inserted-read regression. The presenter refactors have not been separately deployed.
