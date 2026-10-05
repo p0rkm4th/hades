@@ -15,9 +15,13 @@ commits) found 1,509 historical matches for two apparently owner-specific
 other files. The exact names are intentionally omitted here. Another 90
 private-address matches across 86 commits are confined to synthetic
 test/fixture locations. Host-local paths, tailnet names, MAC addresses, and
-credential-like artifact paths were not found by these detectors. This does
-not prove that inline API credentials or key material are absent; that content
-was not inspected by the history audit.
+credential-like artifact paths were not found by these detectors. A separate
+redacted Gitleaks scan found 28 generic API-key matches across six commits;
+all matched the same value in test/fixture files with explicit placeholder
+context, and none of those values appeared in the current tree. Treat these as
+synthetic fixture matches, not a confirmed live credential. A separate
+Gitleaks scan of the current tree found zero findings; secret scanning remains
+heuristic.
 
 The current source tree passes its sanitization scan, but the historical names
 remain in already-published commits. Public history is not being rewritten;
