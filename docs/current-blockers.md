@@ -7,15 +7,15 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current mission checkpoint — 2026-10-05 UTC
 
-Canonical public `origin/main` is `a91db753c8a2058550ec83b60fcf97cf09eb1faa`. Post-promotion Public CI [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810) failed the public-history audit because its promotion range included one private local checkout path in an earlier checkpoint commit. It is absent from the current tree; public history was not rewritten. Candidate `bdc251bbdc91a5e0eb0abf31b5b8485ef720caf5` passes Public CI [37379792181](https://github.com/p0rkm4th/hades/actions/runs/37379792181), adding independent exception handling for GPU telemetry and provider inventory; promotion and main CI remain pending.
+Canonical public `origin/main` is `d708246f4ade0dabe90deecf9451bb3ec3ef4d4e`; post-promotion Public CI [37380311483](https://github.com/p0rkm4th/hades/actions/runs/37380311483) passes. The earlier promotion run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810) failed public-history audit because its range contained one private local checkout path in an earlier checkpoint commit. That value is absent from current tree; public history was not rewritten. Current-tree and later introduced-range safety checks pass.
 
-The old GPU-parity remote ref is deleted and its preserved local tip failed public-history safety. Prior NYX-001/101 reviews found no safe unique old-branch behavior missing from main; NYX-102 accepted the GPU pure-view extraction now in main. NYX-103 found and helped isolate one P2: a failed GPU telemetry or inference-provider read suppressed the successful sibling result. The candidate catches each failure separately and has synthetic tests for both directions.
+The old GPU-parity remote ref is deleted and its preserved local tip failed public-history safety. Prior NYX-001/101 reviews found no safe unique old-branch behavior missing from main; NYX-102 accepted the GPU pure-view extraction now in main. NYX-103 found and helped isolate one P2: a failed GPU telemetry or inference-provider read suppressed the successful sibling result. The fix on main catches each failure separately and has synthetic tests for both directions.
 
 Homelab remains **PARTIAL**. Protected strict-key inspection found 10 active adapter modules versus 14 in current main (four absent, two byte-different); selected disk files do not prove in-memory process bytes. Deployed overlay and adapter provenance remain unverified. Eight authenticated owner/household prompts passed only on the currently reachable deployment, not current-main parity. No production deployment or source ACL change occurred. The private infrastructure checkout remains preserved because it is dirty and includes unrelated work. No independent encrypted off-site recovery destination is available; no artifact or restore proof exists.
 
-The current main's GPU response-view extraction reduces `hermes/sitecustomize.py` by 71 lines while preserving the same routing definitions. The candidate's independent source-failure handling and focused contracts pass locally and its exact candidate CI passes; it is not yet on main or deployed.
+The current main's GPU response-view extraction reduces `hermes/sitecustomize.py` by 71 lines while preserving the same routing definitions. Main's independent source-failure handling and focused contracts pass in candidate and post-promotion CI; it is not deployed.
 
-Next: refresh the top-level milestone docs against the green `bdc251bb` candidate, fast-forward only if based on current main, and verify post-promotion CI. Continue runtime provenance work without changing production.
+Next: continue current-main runtime provenance and owner/household acceptance work without changing production.
 
 ## Historical convergence checkpoint — superseded
 

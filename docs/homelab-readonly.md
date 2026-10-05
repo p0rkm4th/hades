@@ -13,17 +13,16 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 ## Current source and runtime checkpoint
 
 **Current repository checkpoint (2026-10-05):** public `main` is
-`a91db753c8a2058550ec83b60fcf97cf09eb1faa`. Post-promotion Public CI
-[37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810)
-failed its public-history audit because that promotion range contained one
-private local checkout path in an earlier checkpoint commit. The value is
-absent from the current tree; history was not rewritten. Candidate
-`bdc251bbdc91a5e0eb0abf31b5b8485ef720caf5` passes exact Public CI
-[37379792181](https://github.com/p0rkm4th/hades/actions/runs/37379792181).
-NYX-102's pure GPU execution response-view extraction is on main. NYX-103's
-follow-up candidate reads telemetry and provider inventory independently, so
-one source exception no longer hides the other source's result. It is not
-deployed. Candidate promotion and post-promotion CI remain pending.
+`d708246f4ade0dabe90deecf9451bb3ec3ef4d4e`. Post-promotion Public CI
+[37380311483](https://github.com/p0rkm4th/hades/actions/runs/37380311483)
+passes. An earlier main run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810)
+failed the public-history audit because its range contained one private local
+checkout path from an earlier checkpoint commit. It is absent from the current
+tree; public history was not rewritten. Current-tree and subsequent range
+checks pass. NYX-102's GPU response-view extraction and NYX-103's independent
+telemetry/provider error handling are on main; candidate and main CI both
+pass. Neither change has been deployed, and production package provenance
+remains unverified.
 
 A bounded authenticated owner/household run on the currently reachable
 production deployment passed eight fresh prompts: all eight persisted in their
