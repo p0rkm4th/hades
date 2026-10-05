@@ -385,6 +385,13 @@ def mcp_runtime_identity(
         args = [expand_profile_value(item, environment) for item in profile_args(block, name)]
 
         script = next((item for item in args if item.endswith((".py", ".sh", ".js"))), "")
+        if name == "homelab-readonly" and (
+            not re.fullmatch(r"python(?:[0-9]+(?:\.[0-9]+)*)?", Path(command).name)
+            or not script or not args or script != args[0] or not script.endswith(".py")
+        ):
+            raise SystemExit(
+                "enabled homelab-readonly MCP must launch a path-backed server.py package"
+            )
         if script:
             target = Path(script)
             if not target.is_absolute():

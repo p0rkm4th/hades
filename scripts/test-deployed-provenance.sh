@@ -16,11 +16,12 @@ printf '# synthetic Grocy launcher source\n' > "$source_repo/integrations/grocy-
 printf 'from reconcile import VALUE\n' > "$source_repo/integrations/homelab-readonly/server.py"
 printf 'VALUE = "fixture"\n' > "$source_repo/integrations/homelab-readonly/reconcile.py"
 printf 'VALUE = "provider-fixture"\n' > "$source_repo/integrations/homelab-readonly/inference_provider.py"
+printf 'VALUE = "visibility-fixture"\n' > "$source_repo/integrations/homelab-readonly/proxmox_visibility.py"
 printf 'manifest fixture\n' > "$source_repo/config/reconstruction-manifest.json"
 git -C "$source_repo" init -q
 git -C "$source_repo" config user.email fixture@example.invalid
 git -C "$source_repo" config user.name fixture
-git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/inference_provider.py config/reconstruction-manifest.json
+git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/inference_provider.py integrations/homelab-readonly/proxmox_visibility.py config/reconstruction-manifest.json
 git -C "$source_repo" commit -qm fixture
 hades_sha=$(git -C "$source_repo" rev-parse HEAD)
 cp "$source_repo/integrations/homelab-readonly/"*.py "$runtime_homelab_package/"
@@ -71,6 +72,7 @@ else:
 PY
 python3 - "$PWD/scripts/write-deployed-provenance.py" "$tmp/hermes-home/profiles/hades/config.yaml" "$source_repo" "$generated_integrations" <<'PY'
 import importlib.util
+import hashlib
 from pathlib import Path
 import sys
 spec = importlib.util.spec_from_file_location("deployed_provenance", sys.argv[1])
@@ -88,9 +90,10 @@ rows, _ = module.mcp_runtime_identity(profile, environment, root)
 homelab = next(row for row in rows if row["name"] == "homelab-readonly")
 assert [item["source"] for item in homelab["package"]["files"]] == [
     "integrations/homelab-readonly/inference_provider.py",
+    "integrations/homelab-readonly/proxmox_visibility.py",
     "integrations/homelab-readonly/reconcile.py",
     "integrations/homelab-readonly/server.py",
-]
+], homelab["package"]["files"]
 direct_profile = Path(profile.parent.parent.parent) / "direct-config.yaml"
 direct_profile.write_text(
     'mcp_servers:\n'
@@ -115,6 +118,67 @@ alias_profile.write_text(
 alias_rows, _ = module.mcp_runtime_identity(alias_profile, environment, root)
 alias_homelab = next(row for row in alias_rows if row["name"] == "homelab-alias")
 assert alias_homelab["package"]["sha256"] == homelab["package"]["sha256"]
+
+# An enabled homelab MCP must bind to its complete path-backed source package.
+# Module and inline-code launches can otherwise be recorded only as an
+# external executable, leaving their actual implementation unbound.
+fake_external = profile.parent.parent.parent.parent / "active" / "hermes"
+fake_python = profile.parent.parent.parent.parent / "active" / "python3"
+runtime_server = generated_root / "homelab-readonly-646577b" / "server.py"
+fake_python.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+fake_python.chmod(0o700)
+for launch_args in ('["-m", "synthetic_untracked_homelab"]', '["-c", "pass"]'):
+    unbound_profile = Path(profile.parent.parent.parent.parent) / "unbound-homelab.yaml"
+    unbound_profile.write_text(
+        "mcp_servers:\n"
+        "  homelab-readonly:\n"
+        "    enabled: true\n"
+        f"    command: {fake_python}\n"
+        f"    args: {launch_args}\n",
+        encoding="utf-8",
+    )
+    try:
+        module.mcp_runtime_identity(unbound_profile, environment, root)
+    except SystemExit as error:
+        assert "path-backed server.py package" in str(error), error
+    else:
+        raise AssertionError(f"accepted unbound homelab launch arguments: {launch_args}")
+
+# A path-looking server.py argument is not enough when the configured command
+# is not a Python interpreter that will load the package.
+wrong_executor_profile = Path(profile.parent.parent.parent.parent) / "wrong-homelab-executor.yaml"
+wrong_executor_profile.write_text(
+    "mcp_servers:\n"
+    "  homelab-readonly:\n"
+    "    enabled: true\n"
+    f"    command: {fake_external}\n"
+    f"    args: [\"{runtime_server}\"]\n",
+    encoding="utf-8",
+)
+try:
+    module.mcp_runtime_identity(wrong_executor_profile, environment, root)
+except SystemExit as error:
+    assert "path-backed server.py package" in str(error), error
+else:
+    raise AssertionError("accepted homelab server.py path with a non-Python command")
+
+# Unrelated external executable MCPs retain their existing provenance path.
+external_only_profile = Path(profile.parent.parent.parent.parent) / "external-only.yaml"
+external_only_profile.write_text(
+    "mcp_servers:\n"
+    "  unrelated-helper:\n"
+    "    enabled: true\n"
+    f"    command: {fake_external}\n",
+    encoding="utf-8",
+)
+external_rows, _ = module.mcp_runtime_identity(external_only_profile, environment, root)
+assert external_rows == [{
+    "enabled": True,
+    "name": "unrelated-helper",
+    "transport": "external-executable",
+    "sha256": hashlib.sha256(fake_external.read_bytes()).hexdigest(),
+}]
+
 runtime_package = generated_root / "homelab-readonly-646577b"
 reconcile = runtime_package / "reconcile.py"
 original = reconcile.read_bytes()
@@ -128,16 +192,16 @@ try:
         raise AssertionError("homelab provenance accepted a mixed sibling module")
 finally:
     reconcile.write_bytes(original)
-provider = runtime_package / "inference_provider.py"
+provider = runtime_package / "proxmox_visibility.py"
 original = provider.read_bytes()
 try:
-    provider.write_text('VALUE = "mixed-provider-package"\n')
+    provider.write_text('VALUE = "mixed-visibility-package"\n')
     try:
         module.mcp_runtime_identity(profile, environment, root)
     except SystemExit as error:
         assert "package bytes differ" in str(error)
     else:
-        raise AssertionError("homelab provenance accepted a changed provider sibling")
+        raise AssertionError("homelab provenance accepted a changed Proxmox visibility sibling")
 finally:
     provider.write_bytes(original)
 extra_module = runtime_package / "unexpected.py"
@@ -487,6 +551,7 @@ homelab = value["mcp_runtime"][1]
 assert homelab["source"] == "integrations/homelab-readonly/server.py"
 assert [item["source"] for item in homelab["package"]["files"]] == [
     "integrations/homelab-readonly/inference_provider.py",
+    "integrations/homelab-readonly/proxmox_visibility.py",
     "integrations/homelab-readonly/reconcile.py",
     "integrations/homelab-readonly/server.py",
 ]
