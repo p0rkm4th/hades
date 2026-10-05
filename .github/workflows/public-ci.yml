@@ -202,6 +202,8 @@ jobs:
         run: bash scripts/test-clean-reconstruction-contract.sh
       - name: Check doctor and installer composed-overlay parity
         run: bash scripts/test-doctor-homelab-package-drift.sh
+      - name: Check isolated Hermes service rendering
+        run: bash scripts/test-render-hermes-service.sh
       - name: Check synthetic model streaming contract
         run: python3 scripts/test-synthetic-openai-backend.py
       - name: Check reconstruction evidence documentation

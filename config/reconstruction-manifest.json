@@ -243,8 +243,8 @@
     {
       "artifact": "private Compose records and Hermes service unit",
       "classification": "EXPLICIT OPERATOR INPUT",
-      "source": "mode-restricted paths in the operator-input file",
-      "lifecycle": "validated before mutation; retained for rebuild and rollback"
+      "source": "deploy/templates/hermes.service.in plus scripts/render-hermes-service.sh and mode-restricted paths in the operator-input file",
+      "lifecycle": "candidate Hermes service unit rendered independently; validated before mutation; retained for rebuild and rollback"
     },
     {
       "artifact": "generated configuration directories and install marker",

@@ -125,23 +125,7 @@ render() {
   {
     printf '# generated_by=hades\n# manifest_version=%s\n# repository_revision=%s\n# template=%s\n' \
       "$HADES_MANIFEST_VERSION" "$revision" "$source"
-    if [[ "$target" == hermes.service ]]; then
-      local text
-      text=$(<"$repo_dir/$source")
-      text=${text//@HADES_HERMES_WORKING_DIRECTORY@/$HADES_HERMES_WORKING_DIRECTORY}
-      text=${text//@HADES_HERMES_RUNTIME_USER@/$HADES_HERMES_RUNTIME_USER}
-      text=${text//@HADES_HERMES_RUNTIME_GROUP@/$HADES_HERMES_RUNTIME_GROUP}
-      text=${text//@HADES_HERMES_PROFILE@/$HADES_HERMES_PROFILE}
-      text=${text//@HADES_CONFIG_ROOT@/$HADES_CONFIG_ROOT}
-      text=${text//@HADES_DEPLOYMENT_DIR@/$HADES_DEPLOYMENT_DIR}
-      text=${text//@HADES_AGENT_ZERO_CLIENT_ENV_FILE@/$HADES_AGENT_ZERO_CLIENT_ENV_FILE}
-      text=${text//@HADES_SEARXNG_PORT@/${HADES_SEARXNG_PORT:-8080}}
-      text=${text//@HADES_HERMES_EXECUTABLE@/$HADES_HERMES_EXECUTABLE}
-      text=${text//@HADES_HERMES_API_BIND_HOST@/$HADES_HERMES_API_BIND_HOST}
-      printf '%s\n' "$text"
-    else
-      cat "$repo_dir/$source"
-    fi
+    cat "$repo_dir/$source"
   } > "$output/$target"
   chmod 600 "$output/$target"
 }
@@ -149,7 +133,8 @@ render() {
 render deploy/templates/open-webui.compose.yaml open-webui.compose.yaml
 render deploy/templates/hindsight.compose.yaml hindsight.compose.yaml
 render deploy/templates/searxng.compose.yaml searxng.compose.yaml
-render deploy/templates/hermes.service.in hermes.service
+bash "$repo_dir/scripts/render-hermes-service.sh" \
+  --inputs "$inputs" --output "$output/hermes.service" --deployment-dir "$output"
 
 owner_policy_env="$output/hades-owner-policy.env"
 if [[ -n "$HADES_OWNER_SUBJECT_IDS" ]]; then
