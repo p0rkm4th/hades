@@ -7,7 +7,7 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05
 
-Latest validated public `main` is `3f908c239df23c9a1e953a5e0e1e11ac44002016`; Public CI run `37250496781` passed. The re-scoped homelab-view extraction is promoted. NYX-001/002/003/004 reviews are accepted; NYX-005 recommends a re-scope before runtime composition. The availability classifier is shared with a household-safe route, while identity gates, route order, and owner-only dispatch remain in the hook. The old homelab branch remains review-only; no branch code/history was imported.
+Latest validated public `main` is `0d395a1a759d541630d643624d4fd872a1abb7e6`; Public CI run `37250678692` passed. The re-scoped homelab-view extraction is promoted. NYX-001/002/003/004 reviews are accepted; NYX-005/006 advise a re-scope before runtime composition. The availability classifier is shared with a household-safe route, while identity gates, route order, and owner-only dispatch remain in the hook. The old homelab branch remains review-only; no branch code/history was imported.
 
 The promoted change moves six AST-identical inference/GPU response helpers to `inference_view.py`, preserves all former adapter aliases, and has no source-reading or configuration dependency in the view module. Post-deploy, the two active adapter files matched the reviewed candidate hashes, mode/ownership remained `0640 scotty:hades-runtime`, Hermes was active, and health returned HTTP 200. Seven fresh authenticated chats passed with zero errors: four owner inference/GPU/activity checks and three household checks, each household answer passing the topology-leak guard. No overlay or infrastructure-source settings changed. The promoted source also moves a separate five-function pure presentation group to `integrations/homelab_views.py`; it has not been deployed because the active overlay is deployment-local and needs a compatibility review.
 
@@ -34,9 +34,15 @@ response covers source failures, partial scope, identity-link gaps, and
 freshness; an effective-permission guest-visibility route lacks a tracked
 equivalent; and the active service-monitor signature/behavior and direct-reader
 intent order differ. A private synthetic differential harness is the next
-step. NYX-006 is assigned to build that private synthetic differential
-harness. Any future rollout must preserve or explicitly retire these
-semantics, then validate the exact composed bytes before installation.
+step. NYX-006's protected synthetic comparison found source-conflict false
+clears on unavailable sources; missing partial-scope, unlinked-identity, and
+timestamp caveats; no effective-permission provenance route; and missing
+named-monitor truncation/source and bounded reachability fallbacks. The active
+four-argument service-monitor caller is not compatible with the promoted
+two-argument formatter. Household denials remain fail-closed but have different
+copy. NYX-007 is classifying which deltas belong in generic source. Any future
+rollout must preserve or explicitly retire the applicable semantics, then
+validate the exact composed bytes before installation.
 
 ## Historical release baseline and prior evidence
 
