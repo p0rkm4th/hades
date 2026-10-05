@@ -640,6 +640,8 @@ assert "UPID:" not in json.dumps(backup_report)
 assert "private-user" not in json.dumps(backup_report)
 assert "private failure detail" not in json.dumps(backup_report)
 backup_text = server.format_homelab_backup_status(backup_report)
+import backup_view
+assert backup_view.format_homelab_backup_status(backup_report, server._bounded_text) == backup_text
 assert "doesn't verify backup contents" in backup_text
 assert backup_report["retrieved_at"] in backup_text
 assert backup_report["formatted_summary"] == backup_text
@@ -1013,5 +1015,5 @@ print("PASS observed compute capability read is bounded, explicit, and read-only
 print("PASS owner snapshot preserves partial-source errors and authority boundaries")
 PY
 
-python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py
+python -m py_compile integrations/homelab-readonly/backup_view.py integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py
 echo 'PASS homelab MCP adapter is syntax-valid and read-only by construction'
