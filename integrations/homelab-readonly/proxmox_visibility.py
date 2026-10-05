@@ -10,14 +10,29 @@ import re
 
 
 def permission_enabled(value: object) -> bool:
-    return value is True or (type(value) is int and value > 0) or value == "1"
+    if value is False or (type(value) is int and value == 0) or value == "0":
+        return False
+    if value is True or (type(value) is int and value > 0) or value == "1":
+        return True
+    raise ValueError("Proxmox effective-permissions privilege has an invalid value")
+
+
+def _permission_rows(payload: dict) -> dict:
+    permissions = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(permissions, dict):
+        raise ValueError("Proxmox effective-permissions response has an invalid shape")
+    for path, grants in permissions.items():
+        if not isinstance(path, str) or not path.startswith("/") or not isinstance(grants, dict):
+            raise ValueError("Proxmox effective-permissions row has an invalid shape")
+        for privilege in ("VM.Audit", "NoAccess"):
+            if privilege in grants:
+                permission_enabled(grants[privilege])
+    return permissions
 
 
 def guest_visibility(payload: dict) -> dict:
     """State whether effective read ACLs cover all or only selected guests."""
-    permissions = payload.get("data") if isinstance(payload, dict) else None
-    if not isinstance(permissions, dict):
-        raise ValueError("Proxmox effective-permissions response has an invalid shape")
+    permissions = _permission_rows(payload)
     broad = False
     selected: set[str] = set()
     excluded = False
@@ -25,8 +40,8 @@ def guest_visibility(payload: dict) -> dict:
         if not isinstance(path, str) or not isinstance(grants, dict):
             continue
         if path in {"/", "/vms"} or path.startswith("/vms/"):
-            excluded = excluded or permission_enabled(grants.get("NoAccess"))
-        if not permission_enabled(grants.get("VM.Audit")):
+            excluded = excluded or permission_enabled(grants.get("NoAccess", 0))
+        if not permission_enabled(grants.get("VM.Audit", 0)):
             continue
         if path in {"/", "/vms"}:
             broad = True
@@ -55,9 +70,7 @@ def aggregate_guest_visibility(rows: list[dict]) -> dict:
 
 def guest_task_scope(payload: dict) -> dict:
     """Return the subset of guest IDs safe to include from a task listing."""
-    permissions = payload.get("data") if isinstance(payload, dict) else None
-    if not isinstance(permissions, dict):
-        raise ValueError("Proxmox effective-permissions response has an invalid shape")
+    permissions = _permission_rows(payload)
     broad = False
     denied: set[str] = set()
     explicit: set[str] = set()
@@ -67,13 +80,13 @@ def guest_task_scope(payload: dict) -> dict:
         if not isinstance(path, str) or not isinstance(grants, dict):
             continue
         vm_match = re.fullmatch(r"/vms/([1-9][0-9]{0,19})", path)
-        if vm_match and permission_enabled(grants.get("NoAccess")):
+        if vm_match and permission_enabled(grants.get("NoAccess", 0)):
             denied.add(vm_match.group(1))
-        elif permission_enabled(grants.get("NoAccess")) and (
+        elif permission_enabled(grants.get("NoAccess", 0)) and (
             path in {"/", "/vms"} or path.startswith(("/vms/", "/pool/"))
         ):
             has_non_enumerable_exclusion = True
-        if not permission_enabled(grants.get("VM.Audit")):
+        if not permission_enabled(grants.get("VM.Audit", 0)):
             continue
         if path in {"/", "/vms"}:
             broad = True

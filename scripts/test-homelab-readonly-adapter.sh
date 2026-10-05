@@ -449,7 +449,12 @@ for permissions_case in (
     assert proxmox_visibility.guest_visibility(permissions_case) == server._proxmox_guest_visibility(permissions_case)
     assert proxmox_visibility.guest_task_scope(permissions_case) == server._proxmox_guest_task_scope(permissions_case)
 
-for malformed_permissions in (None, {}, {"data": None}, {"data": []}, {"data": "invalid"}):
+for malformed_permissions in (
+    None, {}, {"data": None}, {"data": []}, {"data": "invalid"},
+    {"data": {"/": None}},
+    {"data": {"/": {"VM.Audit": []}}},
+    {"data": {"/": {"VM.Audit": 1}, "/vms/102": {"NoAccess": []}}},
+):
     for policy in (proxmox_visibility.guest_visibility, proxmox_visibility.guest_task_scope):
         try:
             policy(malformed_permissions)
@@ -977,6 +982,32 @@ assert_backup_view_parity(selected_backup_report)
 assert selected_backup["task_scope"] == "SELECTED_GUESTS"
 assert [task["guest_id"] for task in selected_backup["tasks"]] == ["102"]
 assert selected_backup["tasks_status"] == "PARTIAL"
+
+# A malformed effective ACL response must not be interpreted as broad access.
+# The adapter may still return independent job/node data, but it cannot request
+# archived task rows until guest scope has been verified.
+malformed_permission_task_reads = [0]
+def malformed_permission_scope_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {"/": {"VM.Audit": 1}, "/vms/102": {"NoAccess": []}}}
+    if url.endswith("/cluster/backup"):
+        return {"data": []}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+    if "/nodes/hypervisor-alpha/tasks?" in url:
+        malformed_permission_task_reads[0] += 1
+        return {"data": [{"id": "102", "status": "OK", "endtime": 1700000300}]}
+    raise AssertionError(f"unexpected malformed-permission URL: {url}")
+
+server._fetch = malformed_permission_scope_fetch
+malformed_permission_report = server.homelab_backup_status()
+assert malformed_permission_report["status"] != "READABLE", malformed_permission_report
+for malformed_endpoint in malformed_permission_report["endpoints"]:
+    assert malformed_endpoint["task_scope"] == "UNKNOWN", malformed_endpoint
+    assert malformed_endpoint["tasks_status"] == "UNKNOWN", malformed_endpoint
+    assert malformed_endpoint["tasks"] == [], malformed_endpoint
+assert malformed_permission_task_reads[0] == 0, malformed_permission_report
+server._fetch = original_fetch
 
 # A later read after a successful observation must not retain stale backup
 # evidence when the Proxmox source becomes unavailable.

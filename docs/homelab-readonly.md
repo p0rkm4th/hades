@@ -406,22 +406,25 @@ homelab endpoint or credential is involved.
 ## Historical activation checkpoint — 2026-10-05
 
 An earlier adapter rollout record documents seven fresh owner/household chats
-for candidate `6bc6063702f73665a9cf666ca14cf7057d5924e`. The fresh provenance
-check above confirms that the process-selected adapter still maps to that
-public source revision, but the chats are historical acceptance for that
-rollout, not acceptance of current `main`. Current-main presenter refactors
-remain undeployed. The currently available protected owner and Household A/B sign-in inputs
-returned HTTP 400, so no fresh owner or household UI session was established.
-No alternate passwords or account resets were attempted. The current deployment
-is healthy at the Hermes service level; these facts do not establish all
-source or application health.
+for candidate `6bc6063702f73665a9cf666ca14cf7057d5924e`; those chats remain
+historical acceptance for that rollout. A fresh bounded eight-prompt owner and
+household run later passed against the currently reachable deployment using a
+loopback-only SSH tunnel, with same-chat persistence and zero household
+topology leaks. It does not establish parity with current `main`; the active
+package and overlay provenance remain unverified. Earlier login failures are
+superseded by the successful fresh run; no password reset or alternate
+credential was used.
 
 
 Proxmox supplies hypervisor and guest runtime observations within its configured
 read scope. When the effective-permissions endpoint is readable, HADES reports
 whether guest visibility is cluster-wide or selected-scope; unavailable ACL
 evidence stays `UNKNOWN` and must not be inferred from the returned guest rows.
-The scope read is read-only and does not expand permissions. A broad `/vms`
+Malformed permission rows or privilege values also fail closed to `UNKNOWN`.
+For backup activity, the adapter skips archived-task requests unless the
+effective guest scope validates; independent runtime and backup-job reads can
+still return their own partial evidence. The scope read is read-only and does
+not expand permissions. A broad `/vms`
 inventory response alone is not proof that every guest was visible to the token;
 explicit exclusions remain partial coverage rather than being presented as a
 complete cluster view.

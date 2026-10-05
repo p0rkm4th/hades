@@ -53,6 +53,18 @@ OPEN; no package rollout occurred. Historical `.local` names remain published;
 no history rewrite was performed. No independent encrypted off-host recovery
 target is configured by owner choice.
 
+The follow-up candidate extracted Proxmox effective-permission classification
+into a pure adapter module while keeping network reads and failure-to-UNKNOWN
+handling in the server. NYX-020 found an existing fail-open for malformed
+inner ACL values; the candidate now rejects malformed rows/privileges and
+proves backup task reads are skipped until guest scope is valid. The focused
+adapter, package/provenance, readiness-map, and public-safety checks pass
+locally. Public CI run [37373586779](https://github.com/p0rkm4th/hades/actions/runs/37373586779)
+completed 122 steps but failed at the readiness-map step because the homelab
+table row had an extra delimiter; that documentation shape is corrected in the
+current follow-up. This is not a completed CI qualification. No change is on
+main or production yet.
+
 The following homelab details summarize earlier repository checkpoints and
 read-only production observations; they do not supersede the current checkpoint
 above.
