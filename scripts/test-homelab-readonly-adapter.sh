@@ -66,6 +66,17 @@ future = module.summarize(
     now=now,
 )
 assert future["resources"][0]["availability_freshness"] == "UNKNOWN"
+missing_observation_time = module.summarize(
+    {"data": [{"type": "qemu", "name": "timestamp-missing", "node": "storage-alpha", "status": "running"}]},
+    {"results": []},
+    {"monitors": [{"name": "timestamp-missing", "status": "up"}]},
+    now=now,
+)
+missing_observation_resource = missing_observation_time["resources"][0]
+assert missing_observation_resource["availability_freshness"] == "UNKNOWN"
+assert missing_observation_time["availability_summary"] == [{
+    "name": "timestamp-missing", "status": "up", "freshness": "UNKNOWN",
+}]
 duplicate_guest_names = module.summarize(
     {"data": [
         {"type": "qemu", "vmid": 100, "name": "synthetic-core-node", "node": "hypervisor-alpha", "status": "stopped"},
