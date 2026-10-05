@@ -945,6 +945,33 @@ assert netbox_outage["service_catalog"]["status"] == "UNAVAILABLE"
 assert netbox_outage["availability_summary"][0]["freshness"] == "STALE"
 assert next(row for row in netbox_outage["source_observations"] if row["source"] == "Uptime Kuma")["status"] == "AVAILABLE"
 
+# A prior successful Kuma heartbeat must not be reused after the next read
+# fails. Keep current Proxmox state, but make availability explicitly unknown.
+server._fetch = netbox_seed_fetch
+kuma_seed = server.homelab_summary()
+assert next(row for row in kuma_seed["source_observations"] if row["source"] == "Uptime Kuma")["status"] == "AVAILABLE"
+assert kuma_seed["source_counts"]["kuma_monitor_rows"] == 1
+
+def kuma_outage_fetch(url, *args, **kwargs):
+    if url.startswith("https://status.example.test/"):
+        raise OSError("synthetic Kuma source unavailable after prior read")
+    return netbox_seed_fetch(url, *args, **kwargs)
+
+server._fetch = kuma_outage_fetch
+kuma_outage = server.homelab_summary()
+assert kuma_outage["status"] == "PARTIAL", kuma_outage
+assert kuma_outage["source_counts"]["kuma_monitor_rows"] == 0
+assert kuma_outage["availability_summary"] == []
+kuma_observation = next(row for row in kuma_outage["source_observations"] if row["source"] == "Uptime Kuma")
+assert kuma_observation["status"] == "UNAVAILABLE" and kuma_observation["retrieved_at"] is None
+kuma_outage_resource = next(
+    row for row in kuma_outage["resources"]
+    if (row.get("runtime") or {}).get("vmid") == 102
+)
+assert kuma_outage_resource["runtime_status"] == "running", kuma_outage_resource
+assert kuma_outage_resource.get("availability") is None, kuma_outage_resource
+assert kuma_outage_resource["availability_freshness"] == "UNKNOWN", kuma_outage_resource
+
 # Reverse the outage direction: current NetBox inventory for the previously
 # linked guest must not inherit the prior Proxmox runtime/liveness result.
 server._fetch = netbox_seed_fetch
