@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 printf 'manifest fixture\n' > "$tmp/manifest"
