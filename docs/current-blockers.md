@@ -5,20 +5,20 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 05:21 UTC
+## Current convergence checkpoint — 2026-10-05 05:25 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
 passed on that exact commit. Aster's short-lived integration branch
 `codex/aster-homelab-checkpoint-redacted-20261004` has qualified source/test
-candidate `725f8357dd4e71fd7ea7ac52f37d3fd984264536`; exact-SHA run
-[37266372854](https://github.com/p0rkm4th/hades/actions/runs/37266372854)
-passed all 117 steps. This adds a negative adapter contract proving that
-missing Kuma observation time remains `UNKNOWN`. Earlier candidate `47d0473`
-passed run `37265041968`; docs checkpoints `7f8e555a` and `eeb5a6b4` passed
-runs `37265410070` and `37267198078` respectively. `eeb5a6b4` records the
-tip-to-tip lineage equivalence for GPU telemetry and current architecture
-measurements.
+candidate `7b14df854d94c75ba08f697c6cacb37891258ecc`; exact-SHA run
+[37267763664](https://github.com/p0rkm4th/hades/actions/runs/37267763664)
+passed all 117 steps. This extracts the deterministic household homelab
+response into the already packaged view module while retaining the early
+scope guard; the candidate also tests that missing Kuma observation time
+remains `UNKNOWN`. Previous source/test candidate `725f8357` passed
+`37266372854`; latest reconciled docs checkpoint `27fd243e` passed
+`37267473986`.
 The branch is not promoted or deployed. The primary local checkout is
 preserved and is not the integration base.
 
@@ -82,8 +82,9 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 acceptance transcripts remain in protected operator records.
 
 **Next:** finish Nyx's old-line, package-guard, provider-boundary, and
-household-privacy reviews. Prepare a coherent full-package deployment only
-after review and promotion. Then deploy the
+household-privacy/extraction reviews, including NYX-017 against the exact
+`7b14df85` candidate. Prepare a coherent full-package deployment only after
+review and promotion. Then deploy the
 reviewed household boundary fix with hash-guarded rollback, recheck household
 denial and safe status in the live UI, and verify coherent runtime package
 parity plus `observed_at`. No runtime deployment has been made during this

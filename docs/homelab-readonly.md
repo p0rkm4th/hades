@@ -13,11 +13,13 @@ Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` and its CI run
 `37254848424` passed. The homelab source baseline at `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`
 preserves Kuma `last_updated` as `availability_summary[].observed_at`, separate
 from freshness. The current Aster source/test candidate is
-`725f8357dd4e71fd7ea7ac52f37d3fd984264536`; exact-SHA Public CI run
-`37266372854` passed all 117 steps. It explicitly tests that an availability
-row without Kuma observation time is `UNKNOWN`, not fresh. Earlier candidate
-`47d0473` passed `37265041968`; provider extraction `f700e892` passed duplicate
-runs `37264553916` and `37264554854`. The candidate includes the pure
+`7b14df854d94c75ba08f697c6cacb37891258ecc`; exact-SHA Public CI run
+`37267763664` passed all 117 steps. It moves the household-safe response body
+into the already packaged pure view module, retains the early household scope
+guard, and includes a missing-Kuma-observation-time `UNKNOWN` case. Earlier
+candidate `725f8357` passed `37266372854`; docs checkpoint `27fd243e` passed
+`37267473986`. Provider extraction `f700e892` passed duplicate runs
+`37264553916` and `37264554854`. The candidate includes the pure
 backup-summary formatter extraction, the provider-native read-only inference
 catalog boundary, a provenance check comparing the profile-selected generated
 adapter's full Python module set and bytes with tracked source (including a
@@ -28,9 +30,10 @@ deployed.
 
 The fresh 2026-10-05 active-profile package comparison found the deployed
 Python module set matches current public `main` except that `reconcile.py`
-differs; there are no extra Python modules. The candidate-only `backup_view.py`
+differs; there are no extra Python modules. Candidate-only `backup_view.py`
 and `inference_provider.py` are absent as expected because that candidate is
-not deployed. A fresh adapter read returned `OK` with 11 availability rows
+not deployed. The new household response helper is in the existing
+`homelab_views.py` asset and is not deployed. A fresh adapter read returned `OK` with 11 availability rows
 marked fresh and zero `observed_at` values. This fails the tracked monitor-time
 contract. The NetBox application-service catalog remains empty, so placement
 is unknown. This is direct adapter evidence, not owner-UI acceptance or
