@@ -63,6 +63,76 @@ export HADES_IDENTITY_SECRETS_DIR
 hades_layer_digest() {
   sha256sum "$@" | awk '{print $1}' | sha256sum | awk '{print $1}'
 }
+check_homelab_runtime_package() {
+  local path=${HADES_HERMES_WORKING_DIRECTORY:-} package_root expected_modules runtime_modules module
+  local source_path source_mode active_working_directory
+  if [[ "$installed_source_verified" != 1 || -z "$path" ]]; then
+    echo 'WARN homelab runtime package identity is unknown; installed source or working-directory input is unavailable'
+    return 0
+  fi
+  if ! active_working_directory=$(systemctl show -p WorkingDirectory --value hades-hermes.service 2>/dev/null) ||
+     [[ -z "$active_working_directory" ]]; then
+    if ((test_mode)); then
+      echo 'WARN homelab runtime package identity is unknown; active Hermes working directory is unavailable'
+    else
+      echo 'FAIL active Hermes working directory could not be verified'
+      doctor_fail=1
+    fi
+    return 0
+  fi
+  if [[ "$active_working_directory" != "$path" ]]; then
+    echo 'FAIL configured Hermes working directory differs from the active service'
+    doctor_fail=1
+    return 0
+  fi
+  echo 'PASS active Hermes working directory matches operator input'
+  package_root="$path/integrations/homelab-readonly"
+  if [[ "$path" != /* || -L "$path" || ! -d "$path" ||
+        -L "$path/integrations" || ! -d "$path/integrations" ||
+        -L "$package_root" || ! -d "$package_root" ]]; then
+    echo 'FAIL Hermes homelab runtime package is missing or has an unsafe path'
+    doctor_fail=1
+    return 0
+  fi
+  if [[ -n "$(find "$package_root" -type l -print -quit 2>/dev/null)" ||
+        -n "$(find "$package_root" -name '*.py' ! -type f -print -quit 2>/dev/null)" ]]; then
+    echo 'FAIL Hermes homelab runtime package contains a symlink or non-regular Python module'
+    doctor_fail=1
+    return 0
+  fi
+  expected_modules=$(git -c "safe.directory=$repo_dir" -C "$repo_dir" \
+    ls-tree -r --name-only "$installed_source_revision" -- integrations/homelab-readonly 2>/dev/null |
+    sed -n '/\.py$/s@^integrations/homelab-readonly/@@p' | LC_ALL=C sort) || {
+      echo 'FAIL Hermes homelab package source membership cannot be read from the installed revision'
+      doctor_fail=1
+      return 0
+    }
+  runtime_modules=$(find "$package_root" -type f -name '*.py' -printf '%P\n' 2>/dev/null | LC_ALL=C sort) || {
+    echo 'FAIL Hermes homelab runtime package cannot be inspected'
+    doctor_fail=1
+    return 0
+  }
+  if [[ -z "$expected_modules" || "$expected_modules" != "$runtime_modules" ]] ||
+     ! grep -Fxq 'server.py' <<<"$expected_modules"; then
+    echo 'FAIL Hermes homelab runtime package module set differs from the installed source revision'
+    doctor_fail=1
+    return 0
+  fi
+  while IFS= read -r module; do
+    source_path="integrations/homelab-readonly/$module"
+    source_mode=$(git -c "safe.directory=$repo_dir" -C "$repo_dir" \
+      ls-tree "$installed_source_revision" -- "$source_path" 2>/dev/null | awk '{print $1}') || source_mode=''
+    if [[ "$source_mode" != 100644 && "$source_mode" != 100755 ]] ||
+       ! git -c "safe.directory=$repo_dir" -C "$repo_dir" \
+         show "$installed_source_revision:$source_path" 2>/dev/null |
+         cmp -s - "$package_root/$module"; then
+      echo 'FAIL Hermes homelab runtime package differs from the installed source revision'
+      doctor_fail=1
+      return 0
+    fi
+  done <<<"$expected_modules"
+  echo 'PASS Hermes homelab runtime package matches the installed source revision'
+}
 compose_cmd=(docker compose)
 [[ -n "$inputs" ]] && compose_cmd+=(--env-file "$inputs")
 if [[ "$HADES_AGENT_ZERO_OPERATOR_PROXY_ENABLED" == true ]]; then
@@ -111,6 +181,7 @@ check_compose_boundaries() {
 config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
 doctor_fail=0
+installed_source_verified=0
 owner_policy_record="${root%/}${HADES_DEPLOYMENT_DIR:-${HADES_CONFIG_ROOT:-/etc/hades}/private-deployment}/hades-owner-policy.env"
 if [[ -n "${HADES_OWNER_SUBJECT_IDS:-}" ]]; then
   owner_policy_stat=$(stat -c '%u:%g:%a' "$owner_policy_record" 2>/dev/null || true)
@@ -327,6 +398,7 @@ if [[ -f "$state" ]]; then
     current_source_tree=$(git -c "safe.directory=$repo_dir" -C "$repo_dir" rev-parse 'HEAD^{tree}' 2>/dev/null || true)
     if [[ "$installed_source_revision" == "$current_source_revision" && -n "$current_source_tree" && "$installed_source_tree" == "$current_source_tree" ]]; then
       echo 'PASS installation source revision and tree'
+      installed_source_verified=1
     else
       echo 'FAIL installation source revision or tree is stale'
       doctor_fail=1
@@ -346,6 +418,7 @@ if [[ -f "$state" ]]; then
 else
   echo 'WARN installation marker missing'
 fi
+check_homelab_runtime_package
 for file in overlay/sitecustomize.py overlay/homelab_views.py adapters/grocy-mcp-launch.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js assets/finance-upload.js assets/receipt-upload.js; do
   if [[ -f "$state" ]]; then
     [[ -f "$config_root/$file" ]] && echo "PASS HADES layer $file" || { echo "FAIL HADES layer missing: $file"; exit 1; }
