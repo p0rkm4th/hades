@@ -13,7 +13,7 @@ Latest HADES code on public `main` is `9008e9059e5b58d8f6117361c361a0146cdbdcb9`
 
 Fresh read-only production inspection on 2026-10-05 verified the Hermes service active with zero restarts and confirmed its running process selects the configured overlay. Overlay bytes match the protected deployment record and deterministic per-slice builder in private infra. The process-selected homelab MCP server bytes map to public HADES commit `6bc6063702f73665a9cf666ca14cf7057d5924e`; this is older than the current refactored adapter, so current-main source/runtime byte parity is not established. The private per-slice builder provides reproducible overlay lineage from its protected base and patch, but there is no single public end-to-end composition manifest. The full installer overwrites tracked layer files, so it is not a safe way to preserve deployment-local policy.
 
-This read-only provenance check did not exercise authenticated owner/household behavior. The existing protected owner sign-in inputs returned HTTP 400; no alternate password or account reset was attempted. Prior UI acceptance remains dated evidence. The read layer remains **PARTIAL**; fresh owner/household acceptance, live stale/partial and contradiction behavior, service-native health/placement, network trends, and complete restoreability remain open. Independent encrypted off-host recovery is also not configured; the owner confirms there is no off-site backup at this time. Do not describe local copies as independent recovery. No production deployment or infrastructure/source-ACL mutation occurred during this check.
+This read-only provenance check did not exercise authenticated owner/household behavior. The existing protected owner and Household A/B sign-in inputs returned HTTP 400; no alternate passwords or account resets were attempted. Prior UI acceptance remains dated evidence. The read layer remains **PARTIAL**; fresh owner/household acceptance, live stale/partial and contradiction behavior, service-native health/placement, network trends, and complete restoreability remain open. Independent encrypted off-host recovery is also not configured; the owner confirms there is no off-site backup at this time. Do not describe local copies as independent recovery. No production deployment or infrastructure/source-ACL mutation occurred during this check.
 
 ## Authority boundaries
 
@@ -252,9 +252,9 @@ for candidate `6bc6063702f73665a9cf666ca14cf7057d5924e`. The fresh provenance
 check above confirms that the process-selected adapter still maps to that
 public source revision, but the chats are historical acceptance for that
 rollout, not acceptance of current `main`. Current-main presenter refactors
-remain undeployed. The currently available protected owner sign-in inputs
+remain undeployed. The currently available protected owner and Household A/B sign-in inputs
 returned HTTP 400, so no fresh owner or household UI session was established.
-No alternate password or account reset was attempted. The current deployment
+No alternate passwords or account resets were attempted. The current deployment
 is healthy at the Hermes service level; these facts do not establish all
 source or application health.
 
