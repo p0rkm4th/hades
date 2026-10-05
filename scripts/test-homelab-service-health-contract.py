@@ -896,6 +896,16 @@ assert any(
     )
     for node in ast.walk(boundary_guard)
 )
+direct_homelab_reads = [
+    node for node in ast.walk(run_conversation)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id.startswith('_hades_direct_homelab_')
+]
+assert direct_homelab_reads, 'runtime must keep explicit direct homelab read routes'
+assert all(
+    node.lineno > boundary_guard.lineno for node in direct_homelab_reads
+), 'household named-host guard must run before every direct homelab read route'
 
 # A generalized public build must not repeat the previous private deployment's
 # machine, node, or address. An owner may supply an explicit private description.
