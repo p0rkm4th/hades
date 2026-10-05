@@ -126,20 +126,22 @@ LLDAP membership, but neither is deployed or connected to n8n. Keep schedules
 disabled; see
 [`automation-boundary.md`](automation-boundary.md).
 
-## Current next action — 2026-10-05 04:38 UTC
+## Current next action — 2026-10-05 05:09 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI run
-`37254848424` passed. The Aster candidate branch
-`codex/aster-homelab-checkpoint-redacted-20261004` is at
-`47d047329185aff17a45960ac6f1bbc3c0cf1cd4`; exact-SHA run `37265041968`
-passed all 117 steps. The provider extraction at `f700e892` separately passed
+`37254848424` passed. The Aster source/test candidate
+`725f8357dd4e71fd7ea7ac52f37d3fd984264536` passed exact-SHA run
+`37266372854` (117 steps), including a missing-observation-time freshness
+regression case. Earlier candidate `47d0473` passed `37265041968`; docs
+checkpoint `7f8e555a` passed `37265410070`. Provider extraction `f700e892` passed
 duplicate runs `37264553916` and `37264554854`. The candidate contains the
 generated homelab package provenance guard, deterministic household denial,
 and an extracted provider-native read-only inference catalog boundary; the
 new provider sibling is covered by a package-digest mutation test. Nyx's
 old-line classification and relevant code reviews remain pending. The
-candidate is not promoted or deployed. The live adapter package remains mixed
-and its output omits `observed_at`; the household fix requires post-deployment
+candidate is not promoted or deployed. A fresh adapter read returned 11 rows
+marked fresh but no `observed_at`, and its module set differs from current main
+only in `reconcile.py`; the household fix requires post-deployment
 UI verification. Preserve the deployment-local overlay while reconciling
 package parity. The old GPU telemetry line remains review-only.
 

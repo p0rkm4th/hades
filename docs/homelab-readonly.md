@@ -12,11 +12,12 @@ The current upstream MCP candidate evaluation is recorded in
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` and its CI run
 `37254848424` passed. The homelab source baseline at `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`
 preserves Kuma `last_updated` as `availability_summary[].observed_at`, separate
-from freshness. The current Aster candidate is
-`47d047329185aff17a45960ac6f1bbc3c0cf1cd4`; exact-SHA Public CI run
-`37265041968` passed all 117 steps. The provider extraction at `f700e892`
-also passed duplicate runs `37264553916` and `37264554854`. The candidate
-includes the pure
+from freshness. The current Aster source/test candidate is
+`725f8357dd4e71fd7ea7ac52f37d3fd984264536`; exact-SHA Public CI run
+`37266372854` passed all 117 steps. It explicitly tests that an availability
+row without Kuma observation time is `UNKNOWN`, not fresh. Earlier candidate
+`47d0473` passed `37265041968`; provider extraction `f700e892` passed duplicate
+runs `37264553916` and `37264554854`. The candidate includes the pure
 backup-summary formatter extraction, the provider-native read-only inference
 catalog boundary, a provenance check comparing the profile-selected generated
 adapter's full Python module set and bytes with tracked source (including a
@@ -25,14 +26,15 @@ response for private infrastructure-detail requests. Relevant Nyx
 reviews and main promotion are pending. These candidate changes are not
 deployed.
 
-The active runtime package is mixed: its adapter entry module matches tracked
-source but its reconciliation sibling does not. A direct read-only call in the
-active adapter environment reached Proxmox sources, NetBox, and Uptime Kuma
-with complete guest-audit coverage. The NetBox application-service catalog
-was empty, so current service placement remains unknown. The same direct call
-marked availability fresh while omitting `observed_at`; this does not satisfy
-the tracked monitor-time contract. It is source/adapter evidence, not
-owner-UI acceptance or functional-service health. In authenticated owner UI
+The fresh 2026-10-05 active-profile package comparison found the deployed
+Python module set matches current public `main` except that `reconcile.py`
+differs; there are no extra Python modules. The candidate-only `backup_view.py`
+and `inference_provider.py` are absent as expected because that candidate is
+not deployed. A fresh adapter read returned `OK` with 11 availability rows
+marked fresh and zero `observed_at` values. This fails the tracked monitor-time
+contract. The NetBox application-service catalog remains empty, so placement
+is unknown. This is direct adapter evidence, not owner-UI acceptance or
+functional-service health. In authenticated owner UI
 dogfood, the system disclosed source timestamps, current GPU samples, and fit
 uncertainty, while leaving Agent Zero placement unknown. Household A/B status
 answers stayed abstract, but a private-inventory request reached the model and
@@ -302,15 +304,16 @@ is now an ancestor of public `main`. That rollout checked only `server.py` and
 the generated adapter package. The separately composed Hermes overlay was
 unchanged by that adapter rollout.
 
-A later read-only audit compared the complete active adapter directory with
-the tracked source package and found mixed provenance: `server.py` matched the
-then-current public source, but `reconcile.py` differed and `backup_view.py`
-was absent. A direct adapter call returned Kuma observations marked fresh
-without `observed_at`, contrary to the tracked contract. The current source
-candidate `f700e892cd3628deeeadb1dd6b375517a9cc07de` adds a provenance check
-over the complete generated Python package, but it is not deployed. Until a
-coherent package is installed and rechecked, runtime package parity and live
-monitor-timestamp behavior remain unverified/failing. Preserve the
+A fresh 2026-10-05 read-only audit compared the complete active adapter
+directory with current public `main`: all modules match except `reconcile.py`,
+and no extra Python modules are present. Candidate-only `backup_view.py` and
+`inference_provider.py` are absent as expected because the candidate is not
+deployed. A direct adapter call returned 11 availability rows marked fresh and
+zero `observed_at` values, contrary to the tracked contract. The current
+source/test candidate adds a complete-package provenance check and a fixture
+that rejects a changed provider sibling, but it is not deployed. Until a
+coherent candidate package is installed and rechecked, runtime parity remains
+open and live monitor-timestamp behavior fails its contract. Preserve the
 deployment-local overlay during that repair. The bounded chats from the earlier
 rollout are targeted evidence, not full homelab acceptance; outage, conflict,
 native service health, network trend, and restoreability gates remain open.

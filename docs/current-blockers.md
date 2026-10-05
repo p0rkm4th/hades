@@ -5,16 +5,20 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 04:38 UTC
+## Current convergence checkpoint — 2026-10-05 05:09 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
 passed on that exact commit. Aster's short-lived integration branch
 `codex/aster-homelab-checkpoint-redacted-20261004` has qualified source/test
-candidate `47d047329185aff17a45960ac6f1bbc3c0cf1cd4`; exact-SHA run
-[37265041968](https://github.com/p0rkm4th/hades/actions/runs/37265041968)
-passed all 117 steps. The branch is not promoted or deployed. The primary
-local checkout is preserved and is not the integration base.
+candidate `725f8357dd4e71fd7ea7ac52f37d3fd984264536`; exact-SHA run
+[37266372854](https://github.com/p0rkm4th/hades/actions/runs/37266372854)
+passed all 117 steps. This adds a negative adapter contract proving that
+missing Kuma observation time remains `UNKNOWN`. Earlier candidate `47d0473`
+passed run `37265041968`; docs checkpoint `7f8e555a` passed run
+`37265410070`.
+The branch is not promoted or deployed. The primary local checkout is
+preserved and is not the integration base.
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
 candidate. Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
@@ -42,13 +46,13 @@ unknown cases. The old branch's focused tests omit several of main's
 unavailable-Kuma and missing-service-identity cases.
 
 Homelab main preserves Kuma `last_updated` as `observed_at`, independent of
-freshness. The active runtime package remains mixed: its adapter entry module
-matches tracked source while its reconciliation sibling differs. A direct
-read-only adapter call reached Proxmox, NetBox, and Kuma with complete guest
-audit coverage, but the service catalog was empty and the call omitted
-`observed_at` despite reporting fresh availability. Placement therefore
-remains unknown, and live adapter evidence is not owner-UI or application
-health acceptance. The active deployment-local overlay must be preserved.
+freshness. A fresh 2026-10-05 read-only package comparison confirms the active
+profile-selected adapter matches current public source except `reconcile.py`,
+with no additional Python modules. The active adapter read returned status
+`OK` and 11 availability rows marked fresh, but none had `observed_at`; the
+live timestamp contract therefore fails. The service catalog was empty, so
+placement remains unknown. This direct adapter result is not owner-UI or
+application-health acceptance. Preserve the active deployment-local overlay.
 
 The candidate at `10dd2fd1` extracts the pure backup formatter; its focused
 contract and hosted CI pass. Commit `d0c74306` adds a
@@ -76,12 +80,13 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 acceptance transcripts remain in protected operator records.
 
 **Next:** finish Nyx's old-line, package-guard, provider-boundary, and
-household-privacy reviews; the five current-state documents are being refreshed
-to source/test candidate `47d0473` and its green CI. Promote only a small reviewed current-main descendant. Then deploy the
-reviewed household boundary
-fix with hash-guarded rollback, recheck household denial/safe status in the live
-UI, and verify coherent runtime package parity plus `observed_at`. No
-runtime deployment has been made during this checkpoint.
+household-privacy reviews; reconcile the five current-state documents to
+source/test candidate `725f8357` and its green CI. Prepare a coherent
+full-package deployment only after review and promotion. Then deploy the
+reviewed household boundary fix with hash-guarded rollback, recheck household
+denial and safe status in the live UI, and verify coherent runtime package
+parity plus `observed_at`. No runtime deployment has been made during this
+checkpoint.
 
 ## Historical release baseline and prior evidence
 
