@@ -312,6 +312,7 @@ PY
 
 python3 - <<'PY'
 import atexit
+import copy
 import json
 import os
 import shutil
@@ -644,6 +645,89 @@ assert "secret_like_field" not in str(summary)
 assert "unrelated_secret_like_field" not in str(summary)
 server._fetch = original_fetch
 print("PASS homelab MCP summary retains bounded runtime telemetry without unrelated upstream fields")
+
+# The conversational summary is a bounded view over the canonical composition:
+# retain source authorities/counts while capping optional detail lists.
+projection_runtime_rows = [node_fixture] + [
+    {
+        "type": "qemu", "vmid": 200 + index, "name": f"live-guest-{index:02d}",
+        "node": "hypervisor-alpha", "status": "running",
+        "unrelated_secret_like_field": "PROJECTION_SECRET_MUST_NOT_ESCAPE",
+    }
+    for index in range(1, 26)
+]
+projection_devices = [
+    {"id": 300 + index, "name": f"inventory-only-{index:02d}",
+     "role": {"name": "synthetic"}, "secret_like_field": "PROJECTION_SECRET_MUST_NOT_ESCAPE"}
+    for index in range(1, 14)
+]
+projection_monitors = [
+    {"id": index, "name": f"check-only-{index:02d}", "type": "ping"}
+    for index in range(1, 14)
+]
+projection_heartbeat = {
+    str(index): [{"status": 1, "time": "2026-09-14 12:00:00.000"}]
+    for index in range(1, 14)
+}
+projection_inputs = {
+    "proxmox": {"data": projection_runtime_rows},
+    "netbox": {"results": projection_devices},
+    "kuma_config": {"publicGroupList": [{"monitorList": projection_monitors}]},
+    "kuma_heartbeat": {"heartbeatList": projection_heartbeat},
+    "netbox_services": {"count": 0, "next": None, "results": []},
+}
+projection_inputs_before = copy.deepcopy(projection_inputs)
+def projection_fetch(url, *_args, **_kwargs):
+    if url == "https://pve.example.test/cluster/resources":
+        return projection_inputs["proxmox"]
+    if url == "https://pve.example.test/access/permissions":
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url == "https://netbox.example.test/api/dcim/devices/":
+        return projection_inputs["netbox"]
+    if url == "https://netbox.example.test/api/ipam/services/":
+        return projection_inputs["netbox_services"]
+    if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
+        return projection_inputs["kuma_heartbeat"]
+    if url == "https://status.example.test/api/status-page/hades-status":
+        return projection_inputs["kuma_config"]
+    raise AssertionError(f"unexpected synthetic projection URL: {url}")
+
+server._fetch = projection_fetch
+bounded_summary = server.homelab_summary()
+assert bounded_summary["status"] == "OK", bounded_summary
+assert bounded_summary["authority"] == {
+    "runtime": "Proxmox", "inventory": "NetBox", "availability": "Uptime Kuma",
+}
+assert bounded_summary["answer_contract"]["currently_online_source"] == "Proxmox runtime only"
+assert bounded_summary["answer_contract"]["memory_is_not_authority"] is True
+assert bounded_summary["answer_contract"]["writes_performed"] is False
+assert bounded_summary["liveness_rule"].startswith("Only resources with runtime_status=online")
+assert bounded_summary["source_counts"] == {
+    "proxmox_runtime_rows": 26, "netbox_inventory_rows": 13,
+    "kuma_monitor_rows": 13, "composed_resources": 52,
+    "identity_unlinked_resources": 0, "netbox_service_rows": 0,
+}
+assert len(bounded_summary["resources"]) == 4
+assert bounded_summary["resources_truncated"] == {
+    "returned": 4, "total": 52,
+    "reason": "use homelab_compute_capabilities or a targeted follow-up for more detail",
+}
+assert len(bounded_summary["online_names"]) == 24, bounded_summary["online_names"]
+assert bounded_summary["online_names_truncated"] == {"returned": 24, "total": 26}
+assert len(bounded_summary["inventory_only_names"]) == 12
+assert bounded_summary["inventory_only_names_truncated"] == {"returned": 12, "total": 13}
+assert len(bounded_summary["availability_summary"]) == 12
+assert bounded_summary["availability_summary_truncated"] == {"returned": 12, "total": 13}
+assert bounded_summary["proxmox_guest_visibility"]["scope"] == "ALL_GUESTS"
+assert bounded_summary["proxmox_guest_inventory"]["status"] == "COMPLETE"
+assert bounded_summary["proxmox_node_metrics"]["status"] == "READABLE"
+assert bounded_summary["proxmox_node_metrics"]["endpoints"][0]["nodes"][0]["status"] == "ONLINE"
+assert bounded_summary["service_catalog"]["status"] == "OK"
+assert bounded_summary["service_catalog"]["services"] == []
+assert "PROJECTION_SECRET_MUST_NOT_ESCAPE" not in str(bounded_summary)
+assert projection_inputs == projection_inputs_before
+server._fetch = original_fetch
+print("PASS homelab summary caps optional detail while preserving authorities, source counts, and canonical views")
 
 # Proxmox backup evidence is read-only, scope-filtered, bounded, and distinct
 # from proof of artifact contents or restoreability.
