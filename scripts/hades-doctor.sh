@@ -65,7 +65,7 @@ hades_layer_digest() {
 }
 check_homelab_runtime_package() {
   local path=${HADES_HERMES_WORKING_DIRECTORY:-} package_root expected_modules runtime_modules module
-  local source_path source_mode active_working_directory hermes_environment environment_working_directory
+  local source_path source_mode active_working_directory active_environment_files hermes_environment environment_working_directory
   if [[ "$installed_source_verified" != 1 || -z "$path" ]]; then
     echo 'WARN homelab runtime package identity is unknown; installed source or working-directory input is unavailable'
     return 0
@@ -86,6 +86,22 @@ check_homelab_runtime_package() {
     return 0
   fi
   hermes_environment="${HADES_HERMES_PROFILE:-}/hermes.env"
+  if ! active_environment_files=$(systemctl show -p EnvironmentFiles --value hades-hermes.service 2>/dev/null) ||
+     [[ -z "$active_environment_files" ]]; then
+    if ((test_mode)); then
+      echo 'WARN homelab runtime package identity is unknown; active Hermes profile sources are unavailable'
+    else
+      echo 'FAIL active Hermes profile sources could not be verified'
+      doctor_fail=1
+    fi
+    return 0
+  fi
+  if ! grep -Fqx "$hermes_environment (ignore_errors=yes)" <<<"$active_environment_files" &&
+     ! grep -Fqx "$hermes_environment (ignore_errors=no)" <<<"$active_environment_files"; then
+    echo 'FAIL active Hermes profile source differs from configured profile'
+    doctor_fail=1
+    return 0
+  fi
   if [[ ! -f "$hermes_environment" || -L "$hermes_environment" || ! -r "$hermes_environment" ]]; then
     if ((test_mode)); then
       echo 'WARN homelab runtime package identity is unknown; Hermes profile environment is unavailable'

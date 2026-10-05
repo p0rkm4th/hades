@@ -24,18 +24,26 @@ chmod 0600 "$fixture/private/profile/hermes.env"
 # active unit. The stub is synthetic and emits only the configured test path.
 cat > "$fixture/bin/systemctl" <<'SH'
 #!/usr/bin/env bash
-if [[ "$*" != 'show -p WorkingDirectory --value hades-hermes.service' ||
-      -z "${HADES_TEST_UNIT_WORKDIR:-}" ]]; then
+if [[ "$*" == 'show -p WorkingDirectory --value hades-hermes.service' &&
+      -n "${HADES_TEST_UNIT_WORKDIR:-}" ]]; then
+  printf '%s\n' "$HADES_TEST_UNIT_WORKDIR"
+elif [[ "$*" == 'show -p EnvironmentFiles --value hades-hermes.service' &&
+        -n "${HADES_TEST_ACTIVE_ENVFILES:-}" ]]; then
+  printf '%s\n' "$HADES_TEST_ACTIVE_ENVFILES"
+else
   exit 1
 fi
-printf '%s\n' "$HADES_TEST_UNIT_WORKDIR"
 SH
 chmod 0755 "$fixture/bin/systemctl"
 
 bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs "$inputs" >/dev/null
 export HADES_TEST_UNIT_WORKDIR="$working_tree"
+export HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+$fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
 run_doctor() {
-  PATH="$fixture/bin:$PATH" HADES_TEST_UNIT_WORKDIR="${HADES_TEST_UNIT_WORKDIR:-}" \
+  PATH="$fixture/bin:$PATH" \
+    HADES_TEST_UNIT_WORKDIR="${HADES_TEST_UNIT_WORKDIR:-}" \
+    HADES_TEST_ACTIVE_ENVFILES="${HADES_TEST_ACTIVE_ENVFILES:-}" \
     bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$sandbox" --inputs "$inputs"
 }
 expect_package_failure() {
@@ -81,6 +89,19 @@ sed "s#^HADES_HERMES_WORKING_DIRECTORY=.*#HADES_HERMES_WORKING_DIRECTORY=$workin
   "$fixture/private/profile/hermes.env" > "$fixture/private/profile/hermes.env.next"
 mv "$fixture/private/profile/hermes.env.next" "$fixture/private/profile/hermes.env"
 
+HADES_TEST_ACTIVE_ENVFILES="$fixture/other-profile/hermes.env (ignore_errors=yes)"
+if output=$(run_doctor 2>&1); then
+  echo 'FAIL doctor accepted an active Hermes profile-source mismatch' >&2
+  exit 1
+fi
+grep -Fq 'FAIL active Hermes profile source differs from configured profile' <<<"$output"
+! grep -Fq "$fixture/private/profile" <<<"$output" || {
+  echo 'FAIL doctor exposed the configured profile path' >&2
+  exit 1
+}
+HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+$fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
+
 mv "$working_tree/integrations/homelab-readonly/server.py" \
   "$working_tree/integrations/homelab-readonly/server.py.missing"
 expect_package_failure 'module set differs from the installed source revision'
@@ -115,8 +136,19 @@ grep -Fq 'FAIL configured Hermes working directory differs from the active servi
   echo 'FAIL doctor exposed the configured working-directory path' >&2
   exit 1
 }
+HADES_TEST_UNIT_WORKDIR="$working_tree"
+HADES_TEST_ACTIVE_ENVFILES=''
+if output=$(run_doctor 2>&1); then
+  grep -Fq 'WARN homelab runtime package identity is unknown; active Hermes profile sources are unavailable' <<<"$output"
+else
+  echo 'FAIL doctor rejected unavailable active Hermes profile-source evidence in test mode' >&2
+  exit 1
+fi
+HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+$fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
 
 unset HADES_TEST_UNIT_WORKDIR
+unset HADES_TEST_ACTIVE_ENVFILES
 run_doctor > "$fixture/doctor-unknown.out"
 grep -Fq 'WARN homelab runtime package identity is unknown; active Hermes working directory is unavailable' \
   "$fixture/doctor-unknown.out"
