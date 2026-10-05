@@ -5,9 +5,9 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 08:52 UTC
+## Current convergence checkpoint — 2026-10-05 08:55 UTC
 
-Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact CI `37254848424` passed. Candidate `ea606bac` includes NYX-043 schedule and NYX-045 archived-task fixes, the bounded `summary_view.py` extraction, and NYX-051 direct tests. The prior checkpoint `0ea70879` passed exact Public CI `37285252410`; exact CI for `ea606bac` is pending. Focused contracts, package provenance/closure, doctor drift, and public-safety checks pass. Production/runtime parity and owner/household validation remain open. NYX-048 confirmed a P1: current private infra source state lacks an independent recoverable copy; no authorized off-host destination/recipient is documented, and owner input is pending. Preserve its dirty checkout.
+Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact CI `37254848424` passed. Candidate `ea606bac` includes NYX-043 schedule and NYX-045 archived-task fixes, the bounded `summary_view.py` extraction, and NYX-051 direct tests. The integrated code/docs checkpoint `aad6b425` passed exact Public CI `37286488393`. Focused contracts, package provenance/closure, doctor drift, and public-safety checks pass. Production/runtime parity and owner/household validation remain open. NYX-048 confirmed a P1: current private infra source state lacks an independent recoverable copy; no authorized off-host destination/recipient is documented, and owner input is pending. Preserve its dirty checkout.
 
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge

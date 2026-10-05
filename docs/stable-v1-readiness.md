@@ -1,8 +1,8 @@
 # HADES stable-v1 readiness
 
-## Current homelab engineering checkpoint — 2026-10-05 08:52 UTC
+## Current homelab engineering checkpoint — 2026-10-05 08:55 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Candidate `ea606bac` includes NYX-043 schedule validation, NYX-045 malformed/truncated task-history coverage, and NYX-046/047 summary-view extraction/tests plus NYX-051 direct boundary cases. The prior checkpoint `0ea70879` passed exact Public CI `37285252410`; exact CI for `ea606bac` is pending. Production parity, owner/household acceptance, and independent private recovery proof remain open. NYX-048 confirmed no independent current-state recovery copy exists; preserve the private checkout until an approved destination and encryption recipient are specified. No promotion/deployment occurred.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Candidate `ea606bac` includes NYX-043 schedule validation, NYX-045 malformed/truncated task-history coverage, and NYX-046/047 summary-view extraction/tests plus NYX-051 direct boundary cases. The integrated code/docs checkpoint `aad6b425` passed exact Public CI `37286488393`. Production parity, owner/household acceptance, and independent private recovery proof remain open. NYX-048 confirmed no independent current-state recovery copy exists; preserve the private checkout until an approved destination and encryption recipient are specified. No promotion/deployment occurred.
 
 This is a readiness record for the deployment, not an installer or a new
 runtime layer. Most component observations below were last rechecked read-only
