@@ -63,6 +63,13 @@ wording. Invalid timestamp text is retained in bounded source diagnostics but
 is not shown to the owner as a timestamp; freshness remains unknown. The focused
 adapter, service-health, runtime, and safety checks pass.
 
+The Proxmox guest CPU/memory ranking formatter also lives in
+`integrations/homelab_views.py`; Hermes retains intent routing and source
+collection. Direct-module/wrapper parity covers the guest and host ranking
+paths. Non-finite and unrepresentably large guest readings are omitted from
+ranked output. These are synthetic contract checks and do not establish live
+deployment parity or current homelab health.
+
 A follow-up reliability candidate on `codex/aster-homelab-convergence-20261005`
 adds partial-coverage handling for malformed Proxmox backup rows, requires a
 stable ID before counting a backup job, drops malformed nonempty task IDs

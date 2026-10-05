@@ -1,5 +1,6 @@
 """Pure, source-independent views of normalized homelab observations."""
 
+import math
 import re
 
 def _hades_homelab_availability_groups(availability):
@@ -365,6 +366,102 @@ def _hades_homelab_node_metrics_ranking_response(node_metrics):
     ):
         parts.append("One or more Proxmox node feeds were unavailable, unknown, or truncated; this is not a complete host ranking.")
     return " ".join(parts)
+
+
+def _hades_homelab_resource_ranking_response(summary):
+    """Rank current Proxmox guest readings without implying host or GPU load."""
+    node_metrics = summary.get("proxmox_node_metrics") if isinstance(summary, dict) else None
+    if isinstance(node_metrics, dict):
+        return _hades_homelab_node_metrics_ranking_response(node_metrics)
+    resources = summary.get("resources", []) if isinstance(summary, dict) else []
+    if not isinstance(resources, list):
+        resources = []
+    cpu_rows = []
+    memory_rows = []
+    online_records = []
+    status_conflict = False
+
+    def finite_number(value):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        if isinstance(value, int):
+            return value
+        try:
+            converted = float(value)
+        except (OverflowError, TypeError, ValueError):
+            return None
+        return converted if math.isfinite(converted) else None
+
+    def finite_float(value):
+        try:
+            converted = float(value)
+        except (OverflowError, TypeError, ValueError):
+            return None
+        return converted if math.isfinite(converted) else None
+
+    for item in resources[:256]:
+        if not isinstance(item, dict):
+            continue
+        runtime = item.get("runtime") or item.get("runtime_detail")
+        runtime = runtime if isinstance(runtime, dict) else {}
+        runtime_status = str(item.get("runtime_status") or runtime.get("status") or "").casefold()
+        currently_online = item.get("currently_online")
+        runtime_positive = runtime_status in {"running", "online"}
+        runtime_negative = runtime_status in {"stopped", "offline"}
+        if (currently_online is False and runtime_positive) or (currently_online is True and runtime_negative):
+            status_conflict = True
+            continue
+        if currently_online is False or runtime_negative:
+            continue
+        if currently_online is not True and not runtime_positive:
+            continue
+        name = " ".join(str(item.get("name") or runtime.get("name") or "Unnamed runtime").split())[:100]
+        online_records.append(name)
+        cpu = finite_number(runtime.get("cpu"))
+        if cpu is not None and 0 <= cpu <= 1:
+            cpu_rows.append((cpu * 100, name))
+        memory, maximum = finite_number(runtime.get("mem")), finite_number(runtime.get("maxmem"))
+        if memory is not None and maximum is not None and 0 <= memory <= maximum and maximum > 0:
+            memory_value, maximum_value = finite_float(memory), finite_float(maximum)
+            if memory_value is not None and maximum_value is not None:
+                memory_rows.append((memory_value / maximum_value, memory_value, maximum_value, name))
+    if not online_records:
+        response = (
+            "The current Proxmox metrics read returned no rows with an explicit online/running status, "
+            "so I can't rank server load; this does not establish that no machines are online."
+        )
+        if status_conflict:
+            response += " A record with conflicting current-status fields was excluded from the ranking."
+        return response
+    parts = []
+    if cpu_rows:
+        usage, name = max(cpu_rows)
+        parts.append(f"Highest current Proxmox CPU reading: {name} at {usage:.1f}% among {len(cpu_rows)} online records with CPU data")
+    if memory_rows:
+        ratio, memory, maximum, name = max(memory_rows)
+        gib = 1024 ** 3
+        parts.append(
+            f"Highest current Proxmox memory use: {name} at {memory / gib:.1f} / {maximum / gib:.1f} GiB "
+            f"({ratio * 100:.1f}%) among {len(memory_rows)} online records with valid memory data"
+        )
+    if not parts:
+        return "The current Proxmox records are online, but they contain no comparable CPU or memory readings."
+    parts.append(
+        f"This compares {len(online_records)} currently online Proxmox runtime record(s); "
+        "host and guest readings are separate and may overlap. "
+        "It does not measure process-level use, guest filesystem use, GPU load, or inference hosts not represented in Proxmox"
+    )
+    if status_conflict:
+        parts.append("A record with conflicting current-status fields was excluded from the ranking.")
+    observations = summary.get("source_observations") or summary.get("sources") or []
+    proxmox_rows = [
+        row for row in observations if isinstance(row, dict)
+        and str(row.get("source") or "").casefold().startswith("proxmox")
+        and row.get("retrieved_at")
+    ] if isinstance(observations, list) else []
+    if proxmox_rows:
+        parts.append("Proxmox source read completed at " + str(proxmox_rows[0]["retrieved_at"])[:64])
+    return ". ".join(parts) + "."
 
 
 def _hades_homelab_proxmox_node_load_response(summary, target):

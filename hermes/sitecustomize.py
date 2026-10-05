@@ -4957,81 +4957,10 @@ def _hades_homelab_resource_ranking_intent(text):
 
 
 def _hades_homelab_resource_ranking_response(summary):
-    node_metrics = summary.get("proxmox_node_metrics") if isinstance(summary, dict) else None
-    if isinstance(node_metrics, dict):
-        return _hades_homelab_node_metrics_ranking_response(node_metrics)
-    resources = summary.get("resources", []) if isinstance(summary, dict) else []
-    if not isinstance(resources, list):
-        resources = []
-    cpu_rows = []
-    memory_rows = []
-    online_records = []
-    status_conflict = False
-    for item in resources[:256]:
-        if not isinstance(item, dict):
-            continue
-        runtime = item.get("runtime") or item.get("runtime_detail")
-        runtime = runtime if isinstance(runtime, dict) else {}
-        runtime_status = str(item.get("runtime_status") or runtime.get("status") or "").casefold()
-        currently_online = item.get("currently_online")
-        runtime_positive = runtime_status in {"running", "online"}
-        runtime_negative = runtime_status in {"stopped", "offline"}
-        if (currently_online is False and runtime_positive) or (currently_online is True and runtime_negative):
-            status_conflict = True
-            continue
-        if currently_online is False or runtime_negative:
-            continue
-        if currently_online is not True and not runtime_positive:
-            continue
-        name = " ".join(str(item.get("name") or runtime.get("name") or "Unnamed runtime").split())[:100]
-        online_records.append(name)
-        cpu = runtime.get("cpu")
-        if isinstance(cpu, (int, float)) and not isinstance(cpu, bool) and 0 <= cpu <= 1:
-            cpu_rows.append((float(cpu) * 100, name))
-        memory, maximum = runtime.get("mem"), runtime.get("maxmem")
-        if (
-            isinstance(memory, (int, float)) and not isinstance(memory, bool)
-            and isinstance(maximum, (int, float)) and not isinstance(maximum, bool)
-            and 0 <= memory <= maximum and maximum > 0
-        ):
-            memory_rows.append((float(memory) / float(maximum), float(memory), float(maximum), name))
-    if not online_records:
-        response = (
-            "The current Proxmox metrics read returned no rows with an explicit online/running status, "
-            "so I can't rank server load; this does not establish that no machines are online."
-        )
-        if status_conflict:
-            response += " A record with conflicting current-status fields was excluded from the ranking."
-        return response
-    parts = []
-    if cpu_rows:
-        usage, name = max(cpu_rows)
-        parts.append(f"Highest current Proxmox CPU reading: {name} at {usage:.1f}% among {len(cpu_rows)} online records with CPU data")
-    if memory_rows:
-        ratio, memory, maximum, name = max(memory_rows)
-        gib = 1024 ** 3
-        parts.append(
-            f"Highest current Proxmox memory use: {name} at {memory / gib:.1f} / {maximum / gib:.1f} GiB "
-            f"({ratio * 100:.1f}%) among {len(memory_rows)} online records with valid memory data"
-        )
-    if not parts:
-        return "The current Proxmox records are online, but they contain no comparable CPU or memory readings."
-    parts.append(
-        f"This compares {len(online_records)} currently online Proxmox runtime record(s); "
-        "host and guest readings are separate and may overlap. "
-        "It does not measure process-level use, guest filesystem use, GPU load, or inference hosts not represented in Proxmox"
-    )
-    if status_conflict:
-        parts.append("A record with conflicting current-status fields was excluded from the ranking.")
-    observations = summary.get("source_observations") or summary.get("sources") or []
-    proxmox_rows = [
-        row for row in observations if isinstance(row, dict)
-        and str(row.get("source") or "").casefold().startswith("proxmox")
-        and row.get("retrieved_at")
-    ] if isinstance(observations, list) else []
-    if proxmox_rows:
-        parts.append("Proxmox source read completed at " + str(proxmox_rows[0]["retrieved_at"])[:64])
-    return ". ".join(parts) + "."
+    """Preserve the Hermes hook while delegating pure Proxmox load rendering."""
+    return getattr(
+        _hades_load_homelab_views(), "_hades_homelab_resource_ranking_response"
+    )(summary)
 
 
 def _hades_homelab_node_metrics_ranking_response(node_metrics):

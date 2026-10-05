@@ -28,6 +28,7 @@ assert set(view_functions) == {
     '_hades_homelab_health_summary_response',
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_provenance_response',
+    '_hades_homelab_resource_ranking_response',
     '_hades_homelab_conflict_response',
     '_hades_homelab_node_metrics_ranking_response',
     '_hades_homelab_proxmox_node_load_response',
@@ -39,7 +40,7 @@ assert [
     alias.name
     for node in view_tree.body if isinstance(node, ast.Import)
     for alias in node.names
-] == ['re'], 'view module may import only the standard-library regex helper'
+] == ['math', 're'], 'view module may import only its standard-library numeric and regex helpers'
 assert not any(isinstance(node, ast.ImportFrom) for node in view_tree.body)
 assert all(
     isinstance(node, ast.FunctionDef)
@@ -1007,7 +1008,7 @@ assert 'catalog is reachable but empty' not in unknown_coverage_placement, unkno
 assert ranking_intent("What's the most loaded server?")
 assert ranking_intent('What is using the most resources?')
 assert namespace['_hades_is_homelab_intent']("What's the most loaded server?")
-ranking = ranking_response({
+ranking_summary = {
     'resources': [
         {'name': 'Synthetic CPU Host', 'currently_online': True,
          'runtime': {'status': 'running', 'cpu': 0.9, 'mem': 8 * 1024**3, 'maxmem': 16 * 1024**3}},
@@ -1024,7 +1025,8 @@ ranking = ranking_response({
          'runtime': {'status': 'stopped', 'cpu': 0.99, 'mem': 19 * 1024**3, 'maxmem': 20 * 1024**3}},
     ],
     'source_observations': [{'source': 'Proxmox synthetic', 'retrieved_at': 'synthetic-read-time'}],
-})
+}
+ranking = ranking_response(ranking_summary)
 assert 'Synthetic CPU Host at 90.0%' in ranking, ranking
 assert 'Synthetic Memory Host at 15.0 / 20.0 GiB (75.0%)' in ranking, ranking
 assert 'Synthetic Offline' not in ranking
@@ -1114,6 +1116,22 @@ assert view_module._hades_homelab_node_metrics_ranking_response(
 ) == ranking_response({
     'resources': [], 'proxmox_node_metrics': synthetic_node_metrics,
 })
+assert view_module._hades_homelab_resource_ranking_response(ranking_summary) == ranking
+invalid_guest_metrics = view_module._hades_homelab_resource_ranking_response({
+    'resources': [
+        {'name': 'Synthetic Infinite Memory', 'currently_online': True,
+         'runtime': {'status': 'running', 'mem': float('inf'), 'maxmem': float('inf')}},
+        {'name': 'Synthetic NaN Memory', 'currently_online': True,
+         'runtime': {'status': 'running', 'mem': float('nan'), 'maxmem': 16}},
+        {'name': 'Synthetic Huge Memory', 'currently_online': True,
+         'runtime': {'status': 'running', 'mem': 10 ** 1000, 'maxmem': 10 ** 1001}},
+        {'name': 'Synthetic Adjacent Integers', 'currently_online': True,
+         'runtime': {'status': 'running', 'mem': 2 ** 53 + 1, 'maxmem': 2 ** 53}},
+    ],
+})
+assert 'no comparable CPU or memory readings' in invalid_guest_metrics, invalid_guest_metrics
+assert 'inf' not in invalid_guest_metrics.casefold() and 'nan' not in invalid_guest_metrics.casefold()
+assert '100.0%' not in invalid_guest_metrics
 assert node_load_target('How loaded is Synthetic Compute Alpha right now?') == 'Synthetic Compute Alpha'
 assert node_load_target('How much CPU is on Synthetic Node B?') == 'Synthetic Node B'
 assert node_load_target('What is Synthetic Node B load like?') == 'Synthetic Node B'
