@@ -17,7 +17,7 @@ Private-infra recovery remains an owner-managed gate: the existing checkout is d
 
 **Repository state:** public `origin/main` is canonical. The dirty primary checkout and old parallel worktrees are preserved; this integration branch is the only active Aster implementation line. No private topology, credentials, or raw acceptance transcripts belong in public docs.
 
-**Next exact actions:** refresh read-only VM 802 runtime provenance using protected output. Compare the active profile, process-selected overlay, MCP registration/server path, and hashes with a clean reviewed source tree. If the active Hermes file has local composition, stop: no deterministic composer/manifest exists to prove parity. Then run fresh owner and household read behavior checks against the verified active stack; do not infer correctness from the refactor CI.
+**Next exact actions:** refresh read-only production Hermes runtime provenance using protected output. Compare the active profile, process-selected overlay, MCP registration/server path, and hashes with a clean reviewed source tree. If the active Hermes file has local composition, stop: no deterministic composer/manifest exists to prove parity. Then run fresh owner and household read behavior checks against the verified active stack; do not infer correctness from the refactor CI.
 
 ## Previous code and dogfood checkpoints — 2026-10-04
 

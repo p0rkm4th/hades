@@ -13,7 +13,7 @@ Source/runtime identity has not been freshly verified in this campaign epoch. `v
 
 Private-infra recovery also remains gated: the current checkout is dirty, and independent encrypted off-host custody and restore proof are not established. A local copy does not satisfy the independent recovery requirement.
 
-**Next:** perform the documented read-only provenance inspection on VM 802, capturing output only in protected storage. Match active profile/process selection, overlay, and MCP registration/server to a clean reviewed source tree. If the overlay contains local composition, stop because no deterministic composer/manifest currently proves it. Then re-run owner and household behavior checks on the verified active stack. Keep source reads and guest-scope decisions in the adapter.
+**Next:** perform the documented read-only provenance inspection on the production Hermes host, capturing output only in protected storage. Match active profile/process selection, overlay, and MCP registration/server to a clean reviewed source tree. If the overlay contains local composition, stop because no deterministic composer/manifest currently proves it. Then re-run owner and household behavior checks on the verified active stack. Keep source reads and guest-scope decisions in the adapter.
 
 ## Historical release baseline and prior evidence
 
