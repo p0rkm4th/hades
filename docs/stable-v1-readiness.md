@@ -131,10 +131,12 @@ disabled; see
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI run
 `37254848424` passed. The Aster candidate branch
 `codex/aster-homelab-checkpoint-redacted-20261004` is at
-`f700e892cd3628deeeadb1dd6b375517a9cc07de`; duplicate exact-SHA runs
-`37264553916` and `37264554854` passed all 117 steps each. It contains the
+`47d047329185aff17a45960ac6f1bbc3c0cf1cd4`; exact-SHA run `37265041968`
+passed all 117 steps. The provider extraction at `f700e892` separately passed
+duplicate runs `37264553916` and `37264554854`. The candidate contains the
 generated homelab package provenance guard, deterministic household denial,
-and an extracted provider-native read-only inference catalog boundary. Nyx's
+and an extracted provider-native read-only inference catalog boundary; the
+new provider sibling is covered by a package-digest mutation test. Nyx's
 old-line classification and relevant code reviews remain pending. The
 candidate is not promoted or deployed. The live adapter package remains mixed
 and its output omits `observed_at`; the household fix requires post-deployment

@@ -13,12 +13,15 @@ Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` and its CI run
 `37254848424` passed. The homelab source baseline at `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`
 preserves Kuma `last_updated` as `availability_summary[].observed_at`, separate
 from freshness. The current Aster candidate is
-`f700e892cd3628deeeadb1dd6b375517a9cc07de`; duplicate exact-SHA Public CI runs
-`37264553916` and `37264554854` passed all 117 steps each. It includes the pure
+`47d047329185aff17a45960ac6f1bbc3c0cf1cd4`; exact-SHA Public CI run
+`37265041968` passed all 117 steps. The provider extraction at `f700e892`
+also passed duplicate runs `37264553916` and `37264554854`. The candidate
+includes the pure
 backup-summary formatter extraction, the provider-native read-only inference
 catalog boundary, a provenance check comparing the profile-selected generated
-adapter's full Python module set and bytes with tracked source, and a fail-closed
-household response for private infrastructure-detail requests. Relevant Nyx
+adapter's full Python module set and bytes with tracked source (including a
+changed-provider-module rejection fixture), and a fail-closed household
+response for private infrastructure-detail requests. Relevant Nyx
 reviews and main promotion are pending. These candidate changes are not
 deployed.
 

@@ -9,12 +9,11 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
-passed on that exact commit. Aster's clean integration branch
-`codex/aster-homelab-checkpoint-redacted-20261004` is at
-`f700e892cd3628deeeadb1dd6b375517a9cc07de`; duplicate exact-SHA runs
-[37264553916](https://github.com/p0rkm4th/hades/actions/runs/37264553916) and
-[37264554854](https://github.com/p0rkm4th/hades/actions/runs/37264554854)
-each passed all 117 steps. The branch is not promoted or deployed. The primary
+passed on that exact commit. Aster's short-lived integration branch
+`codex/aster-homelab-checkpoint-redacted-20261004` has qualified source/test
+candidate `47d047329185aff17a45960ac6f1bbc3c0cf1cd4`; exact-SHA run
+[37265041968](https://github.com/p0rkm4th/hades/actions/runs/37265041968)
+passed all 117 steps. The branch is not promoted or deployed. The primary
 local checkout is preserved and is not the integration base.
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
@@ -58,10 +57,12 @@ complete Python module set and bytes with the clean tracked package. Commit
 `7de443d7` adds a deterministic household denial for infrastructure inventory
 and administrative-detail prompts. `f700e892` extracts provider-native,
 read-only inference catalog parsing while retaining credential/TLS transport,
-identity mapping, and composition in the server. Focused contracts, public
-safety, and hosted CI runs `37264553916` and `37264554854` pass. Neither change is deployed. Nyx's independent
-old-line review and relevant package/privacy reviews remain pending in the
-protected coordination record. A live household
+identity mapping, and composition in the server. The package-provenance
+fixture now covers the added provider sibling. Focused contracts, public
+safety, and hosted CI runs `37264553916`, `37264554854`, and `37265041968`
+pass. Neither change is deployed. Nyx's independent old-line review and
+relevant package/privacy reviews remain pending in the protected coordination
+record. A live household
 UI prompt exposed the intent-classification gap; no concrete host data was
 returned, and fresh post-deployment UI verification remains open. Runtime
 package parity and monitor observation-time output also remain open.
@@ -76,7 +77,7 @@ acceptance transcripts remain in protected operator records.
 
 **Next:** finish Nyx's old-line, package-guard, provider-boundary, and
 household-privacy reviews; the five current-state documents are being refreshed
-to candidate `f700e892` and its green CI. Promote only a small reviewed current-main descendant. Then deploy the
+to source/test candidate `47d0473` and its green CI. Promote only a small reviewed current-main descendant. Then deploy the
 reviewed household boundary
 fix with hash-guarded rollback, recheck household denial/safe status in the live
 UI, and verify coherent runtime package parity plus `observed_at`. No
