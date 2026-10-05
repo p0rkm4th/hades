@@ -25,8 +25,8 @@ backup-summary formatter extraction, the provider-native read-only inference
 catalog boundary, a provenance check comparing the profile-selected generated
 adapter's full Python module set and bytes with tracked source (including a
 changed-provider-module rejection fixture), and a fail-closed household
-response for private infrastructure-detail requests. The latest docs branch
-head `eba6363e` passed Public CI `37270035266`. NYX-018's old-line
+response for private infrastructure-detail requests. The five-document NYX-018 reconciliation at `aa0fabe7` passed Public CI
+`37272481910`. NYX-018's old-line
 classification is accepted with no port recommended. Remaining exact
 package/provenance and privacy/extraction reviews plus main promotion are
 pending. These candidate changes are not deployed.

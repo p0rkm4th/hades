@@ -19,8 +19,8 @@ scope guard; the candidate also tests that missing Kuma observation time
 remains `UNKNOWN`. Previous source/test candidate `725f8357` passed
 `37266372854`; the docs checkpoint `d31c6d0d` passed Public CI run
 `37269639394` after recording the exact deployed reconciler drift.
-Latest documentation-only branch head `eba6363e7452a97e6225194314a84e3ade980811`
-passed exact Public CI run [37270035266](https://github.com/p0rkm4th/hades/actions/runs/37270035266).
+The five-document NYX-018 reconciliation at `aa0fabe7dda3bb843db067bd5b3c32da9ce582cc`
+passed exact Public CI run [37272481910](https://github.com/p0rkm4th/hades/actions/runs/37272481910).
 The branch is not promoted or deployed. The primary local checkout is
 preserved and is not the integration base.
 
