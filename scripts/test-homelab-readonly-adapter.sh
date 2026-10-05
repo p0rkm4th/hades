@@ -456,6 +456,49 @@ assert kuma["monitors"] == [
     {"name": "host-alpha", "status": "up", "last_updated": "2026-09-16 09:00:00.000", "monitor_type": "ping", "id": "7", "source_identity": "kuma:monitor:7", "ping_ms": 84},
     {"name": "host-beta", "status": "down", "last_updated": "2026-09-16 09:00:01.000", "monitor_type": "ping", "id": "8", "source_identity": "kuma:monitor:8"},
 ]
+canonical_kuma = {"monitors": [], "source_marker": "preserved"}
+assert server._normalize_kuma_status(canonical_kuma) is canonical_kuma
+typed_statuses = server._normalize_kuma_status({
+    "publicGroupList": [{"monitorList": [
+        {"id": 11, "name": "boolean-true", "type": "ping"},
+        {"id": 12, "name": "boolean-false", "type": "ping"},
+        {"id": 13, "name": "numeric-float", "type": "ping"},
+        {"id": 14, "name": "integer-up", "type": "ping"},
+        {"id": 15, "name": "integer-down", "type": "ping"},
+    ]}],
+    "heartbeatList": {
+        "11": [{"status": True}], "12": [{"status": False}],
+        "13": [{"status": 1.0}], "14": [{"status": 1}], "15": [{"status": 0}],
+    },
+})
+assert [row["status"] for row in typed_statuses["monitors"]] == [
+    "unknown", "unknown", "unknown", "up", "down",
+], typed_statuses
+bounded_pings = server._normalize_kuma_status({
+    "publicGroupList": [{"monitorList": [
+        {"id": index, "name": f"ping-{index}", "type": "ping"}
+        for index in range(21, 28)
+    ]}],
+    "heartbeatList": {
+        "21": [{"status": 1, "ping": 0}],
+        "22": [{"status": 1, "ping": 60000}],
+        "23": [{"status": 1, "ping": True}],
+        "24": [{"status": 1, "ping": float("nan")}],
+        "25": [{"status": 1, "ping": float("inf")}],
+        "26": [{"status": 1, "ping": -1}],
+        "27": [{"status": 1, "ping": 60001}],
+    },
+})["monitors"]
+assert bounded_pings[0]["ping_ms"] == 0 and bounded_pings[1]["ping_ms"] == 60000, bounded_pings
+assert all("ping_ms" not in row for row in bounded_pings[2:]), bounded_pings
+try:
+    server._normalize_kuma_status({
+        "publicGroupList": [{"monitorList": None}], "heartbeatList": {},
+    })
+except ValueError:
+    pass
+else:
+    raise AssertionError("malformed Kuma monitorList must fail as a source-shape error")
 assert server._kuma_config_url() == "https://status.example.test/api/status-page/hades-status"
 timestamp_quality_kuma = server._normalize_kuma_status({
     "publicGroupList": [{"monitorList": [
@@ -1138,6 +1181,27 @@ assert kuma_outage_resource["runtime_status"] == "stopped", kuma_outage_resource
 assert kuma_outage_resource.get("availability") is None, kuma_outage_resource
 assert kuma_outage_resource["availability_freshness"] == "UNKNOWN", kuma_outage_resource
 
+def malformed_kuma_group_fetch(url, *args, **kwargs):
+    if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
+        return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
+    if url == "https://status.example.test/api/status-page/hades-status":
+        return {"publicGroupList": [{"monitorList": None}]}
+    return netbox_seed_fetch(url, *args, **kwargs)
+
+server._fetch = malformed_kuma_group_fetch
+malformed_kuma_summary = server.homelab_summary()
+assert malformed_kuma_summary["status"] == "PARTIAL", malformed_kuma_summary
+assert malformed_kuma_summary["source_counts"]["proxmox_runtime_rows"] == 1, malformed_kuma_summary
+assert malformed_kuma_summary["source_counts"]["netbox_inventory_rows"] == 1, malformed_kuma_summary
+assert malformed_kuma_summary["source_counts"]["kuma_monitor_rows"] == 0, malformed_kuma_summary
+assert malformed_kuma_summary["availability_summary"] == [], malformed_kuma_summary
+malformed_kuma_observation = next(
+    row for row in malformed_kuma_summary["source_observations"]
+    if row["source"] == "Uptime Kuma"
+)
+assert malformed_kuma_observation["status"] == "UNAVAILABLE", malformed_kuma_observation
+assert "synthetic-core-node" in malformed_kuma_summary["online_names"]
+
 # Reverse the outage direction: current NetBox inventory for the previously
 # linked guest must not inherit the prior Proxmox runtime/liveness result.
 server._fetch = netbox_seed_fetch
@@ -1240,5 +1304,5 @@ print("PASS observed compute capability read is bounded, explicit, and read-only
 print("PASS owner snapshot preserves partial-source errors and authority boundaries")
 PY
 
-python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py
+python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py integrations/homelab-readonly/kuma.py
 echo 'PASS homelab MCP adapter is syntax-valid and read-only by construction'

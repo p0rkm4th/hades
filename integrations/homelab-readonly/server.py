@@ -42,6 +42,7 @@ from config import (
     inference_endpoint_specs,
 )
 from gpu_telemetry import read_gpu_telemetry
+from kuma import normalize_public_status
 
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
@@ -198,46 +199,8 @@ def _fetch(
 
 
 def _normalize_kuma_status(payload: dict) -> dict:
-    """Convert Kuma's public heartbeat payload into bounded monitor rows."""
-    if isinstance(payload.get("monitors"), list):
-        return payload
-    groups = payload.get("publicGroupList")
-    heartbeats = payload.get("heartbeatList")
-    if not isinstance(groups, list) or not isinstance(heartbeats, dict):
-        raise ValueError("Uptime Kuma heartbeat response has an unsupported shape")
-    monitors = []
-    for group in groups:
-        if not isinstance(group, dict):
-            continue
-        for monitor in group.get("monitorList", []):
-            if not isinstance(monitor, dict) or not monitor.get("name"):
-                continue
-            monitor_id = str(monitor.get("id", ""))
-            history = heartbeats.get(monitor_id, [])
-            latest = history[-1] if isinstance(history, list) and history else {}
-            if not isinstance(latest, dict):
-                latest = {}
-            raw_status = latest.get("status")
-            status = "up" if raw_status == 1 else "down" if raw_status == 0 else "unknown"
-            row = {
-                "name": monitor["name"],
-                "status": status,
-                "last_updated": latest.get("time"),
-                "monitor_type": monitor.get("type"),
-            }
-            if monitor.get("id") is not None:
-                row["id"] = str(monitor["id"])
-                row["source_identity"] = f"kuma:monitor:{monitor['id']}"
-            # Uptime Kuma's public heartbeat includes a per-check response
-            # time. Preserve only a finite, nonnegative, bounded sample; it is
-            # not a network-wide measurement or a historical baseline.
-            ping = latest.get("ping")
-            if isinstance(ping, (int, float)) and not isinstance(ping, bool):
-                import math
-                if math.isfinite(ping) and 0 <= ping <= 60000:
-                    row["ping_ms"] = ping
-            monitors.append(row)
-    return {"monitors": monitors}
+    """Keep the server-facing normalization hook while delegating to Kuma."""
+    return normalize_public_status(payload)
 
 
 def _read_identity_links() -> dict[str, int]:
