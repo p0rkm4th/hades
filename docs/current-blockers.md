@@ -7,7 +7,7 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current mission checkpoint — 2026-10-05 UTC
 
-Canonical public `origin/main` is `6944189a52f0c8bc6326c988115d47653c0c804f`; current-main Public CI [37385871951](https://github.com/p0rkm4th/hades/actions/runs/37385871951) passes. The earlier promotion run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810) failed public-history audit because its range contained one private local checkout path in an earlier checkpoint commit. That value is absent from current tree; public history was not rewritten. Current-tree and later introduced-range safety checks pass.
+Canonical public `origin/main` is `c0a1171603d7ca06c7c389e4e5a89de21020daa9`; current-main Public CI [37386340801](https://github.com/p0rkm4th/hades/actions/runs/37386340801) passes. The earlier promotion run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810) failed public-history audit because its range contained one private local checkout path in an earlier checkpoint commit. That value is absent from current tree; public history was not rewritten. Current-tree and later introduced-range safety checks pass.
 
 The old GPU-parity remote ref is deleted and its preserved local tip failed public-history safety. Prior NYX-001/101 reviews found no safe unique old-branch behavior missing from main; NYX-102 accepted the GPU pure-view extraction now in main. NYX-103 found and helped isolate one P2: a failed GPU telemetry or inference-provider read suppressed the successful sibling result. The fix on main catches each failure separately and has synthetic tests for both directions.
 

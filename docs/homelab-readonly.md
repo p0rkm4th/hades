@@ -13,8 +13,8 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 ## Current source and runtime checkpoint
 
 **Current repository checkpoint (2026-10-05):** public `main` is
-`6944189a52f0c8bc6326c988115d47653c0c804f`. Current-main Public CI
-[37385871951](https://github.com/p0rkm4th/hades/actions/runs/37385871951)
+`c0a1171603d7ca06c7c389e4e5a89de21020daa9`. Current-main Public CI
+[37386340801](https://github.com/p0rkm4th/hades/actions/runs/37386340801)
 passes. An earlier main run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810)
 failed the public-history audit because its range contained one private local
 checkout path from an earlier checkpoint commit. It is absent from the current
