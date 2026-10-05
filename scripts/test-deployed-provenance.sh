@@ -15,11 +15,12 @@ printf 'task store fixture\n' > "$source_repo/integrations/task/store.py"
 printf '# synthetic Grocy launcher source\n' > "$source_repo/integrations/grocy-mcp/launch.py"
 printf 'from reconcile import VALUE\n' > "$source_repo/integrations/homelab-readonly/server.py"
 printf 'VALUE = "fixture"\n' > "$source_repo/integrations/homelab-readonly/reconcile.py"
+printf 'VALUE = "provider-fixture"\n' > "$source_repo/integrations/homelab-readonly/inference_provider.py"
 printf 'manifest fixture\n' > "$source_repo/config/reconstruction-manifest.json"
 git -C "$source_repo" init -q
 git -C "$source_repo" config user.email fixture@example.invalid
 git -C "$source_repo" config user.name fixture
-git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/reconcile.py config/reconstruction-manifest.json
+git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/inference_provider.py config/reconstruction-manifest.json
 git -C "$source_repo" commit -qm fixture
 hades_sha=$(git -C "$source_repo" rev-parse HEAD)
 cp "$source_repo/integrations/homelab-readonly/"*.py "$runtime_homelab_package/"
@@ -86,6 +87,7 @@ environment = {
 rows, _ = module.mcp_runtime_identity(profile, environment, root)
 homelab = next(row for row in rows if row["name"] == "homelab-readonly")
 assert [item["source"] for item in homelab["package"]["files"]] == [
+    "integrations/homelab-readonly/inference_provider.py",
     "integrations/homelab-readonly/reconcile.py",
     "integrations/homelab-readonly/server.py",
 ]
@@ -126,6 +128,18 @@ try:
         raise AssertionError("homelab provenance accepted a mixed sibling module")
 finally:
     reconcile.write_bytes(original)
+provider = runtime_package / "inference_provider.py"
+original = provider.read_bytes()
+try:
+    provider.write_text('VALUE = "mixed-provider-package"\n')
+    try:
+        module.mcp_runtime_identity(profile, environment, root)
+    except SystemExit as error:
+        assert "package bytes differ" in str(error)
+    else:
+        raise AssertionError("homelab provenance accepted a changed provider sibling")
+finally:
+    provider.write_bytes(original)
 extra_module = runtime_package / "unexpected.py"
 extra_module.write_text('VALUE = "unexpected"\n')
 try:
@@ -472,6 +486,7 @@ assert [row["name"] for row in value["mcp_runtime"]] == ["grocy", "homelab-reado
 homelab = value["mcp_runtime"][1]
 assert homelab["source"] == "integrations/homelab-readonly/server.py"
 assert [item["source"] for item in homelab["package"]["files"]] == [
+    "integrations/homelab-readonly/inference_provider.py",
     "integrations/homelab-readonly/reconcile.py",
     "integrations/homelab-readonly/server.py",
 ]
