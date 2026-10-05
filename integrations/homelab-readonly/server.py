@@ -637,6 +637,13 @@ def homelab_summary() -> dict:
                     not isinstance(row, dict) for row in source_rows
                 ):
                     raise ValueError("Proxmox resource response has an invalid data list")
+                if any(
+                    not isinstance(row.get("type"), str)
+                    or not row.get("type")
+                    or ("status" in row and not isinstance(row["status"], str))
+                    for row in source_rows
+                ):
+                    raise ValueError("Proxmox resource response has invalid row fields")
                 indexed_source_rows = []
                 for source_row in source_rows:
                     row = dict(source_row)

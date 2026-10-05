@@ -1155,6 +1155,31 @@ assert next(
 assert malformed_proxmox_rows["source_counts"]["netbox_inventory_rows"] == 1
 assert malformed_proxmox_rows["source_counts"]["kuma_monitor_rows"] == 1
 
+def malformed_proxmox_enum_fetch(field, value):
+    def fetch(url, *args, **kwargs):
+        if url == "https://pve-a.example.test/cluster/resources":
+            row = {
+                "id": "qemu/102", "type": "qemu", "vmid": 102,
+                "name": "synthetic-core-node", "node": "alpha", "status": "running",
+            }
+            row[field] = value
+            return {"data": [row]}
+        return netbox_seed_fetch(url, *args, **kwargs)
+    return fetch
+
+for malformed_field, malformed_value in (("status", []), ("type", [])):
+    server._fetch = malformed_proxmox_enum_fetch(malformed_field, malformed_value)
+    malformed_proxmox_enum = server.homelab_summary()
+    assert malformed_proxmox_enum["status"] == "PARTIAL", malformed_proxmox_enum
+    assert malformed_proxmox_enum["source_counts"]["proxmox_runtime_rows"] == 0
+    assert malformed_proxmox_enum["source_counts"]["netbox_inventory_rows"] == 1
+    assert malformed_proxmox_enum["source_counts"]["kuma_monitor_rows"] == 1
+    assert next(
+        row for row in malformed_proxmox_enum["source_observations"]
+        if row["source"] == "Proxmox:alpha"
+    )["status"] == "UNAVAILABLE"
+    assert malformed_proxmox_enum["proxmox_guest_inventory"]["status"] != "COMPLETE"
+
 def malformed_netbox_container_fetch(url, *args, **kwargs):
     if url == "https://netbox.example.test/api/dcim/devices/":
         return {"results": None}
