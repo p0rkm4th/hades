@@ -13,8 +13,8 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 ## Current source and runtime checkpoint
 
 **Current repository checkpoint (2026-10-05):** public `main` is
-`98ad9d8089767f843d62e63f1d44051f1ba80a1d`. Current-main Public CI
-[37383949832](https://github.com/p0rkm4th/hades/actions/runs/37383949832)
+`6944189a52f0c8bc6326c988115d47653c0c804f`. Current-main Public CI
+[37385871951](https://github.com/p0rkm4th/hades/actions/runs/37385871951)
 passes. An earlier main run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810)
 failed the public-history audit because its range contained one private local
 checkout path from an earlier checkpoint commit. It is absent from the current
@@ -41,12 +41,15 @@ local authority-preserving extraction. Follow
 [`docs/homelab-package-rollout.md`](homelab-package-rollout.md) for the
 loopback-only procedure. Public history still contains the previously reported
 `.local` disclosure, with no history rewrite. Current source measurements are:
-`hermes/sitecustomize.py` is 12,473 lines (71 removed by the pure GPU
-response-view extraction and four net lines later added for independent
-source-failure handling), with 150 top-level functions and 217 total. The
-read-only adapter has 14 modules; `server.py` is 1,864 lines with 36 top-level
-functions. Proxmox visibility is an existing domain-policy extraction; defer
-further orchestration extraction until runtime package provenance is resolved.
+`hermes/sitecustomize.py` is 12,475 lines (71 removed by the pure GPU
+response-view extraction, four net lines later added for independent
+source-failure handling, and two lines of classification/delegation glue in
+the service-placement presentation extraction), with 150 top-level functions
+and 217 total. `integrations/homelab_views.py` is 776 lines with 13 top-level
+and 18 total functions. The read-only adapter has 14 modules; `server.py` is
+1,864 lines with 36 top-level and 40 total functions. Proxmox visibility and
+service placement are existing domain/presentation boundaries; defer further
+server orchestration extraction until runtime package provenance is resolved.
 Independent encrypted off-host recovery remains an owner-accepted limitation. The remainder of this document
 records older repository and live observations as historical evidence; its
 cited revisions and CI runs do not supersede the current checkpoint above.
