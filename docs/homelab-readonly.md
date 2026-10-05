@@ -9,10 +9,11 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Public HADES `main` is `dff5375aaedd1cf6c649ca0a42b4aad88da229ac`; exact Public CI
-run `37312686411` passed. Candidate `c4d3c7d1` extracts the pure backup
-formatter into `backup_view.py` without moving source collection or VM.Audit
-scope logic; focused tests and NYX-002 review pass; full candidate CI is pending. This source includes the owner-only homelab reads and
+Public HADES `main` is `9501de0d3cf9a55ceed3d4b9da3c0ffa6f7330cb`; exact Public CI
+run `37314072829` passed. Candidate `1d51aa7e` extracts the pure recent-activity
+formatter into `activity_view.py` without moving source collection, freshness,
+or VM.Audit scope logic; focused direct/wrapper tests pass, with NYX-004
+hygiene/parity recheck passed and full candidate CI pending. This source includes the owner-only homelab reads and
 extracted response-view modules. NYX-001 completed semantic review of old GPU-parity ref
 `345cb1b6de5f9f51ad98986c88ab9f0693461921`: no safe unique capability needs
 porting, and no code was imported. The branch current tree passes its safety
