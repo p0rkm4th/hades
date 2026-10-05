@@ -12,7 +12,7 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 
 ## Current source and runtime checkpoint
 
-Canonical public `main` is `ab0e098917252156e3c56b8cf1292c37ec0299ce` and includes the deterministic composer and CI contract; candidate Public CI [37359442217](https://github.com/p0rkm4th/hades/actions/runs/37359442217) passed; post-promotion main CI [37359854855](https://github.com/p0rkm4th/hades/actions/runs/37359854855) passed. The actual 13-module package composed from a clean candidate source passed the existing provenance validator. This does not establish production runtime parity;
+Homelab package code revision `2594e33b` is on `main`; docs/runbook checkpoint `85c1365a` passed candidate/main CI and includes the deterministic composer and CI contract; candidate Public CI [37359442217](https://github.com/p0rkm4th/hades/actions/runs/37359442217) passed; post-promotion main CI [37359854855](https://github.com/p0rkm4th/hades/actions/runs/37359854855) passed; the runbook/checkpoint update passed candidate CI [37360970057](https://github.com/p0rkm4th/hades/actions/runs/37360970057) and latest main CI [37361152596](https://github.com/p0rkm4th/hades/actions/runs/37361152596). The actual 13-module package composed from a clean candidate source passed the existing provenance validator. This does not establish production runtime parity;
 named-host workload renderer candidate/main Public CI runs
 [37355109128](https://github.com/p0rkm4th/hades/actions/runs/37355109128) and
 [37355337581](https://github.com/p0rkm4th/hades/actions/runs/37355337581), plus
