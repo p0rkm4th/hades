@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.util
+import json
 import os
 from pathlib import Path
 
@@ -13,6 +15,34 @@ FUNCTIONS = (
     "_hades_household_homelab_boundary_response",
 )
 LOADER = "_hades_load_homelab_views"
+
+
+def _manifest_module():
+    path = Path(__file__).resolve().with_name("hermes-overlay-composition.py")
+    spec = importlib.util.spec_from_file_location("_hades_overlay_composition", path)
+    if spec is None or spec.loader is None:
+        raise SystemExit("FAIL overlay composition manifest helper is unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _write_private_new(path: Path, data: bytes) -> None:
+    try:
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError:
+        raise SystemExit("FAIL candidate output and manifest must be new paths") from None
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
+    if path.stat().st_mode & 0o777 != 0o600:
+        path.unlink(missing_ok=True)
+        raise SystemExit("FAIL candidate artifact permissions are not mode 0600")
 
 
 def read_regular(path: Path, label: str) -> bytes:
@@ -85,37 +115,47 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--active-overlay", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument(
-        "--source", type=Path,
-        default=Path(__file__).resolve().parents[1] / "hermes/sitecustomize.py",
-    )
+    parser.add_argument("--manifest-output", required=True, type=Path)
+    parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--source", type=Path)
     args = parser.parse_args()
 
+    repo = args.repo.resolve(strict=True)
+    canonical_source = repo / "hermes/sitecustomize.py"
+    source_arg = args.source or canonical_source
+    if source_arg.is_symlink() or source_arg.resolve(strict=True) != canonical_source.resolve(strict=True):
+        raise SystemExit("FAIL source must be the tracked Hermes overlay in the selected repository")
     active_path = args.active_overlay.resolve(strict=True)
-    source_path = args.source.resolve(strict=True)
+    source_path = source_arg.resolve(strict=True)
     output = args.output.absolute()
-    if args.active_overlay.is_symlink() or args.source.is_symlink():
+    manifest_output = args.manifest_output.absolute()
+    if args.active_overlay.is_symlink() or source_arg.is_symlink():
         raise SystemExit("FAIL input overlays must be regular files, not symlinks")
-    if output in {active_path, source_path} or output.exists() or output.is_symlink():
-        raise SystemExit("FAIL candidate output must be a new path")
-    if not output.parent.is_dir():
-        raise SystemExit("FAIL candidate output parent directory must exist")
+    outputs = {output, manifest_output}
+    if len(outputs) != 2 or outputs & {active_path, source_path}:
+        raise SystemExit("FAIL candidate output and manifest paths must be distinct from inputs")
+    for path in outputs:
+        if path.exists() or path.is_symlink():
+            raise SystemExit("FAIL candidate output and manifest must be new paths")
+        if not path.parent.is_dir():
+            raise SystemExit("FAIL candidate output parent directory must exist")
 
     active = read_regular(active_path, "active overlay")
     source = read_regular(source_path, "candidate source")
     candidate = compose(active, source, str(active_path), str(source_path))
+    manifest = _manifest_module().build_manifest(repo, active, candidate)
+    manifest_bytes = (json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    written: list[Path] = []
     try:
-        descriptor = os.open(output, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    except FileExistsError:
-        raise SystemExit("FAIL candidate output must be a new path") from None
-    with os.fdopen(descriptor, "wb") as stream:
-        stream.write(candidate)
-        stream.flush()
-        os.fsync(stream.fileno())
-    if output.stat().st_mode & 0o777 != 0o600:
-        output.unlink(missing_ok=True)
-        raise SystemExit("FAIL candidate overlay permissions are not mode 0600")
-    print("PASS composed two homelab wrappers; all other overlay bytes preserved")
+        _write_private_new(output, candidate)
+        written.append(output)
+        _write_private_new(manifest_output, manifest_bytes)
+        written.append(manifest_output)
+    except BaseException:
+        for path in written:
+            path.unlink(missing_ok=True)
+        raise
+    print("PASS composed two homelab wrappers and wrote a mode-0600 identity manifest")
     return 0
 
 

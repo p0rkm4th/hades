@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -14,6 +15,15 @@ import subprocess
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+
+
+class SingleUseOption(argparse.Action):
+    """Reject repeated identity arguments instead of silently choosing the last."""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if getattr(namespace, self.dest, None) is not None:
+            raise argparse.ArgumentError(self, f"{option_string} may be supplied only once")
+        setattr(namespace, self.dest, values)
 
 
 def digest(path: Path) -> str:
@@ -86,6 +96,85 @@ def active_overlay(service: str) -> Path:
                 raise SystemExit("effective Hermes sitecustomize must be a regular non-symlink file")
             return candidate
     raise SystemExit("effective Hermes PYTHONPATH contains no sitecustomize.py")
+
+
+def verify_overlay_composition(
+    manifest_path: Path | None,
+    install_marker_path: Path | None,
+    overlay_path: Path,
+    source_repo: Path,
+) -> dict[str, object] | None:
+    tracked_overlay = source_repo / "hermes/sitecustomize.py"
+    if tracked_overlay.is_symlink() or not tracked_overlay.is_file():
+        raise SystemExit("source repository has no regular tracked Hermes overlay")
+    if overlay_path.is_symlink() or not overlay_path.is_file():
+        raise SystemExit("active Hermes overlay must be a regular non-symlink file")
+    overlay_bytes = overlay_path.read_bytes()
+    marker_lines: list[str] | None = None
+    if install_marker_path is not None:
+        if install_marker_path.is_symlink() or not install_marker_path.is_file():
+            raise SystemExit("installation marker must be a regular non-symlink file")
+        if install_marker_path.stat().st_mode & 0o777 not in {0o600, 0o640}:
+            raise SystemExit("installation marker permissions must be mode 0600 or 0640")
+        try:
+            marker_lines = install_marker_path.read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeError):
+            raise SystemExit("installation marker is unreadable") from None
+    recorded_manifests = [
+        line.partition("=")[2]
+        for line in marker_lines or []
+        if line.startswith("hermes_overlay_composition_manifest_sha256=")
+    ]
+    if manifest_path is None:
+        if recorded_manifests:
+            raise SystemExit("installed composition manifest must be supplied for provenance")
+        if overlay_path.stat().st_mode & 0o777 != 0o644:
+            raise SystemExit("tracked Hermes overlay permissions must be mode 0644")
+        if overlay_bytes != tracked_overlay.read_bytes():
+            raise SystemExit(
+                "custom Hermes overlay requires a verified composition manifest"
+            )
+        return None
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        raise SystemExit("overlay composition manifest must be a regular non-symlink file")
+    if manifest_path.stat().st_mode & 0o777 not in {0o600, 0o640}:
+        raise SystemExit("overlay composition manifest permissions must be mode 0600 or 0640")
+    if overlay_path.stat().st_mode & 0o777 not in {0o600, 0o640}:
+        raise SystemExit("composed Hermes overlay permissions must be mode 0600 or 0640")
+    if install_marker_path is None:
+        raise SystemExit("a regular installation marker is required to verify composed overlay provenance")
+    configured_state_root = Path(os.environ.get("HADES_STATE_ROOT", "/var/lib/hades"))
+    if not configured_state_root.is_absolute():
+        raise SystemExit("HADES_STATE_ROOT must be an absolute path")
+    expected_marker = configured_state_root / "install-contract"
+    if install_marker_path.resolve(strict=True) != expected_marker.resolve(strict=False):
+        raise SystemExit("installation marker path differs from HADES_STATE_ROOT/install-contract")
+    if len(recorded_manifests) != 1 or recorded_manifests[0] != digest(manifest_path):
+        raise SystemExit("composition manifest does not match the installed record")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        raise SystemExit("overlay composition manifest is unreadable or malformed") from None
+    helper_path = source_repo / "scripts/hermes-overlay-composition.py"
+    if helper_path.is_symlink() or not helper_path.is_file():
+        raise SystemExit("source repository is missing the overlay composition verifier")
+    spec = importlib.util.spec_from_file_location("hades_overlay_composition", helper_path)
+    if spec is None or spec.loader is None:
+        raise SystemExit("overlay composition verifier could not be loaded")
+    helper = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(helper)
+    try:
+        helper.verify_manifest(manifest, source_repo, overlay_bytes)
+    except (OSError, ValueError, SystemExit) as exc:
+        raise SystemExit(f"overlay composition identity is invalid: {str(exc)}") from None
+    return {
+        "manifest_sha256": digest(manifest_path),
+        "source_revision": manifest["source_revision"],
+        "source_tree": manifest["source_tree"],
+        "base_overlay_sha256": manifest["base_overlay_sha256"],
+        "final_overlay_sha256": manifest["final_overlay_sha256"],
+        "wrapper_sha256": manifest["wrapper_sha256"],
+    }
 
 
 def running_process_arguments(service: str) -> list[str]:
@@ -532,6 +621,8 @@ def main() -> int:
         help="the Hermes executable configured for the active systemd service",
     )
     parser.add_argument("--overlay", required=True, type=Path)
+    parser.add_argument("--overlay-composition-manifest", type=Path, action=SingleUseOption)
+    parser.add_argument("--install-marker", type=Path, action=SingleUseOption)
     parser.add_argument(
         "--hermes-profile", required=True, type=Path,
         help="selected profiles/<name>/config.yaml under the active HERMES_HOME",
@@ -588,6 +679,9 @@ def main() -> int:
         raise SystemExit(
             "overlay argument differs from the active service PYTHONPATH sitecustomize.py"
         )
+    overlay_composition = verify_overlay_composition(
+        args.overlay_composition_manifest, args.install_marker, args.overlay, source_repo
+    )
     artifact = {
         "schema": "hades/deployed-provenance/v1",
         "hades_sha": args.hades_sha,
@@ -610,6 +704,8 @@ def main() -> int:
     }
     if args.epsilon_manifest is not None:
         artifact["epsilon_package_manifest_sha256"] = digest(args.epsilon_manifest)
+    if overlay_composition is not None:
+        artifact["hermes_overlay_composition"] = overlay_composition
     args.output.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(prefix=".hades-provenance-", dir=args.output.parent, text=True)
     try:

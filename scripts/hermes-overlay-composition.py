@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -136,3 +138,42 @@ def verify_manifest(
         if recomposed != final_overlay:
             raise ValueError("base overlay does not compose to the recorded final bytes")
     return True
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--verify", action="store_true", required=True)
+    parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--manifest", required=True, type=Path)
+    parser.add_argument("--overlay", required=True, type=Path)
+    parser.add_argument("--base-overlay", type=Path)
+    args = parser.parse_args(argv)
+    for path, label in ((args.manifest, "manifest"), (args.overlay, "overlay")):
+        if path.is_symlink() or not path.is_file():
+            raise SystemExit(f"FAIL composition {label} must be a regular non-symlink file")
+        if path.stat().st_mode & 0o777 not in {0o600, 0o640}:
+            raise SystemExit(f"FAIL composition {label} permissions must be mode 0600 or 0640")
+    if args.base_overlay is not None and (
+        args.base_overlay.is_symlink() or not args.base_overlay.is_file()
+    ):
+        raise SystemExit("FAIL base overlay must be a regular non-symlink file")
+    try:
+        manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+        verify_manifest(
+            manifest,
+            args.repo,
+            args.overlay.read_bytes(),
+            args.base_overlay.read_bytes() if args.base_overlay is not None else None,
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        message = str(exc).strip() or "composition identity could not be verified"
+        print(f"FAIL {message}", file=sys.stderr)
+        return 1
+    print("PASS Hermes overlay composition identity")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

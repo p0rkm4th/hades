@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-printf 'overlay fixture\n' > "$tmp/overlay"
 printf 'manifest fixture\n' > "$tmp/manifest"
 printf 'task store fixture\n' > "$tmp/task-store.py"
 printf 'epsilon package fixture\n' > "$tmp/phase3-runtime-manifest.json"
@@ -10,7 +10,19 @@ source_repo="$tmp/source"
 infra_repo="$tmp/infra"
 generated_integrations="$tmp/generated/integrations"
 runtime_homelab_package="$generated_integrations/homelab-readonly-646577b"
-mkdir -p "$tmp/bin" "$tmp/active" "$source_repo/integrations/task" "$source_repo/integrations/grocy-mcp" "$source_repo/integrations/homelab-readonly" "$source_repo/config" "$infra_repo" "$runtime_homelab_package"
+mkdir -p "$tmp/bin" "$tmp/active" "$source_repo/hermes" "$source_repo/scripts" "$source_repo/integrations/task" "$source_repo/integrations/grocy-mcp" "$source_repo/integrations/homelab-readonly" "$source_repo/config" "$infra_repo" "$runtime_homelab_package"
+cat > "$source_repo/hermes/sitecustomize.py" <<'PY'
+def _hades_load_homelab_views():
+    return object()
+
+def _hades_homelab_guest_visibility_response(summary):
+    return _hades_load_homelab_views().guest(summary)
+
+def _hades_household_homelab_boundary_response(user_text):
+    return _hades_load_homelab_views().household(user_text)
+PY
+cp "$repo_dir/scripts/hermes-overlay-composition.py" "$source_repo/scripts/"
+cp "$repo_dir/scripts/prepare-homelab-overlay-candidate.py" "$source_repo/scripts/"
 printf 'task store fixture\n' > "$source_repo/integrations/task/store.py"
 printf '# synthetic Grocy launcher source\n' > "$source_repo/integrations/grocy-mcp/launch.py"
 printf 'from reconcile import VALUE\n' > "$source_repo/integrations/homelab-readonly/server.py"
@@ -21,7 +33,7 @@ printf 'manifest fixture\n' > "$source_repo/config/reconstruction-manifest.json"
 git -C "$source_repo" init -q
 git -C "$source_repo" config user.email fixture@example.invalid
 git -C "$source_repo" config user.name fixture
-git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/inference_provider.py integrations/homelab-readonly/proxmox_visibility.py config/reconstruction-manifest.json
+git -C "$source_repo" add hermes/sitecustomize.py scripts/hermes-overlay-composition.py scripts/prepare-homelab-overlay-candidate.py integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/inference_provider.py integrations/homelab-readonly/proxmox_visibility.py config/reconstruction-manifest.json
 git -C "$source_repo" commit -qm fixture
 hades_sha=$(git -C "$source_repo" rev-parse HEAD)
 cp "$source_repo/integrations/homelab-readonly/"*.py "$runtime_homelab_package/"
@@ -32,6 +44,7 @@ git -C "$infra_repo" config user.name fixture
 git -C "$infra_repo" add infra.txt
 git -C "$infra_repo" commit -qm fixture
 infra_sha=$(git -C "$infra_repo" rev-parse HEAD)
+cp "$source_repo/hermes/sitecustomize.py" "$tmp/overlay"
 cp "$tmp/overlay" "$tmp/active/sitecustomize.py"
 cat > "$tmp/active/hermes" <<'SH'
 #!/usr/bin/env bash
@@ -70,6 +83,26 @@ except SystemExit:
 else:
     raise AssertionError("unsupported args mapping should fail closed")
 PY
+if output=$(python scripts/write-deployed-provenance.py \
+  --install-marker /tmp/first-install-contract \
+  --install-marker /tmp/second-install-contract 2>&1); then
+  echo 'FAIL provenance writer accepted duplicate install-marker options' >&2
+  exit 1
+fi
+grep -Fq 'may be supplied only once' <<<"$output" || {
+  echo 'FAIL duplicate install-marker failure had the wrong cause' >&2
+  exit 1
+}
+if output=$(python scripts/write-deployed-provenance.py \
+  --overlay-composition-manifest /tmp/first-composition.json \
+  --overlay-composition-manifest /tmp/second-composition.json 2>&1); then
+  echo 'FAIL provenance writer accepted duplicate composition-manifest options' >&2
+  exit 1
+fi
+grep -Fq 'may be supplied only once' <<<"$output" || {
+  echo 'FAIL duplicate composition-manifest failure had the wrong cause' >&2
+  exit 1
+}
 python3 - "$PWD/scripts/write-deployed-provenance.py" "$tmp/hermes-home/profiles/hades/config.yaml" "$source_repo" "$generated_integrations" <<'PY'
 import importlib.util
 import hashlib
@@ -300,6 +333,168 @@ python scripts/write-deployed-provenance.py \
   --epsilon-manifest "$tmp/phase3-runtime-manifest.json" \
   --deployment-path /srv/hades \
   --service hades-hermes.service >/dev/null
+chmod 0666 "$tmp/active/sitecustomize.py"
+if python scripts/write-deployed-provenance.py \
+  --output "$tmp/unsafe-tracked-overlay-provenance.json" \
+  --hades-sha "$hades_sha" \
+  --source-repo "$source_repo" \
+  --infra-sha "$infra_sha" \
+  --infra-repo "$infra_repo" \
+  --hermes-version 0.21.2 \
+  --hermes-executable "$tmp/active/hermes" \
+  --overlay "$tmp/active/sitecustomize.py" \
+  --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+  --task-store "$source_repo/integrations/task/store.py" \
+  --manifest "$source_repo/config/reconstruction-manifest.json" \
+  --deployment-path /srv/hades \
+  --service hades-hermes.service >/dev/null 2>&1; then
+  echo 'FAIL provenance writer accepted unsafe permissions on a tracked Hermes overlay' >&2
+  exit 1
+fi
+test ! -e "$tmp/unsafe-tracked-overlay-provenance.json"
+chmod 0644 "$tmp/active/sitecustomize.py"
+cp "$tmp/active/sitecustomize.py" "$tmp/source-overlay.py"
+printf '\n# unbound local customization\n' >> "$tmp/active/sitecustomize.py"
+if python scripts/write-deployed-provenance.py \
+  --output "$tmp/unbound-overlay-provenance.json" \
+  --hades-sha "$hades_sha" \
+  --source-repo "$source_repo" \
+  --infra-sha "$infra_sha" \
+  --infra-repo "$infra_repo" \
+  --hermes-version 0.21.2 \
+  --hermes-executable "$tmp/active/hermes" \
+  --overlay "$tmp/active/sitecustomize.py" \
+  --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+  --task-store "$source_repo/integrations/task/store.py" \
+  --manifest "$source_repo/config/reconstruction-manifest.json" \
+  --deployment-path /srv/hades \
+  --service hades-hermes.service >/dev/null 2>&1; then
+  echo 'FAIL provenance writer accepted an unbound customized Hermes overlay' >&2
+  exit 1
+fi
+test ! -e "$tmp/unbound-overlay-provenance.json"
+cp "$tmp/source-overlay.py" "$tmp/active/sitecustomize.py"
+composition_dir="$tmp/composition"
+mkdir -m 0700 "$composition_dir"
+mkdir -m 0700 "$composition_dir/state"
+cp "$tmp/source-overlay.py" "$composition_dir/base.py"
+printf '\n# deployment-local, explicitly composed overlay\nLOCAL_OVERLAY = True\n' >> "$composition_dir/base.py"
+chmod 600 "$composition_dir/base.py"
+python scripts/prepare-homelab-overlay-candidate.py \
+  --repo "$source_repo" \
+  --active-overlay "$composition_dir/base.py" \
+  --output "$composition_dir/candidate.py" \
+  --manifest-output "$composition_dir/composition.json" >/dev/null
+cp "$composition_dir/candidate.py" "$tmp/active/sitecustomize.py"
+chmod 640 "$tmp/active/sitecustomize.py"
+printf 'hermes_overlay_composition_manifest_sha256=%s\n' \
+  "$(sha256sum "$composition_dir/composition.json" | awk '{print $1}')" \
+  > "$composition_dir/state/install-contract"
+chmod 640 "$composition_dir/state/install-contract"
+HADES_STATE_ROOT="$composition_dir/state" python scripts/write-deployed-provenance.py \
+  --output "$tmp/composed-overlay-provenance.json" \
+  --hades-sha "$hades_sha" \
+  --source-repo "$source_repo" \
+  --infra-sha "$infra_sha" \
+  --infra-repo "$infra_repo" \
+  --hermes-version 0.21.2 \
+  --hermes-executable "$tmp/active/hermes" \
+  --overlay "$tmp/active/sitecustomize.py" \
+  --overlay-composition-manifest "$composition_dir/composition.json" \
+  --install-marker "$composition_dir/state/install-contract" \
+  --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+  --task-store "$source_repo/integrations/task/store.py" \
+  --manifest "$source_repo/config/reconstruction-manifest.json" \
+  --deployment-path /srv/hades \
+  --service hades-hermes.service >/dev/null
+python3 - "$tmp/composed-overlay-provenance.json" "$composition_dir/composition.json" <<'PY'
+import hashlib
+import json
+from pathlib import Path
+import sys
+artifact = json.loads(Path(sys.argv[1]).read_text())
+composition = json.loads(Path(sys.argv[2]).read_text())
+assert artifact["hermes_overlay_composition"]["final_overlay_sha256"] == composition["final_overlay_sha256"]
+assert artifact["hermes_overlay_composition"]["manifest_sha256"] == hashlib.sha256(Path(sys.argv[2]).read_bytes()).hexdigest()
+assert artifact["hermes_overlay_composition"]["source_revision"] == composition["source_revision"]
+assert artifact["hermes_overlay_composition"]["source_tree"] == composition["source_tree"]
+PY
+cp "$composition_dir/state/install-contract" "$composition_dir/fake-install-contract"
+chmod 640 "$composition_dir/fake-install-contract"
+if HADES_STATE_ROOT="$composition_dir/state" python scripts/write-deployed-provenance.py \
+  --output "$tmp/fake-marker-provenance.json" \
+  --hades-sha "$hades_sha" \
+  --source-repo "$source_repo" \
+  --infra-sha "$infra_sha" \
+  --infra-repo "$infra_repo" \
+  --hermes-version 0.21.2 \
+  --hermes-executable "$tmp/active/hermes" \
+  --overlay "$tmp/active/sitecustomize.py" \
+  --overlay-composition-manifest "$composition_dir/composition.json" \
+  --install-marker "$composition_dir/fake-install-contract" \
+  --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+  --task-store "$source_repo/integrations/task/store.py" \
+  --manifest "$source_repo/config/reconstruction-manifest.json" \
+  --deployment-path /srv/hades \
+  --service hades-hermes.service >/dev/null 2>&1; then
+  echo 'FAIL provenance writer accepted a composition marker outside HADES_STATE_ROOT' >&2
+  exit 1
+fi
+test ! -e "$tmp/fake-marker-provenance.json"
+chmod 666 "$tmp/active/sitecustomize.py"
+if HADES_STATE_ROOT="$composition_dir/state" python scripts/write-deployed-provenance.py \
+  --output "$tmp/unsafe-mode-provenance.json" \
+  --hades-sha "$hades_sha" \
+  --source-repo "$source_repo" \
+  --infra-sha "$infra_sha" \
+  --infra-repo "$infra_repo" \
+  --hermes-version 0.21.2 \
+  --hermes-executable "$tmp/active/hermes" \
+  --overlay "$tmp/active/sitecustomize.py" \
+  --overlay-composition-manifest "$composition_dir/composition.json" \
+  --install-marker "$composition_dir/state/install-contract" \
+  --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+  --task-store "$source_repo/integrations/task/store.py" \
+  --manifest "$source_repo/config/reconstruction-manifest.json" \
+  --deployment-path /srv/hades \
+  --service hades-hermes.service >/dev/null 2>&1; then
+  echo 'FAIL provenance writer accepted an unsafe composed-overlay mode' >&2
+  exit 1
+fi
+test ! -e "$tmp/unsafe-mode-provenance.json"
+chmod 640 "$tmp/active/sitecustomize.py"
+python3 - "$composition_dir/composition.json" "$composition_dir/unrecorded-composition.json" <<'PY'
+import json
+from pathlib import Path
+import sys
+source, target = map(Path, sys.argv[1:])
+manifest = json.loads(source.read_text())
+manifest["base_overlay_sha256"] = "0" * 64
+target.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n")
+target.chmod(0o600)
+PY
+if HADES_STATE_ROOT="$composition_dir/state" python scripts/write-deployed-provenance.py \
+  --output "$tmp/unrecorded-manifest-provenance.json" \
+  --hades-sha "$hades_sha" \
+  --source-repo "$source_repo" \
+  --infra-sha "$infra_sha" \
+  --infra-repo "$infra_repo" \
+  --hermes-version 0.21.2 \
+  --hermes-executable "$tmp/active/hermes" \
+  --overlay "$tmp/active/sitecustomize.py" \
+  --overlay-composition-manifest "$composition_dir/unrecorded-composition.json" \
+  --install-marker "$composition_dir/state/install-contract" \
+  --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+  --task-store "$source_repo/integrations/task/store.py" \
+  --manifest "$source_repo/config/reconstruction-manifest.json" \
+  --deployment-path /srv/hades \
+  --service hades-hermes.service >/dev/null 2>&1; then
+  echo 'FAIL provenance writer accepted a manifest that differs from the installed record' >&2
+  exit 1
+fi
+test ! -e "$tmp/unrecorded-manifest-provenance.json"
+cp "$tmp/source-overlay.py" "$tmp/active/sitecustomize.py"
+chmod 0644 "$tmp/active/sitecustomize.py"
 if python scripts/write-deployed-provenance.py \
   --output "$tmp/wrong-provenance.json" \
   --hades-sha "$hades_sha" \

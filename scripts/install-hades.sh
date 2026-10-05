@@ -2,10 +2,14 @@
 set -Eeuo pipefail
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 inputs=''; root=/; root_supplied=0; preflight_only=0; test_mode=0; synthetic_deployment_test=0
+hermes_overlay_candidate_arg=''; hermes_overlay_manifest_arg=''
+hermes_overlay_composition=0; hermes_overlay_install_candidate=''; hermes_overlay_install_manifest=''
 while (($#)); do
   case "$1" in
     --inputs) inputs=${2:?--inputs needs a file}; shift 2 ;;
     --root) root=${2:?--root needs a directory}; root_supplied=1; shift 2 ;;
+    --hermes-overlay-candidate) hermes_overlay_candidate_arg=${2:?--hermes-overlay-candidate needs a file}; shift 2 ;;
+    --hermes-overlay-manifest) hermes_overlay_manifest_arg=${2:?--hermes-overlay-manifest needs a file}; shift 2 ;;
     --preflight) preflight_only=1; shift ;;
     --test-mode) test_mode=1; shift ;;
     --synthetic-deployment-test) synthetic_deployment_test=1; shift ;;
@@ -48,6 +52,10 @@ fi
 source_provenance_records() {
   printf 'source_revision=%s\nsource_tree=%s\nsource_clean=%s\n' \
     "$source_revision" "$source_tree" "$source_clean"
+  if ((hermes_overlay_composition)); then
+    printf 'hermes_overlay_composition_manifest_sha256=%s\n' \
+      "$(sha256sum "$hermes_overlay_install_manifest" | awk '{print $1}')"
+  fi
 }
 hades_layer_digest() {
   sha256sum "$@" | awk '{print $1}' | sha256sum | awk '{print $1}'
@@ -99,6 +107,69 @@ compose_cmd=(docker compose --env-file "$inputs")
 if ((test_mode && !root_supplied)); then fail 'test mode requires an explicit --root sandbox'; fi
 need_cmd() { command -v "$1" >/dev/null 2>&1 || fail "missing prerequisite: $1"; }
 under_root() { printf '%s/%s' "${root%/}" "${1#/}"; }
+select_hermes_overlay() {
+  local config_path target_manifest candidate_real manifest_real
+  config_path="$(under_root "$HADES_CONFIG_ROOT")/overlay/sitecustomize.py"
+  target_manifest="$(under_root "$HADES_CONFIG_ROOT")/overlay/sitecustomize.composition.json"
+  if [[ -n "$hermes_overlay_candidate_arg" || -n "$hermes_overlay_manifest_arg" ]]; then
+    [[ -n "$hermes_overlay_candidate_arg" && -n "$hermes_overlay_manifest_arg" ]] ||
+      fail 'provide both --hermes-overlay-candidate and --hermes-overlay-manifest'
+    [[ -f "$config_path" && ! -L "$config_path" ]] ||
+      fail 'composed overlay requires an existing active sitecustomize base'
+    [[ -f "$hermes_overlay_candidate_arg" && ! -L "$hermes_overlay_candidate_arg" &&
+       -f "$hermes_overlay_manifest_arg" && ! -L "$hermes_overlay_manifest_arg" ]] ||
+      fail 'composed overlay candidate and manifest must be regular non-symlink files'
+    candidate_real=$(readlink -e "$hermes_overlay_candidate_arg") || fail 'composed overlay candidate path cannot be resolved'
+    manifest_real=$(readlink -e "$hermes_overlay_manifest_arg") || fail 'composed overlay manifest path cannot be resolved'
+    [[ "$candidate_real" != "$(readlink -e "$config_path")" &&
+       "$manifest_real" != "$(readlink -e "$target_manifest" 2>/dev/null || true)" ]] ||
+      fail 'composed overlay candidate and manifest must be staged outside the active overlay'
+    [[ "$(stat -c '%a' "$hermes_overlay_candidate_arg")" == 600 &&
+       "$(stat -c '%a' "$hermes_overlay_manifest_arg")" == 600 ]] ||
+      fail 'composed overlay candidate and manifest must be mode 0600'
+    hermes_overlay_install_candidate=$hermes_overlay_candidate_arg
+    hermes_overlay_install_manifest=$hermes_overlay_manifest_arg
+    hermes_overlay_composition=1
+    python3 "$repo_dir/scripts/hermes-overlay-composition.py" --verify \
+      --repo "$repo_dir" --manifest "$hermes_overlay_install_manifest" \
+      --overlay "$hermes_overlay_install_candidate" --base-overlay "$config_path" >/dev/null ||
+      fail 'composed overlay candidate does not match the active base and tracked source'
+    return
+  fi
+  if [[ -e "$target_manifest" || -L "$target_manifest" ]]; then
+    [[ -f "$config_path" && ! -L "$config_path" && -f "$target_manifest" && ! -L "$target_manifest" ]] ||
+      fail 'installed Hermes overlay composition files are missing or linked'
+    hermes_overlay_install_candidate=$config_path
+    hermes_overlay_install_manifest=$target_manifest
+    hermes_overlay_composition=1
+    python3 "$repo_dir/scripts/hermes-overlay-composition.py" --verify \
+      --repo "$repo_dir" --manifest "$hermes_overlay_install_manifest" \
+      --overlay "$hermes_overlay_install_candidate" --base-overlay "$config_path" >/dev/null ||
+      fail 'installed Hermes overlay composition is stale or modified'
+    return
+  fi
+  if [[ -e "$config_path" || -L "$config_path" ]]; then
+    [[ -f "$config_path" && ! -L "$config_path" ]] || fail 'active Hermes overlay must be a regular non-symlink file'
+    cmp -s "$repo_dir/hermes/sitecustomize.py" "$config_path" ||
+      fail 'active Hermes overlay is customized; provide a reviewed composed candidate and manifest instead of overwriting it'
+  fi
+  hermes_overlay_install_candidate="$repo_dir/hermes/sitecustomize.py"
+}
+install_selected_hermes_overlay() {
+  if ((hermes_overlay_composition)); then
+    if [[ "$hermes_overlay_install_candidate" != "$(under_root "$HADES_CONFIG_ROOT")/overlay/sitecustomize.py" ]]; then
+      install -m 0640 "$hermes_overlay_install_candidate" "$(under_root "$HADES_CONFIG_ROOT")/overlay/sitecustomize.py"
+      install -m 0640 "$hermes_overlay_install_manifest" "$(under_root "$HADES_CONFIG_ROOT")/overlay/sitecustomize.composition.json"
+    fi
+    python3 "$repo_dir/scripts/hermes-overlay-composition.py" --verify \
+      --repo "$repo_dir" \
+      --manifest "$(under_root "$HADES_CONFIG_ROOT")/overlay/sitecustomize.composition.json" \
+      --overlay "$(under_root "$HADES_CONFIG_ROOT")/overlay/sitecustomize.py" >/dev/null ||
+      fail 'installed Hermes overlay composition failed identity verification'
+  else
+    install -m 0644 "$repo_dir/hermes/sitecustomize.py" "$(under_root "$HADES_CONFIG_ROOT")/overlay/sitecustomize.py"
+  fi
+}
 ensure_shared_network() {
   local name=$1 found
   if found=$(docker network inspect --format '{{.Driver}} {{.Scope}}' "$name" 2>/dev/null); then
@@ -432,6 +503,7 @@ preflight() {
     hermes/config.yaml.example
     hermes/env.example
     hermes/sitecustomize.py
+    scripts/hermes-overlay-composition.py
     integrations/grocy-mcp/launch.py
     integrations/grocy-mcp/requirements.lock
     scripts/install-grocy-mcp.sh
@@ -466,6 +538,7 @@ preflight() {
   for source_file in "${tracked_sources[@]}"; do
     [[ -f "$repo_dir/$source_file" ]] || fail "required tracked source is absent: $source_file"
   done
+  select_hermes_overlay
   if ((test_mode)); then
     if [[ -d "${HADES_DEPLOYMENT_DIR:-}" ]]; then
       validate_private_records
@@ -642,7 +715,7 @@ if ((test_mode)); then
   [[ -e "$config_root/hermes.env.example" ]] || install -m 0644 "$repo_dir/hermes/env.example" "$config_root/hermes.env.example"
   install -d -m 0750 "$state_root/runtime" "$state_root/compose"
   install -d -m 0750 "$config_root/overlay" "$config_root/adapters" "$config_root/assets"
-  install -m 0644 "$repo_dir/hermes/sitecustomize.py" "$config_root/overlay/sitecustomize.py"
+  install_selected_hermes_overlay
   install -m 0644 "$repo_dir/integrations/homelab_views.py" "$config_root/overlay/homelab_views.py"
   install -m 0644 "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$config_root/adapters/grocy-recipe-authoring.py"
   install -m 0644 "$repo_dir/integrations/agent-zero-mcp/server.py" "$config_root/adapters/agent-zero-mcp.py"
@@ -655,7 +728,7 @@ if ((test_mode)); then
     printf 'manifest=%s\nreconstruction_manifest=%s\nlayer=%s\ninstalled_from=%s\n' \
       "$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')" \
       "$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')" \
-      "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
+      "$(hades_layer_digest "$config_root/overlay/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
       "$repo_dir"
     source_provenance_records
     printf 'phase=prepared\n'
@@ -682,7 +755,7 @@ install -m 0644 "$repo_dir/config/reconstruction-manifest.json" "$config_root/re
 [[ -e "$config_root/hermes.env.example" ]] || install -m 0644 "$repo_dir/hermes/env.example" "$config_root/hermes.env.example"
 install -d -m 0750 "$state_root/runtime" "$state_root/compose"
 install -d -m 0750 "$config_root/overlay" "$config_root/adapters" "$config_root/assets"
-install -m 0644 "$repo_dir/hermes/sitecustomize.py" "$config_root/overlay/sitecustomize.py"
+install_selected_hermes_overlay
 install -m 0644 "$repo_dir/integrations/homelab_views.py" "$config_root/overlay/homelab_views.py"
 install -m 0644 "$repo_dir/integrations/grocy-mcp/launch.py" "$config_root/adapters/grocy-mcp-launch.py"
 install -m 0644 "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$config_root/adapters/grocy-recipe-authoring.py"
@@ -718,7 +791,7 @@ find "$config_root/overlay" "$config_root/adapters" "$config_root/assets" -type 
   printf 'manifest=%s\nreconstruction_manifest=%s\nlayer=%s\ninstalled_from=%s\n' \
     "$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')" \
     "$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')" \
-    "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
+    "$(hades_layer_digest "$config_root/overlay/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
     "$repo_dir"
   source_provenance_records
   printf 'phase=prepared\n'

@@ -84,10 +84,13 @@ The check compares bytes and validates syntax without modifying either file.
 
 After the installed overlay has been synchronized, Hermes restarted, and the
 service health checked, refresh the machine-readable runtime record with the
-same installed overlay and manifest that were just validated:
+same installed overlay that was just validated. For a deployment-local
+composed overlay, also pass its installed composition manifest and installer
+marker as shown below; omit both flags when the installed overlay exactly
+matches the tracked source:
 
 ```text
-python3 scripts/write-deployed-provenance.py \
+HADES_STATE_ROOT=/path/to/HADES/state python3 scripts/write-deployed-provenance.py \
   --output /path/read-by/hades-epsilon-source/hades-live-provenance.json \
   --hades-sha <deployed-40-character-HADES-commit> \
   --source-repo /path/to/clean/deployed/HADES/git-checkout \
@@ -96,6 +99,8 @@ python3 scripts/write-deployed-provenance.py \
   --hermes-version <running-Hermes-version> \
   --hermes-executable /path/to/the/configured/hermes \
   --overlay /path/to/installed/sitecustomize.py \
+  --overlay-composition-manifest /path/to/installed/sitecustomize.composition.json \
+  --install-marker /path/to/HADES/state/install-contract \
   --hermes-profile /path/to/HERMES_HOME/profiles/hades/config.yaml \
   --task-store /path/to/deployed/HADES/integrations/task/store.py \
   --manifest /path/to/deployed/config/reconstruction-manifest.json \
@@ -118,6 +123,12 @@ path, SHA-256, and runtime kind. It also checks that `--overlay` is the
 `sitecustomize.py` selected by that unit's effective `PYTHONPATH`. It refuses
 to write a record when the supplied path differs. It also hashes the deployed
 TaskStore source so task-route behavior has an artifact identity. The required
+composition manifest must match the manifest SHA recorded in the protected
+installer marker, and both overlay and manifest must have safe non-writable
+modes. This binds its source wrappers, final bytes, and base-overlay digest to
+the composition the installer verified before copying it. The provenance
+record includes the source revision/tree and base/final digests for that
+composition.
 `--hermes-profile` must resolve to `HERMES_HOME/profiles/<name>/config.yaml`,
 where `<name>` is selected by the running Hermes process's `-p` or `--profile`
 argument. Only its SHA-256 is added to the record; profile contents, private

@@ -49,6 +49,98 @@ SH
 chmod 0755 "$fixture/bin/systemctl"
 
 bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs "$inputs" >/dev/null
+source "$inputs"
+overlay_target="$sandbox${HADES_CONFIG_ROOT}/overlay/sitecustomize.py"
+composition_target="$sandbox${HADES_CONFIG_ROOT}/overlay/sitecustomize.composition.json"
+HADES_TEST_UNIT_WORKDIR="$working_tree"
+HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+$fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
+(
+  cd "$working_tree"
+  set -a
+  source "$fixture/private/profile/hermes.env"
+  set +a
+  exec sleep 120
+) &
+fake_hermes_pid=$!
+for _attempt in {1..50}; do
+  [[ -r "/proc/$fake_hermes_pid/environ" ]] &&
+    [[ "$(readlink -e "/proc/$fake_hermes_pid/cwd" 2>/dev/null || true)" == "$working_tree" ]] && break
+  sleep 0.02
+done
+if ! PATH="$fixture/bin:$PATH" HADES_TEST_UNIT_WORKDIR="$HADES_TEST_UNIT_WORKDIR" \
+  HADES_TEST_ACTIVE_ENVFILES="$HADES_TEST_ACTIVE_ENVFILES" HADES_TEST_MAINPID="$fake_hermes_pid" \
+  bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$sandbox" --inputs "$inputs" \
+  > "$fixture/tracked-overlay-doctor.out" 2>&1; then
+  cat "$fixture/tracked-overlay-doctor.out" >&2
+  echo 'FAIL doctor rejected the tracked overlay at its documented mode' >&2
+  exit 1
+fi
+chmod 0666 "$overlay_target"
+if output=$(PATH="$fixture/bin:$PATH" HADES_TEST_UNIT_WORKDIR="$HADES_TEST_UNIT_WORKDIR" \
+  HADES_TEST_ACTIVE_ENVFILES="$HADES_TEST_ACTIVE_ENVFILES" HADES_TEST_MAINPID="$fake_hermes_pid" \
+  bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$sandbox" --inputs "$inputs" 2>&1); then
+  echo 'FAIL doctor accepted unsafe permissions on a tracked Hermes overlay' >&2
+  exit 1
+fi
+grep -Fq 'tracked Hermes overlay is missing, linked, or not mode 0644' <<<"$output" || {
+  echo 'FAIL doctor did not identify unsafe tracked-overlay permissions' >&2
+  exit 1
+}
+chmod 0644 "$overlay_target"
+kill "$fake_hermes_pid" 2>/dev/null || true
+wait "$fake_hermes_pid" 2>/dev/null || true
+fake_hermes_pid=''
+chmod 0666 "$overlay_target"
+if output=$(bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$sandbox" --inputs "$inputs" 2>&1); then
+  echo 'FAIL install validator accepted unsafe permissions on a tracked Hermes overlay' >&2
+  exit 1
+fi
+grep -Fq 'tracked Hermes overlay permissions must be mode 0644' <<<"$output" || {
+  echo 'FAIL install validator did not identify unsafe tracked overlay permissions' >&2
+  exit 1
+}
+chmod 0644 "$overlay_target"
+printf '\n# deployment-local sentinel\nLOCAL_OVERLAY_VALUE = "keep-me"\n' >> "$overlay_target"
+before_custom_overlay=$(sha256sum "$overlay_target" | awk '{print $1}')
+if bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs "$inputs" >/dev/null 2>&1; then
+  echo 'FAIL installer overwrote a customized Hermes overlay without a composition manifest' >&2
+  exit 1
+fi
+[[ "$(sha256sum "$overlay_target" | awk '{print $1}')" == "$before_custom_overlay" ]] || {
+  echo 'FAIL installer changed a customized Hermes overlay after rejecting it' >&2
+  exit 1
+}
+composition_dir="$fixture/hermes-overlay-candidate"
+mkdir -m 0700 "$composition_dir"
+candidate_overlay="$composition_dir/sitecustomize.py"
+candidate_manifest="$composition_dir/sitecustomize.composition.json"
+python3 "$repo_dir/scripts/prepare-homelab-overlay-candidate.py" \
+  --repo "$repo_dir" --active-overlay "$overlay_target" \
+  --output "$candidate_overlay" --manifest-output "$candidate_manifest" >/dev/null
+bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs "$inputs" \
+  --hermes-overlay-candidate "$candidate_overlay" \
+  --hermes-overlay-manifest "$candidate_manifest" >/dev/null
+grep -Fq 'LOCAL_OVERLAY_VALUE = "keep-me"' "$overlay_target"
+[[ -f "$composition_target" && "$(stat -c '%a' "$composition_target")" == 640 ]] || {
+  echo 'FAIL installer did not preserve the mode-0640 composition manifest' >&2
+  exit 1
+}
+grep -Fxq "hermes_overlay_composition_manifest_sha256=$(sha256sum "$composition_target" | awk '{print $1}')" \
+  "$sandbox${HADES_STATE_ROOT}/install-contract" || {
+    echo 'FAIL installer did not bind the composition manifest in its marker' >&2
+    exit 1
+  }
+# An ordinary installer rerun must discover the installed manifest and keep the
+# composed overlay, even when the staging candidate has been removed.
+candidate_hash=$(sha256sum "$overlay_target" | awk '{print $1}')
+rm -rf "$composition_dir"
+bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs "$inputs" >/dev/null
+[[ "$(sha256sum "$overlay_target" | awk '{print $1}')" == "$candidate_hash" ]] || {
+  echo 'FAIL installer rerun replaced a verified deployment-local overlay' >&2
+  exit 1
+}
+bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$sandbox" --inputs "$inputs" >/dev/null
 export HADES_TEST_UNIT_WORKDIR="$working_tree"
 export HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
@@ -121,6 +213,24 @@ grep -Fq 'PASS active Hermes process directory and environment match the configu
   echo 'FAIL doctor exposed the configured working-directory path' >&2
   exit 1
 }
+chmod 0666 "$overlay_target"
+if output=$(run_doctor 2>&1); then
+  echo 'FAIL doctor accepted an unsafe composed Hermes overlay mode' >&2
+  exit 1
+fi
+grep -Fq 'overlay permissions must be mode 0600 or 0640' <<<"$output" || {
+  echo 'FAIL doctor did not identify unsafe composed overlay permissions' >&2
+  exit 1
+}
+if output=$(bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$sandbox" --inputs "$inputs" 2>&1); then
+  echo 'FAIL install validator accepted an unsafe composed Hermes overlay mode' >&2
+  exit 1
+fi
+grep -Fq 'overlay permissions must be mode 0600 or 0640' <<<"$output" || {
+  echo 'FAIL install validator did not identify unsafe composed overlay permissions' >&2
+  exit 1
+}
+chmod 0640 "$overlay_target"
 
 # The generated service contract binds HADES_HERMES_WORKING_DIRECTORY into
 # the systemd process environment. If a running process does not have it,

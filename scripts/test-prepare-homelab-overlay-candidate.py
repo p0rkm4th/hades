@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import stat
 import subprocess
@@ -13,10 +14,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/prepare-homelab-overlay-candidate.py"
+MANIFEST_SCRIPT = ROOT / "scripts/hermes-overlay-composition.py"
 spec = importlib.util.spec_from_file_location("homelab_overlay_composer", SCRIPT)
 assert spec and spec.loader
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+manifest_spec = importlib.util.spec_from_file_location("overlay_manifest", MANIFEST_SCRIPT)
+assert manifest_spec and manifest_spec.loader
+manifest_module = importlib.util.module_from_spec(manifest_spec)
+manifest_spec.loader.exec_module(manifest_module)
 
 
 def must_fail(active: bytes, source: bytes, message: str) -> None:
@@ -119,22 +125,35 @@ print("PASS missing, duplicate, malformed, and loaderless cases fail closed")
 
 with tempfile.TemporaryDirectory(prefix="hades-overlay-composer-") as temporary:
     root = Path(temporary)
+    repo = root / "repo"
+    (repo / "hermes").mkdir(parents=True)
     active_path = root / "active.py"
-    source_path = root / "source.py"
     output_path = root / "candidate.py"
+    manifest_path = root / "candidate.json"
     active_path.write_bytes(active)
+    source_path = repo / "hermes/sitecustomize.py"
     source_path.write_bytes(source)
+    subprocess.run(["git", "-C", os.fspath(repo), "init", "-q"], check=True)
+    subprocess.run(["git", "-C", os.fspath(repo), "config", "user.email", "synthetic@example.invalid"], check=True)
+    subprocess.run(["git", "-C", os.fspath(repo), "config", "user.name", "Synthetic Test"], check=True)
+    subprocess.run(["git", "-C", os.fspath(repo), "add", "hermes/sitecustomize.py"], check=True)
+    subprocess.run(["git", "-C", os.fspath(repo), "commit", "-qm", "synthetic source"], check=True)
     os.chmod(active_path, 0o600)
-    os.chmod(source_path, 0o600)
     command = [
         sys.executable, os.fspath(SCRIPT), "--active-overlay", os.fspath(active_path),
-        "--source", os.fspath(source_path), "--output", os.fspath(output_path),
+        "--source", os.fspath(source_path), "--repo", os.fspath(repo),
+        "--output", os.fspath(output_path), "--manifest-output", os.fspath(manifest_path),
     ]
     subprocess.run(command, check=True, capture_output=True, text=True)
     assert output_path.read_bytes() == expected
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest_module.verify_manifest(manifest, repo, output_path.read_bytes(), active)
     assert stat.S_IMODE(output_path.stat().st_mode) == 0o600
+    assert stat.S_IMODE(manifest_path.stat().st_mode) == 0o600
     before = output_path.read_bytes()
+    manifest_before = manifest_path.read_bytes()
     failed = subprocess.run(command, capture_output=True, text=True)
-    assert failed.returncode != 0 and "must be a new path" in failed.stderr
+    assert failed.returncode != 0 and "must be new paths" in failed.stderr
     assert output_path.read_bytes() == before
-print("PASS CLI writes mode-0600 candidate and refuses output overwrite")
+    assert manifest_path.read_bytes() == manifest_before
+print("PASS CLI writes mode-0600 candidate and manifest, validates identity, and refuses overwrite")

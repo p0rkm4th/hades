@@ -481,11 +481,44 @@ if [[ -f "$state" ]]; then
   expected_reconstruction_manifest=$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')
   installed_reconstruction_manifest=$(awk -F= '$1 == "reconstruction_manifest" {print $2}' "$state")
   [[ "$installed_reconstruction_manifest" == "$expected_reconstruction_manifest" ]] && echo 'PASS reconstruction manifest provenance' || { echo 'FAIL reconstruction manifest provenance is stale'; exit 1; }
-  expected_layer=$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")
+  expected_sitecustomize="$repo_dir/hermes/sitecustomize.py"
+  composition_manifest_sha=$(awk -F= '$1 == "hermes_overlay_composition_manifest_sha256" {print $2}' "$state")
+  composition_manifest="$config_root/overlay/sitecustomize.composition.json"
+  if [[ -n "$composition_manifest_sha" ]]; then
+    if [[ ! -f "$composition_manifest" || -L "$composition_manifest" ||
+          ! -f "$config_root/overlay/sitecustomize.py" || -L "$config_root/overlay/sitecustomize.py" ]]; then
+      echo 'FAIL composed Hermes overlay manifest or artifact is missing or linked'
+      doctor_fail=1
+    elif [[ "$(sha256sum "$composition_manifest" | awk '{print $1}')" != "$composition_manifest_sha" ]]; then
+      echo 'FAIL composed Hermes overlay manifest differs from installation record'
+      doctor_fail=1
+    elif python3 "$repo_dir/scripts/hermes-overlay-composition.py" --verify \
+         --repo "$repo_dir" --manifest "$composition_manifest" \
+         --overlay "$config_root/overlay/sitecustomize.py" >/dev/null; then
+      echo 'PASS composed Hermes overlay source and artifact identity'
+      expected_sitecustomize="$config_root/overlay/sitecustomize.py"
+    else
+      echo 'FAIL composed Hermes overlay source or artifact identity is stale'
+      doctor_fail=1
+      expected_sitecustomize="$config_root/overlay/sitecustomize.py"
+    fi
+  elif [[ -e "$composition_manifest" || -L "$composition_manifest" ]]; then
+    echo 'FAIL composed Hermes overlay manifest is present but absent from installation record'
+    doctor_fail=1
+  elif [[ ! -f "$config_root/overlay/sitecustomize.py" || -L "$config_root/overlay/sitecustomize.py" ||
+          "$(stat -c '%a' "$config_root/overlay/sitecustomize.py" 2>/dev/null || true)" != 644 ]]; then
+    echo 'FAIL tracked Hermes overlay is missing, linked, or not mode 0644'
+    doctor_fail=1
+  fi
+  expected_layer=$(hades_layer_digest "$expected_sitecustomize" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")
   installed_layer=$(awk -F= '$1 == "layer" {print $2}' "$state")
   [[ "$installed_layer" == "$expected_layer" ]] && echo 'PASS HADES layer provenance' || { echo 'FAIL HADES layer provenance is stale'; exit 1; }
 else
   echo 'WARN installation marker missing'
+  if [[ -e "$config_root/overlay/sitecustomize.composition.json" || -L "$config_root/overlay/sitecustomize.composition.json" ]]; then
+    echo 'FAIL composed Hermes overlay manifest exists without an installation marker'
+    doctor_fail=1
+  fi
 fi
 check_homelab_runtime_package
 for file in overlay/sitecustomize.py overlay/homelab_views.py adapters/grocy-mcp-launch.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js assets/finance-upload.js assets/receipt-upload.js; do

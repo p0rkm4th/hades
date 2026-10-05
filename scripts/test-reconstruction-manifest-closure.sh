@@ -67,8 +67,7 @@ if layer.get('layer_digest_sources') != expected_digest_sources:
 installer = Path('scripts/install-hades.sh').read_text(encoding='utf-8')
 doctor = Path('scripts/hades-doctor.sh').read_text(encoding='utf-8')
 validator = Path('scripts/validate-install.sh').read_text(encoding='utf-8')
-expected_source_digest_call = (
-    'hades_layer_digest "$repo_dir/hermes/sitecustomize.py" '
+expected_source_digest_tail = (
     '"$repo_dir/integrations/homelab_views.py" '
     '"$repo_dir/integrations/grocy-mcp/launch.py" '
     '"$repo_dir/integrations/grocy-mcp/requirements.lock" '
@@ -77,7 +76,15 @@ expected_source_digest_call = (
     '"$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" '
     '"$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js"'
 )
-if any(expected_source_digest_call not in text for text in (installer, doctor, validator)):
+expected_overlay_digest_calls = (
+    'hades_layer_digest "$config_root/overlay/sitecustomize.py" ',
+    'hades_layer_digest "$expected_sitecustomize" ',
+    'hades_layer_digest "$config_root/overlay/sitecustomize.py" ',
+)
+if any(
+    call + expected_source_digest_tail not in text
+    for text, call in zip((installer, doctor, validator), expected_overlay_digest_calls)
+):
     raise SystemExit('FAIL installer/doctor/validator digest order differs from manifest source order')
 compose = Path('deploy/templates/open-webui.compose.yaml').read_text(encoding='utf-8')
 compose_asset_names = set(re.findall(r'\$\{HADES_CONFIG_ROOT[^}]*\}/assets/([^:/]+):', compose))

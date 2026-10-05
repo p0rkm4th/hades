@@ -60,6 +60,7 @@ if [[ "$HADES_AGENT_ZERO_OPERATOR_PROXY_ENABLED" == true ]]; then
   compose_cmd+=(--env-file "$proxy_env")
 fi
 state="${root%/}${HADES_STATE_ROOT:-/var/lib/hades}/install-contract"
+config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 [[ -f "$state" ]] || { echo 'FAIL installer contract marker missing'; exit 1; }
 if ((synthetic_deployment_test)); then
   grep -Fxq 'synthetic_deployment_test=true' "$state" || { echo 'FAIL install marker does not identify a synthetic test deployment'; exit 1; }
@@ -89,10 +90,36 @@ fi
 expected_reconstruction_manifest=$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')
 installed_reconstruction_manifest=$(awk -F= '$1 == "reconstruction_manifest" {print $2}' "$state")
 [[ "$installed_reconstruction_manifest" == "$expected_reconstruction_manifest" ]] || { echo 'FAIL installer reconstruction manifest is stale'; exit 1; }
-expected_layer=$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")
+composition_manifest_sha=$(awk -F= '$1 == "hermes_overlay_composition_manifest_sha256" {print $2}' "$state")
+composition_manifest="$config_root/overlay/sitecustomize.composition.json"
+[[ -f "$config_root/overlay/sitecustomize.py" && ! -L "$config_root/overlay/sitecustomize.py" ]] || {
+  echo 'FAIL installed Hermes overlay is missing or linked'; exit 1;
+}
+if [[ -n "$composition_manifest_sha" ]]; then
+  [[ -f "$composition_manifest" && ! -L "$composition_manifest" ]] || {
+    echo 'FAIL composed Hermes overlay manifest or artifact is missing or linked'; exit 1;
+  }
+  [[ "$(sha256sum "$composition_manifest" | awk '{print $1}')" == "$composition_manifest_sha" ]] || {
+    echo 'FAIL composed Hermes overlay manifest differs from installation record'; exit 1;
+  }
+  python3 "$repo_dir/scripts/hermes-overlay-composition.py" --verify \
+    --repo "$repo_dir" --manifest "$composition_manifest" \
+    --overlay "$config_root/overlay/sitecustomize.py" >/dev/null || {
+      echo 'FAIL composed Hermes overlay source or artifact identity is stale'; exit 1;
+    }
+elif [[ -e "$composition_manifest" || -L "$composition_manifest" ]]; then
+  echo 'FAIL composed Hermes overlay manifest is present but absent from installation record'; exit 1
+else
+  [[ "$(stat -c '%a' "$config_root/overlay/sitecustomize.py")" == 644 ]] || {
+    echo 'FAIL tracked Hermes overlay permissions must be mode 0644'; exit 1;
+  }
+  cmp -s "$repo_dir/hermes/sitecustomize.py" "$config_root/overlay/sitecustomize.py" || {
+    echo 'FAIL customized Hermes overlay has no installation composition record'; exit 1;
+  }
+fi
+expected_layer=$(hades_layer_digest "$config_root/overlay/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")
 installed_layer=$(awk -F= '$1 == "layer" {print $2}' "$state")
 [[ "$installed_layer" == "$expected_layer" ]] || { echo 'FAIL installer HADES layer provenance is stale'; exit 1; }
-config_root="${root%/}${HADES_CONFIG_ROOT:-/etc/hades}"
 owner_policy_record="${root%/}${HADES_DEPLOYMENT_DIR:-${HADES_CONFIG_ROOT:-/etc/hades}/private-deployment}/hades-owner-policy.env"
 if [[ -n "${HADES_OWNER_SUBJECT_IDS:-}" ]]; then
   owner_policy_stat=$(stat -c '%u:%g:%a' "$owner_policy_record" 2>/dev/null || true)
