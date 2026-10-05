@@ -1377,6 +1377,81 @@ server._fetch = original_fetch
 print("PASS NetBox failure drops prior linked inventory while preserving live runtime and stale Kuma state")
 print("PASS Proxmox failure preserves current linked inventory without prior runtime liveness")
 
+# A fresh Kuma heartbeat must not survive a later heartbeat or status-page
+# configuration outage as current availability. Independent Proxmox and
+# NetBox observations remain available in each new summary.
+kuma_heartbeat_url = os.environ["HADES_KUMA_STATUS_URL"]
+kuma_config_url = server._kuma_config_url()
+kuma_observed_at = datetime.now(timezone.utc).isoformat()
+def kuma_sequence_fetch(url, failure=None):
+    if url == "https://pve-a.example.test/cluster/resources":
+        return {"data": [{
+            "id": "qemu/102", "type": "qemu", "vmid": 102,
+            "name": "synthetic-core-node", "node": "alpha", "status": "running",
+        }]}
+    if url == "https://pve-b.example.test/cluster/resources":
+        return {"data": []}
+    if url in {
+        "https://pve-a.example.test/access/permissions",
+        "https://pve-b.example.test/access/permissions",
+    }:
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url == "https://netbox.example.test/api/dcim/devices/":
+        return {"results": [seed_device]}
+    if url == "https://netbox.example.test/api/ipam/services/":
+        return {"count": 0, "next": None, "results": []}
+    if url == kuma_heartbeat_url:
+        if failure == "heartbeat":
+            raise OSError("synthetic Kuma heartbeat outage")
+        if failure == "config":
+            return {"heartbeatList": {}}
+        return {"heartbeatList": {"501": [{"status": 1, "time": kuma_observed_at}]}}
+    if url == kuma_config_url:
+        if failure == "config":
+            raise OSError("synthetic Kuma config outage")
+        return {"publicGroupList": [{"monitorList": [
+            {"id": 501, "name": "synthetic-kuma-marker", "type": "ping"},
+        ]}]}
+    raise AssertionError(f"unexpected Kuma-sequence URL: {url}")
+
+for failed_kuma_read in ("heartbeat", "config"):
+    server._fetch = lambda url, *_args, **_kwargs: kuma_sequence_fetch(url)
+    prior_kuma_summary = server.homelab_summary()
+    prior_marker = next(
+        row for row in prior_kuma_summary["availability_summary"]
+        if row["name"] == "synthetic-kuma-marker"
+    )
+    assert prior_marker["status"] == "up", prior_marker
+    assert prior_marker["freshness"] == "FRESH", prior_marker
+
+    server._fetch = lambda url, *_args, _failure=failed_kuma_read, **_kwargs: (
+        kuma_sequence_fetch(url, _failure)
+    )
+    current_kuma_outage = server.homelab_summary()
+    assert current_kuma_outage["status"] == "PARTIAL", current_kuma_outage
+    kuma_observation = next(
+        row for row in current_kuma_outage["source_observations"]
+        if row["source"] == "Uptime Kuma"
+    )
+    assert kuma_observation["status"] == "UNAVAILABLE", kuma_observation
+    assert kuma_observation["retrieved_at"] is None, kuma_observation
+    assert "Uptime Kuma source unavailable" in " ".join(current_kuma_outage["errors"])
+    assert current_kuma_outage["availability_summary"] == [], current_kuma_outage
+    assert not any(
+        row.get("name") == "synthetic-kuma-marker"
+        for row in current_kuma_outage["resources"]
+    ), current_kuma_outage["resources"]
+    current_observations = {
+        row["source"]: row for row in current_kuma_outage["source_observations"]
+    }
+    assert current_observations["Proxmox:alpha"]["status"] == "AVAILABLE"
+    assert current_observations["NetBox"]["status"] == "AVAILABLE"
+    assert current_kuma_outage["source_counts"]["proxmox_runtime_rows"] == 1
+    assert current_kuma_outage["source_counts"]["netbox_inventory_rows"] == 1
+
+server._fetch = original_fetch
+print("PASS sequential Kuma heartbeat/config failures clear prior availability while preserving Proxmox and NetBox")
+
 result = server.homelab_compute_capabilities()
 assert result["status"] == "OK"
 assert result["read_only"] is True
