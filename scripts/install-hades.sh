@@ -273,16 +273,20 @@ validate_hermes_profile_parent() {
   done
 }
 validate_hermes_working_directory() {
-  local path=${HADES_HERMES_WORKING_DIRECTORY:-} walk mode other source_file
+  local path=${HADES_HERMES_WORKING_DIRECTORY:-} walk mode other source_file view_source
   [[ -n "$path" ]] || return 0
   [[ "$path" == /* && -d "$path" && ! -L "$path" ]] ||
     fail 'HADES_HERMES_WORKING_DIRECTORY must be an existing absolute non-symlink directory'
   source_file="$path/hermes/config.yaml.example"
   [[ -f "$source_file" && ! -L "$source_file" ]] ||
     fail 'Hermes working directory is missing the tracked Hermes configuration source'
+  view_source="$path/integrations/homelab_views.py"
+  [[ -f "$view_source" && ! -L "$view_source" ]] ||
+    fail 'Hermes working directory is missing the tracked homelab view module'
   if id "$HADES_HERMES_RUNTIME_USER" >/dev/null 2>&1; then
     runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -x "$path" &&
-      runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -r "$source_file" ||
+      runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -r "$source_file" &&
+      runuser -u "$HADES_HERMES_RUNTIME_USER" -- test -r "$view_source" ||
       fail "Hermes runtime cannot traverse or read its working directory: $path; use a service-accessible checkout such as /opt/hades"
     return 0
   fi
@@ -299,6 +303,10 @@ validate_hermes_working_directory() {
       fail "Hermes working directory is not traversable by its future service account: $walk; use a service-accessible checkout such as /opt/hades"
     walk=$(dirname "$walk")
   done
+  mode=$(stat -c '%a' "$view_source")
+  other=${mode: -1}
+  [[ "$other" =~ ^[0-7]$ ]] && (( (8#$other & 4) == 4 )) ||
+    fail "Hermes homelab view module is not readable by its future service account: $view_source"
   mode=$(stat -c '%a' "$source_file")
   other=${mode: -1}
   [[ "$other" =~ ^[0-7]$ ]] && (( (8#$other & 4) == 4 )) ||
@@ -580,6 +588,7 @@ if ((test_mode)); then
   install -d -m 0750 "$state_root/runtime" "$state_root/compose"
   install -d -m 0750 "$config_root/overlay" "$config_root/adapters" "$config_root/assets"
   install -m 0644 "$repo_dir/hermes/sitecustomize.py" "$config_root/overlay/sitecustomize.py"
+  install -m 0644 "$repo_dir/integrations/homelab_views.py" "$config_root/overlay/homelab_views.py"
   install -m 0644 "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$config_root/adapters/grocy-recipe-authoring.py"
   install -m 0644 "$repo_dir/integrations/agent-zero-mcp/server.py" "$config_root/adapters/agent-zero-mcp.py"
   install -m 0644 "$repo_dir/webui/hades-theme.css" "$config_root/assets/hades-theme.css"
@@ -591,7 +600,7 @@ if ((test_mode)); then
     printf 'manifest=%s\nreconstruction_manifest=%s\nlayer=%s\ninstalled_from=%s\n' \
       "$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')" \
       "$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')" \
-      "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
+      "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
       "$repo_dir"
     source_provenance_records
     printf 'phase=prepared\n'
@@ -619,6 +628,7 @@ install -m 0644 "$repo_dir/config/reconstruction-manifest.json" "$config_root/re
 install -d -m 0750 "$state_root/runtime" "$state_root/compose"
 install -d -m 0750 "$config_root/overlay" "$config_root/adapters" "$config_root/assets"
 install -m 0644 "$repo_dir/hermes/sitecustomize.py" "$config_root/overlay/sitecustomize.py"
+install -m 0644 "$repo_dir/integrations/homelab_views.py" "$config_root/overlay/homelab_views.py"
 install -m 0644 "$repo_dir/integrations/grocy-mcp/launch.py" "$config_root/adapters/grocy-mcp-launch.py"
 install -m 0644 "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$config_root/adapters/grocy-recipe-authoring.py"
 install -m 0644 "$repo_dir/integrations/agent-zero-mcp/server.py" "$config_root/adapters/agent-zero-mcp.py"
@@ -653,7 +663,7 @@ find "$config_root/overlay" "$config_root/adapters" "$config_root/assets" -type 
   printf 'manifest=%s\nreconstruction_manifest=%s\nlayer=%s\ninstalled_from=%s\n' \
     "$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')" \
     "$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')" \
-    "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
+    "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
     "$repo_dir"
   source_provenance_records
   printf 'phase=prepared\n'

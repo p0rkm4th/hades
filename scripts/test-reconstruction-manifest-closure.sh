@@ -24,7 +24,7 @@ sources = {
     'Hermes': ['deploy/templates/hermes.service.in', 'hermes/config.yaml.example', 'scripts/install-hermes-artifact.sh'],
     'Agent Zero': ['deploy/agent-zero.compose.yaml', 'integrations/agent-zero-mcp'],
     'SearXNG': ['deploy/templates/searxng.compose.yaml', 'searxng/settings.yml'],
-    'HADES policy/assets/adapters': ['hermes/sitecustomize.py', 'integrations/grocy-mcp/launch.py', 'integrations/grocy-mcp/requirements.lock', 'integrations/grocy-recipe-authoring/server.py', 'integrations/agent-zero-mcp/server.py', 'webui/hades-theme.css', 'webui/hades-theme.js', 'webui/finance-upload.js', 'webui/receipt-upload.js', 'integrations/homelab-readonly', 'integrations/public-research/server.py', 'integrations/public-research/research.py', 'integrations/browser-access/proxy.py', 'integrations/browser-access/research_reader.py', 'integrations/browser-access/read-only-network.js'],
+    'HADES policy/assets/adapters': ['hermes/sitecustomize.py', 'integrations/grocy-mcp/launch.py', 'integrations/grocy-mcp/requirements.lock', 'integrations/grocy-recipe-authoring/server.py', 'integrations/agent-zero-mcp/server.py', 'integrations/homelab_views.py', 'webui/hades-theme.css', 'webui/hades-theme.js', 'webui/finance-upload.js', 'webui/receipt-upload.js', 'integrations/homelab-readonly', 'integrations/public-research/server.py', 'integrations/public-research/research.py', 'integrations/browser-access/proxy.py', 'integrations/browser-access/research_reader.py', 'integrations/browser-access/read-only-network.js'],
 }
 components = {item['component']: item for item in manifest['components']}
 if set(components) != set(sources):
@@ -39,6 +39,7 @@ if open_webui.get('required_assets') != [
 layer = components['HADES policy/assets/adapters']
 expected_layer_files = [
     'overlay/sitecustomize.py',
+    'overlay/homelab_views.py',
     'adapters/grocy-mcp-launch.py',
     'adapters/grocy-recipe-authoring.py',
     'adapters/agent-zero-mcp.py',
@@ -55,6 +56,7 @@ expected_digest_sources = [
     'integrations/grocy-mcp/requirements.lock',
     'integrations/grocy-recipe-authoring/server.py',
     'integrations/agent-zero-mcp/server.py',
+    'integrations/homelab_views.py',
     'webui/hades-theme.css',
     'webui/hades-theme.js',
     'webui/finance-upload.js',

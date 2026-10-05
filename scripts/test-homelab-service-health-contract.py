@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import ast
+import importlib
 import importlib.util
 import json
 import os
 import re
+import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,7 +16,27 @@ import yaml
 
 
 source = Path('hermes/sitecustomize.py').read_text(encoding='utf-8')
+repository_root = Path.cwd().resolve()
 tree = ast.parse(source)
+view_source = repository_root / 'integrations' / 'homelab_views.py'
+view_tree = ast.parse(view_source.read_text(encoding='utf-8'))
+view_functions = {
+    node.name: node for node in view_tree.body if isinstance(node, ast.FunctionDef)
+}
+assert set(view_functions) == {
+    '_hades_homelab_availability_groups',
+    '_hades_homelab_health_summary_response',
+    '_hades_homelab_service_coverage_response',
+    '_hades_homelab_provenance_response',
+    '_hades_homelab_conflict_response',
+}
+assert not any(isinstance(node, (ast.Import, ast.ImportFrom)) for node in view_tree.body)
+assert all(
+    isinstance(node, ast.FunctionDef)
+    or isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)
+    and isinstance(node.value.value, str)
+    for node in view_tree.body
+), 'homelab view module must have no import or top-level runtime work'
 inference_reader = next(
     node for node in tree.body
     if isinstance(node, ast.FunctionDef) and node.name == '_hades_direct_homelab_inference_read'
@@ -37,6 +59,7 @@ wanted = {
     '_hades_configured_homelab_aliases',
     '_hades_configured_homelab_alias_match', '_hades_is_homelab_intent',
     '_hades_service_health_target', '_hades_service_monitor_response',
+    '_hades_load_homelab_views',
     '_hades_homelab_availability_groups',
     '_hades_broad_homelab_status_intent',
     '_hades_homelab_health_summary_response',
@@ -82,6 +105,8 @@ assert {node.name for node in functions} == wanted
 namespace = {
     're': re,
     'os': os,
+    'sys': sys,
+    'importlib': importlib,
     'Path': Path,
     '_hades_agent_zero_available': lambda: True,
     '_hades_logger': type('Logger', (), {'warning': lambda *_args, **_kwargs: None})(),
@@ -92,6 +117,7 @@ namespace = {
         r'\b(?:homelab|server|node|computer|network|minecraft|hades)\b', re.I
     ),
 }
+namespace['__file__'] = str(repository_root / 'hermes' / 'sitecustomize.py')
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
@@ -104,6 +130,95 @@ provenance_followup = namespace['_hades_homelab_provenance_followup']
 provenance_response = namespace['_hades_homelab_provenance_response']
 conflict_intent = namespace['_hades_homelab_conflict_intent']
 conflict_response = namespace['_hades_homelab_conflict_response']
+
+# Run the same-name wrappers from an unrelated CWD while pinning the selected
+# integration root. These byte-for-byte goldens capture former hook behavior.
+golden_availability = [
+    {'name': 'Fresh up', 'status': 'up', 'freshness': 'FRESH'},
+    {'name': 'Stale down', 'status': 'down', 'freshness': 'STALE'},
+    {'name': 'Fresh down', 'status': 'down', 'freshness': 'FRESH'},
+]
+golden_health = {
+    'status': 'PARTIAL', 'online_names': ['Synthetic Guest'],
+    'availability_summary': [
+        {'name': 'Old up', 'status': 'up', 'freshness': 'STALE'},
+        {'name': 'Fresh down', 'status': 'down', 'freshness': 'FRESH'},
+    ],
+    'source_observations': [
+        {'source': 'Synthetic Proxmox', 'status': 'AVAILABLE'},
+        {'source': 'Synthetic NetBox', 'status': 'UNAVAILABLE'},
+    ],
+    'service_catalog': {'status': 'OK', 'coverage': 'PARTIAL', 'services': [{'name': 'X'}]},
+    'proxmox_guest_visibility': {'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS'},
+    'conflicts': [{'name': 'Synthetic Resource', 'reasons': ['NetBox intended differs from Proxmox runtime']}],
+}
+golden_coverage = {
+    'status': 'PARTIAL', 'retrieved_at': '2026-10-04T12:00:00Z',
+    'availability_summary': [
+        {'name': 'Fresh up', 'status': 'up', 'freshness': 'FRESH'},
+        {'name': 'Old down', 'status': 'down', 'freshness': 'STALE'},
+    ],
+    'service_catalog': {'status': 'OK', 'coverage': 'UNKNOWN', 'services': []},
+    'proxmox_guest_visibility': {'status': 'UNKNOWN', 'scope': 'UNKNOWN'},
+}
+golden_provenance = {'source_observations': [
+    {'source': 'Synthetic Proxmox', 'status': 'AVAILABLE', 'retrieved_at': '2026-10-04T12:00:00Z'},
+    {'source': 'Synthetic Kuma', 'status': 'UNAVAILABLE'},
+]}
+golden_conflict = {'conflicts': [
+    {'name': 'Synthetic Guest', 'reasons': [
+        'Display label is shared by multiple records; they remain separate by stable source identity',
+    ]},
+    {'name': 'Synthetic Host', 'reasons': [
+        'NetBox intended node differs from Proxmox runtime node',
+    ]},
+]}
+old_cwd = Path.cwd()
+original_integrations_root = os.environ.get('HADES_INTEGRATIONS_ROOT')
+os.environ['HADES_INTEGRATIONS_ROOT'] = str(repository_root)
+with tempfile.TemporaryDirectory(prefix='homelab-view-cwd-decoy-') as unrelated_cwd:
+    os.chdir(unrelated_cwd)
+    try:
+        assert groups(golden_availability) == {
+            'up': ['Fresh up'], 'down': ['Fresh down'],
+            'unknown': [{'name': 'Stale down', 'last_status': 'down', 'freshness': 'STALE'}],
+        }
+        assert health_summary_response(golden_health) == (
+            'Some configured homelab evidence needs attention. Failing configured checks: Fresh down. '
+            '1 configured check(s) are stale or unknown. Proxmox reports 1 guest(s) running; this is '
+            'power/runtime state, not application health. Sources disagree about Synthetic Resource. '
+            'Proxmox guest visibility is selected_guests; unreported guest state remains unknown. '
+            'Could not verify Synthetic NetBox in this read. Application-service placement coverage is '
+            'missing, empty, or incomplete. Some unmonitored services remain unknown for application '
+            'health. Backup contents and restoreability were not checked in this summary.'
+        )
+        assert coverage_response(golden_coverage) == (
+            "The service catalog responded, but its total coverage is unknown, so I can't confirm that "
+            'unlisted services are absent. Guest visibility is partial or unknown, so services on '
+            'unreported guests remain unverified. Current probe state is unknown or stale for: Old down. '
+            '1 configured probes responded, but that does not confirm application login or workload '
+            'readiness. The source read completed at 2026-10-04T12:00:00Z.'
+        )
+        assert provenance_response(golden_provenance) == (
+            'I refreshed the configured homelab sources for this answer. Synthetic Proxmox: available; '
+            'read at 2026-10-04T12:00:00Z; Synthetic Kuma: unavailable; read time unavailable. These '
+            'are source-read times, not proof that older observations remain live. NetBox describes '
+            'intended inventory, Proxmox reports runtime state, and configured probes report availability; '
+            'those sources are not interchangeable.'
+        )
+        assert conflict_response(golden_conflict) == (
+            'The current sources report these inventory/runtime disagreements: Synthetic Host: NetBox '
+            'intended node differs from Proxmox runtime node. I kept those records separate instead of '
+            'choosing one source as universal truth. Shared display labels remain separate by stable '
+            'source identity: Synthetic Guest: Display label is shared by multiple records; they remain '
+            'separate by stable source identity.'
+        )
+    finally:
+        os.chdir(old_cwd)
+        if original_integrations_root is None:
+            os.environ.pop('HADES_INTEGRATIONS_ROOT', None)
+        else:
+            os.environ['HADES_INTEGRATIONS_ROOT'] = original_integrations_root
 guest_visibility_intent = namespace['_hades_homelab_guest_visibility_intent']
 guest_visibility_response = namespace['_hades_homelab_guest_visibility_response']
 placement_intent = namespace['_hades_homelab_service_placement_intent']
@@ -960,6 +1075,21 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Sources disagree about Synthetic Node' in owner_overall, owner_overall
         assert 'Backup contents and restoreability were not checked' in owner_overall, owner_overall
         assert 'Live Proxmox currently reports:' not in owner_overall, owner_overall
+
+        view_module = namespace['_hades_load_homelab_views']()
+        owner_view_names = (
+            '_hades_homelab_health_summary_response',
+            '_hades_homelab_service_coverage_response',
+            '_hades_homelab_provenance_response',
+            '_hades_homelab_conflict_response',
+        )
+        original_owner_views = {name: getattr(view_module, name) for name in owner_view_names}
+        owner_view_calls = []
+        for name, original in original_owner_views.items():
+            def track_owner_view(summary, _name=name, _original=original):
+                owner_view_calls.append(_name)
+                return _original(summary)
+            setattr(view_module, name, track_owner_view)
         household_overall = direct_read(
             'Is everything okay with the homelab?', 'synthetic-household', 'household'
         )
@@ -969,6 +1099,19 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert direct_read("What's down?", 'synthetic-household', 'household') == household_boundary(
             "What's down?"
         )
+        assert direct_read(
+            'Which services can you not verify?', 'synthetic-household', 'household'
+        ) is None
+        assert direct_read(
+            'How do you know that?', 'synthetic-household', 'household',
+            conversation_history=provenance_history,
+        ) is None
+        assert direct_read(
+            'Do any sources disagree?', 'synthetic-household', 'household'
+        ) is None
+        assert owner_view_calls == [], f'household route invoked owner renderers: {owner_view_calls}'
+        for name, original in original_owner_views.items():
+            setattr(view_module, name, original)
         owner_provenance = direct_read(
             'How do you know that?', 'synthetic-owner', 'owner',
             conversation_history=provenance_history,
