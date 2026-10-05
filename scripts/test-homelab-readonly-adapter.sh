@@ -1118,6 +1118,75 @@ seed_resource = next(
 assert seed_resource["identity"]["canonical_id"] == "netbox:device:102", seed_resource
 assert seed_resource["inventory_device_id"] == 102, seed_resource
 
+def malformed_proxmox_container_fetch(url, *args, **kwargs):
+    if url == "https://pve-a.example.test/cluster/resources":
+        return {"data": "malformed-not-a-row-list"}
+    return netbox_seed_fetch(url, *args, **kwargs)
+
+server._fetch = malformed_proxmox_container_fetch
+malformed_proxmox = server.homelab_summary()
+assert malformed_proxmox["status"] == "PARTIAL", malformed_proxmox
+assert malformed_proxmox["source_counts"]["proxmox_runtime_rows"] == 0, malformed_proxmox
+assert malformed_proxmox["source_counts"]["netbox_inventory_rows"] == 1, malformed_proxmox
+assert malformed_proxmox["source_counts"]["kuma_monitor_rows"] == 1, malformed_proxmox
+malformed_pve_observation = next(
+    row for row in malformed_proxmox["source_observations"]
+    if row["source"] == "Proxmox:alpha"
+)
+assert malformed_pve_observation["status"] == "UNAVAILABLE", malformed_pve_observation
+malformed_pve_inventory = next(
+    row for row in malformed_proxmox["proxmox_guest_inventory"]["endpoints"]
+    if row["source_id"] == "alpha"
+)
+assert malformed_pve_inventory["status"] == "UNAVAILABLE", malformed_pve_inventory
+assert malformed_proxmox["proxmox_guest_inventory"]["status"] != "COMPLETE"
+
+def malformed_proxmox_rows_fetch(url, *args, **kwargs):
+    if url == "https://pve-a.example.test/cluster/resources":
+        return {"data": [None]}
+    return netbox_seed_fetch(url, *args, **kwargs)
+
+server._fetch = malformed_proxmox_rows_fetch
+malformed_proxmox_rows = server.homelab_summary()
+assert next(
+    row for row in malformed_proxmox_rows["source_observations"]
+    if row["source"] == "Proxmox:alpha"
+)["status"] == "UNAVAILABLE"
+assert malformed_proxmox_rows["source_counts"]["netbox_inventory_rows"] == 1
+assert malformed_proxmox_rows["source_counts"]["kuma_monitor_rows"] == 1
+
+def malformed_netbox_container_fetch(url, *args, **kwargs):
+    if url == "https://netbox.example.test/api/dcim/devices/":
+        return {"results": None}
+    return netbox_seed_fetch(url, *args, **kwargs)
+
+server._fetch = malformed_netbox_container_fetch
+malformed_netbox = server.homelab_summary()
+assert malformed_netbox["status"] == "PARTIAL", malformed_netbox
+assert malformed_netbox["source_counts"]["proxmox_runtime_rows"] == 1, malformed_netbox
+assert malformed_netbox["source_counts"]["netbox_inventory_rows"] == 0, malformed_netbox
+assert malformed_netbox["source_counts"]["kuma_monitor_rows"] == 1, malformed_netbox
+malformed_netbox_observation = next(
+    row for row in malformed_netbox["source_observations"] if row["source"] == "NetBox"
+)
+assert malformed_netbox_observation["status"] == "UNAVAILABLE", malformed_netbox_observation
+assert "synthetic-core-node" in malformed_netbox["online_names"]
+assert malformed_netbox["availability_summary"][0]["status"] == "up"
+
+def malformed_netbox_rows_fetch(url, *args, **kwargs):
+    if url == "https://netbox.example.test/api/dcim/devices/":
+        return {"results": [None]}
+    return netbox_seed_fetch(url, *args, **kwargs)
+
+server._fetch = malformed_netbox_rows_fetch
+malformed_netbox_rows = server.homelab_summary()
+assert next(
+    row for row in malformed_netbox_rows["source_observations"]
+    if row["source"] == "NetBox"
+)["status"] == "UNAVAILABLE"
+assert malformed_netbox_rows["source_counts"]["proxmox_runtime_rows"] == 1
+assert malformed_netbox_rows["source_counts"]["kuma_monitor_rows"] == 1
+
 # NetBox is now unavailable; the Proxmox guest stays live and Kuma keeps its
 # old heartbeat. No inventory from the successful prior call may survive.
 server._fetch = netbox_outage_fetch

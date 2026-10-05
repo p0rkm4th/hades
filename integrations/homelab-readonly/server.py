@@ -632,7 +632,11 @@ def homelab_summary() -> dict:
                 continue
             try:
                 payload = _fetch(url, token_file, ca_file, token_ids[index])
-                source_rows = [row for row in payload.get("data", []) if isinstance(row, dict)]
+                source_rows = payload.get("data")
+                if not isinstance(source_rows, list) or any(
+                    not isinstance(row, dict) for row in source_rows
+                ):
+                    raise ValueError("Proxmox resource response has an invalid data list")
                 indexed_source_rows = []
                 for source_row in source_rows:
                     row = dict(source_row)
@@ -712,6 +716,12 @@ def homelab_summary() -> dict:
             continue
         try:
             value = _fetch(url, token_file)
+            if label == "NetBox":
+                inventory_rows = value.get("results")
+                if not isinstance(inventory_rows, list) or any(
+                    not isinstance(row, dict) for row in inventory_rows
+                ):
+                    raise ValueError("NetBox inventory response has an invalid results list")
             if label == "Uptime Kuma" and "monitors" not in value:
                 config_url = _kuma_config_url()
                 if not config_url:
