@@ -30,7 +30,7 @@ response for private infrastructure-detail requests. The five-document NYX-018 r
 classification is accepted with no port recommended. NYX-017's authenticated
 hostile-household no-dispatch review is accepted; its runtime regression and
 corrected partial-source contradiction assertion are in `2e62ffde`, which
-passed exact Public CI `37273578676`. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox guest-visibility extraction moves pure ACL policy into `proxmox_visibility.py`; focused contracts pass locally; exact Public CI `37274388982` and public tree/history safety pass. Package/provenance and provider reviews plus main promotion remain pending. These candidate changes are not deployed.
+passed exact Public CI `37273578676`. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox guest-visibility extraction moves pure ACL policy into `proxmox_visibility.py`; focused contracts pass locally; exact Public CI `37274388982` and public tree/history safety pass. Docs refresh `7ba90aa7` passed exact CI `37274614406`. NYX-029 found helper failures abort before MCP/model dispatch without private leakage (P2 availability). NYX-030's loader/alias/renderer failure tests are committed in `1c4f280e` and pass locally; exact hosted CI remains pending. Package/provenance and provider reviews plus main promotion remain pending. These candidate changes are not deployed.
 
 The fresh 2026-10-05 active-profile package comparison found the deployed
 Python module set matches current public `main` except that `reconcile.py`

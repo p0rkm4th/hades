@@ -78,7 +78,7 @@ safety, and hosted CI runs `37264553916`, `37264554854`, and `37265041968`
 pass. Neither change is deployed. NYX-018 lineage and NYX-017 no-dispatch
 reviews are accepted. The hostile-household runtime regression and corrected
 partial-source contradiction assertion are committed in `2e62ffde` and exact
-Public CI `37273578676` passed. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox visibility extraction is accepted; the cherry-picked candidate passed exact Public CI `37274388982`, and public-tree/history checks pass. Package/provenance and provider reviews remain pending in the protected coordination record. A live household
+Public CI `37273578676` passed. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox visibility extraction is accepted; the cherry-picked candidate passed exact Public CI `37274388982`, and public-tree/history checks pass. Docs refresh `7ba90aa7` passed exact CI `37274614406`. NYX-029 found helper failures abort before MCP/model dispatch without private leakage (P2 availability). NYX-030's loader/alias/renderer failure tests are committed in `1c4f280e` and the focused runtime contract passes locally; hosted CI for that test commit is pending. Package/provenance and provider reviews remain pending in the protected coordination record. A live household
 UI prompt exposed the intent-classification gap; no concrete host data was
 returned, and fresh post-deployment UI verification remains open. Runtime
 package parity and monitor observation-time output also remain open.
@@ -91,7 +91,7 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 **PARTIAL**. Exact runtime hashes, private topology, rollback paths, and raw
 acceptance transcripts remain in protected operator records.
 
-**Next:** finish the remaining package-guard and provider-boundary reviews, then qualify/promote only after review closure.
+**Next:** qualify the NYX-030 regression with exact CI, finish package-guard and provider-boundary reviews, then promote only after review closure.
 Prepare a coherent full-package deployment only after
 review and promotion. Then deploy the
 reviewed household boundary fix with hash-guarded rollback, recheck household
