@@ -35,6 +35,10 @@ jobs:
         run: node --check integrations/browser-access/read-only-network.js
       - name: Check finance attachment JavaScript
         run: node --check webui/finance-upload.js
+      - name: Check bounded homelab UI acceptance script syntax
+        run: node --check scripts/dom-homelab-readonly-acceptance.js
+      - name: Check household homelab redaction contract
+        run: node scripts/test-homelab-household-redaction.js
 
       - name: Check memory intent boundary
         run: bash scripts/test-hades-memory-intent.sh

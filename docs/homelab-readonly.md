@@ -15,26 +15,29 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 **Current repository checkpoint (2026-10-05):** public `main` code baseline
 is `0295a4ae757cc665553045e40f5263e39c437e0e`. Candidate Public CI
 [37367162037](https://github.com/p0rkm4th/hades/actions/runs/37367162037)
-passed on that exact source SHA; post-promotion main CI
+passed on that exact source SHA. Post-promotion main CI
 [37367398725](https://github.com/p0rkm4th/hades/actions/runs/37367398725)
-is still queued, not a pass. The documentation checkpoint candidate is
-`ecb50ad16037129e326b6c250e3c6034a78282de`; its CI
-[37368769136](https://github.com/p0rkm4th/hades/actions/runs/37368769136)
-is queued. The current-main 13-module
-adapter package was composed locally with manifest digest
-`d3a81bed0383ca1c998c90e5c0ff8830962bd0f91611866d9f324b712f4bf000`;
-this is preparation only. No production files or source access were changed.
+was marked failed only because its sole job was cancelled before any steps ran;
+it is not a code/test failure or pass. Corrected docs candidate `ee9563ea`
+passed all 120 steps in Public CI
+[37369088801](https://github.com/p0rkm4th/hades/actions/runs/37369088801).
+The current-main 13-module adapter package was composed locally with manifest
+digest `d3a81bed0383ca1c998c90e5c0ff8830962bd0f91611866d9f324b712f4bf000`;
+this is preparation only and is not deployed.
 
-Fresh owner/household acceptance and current-main runtime parity remain open.
-Nyx-4's tracked-route review found no complete homelab-specific fresh-login
-procedure or confirmed reachable owner-client URL. The older seven-chat result
-is valid only for its older adapter. Existing DOM scripts exercise broader or
-mutating scenarios and are not substitutes for bounded read-only acceptance.
-Follow [`docs/homelab-package-rollout.md`](homelab-package-rollout.md) and do
-not activate the package until the exact current candidate can be tested in
-fresh owner and household sessions. Public history also retains the previously
-documented `.local` disclosure; no history rewrite was performed. Independent
-encrypted off-host recovery remains an owner-accepted limitation.
+Aster established an authenticated owner/household route through a loopback-only
+SSH tunnel using the approved account and strict host-key checking. The WebUI
+returned HTTP 200. Eight fresh owner/household questions returned answers; all
+were verified in their corresponding persisted chats, and all household
+redaction checks passed. The harness and protected label-input contract are
+tracked in this candidate. This is narrow acceptance of the currently
+reachable deployment, not current-main package parity. The deployed adapter and
+overlay hashes are still unverified; the known package disk tree differs from
+current main. No package rollout occurred. Follow
+[`docs/homelab-package-rollout.md`](homelab-package-rollout.md) for the
+loopback-only procedure. Public history still contains the previously
+reported `.local` disclosure, with no history rewrite. Independent encrypted
+off-host recovery remains an owner-accepted limitation.
 
 The remainder of this checkpoint records older repository and live observations
 as historical evidence; its cited revisions and CI runs do not supersede the

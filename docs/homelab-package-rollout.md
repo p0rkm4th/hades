@@ -31,6 +31,50 @@ deterministic manifest. It does not transfer, install, or activate anything.
   deployment record. Do not place private paths, credentials, or topology in
   this public runbook.
 
+### Bounded authenticated acceptance route
+
+Use an already approved SSH account and strict host-key checking to forward the
+WebUI's verified host-side listener to a loopback-only local port. Do not expose
+the WebUI on a new interface for acceptance. Substitute the address, port, and
+SSH alias from protected operator records:
+
+```bash
+ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -N \
+  -L 127.0.0.1:13300:<verified-webui-bind-address>:<verified-host-port> \
+  <approved-ssh-alias>
+```
+
+In a second terminal, point the bounded harness at the tunnel and the existing
+mode-`0600` Alpha/Beta/Gamma credential files:
+
+```bash
+export HADES_DOM_BASE_URL=http://127.0.0.1:13300/
+export HADES_DOM_CREDENTIAL_DIR=/protected/hades-dom-credentials
+export HADES_HOMELAB_PRIVATE_LABELS_FILE=/protected/homelab-private-labels
+node scripts/dom-homelab-readonly-acceptance.js
+```
+
+The script runs four fresh owner questions and two each for Household A and B.
+It accepts only a loopback base URL, refuses login redirects, and performs no
+infrastructure writes. The credential files and private-label file must be
+regular files with no group/other permissions; the label file must enumerate
+the complete private host and owner-only service labels from protected operator
+inventory, one per line. The script exercises positive redaction controls for
+each label, including punctuation and Unicode boundaries. Public CI tests the
+generic detector using synthetic labels. Each answer must be present after its
+corresponding user turn in that same chat; ordered token comparison tolerates
+rendered Markdown differences. It never emits credentials, cookies, or answer
+text to stdout. The complete transcript is created only as a mode-`0600` report
+outside the checkout, after resolving and checking the report's real parent
+path. Review that report through the protected operator channel. A nonzero exit,
+authentication failure, missing persistence, or any household leak blocks
+activation and must be recorded as a defect.
+
+If Playwright is not in Node's default module path, set
+`HADES_PLAYWRIGHT_MODULE` to the locally installed Playwright module before
+running the harness. Never copy credentials or private labels into shell
+history, this repository, or a public report.
+
 ## Compose and inspect
 
 From the clean source checkout, choose a new immutable output directory and an

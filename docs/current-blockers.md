@@ -32,22 +32,26 @@ describe all reachable HADES history as sanitized.
 Current public `main` code baseline is
 `0295a4ae757cc665553045e40f5263e39c437e0e`; its candidate Public CI
 [37367162037](https://github.com/p0rkm4th/hades/actions/runs/37367162037)
-passed and post-promotion main CI
+passed. Post-promotion main CI
 [37367398725](https://github.com/p0rkm4th/hades/actions/runs/37367398725)
-remains queued. The documentation checkpoint candidate is
-`ecb50ad16037129e326b6c250e3c6034a78282de`; its Public CI
-[37368769136](https://github.com/p0rkm4th/hades/actions/runs/37368769136)
-is queued. Neither queued run is a pass. The 13-module adapter package was composed
+ended with its only job cancelled before any steps ran, so it is neither a
+code failure nor a test pass. The corrected docs checkpoint `ee9563ea` passed
+candidate Public CI [37369088801](https://github.com/p0rkm4th/hades/actions/runs/37369088801)
+with 120 steps. The 13-module adapter package was composed
 from the exact current source with manifest digest
 `d3a81bed0383ca1c998c90e5c0ff8830962bd0f91611866d9f324b712f4bf000`; this
-local artifact is not deployed. Nyx-4's route review found no complete
-homelab-specific fresh owner/household login procedure or confirmed reachable
-owner-client URL. The seven successful historical chats cover only adapter
-`6bc6063702f73665a9cf666ca14cf7057d5924e`. No rollout occurred. Keep runtime
-parity and fresh authenticated acceptance **OPEN** until both are proven on the
-current package. Historical `.local` names remain published; no history rewrite
-was performed. No independent encrypted off-host recovery target is configured
-by owner choice.
+local artifact is not deployed. Aster established the approved owner/household
+route through a loopback-only SSH forward with strict host-key checking; the
+authenticated WebUI returned HTTP 200. Eight fresh owner/household prompts
+returned answers, all persisted in their chats after Markdown-tolerant
+same-turn verification, and all household leak checks passed. This is narrow
+dogfood of the currently reachable deployment, not proof that it runs the
+current-main package. The tracked bounded harness requires loopback, refuses
+login redirects, checks private labels from a protected mode-0600 file, and
+has synthetic redaction contracts in CI. Current-main runtime parity remains
+OPEN; no package rollout occurred. Historical `.local` names remain published;
+no history rewrite was performed. No independent encrypted off-host recovery
+target is configured by owner choice.
 
 The following homelab details summarize earlier repository checkpoints and
 read-only production observations; they do not supersede the current checkpoint
@@ -59,7 +63,7 @@ Current deployed Hermes-overlay and homelab-adapter hashes are **NOT VERIFIED** 
 
 Current main includes extracted Proxmox host-load/guest views and Kuma normalization, malformed Proxmox/NetBox container/row rejection, Proxmox enum validation, partial backup-node discovery, and a household guard for named-host resource questions and context-only resource follow-ups. The latter reads only the latest user-authored turn when resolving a pronoun follow-up; assistant history does not identify a host. Generic conceptual prompts remain unblocked. NYX-008–013 and NYX-015–018 reviewed source completeness and household privacy; candidate tests prove zero model calls, no homelab dispatch, and no sentinel leakage for protected household requests.
 
-Homelab remains **PARTIAL** for owner-facing live use. Current-main runtime byte parity and fresh authenticated owner/household acceptance remain unverified. The narrow seven-chat result is on an older adapter revision and is historical evidence only. No production deployment or source ACL change occurred. No old-branch history was imported; NYX-001 semantic classification is complete and the unsafe/obsolete remote ref has been deleted, with the local evidence worktree retained. NYX-007 response-boundary tests and NYX-008 pure view extraction are on green main.
+Homelab remains **PARTIAL** for owner-facing live use. Current-main runtime byte parity remains unverified. The older seven-chat result is historical evidence only; the fresh eight-prompt acceptance above applies to the currently reachable deployment and not current-main package parity. No production package deployment or source ACL change occurred. No old-branch history was imported; NYX-001 semantic classification is complete and the unsafe/obsolete remote ref has been deleted, with the local evidence worktree retained. NYX-007 response-boundary tests and NYX-008 pure view extraction are on green main.
 
 No independent encrypted off-host recovery destination or recipient is configured. The owner confirms no off-site backup is available now and considers this acceptable; no recovery artifact was created. Record this as a known recovery limitation, separate from the homelab read-source campaign.
 
