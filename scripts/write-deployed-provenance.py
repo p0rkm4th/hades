@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -18,6 +19,38 @@ from pathlib import Path
 
 def digest(path: Path) -> str:
     return hashlib.sha256(read_regular_file(path, "regular file required")).hexdigest()
+
+
+def load_overlay_composition(manifest_path: Path, base_path: Path, source_repo: Path, final_bytes: bytes) -> tuple[dict, str, bytes]:
+    """Verify the selected on-disk overlay against a source-bound composition record."""
+    manifest_bytes = read_regular_file(manifest_path, "overlay composition manifest must be a stable regular file")
+    base_bytes = read_regular_file(base_path, "overlay composition base must be a stable regular file")
+
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate manifest key")
+            result[key] = value
+        return result
+
+    try:
+        manifest = json.loads(manifest_bytes, object_pairs_hook=unique_object)
+    except (UnicodeError, json.JSONDecodeError, ValueError):
+        raise SystemExit("overlay composition manifest is malformed") from None
+    verifier_path = source_repo / "scripts/hermes-overlay-composition.py"
+    if verifier_path.is_symlink() or not verifier_path.is_file():
+        raise SystemExit("source revision has no tracked overlay composition verifier")
+    try:
+        spec = importlib.util.spec_from_file_location("_hades_overlay_composition_verifier", verifier_path)
+        if spec is None or spec.loader is None:
+            raise ValueError("verifier import unavailable")
+        verifier = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(verifier)
+        verifier.verify_manifest(manifest, source_repo, final_bytes, base_bytes)
+    except (OSError, ValueError, ImportError, SystemExit):
+        raise SystemExit("overlay composition does not match the clean HADES source and selected overlay") from None
+    return manifest, hashlib.sha256(manifest_bytes).hexdigest(), base_bytes
 
 
 def read_regular_file(path: Path, error: str) -> bytes:
@@ -549,6 +582,14 @@ def main() -> int:
     )
     parser.add_argument("--overlay", required=True, type=Path)
     parser.add_argument(
+        "--overlay-composition-manifest", type=Path,
+        help="optional source-bound manifest for a composed deployment-local Hermes overlay",
+    )
+    parser.add_argument(
+        "--overlay-composition-base", type=Path,
+        help="exact base overlay bytes used by the composition (required with the manifest)",
+    )
+    parser.add_argument(
         "--hermes-profile", required=True, type=Path,
         help="selected profiles/<name>/config.yaml under the active HERMES_HOME",
     )
@@ -567,6 +608,8 @@ def main() -> int:
     parser.add_argument("--deployment-path", required=True)
     parser.add_argument("--service", required=True, help="active systemd unit that loads the overlay")
     args = parser.parse_args()
+    if (args.overlay_composition_manifest is None) != (args.overlay_composition_base is None):
+        raise SystemExit("overlay composition manifest and base must be supplied together")
     for name, value in (("hades SHA", args.hades_sha), ("infra SHA", args.infra_sha)):
         if len(value) != 40 or any(char not in "0123456789abcdef" for char in value.lower()):
             raise SystemExit(f"{name} must be a Git SHA")
@@ -610,7 +653,17 @@ def main() -> int:
         raise SystemExit(
             "overlay argument differs from the active service PYTHONPATH sitecustomize.py"
         )
-    overlay_sha256 = digest(args.overlay)
+    overlay_bytes = read_regular_file(args.overlay, "regular overlay file required")
+    overlay_sha256 = hashlib.sha256(overlay_bytes).hexdigest()
+    composition_manifest = None
+    composition_manifest_sha256 = None
+    composition_base_sha256 = None
+    if args.overlay_composition_manifest is not None:
+        composition_manifest, composition_manifest_sha256, composition_base_bytes = load_overlay_composition(
+            args.overlay_composition_manifest, args.overlay_composition_base,
+            args.source_repo, overlay_bytes,
+        )
+        composition_base_sha256 = hashlib.sha256(composition_base_bytes).hexdigest()
     task_store_sha256 = digest(args.task_store)
     manifest_sha256 = digest(args.manifest)
     hermes_executable_sha256 = digest(args.hermes_executable.resolve())
@@ -623,6 +676,11 @@ def main() -> int:
         raise SystemExit("Hermes profile changed during provenance capture")
     if digest(args.overlay) != overlay_sha256:
         raise SystemExit("Hermes overlay changed during provenance capture")
+    if args.overlay_composition_manifest is not None:
+        if digest(args.overlay_composition_manifest) != composition_manifest_sha256:
+            raise SystemExit("overlay composition manifest changed during provenance capture")
+        if digest(args.overlay_composition_base) != composition_base_sha256:
+            raise SystemExit("overlay composition base changed during provenance capture")
     if digest(args.task_store) != task_store_sha256 or digest(args.manifest) != manifest_sha256:
         raise SystemExit("deployed HADES source artifact changed during provenance capture")
     if digest(args.hermes_executable.resolve()) != hermes_executable_sha256:
@@ -667,6 +725,16 @@ def main() -> int:
         "deployment_path": args.deployment_path,
         "classification": "tested-source-and-current-disk-artifact-identity",
     }
+    if composition_manifest is not None:
+        artifact["overlay_composition"] = {
+            "manifest_sha256": composition_manifest_sha256,
+            "schema": composition_manifest["schema"],
+            "source_revision": composition_manifest["source_revision"],
+            "source_tree": composition_manifest["source_tree"],
+            "base_overlay_sha256": composition_manifest["base_overlay_sha256"],
+            "wrapper_sha256": composition_manifest["wrapper_sha256"],
+            "final_overlay_sha256": composition_manifest["final_overlay_sha256"],
+        }
     if epsilon_manifest_sha256 is not None:
         artifact["epsilon_package_manifest_sha256"] = epsilon_manifest_sha256
     args.output.parent.mkdir(parents=True, exist_ok=True)

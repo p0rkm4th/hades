@@ -8,16 +8,20 @@ printf 'task store fixture\n' > "$tmp/task-store.py"
 printf 'epsilon package fixture\n' > "$tmp/phase3-runtime-manifest.json"
 source_repo="$tmp/source"
 infra_repo="$tmp/infra"
-mkdir -p "$tmp/bin" "$tmp/active" "$source_repo/integrations/task" "$source_repo/integrations/grocy-mcp" "$source_repo/integrations/homelab-readonly" "$source_repo/config" "$infra_repo"
+mkdir -p "$tmp/bin" "$tmp/active" "$source_repo/integrations/task" "$source_repo/integrations/grocy-mcp" "$source_repo/integrations/homelab-readonly" "$source_repo/config" "$source_repo/hermes" "$source_repo/scripts" "$infra_repo"
 printf 'task store fixture\n' > "$source_repo/integrations/task/store.py"
 printf '# synthetic Grocy launcher source\n' > "$source_repo/integrations/grocy-mcp/launch.py"
 printf '# synthetic homelab server source\n' > "$source_repo/integrations/homelab-readonly/server.py"
 printf '# synthetic homelab view source\n' > "$source_repo/integrations/homelab-readonly/view.py"
+printf '__pycache__/\n*.pyc\n' > "$source_repo/.gitignore"
+printf 'def _hades_load_homelab_views():\n    return view_loader()\n\ndef _hades_homelab_guest_visibility_response(summary):\n    return _hades_load_homelab_views().guest(summary)\n' > "$source_repo/hermes/sitecustomize.py"
+cp scripts/prepare-homelab-overlay-candidate.py "$source_repo/scripts/prepare-homelab-overlay-candidate.py"
+cp scripts/hermes-overlay-composition.py "$source_repo/scripts/hermes-overlay-composition.py"
 printf 'manifest fixture\n' > "$source_repo/config/reconstruction-manifest.json"
 git -C "$source_repo" init -q
 git -C "$source_repo" config user.email fixture@example.invalid
 git -C "$source_repo" config user.name fixture
-git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/view.py config/reconstruction-manifest.json
+git -C "$source_repo" add .gitignore integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/view.py config/reconstruction-manifest.json hermes/sitecustomize.py scripts/prepare-homelab-overlay-candidate.py scripts/hermes-overlay-composition.py
 git -C "$source_repo" commit -qm fixture
 hades_sha=$(git -C "$source_repo" rev-parse HEAD)
 printf 'infra fixture\n' > "$infra_repo/infra.txt"
@@ -640,4 +644,50 @@ assert row["file_count"] == 2
 assert len(row["package_tree_sha256"]) == 64
 assert "/external-homelab-package" not in json.dumps(value)
 print("PASS CLI provenance binds the selected external homelab package to the clean HADES tree")
+PY
+cat > "$tmp/composition-base.py" <<'PY'
+# deployment-local synthetic policy remains present
+LOCAL_POLICY_SENTINEL = "synthetic-only"
+def _hades_load_homelab_views():
+    return view_loader()
+def _hades_homelab_guest_visibility_response(summary):
+    return local_guest_policy(summary)
+PY
+python3 scripts/prepare-homelab-overlay-candidate.py \
+  --active-overlay "$tmp/composition-base.py" \
+  --output "$tmp/composed-sitecustomize.py" \
+  --source "$source_repo/hermes/sitecustomize.py" >/dev/null
+python3 scripts/hermes-overlay-composition.py \
+  --source-repo "$source_repo" \
+  --base-overlay "$tmp/composition-base.py" \
+  --final-overlay "$tmp/composed-sitecustomize.py" \
+  --output "$tmp/overlay-composition.json" >/dev/null
+cp "$tmp/composed-sitecustomize.py" "$tmp/active/sitecustomize.py"
+python scripts/write-deployed-provenance.py \
+  --output "$tmp/composed-overlay-provenance.json" \
+  --hades-sha "$hades_sha" \
+  --source-repo "$source_repo" \
+  --infra-sha "$infra_sha" \
+  --infra-repo "$infra_repo" \
+  --hermes-version 0.21.2 \
+  --hermes-executable "$tmp/active/python" \
+  --overlay "$tmp/active/sitecustomize.py" \
+  --overlay-composition-manifest "$tmp/overlay-composition.json" \
+  --overlay-composition-base "$tmp/composition-base.py" \
+  --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+  --task-store "$source_repo/integrations/task/store.py" \
+  --manifest "$source_repo/config/reconstruction-manifest.json" \
+  --homelab-package-root "$tmp/external-homelab-package" \
+  --deployment-path /srv/hades \
+  --service hades-hermes.service >/dev/null
+python - "$tmp/composed-overlay-provenance.json" "$hades_sha" <<'PY'
+import json, sys
+value = json.load(open(sys.argv[1]))
+identity = value["overlay_composition"]
+assert identity["source_revision"] == sys.argv[2]
+assert identity["schema"] == "hades/hermes-overlay-composition/v1"
+assert identity["final_overlay_sha256"] == value["overlay_sha256"]
+assert set(identity["wrapper_sha256"]) == {"_hades_homelab_guest_visibility_response"}
+assert "LOCAL_POLICY_SENTINEL" not in json.dumps(value)
+print("PASS deployed provenance binds composed overlay bytes to current source and base manifest")
 PY
