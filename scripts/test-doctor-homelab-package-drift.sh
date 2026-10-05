@@ -17,17 +17,25 @@ bash "$repo_dir/scripts/create-synthetic-private-fixture.sh" "$fixture/private" 
 inputs="$fixture/private/operator.env"
 working_tree="$fixture/working"
 sandbox="$fixture/sandbox"
+profile_home="$fixture/private/hermes-home"
+profile_root="$profile_home/profiles/hades"
+integration_root="$fixture/integrations-root"
+generated_package="$integration_root/integrations/homelab-readonly-test001"
 mkdir -p "$working_tree/hermes" "$working_tree/integrations/public-research" "$fixture/bin"
+mkdir -p "$profile_root"
+mkdir -p "$generated_package"
 chmod 0755 "$fixture" "$working_tree"
 cp "$repo_dir/hermes/config.yaml.example" "$working_tree/hermes/config.yaml.example"
 cp "$repo_dir/integrations/homelab_views.py" "$working_tree/integrations/homelab_views.py"
 cp "$repo_dir/integrations/public-research/research.py" "$working_tree/integrations/public-research/research.py"
 cp -a "$repo_dir/integrations/homelab-readonly" "$working_tree/integrations/homelab-readonly"
+cp -a "$repo_dir/integrations/homelab-readonly/." "$generated_package/"
 printf '\nHADES_HERMES_WORKING_DIRECTORY=%s\n' "$working_tree" >> "$inputs"
+printf 'HADES_HERMES_PROFILE=%s\n' "$profile_home" >> "$inputs"
 chmod 0600 "$inputs"
-printf 'HADES_HERMES_WORKING_DIRECTORY=%s\n' "$working_tree" \
-  > "$fixture/private/profile/hermes.env"
-chmod 0600 "$fixture/private/profile/hermes.env"
+printf 'HADES_HERMES_WORKING_DIRECTORY=%s\nHADES_INTEGRATIONS_ROOT=%s\nHERMES_HOME=%s\n' \
+  "$working_tree" "$integration_root" "$sandbox$profile_home" > "$profile_home/hermes.env"
+chmod 0600 "$profile_home/hermes.env"
 
 # The doctor uses this read-only systemctl query to bind its check to the
 # active unit. The stub is synthetic and emits only the configured test path.
@@ -39,8 +47,9 @@ if [[ "$*" == 'show -p WorkingDirectory --value hades-hermes.service' &&
 elif [[ "$*" == 'show -p EnvironmentFiles --value hades-hermes.service' &&
         -n "${HADES_TEST_ACTIVE_ENVFILES:-}" ]]; then
   printf '%s\n' "$HADES_TEST_ACTIVE_ENVFILES"
-elif [[ "$*" == 'show -p MainPID --value hades-hermes.service' &&
-        -n "${HADES_TEST_MAINPID:-}" ]]; then
+elif [[ "$*" == 'show -p MainPID --value hades-hermes.service' ||
+        "$*" == 'show --property=MainPID --value hades-hermes.service' ]] &&
+     [[ -n "${HADES_TEST_MAINPID:-}" ]]; then
   printf '%s\n' "$HADES_TEST_MAINPID"
 else
   exit 1
@@ -50,17 +59,31 @@ chmod 0755 "$fixture/bin/systemctl"
 
 bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs "$inputs" >/dev/null
 source "$inputs"
+profile_config="$sandbox${HADES_HERMES_PROFILE}/profiles/hades/config.yaml"
+mkdir -p "$(dirname "$profile_config")"
+cp "$sandbox${HADES_HERMES_PROFILE}/config.yaml" "$profile_config"
+python3 - "$profile_config" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+text = path.read_text()
+old = 'args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/homelab-readonly/server.py"]'
+new = 'args: ["${HADES_INTEGRATIONS_ROOT}/integrations/homelab-readonly-test001/server.py"]'
+if text.count(old) != 1:
+    raise SystemExit("FAIL synthetic profile did not contain one canonical homelab MCP path")
+path.write_text(text.replace(old, new))
+PY
 overlay_target="$sandbox${HADES_CONFIG_ROOT}/overlay/sitecustomize.py"
 composition_target="$sandbox${HADES_CONFIG_ROOT}/overlay/sitecustomize.composition.json"
 HADES_TEST_UNIT_WORKDIR="$working_tree"
-HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+HADES_TEST_ACTIVE_ENVFILES="$profile_home/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
 (
   cd "$working_tree"
   set -a
-  source "$fixture/private/profile/hermes.env"
+  source "$profile_home/hermes.env"
   set +a
-  exec sleep 120
+  exec python3 -c 'import time; time.sleep(120)' -p hades gateway run
 ) &
 fake_hermes_pid=$!
 for _attempt in {1..50}; do
@@ -142,18 +165,18 @@ bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs
 }
 bash "$repo_dir/scripts/validate-install.sh" --test-mode --root "$sandbox" --inputs "$inputs" >/dev/null
 export HADES_TEST_UNIT_WORKDIR="$working_tree"
-export HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+export HADES_TEST_ACTIVE_ENVFILES="$profile_home/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
 start_fake_hermes() {
   local process_cwd=$1 source_extra=${2:-} clear_working_directory=${3:-false}
   (
     cd "$process_cwd"
     set -a
-    source "$fixture/private/profile/hermes.env"
+    source "$profile_home/hermes.env"
     if [[ -n "$source_extra" ]]; then source "$source_extra"; fi
     if [[ "$clear_working_directory" == true ]]; then unset HADES_HERMES_WORKING_DIRECTORY; fi
     set +a
-    exec sleep 120
+    exec python3 -c 'import time; time.sleep(120)' -p hades gateway run
   ) &
   fake_hermes_pid=$!
   export HADES_TEST_MAINPID="$fake_hermes_pid"
@@ -209,6 +232,7 @@ if ! HADES_TEST_UNIT_WORKDIR="$working_tree" run_doctor > "$fixture/doctor-pass.
 fi
 grep -Fq 'PASS Hermes homelab runtime package matches the installed source revision' "$fixture/doctor-pass.out"
 grep -Fq 'PASS active Hermes process directory and environment match the configured package' "$fixture/doctor-pass.out"
+grep -Fq 'PASS selected Hermes homelab MCP package matches the installed source revision' "$fixture/doctor-pass.out"
 ! grep -Fq "$working_tree" "$fixture/doctor-pass.out" || {
   echo 'FAIL doctor exposed the configured working-directory path' >&2
   exit 1
@@ -250,8 +274,8 @@ stop_fake_hermes
 start_fake_hermes "$working_tree"
 
 sed "s#^HADES_HERMES_WORKING_DIRECTORY=.*#HADES_HERMES_WORKING_DIRECTORY=$fixture/other-environment-directory#" \
-  "$fixture/private/profile/hermes.env" > "$fixture/private/profile/hermes.env.next"
-mv "$fixture/private/profile/hermes.env.next" "$fixture/private/profile/hermes.env"
+  "$profile_home/hermes.env" > "$profile_home/hermes.env.next"
+mv "$profile_home/hermes.env.next" "$profile_home/hermes.env"
 if output=$(run_doctor 2>&1); then
   echo 'FAIL doctor accepted a Hermes profile environment working-directory mismatch' >&2
   exit 1
@@ -262,8 +286,8 @@ grep -Fq 'FAIL Hermes profile environment working directory differs from the act
   exit 1
 }
 sed "s#^HADES_HERMES_WORKING_DIRECTORY=.*#HADES_HERMES_WORKING_DIRECTORY=$working_tree#" \
-  "$fixture/private/profile/hermes.env" > "$fixture/private/profile/hermes.env.next"
-mv "$fixture/private/profile/hermes.env.next" "$fixture/private/profile/hermes.env"
+  "$profile_home/hermes.env" > "$profile_home/hermes.env.next"
+mv "$profile_home/hermes.env.next" "$profile_home/hermes.env"
 
 HADES_TEST_ACTIVE_ENVFILES="$fixture/other-profile/hermes.env (ignore_errors=yes)"
 if output=$(run_doctor 2>&1); then
@@ -271,11 +295,11 @@ if output=$(run_doctor 2>&1); then
   exit 1
 fi
 grep -Fq 'FAIL active Hermes profile source differs from configured profile' <<<"$output"
-! grep -Fq "$fixture/private/profile" <<<"$output" || {
+! grep -Fq "$profile_home" <<<"$output" || {
   echo 'FAIL doctor exposed the configured profile path' >&2
   exit 1
 }
-HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+HADES_TEST_ACTIVE_ENVFILES="$profile_home/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
 
 # Reproduce ExecStart's later shell-source ordering: a loaded later env file
@@ -285,7 +309,7 @@ grocy_env="$fixture/private/records/grocy-mcp.env"
 printf 'HADES_HERMES_WORKING_DIRECTORY=%s\n' "$fixture/override-directory" > "$grocy_env"
 chmod 0600 "$grocy_env"
 stop_fake_hermes
-HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+HADES_TEST_ACTIVE_ENVFILES="$profile_home/hermes.env (ignore_errors=yes)
 $grocy_env (ignore_errors=yes)"
 start_fake_hermes "$working_tree" "$grocy_env"
 if output=$(run_doctor 2>&1); then
@@ -300,7 +324,7 @@ grep -Fq 'FAIL active Hermes process directory or environment differs from the c
 }
 : > "$grocy_env"
 stop_fake_hermes
-HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+HADES_TEST_ACTIVE_ENVFILES="$profile_home/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
 mkdir -p "$fixture/other-process-directory"
 start_fake_hermes "$fixture/other-process-directory"
@@ -335,6 +359,37 @@ expect_package_failure 'contains a symlink or non-regular Python module'
 mv "$working_tree/integrations/homelab-readonly/extra.py" \
   "$working_tree/integrations/homelab-readonly/extra-link.disabled"
 
+# Keep the working-directory package exact while corrupting only the selected
+# versioned package. Doctor must validate the package Hermes actually starts.
+cp "$generated_package/server.py" "$generated_package/server.py.original"
+printf '# synthetic selected-package byte drift\n' > "$generated_package/server.py"
+expect_package_failure 'selected Hermes homelab MCP package does not match the installed source revision'
+mv "$generated_package/server.py.original" "$generated_package/server.py"
+mv "$generated_package/reconcile.py" "$generated_package/reconcile.py.missing"
+expect_package_failure 'selected Hermes homelab MCP package does not match the installed source revision'
+mv "$generated_package/reconcile.py.missing" "$generated_package/reconcile.py"
+printf '# synthetic selected extra module\n' > "$generated_package/extra.py"
+expect_package_failure 'selected Hermes homelab MCP package does not match the installed source revision'
+rm "$generated_package/extra.py"
+
+mv "$generated_package" "$fixture/generated-package-real"
+ln -s "$fixture/generated-package-real" "$generated_package"
+expect_package_failure 'selected Hermes homelab MCP package does not match the installed source revision'
+rm "$generated_package"
+mv "$fixture/generated-package-real" "$generated_package"
+
+stop_fake_hermes
+sed "s#^HADES_INTEGRATIONS_ROOT=.*#HADES_INTEGRATIONS_ROOT=$fixture/other-integrations-root#" \
+  "$profile_home/hermes.env" > "$profile_home/hermes.env.next"
+mv "$profile_home/hermes.env.next" "$profile_home/hermes.env"
+start_fake_hermes "$working_tree"
+expect_package_failure 'selected Hermes homelab MCP package does not match the installed source revision'
+stop_fake_hermes
+sed "s#^HADES_INTEGRATIONS_ROOT=.*#HADES_INTEGRATIONS_ROOT=$integration_root#" \
+  "$profile_home/hermes.env" > "$profile_home/hermes.env.next"
+mv "$profile_home/hermes.env.next" "$profile_home/hermes.env"
+start_fake_hermes "$working_tree"
+
 HADES_TEST_UNIT_WORKDIR="$fixture/other-active-directory"
 export HADES_TEST_UNIT_WORKDIR
 if output=$(run_doctor 2>&1); then
@@ -354,7 +409,7 @@ else
   echo 'FAIL doctor rejected unavailable active Hermes profile-source evidence in test mode' >&2
   exit 1
 fi
-HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+HADES_TEST_ACTIVE_ENVFILES="$profile_home/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
 HADES_TEST_MAINPID=''
 if output=$(run_doctor 2>&1); then

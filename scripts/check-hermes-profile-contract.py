@@ -65,6 +65,18 @@ def main() -> int:
             if re.search(r"(?m)^    enabled:\s*false\s*$", block):
                 raise ValueError(f"required V1 `{name}` registration is explicitly disabled")
             missing_markers = [marker for marker in markers if marker not in block]
+            if name == "homelab-readonly" and missing_markers == [
+                "integrations/homelab-readonly/server.py"
+            ]:
+                generated_entrypoint = re.search(
+                    r'(?m)^    command:\s*python(?:[0-9]+(?:\.[0-9]+)*)?\s*$'
+                    r'.*?^    args:\s*\["\$\{HADES_INTEGRATIONS_ROOT\}/integrations/'
+                    r'homelab-readonly-[A-Za-z0-9_-]{6,64}/server\.py"\]\s*$',
+                    block,
+                    re.DOTALL,
+                )
+                if generated_entrypoint:
+                    missing_markers = []
             if missing_markers:
                 raise ValueError(f"required `{name}` registration is incomplete: {missing_markers}")
             print(f"PASS V1-required Hermes MCP registration: {name}")

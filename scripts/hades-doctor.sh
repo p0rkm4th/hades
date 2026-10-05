@@ -66,7 +66,7 @@ hades_layer_digest() {
 check_homelab_runtime_package() {
   local path=${HADES_HERMES_WORKING_DIRECTORY:-} package_root expected_modules runtime_modules module
   local source_path source_mode active_working_directory active_environment_files active_main_pid verified_main_pid
-  local active_process_working_directory active_process_cwd hermes_environment environment_working_directory
+  local active_process_working_directory active_process_cwd hermes_environment environment_working_directory hermes_config
   if [[ "$installed_source_verified" != 1 || -z "$path" ]]; then
     echo 'WARN homelab runtime package identity is unknown; installed source or working-directory input is unavailable'
     return 0
@@ -87,6 +87,10 @@ check_homelab_runtime_package() {
     return 0
   fi
   hermes_environment="${HADES_HERMES_PROFILE:-}/hermes.env"
+  hermes_config="${HADES_HERMES_PROFILE:-}/profiles/hades/config.yaml"
+  if ((test_mode)) && [[ "$root" != / ]]; then
+    hermes_config="$root/${HADES_HERMES_PROFILE#/}/profiles/hades/config.yaml"
+  fi
   if ! active_environment_files=$(systemctl show -p EnvironmentFiles --value hades-hermes.service 2>/dev/null) ||
      [[ -z "$active_environment_files" ]]; then
     if ((test_mode)); then
@@ -144,6 +148,13 @@ check_homelab_runtime_package() {
     doctor_fail=1
     return 0
   fi
+  if ! python3 "$repo_dir/scripts/verify-hermes-homelab-runtime.py" \
+      --repo "$repo_dir" --expected-profile "$hermes_config" \
+      --pid "$active_main_pid" >/dev/null 2>&1; then
+    echo 'FAIL selected Hermes homelab MCP package does not match the installed source revision'
+    doctor_fail=1
+    return 0
+  fi
   if ! verified_main_pid=$(systemctl show -p MainPID --value hades-hermes.service 2>/dev/null) ||
      [[ "$verified_main_pid" != "$active_main_pid" ]]; then
     if ((test_mode)); then
@@ -155,6 +166,7 @@ check_homelab_runtime_package() {
     return 0
   fi
   echo 'PASS active Hermes process directory and environment match the configured package'
+  echo 'PASS selected Hermes homelab MCP package matches the installed source revision'
   package_root="$path/integrations/homelab-readonly"
   if [[ "$path" != /* || -L "$path" || ! -d "$path" ||
         -L "$path/integrations" || ! -d "$path/integrations" ||
