@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
 import os
 import re
 from pathlib import Path
@@ -19,6 +20,7 @@ helper_names = {
     "_hades_homelab_guest_visibility_intent",
     "_hades_homelab_guest_inventory_intent",
     "_hades_homelab_guest_inventory_response",
+    "_hades_load_homelab_views",
     "_hades_direct_homelab_guest_inventory_read",
     "_hades_homelab_core_guest_name_keys",
     "_hades_homelab_core_vm_placement_intent",
@@ -74,8 +76,10 @@ def registry_read(tool_name, arguments=None):
 
 
 namespace = {
+    "importlib": importlib,
     "os": os,
     "re": re,
+    "Path": Path,
     "_hades_logger": Logger(),
     "_hades_direct_homelab_tool_result": registry_read,
 }
