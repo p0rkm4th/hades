@@ -7,65 +7,19 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-05 UTC
 
-Canonical public `main` is `2c48aaffc9be349e818baeabcdb6465913e91ad8`;
-post-promotion Public CI run
-[37341433176](https://github.com/p0rkm4th/hades/actions/runs/37341433176)
-passed. This is a documentation/provenance descendant of the homelab
-implementation baseline `0e468fff97567d4f85e4e50d76d2d039d58403ec` and the
-profile-bound package-provenance additions `1b96f1eed6b74ba6df2282d7078bf19b496b06c1`
-and `fa2c7d710161b33e07aa29913b12509b39b810d5`. The previous homelab branch
-`codex/gpu-telemetry-parity-20261004` is reference-only: its latest hosted
-Public CI run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
-failed public-history safety. It was not merged or rewritten.
+Canonical public `main` is `50919421f8478ea49a2536d5d0c24669f3bff2cc`. Candidate Public CI run [37346019937](https://github.com/p0rkm4th/hades/actions/runs/37346019937) passed before fast-forward promotion; post-promotion run [37346207557](https://github.com/p0rkm4th/hades/actions/runs/37346207557) passed. Its parent `d26869a5fb1781f24780feba4039ad5fd33d0c16` passed candidate run [37345598273](https://github.com/p0rkm4th/hades/actions/runs/37345598273) and post-promotion run [37345779794](https://github.com/p0rkm4th/hades/actions/runs/37345779794).
 
-The current mission is to classify its behavior against `main`, close
-achievable read-only reliability gaps, and make measured, contract-backed
-architecture extractions. Nyx-4's NYX-001 lineage/concentration review is in
-progress; no findings are claimed yet. Current measured sizes are
-`hermes/sitecustomize.py` 12,687 lines / 150 `_hades_*` definitions and
-`integrations/homelab-readonly/server.py` 1,948 lines, with reconciliation and
-configuration modules at 375 and 156 lines respectively. These are baseline
-measurements, not a reason by themselves to extract code.
+The homelab read layer remains **PARTIAL** as an owner-facing live capability. No current-main package/runtime byte parity or fresh authenticated owner/household acceptance was established, and no production deployment or canonical-source ACL mutation was performed. Seven authenticated chats on adapter revision `6bc6063702f73665a9cf666ca14cf7057d5924e` remain narrow historical evidence, not acceptance of current main.
 
-The host-load response extraction moved two pure renderer bodies into
-`integrations/homelab_views.py`, preserving Hermes wrappers, owner authorization,
-source reads, and routing. NYX-003 found no P1/P2 issue. NYX-004 found no
-remaining low-risk adapter projection to extract because the sizable remaining
-Proxmox projections contain scope, identity, freshness, and truncation rules.
-The linked NetBox alias case now has a direct full-output assertion after
-NYX-005 review.
+The lineage audit found no safe unique behavior to import from `codex/gpu-telemetry-parity-20261004`; that branch remains reference-only after public-history safety failure. Architecture work now includes pure Proxmox host-load and guest-inventory presenters in `integrations/homelab_views.py`, plus an extracted bounded Kuma normalizer in `integrations/homelab-readonly/kuma.py`. Hermes retains authorization, source reads, scope, identity, and routing. The adapter now rejects malformed Proxmox/NetBox row containers locally and rejects malformed Proxmox `type`/`status` fields inside the Proxmox boundary. NYX-008 through NYX-011 reviewed these reliability changes; focused contracts pass.
 
-NYX-006/007 found missing and malformed Kuma observation-time test coverage.
-The tests now exercise `heartbeatList` normalization through reconciliation
-and require status `up` with freshness `UNKNOWN` for invalid/missing times. The
-owner answer refuses to call the check currently up and omits malformed text
-from timestamp wording, while the bounded source result retains it for
-operator diagnostics. NYX-008 found no issue. Focused adapter, service-health,
-Hermes task-chat runtime, public-tree safety, and Python compile checks pass.
-No live behavior was changed or deployed in this epoch.
+A follow-up backup-history review found malformed node-discovery rows could make incomplete Proxmox backup coverage appear healthy. The fix at `50919421` tracks these rows, keeps valid-node evidence, marks task coverage PARTIAL, and surfaces an operator warning. NYX-012/013 cleared it; candidate CI passed. Main post-promotion CI run `37346207557` passed.
 
-The last protected production provenance is dated 2026-10-05 and is recorded
-in private operator evidence. It showed an active Hermes process, but its
-running homelab MCP server was older than current main; current-main byte parity
-and fresh authenticated owner/household acceptance were not established. The
-existing scripted owner and Household A/B sign-in inputs returned HTTP 400;
-they were not retried or reset. A separate protected report records seven
-authenticated chats on the older adapter revision
-`6bc6063702f73665a9cf666ca14cf7057d5924e` (four owner, three household; zero
-turn errors and no household topology-leak flags). This is narrow
-historical-package acceptance, not current-main acceptance. No current
-deployment is claimed.
+Measured source sizes after the view/provider extractions: `hermes/sitecustomize.py` 12,615 lines / 150 `_hades_*` definitions; `integrations/homelab-readonly/server.py` 1,937 lines; `reconcile.py` 375; `config.py` 156; `kuma.py` 62; `backup_view.py` 142; `homelab_views.py` 502. These are measurements, not targets by themselves.
 
-Private infrastructure recovery remains owner-managed: the checkout is dirty,
-there is no independent off-host recovery destination, and no encrypted
-recipient was specified. Same-disk copies are not independent recovery. No
-private topology, credentials, or raw acceptance transcripts belong in public
-HADES.
+Private infrastructure recovery remains owner-managed and unresolved: the owner confirmed no off-site backup currently exists and could not name an independent encrypted target or recipient. No recovery artifact was made; same-disk copies are not independent disaster recovery. Keep topology, credentials, and raw acceptance material in protected records.
 
-**Next exact action:** finish NYX-001; disposition branch-only behavior and
-select one low-risk, contract-backed extraction or reliability fix. Preserve
-the private infra checkout: the owner has no off-site recovery destination to
-specify, and no independent encrypted backup was created.
+**Next exact action:** finish current documentation reconciliation; then continue read-only current-main owner/runtime parity work without claiming deployment or recovery PASS.
 
 ## Previous code and dogfood checkpoints — 2026-10-04
 

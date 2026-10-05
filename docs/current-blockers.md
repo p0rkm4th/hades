@@ -7,36 +7,13 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-The public repository is at `2c48aaffc9be349e818baeabcdb6465913e91ad8` on
-`main`; post-promotion Public CI run
-[37341433176](https://github.com/p0rkm4th/hades/actions/runs/37341433176)
-passed. The homelab code baseline is `0e468fff97567d4f85e4e50d76d2d039d58403ec`
-with its post-promotion Public CI passing in run
-[37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737).
-The bounded external-package provenance follow-up is on `main` at
-`1b96f1eed6b74ba6df2282d7078bf19b496b06c1`; candidate and post-promotion
-Public CI runs [37338721434](https://github.com/p0rkm4th/hades/actions/runs/37338721434)
-and [37338894671](https://github.com/p0rkm4th/hades/actions/runs/37338894671)
-passed. The end-to-end CLI package provenance follow-up is on `main` at
-`fa2c7d710161b33e07aa29913b12509b39b810d5`; candidate and post-promotion CI
-runs [37339416819](https://github.com/p0rkm4th/hades/actions/runs/37339416819)
-and [37339622965](https://github.com/p0rkm4th/hades/actions/runs/37339622965)
-passed, along with focused provenance contracts.
-The older GPU-parity branch at `345cb1b6de5f9f51ad98986c88ab9f0693461921` was
-not imported or rewritten; its latest hosted run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
-failed public-history safety. NYX-001 is rechecking semantic branch-only value
-and current architecture concentration; findings are pending.
+Canonical public `main` is `50919421f8478ea49a2536d5d0c24669f3bff2cc`. Candidate Public CI run [37346019937](https://github.com/p0rkm4th/hades/actions/runs/37346019937) passed; post-promotion main run [37346207557](https://github.com/p0rkm4th/hades/actions/runs/37346207557) passed. Parent main `d26869a5fb1781f24780feba4039ad5fd33d0c16` passed post-promotion run [37345779794](https://github.com/p0rkm4th/hades/actions/runs/37345779794).
 
-NYX-003 reviewed extraction of two pure host-load presenters into the existing
-view module; authorization, source reads, and routing remain in Hermes.
-NYX-004 found no additional low-risk adapter projection to move. NYX-005's
-direct linked-inventory alias output assertion is covered. NYX-006/007 added
-synthetic missing/malformed Kuma timestamp cases through heartbeat
-normalization and reconciliation. Such rows remain `UNKNOWN`; owner wording
-no longer labels malformed text as a timestamp. NYX-008 found no issue.
-Focused adapter, service-health, Hermes runtime, tree-safety, and compile
-checks pass. The live-read layer remains **PARTIAL**; these synthetic tests add
-no current-main owner dogfood or source-byte-parity evidence.
+Current main includes extracted Proxmox host-load and guest-inventory presenters, a bounded Kuma status provider, deterministic harness loading for the extracted views, source-local rejection of malformed Proxmox/NetBox containers and rows, and Proxmox `type`/`status` validation before reconciliation. Candidate `50919421` adds backup node-discovery completeness: malformed node rows now make task coverage PARTIAL while valid-node evidence is retained. NYX-008 through NYX-013 reviewed these focused source-isolation and completeness changes. Public history audit and focused adapter contracts pass.
+
+Homelab remains **PARTIAL** for owner-facing live use. Current-main runtime byte parity and fresh authenticated owner/household acceptance remain unverified. The narrow seven-chat result is on an older adapter revision and is historical evidence only. No production deployment or source ACL change occurred. The old GPU-parity branch remains reference-only; no safe unique branch behavior was identified for import.
+
+No independent encrypted off-host recovery destination or recipient is configured. The owner confirms there is no off-site backup now; no recovery artifact was created. This remains an owner-managed gate, not a reconstruction or live-source pass.
 
 Last protected read-only production provenance is dated 2026-10-05 and remains
 the source for the statements below. A mode-0600 acceptance report records
