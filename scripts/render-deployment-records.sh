@@ -4,6 +4,18 @@ set -Eeuo pipefail
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 inputs=${1:-}
 output=${2:-}
+searx_settings_root=
+shift $(( $# >= 2 ? 2 : $# ))
+while (($#)); do
+  case "$1" in
+    --searx-settings-root)
+      (($# >= 2)) || { echo 'FAIL --searx-settings-root requires an absolute directory' >&2; exit 2; }
+      searx_settings_root=$2
+      shift 2
+      ;;
+    *) echo "FAIL unknown renderer option: $1" >&2; exit 2 ;;
+  esac
+done
 [[ "$inputs" == /* && -f "$inputs" ]] || { echo 'FAIL renderer needs an absolute operator-input file' >&2; exit 2; }
 [[ "$output" == /* ]] || { echo 'FAIL renderer needs an absolute output directory' >&2; exit 2; }
 [[ ! -L "$inputs" ]] || { echo 'FAIL operator input file must not be a symlink' >&2; exit 1; }
@@ -20,6 +32,7 @@ source "$repo_dir/config/versions.env"
 : "${HADES_HINDSIGHT_DATA:?operator input is missing HADES_HINDSIGHT_DATA}"
 : "${HADES_SEARXNG_DATA:?operator input is missing HADES_SEARXNG_DATA}"
 : "${HADES_SEARXNG_SECRET_FILE:?operator input is missing HADES_SEARXNG_SECRET_FILE}"
+: "${HADES_CONFIG_ROOT:?operator input is missing HADES_CONFIG_ROOT}"
 : "${HADES_HERMES_WORKING_DIRECTORY:?operator input is missing HADES_HERMES_WORKING_DIRECTORY}"
 : "${HADES_HERMES_EXECUTABLE:?operator input is missing HADES_HERMES_EXECUTABLE}"
 HADES_DEPLOYMENT_DIR=${HADES_DEPLOYMENT_DIR:-$HADES_CONFIG_ROOT/private-deployment}
@@ -28,6 +41,10 @@ HADES_GROCY_URL=${HADES_GROCY_URL:-http://127.0.0.1:7003}
   echo 'FAIL HADES_GROCY_URL must be a simple HTTP(S) URL without credentials or shell-sensitive characters' >&2; exit 1;
 }
 HADES_DEPLOYMENT_DIR=$output
+searx_settings_root=${searx_settings_root:-$HADES_CONFIG_ROOT}
+[[ "$searx_settings_root" == /* && ! -L "$searx_settings_root" ]] || {
+  echo 'FAIL SearXNG settings root must be an absolute non-symlink directory' >&2; exit 1;
+}
 HADES_HERMES_API_BIND_HOST=${HADES_HERMES_API_BIND_HOST:-127.0.0.1}
 HADES_HERMES_RUNTIME_USER=${HADES_HERMES_RUNTIME_USER:-hades-runtime}
 HADES_HERMES_RUNTIME_GROUP=${HADES_HERMES_RUNTIME_GROUP:-hades-runtime}
@@ -112,11 +129,13 @@ secret_mode=$(stat -c '%a' "$HADES_SEARXNG_SECRET_FILE")
 [[ "$secret_mode" == 600 || "$secret_mode" == 640 ]] || {
   echo 'FAIL SearXNG secret file must be mode 0600 or 0640' >&2; exit 1;
 }
-mkdir -p "$HADES_CONFIG_ROOT/searxng"
+mkdir -p "$searx_settings_root/searxng"
+[[ ! -L "$searx_settings_root/searxng" ]] || { echo 'FAIL SearXNG settings directory must not be a symlink' >&2; exit 1; }
+[[ ! -L "$searx_settings_root/searxng/settings.yml" ]] || { echo 'FAIL SearXNG settings file must not be a symlink' >&2; exit 1; }
 awk -v secret="$(<"$HADES_SEARXNG_SECRET_FILE")" \
   '{gsub("__SEARXNG_SECRET__", secret); print}' \
-  "$repo_dir/searxng/settings.yml" > "$HADES_CONFIG_ROOT/searxng/settings.yml"
-chmod 600 "$HADES_CONFIG_ROOT/searxng/settings.yml"
+  "$repo_dir/searxng/settings.yml" > "$searx_settings_root/searxng/settings.yml"
+chmod 600 "$searx_settings_root/searxng/settings.yml"
 revision=$(git -c "safe.directory=$repo_dir" -C "$repo_dir" rev-parse HEAD 2>/dev/null || printf 'unknown')
 manifest_sha=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
 
