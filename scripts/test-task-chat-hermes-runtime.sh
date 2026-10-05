@@ -192,6 +192,20 @@ assert "household chat" in household_backup_result["final_response"].casefold()
 assert "owner" in household_backup_result["final_response"].casefold()
 for private_marker in ("nightly", "guest 102", "hypervisor-alpha", "synthetic Proxmox"):
     assert private_marker not in household_backup_result["final_response"], household_backup_result
+unverified_backup_dispatch_count = len(homelab_dispatch_calls)
+unverified_backup_agent = agent_class(
+    gateway_session_key="hades-user-", session_id="synthetic-unverified-proxmox-backup",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+unverified_backup_result = unverified_backup_agent.run_conversation(
+    "Are the Proxmox backups okay?", conversation_history=[]
+)
+assert unverified_backup_result.get("completed") is True, unverified_backup_result
+assert unverified_backup_result.get("api_calls") == 0, unverified_backup_result
+assert len(homelab_dispatch_calls) == unverified_backup_dispatch_count, homelab_dispatch_calls
+assert "couldn't verify this HADES session" in unverified_backup_result["final_response"]
+for private_marker in ("nightly", "guest 102", "hypervisor-alpha", "synthetic Proxmox"):
+    assert private_marker not in unverified_backup_result["final_response"], unverified_backup_result
 results = {}
 for subject in (owner, beta):
     chunks = []

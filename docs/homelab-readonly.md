@@ -46,6 +46,13 @@ post-promotion Public CI run
 passed. Focused adapter, formatter, syntax, tree-safety, and whitespace checks
 pass. The change is not deployed and supplies no new live-source evidence.
 
+A follow-up runtime candidate adds a deterministic owner-session boundary for
+Proxmox backup questions: household sessions receive only a generic owner
+boundary, and invalid/unverified sessions receive an explicit unable-to-verify
+answer before model or MCP dispatch. The focused Hermes runtime contract checks
+both cases for zero API calls, zero homelab dispatch, and no private fixture
+details. This follow-up is not yet promoted or deployed.
+
 These changes are undeployed and provide no new live homelab evidence. The last
 protected production inspection on 2026-10-05 showed an active Hermes process,
 but its running homelab MCP server maps to an older public source revision;

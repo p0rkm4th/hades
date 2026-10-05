@@ -52,6 +52,11 @@ passed. Focused contracts and current-tree safety checks pass. The code remains
 undeployed; live-source, runtime-parity, and authenticated owner/household
 evidence remain unchanged.
 
+A separate runtime follow-up candidate adds end-to-end owner-boundary coverage
+for household and unverified-session Proxmox backup questions. The focused
+Hermes runtime contract passes with no model or homelab-tool call and no private
+details in either response. This follow-up is not yet promoted or deployed.
+
 Private-infra recovery remains owner-managed: the checkout is dirty, no
 independent encrypted off-host target has been specified, and the owner confirms
 no off-site backup. Same-disk copies are not independent recovery.

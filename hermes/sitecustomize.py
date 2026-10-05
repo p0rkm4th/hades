@@ -10377,6 +10377,22 @@ try:
             getattr(self, "_hades_conversation_id", ""),
         )
         _preflight_text = str(user_message or "")
+        if self._hades_session_scope not in {"owner", "household"}:
+            _unverified_backup_response = _hades_direct_proxmox_backup_status(
+                _preflight_text,
+                getattr(self, "_hades_subject", ""),
+                self._hades_session_scope,
+            )
+            if _unverified_backup_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(_unverified_backup_response)
+                return {
+                    "final_response": _unverified_backup_response,
+                    "messages": [{"role": "assistant", "content": _unverified_backup_response}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
         _compound_briefing = bool(re.search(r"\b(?:morning\s+briefing|briefing)\b", _preflight_text, re.IGNORECASE))
         _briefing_recap = bool(
             re.search(
