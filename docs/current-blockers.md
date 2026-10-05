@@ -7,49 +7,13 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-Public `main` is `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`; Public CI run
-[37252630983](https://github.com/p0rkm4th/hades/actions/runs/37252630983)
-completed successfully. The source checkpoint preserves Kuma observation time
-as `observed_at` in the canonical compact summary; the owner named-monitor
-response labels it as observation time and treats freshness separately. This
-checkpoint is not deployed. The active runtime is a deployment-local
-composition, and source/runtime parity remains unverified for this change.
+Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact Public CI run [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424) passed. Aster's sole integration branch is based on this exact head and has no code delta yet. The old GPU-parity ref `345cb1b6de5f9f51ad98986c88ab9f0693461921` is review material only; merge base is `b903ad331dc0269becf46600bf29db8931707fef`. Its latest Public CI run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed `Check public history`. No old history or code has been imported. NYX-001 reviewed these exact tips and is **ACCEPTED**: old branch current-tree safety passes, but introduced-history safety fails. No safe unique behavior remains to port. It regresses NetBox pagination completeness, Kuma observation timestamps, partial-source service-health handling, and inference freshness/count wording already protected on main.
 
-The older `codex/gpu-telemetry-parity-20261004` ref remains review-only; no
-code or history has been imported wholesale. NYX-010 rechecked the earlier
-NYX-001 classification against current `main`; its semantic dispositions are
-unchanged and the old branch still has no accepted unique behavior to port.
-NYX-008 accepted the source-level incomplete-conflict and named-monitor review.
-That was static source review, not live failure dogfood. NYX-009 completed a
-fresh read-only backup metadata pass. NYX-011 found one unnecessary
-protected-custody detail; Aster removed it.
-The clean-lineage replacement candidate `d3b14c53` passed Public CI run
-`37254383967`; NYX-012 is rechecking this exact candidate. It remains unpromoted.
+Source/runtime identity has not been freshly verified in this campaign epoch. The last protected rollout records and prior owner/household dogfood are dated evidence only; active overlay/adapter parity and fresh authenticated acceptance remain unverified. The read layer remains **PARTIAL**. Live stale/partial and contradictory-source behavior, native service health/placement, network trends, complete restoreability, and independent private-infra recovery remain open. No deployment, host, network, driver, source-ACL, or backup mutation occurred.
 
-The prior inference-view extraction remains deployed according to the last
-protected rollout record. The later pure `homelab_views.py` extraction remains
-in source but is not deployed. Existing owner/household dogfood covers source
-provenance, bounded change history, and denial of private topology requests;
-those targeted results do not close live stale/partial/contradiction tests,
-native application health/placement, network trends, backup artifact or restore
-verification, normal-user outage acceptance, or independent-device custody.
-NYX-009 found the latest observed guest backup tasks successful through Oct 4;
-Oct 5 local runs were pending at read time. A weekly application archive
-completed on Oct 5 UTC, its sidecar matched, and an embedded database archive
-passed structural listing; full application restore remains unproven. Synthetic
-file-level dataset restore and several historical stopped-clone restore checks
-are documented. Copies remain in the same homelab failure domain, and fresh
-artifact/restore checks remain open for other components. The campaign remains
-**PARTIAL**. No current-turn runtime, host, network,
-source-ACL, or backup mutation occurred.
+Private-infra recovery also remains gated: the current checkout is dirty, and independent encrypted off-host custody and restore proof are not established. A local copy does not satisfy the independent recovery requirement.
 
-**Next:** complete NYX-012 review of the clean-lineage candidate, then promote
-only after its main CI run passes; recheck backup task and snapshot metadata
-after the pending local schedules; verify
-active runtime provenance before any deployment decision; then take the
-smallest remaining evidence-backed adapter extraction or source-completeness
-fix. The dirty primary checkout is preserved; use the clean worktree based on
-public `main` for integration.
+**Next:** qualify this corrected checkpoint on current-main lineage, then extract the pure backup formatter as the first low-risk adapter boundary. Keep Proxmox reads, permission interpretation, and guest-scope decisions in the server. Preserve current `main`; do not promote or import the old branch. Recheck runtime provenance before any deployment claim.
 
 ## Historical release baseline and prior evidence
 

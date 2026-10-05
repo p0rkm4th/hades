@@ -9,24 +9,25 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Public HADES `main` is `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`; Public CI
-run `37252630983` passed. The canonical summary retains the monitor source's
-`last_updated` value as `observed_at`; response freshness remains a separate
-field. This source change is not deployed. Runtime overlay and adapter hashes
-are kept in the protected operator record and must be rechecked before a
-rollout. The current active composition is not assumed to match repository
-source.
+Public HADES `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact Public CI
+run `37254848424` passed. This source includes the owner-only homelab reads and
+extracted response-view modules. NYX-001 completed semantic review of old GPU-parity ref
+`345cb1b6de5f9f51ad98986c88ab9f0693461921`: no safe unique capability needs
+porting, and no code was imported. The branch current tree passes its safety
+check, but its introduced history fails public-history safety. It also regresses
+NetBox pagination completeness, Kuma observation timestamps, partial-source
+service-health semantics, and inference freshness/count safeguards.
+The previous `b17ce8e7` monitor timestamp acceptance remains a source-level
+checkpoint, not a fresh runtime claim. Current main preserves the corresponding
+service-health and inference safeguards and has expanded adapter regressions.
 
-The read layer remains **PARTIAL**: synthetic contracts and prior targeted
-owner/household dogfood do not establish live stale-source, contradiction,
-native service-health, or network-trend acceptance. A read-only backup metadata
-pass observed recent guest jobs successful through Oct 4 and an Oct 5 UTC weekly
-application archive with a matching sidecar and structurally valid embedded
-database listing. That does not prove a full application restore. Synthetic
-file-level dataset restore and selected historical stopped-clone checks exist;
-all observed backup copies remain inside one homelab failure domain. Other
-artifact/restore checks and independent-device/off-site custody remain open.
-Unknown and incomplete source coverage must remain explicit.
+Source/runtime parity, active overlay/adapter digests, and authenticated
+owner/household behavior have not been freshly verified in this campaign epoch.
+The read layer remains **PARTIAL**. Live stale/partial and contradiction
+acceptance, service-native health/placement, network trends, complete
+restoreability, and independent private-infra recovery remain open. Existing
+backup and dogfood reports are dated evidence. Unknown and incomplete source
+coverage must remain explicit.
 
 ## Authority boundaries
 
