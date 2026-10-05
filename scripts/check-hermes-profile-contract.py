@@ -70,7 +70,7 @@ def main() -> int:
             ]:
                 generated_entrypoint = re.search(
                     r'(?m)^    command:\s*python(?:[0-9]+(?:\.[0-9]+)*)?\s*$'
-                    r'.*?^    args:\s*\["\$\{HADES_INTEGRATIONS_ROOT\}/integrations/'
+                    r'.*?^    args:\s*\["\$\{HADES_INTEGRATIONS_ROOT\}/'
                     r'homelab-readonly-[A-Za-z0-9_-]{6,64}/server\.py"\]\s*$',
                     block,
                     re.DOTALL,

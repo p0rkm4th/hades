@@ -20,7 +20,7 @@ sandbox="$fixture/sandbox"
 profile_home="$fixture/private/hermes-home"
 profile_root="$profile_home/profiles/hades"
 integration_root="$fixture/integrations-root"
-generated_package="$integration_root/integrations/homelab-readonly-test001"
+generated_package="$integration_root/homelab-readonly-test001"
 mkdir -p "$working_tree/hermes" "$working_tree/integrations/public-research" "$fixture/bin"
 mkdir -p "$profile_root"
 mkdir -p "$generated_package"
@@ -68,11 +68,12 @@ import sys
 path = Path(sys.argv[1])
 text = path.read_text()
 old = 'args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/homelab-readonly/server.py"]'
-new = 'args: ["${HADES_INTEGRATIONS_ROOT}/integrations/homelab-readonly-test001/server.py"]'
+new = 'args: ["${HADES_INTEGRATIONS_ROOT}/homelab-readonly-test001/server.py"]'
 if text.count(old) != 1:
     raise SystemExit("FAIL synthetic profile did not contain one canonical homelab MCP path")
 path.write_text(text.replace(old, new))
 PY
+python3 "$repo_dir/scripts/check-hermes-profile-contract.py" "$profile_config" >/dev/null
 overlay_target="$sandbox${HADES_CONFIG_ROOT}/overlay/sitecustomize.py"
 composition_target="$sandbox${HADES_CONFIG_ROOT}/overlay/sitecustomize.composition.json"
 HADES_TEST_UNIT_WORKDIR="$working_tree"
