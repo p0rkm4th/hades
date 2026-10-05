@@ -9,22 +9,11 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Latest HADES code on public `main` is `9b948d3ecd32c2521885db9d3c01ec619a18987a`; exact Public CI run `37315053716` passed. This version includes the reviewed Proxmox backup response view and recent-activity view extractions. NYX-002 and NYX-004 found no material P1/P2 issue; direct presenter and adapter-parity tests pass. These are presentation refactors and have not been separately deployed.
+Latest HADES code on public `main` is `9008e9059e5b58d8f6117361c361a0146cdbdcb9`; exact Public CI runs [37315944780](https://github.com/p0rkm4th/hades/actions/runs/37315944780) and [37316942770](https://github.com/p0rkm4th/hades/actions/runs/37316942770) passed. This version includes the reviewed Proxmox backup response and recent-activity view extractions. NYX-002/004 found no material P1/P2 issue; focused direct-view and adapter-parity checks pass. These refactors have not been separately deployed.
 
-NYX-005 verified that the partial Hermes-facing presenter module is `integrations/homelab_views.py` (top-level under `integrations/`); the old GPU-parity branch has no extracted presenter modules. Several renderers remain inline in `hermes/sitecustomize.py`.
+Fresh read-only production inspection on 2026-10-05 verified the Hermes service active with zero restarts and confirmed its running process selects the configured overlay. Overlay bytes match the protected deployment record and deterministic per-slice builder in private infra. The process-selected homelab MCP server bytes map to public HADES commit `6bc6063702f73665a9cf666ca14cf7057d5924e`; this is older than the current refactored adapter, so current-main source/runtime byte parity is not established. The private per-slice builder provides reproducible overlay lineage from its protected base and patch, but there is no single public end-to-end composition manifest. The full installer overwrites tracked layer files, so it is not a safe way to preserve deployment-local policy.
 
-Source/runtime parity, active overlay/adapter digests, and authenticated
-owner/household behavior have not been freshly verified in this campaign epoch.
-`scripts/verify-live-hermes-overlay.sh` proves byte equality only for an exact
-file; `scripts/write-deployed-provenance.py` records the selected process/profile/MCP
-identity but does not validate local overlay composition. No homelab overlay
-composer or composition manifest exists. The full installer overwrites tracked
-layer files, so do not use it to preserve deployment-local policy.
-The read layer remains **PARTIAL**. Live stale/partial and contradiction
-acceptance, service-native health/placement, network trends, complete
-restoreability, and independent private-infra recovery remain open. Existing
-backup and dogfood reports are dated evidence. Unknown and incomplete source
-coverage must remain explicit.
+This read-only provenance check did not exercise authenticated owner/household behavior. The existing protected owner sign-in inputs returned HTTP 400; no alternate password or account reset was attempted. Prior UI acceptance remains dated evidence. The read layer remains **PARTIAL**; fresh owner/household acceptance, live stale/partial and contradiction behavior, service-native health/placement, network trends, and complete restoreability remain open. Independent encrypted off-host recovery is also not configured; the owner confirms there is no off-site backup at this time. Do not describe local copies as independent recovery. No production deployment or infrastructure/source-ACL mutation occurred during this check.
 
 ## Authority boundaries
 

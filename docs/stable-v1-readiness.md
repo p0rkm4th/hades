@@ -1,10 +1,10 @@
 # HADES stable-v1 readiness
 
 This is a readiness record for the deployment, not an installer or a new
-runtime layer. The operational observations below were last rechecked
-read-only on 2026-09-25; this release-convergence campaign did not recheck or
-change production. Treat those entries as dated evidence, not a fresh live
-probe.
+runtime layer. Most component observations below were last rechecked read-only
+on 2026-09-25 and remain dated evidence. The Homelab row records a narrower
+read-only provenance check from 2026-10-05; that check does not establish
+general service health or owner/household acceptance.
 
 ## Engineering release convergence (2026-10-01)
 
@@ -101,7 +101,7 @@ not commit volume.
 | Web/search | OWNER-GATED | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary, including fresh follow-up semantics and search-vs-page provenance; fresh authenticated owner-UI follow-up must confirm search freshness |
 | Bounded operator | PASS | Bounded inspection remains available and unsafe delegation is rejected before upstream dispatch; broader tasks and native A2A remain optional hardening |
 | Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; owner-scoped local CSV preview/import planning, native CSV/QIF/OFX/QFX/CAMT handoff, and the unregistered reconciled writer contract are dogfood-tested without production writes |
-| Homelab | PARTIAL | Latest HADES code on public `main` is `9b948d3ecd32c2521885db9d3c01ec619a18987a` and passed Public CI `37315053716`. It includes pure backup and recent-activity presenter extractions; NYX-002/004 review and focused direct/adapter parity checks pass. These refactors have not been separately deployed. Runtime provenance and fresh owner/household acceptance remain unverified. NYX-001 found no safe unique behavior to port from the old GPU-parity branch; its history fails public-history safety and its code regresses newer main contracts. Current source/runtime parity is not freshly verified. Live failure/conflict acceptance, service health/placement, network trends, full restoreability, and independent private-infra recovery remain open. |
+| Homelab | PARTIAL | Public `main` `9008e9059e5b58d8f6117361c361a0146cdbdcb9` passed Public CI runs `37315944780` and `37316942770`. Fresh read-only provenance confirms active Hermes, zero restarts, overlay match to its protected per-slice deployment record, and running MCP server lineage to public HADES commit `6bc6063702f73665a9cf666ca14cf7057d5924e`; this is not byte parity with current main. Reviewed backup/activity presenter refactors are undeployed. Fresh authenticated owner/household acceptance, live failure/conflict behavior, service health/placement, network trends, and full restoreability remain open. No off-site backup is configured by owner choice. |
 | Home Assistant | PARTIAL | Synthetic read-only adapter, ordinary-entity reads, stale/unavailable shaping, and security-sensitive filtering pass; connect the approved URL/token/entity allowlist and validate the deployed read path |
 | Automation | PARTIAL | The joined disposable Phase 3 path passes on two independent pristine Fedora 44 x86_64 guests with SELinux enforcing: immutable n8n and LLDAP pins, generated Epsilon package under strict transient systemd, Hermes 0.21.2 result route, authenticated Open WebUI Alpha/Beta/Gamma, shared/unshared isolation, live Beta grant revocation, and duplicate signed run replay after service restart. The second guest passed again after a real reboot with Docker automatically active. Synthetic contracts cover expired-lease UNKNOWN suppression, failure redaction, ten concurrent maximum-quota requests with replay, and post-poll schedule rollback. The resolver does not query Open WebUI-only account disable. Production Phase 3 keys, state, group mapping, endpoint, and scoped n8n credential remain unprovisioned; schedules stay inactive |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
