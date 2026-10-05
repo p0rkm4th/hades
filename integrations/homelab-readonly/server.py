@@ -41,6 +41,7 @@ from config import (
     inference_endpoint_specs,
 )
 from gpu_telemetry import read_gpu_telemetry
+from inference_provider import read_provider_catalog
 
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
@@ -999,44 +1000,14 @@ def homelab_gpu_telemetry() -> dict:
 def _read_inference_endpoint(endpoint: dict[str, str], links: dict[str, int]) -> dict:
     """Read one provider's bounded model catalog and optional residency."""
     identity = f"inference:{endpoint['id']}"
-    base = endpoint["url"].rstrip("/") + "/"
     checked_at = _retrieved_at()
     try:
-        if endpoint["provider"] == "openai-compatible":
-            catalog = _fetch(urljoin(base, "v1/models"), endpoint["token_file"], endpoint["ca_file"],
-                             timeout_seconds=4, max_response_bytes=512 * 1024).get("data")
-            if not isinstance(catalog, list) or len(catalog) > 512:
-                raise ValueError("inference model catalog has an invalid shape")
-            models = [{"name": str(row["id"])[:256]} for row in catalog
-                      if isinstance(row, dict) and isinstance(row.get("id"), str) and row["id"]]
-            loaded, loaded_status = [], "UNSUPPORTED"
-        else:
-            catalog = _fetch(urljoin(base, "api/tags"), endpoint["token_file"], endpoint["ca_file"],
-                             timeout_seconds=4, max_response_bytes=512 * 1024).get("models")
-            if not isinstance(catalog, list) or len(catalog) > 512:
-                raise ValueError("inference model catalog has an invalid shape")
-            models = []
-            for row in catalog:
-                if not isinstance(row, dict) or not isinstance(row.get("name"), str):
-                    continue
-                models.append({"name": row["name"][:256],
-                               "size_bytes": row.get("size") if type(row.get("size")) is int and row["size"] >= 0 else None,
-                               "modified_at": str(row.get("modified_at") or "")[:64] or None})
-            try:
-                running = _fetch(urljoin(base, "api/ps"), endpoint["token_file"], endpoint["ca_file"],
-                                 timeout_seconds=4, max_response_bytes=512 * 1024).get("models")
-                if not isinstance(running, list) or len(running) > 512:
-                    raise ValueError("inference residency response has an invalid shape")
-                loaded = [{"name": row["name"][:256],
-                           "size_vram_bytes": row.get("size_vram") if type(row.get("size_vram")) is int and row["size_vram"] >= 0 else None}
-                          for row in running if isinstance(row, dict) and isinstance(row.get("name"), str)]
-                loaded_status = "CURRENT"
-            except Exception:
-                loaded, loaded_status = [], "UNKNOWN"
+        catalog = read_provider_catalog(endpoint, _fetch)
+        loaded_status = catalog["loaded_status"]
         return {"source_identity": identity, "netbox_device_id": links.get(identity),
                 "identity_status": "LINKED" if identity in links else "UNLINKED",
                 "provider": endpoint["provider"], "status": "READABLE" if loaded_status != "UNKNOWN" else "PARTIAL",
-                "checked_at": checked_at, "models": models, "loaded_models": loaded,
+                "checked_at": checked_at, "models": catalog["models"], "loaded_models": catalog["loaded_models"],
                 "loaded_status": loaded_status,
                 "health_scope": "provider catalog/residency only; no generation request was made",
                 "read_only": True}

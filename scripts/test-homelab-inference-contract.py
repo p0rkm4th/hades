@@ -185,6 +185,47 @@ unavailable = server._read_inference_endpoint(endpoint, {})
 assert unavailable["status"] == "UNAVAILABLE"
 assert unavailable["models"] == [] and unavailable["read_only"] is True
 
+# Provider-native response parsing remains bounded and GET-only; OpenAI
+# compatibility has no residency route, while an Ollama /api/ps outage keeps
+# the catalog but marks residency and the endpoint partial.
+provider_calls = []
+
+
+def openai_fetch(url, token_file="", ca_file="", proxmox_token_id="", **kwargs):
+    provider_calls.append(url)
+    assert kwargs == {"timeout_seconds": 4, "max_response_bytes": 512 * 1024}
+    assert url.endswith("/v1/models")
+    return {"data": [{"id": "model-b:7b"}, {"name": "ignored"}]}
+
+
+server._fetch = openai_fetch
+openai_endpoint = {
+    "id": "openai-lane", "provider": "openai-compatible",
+    "url": "https://inference.example.test", "token_file": "/synthetic/token",
+    "ca_file": "/synthetic/ca.pem",
+}
+openai_row = server._read_inference_endpoint(openai_endpoint, {})
+assert openai_row["status"] == "READABLE"
+assert openai_row["models"] == [{"name": "model-b:7b"}]
+assert openai_row["loaded_status"] == "UNSUPPORTED"
+assert openai_row["loaded_models"] == []
+assert len(provider_calls) == 1
+
+
+def partial_ollama_fetch(url, *args, **kwargs):
+    if url.endswith("/api/tags"):
+        return {"models": [{"name": "model-a:8b"}]}
+    assert url.endswith("/api/ps")
+    raise OSError("synthetic residency unavailable")
+
+
+server._fetch = partial_ollama_fetch
+partial_row = server._read_inference_endpoint(endpoint, {})
+assert partial_row["status"] == "PARTIAL"
+assert partial_row["models"] == [{"name": "model-a:8b", "size_bytes": None, "modified_at": None}]
+assert partial_row["loaded_status"] == "UNKNOWN" and partial_row["loaded_models"] == []
+assert partial_row["read_only"] is True
+
 readers = {
     "homelab_summary": lambda: {"status": "PARTIAL", "resources": []},
     "homelab_compute_capabilities": lambda: {"status": "OK", "machines": []},
