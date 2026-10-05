@@ -182,4 +182,28 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-manifest-") as temp:
     missing_loader = source.replace(b"_hades_load_homelab_views().guest", b"view_loader().guest")
     must_fail(lambda: composer.compose(base, missing_loader), "compatibility loader")
 
+    race_repo = root / "race-source"
+    shutil.copytree(repo, race_repo)
+    original_run = manifest_tool.subprocess.run
+    head_advanced = {"value": False}
+
+    def advance_head_during_blob_read(args, *call_args, **call_kwargs):
+        if not head_advanced["value"] and isinstance(args, (list, tuple)) and "ls-tree" in args and str(race_repo) in args:
+            head_advanced["value"] = True
+            original_run(
+                ["git", "-C", str(race_repo), "commit", "--allow-empty", "-qm", "concurrent HEAD move"],
+                check=True, capture_output=True,
+            )
+        return original_run(args, *call_args, **call_kwargs)
+
+    manifest_tool.subprocess.run = advance_head_during_blob_read
+    try:
+        must_fail(
+            lambda: manifest_tool.build_manifest(race_repo, base, final),
+            "identity changed during",
+        )
+    finally:
+        manifest_tool.subprocess.run = original_run
+    assert head_advanced["value"], "controlled test did not move the synthetic HEAD during blob reads"
+
 print("PASS source-bound Hermes overlay composition and provenance integration")

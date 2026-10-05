@@ -119,6 +119,10 @@ def _tracked_source(repo: Path) -> tuple[str, str, bytes]:
         raise ValueError("tracked overlay source or composer is unavailable") from None
     if running_manifest_tool != recorded_manifest_tool:
         raise ValueError("running manifest verifier differs from the exact Git blob")
+    revision_after = _git(root, "rev-parse", "--verify", "HEAD")
+    tree_after = _git(root, "rev-parse", "--verify", "HEAD^{tree}")
+    if revision_after != revision or tree_after != tree:
+        raise ValueError("source repository identity changed during manifest verification")
     return revision, tree, source
 
 
