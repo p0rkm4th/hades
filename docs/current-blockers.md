@@ -21,9 +21,14 @@ invoke owner renderers. Candidate CI `37249123822` and post-promotion main CI
 `37249668974` passed. A fresh read-only VM check found Hermes healthy with zero
 restarts; the new module has not been deployed. The active production overlay
 is a deployment-local composition that differs from repository
-`sitecustomize.py`; a protected compatibility review is in progress. Any
-future rollout must compose against the exact active bytes and validate helper
-semantics before installation.
+`sitecustomize.py`. NYX-005's protected read-only compatibility review
+recommends **RE-SCOPE before runtime composition**: the active conflict
+response covers source failures, partial scope, identity-link gaps, and
+freshness; an effective-permission guest-visibility route lacks a tracked
+equivalent; and the active service-monitor signature/behavior and direct-reader
+intent order differ. A private synthetic differential harness is the next
+step. Any future rollout must preserve or explicitly retire these semantics,
+then validate the exact composed bytes before installation.
 
 ## Historical release baseline and prior evidence
 
