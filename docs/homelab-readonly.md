@@ -12,7 +12,7 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 
 ## Current source and runtime checkpoint
 
-Canonical public `main` is `2594e33b0867ff55170acd888d8e1ceef0056089` and includes the deterministic composer and CI contract; candidate Public CI [37359442217](https://github.com/p0rkm4th/hades/actions/runs/37359442217) passed; post-promotion main CI [37359854855](https://github.com/p0rkm4th/hades/actions/runs/37359854855) passed. The actual 13-module package composed from a clean candidate source passed the existing provenance validator. This does not establish production runtime parity;
+Canonical public `main` is `ab0e098917252156e3c56b8cf1292c37ec0299ce` and includes the deterministic composer and CI contract; candidate Public CI [37359442217](https://github.com/p0rkm4th/hades/actions/runs/37359442217) passed; post-promotion main CI [37359854855](https://github.com/p0rkm4th/hades/actions/runs/37359854855) passed. The actual 13-module package composed from a clean candidate source passed the existing provenance validator. This does not establish production runtime parity;
 named-host workload renderer candidate/main Public CI runs
 [37355109128](https://github.com/p0rkm4th/hades/actions/runs/37355109128) and
 [37355337581](https://github.com/p0rkm4th/hades/actions/runs/37355337581), plus
@@ -107,7 +107,7 @@ disk bytes, not which code a running MCP process has already imported. The
 selected live package currently fails that check: 10 source files are present
 versus 13 expected, two differ, three are absent, and an extra cache directory
 is present. Its entrypoint is selected by the running profile, but loaded-memory
-parity remains unknown. Candidate `2594e33b` adds a tracked deterministic composer; a human-run adapter-only profile switch and hash-guarded rollback procedure is still absent. The synthetic copy in
+parity remains unknown. The tracked composer and guarded profile-only rollout/rollback procedure are documented but not yet exercised on production. The synthetic copy in
 `scripts/test-deployed-provenance.sh` tests only the validator; it is not a
 production rollout path. The full installer is not a safe substitute because
 it also replaces tracked overlay and asset files.
