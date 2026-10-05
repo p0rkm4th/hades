@@ -125,11 +125,11 @@
       ],
       "layer_digest_sources": [
         "hermes/sitecustomize.py",
+        "integrations/homelab_views.py",
         "integrations/grocy-mcp/launch.py",
         "integrations/grocy-mcp/requirements.lock",
         "integrations/grocy-recipe-authoring/server.py",
         "integrations/agent-zero-mcp/server.py",
-        "integrations/homelab_views.py",
         "webui/hades-theme.css",
         "webui/hades-theme.js",
         "webui/finance-upload.js",

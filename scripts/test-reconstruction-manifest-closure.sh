@@ -24,7 +24,7 @@ sources = {
     'Hermes': ['deploy/templates/hermes.service.in', 'hermes/config.yaml.example', 'scripts/install-hermes-artifact.sh'],
     'Agent Zero': ['deploy/agent-zero.compose.yaml', 'integrations/agent-zero-mcp'],
     'SearXNG': ['deploy/templates/searxng.compose.yaml', 'searxng/settings.yml'],
-    'HADES policy/assets/adapters': ['hermes/sitecustomize.py', 'integrations/grocy-mcp/launch.py', 'integrations/grocy-mcp/requirements.lock', 'integrations/grocy-recipe-authoring/server.py', 'integrations/agent-zero-mcp/server.py', 'integrations/homelab_views.py', 'webui/hades-theme.css', 'webui/hades-theme.js', 'webui/finance-upload.js', 'webui/receipt-upload.js', 'integrations/homelab-readonly', 'integrations/public-research/server.py', 'integrations/public-research/research.py', 'integrations/browser-access/proxy.py', 'integrations/browser-access/research_reader.py', 'integrations/browser-access/read-only-network.js'],
+    'HADES policy/assets/adapters': ['hermes/sitecustomize.py', 'integrations/homelab_views.py', 'integrations/grocy-mcp/launch.py', 'integrations/grocy-mcp/requirements.lock', 'integrations/grocy-recipe-authoring/server.py', 'integrations/agent-zero-mcp/server.py', 'webui/hades-theme.css', 'webui/hades-theme.js', 'webui/finance-upload.js', 'webui/receipt-upload.js', 'integrations/homelab-readonly', 'integrations/public-research/server.py', 'integrations/public-research/research.py', 'integrations/browser-access/proxy.py', 'integrations/browser-access/research_reader.py', 'integrations/browser-access/read-only-network.js'],
 }
 components = {item['component']: item for item in manifest['components']}
 if set(components) != set(sources):
@@ -52,11 +52,11 @@ if layer.get('installed_layer_files') != expected_layer_files:
     raise SystemExit('FAIL installed HADES layer file list is incomplete or out of order')
 expected_digest_sources = [
     'hermes/sitecustomize.py',
+    'integrations/homelab_views.py',
     'integrations/grocy-mcp/launch.py',
     'integrations/grocy-mcp/requirements.lock',
     'integrations/grocy-recipe-authoring/server.py',
     'integrations/agent-zero-mcp/server.py',
-    'integrations/homelab_views.py',
     'webui/hades-theme.css',
     'webui/hades-theme.js',
     'webui/finance-upload.js',
@@ -67,6 +67,18 @@ if layer.get('layer_digest_sources') != expected_digest_sources:
 installer = Path('scripts/install-hades.sh').read_text(encoding='utf-8')
 doctor = Path('scripts/hades-doctor.sh').read_text(encoding='utf-8')
 validator = Path('scripts/validate-install.sh').read_text(encoding='utf-8')
+expected_source_digest_call = (
+    'hades_layer_digest "$repo_dir/hermes/sitecustomize.py" '
+    '"$repo_dir/integrations/homelab_views.py" '
+    '"$repo_dir/integrations/grocy-mcp/launch.py" '
+    '"$repo_dir/integrations/grocy-mcp/requirements.lock" '
+    '"$repo_dir/integrations/grocy-recipe-authoring/server.py" '
+    '"$repo_dir/integrations/agent-zero-mcp/server.py" '
+    '"$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" '
+    '"$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js"'
+)
+if any(expected_source_digest_call not in text for text in (installer, doctor, validator)):
+    raise SystemExit('FAIL installer/doctor/validator digest order differs from manifest source order')
 compose = Path('deploy/templates/open-webui.compose.yaml').read_text(encoding='utf-8')
 compose_asset_names = set(re.findall(r'\$\{HADES_CONFIG_ROOT[^}]*\}/assets/([^:/]+):', compose))
 required_asset_names = {Path(item).name for item in open_webui['required_assets']}
