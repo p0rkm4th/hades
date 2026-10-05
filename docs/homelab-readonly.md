@@ -1,9 +1,10 @@
 # Homelab read-only integration plan
 
-The owner has authorized read-only activation for the current connected LAN.
-Dedicated Proxmox, NetBox, and Uptime Kuma read-only inputs are provisioned and
-their live read paths are accepted through the owner-scoped HADES route. Kuma
-is exposed to HADES through its LAN-scoped published status page only.
+The owner previously authorized read-only access to configured Proxmox,
+NetBox, and Uptime Kuma sources. Those inputs and routes were used in prior
+acceptance, but current-main package parity and fresh authenticated live
+acceptance are not verified; see the checkpoint below. Kuma access is limited
+to the configured status-page read path.
 The current upstream MCP candidate evaluation is recorded in
 [`docs/homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 

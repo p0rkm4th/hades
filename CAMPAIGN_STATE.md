@@ -7,11 +7,13 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-05 UTC
 
-Public `main` and the Aster integration branch are both at
-`d01d83b42bb4f00af4b2150ae3db30f440aedbc3`. Candidate Public CI run
-[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635)
+Public main code baseline is `d01d83b42bb4f00af4b2150ae3db30f440aedbc3`.
+Its candidate run [37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635)
 and post-promotion run
 [37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140)
+passed. This checkpoint is docs commit `339026461c2293ab96921a298d1450d629d0feb4`
+on the current-main descendant branch; Public CI run
+[37327917793](https://github.com/p0rkm4th/hades/actions/runs/37327917793)
 passed. The implementation is a current-main descendant; the unsafe historic
 GPU-parity branch was not imported or rewritten. Its old tip remains reference
 material only.

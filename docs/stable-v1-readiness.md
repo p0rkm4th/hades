@@ -27,7 +27,7 @@ rewritten.
 | SearXNG | web search | healthy, private | search results and freshness |
 | Agent Zero | bounded subordinate operator | healthy, owner-scoped | delegated task evidence |
 | LLDAP | staged/production identity foundation | private and persistent | directory identity and groups |
-| Homelab substrate | owner-only infrastructure reads | Proxmox, NetBox, and Kuma published read paths live | Proxmox runtime; NetBox intended inventory; Kuma observed availability |
+| Homelab substrate | owner-only infrastructure reads | Proxmox, NetBox, and Kuma inputs were previously configured and authorized; current-main runtime parity and fresh authenticated read acceptance are unverified | Proxmox runtime; NetBox intended inventory; Kuma observed availability |
 
 Hermes' production API listener is bound to the Docker host mapping used by
 the containerized WebUI, rather than all host interfaces; the WebUI remains
