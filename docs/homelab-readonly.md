@@ -10,20 +10,24 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-The public repository is at `2c48aaffc9be349e818baeabcdb6465913e91ad8` on
-`main`; post-promotion Public CI run
-[37341433176](https://github.com/p0rkm4th/hades/actions/runs/37341433176)
-passed. The older GPU-parity branch remains reference-only; its latest hosted
-Public CI failed public-history safety, and NYX-001 is rechecking semantic
-uniqueness before any port is considered. The homelab code baseline is
-`0e468fff97567d4f85e4e50d76d2d039d58403ec`, with post-promotion CI run
-[37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
-passed. The external-package provenance follow-up at `1b96f1eed6b74ba6df2282d7078bf19b496b06c1`
-passed candidate CI [37338721434](https://github.com/p0rkm4th/hades/actions/runs/37338721434)
-and post-promotion CI [37338894671](https://github.com/p0rkm4th/hades/actions/runs/37338894671).
-Its CLI integration test follow-up `fa2c7d710161b33e07aa29913b12509b39b810d5`
-passed candidate CI [37339416819](https://github.com/p0rkm4th/hades/actions/runs/37339416819)
-and post-promotion CI [37339622965](https://github.com/p0rkm4th/hades/actions/runs/37339622965).
+Canonical public `main` is `7127b4075b58759af5a9b9660f971f4f48f24dda`;
+post-promotion Public CI run
+[37348801344](https://github.com/p0rkm4th/hades/actions/runs/37348801344)
+passed on that exact SHA. Current-main package/runtime parity and fresh
+authenticated owner/household acceptance are not verified. No current-source
+deployment has been established. The old GPU-parity branch remains
+unpromoted at `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its latest hosted
+CI run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
+failed, and the introduced-history safety audit currently reports one
+redacted private-path/address finding. NYX-001 is independently rechecking
+semantic uniqueness before any salvage decision.
+
+The current architecture includes extracted pure Proxmox host-load and guest
+views in `integrations/homelab_views.py`, plus bounded Kuma, backup, activity,
+and inference views under `integrations/homelab-readonly/`. Hermes retains
+authorization, live source reads, identity/scope decisions, and routing. The
+adapter rejects malformed source rows locally; focused adapter, service-health,
+runtime, and safety checks are part of current Public CI.
 The host-load response extraction moves two pure renderers into
 `integrations/homelab_views.py`; Hermes keeps the route, authorization, and
 live source reads. NYX-003/008 found no P1/P2 issue. NYX-004 found no safe

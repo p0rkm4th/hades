@@ -7,11 +7,13 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-Canonical public `main` is `786afe87290a45e8d3547b8fa1317c7c8841c20c`. Candidate Public CI run [37348035481](https://github.com/p0rkm4th/hades/actions/runs/37348035481) passed; post-promotion main run [37348237613](https://github.com/p0rkm4th/hades/actions/runs/37348237613) passed. The preceding main `50919421f8478ea49a2536d5d0c24669f3bff2cc` passed candidate run [37346019937](https://github.com/p0rkm4th/hades/actions/runs/37346019937) and post-promotion run [37346207557](https://github.com/p0rkm4th/hades/actions/runs/37346207557).
+Canonical public `main` is `7127b4075b58759af5a9b9660f971f4f48f24dda`; Public CI run [37348801344](https://github.com/p0rkm4th/hades/actions/runs/37348801344) passed on that exact SHA. The active Aster worktree is clean and matches `origin/main`. The old `codex/gpu-telemetry-parity-20261004` ref remains unpromoted at `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its latest CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed, and the introduced-history safety audit has one redacted local-path/private-address finding. NYX-001 is revalidating semantic uniqueness before disposition.
+
+Current deployed Hermes-overlay and homelab-adapter hashes are **NOT VERIFIED** in this epoch. Do not infer runtime parity from green source CI.
 
 Current main includes extracted Proxmox host-load/guest views and Kuma normalization, malformed Proxmox/NetBox container/row rejection, Proxmox enum validation, partial backup-node discovery, and a household guard for named-host resource questions and context-only resource follow-ups. The latter reads only the latest user-authored turn when resolving a pronoun follow-up; assistant history does not identify a host. Generic conceptual prompts remain unblocked. NYX-008–013 and NYX-015–018 reviewed source completeness and household privacy; candidate tests prove zero model calls, no homelab dispatch, and no sentinel leakage for protected household requests.
 
-Homelab remains **PARTIAL** for owner-facing live use. Current-main runtime byte parity and fresh authenticated owner/household acceptance remain unverified. The narrow seven-chat result is on an older adapter revision and is historical evidence only. No production deployment or source ACL change occurred. The old GPU-parity branch remains reference-only; no safe unique behavior was identified for import.
+Homelab remains **PARTIAL** for owner-facing live use. Current-main runtime byte parity and fresh authenticated owner/household acceptance remain unverified. The narrow seven-chat result is on an older adapter revision and is historical evidence only. No production deployment or source ACL change occurred. No old-branch history was imported; NYX-001's current-main semantic classification remains open.
 
 No independent encrypted off-host recovery destination or recipient is configured. The owner confirms there is no off-site backup now; no recovery artifact was created. This remains an owner-managed gate, not a reconstruction or live-source pass.
 
