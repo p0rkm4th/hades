@@ -129,16 +129,16 @@ disabled; see
 ## Current next action
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI run
-`37254848424` passed. The Aster candidate is at
-`7de443d7b8bf3416c2a1287167edd5387b5303ab`, with Public CI run `37261433008`
-passing all 117 steps. Its five-document status checkpoints `a597283e` and
-`4caa896d` passed Public CI runs `37262696829` and `37262892988` (117 steps
-each). It adds a generated homelab
-package provenance guard and a deterministic household denial for owner-only
-infrastructure inventory requests. Nyx's old-line review remains pending.
-Promote only a small reviewed current-main descendant. The live adapter package remains mixed and
-its output omits `observed_at`; the household fix is not deployed and requires
-post-deployment UI verification. Preserve the deployment-local overlay while
-reconciling package parity. The old GPU telemetry line remains review-only.
+`37254848424` passed. The Aster candidate branch
+`codex/aster-homelab-checkpoint-redacted-20261004` is at
+`acf896751217db813511b190bcfa4418270ccd68`, with exact-SHA Public CI run
+`37263872345` passing all 117 steps. It contains a generated homelab package
+provenance guard and a deterministic household denial for owner-only
+infrastructure inventory requests, plus current-state documentation. Nyx's
+old-line classification and relevant code reviews remain pending. The
+candidate is not promoted or deployed. The live adapter package remains mixed
+and its output omits `observed_at`; the household fix requires post-deployment
+UI verification. Preserve the deployment-local overlay while reconciling
+package parity. The old GPU telemetry line remains review-only.
 
 Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).

@@ -5,19 +5,16 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 UTC
+## Current convergence checkpoint — 2026-10-05 04:35 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
-passed on that exact commit. The source candidate `7de443d7b8bf3416c2a1287167edd5387b5303ab`
-passed run [37261433008](https://github.com/p0rkm4th/hades/actions/runs/37261433008)
-across all 117 steps. The five current-state documents were reconciled in
-`a597283e` and passed run
-[37262696829](https://github.com/p0rkm4th/hades/actions/runs/37262696829), also
-117/117 steps. A follow-on status correction at `4caa896d` passed run
-[37262892988](https://github.com/p0rkm4th/hades/actions/runs/37262892988), also
-117/117. The integration branch is not promoted or deployed. The primary local
-checkout is preserved and is not the integration base.
+passed on that exact commit. Aster's clean integration branch
+`codex/aster-homelab-checkpoint-redacted-20261004` is at
+`acf896751217db813511b190bcfa4418270ccd68`; its exact-SHA run
+[37263872345](https://github.com/p0rkm4th/hades/actions/runs/37263872345)
+passed all 117 steps. The branch is not promoted or deployed. The primary
+local checkout is preserved and is not the integration base.
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
 candidate. Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
@@ -54,12 +51,14 @@ remains unknown, and live adapter evidence is not owner-UI or application
 health acceptance. The active deployment-local overlay must be preserved.
 
 The candidate at `10dd2fd1` extracts the pure backup formatter; its focused
-contract and hosted CI pass, with Nyx review pending. Commit `d0c74306` adds a
+contract and hosted CI pass. Commit `d0c74306` adds a
 provenance guard comparing the profile-selected generated homelab adapter's
 complete Python module set and bytes with the clean tracked package. Commit
 `7de443d7` adds a deterministic household denial for infrastructure inventory
 and administrative-detail prompts. Focused contracts, public safety, and
-hosted CI run `37261433008` pass. Neither change is deployed. A live household
+hosted CI run `37263872345` pass. Neither change is deployed. Nyx's independent
+old-line review and relevant package/privacy reviews remain pending in the
+protected coordination record. A live household
 UI prompt exposed the intent-classification gap; no concrete host data was
 returned, and fresh post-deployment UI verification remains open. Runtime
 package parity and monitor observation-time output also remain open.
@@ -73,8 +72,9 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 acceptance transcripts remain in protected operator records.
 
 **Next:** finish Nyx's old-line, package-guard, and household-privacy reviews;
-reconcile and CI-qualify the five current-state documents; promote only a small
-reviewed current-main descendant. Then deploy the reviewed household boundary
+the five current-state documents now match candidate `acf89675` and its green
+CI. Promote only a small reviewed current-main descendant. Then deploy the
+reviewed household boundary
 fix with hash-guarded rollback, recheck household denial/safe status in the live
 UI, and verify coherent runtime package parity plus `observed_at`. No
 runtime deployment has been made during this checkpoint.
