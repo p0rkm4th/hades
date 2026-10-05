@@ -5,7 +5,19 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 UTC
+## Current mission checkpoint — 2026-10-05 UTC
+
+Canonical public `origin/main` is `557d0cb0c382c4d267beb5a7651bc12be70ceea8`; Public CI run [37375570990](https://github.com/p0rkm4th/hades/actions/runs/37375570990) passed all 122 steps. Aster's pushed checkpoint candidate `codex/aster-proxmox-resource-ranking-view-20261005` at `9125026abb02574c2cb818de19867dad56483ed1`, one documentation-only commit ahead, passed push-triggered Public CI [37376227713](https://github.com/p0rkm4th/hades/actions/runs/37376227713). This local documentation refresh is newer and remains uncommitted/unqualified. The connected GitHub integration returned HTTP 403 when asked to create a PR, so no promotion occurred.
+
+The old `codex/gpu-telemetry-parity-20261004` remote ref is deleted; its preserved local tip is `345cb1b6de5f9f51ad98986c88ab9f0693461921`, based on `b903ad331dc0269becf46600bf29db8931707fef`. Its last hosted CI run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed public-history safety. Prior NYX-001 review found no safe unique capability missing from main; NYX-101 is rechecking the current delta and extraction choices. No old-line commits are being imported.
+
+Homelab remains **PARTIAL**. The last protected strict-key package inventory found 10 active adapter Python modules versus 14 in current main (four missing, two byte-different); selected disk files do not prove in-memory process bytes. Deployed overlay and adapter provenance remain unverified. The eight-prompt authenticated owner/household dogfood applies only to the currently reachable deployment, not current-main parity. No production deployment or source ACL change occurred. The private infrastructure checkout is preserved because it is dirty and includes unrelated work. The owner accepts that no independent encrypted off-site recovery target is currently available; no artifact or restore proof exists.
+
+Canonical main `557d0cb0` measures `hermes/sitecustomize.py` at 12,540 lines / 150 top-level and 217 total functions, and `integrations/homelab-readonly/server.py` at 1,864 lines / 36 top-level and 40 total. The uncommitted Aster candidate moves the pure GPU execution response into existing `integrations/homelab_views.py`, reducing `sitecustomize.py` by 71 lines; NYX-102 accepted the authority-preserving extraction and its direct/wrapper, malformed-input, and output-cap tests pass. The source/docs changes are not on main or deployed.
+
+Next: commit and push the NYX-102-accepted extraction plus current-state documentation, check exact hosted candidate CI, and fast-forward only if green and main is unchanged. Continue source/runtime provenance work without changing production.
+
+## Historical convergence checkpoint — superseded
 
 ### Published-history privacy audit
 
@@ -27,7 +39,7 @@ remain in already-published commits. Public history is not being rewritten;
 the disclosure therefore remains an unresolved privacy limitation. Do not
 describe all reachable HADES history as sanitized.
 
-### Current homelab repository checkpoint — 2026-10-05
+### Previous homelab repository checkpoint — superseded
 
 Current public `main` is `c4a6de1b2f9e1ebdff08b0367b5046b028019776`,
 fast-forwarded from the qualified Aster candidate. Candidate Public CI

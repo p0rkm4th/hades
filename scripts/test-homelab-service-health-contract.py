@@ -35,6 +35,7 @@ assert set(view_functions) == {
     '_hades_homelab_guest_inventory_response',
     '_hades_homelab_guest_index_workloads_view',
     '_hades_homelab_guest_visibility_response',
+    '_hades_homelab_gpu_execution_response',
 }
 assert [
     alias.name
@@ -590,6 +591,43 @@ assert 'not proof that a requested workload completed' in gpu_execution_answer, 
 assert 'provider reports resident model(s): synthetic-model' in gpu_execution_answer, gpu_execution_answer
 assert 'no generation request was made' in gpu_execution_answer, gpu_execution_answer
 assert 'driver health, GPU execution' in gpu_execution_answer, gpu_execution_answer
+gpu_execution_view = namespace['_hades_load_homelab_views']()._hades_homelab_gpu_execution_response
+assert gpu_execution_view({
+    'status': 'READABLE', 'retrieved_at': 'synthetic-provider-read',
+    'endpoints': [{
+        'source_identity': 'inference:fast-lane', 'status': 'READABLE',
+        'loaded_status': 'CURRENT', 'loaded_models': [{'name': 'synthetic-model'}],
+    }],
+}, {
+    'status': 'PARTIAL', 'retrieved_at': 'synthetic-gpu-read',
+    'endpoints': [
+        {'inference_id': 'fast-lane', 'status': 'READABLE', 'devices': [{
+            'index': 0, 'name': 'Synthetic GPU', 'gpu_utilization_percent': 92,
+            'memory_free_mib': 2048, 'memory_total_mib': 16384,
+        }]},
+        {'inference_id': 'deep-lane', 'status': 'UNAVAILABLE'},
+    ],
+}) == gpu_execution_answer, 'extracted GPU response must match the Hermes compatibility wrapper'
+malformed_gpu_answer = gpu_execution_view(None, {
+    'status': 'READABLE', 'endpoints': [None, {'status': 'READABLE', 'devices': [None, 'bad-row']}],
+})
+assert 'driver health and actual GPU execution are unknown' in malformed_gpu_answer, malformed_gpu_answer
+assert "couldn't read configured inference-provider status either" in malformed_gpu_answer, malformed_gpu_answer
+bounded_gpu_answer = gpu_execution_view(
+    {'status': 'READABLE', 'endpoints': [
+        {'source_identity': f'inference:provider-{index}', 'status': 'READABLE'}
+        for index in range(17)
+    ]},
+    {'status': 'PARTIAL', 'endpoints': [
+        {'inference_id': f'telemetry-{index}', 'status': 'READABLE', 'devices': [
+            {'index': device} for device in range(32)
+        ]}
+        for index in range(17)
+    ]},
+)
+assert bounded_gpu_answer.count('NVIDIA query responded') == 24, bounded_gpu_answer
+assert bounded_gpu_answer.count('provider API responding') == 16, bounded_gpu_answer
+assert 'provider-16' not in bounded_gpu_answer and 'telemetry-16' not in bounded_gpu_answer, bounded_gpu_answer
 unknown_gpu_answer = gpu_execution_response(
     {'status': 'NOT_CONFIGURED', 'endpoints': []},
     {'status': 'NOT_CONFIGURED', 'endpoints': []},

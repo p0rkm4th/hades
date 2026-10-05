@@ -5359,81 +5359,10 @@ def _hades_homelab_gpu_execution_intent(text):
 
 
 def _hades_homelab_gpu_execution_response(inventory, telemetry=None):
-    """Separate host NVIDIA query evidence from provider catalog observations."""
-    telemetry = telemetry if isinstance(telemetry, dict) else {}
-    telemetry_endpoints = telemetry.get("endpoints") if isinstance(telemetry.get("endpoints"), list) else []
-    readable_rows = []
-    unavailable_rows = []
-    for endpoint in telemetry_endpoints[:16]:
-        if not isinstance(endpoint, dict):
-            continue
-        inference_id = str(endpoint.get("inference_id") or "configured endpoint")
-        if endpoint.get("status") != "READABLE":
-            unavailable_rows.append(inference_id)
-            continue
-        devices = endpoint.get("devices") if isinstance(endpoint.get("devices"), list) else []
-        if not devices:
-            unavailable_rows.append(inference_id)
-            continue
-        for device in devices[:32]:
-            if not isinstance(device, dict):
-                continue
-            detail = f"{inference_id} GPU {device.get('index')}: NVIDIA query responded"
-            model = str(device.get("name") or "").strip()
-            if model:
-                detail += f" ({model[:80]})"
-            utilization = device.get("gpu_utilization_percent")
-            free, total = device.get("memory_free_mib"), device.get("memory_total_mib")
-            detail += f", {utilization}% utilization" if isinstance(utilization, int) and not isinstance(utilization, bool) else ", utilization unavailable"
-            if isinstance(free, int) and not isinstance(free, bool) and isinstance(total, int) and not isinstance(total, bool):
-                detail += f", {free} MiB free of {total} MiB"
-            readable_rows.append(detail)
-    if readable_rows:
-        checked_at = str(telemetry.get("retrieved_at") or "check time unavailable")[:80]
-        response = (
-            "Live host telemetry: " + "; ".join(readable_rows[:24])
-            + f". Read at {checked_at}. A responding NVIDIA query confirms the driver interface answered; utilization is a point-in-time signal, not proof that a requested workload completed."
-        )
-        if unavailable_rows or str(telemetry.get("status") or "").upper() == "PARTIAL":
-            response += " Telemetry was unavailable for: " + ", ".join(unavailable_rows[:16] or ["one or more configured endpoints"]) + "."
-    else:
-        response = (
-            "Host NVIDIA driver health and actual GPU execution are unknown because "
-            "live host-driver and GPU-process telemetry are not configured or currently unavailable."
-        )
-    if not isinstance(inventory, dict):
-        return response + " I couldn't read configured inference-provider status either."
-    endpoints = inventory.get("endpoints") if isinstance(inventory.get("endpoints"), list) else []
-    reports = []
-    for endpoint in endpoints[:16]:
-        if not isinstance(endpoint, dict):
-            continue
-        identity = str(endpoint.get("source_identity") or "").removeprefix("inference:")
-        label = " ".join(re.sub(r"[._-]+", " ", identity).split())[:80] or "Configured provider"
-        state = str(endpoint.get("status") or "UNKNOWN").upper()
-        detail = f"{label}: provider API responding" if state in {"READABLE", "HEALTHY", "OK"} else (
-            f"{label}: provider read is partial" if state in {"PARTIAL", "DEGRADED"}
-            else f"{label}: provider API status {state.casefold()}"
-        )
-        loaded_status = str(endpoint.get("loaded_status") or "UNKNOWN").upper()
-        loaded = endpoint.get("loaded_models") if isinstance(endpoint.get("loaded_models"), list) else []
-        names = [" ".join(str(model.get("name") or "").split())[:128]
-                 for model in loaded[:8] if isinstance(model, dict) and model.get("name")]
-        if loaded_status == "CURRENT":
-            detail += "; provider reports " + ("resident model(s): " + ", ".join(names) if names else "no models resident")
-        elif loaded_status == "UNSUPPORTED":
-            detail += "; provider does not expose a residency check"
-        else:
-            detail += "; residency is unknown"
-        reports.append(detail)
-    if reports:
-        response += " Current configured provider observations: " + "; ".join(reports) + "."
-    else:
-        response += f" Configured inference-provider observations are {str(inventory.get('status') or 'UNKNOWN').casefold()}; no endpoint details were returned."
-    retrieved_at = str(inventory.get("retrieved_at") or "").strip()
-    if retrieved_at:
-        response += f" Provider inventory was read at {retrieved_at[:80]}."
-    return response + " Provider catalog or residency responses do not verify driver health, GPU execution, or successful generation; no generation request was made."
+    """Preserve the Hermes entry point while delegating pure presentation."""
+    return getattr(
+        _hades_load_homelab_views(), "_hades_homelab_gpu_execution_response"
+    )(inventory, telemetry)
 
 
 def _hades_direct_homelab_gpu_execution_read(user_text, subject, scope):

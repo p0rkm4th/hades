@@ -13,16 +13,20 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 ## Current source and runtime checkpoint
 
 **Current repository checkpoint (2026-10-05):** public `main` is
-`c4a6de1b2f9e1ebdff08b0367b5046b028019776`. Its candidate Public CI run
-[37374922926](https://github.com/p0rkm4th/hades/actions/runs/37374922926)
-passed all 122 steps; post-promotion main CI
-[37375169299](https://github.com/p0rkm4th/hades/actions/runs/37375169299)
-is queued. The 14-module homelab adapter package was composed from this exact
-source with manifest digest
-`b0fd8052740e6cfd2950e308508c67f185ac3ce407e3f064e349da8a765b0a07`, but is
-not deployed. The source extracts pure Proxmox effective-permission policy
-and fails closed on malformed ACL rows or privilege values; backup task reads
-are not issued until guest scope validates.
+`557d0cb0c382c4d267beb5a7651bc12be70ceea8`; Public CI
+[37375570990](https://github.com/p0rkm4th/hades/actions/runs/37375570990)
+passed all 122 steps. Aster's pushed documentation checkpoint candidate is
+`9125026abb02574c2cb818de19867dad56483ed1`, one commit ahead, and passed
+push-triggered CI [37376227713](https://github.com/p0rkm4th/hades/actions/runs/37376227713).
+This local docs/code refresh is newer and uncommitted; the GitHub integration
+returned HTTP 403 on PR creation, so no promotion occurred. The candidate
+extracts only the pure GPU execution response into the existing view module;
+NYX-102 accepted exact parent AST behavior, with scope/subject authorization
+and tool reads left in Hermes. Focused owner/household, malformed-input, and
+bounded-output contracts pass. This candidate is not in main or deployed.
+Canonical source also includes the deterministic package composer, Proxmox
+visibility policy, malformed-ACL fail-closed behavior, and backup-task scope
+validation.
 
 A bounded authenticated owner/household run on the currently reachable
 production deployment passed eight fresh prompts: all eight persisted in their
@@ -33,15 +37,17 @@ parity. A fresh strict-key host inspection found Hermes active, but its selected
 adapter tree has 10 Python modules versus 14 in current main: four expected
 modules are absent and two files are byte-different. Overlay/package
 provenance remains unverified. No package rollout or source ACL change
-occurred. The bounded acceptance harness and synthetic redaction
-contract are in main. Follow
+occurred. The bounded acceptance harness and synthetic redaction contract are
+in main. The old GPU parity remote ref is deleted; its preserved local source
+tip has failed public-history safety and is not an integration base. Prior
+NYX-001 review found no safe unique capability missing from main; NYX-101 is
+rechecking the current delta and extraction architecture. Follow
 [`docs/homelab-package-rollout.md`](homelab-package-rollout.md) for the
 loopback-only procedure. Public history still contains the previously reported
 `.local` disclosure, with no history rewrite. Independent encrypted off-host
-recovery remains an owner-accepted limitation.
-The remainder of this checkpoint records older repository and live observations
-as historical evidence; its cited revisions and CI runs do not supersede the
-current checkpoint above.
+recovery remains an owner-accepted limitation. The remainder of this document
+records older repository and live observations as historical evidence; its
+cited revisions and CI runs do not supersede the current checkpoint above.
 
 Homelab package code revision `2594e33b` is on `main`; docs/runbook checkpoint `85c1365a` passed candidate/main CI and includes the deterministic composer and CI contract; candidate Public CI [37359442217](https://github.com/p0rkm4th/hades/actions/runs/37359442217) passed; post-promotion main CI [37359854855](https://github.com/p0rkm4th/hades/actions/runs/37359854855) passed; the runbook/checkpoint update passed candidate CI [37360970057](https://github.com/p0rkm4th/hades/actions/runs/37360970057) and latest main CI [37361152596](https://github.com/p0rkm4th/hades/actions/runs/37361152596). The actual 13-module package composed from a clean candidate source passed the existing provenance validator. This does not establish production runtime parity;
 named-host workload renderer candidate/main Public CI runs
