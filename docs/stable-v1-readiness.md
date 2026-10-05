@@ -102,7 +102,7 @@ not commit volume.
 | Web/search | OWNER-GATED | Synthetic and credential-free Hermes CLI paths pass the repaired search-only boundary, including fresh follow-up semantics and search-vs-page provenance; fresh authenticated owner-UI follow-up must confirm search freshness |
 | Bounded operator | PASS | Bounded inspection remains available and unsafe delegation is rejected before upstream dispatch; broader tasks and native A2A remain optional hardening |
 | Finance | OWNER-GATED | Approve canonical environment, data, credentials, and production scope; owner-scoped local CSV preview/import planning, native CSV/QIF/OFX/QFX/CAMT handoff, and the unregistered reconciled writer contract are dogfood-tested without production writes |
-| Homelab | PARTIAL | Public `main` is `3a43d146561033e04f27ed171954607b85c92c9a`; current-main CI [37386827640](https://github.com/p0rkm4th/hades/actions/runs/37386827640) passes. Earlier run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810) failed public-history audit because its range included one private local checkout path in a previous checkpoint commit; it is absent from current tree, and history was not rewritten. NYX-103's independently-failing-safe GPU/provider read correction is on main; its candidate CI [37379792181](https://github.com/p0rkm4th/hades/actions/runs/37379792181) passes. Current main includes the deterministic package composer, Proxmox effective-permission policy, malformed-ACL fail-closed behavior, and scoped backup task reads. Protected inspection found 10 active adapter modules versus 14 in current main (four missing, two byte-different). NYX-118 found historical exact matches only for a nine-module set, no exact tracked overlay blob, and no source-bound profile/overlay generation record; deployment lineage remains incomplete and current-main runtime parity is unverified. A candidate provenance-writer fix now binds capture to one PID and rejects process/file changes; focused tests pass, with Nyx re-review and hosted CI pending. Current `sitecustomize.py` is 12,475 lines, 65 net below the recorded 12,540-line pre-extraction baseline; it still has 150 top-level functions and 217 total. The service-placement presentation extraction is on main; classification remains in Hermes and its owner route is unchanged. Eight bounded authenticated owner/household prompts passed only on the currently reachable deployment. Prior NYX-001 found no safe unique old-branch capability missing from main; NYX-101 found no salvageable unique behavior, and NYX-102 accepted a local pure GPU response-view extraction; the extraction and independently-failing-safe partial-source fix are in main, not deployed. The old line's last CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed public-history safety and its remote ref is deleted. No independent encrypted recovery destination or recipient has been identified; available writable volumes share one physical NVMe, with no artifact or restore proof. Historical private-label matches remain published; no rewrite occurred. Keep PARTIAL until provenance, current-main UI acceptance, and remaining priority reliability work are addressed. |
+| Homelab | PARTIAL | Public `main` is `d5f8279085c9559383b1f5902631dd92f2edf944`; candidate CI [37388632877](https://github.com/p0rkm4th/hades/actions/runs/37388632877) and post-promotion CI [37388754814](https://github.com/p0rkm4th/hades/actions/runs/37388754814) pass. Current main includes the deterministic package composer, Proxmox effective-permission policy, malformed-ACL fail-closed behavior, scoped backup task reads, and the NYX-119-accepted provenance capture race fix. Protected inspection found 10 active adapter modules versus 14 in current main (four missing, two byte-different). NYX-118 found historical exact matches only for a nine-module set, no exact tracked overlay blob, and no source-bound profile/overlay generation record; deployment lineage remains incomplete and current-main runtime parity is unverified. The provenance writer binds process configuration and stable disk reads to one MainPID and explicitly reports current-disk identity, not loaded Python memory; operators must serialize capture with activation. Current `sitecustomize.py` is 12,475 lines, 65 net below the recorded 12,540-line pre-extraction baseline; it still has 150 top-level functions and 217 total. The service-placement presentation extraction is on main; classification remains in Hermes and its owner route is unchanged. Eight bounded authenticated owner/household prompts passed only on the currently reachable deployment. Prior NYX-001 found no safe unique old-branch capability missing from main; NYX-101 found no salvageable unique behavior, and NYX-102 accepted a local pure GPU response-view extraction; the extraction and independently-failing-safe partial-source fix are in main, not deployed. The old line's last CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed public-history safety and its remote ref is deleted. The owner confirmed there is currently no off-site backup and could not identify a destination or encryption recipient; no recovery artifact or restore proof exists. Historical private-label matches remain published; no rewrite occurred. Keep PARTIAL until source lineage, current-main UI acceptance, and remaining priority reliability work are addressed. |
 | Home Assistant | PARTIAL | Synthetic read-only adapter, ordinary-entity reads, stale/unavailable shaping, and security-sensitive filtering pass; connect the approved URL/token/entity allowlist and validate the deployed read path |
 | Automation | PARTIAL | The joined disposable Phase 3 path passes on two independent pristine Fedora 44 x86_64 guests with SELinux enforcing: immutable n8n and LLDAP pins, generated Epsilon package under strict transient systemd, Hermes 0.21.2 result route, authenticated Open WebUI Alpha/Beta/Gamma, shared/unshared isolation, live Beta grant revocation, and duplicate signed run replay after service restart. The second guest passed again after a real reboot with Docker automatically active. Synthetic contracts cover expired-lease UNKNOWN suppression, failure redaction, ten concurrent maximum-quota requests with replay, and post-poll schedule rollback. The resolver does not query Open WebUI-only account disable. Production Phase 3 keys, state, group mapping, endpoint, and scoped n8n credential remain unprovisioned; schedules stay inactive |
 | Recovery | PARTIAL | Synthetic identity/canonical-state restore now passes; complete private encrypted custody, retention, and full-component restore |
@@ -130,25 +130,16 @@ disabled; see
 
 ## Current next action
 
-The homelab code baseline is `d01d83b42bb4f00af4b2150ae3db30f440aedbc3`; its
-candidate and post-promotion Public CI runs
-[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635) and
-[37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140)
-passed. The documentation reconciliations passed candidate run
-[37328247716](https://github.com/p0rkm4th/hades/actions/runs/37328247716),
-post-promotion run
-[37328612554](https://github.com/p0rkm4th/hades/actions/runs/37328612554),
-and the immediately preceding checkpoint's pointer-correction run
-[37328924100](https://github.com/p0rkm4th/hades/actions/runs/37328924100).
-Use the repository's `main` ref for its current tip; this document records the
-homelab code baseline rather than trying to encode its own commit hash.
-The host-load and guest visibility/workload view extractions and Kuma
-missing/malformed timestamp tests are read-only and undeployed. NYX-007 added
-workload boundary fixtures and NYX-008 completed the pure named-host renderer
-extraction with direct/module-wrapper parity. Hermes retains authorization,
-source reads, node matching, filtering, and completeness. Fresh
-owner/household acceptance and current-main runtime package parity remain open,
-so homelab readiness remains PARTIAL.
+The current code-bearing main is `d5f8279085c9559383b1f5902631dd92f2edf944`;
+candidate CI [37388632877](https://github.com/p0rkm4th/hades/actions/runs/37388632877)
+and post-promotion main CI
+[37388754814](https://github.com/p0rkm4th/hades/actions/runs/37388754814)
+passed. NYX-119's process-bound provenance capture is accepted and green, but it
+does not establish already-loaded Python bytes or source-bound adapter/profile/
+overlay composition. Continue with source/runtime witness and read-only
+owner/household parity work. Do not deploy while complete lineage remains
+unverified. Private recovery remains owner-accepted as unavailable for now; no
+off-site destination, recipient, artifact, or restore proof exists.
 
 Continue with read-only source readiness/freshness validation. Do not claim
 production behavior changed. The owner accepts that independent encrypted
