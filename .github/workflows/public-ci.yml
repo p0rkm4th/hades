@@ -42,6 +42,8 @@ jobs:
         run: python scripts/test-homelab-service-health-contract.py
       - name: Check canonical homelab read-source composition
         run: bash scripts/test-homelab-readonly-adapter.sh
+      - name: Check pure Proxmox backup response view
+        run: python3 scripts/test-homelab-backup-view-contract.py
       - name: Test restricted GPU telemetry contract
         run: python3 scripts/test-homelab-gpu-telemetry.py
       - name: Test provider-native inference catalog contract

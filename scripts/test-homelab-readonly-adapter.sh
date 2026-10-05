@@ -368,7 +368,19 @@ os.environ["HADES_CAPABILITY_MATRIX_FILE"] = str(matrix_path)
 
 root = Path("integrations/homelab-readonly").resolve()
 sys.path.insert(0, str(root))
+import backup_view
 import server
+
+def assert_backup_view_parity(report):
+    assert backup_view.format_backup_status(report, server._bounded_text) == server.format_homelab_backup_status(report)
+
+for empty_view_input in (
+    None,
+    {"status": "NOT_CONFIGURED"},
+    {"status": "CONFIGURATION_ERROR"},
+    {"status": "READABLE", "endpoints": []},
+):
+    assert_backup_view_parity(empty_view_input)
 
 assert server._proxmox_permissions_url(
     "https://pve.example.test:8006/api2/json/cluster/resources"
@@ -640,6 +652,7 @@ assert "UPID:" not in json.dumps(backup_report)
 assert "private-user" not in json.dumps(backup_report)
 assert "private failure detail" not in json.dumps(backup_report)
 backup_text = server.format_homelab_backup_status(backup_report)
+assert_backup_view_parity(backup_report)
 assert "doesn't verify backup contents" in backup_text
 assert backup_report["retrieved_at"] in backup_text
 assert backup_report["formatted_summary"] == backup_text
@@ -660,7 +673,9 @@ def selected_backup_fetch(url, *_args, **_kwargs):
     raise AssertionError(f"unexpected selected-scope backup URL: {url}")
 
 server._fetch = selected_backup_fetch
-selected_backup = server.homelab_backup_status()["endpoints"][0]
+selected_backup_report = server.homelab_backup_status()
+selected_backup = selected_backup_report["endpoints"][0]
+assert_backup_view_parity(selected_backup_report)
 assert selected_backup["task_scope"] == "SELECTED_GUESTS"
 assert [task["guest_id"] for task in selected_backup["tasks"]] == ["102"]
 assert selected_backup["tasks_status"] == "PARTIAL"
@@ -701,6 +716,7 @@ assert outage_endpoint["unattributed_tasks"] == []
 assert sequential_outage["retrieved_at"] != sequential_success["retrieved_at"]
 assert outage_endpoint["retrieved_at"] != sequential_success["endpoints"][0]["retrieved_at"]
 outage_text = server.format_homelab_backup_status(sequential_outage)
+assert_backup_view_parity(sequential_outage)
 assert "backup-job configuration is unavailable" in outage_text
 assert "Archived vzdump task history is unavailable" in outage_text
 assert "doesn't verify backup contents" in outage_text

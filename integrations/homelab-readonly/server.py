@@ -18,6 +18,7 @@ from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 
+from backup_view import format_backup_status
 from inference_view import (
     _format_node_activity_fallback,
     _inference_monitor_is_linked_to_target,
@@ -1476,114 +1477,9 @@ def homelab_backup_status() -> dict:
 
 
 def format_homelab_backup_status(report: dict) -> str:
-    """Format bounded Proxmox backup evidence without broad DR claims."""
-    if not isinstance(report, dict):
-        return "I couldn't read the Proxmox backup status."
-    status = str(report.get("status") or "UNKNOWN").upper()
-    if status == "NOT_CONFIGURED":
-        return "Proxmox backup status isn't configured in HADES, so I can't verify Proxmox backup jobs or tasks."
-    if status == "CONFIGURATION_ERROR":
-        return "The Proxmox backup read configuration is invalid, so I can't verify backup jobs or tasks."
-    endpoints = report.get("endpoints") if isinstance(report.get("endpoints"), list) else []
-    if not endpoints:
-        return "I couldn't read any Proxmox backup sources, so backup status is unknown."
-    sentences = []
-    for endpoint in endpoints[:8]:
-        if not isinstance(endpoint, dict):
-            continue
-        source_id = _bounded_text(endpoint.get("source_id"), 100) or "configured Proxmox source"
-        endpoint_status = str(endpoint.get("status") or "UNKNOWN").upper()
-        jobs_status = str(endpoint.get("jobs_status") or "UNKNOWN").upper()
-        tasks_status = str(endpoint.get("tasks_status") or "UNKNOWN").upper()
-        task_scope = str(endpoint.get("task_scope") or "UNKNOWN").upper()
-        visible_guest_count = endpoint.get("visible_guest_count")
-        if jobs_status in {"HEALTHY", "PARTIAL"}:
-            jobs = endpoint.get("jobs") if isinstance(endpoint.get("jobs"), list) else []
-            if jobs:
-                sentences.append(f"Proxmox {source_id} reports {len(jobs)} configured vzdump job(s).")
-            else:
-                sentences.append(f"Proxmox {source_id} reports no configured vzdump jobs.")
-        else:
-            sentences.append(f"Proxmox {source_id} backup-job configuration is {jobs_status.casefold()}.")
-        if tasks_status in {"HEALTHY", "PARTIAL"}:
-            tasks = endpoint.get("tasks") if isinstance(endpoint.get("tasks"), list) else []
-            unattributed_tasks = endpoint.get("unattributed_tasks") if isinstance(endpoint.get("unattributed_tasks"), list) else []
-            if tasks:
-                latest = tasks[0]
-                task_status = str(latest.get("status") or "UNKNOWN").upper()
-                guest_id = latest.get("guest_id")
-                guest_text = f" for guest {guest_id}" if isinstance(guest_id, str) else ""
-                when = latest.get("finished_at")
-                when_text = f" at {when}" if isinstance(when, str) else ""
-                sentences.append(f"The latest visible archived vzdump task{guest_text} reported {task_status}{when_text}.")
-            elif unattributed_tasks:
-                if task_scope == "SELECTED_GUESTS":
-                    sentences.append(
-                        "No guest-attributed archived task was returned for the selected guest(s) in the bounded recent history."
-                    )
-                else:
-                    sentences.append(
-                        "No guest-attributed archived task was returned in the bounded recent history."
-                    )
-            elif task_scope == "SELECTED_GUESTS":
-                sentences.append(
-                    "No archived task was returned for the selected guest(s) in the bounded recent history."
-                )
-            elif task_scope == "PARTIAL":
-                sentences.append(
-                    "No archived task was returned in the visible guest scope in the bounded recent history."
-                )
-            elif endpoint_status == "HEALTHY":
-                sentences.append("No archived vzdump task appears in the bounded recent task history.")
-            else:
-                sentences.append("Archived vzdump task history is incomplete.")
-        else:
-            sentences.append(f"Archived vzdump task history is {tasks_status.casefold()}.")
-        if task_scope == "SELECTED_GUESTS":
-            count_text = (
-                f"{visible_guest_count} selected guest(s)"
-                if isinstance(visible_guest_count, int) and not isinstance(visible_guest_count, bool)
-                else "selected guests"
-            )
-            sentences.append(
-                f"Task history is limited to {count_text} covered by this read-only token; other guest task history is unknown."
-            )
-        elif task_scope == "PARTIAL":
-            sentences.append(
-                "Task history has partial guest coverage under this read-only token; unlisted guest task history is unknown."
-            )
-        elif task_scope == "NO_GUEST_AUDIT":
-            sentences.append(
-                "Guest backup task history is unknown because this read-only token has no VM.Audit visibility."
-            )
-        elif task_scope == "UNKNOWN":
-            sentences.append(
-                "Guest backup task history is unknown because effective VM.Audit visibility could not be verified."
-            )
-        unattributed_tasks = endpoint.get("unattributed_tasks") if isinstance(endpoint.get("unattributed_tasks"), list) else []
-        if unattributed_tasks and tasks_status in {"HEALTHY", "PARTIAL"}:
-            latest = unattributed_tasks[0]
-            task_status = str(latest.get("status") or "UNKNOWN").upper()
-            when = latest.get("finished_at")
-            when_text = f" at {when}" if isinstance(when, str) else ""
-            sentences.append(
-                "Proxmox also returned an archived vzdump task without a guest ID; "
-                f"it reported {task_status}{when_text} and cannot be attributed to a specific guest."
-            )
-        if endpoint_status == "PARTIAL":
-            sentences.append(f"The {source_id} read is partial.")
-        elif endpoint_status == "UNAVAILABLE":
-            sentences.append(f"The {source_id} backup source is unavailable.")
-    sentences.append(
-        "This covers Proxmox vzdump records only; it doesn't verify backup contents, other backup systems, off-site custody, or restoreability."
-    )
-    retrieved_at = _bounded_text(report.get("retrieved_at"), 40)
-    sentences.append(
-        f"Source reads completed at {retrieved_at}."
-        if retrieved_at else
-        "Source read time is unavailable."
-    )
-    return " ".join(sentences)
+    """Preserve the adapter entry point while delegating pure presentation."""
+    return format_backup_status(report, _bounded_text)
+
 
 def _netbox_recent_inventory_updates(since: int) -> dict:
     """Read recent NetBox device/service timestamps without exposing change payloads."""
