@@ -28,6 +28,27 @@ commit. Do not identify a deployment by a moving branch name.
   install-managed HADES layer, generated deployment records, service unit,
   install marker, and source checkout rollback metadata.
 
+Before using this procedure, inspect optional Agent Zero state without changing
+it. Require `HADES_AGENT_ZERO_OPERATOR_PROXY_ENABLED=false`, no installed or
+enabled `hades-agent-zero-operator-auth.service`, no
+`hades-agent-zero-operator-proxy` container, no files or symlinks under
+`$HADES_CONFIG_ROOT/operator-proxy/`, no ACL entry for the Hermes runtime UID
+on `$HADES_CONFIG_ROOT`, no `HADES_AGENT_ZERO_CREDENTIAL_FILE` or
+`HADES_AGENT_ZERO_OPERATOR_PASSWORD_FILE` input, and no active
+`agent-zero-client-auth.env`. If optional proxy or client-auth state is
+active/configured, stop; this homelab-only procedure does not authorize
+changing it.
+
+The canonical installer recursively normalizes Hermes profile ownership and
+modes and recursively assigns Hindsight data ownership to UID/GID 1000. Before
+rollout, inventory those trees with `lstat` semantics and require the operations
+to be no-ops: every Hermes profile object is owned by the configured runtime
+UID/GID; directories are mode 0700; regular files have no group/other bits;
+symlinks have the expected runtime owner/group. Every Hindsight data object,
+including symlinks and the root directory, must already be UID/GID 1000. Stop
+if any object would change. This procedure does not back up application data
+or authorize recursive permission repair.
+
 ## 1. Identify the live runtime
 
 Set `HADES_REPO` to the checkout configured as the Hermes working directory,
@@ -83,7 +104,10 @@ up at least:
 
 Do not copy secrets to a public location or print their values. Preserve the
 existing native data volumes; this application-layer rollout does not back up
-or replace household database contents.
+or replace household database contents. The Hermes-profile and Hindsight
+metadata preconditions above ensure recursive installer normalization does not
+change those trees. The Agent Zero precondition ensures its disable/removal
+branch and client-auth deletion branch have no applicable live state.
 
 Check that all active targets still match the captured backup hashes before
 continuing. If any target changed during preparation, stop and recapture the
@@ -237,9 +261,12 @@ Stop Hermes if it is running. Restore the previous source checkout revision
 only when its worktree remains clean. Restore the selected profile, installed
 HADES layer and overlay manifest, generated deployment records, Hermes unit,
 SearXNG settings, and install marker from the root-only backup with their
-recorded ownership and modes. Run `systemctl daemon-reload`, start Hermes, and verify the previous
-health and source identity. Do not alter unrelated containers, data volumes,
-or infrastructure sources during rollback.
+recorded ownership and modes. Since recursive ownership/mode operations were
+proven no-ops before applying, Hermes-profile and Hindsight metadata remain as
+captured. Since optional Agent Zero state was proven absent, rollback needs no
+proxy/client-auth reconstruction. Run `systemctl daemon-reload`, start Hermes,
+and verify the previous health and source identity. Do not alter unrelated
+containers, data volumes, or infrastructure sources during rollback.
 
 Keep the failed candidate and its package/build evidence for diagnosis. Do not
 delete unrelated deployment files.
