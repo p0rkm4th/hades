@@ -8442,75 +8442,11 @@ def _hades_contextual_followup_clarification(user_text, previous_user_text):
 
 
 def _hades_household_homelab_boundary_response(user_text):
-    """Fail closed without leaking household memory or tool internals."""
-    text = str(user_text or "")
-    domain = re.search(
-        r"\b(?:homelab|home\s+lab|servers?|computers?|machines?|nodes?|network|"
-        r"minecraft|hades|proxmox|netbox|uptime\s+kuma|vms?|guests?|gpus?)\b",
-        text,
-        re.IGNORECASE,
-    ) or _hades_configured_homelab_alias_match(text)
-    if not domain:
-        return None
-    private_detail = re.search(
-        r"\b(?:"
-        r"(?:private|internal)\s+(?:hostnames?|(?:ip\s+)?addresses?|topology)|"
-        r"(?:ip|ipv4|ipv6)\s+addresses?|"
-        r"proxmox\s+(?:(?:vm|guest)\s+)?ids?|(?:vm|guest)\s+(?:ids?|identifiers?)|vmids?|"
-        r"(?:admin(?:istrative)?|management)\s+services?|"
-        r"(?:server|host|node|vm|guest|infrastructure)\s+inventory|"
-        r"(?:gpu|gpus)\s+(?:placement|inventory|availability|utilization|usage|memory|vram)|"
-        r"(?:which|what)\s+(?:gpus?|gpu\s+devices?)\b.{0,60}\b"
-        r"(?:free|available|loaded|busy|utilization|usage|placement|memory|vram)|"
-        r"(?:list|show|dump|enumerate|give)\b.{0,80}\b"
-        r"(?:all|every)\s+(?:servers?|hosts?|nodes?|machines?|vms?|guests?|gpus?)"
-        r")\b",
-        text,
-        re.IGNORECASE,
+    """Delegate the pure household-safe homelab response to its view module."""
+    views = _hades_load_homelab_views()
+    return getattr(views, "_hades_household_homelab_boundary_response")(
+        user_text, re, _hades_configured_homelab_alias_match
     )
-    if private_detail:
-        return "I can't provide private infrastructure inventory or administrative details from this account."
-    status = re.search(
-        r"\b(?:okay|ok|well|working|healthy|health|status|down|up|running|online|offline|"
-        r"trouble|wrong|broken|slow|available|alive|doing|responding|reachable|"
-        r"can\s+we\s+use|which\s+.*(?:trouble|problem)|what\s+changed)\b",
-        text,
-        re.IGNORECASE,
-    )
-    location = re.search(
-        r"\b(?:where\b.{0,60}\b(?:run|running|hosted|located|live)|"
-        r"which\s+(?:computer|server|machine|node)\b.{0,60}\b(?:run|running|hosted|located|live))",
-        text,
-        re.IGNORECASE,
-    )
-    if not status and not location:
-        return None
-
-    parts = []
-    aggregate_status = re.search(
-        r"\b(?:computers?|machines?|nodes?|homelab|home\s+lab|network)\b",
-        text,
-        re.IGNORECASE,
-    )
-    if aggregate_status:
-        parts.append(
-            "I can't verify the computers' live status from this account, so I can't say whether everything is okay."
-        )
-    elif (
-        re.search(r"\bservers?\b", text, re.IGNORECASE)
-        and not re.search(r"\bminecraft\b", text, re.IGNORECASE)
-    ):
-        parts.append("I can't verify the server's live status from this account.")
-    if re.search(r"\bminecraft\b", text, re.IGNORECASE):
-        parts.append("I can't confirm that Minecraft is online from an approved live status check.")
-    if location:
-        parts.append("I can't share internal host or network details from this account.")
-    if not parts:
-        parts.append(
-            "I can't verify current infrastructure status from this account, "
-            "so I won't guess from remembered information."
-        )
-    return " ".join(parts)
 
 
 try:

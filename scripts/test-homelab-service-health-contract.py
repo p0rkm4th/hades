@@ -29,6 +29,7 @@ assert set(view_functions) == {
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_provenance_response',
     '_hades_homelab_conflict_response',
+    '_hades_household_homelab_boundary_response',
 }
 assert not any(isinstance(node, (ast.Import, ast.ImportFrom)) for node in view_tree.body)
 assert all(
