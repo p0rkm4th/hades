@@ -55,7 +55,12 @@ evidence remain unchanged.
 A separate runtime follow-up candidate adds end-to-end owner-boundary coverage
 for household and unverified-session Proxmox backup questions. The focused
 Hermes runtime contract passes with no model or homelab-tool call and no private
-details in either response. This follow-up is not yet promoted or deployed.
+details in either response. The fix is on `main` at
+`0e468fff97567d4f85e4e50d76d2d039d58403ec`; candidate CI run
+[37334351339](https://github.com/p0rkm4th/hades/actions/runs/37334351339) and
+post-promotion run
+[37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
+passed. It remains undeployed.
 
 Private-infra recovery remains owner-managed: the checkout is dirty, no
 independent encrypted off-host target has been specified, and the owner confirms

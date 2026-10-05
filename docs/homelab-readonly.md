@@ -51,7 +51,12 @@ Proxmox backup questions: household sessions receive only a generic owner
 boundary, and invalid/unverified sessions receive an explicit unable-to-verify
 answer before model or MCP dispatch. The focused Hermes runtime contract checks
 both cases for zero API calls, zero homelab dispatch, and no private fixture
-details. This follow-up is not yet promoted or deployed.
+details. It is promoted on `main` at
+`0e468fff97567d4f85e4e50d76d2d039d58403ec`; candidate CI run
+[37334351339](https://github.com/p0rkm4th/hades/actions/runs/37334351339) and
+post-promotion CI run
+[37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
+passed. It remains undeployed and adds no live-source evidence.
 
 These changes are undeployed and provide no new live homelab evidence. The last
 protected production inspection on 2026-10-05 showed an active Hermes process,
