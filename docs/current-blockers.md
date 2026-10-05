@@ -7,21 +7,22 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05
 
-Canonical public `main` is `a9a52f0cbbb09fb2a0117f69632902b0aeb7e0e9`; Public CI run `37247728530` passed. Candidate `70cab0ccbbb8b4ade68a0dd0744dc2aab612be56` extracts re-scoped homelab views; Public CI `37249123822` passed and NYX-004 accepted. NYX-001/002 are accepted, and NYX-003's re-scope is implemented: the availability classifier is shared with a household-safe route, so the extracted module has a neutral name and the hook retains all identity gates, route order, and owner-only dispatch. The old homelab branch remains review-only; no branch code/history was imported.
+Canonical public `main` is `9c8324408578c1d7cd5b65c880afa9a146c4a68c`; post-promotion Public CI run `37249668974` passed. The re-scoped homelab-view extraction is promoted. NYX-001/002/003/004 reviews are accepted; the availability classifier is shared with a household-safe route, while identity gates, route order, and owner-only dispatch remain in the hook. The old homelab branch remains review-only; no branch code/history was imported.
 
-The promoted change moves six AST-identical inference/GPU response helpers to `inference_view.py`, preserves all former adapter aliases, and has no source-reading or configuration dependency in the view module. Post-deploy, the two active adapter files matched the reviewed candidate hashes, mode/ownership remained `0640 scotty:hades-runtime`, Hermes was active, and health returned HTTP 200. Seven fresh authenticated chats passed with zero errors: four owner inference/GPU/activity checks and three household checks, each household answer passing the topology-leak guard. No overlay or infrastructure-source settings changed. The current candidate moves a separate five-function pure presentation group to `integrations/homelab_views.py`; it has not been deployed.
+The promoted change moves six AST-identical inference/GPU response helpers to `inference_view.py`, preserves all former adapter aliases, and has no source-reading or configuration dependency in the view module. Post-deploy, the two active adapter files matched the reviewed candidate hashes, mode/ownership remained `0640 scotty:hades-runtime`, Hermes was active, and health returned HTTP 200. Seven fresh authenticated chats passed with zero errors: four owner inference/GPU/activity checks and three household checks, each household answer passing the topology-leak guard. No overlay or infrastructure-source settings changed. The promoted source also moves a separate five-function pure presentation group to `integrations/homelab_views.py`; it has not been deployed because the active overlay is deployment-local and needs a compatibility review.
 
 The wider homelab campaign remains **PARTIAL** pending stale/partial-source and contradiction dogfood, native application-health and service-placement coverage, network trends, backup artifact/restoreability evidence, and ordinary-user outage acceptance. The encrypted private-infra snapshot restores bytes and modes but is on the same `/home` filesystem; independent-device custody is still open.
 
-The candidate packages `homelab_views.py` beside the installed Hermes overlay
-and includes it in the installer, validator, doctor, and source/runtime digest.
-Its test pins byte-for-byte outputs, loads the module from a configured root
-while CWD is unrelated, and confirms household routes do not invoke owner
-renderers. Candidate CI `37249123822` passed and NYX-004 accepted. A fresh
-read-only VM check found the existing Hermes runtime healthy with zero restarts;
-the new module has not been deployed. The active production overlay is a
-deployment-local composition that differs from repository `sitecustomize.py`;
-any future rollout must compose against its current bytes and validate helper
+The promoted source packages `homelab_views.py` beside the installed Hermes
+overlay and includes it in installer, validator, doctor, and source/runtime
+digest checks. Its contract pins byte-for-byte outputs, loads from the
+configured root while CWD is unrelated, and confirms household routes do not
+invoke owner renderers. Candidate CI `37249123822` and post-promotion main CI
+`37249668974` passed. A fresh read-only VM check found Hermes healthy with zero
+restarts; the new module has not been deployed. The active production overlay
+is a deployment-local composition that differs from repository
+`sitecustomize.py`; a protected compatibility review is in progress. Any
+future rollout must compose against the exact active bytes and validate helper
 semantics before installation.
 
 ## Historical release baseline and prior evidence
