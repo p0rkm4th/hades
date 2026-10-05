@@ -62,6 +62,47 @@ any object would change. This
 procedure does not back up application data or authorize recursive permission
 repair.
 
+Also establish these no-op conditions before apply:
+
+- `$HADES_OPEN_WEBUI_SECRET_SOURCE` already exists as a regular non-symlink
+  mode-0600 file, and its containing secrets directory is already mode 0700.
+  Stop if the installer would generate a replacement signing key.
+- `$HADES_CONFIG_ROOT/secrets/grocy-api-key` already exists as a regular
+  non-symlink mode-0640 file owned by `root:$HADES_HERMES_RUNTIME_GROUP`; its
+  SHA-256 must equal the protected `$HADES_GROCY_API_KEY_FILE`. Stop on any
+  mismatch rather than rotating the live Grocy credential during this rollout.
+- Config, state, backup, layer, and runtime directories already exist. The
+  config/state/backup roots already have mode 0750; `overlay`, `adapters`,
+  `assets`, state `runtime` and `compose` directories already exist at the
+  modes the installer enforces. Config root and layer groups already match the
+  Hermes runtime group. `$HADES_CONFIG_ROOT/secrets` already exists as
+  `root:$HADES_HERMES_RUNTIME_GROUP`, mode 0750. Every object recursively
+  chgrp'd below `overlay`, `adapters`, and `assets` already has the Hermes
+  runtime group; every regular file below those paths already has mode 0640.
+  Require no named/default ACL entries on the config root, its `overlay`,
+  `adapters`, `assets`, and `secrets` trees, the state/backup roots, or the
+  state `runtime` and `compose` trees. Otherwise stop; the installer changes
+  modes/group metadata outside the HADES file-content set.
+- The active `versions.env`, `hermes-config.yaml`, and `hermes.env.example`
+  already exist under `$HADES_CONFIG_ROOT`; their absence would make the
+  installer create state outside this procedure's expected update set.
+- The Open WebUI, Hindsight, and SearXNG data paths already exist as real
+  directories and are the paths currently mounted by their services. Stop if
+  any would need to be created or redirected.
+- The required Docker bridges `hades-application-net`, `hades-private`, and
+  `hades-grocy-net` already exist as local bridge networks. The installer
+  creates a missing network, so stop if any is absent or incompatible.
+- `hades-hermes.service` is already enabled and active before the planned stop.
+  The installer always enables it; do not let this application-layer rollout
+  change its boot policy.
+- All existing component Compose files render to the active effective config,
+  and Docker Compose's read-only `--dry-run up -d` plan reports no create,
+  recreate, remove, build, or pull for LLDAP, Open WebUI, Hindsight, Grocy,
+  Agent Zero, or SearXNG. Capture the sanitized plans privately. If the
+  installed Compose version cannot provide a read-only plan, or any component
+  would change, stop; this rollout does not authorize database/container
+  reconciliation. Repeat this check immediately before apply.
+
 ## 1. Identify the live runtime
 
 Set `HADES_REPO` to the checkout configured as the Hermes working directory,
@@ -108,19 +149,28 @@ up at least:
 - the installed overlay and composition manifest;
 - `overlay/homelab_views.py`, installed adapters and web assets;
 - installed versions and reconstruction manifests;
+- the existing HADES config-root `versions.env`, `hermes-config.yaml`, and
+  `hermes.env.example` files, plus the state-root `runtime` and `compose`
+  directories' metadata;
 - the Hermes systemd unit and every generated HADES deployment record that
   will be rewritten from the supplied operator inputs;
 - `$HADES_CONFIG_ROOT/searxng/settings.yml`, because the canonical installer
   regenerates this active SearXNG settings file from the protected secret;
+- `$HADES_CONFIG_ROOT/secrets/grocy-api-key` and
+  `$HADES_OPEN_WEBUI_SECRET_SOURCE`, with ownership, mode, and hash recorded;
+- existing config/state/backup root and installed-layer directory metadata,
+  including ACLs, even though the no-op preconditions above should preserve
+  them;
 - the install marker at `HADES_STATE_ROOT/install-contract`;
 - the previous source revision/tree and the prior selected adapter identity.
 
 Do not copy secrets to a public location or print their values. Preserve the
 existing native data volumes; this application-layer rollout does not back up
-or replace household database contents. The Hermes-profile and Hindsight
-metadata preconditions above ensure recursive installer normalization does not
-change those trees. The Agent Zero precondition ensures its disable/removal
-branch and client-auth deletion branch have no applicable live state.
+or replace household database contents. The installer no-op preconditions
+must be rechecked immediately before apply; a metadata or secret mismatch
+requires a separately scoped repair, not an in-place correction during this
+rollout. The Agent Zero precondition ensures its disable/removal branch and
+client-auth deletion branch have no applicable live state.
 
 Check that all active targets still match the captured backup hashes before
 continuing. If any target changed during preparation, stop and recapture the
