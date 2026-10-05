@@ -15,11 +15,12 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 **Current repository checkpoint (2026-10-05):** public `main` is
 `557d0cb0c382c4d267beb5a7651bc12be70ceea8`; Public CI
 [37375570990](https://github.com/p0rkm4th/hades/actions/runs/37375570990)
-passed all 122 steps. Aster candidate `bbac828c7144988eaccb7c501ea79f43bbeb0387` failed push-triggered
-Public CI [37378812179](https://github.com/p0rkm4th/hades/actions/runs/37378812179):
-the current-tree safety guard found one private local checkout path in the
-checkpoint. The reference is being removed before requalification; no
-promotion occurred. The candidate
+passed all 122 steps. The first candidate `bbac828c7144988eaccb7c501ea79f43bbeb0387` failed
+current-tree safety in Public CI [37378812179](https://github.com/p0rkm4th/hades/actions/runs/37378812179)
+because its checkpoint exposed a private local checkout path. The correction
+at `71816c7fff38c3b7e86b9fe6e1316a6f97a8714e` passes push-triggered CI
+[37379104048](https://github.com/p0rkm4th/hades/actions/runs/37379104048); it is
+not yet promoted or deployed. The candidate
 extracts only the pure GPU execution response into the existing view module;
 NYX-102 accepted exact parent AST behavior, with scope/subject authorization
 and tool reads left in Hermes. Focused owner/household, malformed-input, and
