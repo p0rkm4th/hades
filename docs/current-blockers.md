@@ -5,19 +5,10 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 07:55 UTC
+## Current convergence checkpoint — 2026-10-05 08:20 UTC
 
-Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact Public CI
-[37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424) passed.
-Aster integration branch `codex/aster-homelab-checkpoint-redacted-20261004` is
-based on that main. Candidate `1684f78736d015dd6ea25fa869e4a90694993cf9`
-passed exact Public CI [37277326937](https://github.com/p0rkm4th/hades/actions/runs/37277326937).
-Code candidate `b8258e8724219cd34cb31c37b9d9165736b5440e` with status checkpoint `21165bf6ce3c7ecfc09e9749dd07eee683d60d00` passed exact Public CI
-[37278311508](https://github.com/p0rkm4th/hades/actions/runs/37278311508). The installer
-preflight verifies the complete homelab Python package against tracked source,
-rejects links, and checks runtime traversal/readability. Aster independently reran
-preflight, install-source-provenance, install-failure, reconstruction closure,
-deployed provenance, syntax, current-tree safety, and introduced-history checks; all pass. The following source candidate `c5e865aca1f78a70598d50bae4a11b919039351c` moves pure guest-visibility rendering from `sitecustomize.py` into `homelab_views.py`; exact Public CI [37278760219](https://github.com/p0rkm4th/hades/actions/runs/37278760219) passed. NYX-036 package-drift doctor checks are integrated locally in `57d4c14e`, bind to the active Hermes working directory and environment-file profile, and pass focused tests. Exact Public CI `37280194670` passed for `3dac7d2f`; Nyx found and fixed the active-process false-PASS in `9d225dfc`; focused tests pass locally and hosted CI is pending. Nyx's c5 extraction review found no material issue. No source candidate is promoted or deployed.
+Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact Public CI `37254848424` passed. Aster candidate `4f3eed53be3c2c1a47d431f819ead965a8272053` is based on current main, has no exact hosted CI yet, and is not promoted or deployed. Preceding candidate `7b679f1c` passed exact CI `37280692927`. NYX-037's malformed Proxmox payload guard and NYX-036's doctor process-environment regression pass focused local contracts. NYX-038 found no new P1/P2 freshness or partial-source issue. NYX-039 verified `test-generated-deployment-records.sh` passes from a clean checkout; the earlier local failure was the expected clean-worktree preflight in this dirty checkout. Live read-only evidence shows the production Hermes process lacks `HADES_HERMES_WORKING_DIRECTORY`; the doctor correctly fails closed. Deployed adapter parity, source timestamps, and owner/household revalidation remain open. No production change occurred.
+
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
 candidate. Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)

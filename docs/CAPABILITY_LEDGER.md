@@ -7,17 +7,9 @@ state checks remain in the private acceptance record.
 Last reviewed: 2026-10-05
 
 
-## Current homelab source checkpoint — 2026-10-05 07:55 UTC
+## Current homelab source checkpoint — 2026-10-05 08:20 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed
-Public CI `37254848424`. NYX-034 candidate `1684f787` passed `37277326937`;
-NYX-035 installer closure `b8258e87` passed within status checkpoint `21165bf6`
-(Public CI `37278311508`). Candidate `c5e865ac` extracts pure Proxmox
-visibility rendering into `homelab_views.py` and passed exact CI `37278760219`.
-NYX-036 doctor-time package drift checks are integrated locally in `57d4c14e`;
-focused contracts pass, with exact Public CI `37280194670` passing for `3dac7d2f`; Nyx found and fixed the active-process false-PASS in `9d225dfc`; focused tests pass locally and hosted CI is pending. Nyx's c5 extraction review found no material
-issue. Changes remain unpromoted and undeployed; live package parity and
-owner/household revalidation remain open.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Candidate `4f3eed53` remains on the Aster branch, based on that main; exact candidate CI is pending. NYX-036 doctor checks and the test-only missing-process-environment regression, NYX-037 malformed Proxmox payload isolation, and the c5 guest-visibility view extraction are integrated locally. Focused doctor, adapter, and service-health tests pass. NYX-038 found no additional freshness/partial-source defect. NYX-039 confirmed the generated-deployment-record suite passes from a clean checkout; the earlier local failure was caused by this dirty checkout failing the installer cleanliness preflight. Production has not been updated; the live Hermes process lacks the configured working-directory environment variable and source/runtime adapter parity remains unresolved.
 
 ## Gamma transition
 

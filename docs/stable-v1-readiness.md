@@ -1,16 +1,8 @@
 # HADES stable-v1 readiness
 
-## Current homelab engineering checkpoint — 2026-10-05 07:55 UTC
+## Current homelab engineering checkpoint — 2026-10-05 08:20 UTC
 
-Canonical `origin/main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`
-(Public CI `37254848424` passed). Candidate `1684f78736d015dd6ea25fa869e4a90694993cf9`
-passed exact Public CI `37277326937`. NYX-035 installer package closure
-`b8258e87` passed with its status checkpoint in Public CI `37278311508`.
-Candidate `c5e865ac` extracts pure guest-visibility rendering into the existing
-view module and passed exact CI `37278760219`. NYX-036 doctor-time package drift
-checks are integrated locally in `57d4c14e`; focused contracts pass, with
-exact Public CI `37280194670` passed for `3dac7d2f`. Nyx found and fixed the active-process false-PASS in `9d225dfc`; focused tests pass locally and hosted CI is pending. Nothing is promoted or
-deployed. Live package parity and owner/household revalidation remain open.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Aster candidate `4f3eed53` is based on that SHA; exact candidate CI is pending. The candidate contains the pure guest-visibility extraction, NYX-036 doctor package/process verification, and NYX-037 malformed Proxmox payload isolation; focused contracts pass locally. NYX-038 found no additional freshness or partial-source failure gap. NYX-039 verified the generated-deployment-record test passes from a clean checkout; the earlier failure was caused by running it from a dirty worktree. No production deployment or main promotion occurred. Live read-only evidence found the active Hermes process lacks `HADES_HERMES_WORKING_DIRECTORY`; adapter parity and fresh Kuma timestamps also remain open. Owner/household revalidation is outstanding.
 
 This is a readiness record for the deployment, not an installer or a new
 runtime layer. Most component observations below were last rechecked read-only

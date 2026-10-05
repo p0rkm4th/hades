@@ -9,20 +9,7 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Aster integration branch `codex/aster-homelab-checkpoint-redacted-20261004`
-is based on `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`
-(Public CI `37254848424` passed). Candidate `1684f78736d015dd6ea25fa869e4a90694993cf9`
-passed exact Public CI `37277326937`. Code candidate `b8258e8724219cd34cb31c37b9d9165736b5440e` with status
-checkpoint `21165bf6ce3c7ecfc09e9749dd07eee683d60d00` passed exact Public CI
-`37278311508`; local installer/provenance/reconstruction/safety checks pass.
-NYX-036 doctor-time package drift checks are integrated locally in `57d4c14e`
-and bind the package check to the active Hermes working directory and profile
-environment file. Focused tests pass; exact Public CI `37280194670` passed for
-`3dac7d2f`. Nyx found and fixed the active-process false-PASS in `9d225dfc`; focused tests pass locally and hosted CI is pending.
-The c5 extraction review found no material issue. The pure guest-visibility response
-formatter is extracted into the existing view module in
-`c5e865aca1f78a70598d50bae4a11b919039351c`, which passed exact Public CI
-`37278760219`. No candidate change is deployed or promoted.
+Aster candidate `4f3eed53be3c2c1a47d431f819ead965a8272053` is based on canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` (exact main CI `37254848424` passed). Candidate CI is pending; no promotion or deployment occurred. The candidate includes the c5 guest-visibility renderer extraction, NYX-036 doctor process/package checks, and NYX-037 fail-closed handling for malformed Proxmox resource payloads. Focused doctor, adapter, and service-health contracts pass locally. NYX-038 reviewed timestamp freshness and partial outages and found no new P1/P2 issue. NYX-039 verified the deployment-record test passes from a clean checkout; the earlier local run stopped at the expected dirty-worktree preflight. Read-only live inspection found the Hermes process missing `HADES_HERMES_WORKING_DIRECTORY`, despite its cwd matching the active unit. Canonical service regeneration is required before doctor acceptance; deployed adapter/source parity and fresh Kuma observation timestamps remain unverified.
 
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` and its CI run
