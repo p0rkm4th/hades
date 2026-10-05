@@ -5,7 +5,7 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 05:25 UTC
+## Current convergence checkpoint — 2026-10-05 05:29 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
@@ -17,19 +17,21 @@ passed all 117 steps. This extracts the deterministic household homelab
 response into the already packaged view module while retaining the early
 scope guard; the candidate also tests that missing Kuma observation time
 remains `UNKNOWN`. Previous source/test candidate `725f8357` passed
-`37266372854`; latest reconciled docs checkpoint `27fd243e` passed
-`37267473986`.
+`37266372854`; latest reconciled docs checkpoint `ba7d4e3b` passed
+`37267996626`.
 The branch is not promoted or deployed. The primary local checkout is
 preserved and is not the integration base.
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
 candidate. Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
-failed at `Check public history`; Aster and Nyx are classifying semantic
-differences separately. Its final tree also removes Kuma `observed_at` and
-NetBox pagination-coverage semantics that current main and focused tests
-preserve. No wholesale import is planned. Its duplicated inference view code
-is less complete than main's freshness/provenance behavior, and deleting the
-extracted view modules concentrates more code in the MCP server.
+failed at `Check public history`; Aster has completed a preliminary semantic
+classification and awaits Nyx's independent challenge. Its final tree removes
+Kuma `observed_at` and NetBox pagination-coverage semantics that current main
+and focused tests preserve. No wholesale import is planned. Its duplicated
+inference view code is less complete than main's freshness/provenance behavior,
+and deleting the extracted view modules concentrates more code in the MCP
+server. The old tip also removes `homelab_views.py` from installer, doctor,
+validator, and manifest closure checks, weakening the reconstruction contract.
 
 A fresh source/test comparison found two additional old-line regressions.
 Its named service-health helper removes the owner-scope guard, and its route

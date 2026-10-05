@@ -17,8 +17,8 @@ from freshness. The current Aster source/test candidate is
 `37267763664` passed all 117 steps. It moves the household-safe response body
 into the already packaged pure view module, retains the early household scope
 guard, and includes a missing-Kuma-observation-time `UNKNOWN` case. Earlier
-candidate `725f8357` passed `37266372854`; docs checkpoint `27fd243e` passed
-`37267473986`. Provider extraction `f700e892` passed duplicate runs
+candidate `725f8357` passed `37266372854`; docs checkpoint `ba7d4e3b` passed
+`37267996626`. Provider extraction `f700e892` passed duplicate runs
 `37264553916` and `37264554854`. The candidate includes the pure
 backup-summary formatter extraction, the provider-native read-only inference
 catalog boundary, a provenance check comparing the profile-selected generated
