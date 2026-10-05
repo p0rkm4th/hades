@@ -14,8 +14,10 @@ passed run [37261433008](https://github.com/p0rkm4th/hades/actions/runs/37261433
 across all 117 steps. The five current-state documents were reconciled in
 `a597283e` and passed run
 [37262696829](https://github.com/p0rkm4th/hades/actions/runs/37262696829), also
-117/117 steps. The integration branch is not promoted or deployed. The primary
-local checkout is preserved and is not the integration base.
+117/117 steps. A follow-on status correction at `4caa896d` passed run
+[37262892988](https://github.com/p0rkm4th/hades/actions/runs/37262892988), also
+117/117. The integration branch is not promoted or deployed. The primary local
+checkout is preserved and is not the integration base.
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
 candidate. Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
