@@ -121,7 +121,9 @@ TaskStore source so task-route behavior has an artifact identity. The required
 `--hermes-profile` must resolve to `HERMES_HOME/profiles/<name>/config.yaml`,
 where `<name>` is selected by the running Hermes process's `-p` or `--profile`
 argument. Only its SHA-256 is added to the record; profile contents, private
-endpoints, and secret references are not returned. This distinguishes
+endpoints, and secret references are not returned. The complete record is
+written only to the selected mode-`0600` output file; stdout contains a fixed
+success line rather than the record or private fields. This distinguishes
 deployments that share code but use different MCP registrations or activation
 settings. The record's private `mcp_runtime` list identifies enabled local MCP
 source paths and hashes, external executable hashes, and HTTP endpoint hashes.

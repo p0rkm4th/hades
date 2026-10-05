@@ -232,7 +232,25 @@ python scripts/write-deployed-provenance.py \
   --manifest "$source_repo/config/reconstruction-manifest.json" \
   --epsilon-manifest "$tmp/phase3-runtime-manifest.json" \
   --deployment-path /srv/hades \
-  --service hades-hermes.service >/dev/null
+  --service hades-hermes.service >"$tmp/provenance.stdout"
+test "$(cat "$tmp/provenance.stdout")" = 'PASS deployed provenance artifact written (mode=0600)' || {
+  echo 'FAIL provenance writer did not emit its safe success summary' >&2
+  exit 1
+}
+if grep -Eq '"(deployment_path|hermes_executable|mcp_runtime|infra_sha)"|/srv/hades|"mcp_runtime_sha256"' "$tmp/provenance.stdout"; then
+  echo 'FAIL provenance writer emitted protected artifact details to stdout' >&2
+  exit 1
+fi
+python - "$tmp/provenance.json" <<'PY'
+import json, sys
+from pathlib import Path
+artifact = Path(sys.argv[1])
+assert artifact.stat().st_mode & 0o777 == 0o600
+value = json.loads(artifact.read_text())
+assert value["deployment_path"] == "/srv/hades"
+assert value["mcp_runtime"]
+print("PASS protected provenance is persisted while stdout stays redacted")
+PY
 if python scripts/write-deployed-provenance.py \
   --output "$tmp/wrong-provenance.json" \
   --hades-sha "$hades_sha" \

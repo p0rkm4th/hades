@@ -580,7 +580,10 @@ def main() -> int:
         if os.path.exists(temp_name):
             os.unlink(temp_name)
     args.output.chmod(0o600)
-    print(json.dumps(artifact, sort_keys=True))
+    # The protected record contains deployment paths, executable identity,
+    # private source fingerprints, and runtime registrations. Keep it in the
+    # mode-0600 artifact; command logs should receive only a safe summary.
+    print("PASS deployed provenance artifact written (mode=0600)")
     return 0
 
 

@@ -137,6 +137,9 @@ the target before proceeding. Keep the package immutable after composition.
   source revision. Start from the documented
   invocation in [`docs/hermes-overlay-inventory.md`](hermes-overlay-inventory.md)
   and supply `--homelab-package-root` for the selected external package.
+  The complete provenance record is stored only in its protected mode-`0600`
+  output file; stdout is a fixed success message. Treat the record as private
+  because it contains deployment paths and source/runtime fingerprints.
 - Verify the Hermes service is active and the selected MCP starts from the new
   package. Make a fresh read-only homelab request and confirm its result is
   well formed and grounded in the configured sources.
