@@ -648,6 +648,49 @@ try:
     assert 'driver health and actual GPU execution are unknown' in direct_gpu_answer, direct_gpu_answer
     assert gpu_registry_calls == ['homelab_gpu_telemetry', 'homelab_inference_inventory'], gpu_registry_calls
     gpu_registry_calls.clear()
+
+    def telemetry_failure_with_provider(name):
+        gpu_registry_calls.append(name)
+        if name == 'homelab_gpu_telemetry':
+            raise TimeoutError('synthetic telemetry outage')
+        return {'status': 'READABLE', 'retrieved_at': 'synthetic-provider-read', 'endpoints': [
+            {'source_identity': 'inference:fast-lane', 'status': 'READABLE'}
+        ]}
+
+    namespace['_hades_direct_homelab_tool_result'] = telemetry_failure_with_provider
+    telemetry_outage_answer = direct_gpu_execution(
+        'Is the NVIDIA driver responding?', 'synthetic-owner', 'owner'
+    )
+    assert 'driver health and actual GPU execution are unknown' in telemetry_outage_answer, telemetry_outage_answer
+    assert 'fast lane: provider API responding' in telemetry_outage_answer, telemetry_outage_answer
+    assert "couldn't read configured inference-provider status either" not in telemetry_outage_answer, telemetry_outage_answer
+    assert gpu_registry_calls == ['homelab_gpu_telemetry', 'homelab_inference_inventory'], gpu_registry_calls
+
+    gpu_registry_calls.clear()
+    def provider_failure_with_telemetry(name):
+        gpu_registry_calls.append(name)
+        if name == 'homelab_inference_inventory':
+            raise TimeoutError('synthetic provider outage')
+        return {'status': 'READABLE', 'retrieved_at': 'synthetic-gpu-read', 'endpoints': [{
+            'inference_id': 'fast-lane', 'status': 'READABLE', 'devices': [{
+                'index': 0, 'name': 'Synthetic GPU', 'gpu_utilization_percent': 42,
+                'memory_free_mib': 4096, 'memory_total_mib': 16384,
+            }]
+        }]}
+
+    namespace['_hades_direct_homelab_tool_result'] = provider_failure_with_telemetry
+    provider_outage_answer = direct_gpu_execution(
+        'Is the NVIDIA driver responding?', 'synthetic-owner', 'owner'
+    )
+    assert 'Live host telemetry: fast-lane GPU 0: NVIDIA query responded' in provider_outage_answer, provider_outage_answer
+    assert "couldn't read configured inference-provider status either" in provider_outage_answer, provider_outage_answer
+    assert gpu_registry_calls == ['homelab_gpu_telemetry', 'homelab_inference_inventory'], gpu_registry_calls
+
+    gpu_registry_calls.clear()
+    namespace['_hades_direct_homelab_tool_result'] = lambda name: (
+        gpu_registry_calls.append(name)
+        or {'status': 'NOT_CONFIGURED', 'endpoints': []}
+    )
     assert direct_gpu_execution(
         'Is the NVIDIA driver responding?', 'synthetic-household', 'household'
     ) is None

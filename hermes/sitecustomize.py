@@ -5371,10 +5371,14 @@ def _hades_direct_homelab_gpu_execution_read(user_text, subject, scope):
         return None
     try:
         telemetry = _hades_direct_homelab_tool_result("homelab_gpu_telemetry")
+    except Exception as exc:
+        _hades_logger.warning("Owner GPU telemetry read failed: %s", type(exc).__name__)
+        telemetry = {"status": "UNAVAILABLE", "endpoints": []}
+    try:
         inventory = _hades_direct_homelab_tool_result("homelab_inference_inventory")
     except Exception as exc:
-        _hades_logger.warning("Owner GPU execution read failed: %s", type(exc).__name__)
-        return "I couldn't verify current NVIDIA telemetry or inference-provider status."
+        _hades_logger.warning("Owner inference inventory read failed: %s", type(exc).__name__)
+        inventory = None
     return _hades_homelab_gpu_execution_response(inventory, telemetry)
 
 
