@@ -4737,6 +4737,14 @@ def _hades_service_monitor_response(user_text, resources, summary=None, scope="o
     monitor_name, availability, freshness = matches[0]
     observed_status = str(availability.get("status") or "unknown").casefold()
     timestamp = " ".join(str(availability.get("last_updated") or "").split())[:64]
+    if timestamp:
+        from datetime import datetime
+        try:
+            datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        except ValueError:
+            # Retain malformed source data for diagnostics, but don't present
+            # it to the owner as a meaningful timestamp.
+            timestamp = ""
     checked = f" The last observation is timestamped {timestamp}." if timestamp else ""
     label = " ".join(monitor_name.split())[:80] or target
     if freshness != "FRESH":

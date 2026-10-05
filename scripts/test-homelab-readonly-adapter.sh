@@ -66,6 +66,20 @@ future = module.summarize(
     now=now,
 )
 assert future["resources"][0]["availability_freshness"] == "UNKNOWN"
+for heartbeat in ({"name": "untimed-probe", "status": "up"}, {
+    "name": "malformed-time-probe", "status": "up", "last_updated": "not-a-timestamp",
+}):
+    untimed = module.summarize(
+        {"data": []}, {"results": []}, {"monitors": [heartbeat]}, now=now,
+    )
+    observation = untimed["availability_summary"][0]
+    assert observation["status"] == "up", observation
+    assert observation["freshness"] == "UNKNOWN", observation
+    if "last_updated" in heartbeat:
+        assert observation["observed_at"] == heartbeat["last_updated"], observation
+    else:
+        assert "observed_at" not in observation, observation
+    assert untimed["resources"][0]["availability_freshness"] == "UNKNOWN", untimed
 duplicate_guest_names = module.summarize(
     {"data": [
         {"type": "qemu", "vmid": 100, "name": "synthetic-core-node", "node": "hypervisor-alpha", "status": "stopped"},
@@ -231,7 +245,7 @@ assert config.proxmox_source_ids() == ("alpha", "beta")
 print("PASS homelab adapter preserves runtime/inventory/availability authority")
 print("PASS homelab adapter discloses node conflict and stale Kuma observation")
 print("PASS Proxmox runtime exposes configured guest without inventing a NetBox record")
-print("PASS future monitoring observations fail closed as unknown")
+print("PASS future, missing, and malformed monitoring timestamps fail closed as unknown")
 print("PASS duplicate guest display names preserve each stable Proxmox identity")
 print("PASS explicit Proxmox-to-NetBox identity links correlate hosts without collapsing service monitors")
 print("PASS stable same-name records remain unlinked without an explicit crosswalk")
@@ -308,6 +322,7 @@ import sys
 import tempfile
 import types
 from pathlib import Path
+from datetime import datetime, timezone
 
 # Keep this public acceptance test independent of Hermes, MCP, PyYAML, and the
 # sibling private hades-infra checkout. Only the adapter behavior under test is
@@ -442,6 +457,29 @@ assert kuma["monitors"] == [
     {"name": "host-beta", "status": "down", "last_updated": "2026-09-16 09:00:01.000", "monitor_type": "ping", "id": "8", "source_identity": "kuma:monitor:8"},
 ]
 assert server._kuma_config_url() == "https://status.example.test/api/status-page/hades-status"
+timestamp_quality_kuma = server._normalize_kuma_status({
+    "publicGroupList": [{"monitorList": [
+        {"id": 9, "name": "missing-time-probe", "type": "ping"},
+        {"id": 10, "name": "malformed-time-probe", "type": "ping"},
+    ]}],
+    "heartbeatList": {
+        "9": [{"status": 1}],
+        "10": [{"status": 1, "time": "not-a-timestamp"}],
+    },
+})
+timestamp_quality_summary = server.summarize(
+    {"data": []}, {"results": []}, timestamp_quality_kuma,
+    now=datetime.now(timezone.utc),
+)
+timestamp_quality = {
+    item["name"]: item for item in timestamp_quality_summary["availability_summary"]
+}
+assert timestamp_quality["missing-time-probe"]["status"] == "up"
+assert timestamp_quality["missing-time-probe"]["freshness"] == "UNKNOWN"
+assert "observed_at" not in timestamp_quality["missing-time-probe"]
+assert timestamp_quality["malformed-time-probe"]["status"] == "up"
+assert timestamp_quality["malformed-time-probe"]["freshness"] == "UNKNOWN"
+assert timestamp_quality["malformed-time-probe"]["observed_at"] == "not-a-timestamp"
 assert server._proxmox_source_identity("alpha", {"type": "node", "id": "node/alpha"}) == "proxmox:alpha:node:alpha"
 assert server._proxmox_source_identity("alpha", {"type": "qemu", "id": "qemu/102"}) == "proxmox:alpha:qemu:102"
 assert server._proxmox_source_identity("", {"type": "node", "node": "alpha"}) is None

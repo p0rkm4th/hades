@@ -1106,6 +1106,17 @@ compact_stale = answer('Is Minecraft online?', [], {
 }, 'owner')
 assert 'observation is stale' in compact_stale and "can't verify current service health" in compact_stale, compact_stale
 assert 'configured check for Minecraft Server is up' not in compact_stale, compact_stale
+compact_unknown_time = answer('Is Minecraft online?', [], {
+    **compact_minecraft_summary,
+    'availability_summary': [{
+        'name': 'Minecraft Server', 'status': 'up', 'freshness': 'UNKNOWN',
+        'observed_at': 'not-a-timestamp',
+    }],
+}, 'owner')
+assert 'observation is unknown' in compact_unknown_time, compact_unknown_time
+assert "can't verify current service health" in compact_unknown_time, compact_unknown_time
+assert 'configured check for Minecraft Server is up' not in compact_unknown_time, compact_unknown_time
+assert 'timestamped' not in compact_unknown_time, compact_unknown_time
 
 unmonitored = answer('Is Jellyfin healthy enough for tonight?', fresh_minecraft)
 assert 'couldn\'t verify a current Uptime Kuma service monitor matching jellyfin' in unmonitored, unmonitored
