@@ -10,15 +10,18 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Current public `main` is `b3346706f5ba28fb579c1aa49e09c4ade7308169`.
-The code baseline `d01d83b42bb4f00af4b2150ae3db30f440aedbc3` passed candidate
-run [37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635)
-and post-promotion run
-[37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140).
-The documentation reconciliation passed candidate run
-[37328247716](https://github.com/p0rkm4th/hades/actions/runs/37328247716)
-and post-promotion run
-[37328612554](https://github.com/p0rkm4th/hades/actions/runs/37328612554).
+The homelab code baseline is `d01d83b42bb4f00af4b2150ae3db30f440aedbc3`; its
+candidate and post-promotion Public CI runs
+[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635) and
+[37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140)
+passed. The documentation reconciliations passed candidate run
+[37328247716](https://github.com/p0rkm4th/hades/actions/runs/37328247716),
+post-promotion run
+[37328612554](https://github.com/p0rkm4th/hades/actions/runs/37328612554),
+and the immediately preceding checkpoint's pointer-correction run
+[37328924100](https://github.com/p0rkm4th/hades/actions/runs/37328924100).
+Use the repository's `main` ref for its current tip; this document records the
+homelab code baseline rather than trying to encode its own commit hash.
 The host-load response extraction moves two pure renderers into
 `integrations/homelab_views.py`; Hermes keeps the route, authorization, and
 live source reads. NYX-003/008 found no P1/P2 issue. NYX-004 found no safe

@@ -7,17 +7,19 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-05 UTC
 
-Public `main` is `b3346706f5ba28fb579c1aa49e09c4ade7308169`. The code
-baseline `d01d83b42bb4f00af4b2150ae3db30f440aedbc3` passed candidate run
-[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635)
-and post-promotion run
-[37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140).
-Documentation commit `b3346706` reconciles live-acceptance and source-parity
-claims; candidate run
-[37328247716](https://github.com/p0rkm4th/hades/actions/runs/37328247716)
-and post-promotion run
-[37328612554](https://github.com/p0rkm4th/hades/actions/runs/37328612554)
-passed. The implementation is a current-main descendant; the unsafe historic
+The homelab code baseline is `d01d83b42bb4f00af4b2150ae3db30f440aedbc3`;
+its candidate and post-promotion Public CI runs
+[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635) and
+[37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140)
+passed. The live-acceptance documentation reconciliation passed candidate run
+[37328247716](https://github.com/p0rkm4th/hades/actions/runs/37328247716) and
+post-promotion run
+[37328612554](https://github.com/p0rkm4th/hades/actions/runs/37328612554).
+The immediately preceding branch-pointer correction passed Public CI run
+[37328924100](https://github.com/p0rkm4th/hades/actions/runs/37328924100).
+Use `main` for the exact current public tip; this checkpoint names the stable
+code baseline and avoids a self-referential docs commit SHA.
+The implementation is a current-main descendant; the unsafe historic
 GPU-parity branch was not imported or rewritten. Its old tip remains reference
 material only.
 
