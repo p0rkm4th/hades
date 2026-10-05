@@ -7,7 +7,7 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05
 
-Latest validated public `main` is `0d395a1a759d541630d643624d4fd872a1abb7e6`; Public CI run `37250678692` passed. The re-scoped homelab-view extraction is promoted. NYX-001/002/003/004 reviews are accepted; NYX-005/006 advise a re-scope before runtime composition. The availability classifier is shared with a household-safe route, while identity gates, route order, and owner-only dispatch remain in the hook. The old homelab branch remains review-only; no branch code/history was imported.
+Latest validated public `main` is `efbcb19cfcb8a52893265aa807eb62159dee9c9a`; Public CI run `37251054983` passed. The re-scoped homelab-view extraction is promoted. NYX-001/002/003/004 reviews are accepted; NYX-005/006 advise a re-scope before runtime composition. The availability classifier is shared with a household-safe route, while identity gates, route order, and owner-only dispatch remain in the hook. The old homelab branch remains review-only; no branch code/history was imported.
 
 The promoted change moves six AST-identical inference/GPU response helpers to `inference_view.py`, preserves all former adapter aliases, and has no source-reading or configuration dependency in the view module. Post-deploy, the two active adapter files matched the reviewed candidate hashes, mode/ownership remained `0640 scotty:hades-runtime`, Hermes was active, and health returned HTTP 200. Seven fresh authenticated chats passed with zero errors: four owner inference/GPU/activity checks and three household checks, each household answer passing the topology-leak guard. No overlay or infrastructure-source settings changed. The promoted source also moves a separate five-function pure presentation group to `integrations/homelab_views.py`; it has not been deployed because the active overlay is deployment-local and needs a compatibility review.
 
@@ -43,6 +43,13 @@ two-argument formatter. Household denials remain fail-closed but have different
 copy. NYX-007 is classifying which deltas belong in generic source. Any future
 rollout must preserve or explicitly retire the applicable semantics, then
 validate the exact composed bytes before installation.
+
+The generic conflict response now preserves unknown when the source summary or
+conflict records are missing/malformed, or configured sources/guest visibility
+are incomplete. It keeps known disagreements while stating the coverage gap.
+Synthetic contract coverage and Public CI pass at `efbcb19c`; this source
+change is not deployed because of the outstanding active-overlay compatibility
+gaps above.
 
 ## Historical release baseline and prior evidence
 
