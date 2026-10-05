@@ -13,8 +13,8 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 ## Current source and runtime checkpoint
 
 **Current repository checkpoint (2026-10-05):** public `main` is
-`d708246f4ade0dabe90deecf9451bb3ec3ef4d4e`. Post-promotion Public CI
-[37380311483](https://github.com/p0rkm4th/hades/actions/runs/37380311483)
+`0defe858b0f4fd9d8776af6900dbfed675582c49`. Current-main Public CI
+[37380698635](https://github.com/p0rkm4th/hades/actions/runs/37380698635)
 passes. An earlier main run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810)
 failed the public-history audit because its range contained one private local
 checkout path from an earlier checkpoint commit. It is absent from the current
@@ -40,8 +40,14 @@ NYX-001 review found no safe unique capability missing from main; NYX-101 found 
 local authority-preserving extraction. Follow
 [`docs/homelab-package-rollout.md`](homelab-package-rollout.md) for the
 loopback-only procedure. Public history still contains the previously reported
-`.local` disclosure, with no history rewrite. Independent encrypted off-host
-recovery remains an owner-accepted limitation. The remainder of this document
+`.local` disclosure, with no history rewrite. Current source measurements are:
+`hermes/sitecustomize.py` is 12,473 lines (71 removed by the pure GPU
+response-view extraction and four net lines later added for independent
+source-failure handling), with 150 top-level functions and 217 total. The
+read-only adapter has 14 modules; `server.py` is 1,864 lines with 36 top-level
+functions. Proxmox visibility is an existing domain-policy extraction; defer
+further orchestration extraction until runtime package provenance is resolved.
+Independent encrypted off-host recovery remains an owner-accepted limitation. The remainder of this document
 records older repository and live observations as historical evidence; its
 cited revisions and CI runs do not supersede the current checkpoint above.
 
