@@ -12,12 +12,15 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 
 ## Current source and runtime checkpoint
 
-**Current repository checkpoint (2026-10-05):** HADES `main` and the clean
-candidate branch are at `0295a4ae757cc665553045e40f5263e39c437e0e`.
-Candidate Public CI [37367162037](https://github.com/p0rkm4th/hades/actions/runs/37367162037)
-passed on this exact SHA. Post-promotion main CI
+**Current repository checkpoint (2026-10-05):** public `main` code baseline
+is `0295a4ae757cc665553045e40f5263e39c437e0e`. Candidate Public CI
+[37367162037](https://github.com/p0rkm4th/hades/actions/runs/37367162037)
+passed on that exact source SHA; post-promotion main CI
 [37367398725](https://github.com/p0rkm4th/hades/actions/runs/37367398725)
-is still queued; it is not counted as a pass. The current-main 13-module
+is still queued, not a pass. The documentation checkpoint candidate is
+`ecb50ad16037129e326b6c250e3c6034a78282de`; its CI
+[37368769136](https://github.com/p0rkm4th/hades/actions/runs/37368769136)
+is queued. The current-main 13-module
 adapter package was composed locally with manifest digest
 `d3a81bed0383ca1c998c90e5c0ff8830962bd0f91611866d9f324b712f4bf000`;
 this is preparation only. No production files or source access were changed.

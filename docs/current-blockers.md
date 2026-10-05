@@ -29,12 +29,15 @@ describe all reachable HADES history as sanitized.
 
 ### Current homelab repository checkpoint — 2026-10-05
 
-Current public `main` and the clean candidate branch are at
-`0295a4ae757cc665553045e40f5263e39c437e0e`. Candidate Public CI
+Current public `main` code baseline is
+`0295a4ae757cc665553045e40f5263e39c437e0e`; its candidate Public CI
 [37367162037](https://github.com/p0rkm4th/hades/actions/runs/37367162037)
-passed on that exact SHA; post-promotion main CI
+passed and post-promotion main CI
 [37367398725](https://github.com/p0rkm4th/hades/actions/runs/37367398725)
-remains queued and is not a pass. The 13-module adapter package was composed
+remains queued. The documentation checkpoint candidate is
+`ecb50ad16037129e326b6c250e3c6034a78282de`; its Public CI
+[37368769136](https://github.com/p0rkm4th/hades/actions/runs/37368769136)
+is queued. Neither queued run is a pass. The 13-module adapter package was composed
 from the exact current source with manifest digest
 `d3a81bed0383ca1c998c90e5c0ff8830962bd0f91611866d9f324b712f4bf000`; this
 local artifact is not deployed. Nyx-4's route review found no complete
