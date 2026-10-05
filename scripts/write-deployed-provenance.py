@@ -237,6 +237,121 @@ def profile_args(block: str, name: str) -> list[str]:
     return result
 
 
+def homelab_source_package_files(repo: Path) -> dict[str, str]:
+    """Return the committed Python files that make up the homelab adapter."""
+    package_relative = "integrations/homelab-readonly"
+    package_directory = repo / package_relative
+    for directory in (repo / "integrations", package_directory):
+        if directory.is_symlink() or not directory.is_dir():
+            raise SystemExit("homelab MCP source package path is missing or not a real directory")
+    listed = subprocess.run(
+        ["git", "-C", str(repo), "ls-files", "-z", "--", package_relative],
+        check=False,
+        capture_output=True,
+    )
+    if listed.returncode != 0:
+        raise SystemExit("homelab MCP package membership could not be verified")
+
+    source_files: dict[str, str] = {}
+    for raw_path in listed.stdout.split(b"\0"):
+        if not raw_path:
+            continue
+        try:
+            relative = raw_path.decode("utf-8", errors="strict")
+        except UnicodeError:
+            raise SystemExit("homelab MCP package has an invalid tracked path") from None
+        if not relative.startswith(package_relative + "/") or not relative.endswith(".py"):
+            continue
+        candidate = repo / relative
+        try:
+            resolved_candidate = candidate.resolve(strict=True)
+            resolved_candidate.relative_to(package_directory.resolve(strict=True))
+        except (OSError, RuntimeError, ValueError):
+            raise SystemExit("homelab MCP source package contains a missing or unsafe module path") from None
+        if candidate.is_symlink() or resolved_candidate != candidate or not candidate.is_file():
+            raise SystemExit("homelab MCP package contains a missing or non-regular Python module")
+        committed = subprocess.run(
+            ["git", "-C", str(repo), "show", f"HEAD:{relative}"],
+            check=False,
+            capture_output=True,
+        )
+        if committed.returncode != 0:
+            raise SystemExit("homelab MCP package module is not present at the claimed revision")
+        file_sha = hashlib.sha256(candidate.read_bytes()).hexdigest()
+        if hashlib.sha256(committed.stdout).hexdigest() != file_sha:
+            raise SystemExit(
+                "homelab MCP package contains a module that differs from the claimed revision"
+            )
+        source_files[relative[len(package_relative) + 1:]] = file_sha
+
+    if "server.py" not in source_files:
+        raise SystemExit("homelab MCP entrypoint is missing from its tracked Python package")
+    return source_files
+
+
+def homelab_package_identity(
+    selected_script: Path, environment: dict[str, str], repo: Path
+) -> dict[str, object]:
+    """Bind the selected homelab MCP package, including generated copies, to source."""
+    package_relative = "integrations/homelab-readonly"
+    source_directory = repo / package_relative
+    source_files = homelab_source_package_files(repo)
+    script = selected_script.absolute()
+    if script.is_symlink() or script.name != "server.py":
+        raise SystemExit("selected homelab MCP entrypoint is not a regular server.py")
+
+    if script == source_directory / "server.py":
+        runtime_directory = source_directory
+    else:
+        root_value = environment.get("HADES_INTEGRATIONS_ROOT", "").strip()
+        if not root_value or not Path(root_value).is_absolute():
+            raise SystemExit("generated homelab MCP package has no absolute integration root")
+        integration_root = Path(root_value)
+        if (
+            integration_root.is_symlink()
+            or not integration_root.is_dir()
+            or integration_root.resolve(strict=True) != integration_root
+        ):
+            raise SystemExit("generated homelab integration root is missing or not a real directory")
+        runtime_directory = script.parent
+        if not re.fullmatch(r"homelab-readonly-[A-Za-z0-9_-]{6,64}", runtime_directory.name):
+            raise SystemExit("selected generated homelab MCP package has an unsupported directory name")
+        try:
+            relative_runtime = runtime_directory.relative_to(integration_root)
+        except ValueError:
+            raise SystemExit("selected generated homelab MCP package is outside the integration root") from None
+        if not relative_runtime.parts:
+            raise SystemExit("selected generated homelab MCP package path is invalid")
+        ancestor = integration_root
+        for part in relative_runtime.parts:
+            ancestor = ancestor / part
+            if ancestor.is_symlink() or not ancestor.is_dir():
+                raise SystemExit("generated homelab MCP package path contains a symlink or missing directory")
+        if runtime_directory.resolve(strict=True) != runtime_directory:
+            raise SystemExit("generated homelab MCP package path is not canonical")
+
+    for entry in runtime_directory.rglob("*"):
+        if entry.is_symlink():
+            raise SystemExit("selected homelab MCP package contains a symlink")
+    runtime_files: dict[str, str] = {}
+    for candidate in runtime_directory.rglob("*.py"):
+        if candidate.is_symlink() or not candidate.is_file():
+            raise SystemExit("selected homelab MCP package contains a non-regular Python module")
+        relative = candidate.relative_to(runtime_directory).as_posix()
+        runtime_files[relative] = digest(candidate)
+    if runtime_files.keys() != source_files.keys():
+        raise SystemExit("selected homelab MCP package module set differs from the claimed revision")
+    if runtime_files != source_files:
+        raise SystemExit("selected homelab MCP package bytes differ from the claimed revision")
+
+    package_files = [
+        {"source": f"{package_relative}/{relative}", "sha256": file_sha}
+        for relative, file_sha in sorted(runtime_files.items())
+    ]
+    serialized = json.dumps(package_files, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return {"files": package_files, "sha256": hashlib.sha256(serialized).hexdigest()}
+
+
 def mcp_runtime_identity(
     profile_path: Path, environment: dict[str, str], source_repo: Path
 ) -> tuple[list[dict[str, object]], str]:
@@ -274,6 +389,32 @@ def mcp_runtime_identity(
             target = Path(script)
             if not target.is_absolute():
                 target = repo / target
+            source_homelab_entry = repo / "integrations/homelab-readonly/server.py"
+            versioned_homelab_entry = (
+                target.name == "server.py"
+                and bool(
+                    re.fullmatch(
+                        r"homelab-readonly-[A-Za-z0-9_-]{6,64}", target.parent.name
+                    )
+                )
+            )
+            if (
+                name == "homelab-readonly"
+                or target.absolute() == source_homelab_entry
+                or versioned_homelab_entry
+            ):
+                package_identity = homelab_package_identity(target, environment, repo)
+                package_files = package_identity["files"]
+                server_source = "integrations/homelab-readonly/server.py"
+                server_file = next(item for item in package_files if item["source"] == server_source)
+                row.update({
+                    "transport": "stdio-source",
+                    "source": server_source,
+                    "sha256": server_file["sha256"],
+                    "package": package_identity,
+                })
+                records.append(row)
+                continue
             try:
                 resolved = target.resolve(strict=True)
                 relative = resolved.relative_to(repo).as_posix()

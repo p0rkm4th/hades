@@ -8,16 +8,21 @@ printf 'task store fixture\n' > "$tmp/task-store.py"
 printf 'epsilon package fixture\n' > "$tmp/phase3-runtime-manifest.json"
 source_repo="$tmp/source"
 infra_repo="$tmp/infra"
-mkdir -p "$tmp/bin" "$tmp/active" "$source_repo/integrations/task" "$source_repo/integrations/grocy-mcp" "$source_repo/config" "$infra_repo"
+generated_integrations="$tmp/generated/integrations"
+runtime_homelab_package="$generated_integrations/homelab-readonly-646577b"
+mkdir -p "$tmp/bin" "$tmp/active" "$source_repo/integrations/task" "$source_repo/integrations/grocy-mcp" "$source_repo/integrations/homelab-readonly" "$source_repo/config" "$infra_repo" "$runtime_homelab_package"
 printf 'task store fixture\n' > "$source_repo/integrations/task/store.py"
 printf '# synthetic Grocy launcher source\n' > "$source_repo/integrations/grocy-mcp/launch.py"
+printf 'from reconcile import VALUE\n' > "$source_repo/integrations/homelab-readonly/server.py"
+printf 'VALUE = "fixture"\n' > "$source_repo/integrations/homelab-readonly/reconcile.py"
 printf 'manifest fixture\n' > "$source_repo/config/reconstruction-manifest.json"
 git -C "$source_repo" init -q
 git -C "$source_repo" config user.email fixture@example.invalid
 git -C "$source_repo" config user.name fixture
-git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py config/reconstruction-manifest.json
+git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/reconcile.py config/reconstruction-manifest.json
 git -C "$source_repo" commit -qm fixture
 hades_sha=$(git -C "$source_repo" rev-parse HEAD)
+cp "$source_repo/integrations/homelab-readonly/"*.py "$runtime_homelab_package/"
 printf 'infra fixture\n' > "$infra_repo/infra.txt"
 git -C "$infra_repo" init -q
 git -C "$infra_repo" config user.email fixture@example.invalid
@@ -37,6 +42,17 @@ SH
 chmod 700 "$tmp/active/hermes"
 mkdir -p "$tmp/hermes-home/profiles/hades"
 printf 'mcp_servers:\n  grocy:\n    enabled: true\n    command: python3\n    args:\n      - "${HADES_HERMES_WORKING_DIRECTORY}/integrations/grocy-mcp/launch.py"\n    test_private_value: synthetic-not-for-provenance\n  receipt-ocr-gateway:\n    enabled: true\n    url: "${HADES_TEST_PRIVATE_ENDPOINT}"\n' > "$tmp/hermes-home/profiles/hades/config.yaml"
+python3 - "$tmp/hermes-home/profiles/hades/config.yaml" "$source_repo" <<'PY'
+from pathlib import Path
+import sys
+profile = Path(sys.argv[1])
+profile.write_text(profile.read_text() + (
+    '  homelab-readonly:\n'
+    '    enabled: true\n'
+    '    command: python3\n'
+    '    args: ["${HADES_INTEGRATIONS_ROOT}/homelab-readonly-646577b/server.py"]\n'
+))
+PY
 python3 - "$PWD/scripts/write-deployed-provenance.py" <<'PY'
 import importlib.util
 import sys
@@ -52,6 +68,90 @@ except SystemExit:
 else:
     raise AssertionError("unsupported args mapping should fail closed")
 PY
+python3 - "$PWD/scripts/write-deployed-provenance.py" "$tmp/hermes-home/profiles/hades/config.yaml" "$source_repo" "$generated_integrations" <<'PY'
+import importlib.util
+from pathlib import Path
+import sys
+spec = importlib.util.spec_from_file_location("deployed_provenance", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+profile = Path(sys.argv[2])
+root = Path(sys.argv[3])
+generated_root = Path(sys.argv[4])
+environment = {
+    "HADES_HERMES_WORKING_DIRECTORY": str(root),
+    "HADES_INTEGRATIONS_ROOT": str(generated_root),
+    "HADES_TEST_PRIVATE_ENDPOINT": "http://private.example.invalid:8765/mcp",
+}
+rows, _ = module.mcp_runtime_identity(profile, environment, root)
+homelab = next(row for row in rows if row["name"] == "homelab-readonly")
+assert [item["source"] for item in homelab["package"]["files"]] == [
+    "integrations/homelab-readonly/reconcile.py",
+    "integrations/homelab-readonly/server.py",
+]
+direct_profile = Path(profile.parent.parent.parent) / "direct-config.yaml"
+direct_profile.write_text(
+    'mcp_servers:\n'
+    '  homelab-readonly:\n'
+    '    enabled: true\n'
+    '    command: python3\n'
+    '    args: ["${HADES_HERMES_WORKING_DIRECTORY}/integrations/homelab-readonly/server.py"]\n',
+    encoding="utf-8",
+)
+direct_rows, _ = module.mcp_runtime_identity(
+    direct_profile, {"HADES_HERMES_WORKING_DIRECTORY": str(root)}, root
+)
+direct_homelab = next(row for row in direct_rows if row["name"] == "homelab-readonly")
+assert direct_homelab["package"]["sha256"] == homelab["package"]["sha256"]
+alias_profile = Path(profile.parent.parent.parent) / "alias-config.yaml"
+alias_profile.write_text(
+    profile.read_text(encoding="utf-8").replace(
+        "  homelab-readonly:\n", "  homelab-alias:\n"
+    ),
+    encoding="utf-8",
+)
+alias_rows, _ = module.mcp_runtime_identity(alias_profile, environment, root)
+alias_homelab = next(row for row in alias_rows if row["name"] == "homelab-alias")
+assert alias_homelab["package"]["sha256"] == homelab["package"]["sha256"]
+runtime_package = generated_root / "homelab-readonly-646577b"
+reconcile = runtime_package / "reconcile.py"
+original = reconcile.read_bytes()
+try:
+    reconcile.write_text('VALUE = "mixed-package"\n')
+    try:
+        module.mcp_runtime_identity(profile, environment, root)
+    except SystemExit as error:
+        assert "package bytes differ" in str(error)
+    else:
+        raise AssertionError("homelab provenance accepted a mixed sibling module")
+finally:
+    reconcile.write_bytes(original)
+extra_module = runtime_package / "unexpected.py"
+extra_module.write_text('VALUE = "unexpected"\n')
+try:
+    try:
+        module.mcp_runtime_identity(profile, environment, root)
+    except SystemExit as error:
+        assert "module set differs" in str(error)
+    else:
+        raise AssertionError("homelab provenance accepted an unexpected runtime module")
+finally:
+    extra_module.unlink()
+package_dir = runtime_package
+real_package_dir = generated_root / "homelab-readonly-backup"
+package_dir.rename(real_package_dir)
+package_dir.symlink_to(real_package_dir, target_is_directory=True)
+try:
+    try:
+        module.mcp_runtime_identity(profile, environment, root)
+    except SystemExit as error:
+        assert "symlink or missing directory" in str(error)
+    else:
+        raise AssertionError("homelab provenance accepted a symlinked package directory")
+finally:
+    package_dir.unlink()
+    real_package_dir.rename(package_dir)
+PY
 module_root="$tmp/module-root"
 mkdir -p "$module_root/hermes_cli" "$module_root/hermes_agent-0.21.2.dist-info"
 cat > "$module_root/hermes_cli/main.py" <<'PY'
@@ -65,6 +165,7 @@ Version: 0.21.2
 EOF
 ln -s "$(command -v python3)" "$tmp/active/python"
 export HADES_HERMES_WORKING_DIRECTORY="$source_repo"
+export HADES_INTEGRATIONS_ROOT="$generated_integrations"
 export HADES_TEST_PRIVATE_ENDPOINT='http://private.example.invalid:8765/mcp'
 "$tmp/active/hermes" -p hades service-runner &
 service_pid=$!
@@ -367,10 +468,18 @@ assert value["hermes_executable"] == str((Path(sys.argv[1]).parent / "active" / 
 assert len(value["hermes_executable_sha256"]) == 64
 assert value["hermes_runtime_kind"] == "configured-executable"
 assert value["hermes_profile_sha256"] == hashlib.sha256((Path(sys.argv[1]).parent / "hermes-home" / "profiles" / "hades" / "config.yaml").read_bytes()).hexdigest()
-assert value["mcp_runtime"] == [
-    {"enabled": True, "name": "grocy", "sha256": hashlib.sha256((Path(sys.argv[1]).parent / "source" / "integrations" / "grocy-mcp" / "launch.py").read_bytes()).hexdigest(), "source": "integrations/grocy-mcp/launch.py", "transport": "stdio-source"},
-    {"enabled": True, "name": "receipt-ocr-gateway", "transport": "http", "endpoint_sha256": hashlib.sha256(b"http://private.example.invalid:8765/mcp").hexdigest()},
+assert [row["name"] for row in value["mcp_runtime"]] == ["grocy", "homelab-readonly", "receipt-ocr-gateway"]
+homelab = value["mcp_runtime"][1]
+assert homelab["source"] == "integrations/homelab-readonly/server.py"
+assert [item["source"] for item in homelab["package"]["files"]] == [
+    "integrations/homelab-readonly/reconcile.py",
+    "integrations/homelab-readonly/server.py",
 ]
+assert all(len(item["sha256"]) == 64 for item in homelab["package"]["files"])
+package_bytes = json.dumps(homelab["package"]["files"], sort_keys=True, separators=(",", ":")).encode()
+assert homelab["package"]["sha256"] == hashlib.sha256(package_bytes).hexdigest()
+assert value["mcp_runtime"][0] == {"enabled": True, "name": "grocy", "sha256": hashlib.sha256((Path(sys.argv[1]).parent / "source" / "integrations" / "grocy-mcp" / "launch.py").read_bytes()).hexdigest(), "source": "integrations/grocy-mcp/launch.py", "transport": "stdio-source"}
+assert value["mcp_runtime"][2] == {"enabled": True, "name": "receipt-ocr-gateway", "transport": "http", "endpoint_sha256": hashlib.sha256(b"http://private.example.invalid:8765/mcp").hexdigest()}
 assert len(value["mcp_runtime_sha256"]) == 64
 assert "synthetic-not-for-provenance" not in json.dumps(value)
 assert "private.example.invalid" not in json.dumps(value)
