@@ -387,6 +387,95 @@ host_inventory['proxmox_guest_inventory']['endpoints'][0]['guests'] = []
 host_inventory['proxmox_guest_inventory']['endpoints'][0]['visibility_scope'] = 'SELECTED_GUESTS'
 partial_host_answer = workloads_on_host_response("What's running on Synthetic Hypervisor?", host_inventory, 'owner')
 assert 'does not establish that the node is empty' in partial_host_answer, partial_host_answer
+
+# The per-host workload route must distinguish a genuinely complete empty node
+# from an empty result under partial visibility, without inventing freshness.
+complete_empty_inventory = json.loads(json.dumps(host_inventory))
+complete_empty_endpoint = complete_empty_inventory['proxmox_guest_inventory']['endpoints'][0]
+complete_empty_endpoint['visibility_scope'] = 'ALL_GUESTS'
+complete_empty_endpoint['guests'] = []
+complete_empty_answer = workloads_on_host_response(
+    "What's running on Synthetic Hypervisor?", complete_empty_inventory, 'owner'
+)
+assert 'complete current guest inventory shows no VM/container guests on this node' in complete_empty_answer, complete_empty_answer
+assert 'synthetic-host-read' in complete_empty_answer, complete_empty_answer
+assert 'do not establish application health' in complete_empty_answer, complete_empty_answer
+
+# Missing timestamps remain explicitly missing, rather than being rendered as
+# current/live based on the fact that a response was produced.
+untimed_inventory = json.loads(json.dumps(complete_empty_inventory))
+untimed_inventory['proxmox_guest_inventory']['endpoints'][0].pop('retrieved_at')
+untimed_answer = workloads_on_host_response(
+    "What's running on Synthetic Hypervisor?", untimed_inventory, 'owner'
+)
+assert 'Proxmox read timestamp was not reported' in untimed_answer, untimed_answer
+assert 'synthetic-host-read' not in untimed_answer, untimed_answer
+
+# The view is capped at 20 filtered same-node rows and reports the exact
+# omitted count; an off-node decoy must not be rendered or counted.
+many_guests_inventory = json.loads(json.dumps(host_inventory))
+many_guests_endpoint = many_guests_inventory['proxmox_guest_inventory']['endpoints'][0]
+many_guests_endpoint['visibility_scope'] = 'ALL_GUESTS'
+many_guests_endpoint['guests'] = [
+    {
+        'source_identity': f'synthetic:qemu:{1000 + index}',
+        'node_identity': 'proxmox:synthetic:node:hypervisor-a',
+        'guest_type': 'qemu', 'guest_id': str(1000 + index),
+        'name': f'Synthetic Guest {index:02d}', 'status': 'RUNNING',
+    }
+    for index in range(23)
+] + [{
+    'source_identity': 'synthetic:qemu:1999',
+    'node_identity': 'proxmox:synthetic:node:other',
+    'guest_type': 'qemu', 'guest_id': '1999',
+    'name': 'Off-node Decoy', 'status': 'RUNNING',
+}]
+many_guests_answer = workloads_on_host_response(
+    "What's running on Synthetic Hypervisor?", many_guests_inventory, 'owner'
+)
+assert sum(
+    f'Synthetic Guest {index:02d} VM ' in many_guests_answer
+    for index in range(23)
+) == 20, many_guests_answer
+assert 'Synthetic Guest 19 VM ' in many_guests_answer, many_guests_answer
+assert 'Synthetic Guest 20 VM ' not in many_guests_answer, many_guests_answer
+assert 'and 3 more.' in many_guests_answer, many_guests_answer
+assert 'Off-node Decoy' not in many_guests_answer, many_guests_answer
+
+# Ambiguous labels and unknown targets stay unknown and never fall through to
+# an arbitrary node's rows or timestamp.
+ambiguous_inventory = json.loads(json.dumps(host_inventory))
+ambiguous_endpoint = ambiguous_inventory['proxmox_guest_inventory']['endpoints'][0]
+ambiguous_endpoint['nodes'].append({
+    'source_identity': 'proxmox:synthetic:node:hypervisor-b',
+    'node': 'hypervisor-b', 'name': 'Synthetic Hypervisor', 'status': 'ONLINE',
+})
+for prompt in (
+    "What's running on Synthetic Hypervisor?",
+    "What's running on Missing Hypervisor?",
+):
+    unknown_answer = workloads_on_host_response(prompt, ambiguous_inventory, 'owner')
+    assert 'unknown or ambiguous' in unknown_answer, unknown_answer
+    assert 'Synthetic VM' not in unknown_answer, unknown_answer
+    assert 'synthetic-host-read' not in unknown_answer, unknown_answer
+
+# No configured endpoint and an endpoint with no observed nodes are separate
+# incomplete states; neither may be described as an empty host.
+no_endpoint_answer = workloads_on_host_response(
+    "What's running on Synthetic Hypervisor?",
+    {'proxmox_guest_inventory': {'status': 'UNKNOWN', 'endpoints': []}}, 'owner'
+)
+assert "can't verify current Proxmox node or guest placement" in no_endpoint_answer, no_endpoint_answer
+assert 'shows no VM/container guests' not in no_endpoint_answer, no_endpoint_answer
+no_node_inventory = json.loads(json.dumps(host_inventory))
+no_node_inventory['proxmox_guest_inventory']['endpoints'][0]['nodes'] = []
+no_node_answer = workloads_on_host_response(
+    "What's running on Synthetic Hypervisor?", no_node_inventory, 'owner'
+)
+assert 'unknown or ambiguous' in no_node_answer, no_node_answer
+assert 'Synthetic VM' not in no_node_answer, no_node_answer
+assert 'synthetic-host-read' not in no_node_answer, no_node_answer
+
 assert core_placement_intent('Where is HADES Core running?')
 assert core_placement_intent('Which host is running HADES?')
 assert not core_placement_intent('How is HADES doing?')
