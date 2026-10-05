@@ -36,6 +36,7 @@ from inference_view import (
 from reconcile import summarize
 from backup_view import format_homelab_backup_status as _format_homelab_backup_status
 from activity_view import format_homelab_recent_activity as _format_homelab_recent_activity
+from summary_view import project_summary_response
 from catalog import propose_inventory_candidates
 from scan import DEFAULT_PORTS, run_bounded_scan
 from config import (
@@ -814,63 +815,7 @@ def homelab_summary() -> dict:
     result["source_counts"]["netbox_service_rows"] = len(
         result["service_catalog"].get("services", [])
     )
-    # Keep the common owner answer bounded. The raw composed resources can
-    # contain many inventory-only rows and made a small local model spend its
-    # entire turn repeating JSON instead of answering. Preserve the authority
-    # and decision fields needed for status/location questions while leaving
-    # the full capability matrix to homelab_compute_capabilities().
-    compact_resources = []
-    for resource in result.get("resources", []):
-        inventory = resource.get("inventory") or {}
-        availability = resource.get("availability") or {}
-        compact_resources.append({
-            "name": resource.get("name"),
-            "identity": resource.get("identity"),
-            "runtime_status": resource.get("runtime_status"),
-            "currently_online": resource.get("currently_online"),
-            "runtime": resource.get("runtime"),
-            "inventory_device_id": inventory.get("id"),
-            "related_inventory_device_id": resource.get("related_inventory_device_id"),
-            "primary_ip": inventory.get("primary_ip"),
-            "role": inventory.get("role"),
-            "availability_status": availability.get("status"),
-            "availability_freshness": resource.get("availability_freshness"),
-            "conflicts": resource.get("conflicts", []),
-        })
-    # Keep the detailed index useful for location questions without allowing a
-    # large inventory to dominate the model context. The complete online and
-    # inventory-only name lists above remain authoritative; this is only the
-    # optional per-resource detail view.
-    resource_limit = 4
-    if len(compact_resources) > resource_limit:
-        result["resources_truncated"] = {
-            "returned": resource_limit,
-            "total": len(compact_resources),
-            "reason": "use homelab_compute_capabilities or a targeted follow-up for more detail",
-        }
-        compact_resources = compact_resources[:resource_limit]
-    result["resources"] = compact_resources
-    for field, limit in (
-        ("online_names", 24),
-        ("inventory_only_names", 12),
-        ("availability_summary", 12),
-    ):
-        values = result.get(field)
-        if isinstance(values, list) and len(values) > limit:
-            result[f"{field}_truncated"] = {
-                "returned": limit,
-                "total": len(values),
-            }
-            result[field] = values[:limit]
-    result["supplemental_hardware"] = {
-        "status": "AVAILABLE",
-        "source": "observed capability matrix",
-        "availability_not_provided": True,
-        "use_homelab_compute_capabilities_for_details": True,
-    }
-    if errors:
-        result["errors"] = errors
-    return result
+    return project_summary_response(result, errors)
 
 
 def _capability_matrix_freshness(observed_at: object, *, now: datetime | None = None) -> str:
