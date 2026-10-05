@@ -53,12 +53,13 @@ export HADES_TEST_UNIT_WORKDIR="$working_tree"
 export HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
 start_fake_hermes() {
-  local process_cwd=$1 source_extra=${2:-}
+  local process_cwd=$1 source_extra=${2:-} clear_working_directory=${3:-false}
   (
     cd "$process_cwd"
     set -a
     source "$fixture/private/profile/hermes.env"
     if [[ -n "$source_extra" ]]; then source "$source_extra"; fi
+    if [[ "$clear_working_directory" == true ]]; then unset HADES_HERMES_WORKING_DIRECTORY; fi
     set +a
     exec sleep 120
   ) &
@@ -85,6 +86,13 @@ run_doctor() {
     HADES_TEST_ACTIVE_ENVFILES="${HADES_TEST_ACTIVE_ENVFILES:-}" \
     HADES_TEST_MAINPID="${HADES_TEST_MAINPID:-}" \
     bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$sandbox" --inputs "$inputs"
+}
+run_production_mode_doctor() {
+  PATH="$fixture/bin:$PATH" \
+    HADES_TEST_UNIT_WORKDIR="${HADES_TEST_UNIT_WORKDIR:-}" \
+    HADES_TEST_ACTIVE_ENVFILES="${HADES_TEST_ACTIVE_ENVFILES:-}" \
+    HADES_TEST_MAINPID="${HADES_TEST_MAINPID:-}" \
+    bash "$repo_dir/scripts/hades-doctor.sh" --root "$sandbox" --inputs "$inputs"
 }
 expect_package_failure() {
   local expected=$1 output
@@ -113,6 +121,23 @@ grep -Fq 'PASS active Hermes process directory and environment match the configu
   echo 'FAIL doctor exposed the configured working-directory path' >&2
   exit 1
 }
+
+# The generated service contract binds HADES_HERMES_WORKING_DIRECTORY into
+# the systemd process environment. If a running process does not have it,
+# production-mode doctor must fail even when unit cwd and profile file match.
+stop_fake_hermes
+start_fake_hermes "$working_tree" '' true
+if output=$(run_production_mode_doctor 2>&1); then
+  echo 'FAIL production-mode doctor accepted Hermes without its runtime working-directory environment' >&2
+  exit 1
+fi
+grep -Fq 'FAIL active Hermes process directory or environment differs from the configured package' <<<"$output"
+! grep -Fq "$working_tree" <<<"$output" || {
+  echo 'FAIL production-mode doctor exposed the configured working-directory path' >&2
+  exit 1
+}
+stop_fake_hermes
+start_fake_hermes "$working_tree"
 
 sed "s#^HADES_HERMES_WORKING_DIRECTORY=.*#HADES_HERMES_WORKING_DIRECTORY=$fixture/other-environment-directory#" \
   "$fixture/private/profile/hermes.env" > "$fixture/private/profile/hermes.env.next"
