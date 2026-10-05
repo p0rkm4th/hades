@@ -1,8 +1,8 @@
 # HADES stable-v1 readiness
 
-## Current homelab engineering checkpoint — 2026-10-05 09:40 UTC
+## Current homelab engineering checkpoint — 2026-10-05 10:25 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Active candidate `codex/aster-homelab-clean-candidate-20261005` has code-bearing checkpoint `84ce74c4`, 78 commits ahead of main; exact Public CI `37291258235` passed, including the composer test and current-tree/history checks. NYX-058 is integrated. NYX-059 found coherent private source+records+runtime restore absent; external custody remains owner-gated. NYX-060 found installer overwrite and doctor rejection risks for composed deployment-local overlays; NYX-061 is implementing a manifest validator. Production parity, owner/household acceptance, and recovery custody remain open. No promotion or deployment occurred.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Active current-main descendant `codex/aster-homelab-clean-candidate-20261005` is `f43a3096ccbc113fea0961545b79fe0163b2e15f`; focused runtime and service-health contracts pass; exact CI and post-change safety audits are pending. NYX-062 through NYX-069 reviews/findings are dispositioned, including the household named-host load no-dispatch correction. Private source+records+runtime restoration remains unproven and independent custody is owner-gated. Deployed adapter parity, current live observations, and representative owner/household acceptance remain open. The candidate is not promoted or rolled out.
 
 This is a readiness record for the deployment, not an installer or a new
 runtime layer. Most component observations below were last rechecked read-only
@@ -130,9 +130,9 @@ LLDAP membership, but neither is deployed or connected to n8n. Keep schedules
 disabled; see
 [`automation-boundary.md`](automation-boundary.md).
 
-## Current next action — 2026-10-05 09:40 UTC
+## Current next action — 2026-10-05 10:20 UTC
 
-The exact main and code-candidate CI results are recorded above. Complete NYX-061’s manifest-validator seam and integrate it with installer, doctor, and provenance before defining any rollout command. Continue source/runtime parity and owner/household acceptance. Treat the last recorded runtime inspection as historical, not a fresh probe. The old GPU telemetry line remains review-only.
+Complete current-tree and introduced-history safety and hosted CI for `f43a3096`, then refresh source/runtime provenance from the actual active deployment and complete representative owner/household dogfood before any candidate rollout. Keep the old GPU telemetry line review-only. Do not claim recovery readiness until the private source/records/runtime restore and owner-selected independent custody gates are resolved.
 independently confirmed the candidate's current-tree and introduced-history
 safety. Integrate NYX-058’s reviewed composer and define the overlay-preserving
 rollout contract; continue source/runtime parity and representative

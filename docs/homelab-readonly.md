@@ -9,7 +9,7 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Aster clean candidate branch `codex/aster-homelab-clean-candidate-20261005` has code-bearing checkpoint `84ce74c4`, 78 commits ahead of canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact Public CI `37291258235` passed, including composer, current-tree safety, and introduced-history safety. NYX-058’s composer and focused test are integrated. NYX-060 found that standard installer reruns overwrite deployment-local overlay bytes and the doctor currently rejects a composed overlay; a manifest-bound preservation/verification contract is needed before rollout. NYX-059 found private checkout and full-state recovery remain incomplete and owner-gated. Production remains unchanged. Last recorded runtime inspection found missing `HADES_HERMES_WORKING_DIRECTORY`, adapter source/runtime parity drift, and fresh Kuma rows lacking `observed_at`; these are historical observations, not a fresh probe at this checkpoint.
+Aster clean candidate branch `codex/aster-homelab-clean-candidate-20261005` is at `f43a3096ccbc113fea0961545b79fe0163b2e15f`, a current-main descendant; focused runtime and service-health contracts pass, while exact Public CI and post-change current-tree/introduced-history safety are pending. It includes the manifest-bound overlay preservation path, pure host-load views, and the household named-host load no-dispatch correction. NYX-062 through NYX-069 findings are dispositioned. Private checkout/full-state recovery remains incomplete and owner-gated. The candidate is not promoted or deployed. Last recorded runtime inspection found missing `HADES_HERMES_WORKING_DIRECTORY`, adapter source/runtime parity drift, and fresh Kuma rows lacking `observed_at`; these are historical observations, not a fresh probe at this checkpoint.
 
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` and its CI run
@@ -333,6 +333,23 @@ open and live monitor-timestamp behavior fails its contract. Preserve the
 deployment-local overlay during that repair. The bounded chats from the earlier
 rollout are targeted evidence, not full homelab acceptance; outage, conflict,
 native service health, network trend, and restoreability gates remain open.
+
+The prior HADES candidate `b6123100d26f6d801dafa95c4964ac9f7f7ec89f`
+passed exact Public CI `37295651451`. It adds a manifest-bound overlay
+composition path across installer, doctor, install validator, and deployed
+provenance, plus pure Proxmox host-load renderers with owner-wrapper parity
+tests. Synthetic checks prove the installer preserves a valid deployment-local
+overlay across reruns and rejects unrecorded or unsafe modes. This candidate
+has not been deployed; the live overlay and adapter provenance must be freshly
+rechecked before any rollout. The deployed `reconcile.py` timestamp mismatch
+and broader owner/household acceptance remain open.
+
+The current candidate `f43a3096ccbc113fea0961545b79fe0163b2e15f` adds a
+household boundary denial for named-host load and CPU/memory detail prompts.
+Its synthetic Hermes runtime regression proves the prompt produces no model
+request, no homelab tool call, and no host label or metric disclosure. The
+runtime and service-health focused tests pass; full Public CI and post-change
+safety checks are pending. This fix is not deployed.
 
 
 Proxmox supplies hypervisor and guest runtime observations within its configured
