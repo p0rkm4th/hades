@@ -62,6 +62,12 @@ post-promotion run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
 passed. It remains undeployed.
 
+A fresh strict-key read-only production check found Hermes active but its
+selected checkout dirty and divergent from current main. The active homelab
+adapter does not match the promoted source and is missing the new backup-view
+module dependency. No deployed files or host configuration changed. A reviewed
+package-complete composition is still required before runtime acceptance.
+
 Private-infra recovery remains owner-managed: the checkout is dirty, no
 independent encrypted off-host target has been specified, and the owner confirms
 no off-site backup. Same-disk copies are not independent recovery.

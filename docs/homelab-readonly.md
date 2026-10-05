@@ -58,6 +58,13 @@ post-promotion CI run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
 passed. It remains undeployed and adds no live-source evidence.
 
+A fresh strict-key, read-only production inspection confirmed the Hermes unit
+is active, but its selected checkout is dirty and diverges from current main;
+the active adapter differs from the promoted source and lacks the new
+`backup_view.py` dependency. No deployment or host change was made. A whole-file
+replacement would overwrite local runtime work and leave package closure
+unproven, so runtime parity and authenticated live acceptance remain open.
+
 These changes are undeployed and provide no new live homelab evidence. The last
 protected production inspection on 2026-10-05 showed an active Hermes process,
 but its running homelab MCP server maps to an older public source revision;
