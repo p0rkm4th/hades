@@ -998,16 +998,18 @@ compact_minecraft_summary = {
     'source_counts': {'kuma_monitor_rows': 1, 'identity_unlinked_resources': 0},
     'availability_summary': [{
         'name': 'Minecraft Server', 'status': 'up', 'freshness': 'FRESH',
+        'observed_at': '2026-10-05T01:00:00Z',
     }],
 }
 compact_up = answer('Is Minecraft healthy enough for tonight?', [], compact_minecraft_summary, 'owner')
 assert 'configured check for Minecraft Server is up' in compact_up, compact_up
+assert 'last observation is timestamped 2026-10-05T01:00:00Z' in compact_up, compact_up
 assert answer('Is Minecraft healthy enough for tonight?', [], compact_minecraft_summary, 'household') is None
 compact_stale = answer('Is Minecraft online?', [], {
     **compact_minecraft_summary,
     'availability_summary': [{
         'name': 'Minecraft Server', 'status': 'up', 'freshness': 'STALE',
-        'last_updated': '2026-10-04T11:00:00Z',
+        'observed_at': '2026-10-04T11:00:00Z',
     }],
 }, 'owner')
 assert 'observation is stale' in compact_stale and "can't verify current service health" in compact_stale, compact_stale

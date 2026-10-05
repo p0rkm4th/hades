@@ -30,7 +30,10 @@ assert result["source_counts"] == {
     "composed_resources": 1,
     "identity_unlinked_resources": 0,
 }
-assert result["availability_summary"] == [{"name": "dinner-app", "status": "down", "freshness": "STALE"}]
+assert result["availability_summary"] == [{
+    "name": "dinner-app", "status": "down", "freshness": "STALE",
+    "observed_at": "2026-09-14T11:40:00+00:00",
+}]
 assert result["answer_contract"]["writes_performed"] is False
 assert resource["runtime"]["node"] == "storage-alpha"
 assert resource["runtime_status"] == "running"
@@ -439,7 +442,7 @@ latency_result = server.summarize(
     now=now,
 )
 assert latency_result["availability_summary"] == [
-    {"name": "Router ping", "status": "up", "freshness": "FRESH", "ping_ms": 84}
+    {"name": "Router ping", "status": "up", "freshness": "FRESH", "observed_at": fresh_time, "ping_ms": 84}
 ]
 for unsafe_ping in (-1, 60001, True, float("nan"), float("inf"), "84"):
     normalized = server.summarize(

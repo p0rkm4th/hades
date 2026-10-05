@@ -318,6 +318,11 @@ def summarize(
             "name": resource["name"],
             "status": (resource["availability"] or {}).get("status"),
             "freshness": resource["availability_freshness"],
+            **(
+                {"observed_at": (resource["availability"] or {}).get("last_updated")}
+                if (resource["availability"] or {}).get("last_updated")
+                else {}
+            ),
             **({"ping_ms": resource["probe_ping_ms"]} if resource["probe_ping_ms"] is not None else {}),
         }
         for resource in resources

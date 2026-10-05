@@ -4638,7 +4638,7 @@ def _hades_service_monitor_response(user_text, resources, summary=None, scope="o
                 "availability": {
                     "name": row.get("name"),
                     "status": row.get("status") or "unknown",
-                    "last_updated": row.get("last_updated"),
+                    "last_updated": row.get("observed_at") or row.get("last_updated"),
                 },
                 "availability_freshness": row.get("freshness") or "UNKNOWN",
             }
