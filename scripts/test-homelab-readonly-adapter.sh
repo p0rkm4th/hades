@@ -385,6 +385,7 @@ root = Path("integrations/homelab-readonly").resolve()
 sys.path.insert(0, str(root))
 import backup_view
 import activity_view
+import proxmox_visibility
 import server
 
 def assert_activity_view_parity(report):
@@ -436,7 +437,65 @@ assert server._aggregate_proxmox_guest_visibility([
     {"status": "COMPLETE", "scope": "ALL_GUESTS"},
     {"status": "UNKNOWN", "scope": "UNKNOWN"},
 ]) == {"status": "UNKNOWN", "scope": "MIXED"}
+
+for permissions_case in (
+    {"data": {"/": {"VM.Audit": 1}}},
+    {"data": {"/vms": {"VM.Audit": True}}},
+    {"data": {"/vms/101": {"VM.Audit": 1}, "/vms/102": {"VM.Audit": "1"}}},
+    {"data": {"/pool/inference": {"VM.Audit": 1}}},
+    {"data": {"/": {"VM.Audit": 1}, "/vms/102": {"VM.Audit": 1, "NoAccess": 1}}},
+    {"data": {}},
+):
+    assert proxmox_visibility.guest_visibility(permissions_case) == server._proxmox_guest_visibility(permissions_case)
+    assert proxmox_visibility.guest_task_scope(permissions_case) == server._proxmox_guest_task_scope(permissions_case)
+
+for malformed_permissions in (None, {}, {"data": None}, {"data": []}, {"data": "invalid"}):
+    for policy in (proxmox_visibility.guest_visibility, proxmox_visibility.guest_task_scope):
+        try:
+            policy(malformed_permissions)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("malformed permission payload must fail closed")
+for wrapper, policy in (
+    (server._proxmox_guest_visibility, proxmox_visibility.guest_visibility),
+    (server._proxmox_guest_task_scope, proxmox_visibility.guest_task_scope),
+):
+    try:
+        wrapper({"data": []})
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("server compatibility wrapper must preserve malformed-payload failure")
+
+task_policy_cases = (
+    ({"data": {"/": {"VM.Audit": 1}}},
+     {"scope": "ALL_GUESTS", "all_guests": True, "guest_ids": [], "excluded_guest_ids": []}),
+    ({"data": {"/vms": {"VM.Audit": 1}}},
+     {"scope": "ALL_GUESTS", "all_guests": True, "guest_ids": [], "excluded_guest_ids": []}),
+    ({"data": {"/vms/101": {"VM.Audit": 1}, "/vms/102": {"VM.Audit": 1}}},
+     {"scope": "SELECTED_GUESTS", "all_guests": False, "guest_ids": ["101", "102"], "excluded_guest_ids": []}),
+    ({"data": {"/pool/inference": {"VM.Audit": 1}}},
+     {"scope": "PARTIAL", "all_guests": False, "guest_ids": [], "excluded_guest_ids": []}),
+    ({"data": {"/vms/101": {"VM.Audit": 1}, "/vms/102": {"VM.Audit": 1, "NoAccess": 1}}},
+     {"scope": "SELECTED_GUESTS", "all_guests": False, "guest_ids": ["101"], "excluded_guest_ids": ["102"]}),
+    ({"data": {"/": {"VM.Audit": 1}, "/pool/private": {"NoAccess": 1}}},
+     {"scope": "PARTIAL", "all_guests": False, "guest_ids": [], "excluded_guest_ids": []}),
+)
+for permissions_case, expected_task_scope in task_policy_cases:
+    direct_task_scope = proxmox_visibility.guest_task_scope(permissions_case)
+    assert direct_task_scope == expected_task_scope, direct_task_scope
+    assert direct_task_scope == server._proxmox_guest_task_scope(permissions_case)
+
+assert proxmox_visibility.aggregate_guest_visibility([
+    {"status": "COMPLETE", "scope": "ALL_GUESTS"},
+    {"status": "UNKNOWN", "scope": "UNKNOWN"},
+]) == server._aggregate_proxmox_guest_visibility([
+    {"status": "COMPLETE", "scope": "ALL_GUESTS"},
+    {"status": "UNKNOWN", "scope": "UNKNOWN"},
+])
 print("PASS effective Proxmox guest visibility distinguishes cluster-wide, selected, and unknown scope")
+print("PASS Proxmox visibility module matches compatibility wrappers and fails closed on malformed policy payloads")
 
 os.environ.update({
     "HADES_UPTIME_KUMA_URL": "https://status.example.test",
@@ -1052,6 +1111,14 @@ assert pve_sources[0]["retrieved_at"] and pve_sources[0]["rows"] == 1
 assert pve_sources[1]["retrieved_at"] is None
 assert partial["proxmox_guest_visibility"]["status"] == "PARTIAL"
 assert partial["proxmox_guest_visibility"]["scope"] == "MIXED"
+permission_observations = {
+    row["source"].removeprefix("Proxmox guest visibility (").removesuffix(")"): row
+    for row in partial["source_observations"]
+    if row["source"].startswith("Proxmox guest visibility (")
+}
+assert permission_observations["alpha"]["status"] == "PARTIAL", permission_observations
+assert permission_observations["alpha"]["scope"] == "SELECTED_GUESTS", permission_observations
+assert permission_observations["beta"]["status"] == "UNKNOWN", permission_observations
 partial_node_metrics = partial["proxmox_node_metrics"]
 assert partial_node_metrics["status"] == "PARTIAL", partial_node_metrics
 assert [row["status"] for row in partial_node_metrics["endpoints"]] == ["AVAILABLE", "UNAVAILABLE"]
@@ -1424,5 +1491,5 @@ print("PASS observed compute capability read is bounded, explicit, and read-only
 print("PASS owner snapshot preserves partial-source errors and authority boundaries")
 PY
 
-python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py integrations/homelab-readonly/kuma.py
+python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py integrations/homelab-readonly/kuma.py integrations/homelab-readonly/proxmox_visibility.py
 echo 'PASS homelab MCP adapter is syntax-valid and read-only by construction'
