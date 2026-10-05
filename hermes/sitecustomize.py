@@ -6081,14 +6081,16 @@ def _hades_direct_homelab_write_guidance(user_text):
 def _hades_direct_proxmox_backup_status(user_text, subject, scope):
     """Read owner-scoped Proxmox vzdump configuration and archived tasks."""
     text = str(user_text or "")
-    if scope != "owner" or not subject:
-        return None
     if not re.search(
         r"\b(?:proxmox|vzdump|homelab|homlab|home\s+lab)\b.{0,50}\bbackups?\b|"
         r"\bbackups?\b.{0,50}\b(?:proxmox|vzdump|homelab|homlab|home\s+lab)\b",
         text, re.IGNORECASE,
     ):
         return None
+    if scope == "household":
+        return "I can't check infrastructure backup details in this household chat. Please ask the owner."
+    if scope != "owner" or not subject:
+        return "I couldn't verify this HADES session, so I couldn't check infrastructure backup status."
     if re.search(
         r"\b(?:run|create|schedule|pause|resume|delete|remove|edit|change|fix|repair|"
         r"restart|reboot|start|stop|deploy|provision|restore|mount)\b",

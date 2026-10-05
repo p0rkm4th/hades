@@ -42,7 +42,9 @@ from integrations.task import TaskStatus, TaskStore
 # Production reads must go through Hermes' registered MCP handler so the
 # server's protected child-process configuration is preserved. This runtime
 # contract substitutes only that dispatch boundary with the synthetic adapter.
+homelab_dispatch_calls = []
 def synthetic_homelab_tool_result(tool_name, arguments=None):
+    homelab_dispatch_calls.append(tool_name)
     adapter = Path(os.environ["HADES_HERMES_WORKING_DIRECTORY"]) / "integrations" / "homelab-readonly" / "server.py"
     if str(adapter.parent) not in sys.path:
         sys.path.insert(0, str(adapter.parent))
@@ -96,9 +98,14 @@ proxmox_backup_answer = hades._hades_direct_proxmox_backup_status(
     "What is the Proxmox backup status?", owner, "owner"
 )
 assert "synthetic Proxmox backup report" in proxmox_backup_answer, proxmox_backup_answer
-assert hades._hades_direct_proxmox_backup_status(
+household_backup_denial = hades._hades_direct_proxmox_backup_status(
     "What is the Proxmox backup status?", beta, "household"
-) is None
+)
+assert "can't check infrastructure backup details" in household_backup_denial
+unverified_backup_denial = hades._hades_direct_proxmox_backup_status(
+    "What is the Proxmox backup status?", "", "denied"
+)
+assert "couldn't verify this HADES session" in unverified_backup_denial
 activity_answer = hades._hades_direct_homelab_recent_activity(
     "What changed since yesterday?", owner, "owner"
 )
@@ -170,6 +177,21 @@ assert model_location.get("completed") is True and model_location.get("api_calls
 assert model_location["final_response"].startswith("model-a:8b is listed by Compute Alpha"), model_location
 hades._hades_direct_finance_guidance = saved_finance_guidance
 hades._hades_phase2_backup_response = saved_phase2_backup
+backup_dispatch_count = len(homelab_dispatch_calls)
+household_backup_agent = agent_class(
+    gateway_session_key=f"hades-user-{beta}", session_id="synthetic-household-proxmox-backup",
+    stream_delta_callback=lambda _chunk: None, **kwargs,
+)
+household_backup_result = household_backup_agent.run_conversation(
+    "Are the Proxmox backups okay?", conversation_history=[]
+)
+assert household_backup_result.get("completed") is True, household_backup_result
+assert household_backup_result.get("api_calls") == 0, household_backup_result
+assert len(homelab_dispatch_calls) == backup_dispatch_count, homelab_dispatch_calls
+assert "household chat" in household_backup_result["final_response"].casefold()
+assert "owner" in household_backup_result["final_response"].casefold()
+for private_marker in ("nightly", "guest 102", "hypervisor-alpha", "synthetic Proxmox"):
+    assert private_marker not in household_backup_result["final_response"], household_backup_result
 results = {}
 for subject in (owner, beta):
     chunks = []
@@ -559,6 +581,7 @@ finally:
 print("PASS Hermes 0.21.2 HADES runtime: owner attention briefing combines live-source and private Task summaries; household Task attention and authenticated-subject result summaries remain scoped, zero model calls")
 print("PASS plural owner server-status question bypasses non-confirming task approval language and uses the deterministic read-only homelab route with no model call")
 print("PASS one read-only owner turn composes live homelab status and Backup Check coverage, while household and action requests stay outside the shortcut")
+print("PASS household Proxmox backup questions receive a generic owner-session boundary without MCP or model calls")
 print("PASS speech-like named-node status separates deep-inference-node's hardware listing from missing live runtime evidence")
 print("PASS physical-node wording uses a fresh monitor as reachability evidence without relabeling it as Proxmox runtime or workload health")
 print("PASS detailed homelab blocker summary remains deterministic when optional availability has no rows")
