@@ -164,6 +164,45 @@ def _hades_homelab_service_coverage_response(summary):
         parts.append(f"The source read completed at {str(summary['retrieved_at'])[:80]}.")
     return " ".join(parts) or "I don't have enough current service evidence to identify coverage."
 
+def _hades_homelab_service_placement_response(view):
+    """Render a bounded placement outcome already classified by Hermes."""
+    if not isinstance(view, dict):
+        return "I couldn't read the current application-service inventory, so I can't verify where that service is intended to run."
+    kind = str(view.get("kind") or "UNKNOWN").upper()
+    if kind == "UNREADABLE":
+        return "I couldn't read the current application-service inventory, so I can't verify where that service is intended to run."
+    if kind == "UNAVAILABLE":
+        return "The application-service inventory is not currently available, so I can't verify service placement. I won't substitute a remembered location."
+    if kind == "CONTRADICTORY":
+        return "The NetBox service catalog returned contradictory completeness metadata, so I can't confirm this service's placement or absence."
+    if kind == "INCOMPLETE":
+        return "The NetBox application-service read is partial or doesn't confirm complete coverage, so I can't verify whether this service is missing or where it is intended to run. I won't substitute a remembered location."
+    if kind == "AMBIGUOUS":
+        matches = view.get("matches") if isinstance(view.get("matches"), list) else []
+        names = ", ".join(" ".join(str(name).split())[:80] for name in matches[:5] if isinstance(name, str))
+        if names:
+            return f"I found multiple matching service records: {names}. Which service do you mean?"
+        return "I found multiple matching service records. Which service do you mean?"
+    if kind == "EMPTY":
+        return "The application-service catalog is reachable but empty, so I can't verify where that service is intended to run. I won't substitute a remembered location."
+    if kind == "MISSING":
+        target = view.get("requested_name")
+        if isinstance(target, str) and target:
+            return f"The current application-service inventory has no matching record for {target[:100]}, so I can't verify its placement. I won't substitute a remembered location."
+        return "The current application-service inventory has no matching record, so I can't verify service placement. I won't substitute a remembered location."
+    if kind == "PARENT_MISSING":
+        name = view.get("service_name")
+        name = " ".join(name.split())[:100] if isinstance(name, str) and name else "the service"
+        return f"NetBox lists {name}, but its intended parent host is not recorded. This inventory does not establish where the service is currently running."
+    if kind == "INTENDED":
+        name = view.get("service_name")
+        parent = view.get("parent_name")
+        name = " ".join(name.split())[:100] if isinstance(name, str) and name else "the service"
+        parent = " ".join(parent.split())[:100] if isinstance(parent, str) and parent else ""
+        if parent:
+            return f"NetBox lists {name} on {parent} as intended placement. That inventory does not establish whether the service is currently running or healthy."
+    return "I couldn't verify intended application-service placement from the current catalog."
+
 def _hades_homelab_provenance_response(summary):
     rows = (
         summary.get("sources") or summary.get("source_observations") or []

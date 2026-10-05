@@ -4901,23 +4901,27 @@ def _hades_homelab_service_placement_intent(text):
 
 
 def _hades_homelab_service_placement_response(user_text, summary):
+    """Classify intended placement while keeping source policy in Hermes."""
+    render = getattr(
+        _hades_load_homelab_views(), "_hades_homelab_service_placement_response"
+    )
     catalog = summary.get("service_catalog") if isinstance(summary, dict) else None
     if not isinstance(catalog, dict):
-        return "I couldn't read the current application-service inventory, so I can't verify where that service is intended to run."
+        return render({"kind": "unreadable"})
     status = str(catalog.get("status") or "UNKNOWN").upper()
     coverage = str(catalog.get("coverage") or "UNKNOWN").upper()
     services = catalog.get("services") if isinstance(catalog.get("services"), list) else []
     if status in {"NOT_CONFIGURED", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "ERROR"}:
-        return "The application-service inventory is not currently available, so I can't verify service placement. I won't substitute a remembered location."
+        return render({"kind": "unavailable"})
     if status == "OK" and (
         (coverage == "EMPTY" and services)
         or (coverage == "COMPLETE" and not services)
     ):
-        return "The NetBox service catalog returned contradictory completeness metadata, so I can't confirm this service's placement or absence."
+        return render({"kind": "contradictory"})
     if status == "OK" and (
         coverage in {"PARTIAL", "UNKNOWN"} or catalog.get("truncated") is True
     ):
-        return "The NetBox application-service read is partial or doesn't confirm complete coverage, so I can't verify whether this service is missing or where it is intended to run. I won't substitute a remembered location."
+        return render({"kind": "incomplete"})
     requested = re.search(
         r"\bwhere(?:['’]s|\s+is)\s+(?P<name>.+?)\s+(?:running|hosted|located|live)\b|"
         r"\bwhere\s+does\s+(?P<does>.+?)\s+(?:run|live)\b",
@@ -4930,20 +4934,18 @@ def _hades_homelab_service_placement_response(user_text, summary):
              or (target and str(row["name"]).casefold() == target.casefold()))
     ]
     if len(matches) > 1:
-        names = ", ".join(" ".join(str(row.get("name") or "").split())[:80] for row in matches[:5])
-        return f"I found multiple matching service records: {names}. Which service do you mean?"
+        names = [" ".join(str(row.get("name") or "").split())[:80] for row in matches[:5]]
+        return render({"kind": "ambiguous", "matches": names})
     if not matches:
         if coverage == "EMPTY":
-            return "The application-service catalog is reachable but empty, so I can't verify where that service is intended to run. I won't substitute a remembered location."
-        if target:
-            return f"The current application-service inventory has no matching record for {target[:100]}, so I can't verify its placement. I won't substitute a remembered location."
-        return "The current application-service inventory has no matching record, so I can't verify service placement. I won't substitute a remembered location."
+            return render({"kind": "empty"})
+        return render({"kind": "missing", "requested_name": target[:100]})
     row = matches[0]
     name = " ".join(str(row.get("name") or "the service").split())[:100]
     parent = " ".join(str(row.get("parent_name") or "").split())[:100]
-    if not parent:
-        return f"NetBox lists {name}, but its intended parent host is not recorded. This inventory does not establish where the service is currently running."
-    return f"NetBox lists {name} on {parent} as intended placement. That inventory does not establish whether the service is currently running or healthy."
+    return render({"kind": "parent_missing", "service_name": name}) if not parent else render({
+        "kind": "intended", "service_name": name, "parent_name": parent,
+    })
 
 
 def _hades_homelab_resource_ranking_intent(text):

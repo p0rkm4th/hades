@@ -27,6 +27,7 @@ assert set(view_functions) == {
     '_hades_homelab_availability_groups',
     '_hades_homelab_health_summary_response',
     '_hades_homelab_service_coverage_response',
+    '_hades_homelab_service_placement_response',
     '_hades_homelab_provenance_response',
     '_hades_homelab_resource_ranking_response',
     '_hades_homelab_conflict_response',
@@ -236,6 +237,7 @@ guest_visibility_intent = namespace['_hades_homelab_guest_visibility_intent']
 guest_visibility_response = namespace['_hades_homelab_guest_visibility_response']
 placement_intent = namespace['_hades_homelab_service_placement_intent']
 placement_response = namespace['_hades_homelab_service_placement_response']
+homelab_views_module = namespace['_hades_load_homelab_views']()
 ranking_intent = namespace['_hades_homelab_resource_ranking_intent']
 ranking_response = namespace['_hades_homelab_resource_ranking_response']
 guest_inventory_intent = namespace['_hades_homelab_guest_inventory_intent']
@@ -1056,36 +1058,89 @@ for visibility, expected in visibility_cases:
     assert 'synthetic-permission-read-time' in direct, direct
 assert placement_intent('Where is Agent Zero running?')
 assert namespace['_hades_is_homelab_intent']('Where is Agent Zero running?')
-intended_placement = placement_response('Where is Minecraft Server running?', {
+def assert_placement_parity(user_text, summary):
+    original_renderer = homelab_views_module._hades_homelab_service_placement_response
+    classified_results = []
+    def capturing_renderer(view):
+        classified_results.append(view)
+        return original_renderer(view)
+    homelab_views_module._hades_homelab_service_placement_response = capturing_renderer
+    try:
+        wrapped = placement_response(user_text, summary)
+    finally:
+        homelab_views_module._hades_homelab_service_placement_response = original_renderer
+    assert len(classified_results) == 1, classified_results
+    classified = classified_results[0]
+    assert set(classified) <= {
+        'kind', 'matches', 'requested_name', 'service_name', 'parent_name',
+    }, classified
+    assert isinstance(classified.get('kind'), str)
+    for field in ('requested_name', 'service_name', 'parent_name'):
+        if field in classified:
+            assert isinstance(classified[field], str) and len(classified[field]) <= 100
+    if 'matches' in classified:
+        assert isinstance(classified['matches'], list) and len(classified['matches']) <= 5
+        assert all(isinstance(name, str) and len(name) <= 80 for name in classified['matches'])
+    direct = original_renderer(classified)
+    assert direct == wrapped, (user_text, direct, wrapped)
+    return wrapped
+
+unavailable_placement = assert_placement_parity('Where is Minecraft running?', None)
+assert 'couldn\'t read the current application-service inventory' in unavailable_placement
+source_outage_placement = assert_placement_parity('Where is Minecraft running?', {
+    'service_catalog': {'status': 'UNAVAILABLE', 'coverage': 'UNKNOWN', 'services': []},
+})
+assert 'not currently available' in source_outage_placement
+intended_placement = assert_placement_parity('Where is Minecraft Server running?', {
     'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE', 'services': [{
         'name': 'Minecraft Server', 'parent_name': 'Synthetic Host',
     }], 'truncated': False},
 })
 assert 'NetBox lists Minecraft Server on Synthetic Host' in intended_placement, intended_placement
 assert 'does not establish whether the service is currently running or healthy' in intended_placement
-unknown_placement = placement_response('Where is Agent Zero running?', {
+missing_parent_placement = assert_placement_parity('Where is Minecraft running?', {
+    'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE', 'services': [{
+        'name': 'Minecraft',
+    }], 'truncated': False},
+})
+assert 'intended parent host is not recorded' in missing_parent_placement
+unknown_placement = assert_placement_parity('Where is Agent Zero running?', {
     'service_catalog': {'status': 'OK', 'coverage': 'EMPTY', 'services': []},
 })
 assert 'catalog is reachable but empty' in unknown_placement, unknown_placement
 assert 'remembered location' in unknown_placement, unknown_placement
-placement_empty_with_rows = placement_response('Where is Minecraft running?', {
+placement_empty_with_rows = assert_placement_parity('Where is Minecraft running?', {
     'service_catalog': {'status': 'OK', 'coverage': 'EMPTY', 'services': [{'name': 'Minecraft'}], 'truncated': False},
 })
 assert 'contradictory completeness metadata' in placement_empty_with_rows, placement_empty_with_rows
-placement_complete_without_rows = placement_response('Where is Minecraft running?', {
+placement_complete_without_rows = assert_placement_parity('Where is Minecraft running?', {
     'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE', 'services': [], 'truncated': False},
 })
 assert 'contradictory completeness metadata' in placement_complete_without_rows, placement_complete_without_rows
-partial_placement = placement_response('Where is Minecraft running?', {
+partial_placement = assert_placement_parity('Where is Minecraft running?', {
     'service_catalog': {'status': 'OK', 'coverage': 'PARTIAL', 'services': [{'name': 'Synthetic'}], 'truncated': True},
 })
 assert 'partial or doesn\'t confirm complete coverage' in partial_placement, partial_placement
 assert 'remembered location' in partial_placement, partial_placement
-unknown_coverage_placement = placement_response('Where is Minecraft running?', {
+unknown_coverage_placement = assert_placement_parity('Where is Minecraft running?', {
     'service_catalog': {'status': 'OK', 'services': [], 'truncated': False},
 })
 assert 'doesn\'t confirm complete coverage' in unknown_coverage_placement, unknown_coverage_placement
 assert 'catalog is reachable but empty' not in unknown_coverage_placement, unknown_coverage_placement
+missing_placement = assert_placement_parity('Where is Minecraft running?', {
+    'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE', 'services': [{
+        'name': 'Hades Core', 'parent_name': 'Synthetic Core',
+    }], 'truncated': False},
+})
+assert 'has no matching record for Minecraft' in missing_placement, missing_placement
+multiple_placement = assert_placement_parity('Where is Minecraft Server and Minecraft Metrics running?', {
+    'service_catalog': {'status': 'OK', 'coverage': 'COMPLETE', 'services': [
+        {'name': 'Minecraft Server', 'parent_name': 'Synthetic Host A'},
+        {'name': 'Minecraft Metrics', 'parent_name': 'Synthetic Host B'},
+    ], 'truncated': False},
+})
+assert 'multiple matching service records' in multiple_placement, multiple_placement
+assert 'Which service do you mean?' in multiple_placement, multiple_placement
 assert ranking_intent("What's the most loaded server?")
 assert ranking_intent('What is using the most resources?')
 assert namespace['_hades_is_homelab_intent']("What's the most loaded server?")
