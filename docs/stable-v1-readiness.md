@@ -129,5 +129,16 @@ disabled; see
 
 ## Current next action
 
+For the homelab architecture slice, canonical main is
+`4859acef7af95ff4611af83e8e1777a4fe355f6b` and Public CI run
+[37322096365](https://github.com/p0rkm4th/hades/actions/runs/37322096365)
+passed. Candidate `9e11ff92f503fefeaaf24b30c478857bdd1b29f4` moves two pure
+Proxmox host-load renderers to `integrations/homelab_views.py`; NYX-003 found
+no P1/P2 issue and focused safety/service-health/runtime checks pass. Candidate
+CI [37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706)
+passed for the source commit. This is not deployed or fresh owner acceptance. Private
+encrypted off-host recovery remains an owner-managed limitation: no independent
+destination has been specified.
+
 Homelab code checkpoint `8ae97d13c9b31db715e56c6c2b622ff40ae0ff82` is green (Public CI run [37321354100](https://github.com/p0rkm4th/hades/actions/runs/37321354100)). NYX-001 found no safe unique behavior to port from old branch `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its introduced history fails public-history safety and it regresses newer main contracts. NYX-002/004 validated the backup and recent-activity presenter extractions. Read-only runtime provenance is now recorded; next, obtain fresh authenticated owner/household acceptance and reconcile current-main presenter refactors with the private overlay composition. Independent private-infra recovery remains an owner-managed limitation.
 Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).

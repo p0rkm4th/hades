@@ -7,13 +7,30 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
+Reconciled current main is `4859acef7af95ff4611af83e8e1777a4fe355f6b`
+(Public CI [37322096365](https://github.com/p0rkm4th/hades/actions/runs/37322096365)
+passed). Candidate `9e11ff92f503fefeaaf24b30c478857bdd1b29f4` extracts only
+the pure host-load renderers into the existing view module; CI run
+[37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706)
+passed. NYX-003 found no P1/P2 issue. Local safety, service-health,
+and Hermes runtime checks pass. The candidate is not yet in main or deployed.
+Partial Proxmox guest visibility is now asserted to preserve uncertainty rather
+than infer source agreement. The old GPU-parity branch remains reference-only;
+no code or history from it is being promoted.
+
+The production runtime provenance described below is the last protected
+read-only check, not a new live probe in this epoch. No production rollout,
+source ACL change, host change, or infrastructure mutation occurred. Private
+recovery remains owner-managed because no independent encrypted off-host
+destination has been specified; same-disk copies do not satisfy that gate.
+
 Homelab code checkpoint `8ae97d13c9b31db715e56c6c2b622ff40ae0ff82`; Public CI run [37321354100](https://github.com/p0rkm4th/hades/actions/runs/37321354100) passed. It includes the reviewed backup and recent-activity presenter extractions; NYX-002/004 found no material P1/P2 gap. Sequential Kuma-outage coverage now verifies the following request performs a new Proxmox read and sees a changed guest state; NYX-011 reviewed that assertion. The old GPU-parity ref remains review material only; its introduced history fails public-history safety and it regresses current main contracts. No old history or code was imported.
 
 Fresh read-only provenance confirms the production Hermes process is active, has zero restarts, and selects the configured overlay. Its exact bytes match the protected deployment record and private deterministic per-slice builder. The running homelab MCP server maps to a public historical HADES commit, while current-main presenter refactors are not yet deployed; this does not establish byte parity with current main or fresh owner/household behavior. A private per-slice composition exists, but there is no single end-to-end public composition manifest. The existing protected owner and Household A/B sign-in inputs returned HTTP 400; no alternate passwords or account resets were attempted. Keep the read layer **PARTIAL** pending fresh authenticated owner/household dogfood and live stale/partial/conflict, service-health/placement, network-trend, and restoreability acceptance. No deployment, host, network, driver, source-ACL, or backup mutation occurred during this check.
 
 Private-infra recovery also remains gated: the current checkout is dirty, and independent encrypted off-host custody and restore proof are not established. The owner confirms there is no off-site backup at this time. Treat private-infra recovery as a known owner-managed limitation; do not represent same-host copies as independent recovery.
 
-**Next:** complete fresh authenticated owner/household dogfood using an authorized disposable identity and protected inputs, then document any behavior divergence. Keep current-main view refactors staged until they can be composed and proven against the active deployment without overwriting deployment-local policy.
+**Next:** run Public CI on the documentation-reconciled candidate; if it passes and `main` has not advanced, fast-forward this current-main descendant and verify main CI. Keep the read layer PARTIAL and undeployed until current-main runtime composition and fresh authenticated owner/household acceptance are established. Independent private recovery remains an owner gate.
 
 ## Historical release baseline and prior evidence
 

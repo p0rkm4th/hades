@@ -7,6 +7,29 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-05 UTC
 
+**Live reconciliation for this Aster epoch:** canonical `origin/main` is
+`4859acef7af95ff4611af83e8e1777a4fe355f6b` and its Public CI run
+[37322096365](https://github.com/p0rkm4th/hades/actions/runs/37322096365)
+passed. Candidate commit `9e11ff92f503fefeaaf24b30c478857bdd1b29f4`
+(`Extract pure Proxmox host-load views`) is on the current-main descendant
+branch; its Public CI run [37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706)
+passed. Do not treat it as main or deployed until promotion and runtime
+acceptance are verified. Local public-tree safety, the homelab service-health contract,
+and the Hermes task-chat runtime contract pass. NYX-003 reviewed the change
+and found no P1/P2 issue. Two pure host-load renderers now live in
+`integrations/homelab_views.py`; small Hermes compatibility wrappers preserve
+the route. Authentication, source reads, and authorization remain in
+`hermes/sitecustomize.py`. The runtime test now correctly requires uncertainty
+when Proxmox guest visibility is partial. This is an architectural extraction,
+not a live homelab acceptance or deployment claim.
+
+The current-main worktree is clean apart from the pushed candidate; the
+protected private infrastructure checkout remains heavily dirty and has no
+independent off-host recovery destination. The owner confirms no off-site
+backup is configured and has not specified an encrypted target. Same-disk
+copies are not independent recovery. No private files or transcripts are
+included in public HADES.
+
 Homelab code checkpoint `8ae97d13c9b31db715e56c6c2b622ff40ae0ff82`; Public CI run [37321354100](https://github.com/p0rkm4th/hades/actions/runs/37321354100) passed. It contains the Proxmox backup and recent-activity presentation extractions and sanitized documentation. NYX-002 and NYX-004 reviews found no material P1/P2 gaps; focused direct-view and adapter-parity checks pass. The adapter outage regression now sequences a successful Kuma read followed by a Kuma failure while Proxmox changes the guest from running to stopped; it asserts a second Proxmox fetch and that no prior Kuma availability is reused. NYX-011 reviewed the test; the focused adapter script and Public CI pass. Public CI also enforces that the household named-host guard returns before direct homelab read routes, including a synthetic regression for a read inserted inside the guard. The old `codex/gpu-telemetry-parity-20261004` branch remains a source reference at `345cb1b6de5f9f51ad98986c88ab9f0693461921`, merge base `b903ad331dc0269becf46600bf29db8931707fef`; its latest Public CI run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed the public-history safety check. No old-branch history or code has been imported. NYX-001 compared both branch tips and is **ACCEPTED**: current-tree safety passes on both, but the old introduced history fails its public-history audit. The old branch adds no safe unique capability to current `main`; it regresses NetBox pagination completeness, Kuma observation timestamps, partial-source service-health handling, and inference freshness/count wording. NYX-005 confirmed current main has a partial Hermes-facing presenter extraction at `integrations/homelab_views.py` and adapter views under `integrations/homelab-readonly/`; the old branch has neither. Do not merge or port it.
 
 Current-main concentration is measured at 12,804 lines / 219 AST function nodes in `hermes/sitecustomize.py` (174 `_hades_*`-named nodes), 1,919 lines / 40 in `integrations/homelab-readonly/server.py`, 375 / 6 in `integrations/homelab-readonly/reconcile.py`, 156 / 11 in `integrations/homelab-readonly/config.py`, 946 / 6 in `integrations/homelab-readonly/inference_view.py`, and 266 / 6 in `integrations/homelab_views.py`. `backup_view.py` is extracted at 118 lines / 1 function and `activity_view.py` at 90 lines / 1 function. These are size observations, not architecture goals.
@@ -17,7 +40,7 @@ Private-infra recovery remains an owner-managed limitation: the checkout is dirt
 
 **Repository state:** public `origin/main` is canonical. The dirty primary checkout and old parallel worktrees are preserved; this integration branch is the only active Aster implementation line. No private topology, credentials, or raw acceptance transcripts belong in public docs.
 
-**Next exact actions:** complete fresh authenticated owner and household dogfood against the verified runtime, using protected disposable-account inputs if available. Record any behavior divergence without publishing transcripts. Then decide whether current-main view refactors can be deployed through the private hash-guarded composition process or should remain staged until a single end-to-end provenance manifest exists.
+**Next exact actions:** run the sanitized documentation and current candidate through Public CI, then fast-forward only this current-main descendant to `main` if that run passes and main remains unchanged. Verify post-promotion Public CI. Keep the read layer **PARTIAL**: obtain fresh authenticated owner/household acceptance and establish a reproducible current-main runtime composition before any deployment. Do not attempt private recovery transfer until the owner supplies an independent encrypted destination and public recipient.
 
 ## Previous code and dogfood checkpoints — 2026-10-04
 
