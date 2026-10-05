@@ -7,9 +7,9 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-The public repository is at `fa2c7d710161b33e07aa29913b12509b39b810d5` on
+The public repository is at `1e46daf8e8224688cf747b2ff93fab0b1cb75a2a` on
 `main`; post-promotion Public CI run
-[37339622965](https://github.com/p0rkm4th/hades/actions/runs/37339622965)
+[37340174840](https://github.com/p0rkm4th/hades/actions/runs/37340174840)
 passed. The homelab code baseline is `0e468fff97567d4f85e4e50d76d2d039d58403ec`
 with its post-promotion Public CI passing in run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737).
@@ -87,6 +87,12 @@ cannot use HTTP transport to bypass source identity. The current mixed-version
 live bundle fails this exact-tree check. Its resulting identity attests
 configured disk bytes at capture time, not what a process has already loaded
 in memory.
+
+A fresh direct call through the active read-only MCP returned overall `OK`,
+Proxmox guest visibility `COMPLETE / ALL_GUESTS`, and eleven Kuma monitor rows
+`UP`. The NetBox application-service catalog was healthy but empty, so current
+service placement remains unverified. This is live source composition, not
+owner/household chat acceptance or current-main package parity.
 
 Private-infra recovery remains owner-managed: the checkout is dirty, no
 independent encrypted off-host target has been specified, and the owner confirms

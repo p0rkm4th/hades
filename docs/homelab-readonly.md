@@ -10,9 +10,9 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-The public repository is at `fa2c7d710161b33e07aa29913b12509b39b810d5` on
+The public repository is at `1e46daf8e8224688cf747b2ff93fab0b1cb75a2a` on
 `main`; post-promotion Public CI run
-[37339622965](https://github.com/p0rkm4th/hades/actions/runs/37339622965)
+[37340174840](https://github.com/p0rkm4th/hades/actions/runs/37340174840)
 passed. The homelab code baseline is
 `0e468fff97567d4f85e4e50d76d2d039d58403ec`, with post-promotion CI run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
@@ -82,6 +82,13 @@ writer now has an explicit homelab-only mode that checks an external adapter's
 exact file set and contents against the clean tracked HADES package tree;
 generic external MCP sources remain rejected. The current live bundle fails
 that exact-tree check.
+
+Fresh direct read-only composition through the active MCP reports overall
+`OK`, Proxmox guest visibility `COMPLETE / ALL_GUESTS`, and eleven Kuma monitor
+rows `UP`. The NetBox application-service catalog returned `OK` with zero
+service rows, so HADES cannot ground current application placement from that
+inventory yet. This direct adapter result does not establish owner or household
+natural-language behavior.
 
 These changes are undeployed and provide no new live homelab evidence. The last
 protected production inspection on 2026-10-05 showed an active Hermes process,
