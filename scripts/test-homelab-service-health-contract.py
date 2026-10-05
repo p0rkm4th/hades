@@ -30,6 +30,8 @@ assert set(view_functions) == {
     '_hades_homelab_provenance_response',
     '_hades_homelab_conflict_response',
     '_hades_homelab_guest_visibility_response',
+    '_hades_homelab_node_metrics_ranking_response',
+    '_hades_homelab_proxmox_node_load_response',
     '_hades_household_homelab_boundary_response',
 }
 assert not any(isinstance(node, (ast.Import, ast.ImportFrom)) for node in view_tree.body)
@@ -39,6 +41,10 @@ assert all(
     and isinstance(node.value.value, str)
     for node in view_tree.body
 ), 'homelab view module must have no import or top-level runtime work'
+view_spec = importlib.util.spec_from_file_location('synthetic_homelab_views', view_source)
+assert view_spec and view_spec.loader
+direct_views = importlib.util.module_from_spec(view_spec)
+view_spec.loader.exec_module(direct_views)
 inference_reader = next(
     node for node in tree.body
     if isinstance(node, ast.FunctionDef) and node.name == '_hades_direct_homelab_inference_read'
@@ -755,6 +761,10 @@ synthetic_node_metrics = {
 node_metric_ranking = ranking_response({
     'resources': [], 'proxmox_node_metrics': synthetic_node_metrics,
 })
+direct_node_metric_ranking = direct_views._hades_homelab_node_metrics_ranking_response(
+    synthetic_node_metrics
+)
+assert direct_node_metric_ranking == node_metric_ranking
 assert 'Synthetic Node B at 75.0%' in node_metric_ranking, node_metric_ranking
 assert 'Synthetic Offline Node' not in node_metric_ranking
 assert 'synthetic-node-time-b' in node_metric_ranking
@@ -771,6 +781,24 @@ missing_timestamp_metrics = ranking_response({
     }]},
 })
 assert 'because a source read timestamp is missing' in missing_timestamp_metrics
+tie_node_metrics = {
+    'status': 'READABLE', 'endpoints': [{
+        'status': 'AVAILABLE', 'truncated': False, 'nodes': [
+            {'name': 'Zulu Node', 'status': 'ONLINE', 'cpu_fraction': 0.5,
+             'memory_used_bytes': 8 * 1024**3, 'memory_total_bytes': 16 * 1024**3,
+             'observed_at': 'synthetic-z-time'},
+            {'name': 'Alpha Node', 'status': 'ONLINE', 'cpu_fraction': 0.5,
+             'memory_used_bytes': 4 * 1024**3, 'memory_total_bytes': 8 * 1024**3,
+             'observed_at': 'synthetic-a-time'},
+        ],
+    }],
+}
+tie_wrapper = ranking_response({'resources': [], 'proxmox_node_metrics': tie_node_metrics})
+tie_direct = direct_views._hades_homelab_node_metrics_ranking_response(tie_node_metrics)
+assert tie_direct == tie_wrapper
+assert 'Alpha Node, Zulu Node at 50.0%' in tie_wrapper, tie_wrapper
+assert '(sampled synthetic-a-time, synthetic-z-time)' in tie_wrapper, tie_wrapper
+assert 'Alpha Node, Zulu Node at 50.0% (tied)' in tie_wrapper, tie_wrapper
 node_load_response = namespace['_hades_homelab_proxmox_node_load_response']
 node_load_target = namespace['_hades_homelab_proxmox_node_load_target']
 assert node_load_target('How loaded is Synthetic Compute Alpha right now?') == 'Synthetic Compute Alpha'
@@ -780,6 +808,9 @@ assert node_load_target('What models are available?') is None
 specific_node_load = node_load_response(
     {'proxmox_node_metrics': synthetic_node_metrics}, 'synthetic-node-b'
 )
+assert direct_views._hades_homelab_proxmox_node_load_response(
+    {'proxmox_node_metrics': synthetic_node_metrics}, 'synthetic-node-b', re
+) == specific_node_load
 assert 'synthetic-node-b online' in specific_node_load, specific_node_load
 assert 'Host CPU reading is 75.0%' in specific_node_load, specific_node_load
 assert 'Host memory is 6.0 / 12.0 GiB' in specific_node_load, specific_node_load
@@ -797,6 +828,10 @@ linked_host = {
     }]},
 }
 assert 'Proxmox reports Synthetic Compute Alpha online' in node_load_response(linked_host, 'Synthetic Compute Alpha')
+unique_linked_response = node_load_response(linked_host, 'Synthetic Compute Alpha')
+assert direct_views._hades_homelab_proxmox_node_load_response(
+    linked_host, 'Synthetic Compute Alpha', re
+) == unique_linked_response
 unmatched_host = node_load_response(linked_host, 'Unlisted Node')
 assert 'no current Proxmox node sample uniquely matched that machine' in unmatched_host
 linked_host['proxmox_node_metrics']['endpoints'][0]['nodes'].append({
@@ -804,6 +839,10 @@ linked_host['proxmox_node_metrics']['endpoints'][0]['nodes'].append({
     'cpu_fraction': 0.2, 'observed_at': 'second-linked-host-time',
 })
 assert 'multiple Proxmox node records match' in node_load_response(linked_host, 'Synthetic Compute Alpha')
+ambiguous_linked_response = node_load_response(linked_host, 'Synthetic Compute Alpha')
+assert direct_views._hades_homelab_proxmox_node_load_response(
+    linked_host, 'Synthetic Compute Alpha', re
+) == ambiguous_linked_response
 direct_read_fn = next(
     node for node in functions
     if isinstance(node, ast.FunctionDef) and node.name == '_hades_direct_homelab_read'
