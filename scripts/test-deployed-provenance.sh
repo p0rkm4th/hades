@@ -144,6 +144,21 @@ for launch_args in ('["-m", "synthetic_untracked_homelab"]', '["-c", "pass"]'):
     else:
         raise AssertionError(f"accepted unbound homelab launch arguments: {launch_args}")
 
+http_homelab_profile = Path(profile.parent.parent.parent.parent) / "http-homelab.yaml"
+http_homelab_profile.write_text(
+    "mcp_servers:\n"
+    "  homelab-readonly:\n"
+    "    enabled: true\n"
+    '    url: "http://127.0.0.1:8765/mcp"\n',
+    encoding="utf-8",
+)
+try:
+    module.mcp_runtime_identity(http_homelab_profile, environment, root)
+except SystemExit as error:
+    assert "path-backed server.py package" in str(error), error
+else:
+    raise AssertionError("accepted homelab HTTP registration without source package identity")
+
 # A path-looking server.py argument is not enough when the configured command
 # is not a Python interpreter that will load the package.
 wrong_executor_profile = Path(profile.parent.parent.parent.parent) / "wrong-homelab-executor.yaml"

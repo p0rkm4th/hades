@@ -368,6 +368,10 @@ def mcp_runtime_identity(
 
         url_match = re.search(r"(?m)^    url:\s*(.+?)\s*$", block)
         if url_match:
+            if name == "homelab-readonly":
+                raise SystemExit(
+                    "enabled homelab-readonly MCP must bind a path-backed server.py package"
+                )
             raw = url_match.group(1).strip()
             if raw[:1] in {"'", '"'} and raw[-1:] == raw[:1]:
                 raw = raw[1:-1]
