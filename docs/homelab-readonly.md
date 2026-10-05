@@ -15,11 +15,11 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 **Current repository checkpoint (2026-10-05):** public `main` is
 `557d0cb0c382c4d267beb5a7651bc12be70ceea8`; Public CI
 [37375570990](https://github.com/p0rkm4th/hades/actions/runs/37375570990)
-passed all 122 steps. Aster's pushed documentation checkpoint candidate is
-`9125026abb02574c2cb818de19867dad56483ed1`, one commit ahead, and passed
-push-triggered CI [37376227713](https://github.com/p0rkm4th/hades/actions/runs/37376227713).
-This local docs/code refresh is newer and uncommitted; the GitHub integration
-returned HTTP 403 on PR creation, so no promotion occurred. The candidate
+passed all 122 steps. Aster candidate `bbac828c7144988eaccb7c501ea79f43bbeb0387` failed push-triggered
+Public CI [37378812179](https://github.com/p0rkm4th/hades/actions/runs/37378812179):
+the current-tree safety guard found one private local checkout path in the
+checkpoint. The reference is being removed before requalification; no
+promotion occurred. The candidate
 extracts only the pure GPU execution response into the existing view module;
 NYX-102 accepted exact parent AST behavior, with scope/subject authorization
 and tool reads left in Hermes. Focused owner/household, malformed-input, and
@@ -40,8 +40,8 @@ provenance remains unverified. No package rollout or source ACL change
 occurred. The bounded acceptance harness and synthetic redaction contract are
 in main. The old GPU parity remote ref is deleted; its preserved local source
 tip has failed public-history safety and is not an integration base. Prior
-NYX-001 review found no safe unique capability missing from main; NYX-101 is
-rechecking the current delta and extraction architecture. Follow
+NYX-001 review found no safe unique capability missing from main; NYX-101 found no unique safe behavior missing from main; NYX-102 accepted the
+local authority-preserving extraction. Follow
 [`docs/homelab-package-rollout.md`](homelab-package-rollout.md) for the
 loopback-only procedure. Public history still contains the previously reported
 `.local` disclosure, with no history rewrite. Independent encrypted off-host
