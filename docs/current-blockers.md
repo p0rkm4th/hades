@@ -7,11 +7,15 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-Current public `main` is `d01d83b42bb4f00af4b2150ae3db30f440aedbc3`.
-Public CI passed both candidate run
-[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635)
+Current public `main` is `b3346706f5ba28fb579c1aa49e09c4ade7308169`.
+The code baseline `d01d83b42bb4f00af4b2150ae3db30f440aedbc3` passed candidate
+run [37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635)
 and post-promotion run
 [37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140).
+The live-acceptance documentation correction passed candidate run
+[37328247716](https://github.com/p0rkm4th/hades/actions/runs/37328247716)
+and post-promotion run
+[37328612554](https://github.com/p0rkm4th/hades/actions/runs/37328612554).
 The candidate is a current-main descendant. The older GPU-parity branch was
 not imported or rewritten; its history fails public-history safety and Nyx-4
 found no safe unique capability to port.
