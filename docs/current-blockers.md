@@ -5,9 +5,9 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 08:39 UTC
+## Current convergence checkpoint — 2026-10-05 08:41 UTC
 
-Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact CI `37254848424` passed. Candidate `b3e64752` includes NYX-043 schedule and NYX-045 archived-task fixes plus NYX-046/047 extraction of the bounded summary projection into `summary_view.py`. Adapter, service-health, manifest-closure, install/deployed-provenance, doctor package-drift, syntax, diff, current-tree, and introduced-history checks pass. The preceding docs checkpoint `46cbde38` passed exact CI `37283743113`; exact CI for `b3e64752` is pending. Production/runtime parity and owner/household validation remain open; private infra recovery proof has not yet been established. Other live blockers remain the Hermes process environment mismatch, deployed adapter/source provenance, fresh Kuma observation timestamps, and owner/household validation. No production change occurred.
+Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact CI `37254848424` passed. Candidate `b3e64752` includes NYX-043 schedule and NYX-045 archived-task fixes plus NYX-046/047 extraction of the bounded summary projection into `summary_view.py`. Adapter, service-health, manifest-closure, install/deployed-provenance, doctor package-drift, syntax, diff, current-tree, and introduced-history checks pass. The integrated code/docs checkpoint `69feb409` passed exact Public CI `37285067916`. Production/runtime parity and owner/household validation remain open; independent recovery of current private infra state has not been established. Other live blockers remain the Hermes process environment mismatch, deployed adapter/source provenance, fresh Kuma observation timestamps, and owner/household validation. No production change occurred.
 
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
