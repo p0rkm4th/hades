@@ -10,12 +10,18 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Canonical public `main` is `e93f497e14da7b680612f7d30441a089ad4e22ce`;
+Canonical public `main` is `a2b67a165e7c959ec2e3ba0baf99fd5dfa0c3744`;
 named-host workload renderer candidate/main Public CI runs
 [37355109128](https://github.com/p0rkm4th/hades/actions/runs/37355109128) and
-[37355337581](https://github.com/p0rkm4th/hades/actions/runs/37355337581) passed. Current-main package/runtime parity and fresh
-authenticated owner/household acceptance are not verified. No current-source
-deployment has been established. The old GPU-parity branch was
+[37355337581](https://github.com/p0rkm4th/hades/actions/runs/37355337581), plus
+documentation checkpoint runs
+[37355836915](https://github.com/p0rkm4th/hades/actions/runs/37355836915) and
+[37356083937](https://github.com/p0rkm4th/hades/actions/runs/37356083937), passed. Current-main package/runtime parity and fresh authenticated
+owner/household acceptance are not verified. A fresh strict-key check
+confirmed the HADES Core identity, active Hermes gateway, healthy Open WebUI
+container, and direct health HTTP 200. DNS lookup for the configured
+owner-local name timed out from this client. No
+current-source deployment has been established. The old GPU-parity branch was
 `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its latest hosted
 CI run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
 failed, and the introduced-history safety audit currently reports one

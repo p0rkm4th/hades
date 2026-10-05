@@ -7,7 +7,7 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-Canonical public `main` is `e93f497e14da7b680612f7d30441a089ad4e22ce`; the named-host workload formatter candidate/main CI [37355109128](https://github.com/p0rkm4th/hades/actions/runs/37355109128) / [37355337581](https://github.com/p0rkm4th/hades/actions/runs/37355337581) passed. The response-boundary test and docs checkpoints also passed candidate/main runs [37354412609](https://github.com/p0rkm4th/hades/actions/runs/37354412609) / [37354552987](https://github.com/p0rkm4th/hades/actions/runs/37354552987) and [37354002390](https://github.com/p0rkm4th/hades/actions/runs/37354002390) / [37354189687](https://github.com/p0rkm4th/hades/actions/runs/37354189687). The active Aster branch matches `origin/main`. The old `codex/gpu-telemetry-parity-20261004` ref was `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its latest CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed public-history safety, and the introduced-history audit has one redacted local-path/private-address finding. NYX-001 and Aster found no unique public-safe behavior to port; main has stronger freshness/completeness contracts and separated view modules. Disposition is **UNSAFE / OBSOLETE REFERENCE**; its remote ref has been deleted and its clean local worktree is retained as evidence. No history was rewritten.
+Canonical public `main` is `a2b67a165e7c959ec2e3ba0baf99fd5dfa0c3744`; named-host workload renderer candidate/main CI [37355109128](https://github.com/p0rkm4th/hades/actions/runs/37355109128) / [37355337581](https://github.com/p0rkm4th/hades/actions/runs/37355337581) and latest docs checkpoint [37355836915](https://github.com/p0rkm4th/hades/actions/runs/37355836915) / [37356083937](https://github.com/p0rkm4th/hades/actions/runs/37356083937) passed. The active Aster branch matches `origin/main`. The old `codex/gpu-telemetry-parity-20261004` ref was `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its latest CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed public-history safety, and the introduced-history audit has one redacted local-path/private-address finding. NYX-001 and Aster found no unique public-safe behavior to port; main has stronger freshness/completeness contracts and separated view modules. Disposition is **UNSAFE / OBSOLETE REFERENCE**; its remote ref has been deleted and its clean local worktree is retained as evidence. No history was rewritten.
 
 Current deployed Hermes-overlay and homelab-adapter hashes are **NOT VERIFIED** in this epoch. Do not infer runtime parity from green source CI. Current main retains the `d8013f94` guard that denies household and missing-subject named-host workload questions before reading `homelab_summary`; focused tests assert zero source reads. The pure named-host renderer was subsequently extracted at `e93f497e`, with direct/module-wrapper parity and non-invocation assertions for unknown/unavailable routes.
 
@@ -18,8 +18,15 @@ Homelab remains **PARTIAL** for owner-facing live use. Current-main runtime byte
 No independent encrypted off-host recovery destination or recipient is configured. The owner confirms there is no off-site backup now; no recovery artifact was created. This remains an owner-managed gate, not a reconstruction or live-source pass.
 
 Last protected read-only production provenance is dated 2026-10-05 and remains
-the source for the statements below. A mode-0600 acceptance report records
-seven authenticated chats on the previously deployed adapter revision
+the source for the historical composition statements below. Aster
+re-verified from this session, using the documented strict SSH key, that the
+HADES Core host identity matched, `hades-hermes` was active, Open WebUI
+reported a healthy container state, and its direct health endpoint returned
+HTTP 200. The configured owner-local DNS lookup timed out; related candidate
+names were unresolved or timed out. These checks establish reachability and service
+health only, not the selected adapter revision, functional chat behavior, or
+owner/household acceptance. No host changes were made. A mode-0600
+acceptance report records seven authenticated chats on the previously deployed adapter revision
 `6bc6063702f73665a9cf666ca14cf7057d5924e`: four owner questions and three
 household questions, zero turn errors, and no topology-leak flags on the
 household answers. This is a narrow historical-package pass, not current-main
