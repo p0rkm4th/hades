@@ -643,7 +643,12 @@ def homelab_summary() -> dict:
                 continue
             try:
                 payload = _fetch(url, token_file, ca_file, token_ids[index])
-                source_rows = [row for row in payload.get("data", []) if isinstance(row, dict)]
+                resource_data = payload.get("data")
+                if not isinstance(resource_data, list) or any(
+                    not isinstance(row, dict) for row in resource_data
+                ):
+                    raise ValueError("Proxmox cluster resources response has an unsupported shape")
+                source_rows = resource_data
                 indexed_source_rows = []
                 for source_row in source_rows:
                     row = dict(source_row)

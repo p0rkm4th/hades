@@ -868,6 +868,49 @@ assert any(row["source"] == "Uptime Kuma" and row["status"] == "AVAILABLE"
 server._fetch = original_fetch
 print("PASS partial Proxmox outage preserves successful rows and does not promote a prior read")
 
+# A JSON object with a malformed `data` field is a failed endpoint, not an
+# empty successful inventory. It must not raise out of the composed summary
+# or discard unrelated current source rows.
+def malformed_proxmox_fetch(url, *_args, **_kwargs):
+    if url == "https://pve-a.example.test/cluster/resources":
+        return {"data": [{
+            "id": "qemu/102", "type": "qemu", "vmid": 102,
+            "name": "synthetic-core-node", "node": "alpha", "status": "running",
+        }]}
+    if url == "https://pve-b.example.test/cluster/resources":
+        return {"data": None}
+    if url == "https://pve-a.example.test/access/permissions":
+        return {"data": {"/vms/102": {"VM.Audit": 1}}}
+    if url == "https://pve-b.example.test/access/permissions":
+        raise OSError("synthetic permission read timeout")
+    if url == "https://netbox.example.test/api/dcim/devices/":
+        return {"results": [device_fixture]}
+    if url == "https://netbox.example.test/api/ipam/services/":
+        return {"count": 1, "next": None, "results": [service_fixture]}
+    if url == "https://status.example.test/api/status-page/heartbeat/hades-status":
+        return {"heartbeatList": {"5": [{"status": 1, "time": "2026-09-14 12:00:00.000"}]}}
+    if url == "https://status.example.test/api/status-page/hades-status":
+        return {"publicGroupList": [{"monitorList": [{"id": 5, "name": "monitor-alpha", "type": "ping"}]}]}
+    raise AssertionError(f"unexpected synthetic malformed-response URL: {url}")
+
+server._fetch = malformed_proxmox_fetch
+malformed_partial = server.homelab_summary()
+assert malformed_partial["status"] == "PARTIAL", malformed_partial
+assert any((row["runtime"] or {}).get("vmid") == 102 for row in malformed_partial["resources"])
+malformed_sources = [row for row in malformed_partial["source_observations"]
+                    if row["source"].startswith("Proxmox:") and "guest visibility" not in row["source"]]
+assert [(row["source"], row["status"]) for row in malformed_sources] == [
+    ("Proxmox:alpha", "AVAILABLE"), ("Proxmox:beta", "UNAVAILABLE"),
+], malformed_sources
+assert malformed_sources[0]["retrieved_at"] and malformed_sources[0]["rows"] == 1
+assert malformed_sources[1]["retrieved_at"] is None
+assert any(row["source"] == "NetBox" and row["status"] == "AVAILABLE"
+           for row in malformed_partial["source_observations"])
+assert any(row["source"] == "Uptime Kuma" and row["status"] == "AVAILABLE"
+           for row in malformed_partial["source_observations"])
+server._fetch = original_fetch
+print("PASS malformed Proxmox endpoint shape is isolated while independent current rows survive")
+
 def netbox_outage_fetch(url, *_args, **_kwargs):
     if url == "https://pve-a.example.test/cluster/resources":
         return {"data": [{
