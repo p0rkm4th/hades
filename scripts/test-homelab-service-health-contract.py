@@ -903,9 +903,33 @@ direct_homelab_reads = [
     and node.func.id.startswith('_hades_direct_homelab_')
 ]
 assert direct_homelab_reads, 'runtime must keep explicit direct homelab read routes'
-assert all(
-    node.lineno > boundary_guard.lineno for node in direct_homelab_reads
-), 'household named-host guard must run before every direct homelab read route'
+def direct_reads_follow_guard(guard, reads):
+    return bool(reads) and all(
+        node.lineno > guard.end_lineno for node in reads
+    )
+
+assert direct_reads_follow_guard(boundary_guard, direct_homelab_reads), (
+    'household named-host guard must return before every direct homelab read route'
+)
+mutated_guard_tree = ast.parse('''
+if scope == "household":
+    answer = household_boundary(text)
+    if answer:
+        return {"api_calls": 0}
+    _hades_direct_homelab_read()
+''')
+mutated_guard = next(
+    node for node in mutated_guard_tree.body if isinstance(node, ast.If)
+)
+mutated_reads = [
+    node for node in ast.walk(mutated_guard)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id.startswith('_hades_direct_homelab_')
+]
+assert mutated_reads and not direct_reads_follow_guard(mutated_guard, mutated_reads), (
+    'contract must reject a direct homelab read inserted inside the household guard'
+)
 
 # A generalized public build must not repeat the previous private deployment's
 # machine, node, or address. An owner may supply an explicit private description.
