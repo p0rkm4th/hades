@@ -470,24 +470,31 @@ assert "can't provide private infrastructure inventory" in hostile_household["fi
 assert tool_dispatches == [], tool_dispatches
 assert ModelDispatchHandler.requests == [], ModelDispatchHandler.requests
 
-named_load_household_agent = agent_class(
-    gateway_session_key=f"hades-user-{beta}", session_id="synthetic-household-named-host-load",
-    stream_delta_callback=lambda _chunk: None,
-    **{**kwargs, "base_url": f"http://127.0.0.1:{model_dispatch_server.server_port}/v1"},
-)
-tool_dispatches.clear()
-ModelDispatchHandler.requests.clear()
-named_load_household = named_load_household_agent.run_conversation(
-    "How loaded is Synthetic Node B?", conversation_history=[]
-)
-assert named_load_household.get("completed") is True and named_load_household.get("api_calls") == 0, named_load_household
-assert tool_dispatches == [], tool_dispatches
-assert ModelDispatchHandler.requests == [], ModelDispatchHandler.requests
-for private_detail in (
-    "Synthetic Node B", "75.0%", "6.0 / 12.0 GiB", "Proxmox", "NetBox",
-    "192.168.", "gpu", "memory",
+for case_name, private_prompt in (
+    ("plain", "How loaded is Synthetic Node B?"),
+    ("quoted", 'How loaded is "Synthetic Node B"?'),
+    ("backticked", "How loaded is `Synthetic Node B`?"),
+    ("memory-use", "How much memory does Synthetic Node B use?"),
 ):
-    assert private_detail.casefold() not in named_load_household["final_response"].casefold(), named_load_household
+    named_load_household_agent = agent_class(
+        gateway_session_key=f"hades-user-{beta}", session_id=f"synthetic-household-named-host-load-{case_name}",
+        stream_delta_callback=lambda _chunk: None,
+        **{**kwargs, "base_url": f"http://127.0.0.1:{model_dispatch_server.server_port}/v1"},
+    )
+    tool_dispatches.clear()
+    ModelDispatchHandler.requests.clear()
+    named_load_household = named_load_household_agent.run_conversation(
+        private_prompt, conversation_history=[]
+    )
+    assert named_load_household.get("completed") is True and named_load_household.get("api_calls") == 0, named_load_household
+    assert tool_dispatches == [], tool_dispatches
+    assert ModelDispatchHandler.requests == [], ModelDispatchHandler.requests
+    assert "can't provide private infrastructure inventory" in named_load_household["final_response"].casefold(), named_load_household
+    for private_detail in (
+        "Synthetic Node B", "75.0%", "6.0 / 12.0 GiB", "Proxmox", "NetBox",
+        "192.168.", "gpu", "memory",
+    ):
+        assert private_detail.casefold() not in named_load_household["final_response"].casefold(), named_load_household
 
 # Failures in the household boundary must abort the request before it can
 # fall through to model or homelab tool routing. Test each independently:
