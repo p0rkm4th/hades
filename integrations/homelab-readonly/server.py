@@ -20,6 +20,7 @@ from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 
 from inference_view import (
     _format_node_activity_fallback,
+    _inference_monitor_is_linked_to_target,
     _inference_resource_names,
     format_gpu_hardware_target_response,
     format_inference_inventory_response,

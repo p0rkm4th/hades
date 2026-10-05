@@ -50,6 +50,7 @@ import server
 # The MCP server keeps compatibility aliases while pure inference presentation
 # lives in its domain view module.
 assert server._format_node_activity_fallback is inference_view._format_node_activity_fallback
+assert server._inference_monitor_is_linked_to_target is inference_view._inference_monitor_is_linked_to_target
 assert server._inference_resource_names is inference_view._inference_resource_names
 assert server.resolve_inference_node_target is inference_view.resolve_inference_node_target
 assert server.format_gpu_hardware_target_response is inference_view.format_gpu_hardware_target_response
