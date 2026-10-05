@@ -1,8 +1,8 @@
 # HADES stable-v1 readiness
 
-## Current homelab engineering checkpoint — 2026-10-05 08:20 UTC
+## Current homelab engineering checkpoint — 2026-10-05 08:39 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Source candidate `c8e903e` passed exact CI `37283034443`; docs checkpoint `327f91e7` passed exact CI `37283350767`. NYX-036 doctor package/process checks, NYX-037 malformed Proxmox payload isolation, and NYX-041 activity-view extraction are integrated with focused contract coverage. NYX-042 found two open P2 backup-reporting defects: disabled schedules are hidden, and malformed rows can appear healthy/empty. NYX-043 is implementing the fix and regression tests. No production promotion/deployment occurred. The Hermes process environment mismatch, deployed adapter parity, Kuma timestamps, and owner/household acceptance remain open.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Candidate `b3e64752` includes NYX-043 schedule validation, NYX-045 malformed/truncated task-history coverage, and NYX-046/047 extraction/tests for bounded summary presentation. Focused contracts, package closure/provenance, doctor package drift, and public safety checks pass. The preceding docs checkpoint `46cbde38` passed exact CI `37283743113`; exact CI for this candidate is pending. Production parity, owner/household acceptance, and private recovery proof remain open. No production promotion/deployment occurred. The Hermes process environment mismatch, deployed adapter parity, Kuma timestamps, and owner/household acceptance remain open.
 
 This is a readiness record for the deployment, not an installer or a new
 runtime layer. Most component observations below were last rechecked read-only
