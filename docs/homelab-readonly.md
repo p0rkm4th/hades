@@ -9,6 +9,16 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
+Aster integration branch `codex/aster-homelab-checkpoint-redacted-20261004`
+is based on `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`
+(Public CI `37254848424` passed). Candidate `1684f78736d015dd6ea25fa869e4a90694993cf9`
+passed exact Public CI `37277326937`. Current local candidate `b8258e8724219cd34cb31c37b9d9165736b5440e`
+integrates NYX-035's installer package-closure guard and focused tests; local
+installer/provenance/reconstruction/safety checks pass. Its hosted CI is pending.
+NYX-036 is checking doctor-time package drift against recorded source identity
+and the actual Hermes runtime path. No candidate change is deployed or promoted.
+
+
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` and its CI run
 `37254848424` passed. The homelab source baseline at `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`
 preserves Kuma `last_updated` as `availability_summary[].observed_at`, separate
@@ -30,7 +40,7 @@ response for private infrastructure-detail requests. The five-document NYX-018 r
 classification is accepted with no port recommended. NYX-017's authenticated
 hostile-household no-dispatch review is accepted; its runtime regression and
 corrected partial-source contradiction assertion are in `2e62ffde`, which
-passed exact Public CI `37273578676`. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox guest-visibility extraction moves pure ACL policy into `proxmox_visibility.py`; focused contracts pass locally; exact Public CI `37274388982` and public tree/history safety pass. Docs refresh `7ba90aa7` passed exact CI `37274614406`. NYX-029 found helper failures abort before MCP/model dispatch without private leakage (P2 availability). NYX-030's loader/alias/renderer failure tests are committed in `1c4f280e` and pass locally; exact Public CI `37275149451` passed on head `71cf0497`. NYX-032 closed that P1: enabled required `homelab-readonly` registrations now require a path-backed `server.py` package identity; synthetic tests reject HTTP, `-m`, `-c`, and wrong-executor forms while preserving unrelated MCP transports. Aster independently reran provenance and reconstruction-closure tests; exact Public CI `37276510518` passed on candidate `32d6a6a9`. This source fix is not deployed. Integrated source/test candidate `1c4f280e` passed CI on test-bearing docs head `71cf0497` (run `37275149451`); latest docs/status head `0c927309ac65bc12d851d6b805388bc1197f2535` passed exact CI `37275891021`. NYX-033 accepted the provider-parser boundary and found a separate P1: authenticated redirects can forward Authorization across origins or an HTTPS downgrade. NYX-034 integrated a fail-closed redirect guard as `a8fc1535`; the loopback test and adapter suite pass locally, while hosted CI is pending. NYX-035 is auditing installer working-directory package closure. Main promotion and deployment remain pending. These candidate changes are not deployed.
+passed exact Public CI `37273578676`. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox guest-visibility extraction moves pure ACL policy into `proxmox_visibility.py`; focused contracts pass locally; exact Public CI `37274388982` and public tree/history safety pass. Docs refresh `7ba90aa7` passed exact CI `37274614406`. NYX-029 found helper failures abort before MCP/model dispatch without private leakage (P2 availability). NYX-030's loader/alias/renderer failure tests are committed in `1c4f280e` and pass locally; exact Public CI `37275149451` passed on head `71cf0497`. NYX-032 closed that P1: enabled required `homelab-readonly` registrations now require a path-backed `server.py` package identity; synthetic tests reject HTTP, `-m`, `-c`, and wrong-executor forms while preserving unrelated MCP transports. Aster independently reran provenance and reconstruction-closure tests; exact Public CI `37276510518` passed on candidate `32d6a6a9`. This source fix is not deployed. Integrated source/test candidate `1c4f280e` passed CI on test-bearing docs head `71cf0497` (run `37275149451`); latest docs/status head `0c927309ac65bc12d851d6b805388bc1197f2535` passed exact CI `37275891021`. NYX-033 accepted the provider-parser boundary and found a separate P1: authenticated redirects can forward Authorization across origins or an HTTPS downgrade. NYX-034 integrated a fail-closed authenticated-redirect guard as `a8fc1535`; its exact candidate `1684f787` passed Public CI `37277326937`. NYX-035 installer closure is integrated locally as `b8258e87` with focused validation passing; candidate CI is pending. NYX-036 doctor-time drift detection is active. Main promotion and deployment remain pending. These candidate changes are not deployed.
 
 The fresh 2026-10-05 active-profile package comparison found the deployed
 Python module set matches current public `main` except that `reconcile.py`
