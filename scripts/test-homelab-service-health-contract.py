@@ -812,6 +812,18 @@ assert any(
     and node.func.id == '_hades_homelab_proxmox_node_load_response'
     for node in ast.walk(direct_read_fn)
 ), 'direct named host load intent must reach the explicit Proxmox node-load response'
+service_monitor_calls = [
+    node for node in ast.walk(direct_read_fn)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == '_hades_service_monitor_response'
+]
+assert any(
+    len(call.args) == 4
+    and isinstance(call.args[2], ast.Name) and call.args[2].id == 'summary'
+    and isinstance(call.args[3], ast.Name) and call.args[3].id == 'scope'
+    for call in service_monitor_calls
+), 'direct service-health route must pass canonical summary and scope'
 
 household_health = household_boundary('Are all the computers okay? Is Minecraft working?')
 assert household_health == (
@@ -978,10 +990,57 @@ assert "Uptime Kuma's configured check for Minecraft Server is up." in up, up
 assert 'does not verify an application login, usable session, or workload state' in up, up
 assert 'guarantee it is ready for use' in up, up
 
+# Match the compact, provenance-preserving summary returned by the live adapter
+# and preserve the active four-argument caller contract.
+compact_minecraft_summary = {
+    'status': 'OK',
+    'source_observations': [{'source': 'Synthetic Kuma', 'status': 'READABLE'}],
+    'source_counts': {'kuma_monitor_rows': 1, 'identity_unlinked_resources': 0},
+    'availability_summary': [{
+        'name': 'Minecraft Server', 'status': 'up', 'freshness': 'FRESH',
+    }],
+}
+compact_up = answer('Is Minecraft healthy enough for tonight?', [], compact_minecraft_summary, 'owner')
+assert 'configured check for Minecraft Server is up' in compact_up, compact_up
+assert answer('Is Minecraft healthy enough for tonight?', [], compact_minecraft_summary, 'household') is None
+compact_stale = answer('Is Minecraft online?', [], {
+    **compact_minecraft_summary,
+    'availability_summary': [{
+        'name': 'Minecraft Server', 'status': 'up', 'freshness': 'STALE',
+        'last_updated': '2026-10-04T11:00:00Z',
+    }],
+}, 'owner')
+assert 'observation is stale' in compact_stale and "can't verify current service health" in compact_stale, compact_stale
+assert 'configured check for Minecraft Server is up' not in compact_stale, compact_stale
+
 unmonitored = answer('Is Jellyfin healthy enough for tonight?', fresh_minecraft)
 assert 'couldn\'t verify a current Uptime Kuma service monitor matching jellyfin' in unmonitored, unmonitored
 assert 'Proxmox host or VM being online does not show' in unmonitored, unmonitored
 assert "can't call it healthy" in unmonitored, unmonitored
+
+unavailable_monitor = answer('Is Jellyfin healthy?', [], {
+    'status': 'PARTIAL',
+    'source_observations': [{'source': 'Synthetic Kuma', 'status': 'UNAVAILABLE'}],
+    'source_counts': {'kuma_monitor_rows': 0, 'identity_unlinked_resources': 0},
+    'availability_summary': [],
+}, 'owner')
+assert 'could not read Synthetic Kuma' in unavailable_monitor, unavailable_monitor
+assert 'Whether a matching check exists is unknown' in unavailable_monitor, unavailable_monitor
+assert 'couldn\'t verify a current Uptime Kuma service monitor matching' not in unavailable_monitor, unavailable_monitor
+unavailable_summary_monitor = answer(
+    'Is Jellyfin healthy?', [], {'status': 'SOURCE_UNAVAILABLE'}, 'owner'
+)
+assert 'live homelab summary is unavailable' in unavailable_summary_monitor, unavailable_summary_monitor
+assert 'Whether a matching check exists is unknown' in unavailable_summary_monitor, unavailable_summary_monitor
+
+unlinked_monitor = answer('Is Jellyfin healthy?', [], {
+    'status': 'PARTIAL',
+    'source_observations': [{'source': 'Synthetic Kuma', 'status': 'READABLE'}],
+    'source_counts': {'kuma_monitor_rows': 2, 'identity_unlinked_resources': 1},
+    'availability_summary': [],
+}, 'owner')
+assert 'lack a verified service identity' in unlinked_monitor, unlinked_monitor
+assert 'Whether a matching check exists is unknown' in unlinked_monitor, unlinked_monitor
 
 stale = [dict(fresh_minecraft[0], availability_freshness='STALE')]
 stale_answer = answer('Is Minecraft online?', stale)
