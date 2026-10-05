@@ -470,6 +470,8 @@ for prompt in (
     "How loaded is deep-inference-node?",
     "How much memory does deep-inference-node use?",
     "What is deep-inference-node CPU usage?",
+    "How much memory does it use?",
+    "What about CPU?",
 ):
     dispatches_before = len(homelab_dispatch_calls)
     household_resource_agent = agent_class(

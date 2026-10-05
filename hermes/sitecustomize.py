@@ -8236,31 +8236,52 @@ def _hades_contextual_followup_clarification(user_text, previous_user_text):
     return None
 
 
-def _hades_household_homelab_boundary_response(user_text):
+def _hades_household_homelab_boundary_response(user_text, conversation_history=None):
     """Fail closed without leaking household memory or tool internals."""
     text = str(user_text or "")
+    configured_alias_match = _hades_configured_homelab_alias_match(text)
     domain = re.search(
         r"\b(?:homelab|home\s+lab|servers?|computers?|machines?|nodes?|network|minecraft|hades)\b",
         text,
         re.IGNORECASE,
-    ) or _hades_configured_homelab_alias_match(text)
-    if not domain:
-        return None
+    ) or configured_alias_match
     status = re.search(
         r"\b(?:okay|ok|well|working|healthy|health|status|down|up|running|online|offline|"
         r"trouble|wrong|broken|slow|available|alive|doing|responding|reachable|"
-        r"loaded|cpu|memory|usage|utilization|load|"
         r"can\s+we\s+use|which\s+.*(?:trouble|problem)|what\s+changed)\b",
         text,
         re.IGNORECASE,
     )
+    resource_usage = re.search(
+        r"\b(?:loaded|cpu|memory|ram|gpu|disk|storage|usage|utilization|load)\b",
+        text,
+        re.IGNORECASE,
+    )
+    resource_host_context = bool(configured_alias_match)
+    followup_reference = re.search(
+        r"\b(?:it|that|there|this|those|them|what\s+about|how\s+about)\b",
+        text,
+        re.IGNORECASE,
+    )
+    if not resource_host_context and resource_usage and followup_reference:
+        recent_user_turns = [
+            str(item.get("content") or "")[:4000]
+            for item in (conversation_history[-8:] if isinstance(conversation_history, list) else [])
+            if isinstance(item, dict) and item.get("role") == "user"
+        ]
+        if recent_user_turns:
+            resource_host_context = bool(
+                _hades_configured_homelab_alias_match(recent_user_turns[-1])
+            )
+    if not domain and not resource_host_context:
+        return None
     location = re.search(
         r"\b(?:where\b.{0,60}\b(?:run|running|hosted|located|live)|"
         r"which\s+(?:computer|server|machine|node)\b.{0,60}\b(?:run|running|hosted|located|live))",
         text,
         re.IGNORECASE,
     )
-    if not status and not location:
+    if not status and not location and not (resource_host_context and resource_usage):
         return None
 
     parts = []
@@ -9678,7 +9699,8 @@ try:
             }
         if getattr(self, "_hades_session_scope", "") == "household":
             household_status_response = _hades_household_homelab_boundary_response(
-                _server_text
+                _server_text,
+                _server_history_for_routing,
             )
             if household_status_response:
                 callback = getattr(self, "stream_delta_callback", None)

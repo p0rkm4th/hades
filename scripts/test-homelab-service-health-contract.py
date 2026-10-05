@@ -1013,6 +1013,13 @@ assert household_minecraft == (
 ), household_minecraft
 assert household_boundary('What does Minecraft do?') is None
 assert household_boundary('Can you help me pick a Minecraft skin?') is None
+assert household_boundary('What does computer memory do?') is None
+assert household_boundary('How does Minecraft use memory?') is None
+assert household_boundary('What is server load balancing?') is None
+original_homelab_alias_match = namespace['_hades_configured_homelab_alias_match']
+namespace['_hades_configured_homelab_alias_match'] = lambda text: (
+    'deep-inference-node' if 'deep-inference-node' in str(text).casefold() else None
+)
 for prompt in (
     'How loaded is deep-inference-node?',
     'How much memory does deep-inference-node use?',
@@ -1022,6 +1029,18 @@ for prompt in (
     assert boundary_answer is not None, (prompt, boundary_answer)
     assert 'deep-inference-node' not in boundary_answer
     assert 'remembered' in boundary_answer or "can't verify" in boundary_answer, (prompt, boundary_answer)
+resource_followup_history = [
+    {'role': 'user', 'content': 'Check deep-inference-node.'},
+    {'role': 'assistant', 'content': 'Synthetic host metric sentinel.'},
+]
+for prompt in ('How much memory does it use?', 'What about CPU?'):
+    boundary_answer = household_boundary(prompt, resource_followup_history)
+    assert boundary_answer is not None, (prompt, boundary_answer)
+    assert 'deep-inference-node' not in boundary_answer
+assert household_boundary('How much memory does it use?', [
+    {'role': 'user', 'content': 'What does computer memory do?'}
+]) is None
+namespace['_hades_configured_homelab_alias_match'] = original_homelab_alias_match
 run_conversation = next(
     node for node in ast.walk(tree)
     if isinstance(node, ast.FunctionDef) and node.name == '_hades_run_conversation'
