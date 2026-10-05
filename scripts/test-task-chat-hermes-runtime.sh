@@ -474,6 +474,8 @@ for case_name, private_prompt in (
     ("plain", "How loaded is Synthetic Node B?"),
     ("quoted", 'How loaded is "Synthetic Node B"?'),
     ("backticked", "How loaded is `Synthetic Node B`?"),
+    ("curly-quoted", "How loaded is “Synthetic Node B”?"),
+    ("parenthesized", "How loaded is (Synthetic Node B)?"),
     ("memory-use", "How much memory does Synthetic Node B use?"),
 ):
     named_load_household_agent = agent_class(
