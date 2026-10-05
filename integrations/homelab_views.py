@@ -502,6 +502,32 @@ def _hades_homelab_guest_inventory_response(summary):
     return " ".join(parts)
 
 
+def _hades_homelab_guest_index_workloads_view(
+    *, node_label, node_state, guest_labels, coverage_complete, source_label, retrieved_at
+):
+    """Render prefiltered, owner-authorized Proxmox node workload values."""
+    response = f"Proxmox reports node {node_label} as {node_state}. "
+    if guest_labels:
+        response += "Visible guests: " + "; ".join(guest_labels[:20]) + (
+            f"; and {len(guest_labels) - 20} more." if len(guest_labels) > 20 else "."
+        )
+    elif coverage_complete:
+        response += "The complete current guest inventory shows no VM/container guests on this node."
+    else:
+        response += (
+            "No matching visible guest rows were returned; node guest inventory is incomplete, "
+            "so this does not establish that the node is empty."
+        )
+    if not coverage_complete and guest_labels:
+        response += " Guest visibility or node coverage is incomplete, so additional guests may be unreported."
+    response += (
+        f" Proxmox source {source_label} was read at {retrieved_at}."
+        if retrieved_at else " The Proxmox read timestamp was not reported."
+    )
+    response += " Node state and VM/container power state do not establish application health."
+    return response
+
+
 def _hades_homelab_guest_visibility_response(summary):
     """Render effective Proxmox permission scope without inferring completeness."""
     visibility = summary.get("proxmox_guest_visibility") if isinstance(summary, dict) else None

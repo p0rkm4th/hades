@@ -5152,19 +5152,15 @@ def _hades_homelab_guest_index_workloads_on_host_response(text, summary, scope):
         label = " ".join(str(row.get("name") or "").split())[:100]
         state = str(row.get("status") or "UNKNOWN").upper()
         labels.append(f"{label + ' ' if label else ''}{kind} {guest_id} ({state})")
-    response = f"Proxmox reports node {node_name} as {node_state}. "
-    if labels:
-        response += "Visible guests: " + "; ".join(labels[:20]) + (f"; and {len(labels) - 20} more." if len(labels) > 20 else ".")
-    elif complete:
-        response += "The complete current guest inventory shows no VM/container guests on this node."
-    else:
-        response += "No matching visible guest rows were returned; node guest inventory is incomplete, so this does not establish that the node is empty."
-    if not complete and labels:
-        response += " Guest visibility or node coverage is incomplete, so additional guests may be unreported."
     retrieved_at = str(endpoint.get("retrieved_at") or "")[:64]
-    response += f" Proxmox source {source_id} was read at {retrieved_at}." if retrieved_at else " The Proxmox read timestamp was not reported."
-    response += " Node state and VM/container power state do not establish application health."
-    return response
+    return getattr(_hades_load_homelab_views(), "_hades_homelab_guest_index_workloads_view")(
+        node_label=node_name,
+        node_state=node_state,
+        guest_labels=labels,
+        coverage_complete=complete,
+        source_label=source_id,
+        retrieved_at=retrieved_at,
+    )
 
 
 def _hades_homelab_guest_inventory_intent(text):

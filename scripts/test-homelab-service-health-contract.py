@@ -32,6 +32,7 @@ assert set(view_functions) == {
     '_hades_homelab_node_metrics_ranking_response',
     '_hades_homelab_proxmox_node_load_response',
     '_hades_homelab_guest_inventory_response',
+    '_hades_homelab_guest_index_workloads_view',
     '_hades_homelab_guest_visibility_response',
 }
 assert [
@@ -238,8 +239,24 @@ ranking_response = namespace['_hades_homelab_resource_ranking_response']
 guest_inventory_intent = namespace['_hades_homelab_guest_inventory_intent']
 guest_inventory_response = namespace['_hades_homelab_guest_inventory_response']
 guest_inventory_view = namespace['_hades_load_homelab_views']()._hades_homelab_guest_inventory_response
+guest_workloads_view = namespace['_hades_load_homelab_views']()._hades_homelab_guest_index_workloads_view
 workload_host_target = namespace['_hades_homelab_guest_index_host_target']
 workloads_on_host_response = namespace['_hades_homelab_guest_index_workloads_on_host_response']
+
+
+def assert_workload_view_parity(
+    wrapper_answer, *, node_label, node_state, guest_labels, coverage_complete,
+    source_label, retrieved_at,
+):
+    direct_answer = guest_workloads_view(
+        node_label=node_label,
+        node_state=node_state,
+        guest_labels=guest_labels,
+        coverage_complete=coverage_complete,
+        source_label=source_label,
+        retrieved_at=retrieved_at,
+    )
+    assert direct_answer == wrapper_answer, (direct_answer, wrapper_answer)
 resolve_homelab_adapter_path = namespace['_hades_resolve_homelab_adapter_path']
 core_placement_intent = namespace['_hades_homelab_core_vm_placement_intent']
 core_placement_response = namespace['_hades_homelab_core_vm_placement_response']
@@ -387,6 +404,11 @@ host_inventory['proxmox_guest_inventory']['endpoints'][0]['guests'] = []
 host_inventory['proxmox_guest_inventory']['endpoints'][0]['visibility_scope'] = 'SELECTED_GUESTS'
 partial_host_answer = workloads_on_host_response("What's running on Synthetic Hypervisor?", host_inventory, 'owner')
 assert 'does not establish that the node is empty' in partial_host_answer, partial_host_answer
+assert_workload_view_parity(
+    partial_host_answer,
+    node_label='Synthetic Hypervisor', node_state='ONLINE', guest_labels=[],
+    coverage_complete=False, source_label='synthetic', retrieved_at='synthetic-host-read',
+)
 
 # The per-host workload route must distinguish a genuinely complete empty node
 # from an empty result under partial visibility, without inventing freshness.
@@ -400,6 +422,33 @@ complete_empty_answer = workloads_on_host_response(
 assert 'complete current guest inventory shows no VM/container guests on this node' in complete_empty_answer, complete_empty_answer
 assert 'synthetic-host-read' in complete_empty_answer, complete_empty_answer
 assert 'do not establish application health' in complete_empty_answer, complete_empty_answer
+assert_workload_view_parity(
+    complete_empty_answer,
+    node_label='Synthetic Hypervisor', node_state='ONLINE', guest_labels=[],
+    coverage_complete=True, source_label='synthetic', retrieved_at='synthetic-host-read',
+)
+
+# Partial coverage with visible rows must preserve both the row and the explicit
+# warning that the list may omit guests.
+partial_visible_inventory = json.loads(json.dumps(host_inventory))
+partial_visible_endpoint = partial_visible_inventory['proxmox_guest_inventory']['endpoints'][0]
+partial_visible_endpoint['visibility_scope'] = 'SELECTED_GUESTS'
+partial_visible_endpoint['guests'] = [{
+    'source_identity': 'synthetic:qemu:102',
+    'node_identity': 'proxmox:synthetic:node:hypervisor-a',
+    'guest_type': 'qemu', 'guest_id': '102', 'name': 'Synthetic Visible VM', 'status': 'RUNNING',
+}]
+partial_visible_answer = workloads_on_host_response(
+    "What's running on Synthetic Hypervisor?", partial_visible_inventory, 'owner'
+)
+assert 'Synthetic Visible VM VM 102 (RUNNING)' in partial_visible_answer, partial_visible_answer
+assert 'additional guests may be unreported' in partial_visible_answer, partial_visible_answer
+assert_workload_view_parity(
+    partial_visible_answer,
+    node_label='Synthetic Hypervisor', node_state='ONLINE',
+    guest_labels=['Synthetic Visible VM VM 102 (RUNNING)'], coverage_complete=False,
+    source_label='synthetic', retrieved_at='synthetic-host-read',
+)
 
 # Missing timestamps remain explicitly missing, rather than being rendered as
 # current/live based on the fact that a response was produced.
@@ -410,6 +459,11 @@ untimed_answer = workloads_on_host_response(
 )
 assert 'Proxmox read timestamp was not reported' in untimed_answer, untimed_answer
 assert 'synthetic-host-read' not in untimed_answer, untimed_answer
+assert_workload_view_parity(
+    untimed_answer,
+    node_label='Synthetic Hypervisor', node_state='ONLINE', guest_labels=[],
+    coverage_complete=True, source_label='synthetic', retrieved_at='',
+)
 
 # The view is capped at 20 filtered same-node rows and reports the exact
 # omitted count; an off-node decoy must not be rendered or counted.
@@ -441,6 +495,14 @@ assert 'Synthetic Guest 19 VM ' in many_guests_answer, many_guests_answer
 assert 'Synthetic Guest 20 VM ' not in many_guests_answer, many_guests_answer
 assert 'and 3 more.' in many_guests_answer, many_guests_answer
 assert 'Off-node Decoy' not in many_guests_answer, many_guests_answer
+assert_workload_view_parity(
+    many_guests_answer,
+    node_label='Synthetic Hypervisor', node_state='ONLINE',
+    guest_labels=[
+        f'Synthetic Guest {index:02d} VM {1000 + index} (RUNNING)'
+        for index in range(23)
+    ], coverage_complete=True, source_label='synthetic', retrieved_at='synthetic-host-read',
+)
 
 # Ambiguous labels and unknown targets stay unknown and never fall through to
 # an arbitrary node's rows or timestamp.
@@ -475,6 +537,27 @@ no_node_answer = workloads_on_host_response(
 assert 'unknown or ambiguous' in no_node_answer, no_node_answer
 assert 'Synthetic VM' not in no_node_answer, no_node_answer
 assert 'synthetic-host-read' not in no_node_answer, no_node_answer
+
+# These incomplete/unknown routes return before view rendering; the view only
+# sees a resolved owner node's prepared display values.
+view_module = namespace['_hades_load_homelab_views']()
+original_guest_workloads_view = view_module._hades_homelab_guest_index_workloads_view
+view_module._hades_homelab_guest_index_workloads_view = lambda **_kwargs: (_ for _ in ()).throw(
+    AssertionError('unknown/unavailable host result must not enter the pure renderer')
+)
+try:
+    for prompt, inventory in (
+        ("What's running on Synthetic Hypervisor?", ambiguous_inventory),
+        ("What's running on Missing Hypervisor?", ambiguous_inventory),
+        ("What's running on Synthetic Hypervisor?", no_node_inventory),
+        ("What's running on Synthetic Hypervisor?", {
+            'proxmox_guest_inventory': {'status': 'UNKNOWN', 'endpoints': []},
+        }),
+    ):
+        result = workloads_on_host_response(prompt, inventory, 'owner')
+        assert result and ('unknown or ambiguous' in result or "can't verify" in result), result
+finally:
+    view_module._hades_homelab_guest_index_workloads_view = original_guest_workloads_view
 
 assert core_placement_intent('Where is HADES Core running?')
 assert core_placement_intent('Which host is running HADES?')
