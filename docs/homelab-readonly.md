@@ -10,17 +10,20 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Canonical public `main` is `7127b4075b58759af5a9b9660f971f4f48f24dda`;
+Canonical public `main` is `d8013f94028b28f556de67eeaf5c0d7ad8c80d72`;
 post-promotion Public CI run
-[37348801344](https://github.com/p0rkm4th/hades/actions/runs/37348801344)
+[37352799350](https://github.com/p0rkm4th/hades/actions/runs/37352799350)
 passed on that exact SHA. Current-main package/runtime parity and fresh
 authenticated owner/household acceptance are not verified. No current-source
 deployment has been established. The old GPU-parity branch remains
 unpromoted at `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its latest hosted
 CI run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
 failed, and the introduced-history safety audit currently reports one
-redacted private-path/address finding. NYX-001 is independently rechecking
-semantic uniqueness before any salvage decision.
+redacted private-path/address finding. NYX-001 and Aster found no unique
+public-safe behavior to port; current main has stronger provenance and
+completeness contracts and retains the extracted view modules. The old line is
+classified **UNSAFE / OBSOLETE REFERENCE** and will not be merged or imported;
+remote-ref retirement is pending. No history was rewritten.
 
 The current architecture includes extracted pure Proxmox host-load and guest
 views in `integrations/homelab_views.py`, plus bounded Kuma, backup, activity,
@@ -28,6 +31,12 @@ and inference views under `integrations/homelab-readonly/`. Hermes retains
 authorization, live source reads, identity/scope decisions, and routing. The
 adapter rejects malformed source rows locally; focused adapter, service-health,
 runtime, and safety checks are part of current Public CI.
+Main `d8013f94` also denies household and missing-subject named-host workload
+requests before fetching the summary. Tests assert zero source reads. The
+guest-visibility response renderer moved into `integrations/homelab_views.py`
+with direct/module-wrapper parity coverage; Hermes retains authorization and
+source reads. Current deployed overlay/adapter hashes are not verified in this
+epoch, so main CI does not establish runtime parity.
 The host-load response extraction moves two pure renderers into
 `integrations/homelab_views.py`; Hermes keeps the route, authorization, and
 live source reads. NYX-003/008 found no P1/P2 issue. NYX-004 found no safe
