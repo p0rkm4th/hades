@@ -237,13 +237,104 @@ def profile_args(block: str, name: str) -> list[str]:
     return result
 
 
+def homelab_package_identity(package_root: Path, selected_script: Path, source_repo: Path) -> dict[str, object]:
+    """Verify an external homelab adapter against the exact clean Git package tree."""
+    repo = source_repo.resolve(strict=True)
+    if package_root.is_symlink() or not package_root.is_dir():
+        raise SystemExit("homelab package root must be a real directory")
+    try:
+        root = package_root.resolve(strict=True)
+        script = selected_script.resolve(strict=True)
+    except (OSError, RuntimeError):
+        raise SystemExit("homelab package paths could not be resolved") from None
+    if Path(os.path.abspath(package_root)) != root or Path(os.path.abspath(selected_script)) != script:
+        raise SystemExit("homelab package paths may not use symlinked parent aliases")
+    if root == repo or root.is_relative_to(repo) or repo.is_relative_to(root):
+        raise SystemExit("homelab package root must be separate from the HADES checkout")
+    if selected_script.is_symlink() or script != root / "server.py" or not script.is_file():
+        raise SystemExit("homelab profile must select the package server.py entrypoint")
+    root_mode = root.stat().st_mode
+    if root_mode & 0o7022:
+        raise SystemExit("homelab package directory may not be group/world writable or use special mode bits")
+
+    listing = subprocess.run(
+        ["git", "-C", str(repo), "ls-tree", "-r", "--name-only", "HEAD", "--", "integrations/homelab-readonly/"],
+        check=False,
+        capture_output=True,
+    )
+    if listing.returncode != 0:
+        raise SystemExit("homelab package source tree could not be read from HADES Git")
+    source_paths = sorted(
+        item.decode("utf-8", errors="strict")
+        for item in listing.stdout.splitlines()
+        if item
+    )
+    prefix = "integrations/homelab-readonly/"
+    if not source_paths or any(not item.startswith(prefix) for item in source_paths):
+        raise SystemExit("HADES Git has no valid homelab adapter package tree")
+    expected = {item[len(prefix):] for item in source_paths}
+    if any(not item or Path(item).is_absolute() or ".." in Path(item).parts for item in expected):
+        raise SystemExit("HADES Git contains an invalid homelab package path")
+
+    actual: set[str] = set()
+    for entry in root.iterdir():
+        if entry.is_symlink() or not entry.is_file():
+            raise SystemExit("homelab package may contain only regular top-level source files")
+        actual.add(entry.name)
+    if actual != expected:
+        raise SystemExit("homelab package file set differs from the clean HADES Git tree")
+
+    file_records: list[dict[str, str]] = []
+    for relative in sorted(expected):
+        external = root / relative
+        if external.is_symlink() or not external.is_file():
+            raise SystemExit("homelab package contains a non-regular source file")
+        file_mode = external.stat().st_mode
+        if not file_mode & 0o444 or file_mode & 0o7133:
+            raise SystemExit("homelab package files must be readable and non-executable/non-writable by group or others")
+        source = prefix + relative
+        expected_bytes = subprocess.run(
+            ["git", "-C", str(repo), "show", f"HEAD:{source}"],
+            check=False,
+            capture_output=True,
+        )
+        if expected_bytes.returncode != 0:
+            raise SystemExit("homelab package source bytes could not be read from HADES Git")
+        expected_sha = hashlib.sha256(expected_bytes.stdout).hexdigest()
+        actual_sha = hashlib.sha256(external.read_bytes()).hexdigest()
+        if actual_sha != expected_sha:
+            raise SystemExit("homelab package source differs from the clean HADES Git tree")
+        file_records.append({"path": relative, "sha256": actual_sha})
+
+    tree = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "HEAD:integrations/homelab-readonly"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if tree.returncode != 0 or not re.fullmatch(r"[0-9a-f]{40}", tree.stdout.strip()):
+        raise SystemExit("homelab package Git tree identity could not be verified")
+    encoded = json.dumps(file_records, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return {
+        "transport": "stdio-package-source",
+        "source": "integrations/homelab-readonly",
+        "source_tree": tree.stdout.strip(),
+        "package_tree_sha256": hashlib.sha256(encoded).hexdigest(),
+        "file_count": len(file_records),
+    }
+
+
 def mcp_runtime_identity(
-    profile_path: Path, environment: dict[str, str], source_repo: Path
+    profile_path: Path,
+    environment: dict[str, str],
+    source_repo: Path,
+    homelab_package_root: Path | None = None,
 ) -> tuple[list[dict[str, object]], str]:
     """Bind active MCP registrations to source bytes without emitting private values."""
     registrations = profile_server_blocks(profile_path.read_text(encoding="utf-8"))
     repo = source_repo.resolve(strict=True)
     records: list[dict[str, object]] = []
+    homelab_package_used = False
     for name, block in sorted(registrations.items()):
         is_enabled = not bool(re.search(r"(?m)^    enabled:\s*false\s*$", block))
         row: dict[str, object] = {"name": name, "enabled": is_enabled}
@@ -253,6 +344,8 @@ def mcp_runtime_identity(
 
         url_match = re.search(r"(?m)^    url:\s*(.+?)\s*$", block)
         if url_match:
+            if name == "homelab-readonly":
+                raise SystemExit("homelab-readonly must use a verified path-backed adapter package")
             raw = url_match.group(1).strip()
             if raw[:1] in {"'", '"'} and raw[-1:] == raw[:1]:
                 raw = raw[1:-1]
@@ -278,6 +371,16 @@ def mcp_runtime_identity(
                 resolved = target.resolve(strict=True)
                 relative = resolved.relative_to(repo).as_posix()
             except (OSError, RuntimeError, ValueError):
+                if name == "homelab-readonly" and homelab_package_root is not None:
+                    executable_name = Path(command).name.strip("'\"")
+                    if not re.fullmatch(r"python(?:[0-9]+(?:\.[0-9]+)*)?", executable_name):
+                        raise SystemExit("homelab package mode requires a Python MCP command")
+                    if len(args) != 1:
+                        raise SystemExit("homelab package mode requires only the server.py argument")
+                    row.update(homelab_package_identity(homelab_package_root, target, repo))
+                    homelab_package_used = True
+                    records.append(row)
+                    continue
                 raise SystemExit(f"enabled MCP source is outside the clean HADES checkout: {name}") from None
             if target.is_symlink() or not resolved.is_file():
                 raise SystemExit(f"enabled MCP source is not a regular tracked file: {name}")
@@ -311,6 +414,9 @@ def mcp_runtime_identity(
                 raise SystemExit(f"enabled MCP executable is not a regular executable: {name}")
             row.update({"transport": "external-executable", "sha256": digest(resolved_executable)})
         records.append(row)
+
+    if homelab_package_root is not None and not homelab_package_used:
+        raise SystemExit("homelab package root was supplied but the selected profile did not use it")
 
     serialized = json.dumps(records, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return records, hashlib.sha256(serialized).hexdigest()
@@ -387,6 +493,11 @@ def main() -> int:
     parser.add_argument("--task-store", required=True, type=Path, help="deployed integrations/task/store.py")
     parser.add_argument("--manifest", required=True, type=Path)
     parser.add_argument(
+        "--homelab-package-root",
+        type=Path,
+        help="external homelab adapter package directory, verified against integrations/homelab-readonly in the clean HADES tree",
+    )
+    parser.add_argument(
         "--epsilon-manifest",
         type=Path,
         help="optional generated config/epsilon-source/phase3-runtime-manifest.json",
@@ -417,7 +528,7 @@ def main() -> int:
     )
     runtime_environment = {**service_environment, **running_process_environment(args.service)}
     mcp_runtime, mcp_runtime_sha256 = mcp_runtime_identity(
-        args.hermes_profile, runtime_environment, args.source_repo
+        args.hermes_profile, runtime_environment, args.source_repo, args.homelab_package_root
     )
     source_repo = args.source_repo.resolve()
     for supplied, relative, label in (

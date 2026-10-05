@@ -72,7 +72,11 @@ revision, but its entrypoint and `reconcile.py` differ from current `main`,
 current `activity_view.py` and `backup_view.py` are missing, and other files
 match current sources. This is a mixed-version package rather than a coherent
 revision. A future package-tree digest would establish configured disk bytes,
-not which code a running MCP process has already imported.
+not which code a running MCP process has already imported. The provenance
+writer now has an explicit homelab-only mode that checks an external adapter's
+exact file set and contents against the clean tracked HADES package tree;
+generic external MCP sources remain rejected. The current live bundle fails
+that exact-tree check.
 
 These changes are undeployed and provide no new live homelab evidence. The last
 protected production inspection on 2026-10-05 showed an active Hermes process,

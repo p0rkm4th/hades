@@ -8,14 +8,16 @@ printf 'task store fixture\n' > "$tmp/task-store.py"
 printf 'epsilon package fixture\n' > "$tmp/phase3-runtime-manifest.json"
 source_repo="$tmp/source"
 infra_repo="$tmp/infra"
-mkdir -p "$tmp/bin" "$tmp/active" "$source_repo/integrations/task" "$source_repo/integrations/grocy-mcp" "$source_repo/config" "$infra_repo"
+mkdir -p "$tmp/bin" "$tmp/active" "$source_repo/integrations/task" "$source_repo/integrations/grocy-mcp" "$source_repo/integrations/homelab-readonly" "$source_repo/config" "$infra_repo"
 printf 'task store fixture\n' > "$source_repo/integrations/task/store.py"
 printf '# synthetic Grocy launcher source\n' > "$source_repo/integrations/grocy-mcp/launch.py"
+printf '# synthetic homelab server source\n' > "$source_repo/integrations/homelab-readonly/server.py"
+printf '# synthetic homelab view source\n' > "$source_repo/integrations/homelab-readonly/view.py"
 printf 'manifest fixture\n' > "$source_repo/config/reconstruction-manifest.json"
 git -C "$source_repo" init -q
 git -C "$source_repo" config user.email fixture@example.invalid
 git -C "$source_repo" config user.name fixture
-git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py config/reconstruction-manifest.json
+git -C "$source_repo" add integrations/task/store.py integrations/grocy-mcp/launch.py integrations/homelab-readonly/server.py integrations/homelab-readonly/view.py config/reconstruction-manifest.json
 git -C "$source_repo" commit -qm fixture
 hades_sha=$(git -C "$source_repo" rev-parse HEAD)
 printf 'infra fixture\n' > "$infra_repo/infra.txt"
@@ -51,6 +53,131 @@ except SystemExit:
     pass
 else:
     raise AssertionError("unsupported args mapping should fail closed")
+PY
+python3 - "$PWD/scripts/write-deployed-provenance.py" "$source_repo" "$tmp" <<'PY'
+import importlib.util
+import json
+import hashlib
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+script, source, temp = map(Path, sys.argv[1:])
+spec = importlib.util.spec_from_file_location("deployed_provenance", script)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+source_package = source / "integrations/homelab-readonly"
+package = temp / "external-homelab-package"
+shutil.copytree(source_package, package)
+profile = temp / "homelab-profile.yaml"
+def write_profile(server_path):
+    profile.write_text(
+        "mcp_servers:\n"
+        "  homelab-readonly:\n"
+        "    enabled: true\n"
+        "    command: python3\n"
+        "    args:\n"
+        f"      - {server_path}\n",
+        encoding="utf-8",
+    )
+
+write_profile(package / "server.py")
+rows, first_digest = module.mcp_runtime_identity(profile, {}, source, package)
+assert len(rows) == 1
+row = rows[0]
+expected_files = [
+    {"path": name, "sha256": hashlib.sha256((package / name).read_bytes()).hexdigest()}
+    for name in ("server.py", "view.py")
+]
+expected_package_digest = hashlib.sha256(
+    json.dumps(expected_files, sort_keys=True, separators=(",", ":")).encode()
+).hexdigest()
+assert row == {
+    "enabled": True,
+    "name": "homelab-readonly",
+    "transport": "stdio-package-source",
+    "source": "integrations/homelab-readonly",
+    "source_tree": subprocess.check_output(
+        ["git", "-C", str(source), "rev-parse", "HEAD:integrations/homelab-readonly"], text=True
+    ).strip(),
+    "package_tree_sha256": expected_package_digest,
+    "file_count": 2,
+}
+assert len(first_digest) == 64
+assert "/tmp/" not in json.dumps(rows)
+assert module.mcp_runtime_identity(profile, {}, source, package)[1] == first_digest
+
+def must_reject(label):
+    try:
+        module.mcp_runtime_identity(profile, {}, source, package)
+    except SystemExit:
+        return
+    raise AssertionError(f"external homelab package accepted {label}")
+
+(package / "view.py").write_text("tampered\n", encoding="utf-8")
+must_reject("modified module")
+shutil.copy(source_package / "view.py", package / "view.py")
+(package / "view.py").unlink()
+must_reject("missing module")
+shutil.copy(source_package / "view.py", package / "view.py")
+(package / "extra.py").write_text("unexpected\n", encoding="utf-8")
+must_reject("extra module")
+(package / "extra.py").unlink()
+(package / "view.py").chmod(0o666)
+must_reject("group/world-writable source file")
+shutil.copy(source_package / "view.py", package / "view.py")
+(package / "linked.py").symlink_to(package / "view.py")
+must_reject("symlink")
+(package / "linked.py").unlink()
+original_root_mode = package.stat().st_mode & 0o777
+package.chmod(0o770)
+must_reject("group-writable package root")
+package.chmod(original_root_mode)
+write_profile(temp / "wrong" / "server.py")
+must_reject("profile entrypoint outside package root")
+linked_root = temp / "linked-package-root"
+linked_root.symlink_to(package, target_is_directory=True)
+write_profile(linked_root / "server.py")
+must_reject("symlinked package root")
+write_profile(package / "server.py")
+unused_profile = temp / "unused-profile.yaml"
+unused_profile.write_text("mcp_servers:\n  grocy:\n    enabled: false\n", encoding="utf-8")
+try:
+    module.mcp_runtime_identity(unused_profile, {}, source, package)
+except SystemExit:
+    pass
+else:
+    raise AssertionError("unused homelab package root should fail closed")
+write_profile(package / "server.py")
+profile.write_text(
+    "mcp_servers:\n"
+    "  grocy:\n"
+    "    enabled: true\n"
+    "    command: python3\n"
+    f"    args: [\"{package / 'server.py'}\"]\n",
+    encoding="utf-8",
+)
+try:
+    module.mcp_runtime_identity(profile, {}, source, package)
+except SystemExit:
+    pass
+else:
+    raise AssertionError("external non-homelab MCP was accepted in package mode")
+profile.write_text(
+    "mcp_servers:\n"
+    "  homelab-readonly:\n"
+    "    enabled: true\n"
+    "    url: https://homelab.example.invalid/mcp\n",
+    encoding="utf-8",
+)
+try:
+    module.mcp_runtime_identity(profile, {}, source)
+except SystemExit:
+    pass
+else:
+    raise AssertionError("HTTP homelab registration bypassed package identity")
+print("PASS external homelab package identity is exact, opt-in, and path-free")
 PY
 module_root="$tmp/module-root"
 mkdir -p "$module_root/hermes_cli" "$module_root/hermes_agent-0.21.2.dist-info"

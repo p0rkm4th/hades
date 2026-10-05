@@ -70,11 +70,14 @@ required before deployment or runtime acceptance. The selected bundle's
 `server.py` and `reconcile.py` differ from current `main`; the current
 `activity_view.py` and `backup_view.py` modules are absent from that bundle.
 Other files match current tracked sources, so this is a mixed-version package,
-not one reproducible Git revision. The deployed-provenance writer accepts
-path-backed MCP source only from the clean tracked HADES checkout, so it cannot
-yet produce a complete tree identity for an external generated adapter bundle.
-That identity would still attest configured disk bytes, not what a process
-already loaded in memory.
+not one reproducible Git revision. The deployed-provenance writer now has a
+homelab-specific opt-in mode that checks an external adapter's exact file set
+and contents against the clean tracked HADES package tree. Generic external
+path-backed MCP sources remain rejected, and the canonical homelab registration
+cannot use HTTP transport to bypass source identity. The current mixed-version
+live bundle fails this exact-tree check. Its resulting identity attests
+configured disk bytes at capture time, not what a process has already loaded
+in memory.
 
 Private-infra recovery remains owner-managed: the checkout is dirty, no
 independent encrypted off-host target has been specified, and the owner confirms
