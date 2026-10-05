@@ -126,14 +126,14 @@ LLDAP membership, but neither is deployed or connected to n8n. Keep schedules
 disabled; see
 [`automation-boundary.md`](automation-boundary.md).
 
-## Current next action — 2026-10-05 05:09 UTC
+## Current next action — 2026-10-05 05:21 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI run
 `37254848424` passed. The Aster source/test candidate
 `725f8357dd4e71fd7ea7ac52f37d3fd984264536` passed exact-SHA run
 `37266372854` (117 steps), including a missing-observation-time freshness
 regression case. Earlier candidate `47d0473` passed `37265041968`; docs
-checkpoint `7f8e555a` passed `37265410070`. Provider extraction `f700e892` passed
+checkpoint `eeb5a6b4` passed `37267198078`. Provider extraction `f700e892` passed
 duplicate runs `37264553916` and `37264554854`. The candidate contains the
 generated homelab package provenance guard, deterministic household denial,
 and an extracted provider-native read-only inference catalog boundary; the
