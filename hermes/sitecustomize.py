@@ -4880,36 +4880,8 @@ def _hades_homelab_guest_visibility_intent(text):
 
 
 def _hades_homelab_guest_visibility_response(summary):
-    visibility = summary.get("proxmox_guest_visibility") if isinstance(summary, dict) else None
-    if not isinstance(visibility, dict):
-        return "I couldn't verify current Proxmox guest-visibility scope."
-    status = str(visibility.get("status") or "UNKNOWN").upper()
-    scope = str(visibility.get("scope") or "UNKNOWN").upper()
-    if status == "COMPLETE" and scope == "ALL_GUESTS":
-        answer = "The latest read-only permission checks report all guests in scope at each configured Proxmox source."
-    elif status == "PARTIAL" and scope == "SELECTED_GUESTS":
-        answer = "The permission checks show selected guests only; HADES cannot verify other guest state."
-    elif status == "PARTIAL" and scope == "ALL_GUESTS_WITH_EXCLUSIONS":
-        answer = "The permission checks show broad guest scope with explicit exclusions, so the guest view is not complete."
-    elif status == "PARTIAL" and scope == "NO_GUEST_AUDIT":
-        answer = "At least one configured Proxmox source has no guest-audit visibility, so HADES cannot verify all guest state."
-    elif status == "PARTIAL" or scope == "MIXED":
-        answer = "Configured Proxmox guest-visibility scopes are mixed or incomplete, so HADES cannot claim a complete guest view."
-    elif status == "NOT_CONFIGURED":
-        answer = "Proxmox guest-visibility checks are not configured, so HADES cannot verify guest scope."
-    else:
-        answer = "HADES could not verify effective Proxmox permissions, so it cannot confirm complete guest visibility."
-    answer += " This comes from read-only effective-permission data, not from assuming the returned guest list is exhaustive."
-    rows = summary.get("source_observations") or summary.get("sources") or []
-    times = [
-        " ".join(str(row.get("retrieved_at") or "").split())[:64]
-        for row in rows if isinstance(row, dict)
-        and str(row.get("source") or "").startswith("Proxmox guest visibility")
-        and row.get("retrieved_at")
-    ] if isinstance(rows, list) else []
-    if times:
-        answer += " Permission-scope reads completed at " + ", ".join(times[:4]) + "."
-    return answer
+    """Preserve the hook name while delegating pure rendering."""
+    return getattr(_hades_load_homelab_views(), "_hades_homelab_guest_visibility_response")(summary)
 
 
 def _hades_homelab_service_placement_intent(text):
