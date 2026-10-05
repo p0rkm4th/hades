@@ -30,12 +30,18 @@ commit. Do not identify a deployment by a moving branch name.
 
 Before using this procedure, inspect optional Agent Zero state without changing
 it. Require `HADES_AGENT_ZERO_OPERATOR_PROXY_ENABLED=false`, no installed or
-enabled `hades-agent-zero-operator-auth.service`, no
-`hades-agent-zero-operator-proxy` container, no files or symlinks under
-`$HADES_CONFIG_ROOT/operator-proxy/`, no ACL entry for the Hermes runtime UID
-on `$HADES_CONFIG_ROOT`, no `HADES_AGENT_ZERO_CREDENTIAL_FILE` or
+enabled `hades-agent-zero-operator-auth.service`, and no running or stopped
+`hades-agent-zero-operator-proxy` container (check all containers, not only
+running ones). Require no symlink at
+`$HADES_CONFIG_ROOT/operator-proxy`, and no files or symlinks beneath that
+path. Require no ACL entry for the Hermes runtime UID on `$HADES_CONFIG_ROOT`,
+no `HADES_AGENT_ZERO_CREDENTIAL_FILE` or
 `HADES_AGENT_ZERO_OPERATOR_PASSWORD_FILE` input, and no active
-`agent-zero-client-auth.env`. If optional proxy or client-auth state is
+`agent-zero-client-auth.env`. Also require these optional generated records to
+be absent from `$HADES_DEPLOYMENT_DIR`: `agent-zero-operator-proxy.env`,
+`agent-zero-operator-proxy.compose.yaml`, `agent-zero-operator-auth.env`, and
+`agent-zero-operator-auth.service`. The renderer removes them when their
+corresponding inputs are disabled. If optional proxy or client-auth state is
 active/configured, stop; this homelab-only procedure does not authorize
 changing it.
 
@@ -44,10 +50,15 @@ modes and recursively assigns Hindsight data ownership to UID/GID 1000. Before
 rollout, inventory those trees with `lstat` semantics and require the operations
 to be no-ops: every Hermes profile object is owned by the configured runtime
 UID/GID; directories are mode 0700; regular files have no group/other bits;
-symlinks have the expected runtime owner/group. Every Hindsight data object,
-including symlinks and the root directory, must already be UID/GID 1000. Stop
-if any object would change. This procedure does not back up application data
-or authorize recursive permission repair.
+regular files and directories have no setuid/setgid/sticky bits; symlinks have
+the expected runtime owner/group. Hindsight data root must already exist as a
+directory. Every Hindsight data object, including symlinks and the root
+directory, must already be UID/GID 1000, and regular files/directories must
+have no setuid/setgid/sticky bits. Require no named or default ACL entries in
+either tree, because the profile chmod pass must not change ACL masks. Stop if
+any object would change. This
+procedure does not back up application data or authorize recursive permission
+repair.
 
 ## 1. Identify the live runtime
 
