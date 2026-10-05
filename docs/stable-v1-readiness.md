@@ -131,11 +131,11 @@ disabled; see
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI run
 `37254848424` passed. The Aster candidate is at
 `7de443d7b8bf3416c2a1287167edd5387b5303ab`, with Public CI run `37261433008`
-passing all 117 steps. It adds a generated homelab package provenance guard
-and a deterministic household denial for owner-only infrastructure inventory
-requests. Nyx's package, privacy, and old-line reviews remain pending; five
-documentation edits are uncommitted and need review/CI. Promote only a small
-reviewed current-main descendant. The live adapter package remains mixed and
+passing all 117 steps. Its five-document status checkpoint at `a597283e`
+passed Public CI run `37262696829` (117 steps). It adds a generated homelab
+package provenance guard and a deterministic household denial for owner-only
+infrastructure inventory requests. Nyx's old-line review remains pending.
+Promote only a small reviewed current-main descendant. The live adapter package remains mixed and
 its output omits `observed_at`; the household fix is not deployed and requires
 post-deployment UI verification. Preserve the deployment-local overlay while
 reconciling package parity. The old GPU telemetry line remains review-only.

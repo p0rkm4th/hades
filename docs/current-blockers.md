@@ -9,12 +9,13 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
-passed on that exact commit. Aster's short-lived integration branch and its
-remote are at `7de443d7b8bf3416c2a1287167edd5387b5303ab`; Public CI
-[37261433008](https://github.com/p0rkm4th/hades/actions/runs/37261433008)
-passed on that exact candidate across all 117 steps. Five documentation edits
-remain uncommitted and are not covered by that CI run. The primary local
-checkout is preserved and is not the integration base.
+passed on that exact commit. The source candidate `7de443d7b8bf3416c2a1287167edd5387b5303ab`
+passed run [37261433008](https://github.com/p0rkm4th/hades/actions/runs/37261433008)
+across all 117 steps. The five current-state documents were reconciled in
+`a597283e` and passed run
+[37262696829](https://github.com/p0rkm4th/hades/actions/runs/37262696829), also
+117/117 steps. The integration branch is not promoted or deployed. The primary
+local checkout is preserved and is not the integration base.
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
 candidate. Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
