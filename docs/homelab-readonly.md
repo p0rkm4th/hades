@@ -9,24 +9,17 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Public HADES `main` is `9501de0d3cf9a55ceed3d4b9da3c0ffa6f7330cb`; exact Public CI
-run `37314072829` passed. Candidate `1d51aa7e` extracts the pure recent-activity
-formatter into `activity_view.py` without moving source collection, freshness,
-or VM.Audit scope logic; focused direct/wrapper tests pass, with NYX-004
-hygiene/parity recheck passed and full candidate CI pending. This source includes the owner-only homelab reads and
-extracted response-view modules. NYX-001 completed semantic review of old GPU-parity ref
-`345cb1b6de5f9f51ad98986c88ab9f0693461921`: no safe unique capability needs
-porting, and no code was imported. The branch current tree passes its safety
-check, but its introduced history fails public-history safety. It also regresses
-NetBox pagination completeness, Kuma observation timestamps, partial-source
-service-health semantics, and inference freshness/count safeguards.
-The previous `b17ce8e7` monitor timestamp acceptance remains a source-level
-checkpoint, not a fresh runtime claim. Current main preserves the corresponding
-service-health and inference safeguards and has expanded adapter regressions.
-The candidate is not deployed.
+Latest HADES code on public `main` is `9b948d3ecd32c2521885db9d3c01ec619a18987a`; exact Public CI run `37315053716` passed. This version includes the reviewed Proxmox backup response view and recent-activity view extractions. NYX-002 and NYX-004 found no material P1/P2 issue; direct presenter and adapter-parity tests pass. These are presentation refactors and have not been separately deployed.
+
+NYX-005 verified that the partial Hermes-facing presenter module is `integrations/homelab_views.py` (top-level under `integrations/`); the old GPU-parity branch has no extracted presenter modules. Several renderers remain inline in `hermes/sitecustomize.py`.
 
 Source/runtime parity, active overlay/adapter digests, and authenticated
 owner/household behavior have not been freshly verified in this campaign epoch.
+`scripts/verify-live-hermes-overlay.sh` proves byte equality only for an exact
+file; `scripts/write-deployed-provenance.py` records the selected process/profile/MCP
+identity but does not validate local overlay composition. No homelab overlay
+composer or composition manifest exists. The full installer overwrites tracked
+layer files, so do not use it to preserve deployment-local policy.
 The read layer remains **PARTIAL**. Live stale/partial and contradiction
 acceptance, service-native health/placement, network trends, complete
 restoreability, and independent private-infra recovery remain open. Existing
