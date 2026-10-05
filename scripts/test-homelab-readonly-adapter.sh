@@ -786,8 +786,71 @@ assert {row["object_type"] for row in activity["netbox"]["objects"]} == {"device
 activity_text = server.format_homelab_recent_activity(activity)
 assert "Recent recorded activity" in activity_text and "complete homelab change log" in activity_text
 assert "private" not in activity_text.casefold()
+import activity_view
+activity_reports = {
+    "mixed": {
+        "status": "READABLE", "source_status": {"proxmox": "READABLE", "netbox": "READABLE"},
+        "retrieved_at": "2026-10-05T12:34:56+00:00", "window_hours": 24,
+        "endpoints": [{"events": [{
+            "starttime": 1791200000, "guest_id": "102", "node": "hypervisor-alpha",
+            "task_type": "qmstart", "status": "OK", "upid": "private-upid-secret",
+        }]}],
+        "netbox": {"status": "READABLE", "objects": [{
+            "object_type": "device", "name": "service-host-alpha",
+            "last_updated": activity_now, "private_field": "private-netbox-secret",
+        }]},
+    },
+    "partial": {
+        "status": "PARTIAL", "source_status": {"proxmox": "PARTIAL", "netbox": "SOURCE_UNAVAILABLE"},
+        "retrieved_at": "2026-10-05T12:34:56+00:00", "window_hours": 6,
+        "endpoints": [{"events": []}], "netbox": {"status": "SOURCE_UNAVAILABLE", "objects": []},
+    },
+    "empty": {
+        "status": "READABLE", "source_status": {"proxmox": "READABLE", "netbox": "READABLE"},
+        "retrieved_at": "2026-10-05T12:34:56+00:00", "window_hours": 24,
+        "endpoints": [{"events": []}], "netbox": {"status": "READABLE", "objects": []},
+    },
+    "source-unavailable": {
+        "status": "SOURCE_UNAVAILABLE", "endpoints": [], "retrieved_at": "must-not-be-present",
+    },
+    "not-configured": {
+        "status": "NOT_CONFIGURED", "endpoints": [], "retrieved_at": "must-not-be-present",
+    },
+}
+activity_expected = {
+    "mixed": ("Recent recorded activity", "Read at 2026-10-05T12:34:56+00:00", "complete homelab change log"),
+    "partial": ("Proxmox task coverage is partial", "NetBox inventory-update coverage is unavailable", "complete homelab change log"),
+    "empty": ("In the last 24 hours", "no archived Proxmox guest tasks were returned", "no recently updated NetBox"),
+    "source-unavailable": ("recent homelab changes are unknown",),
+    "not-configured": ("No recent Proxmox or NetBox activity source is configured",),
+}
+for case, report in activity_reports.items():
+    rendered = activity_view.format_homelab_recent_activity(report, server._bounded_text)
+    assert rendered == server.format_homelab_recent_activity(report), (case, rendered)
+    for expected in activity_expected[case]:
+        assert expected in rendered, (case, expected, rendered)
+    if case in {"source-unavailable", "not-configured"}:
+        assert "must-not-be-present" not in rendered
+mixed_text = activity_view.format_homelab_recent_activity(activity_reports["mixed"], server._bounded_text)
+assert "private-upid-secret" not in mixed_text and "private-netbox-secret" not in mixed_text
+assert "service-host-alpha" in mixed_text and "qmstart for guest 102" in mixed_text
+long_name = "Synthetic " + ("bounded-name-" * 12)
+bounded_report = {
+    "status": "READABLE", "source_status": {"proxmox": "READABLE", "netbox": "READABLE"},
+    "endpoints": [{"events": [{
+        "starttime": 9, "guest_id": "102", "node": "alpha", "task_type": "qmstart", "status": "OK",
+    } for _ in range(9)]}],
+    "netbox": {"status": "READABLE", "objects": [{
+        "object_type": "device", "name": long_name, "last_updated": activity_now,
+    }]},
+}
+bounded_text = activity_view.format_homelab_recent_activity(bounded_report, server._bounded_text)
+assert "2 additional records were omitted" in bounded_text
+assert long_name not in bounded_text
+assert bounded_text == server.format_homelab_recent_activity(bounded_report)
 server._fetch = original_fetch
 print("PASS recent activity composes scoped Proxmox tasks and NetBox timestamps without claiming a complete change log")
+print("PASS recent activity presenter preserves response branches, bounds text, and omits private fields")
 
 # A failed independent Proxmox endpoint must not discard rows retrieved from
 # another endpoint, and the summary must preserve per-source retrieval status.
