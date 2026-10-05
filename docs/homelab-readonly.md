@@ -12,6 +12,31 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 
 ## Current source and runtime checkpoint
 
+**Current repository checkpoint (2026-10-05):** HADES `main` and the clean
+candidate branch are at `0295a4ae757cc665553045e40f5263e39c437e0e`.
+Candidate Public CI [37367162037](https://github.com/p0rkm4th/hades/actions/runs/37367162037)
+passed on this exact SHA. Post-promotion main CI
+[37367398725](https://github.com/p0rkm4th/hades/actions/runs/37367398725)
+is still queued; it is not counted as a pass. The current-main 13-module
+adapter package was composed locally with manifest digest
+`d3a81bed0383ca1c998c90e5c0ff8830962bd0f91611866d9f324b712f4bf000`;
+this is preparation only. No production files or source access were changed.
+
+Fresh owner/household acceptance and current-main runtime parity remain open.
+Nyx-4's tracked-route review found no complete homelab-specific fresh-login
+procedure or confirmed reachable owner-client URL. The older seven-chat result
+is valid only for its older adapter. Existing DOM scripts exercise broader or
+mutating scenarios and are not substitutes for bounded read-only acceptance.
+Follow [`docs/homelab-package-rollout.md`](homelab-package-rollout.md) and do
+not activate the package until the exact current candidate can be tested in
+fresh owner and household sessions. Public history also retains the previously
+documented `.local` disclosure; no history rewrite was performed. Independent
+encrypted off-host recovery remains an owner-accepted limitation.
+
+The remainder of this checkpoint records older repository and live observations
+as historical evidence; its cited revisions and CI runs do not supersede the
+current checkpoint above.
+
 Homelab package code revision `2594e33b` is on `main`; docs/runbook checkpoint `85c1365a` passed candidate/main CI and includes the deterministic composer and CI contract; candidate Public CI [37359442217](https://github.com/p0rkm4th/hades/actions/runs/37359442217) passed; post-promotion main CI [37359854855](https://github.com/p0rkm4th/hades/actions/runs/37359854855) passed; the runbook/checkpoint update passed candidate CI [37360970057](https://github.com/p0rkm4th/hades/actions/runs/37360970057) and latest main CI [37361152596](https://github.com/p0rkm4th/hades/actions/runs/37361152596). The actual 13-module package composed from a clean candidate source passed the existing provenance validator. This does not establish production runtime parity;
 named-host workload renderer candidate/main Public CI runs
 [37355109128](https://github.com/p0rkm4th/hades/actions/runs/37355109128) and

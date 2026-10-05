@@ -9,8 +9,7 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ### Published-history privacy audit
 
-A full reachable-history scan of current public `main` (`8b995715`, 870
-commits) found 1,509 historical matches for two apparently owner-specific
+A full reachable-history scan at audit base `8b995715` (870 commits) found 1,509 historical matches for two apparently owner-specific
 `.local` names across deployment/configuration, documentation, source, and
 other files. The exact names are intentionally omitted here. Another 90
 private-address matches across 86 commits are confined to synthetic
@@ -27,6 +26,29 @@ The current source tree passes its sanitization scan, but the historical names
 remain in already-published commits. Public history is not being rewritten;
 the disclosure therefore remains an unresolved privacy limitation. Do not
 describe all reachable HADES history as sanitized.
+
+### Current homelab repository checkpoint — 2026-10-05
+
+Current public `main` and the clean candidate branch are at
+`0295a4ae757cc665553045e40f5263e39c437e0e`. Candidate Public CI
+[37367162037](https://github.com/p0rkm4th/hades/actions/runs/37367162037)
+passed on that exact SHA; post-promotion main CI
+[37367398725](https://github.com/p0rkm4th/hades/actions/runs/37367398725)
+remains queued and is not a pass. The 13-module adapter package was composed
+from the exact current source with manifest digest
+`d3a81bed0383ca1c998c90e5c0ff8830962bd0f91611866d9f324b712f4bf000`; this
+local artifact is not deployed. Nyx-4's route review found no complete
+homelab-specific fresh owner/household login procedure or confirmed reachable
+owner-client URL. The seven successful historical chats cover only adapter
+`6bc6063702f73665a9cf666ca14cf7057d5924e`. No rollout occurred. Keep runtime
+parity and fresh authenticated acceptance **OPEN** until both are proven on the
+current package. Historical `.local` names remain published; no history rewrite
+was performed. No independent encrypted off-host recovery target is configured
+by owner choice.
+
+The following homelab details summarize earlier repository checkpoints and
+read-only production observations; they do not supersede the current checkpoint
+above.
 
 Homelab package code revision `2594e33b` is on `main`; docs/runbook checkpoint `85c1365a` passed candidate/main CI; main includes the deterministic composer for the tracked homelab package and its Public CI contract; candidate Public CI [37359442217](https://github.com/p0rkm4th/hades/actions/runs/37359442217) passed; post-promotion main CI [37359854855](https://github.com/p0rkm4th/hades/actions/runs/37359854855) passed; the runbook/checkpoint update passed candidate CI [37360970057](https://github.com/p0rkm4th/hades/actions/runs/37360970057) and latest main CI [37361152596](https://github.com/p0rkm4th/hades/actions/runs/37361152596). The composer produced the actual 13-module package from a clean source revision, and the current provenance validator accepted it. This is package-generation evidence only. The prior named-host workload renderer candidate/main CI [37355109128](https://github.com/p0rkm4th/hades/actions/runs/37355109128) / [37355337581](https://github.com/p0rkm4th/hades/actions/runs/37355337581) and latest docs checkpoint [37355836915](https://github.com/p0rkm4th/hades/actions/runs/37355836915) / [37356083937](https://github.com/p0rkm4th/hades/actions/runs/37356083937) passed. Main includes the deterministic package composer, CI contract, and documented profile-only rollout/rollback procedure. The old `codex/gpu-telemetry-parity-20261004` ref was `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its latest CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed public-history safety, and the introduced-history audit has one redacted local-path/private-address finding. NYX-001 and Aster found no unique public-safe behavior to port; main has stronger freshness/completeness contracts and separated view modules. Disposition is **UNSAFE / OBSOLETE REFERENCE**; its remote ref has been deleted and its clean local worktree is retained as evidence. No history was rewritten.
 
