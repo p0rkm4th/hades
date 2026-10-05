@@ -10,11 +10,10 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Canonical public `main` is `2ec44eeab112f4dd203e4340bedbdccf89919012`;
-source-change post-promotion Public CI run
-[37352799350](https://github.com/p0rkm4th/hades/actions/runs/37352799350)
-passed; the current documentation checkpoint at `2ec44ee` also passed
-[37353426505](https://github.com/p0rkm4th/hades/actions/runs/37353426505). Current-main package/runtime parity and fresh
+Canonical public `main` is `e93f497e14da7b680612f7d30441a089ad4e22ce`;
+named-host workload renderer candidate/main Public CI runs
+[37355109128](https://github.com/p0rkm4th/hades/actions/runs/37355109128) and
+[37355337581](https://github.com/p0rkm4th/hades/actions/runs/37355337581) passed. Current-main package/runtime parity and fresh
 authenticated owner/household acceptance are not verified. No current-source
 deployment has been established. The old GPU-parity branch was
 `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its latest hosted
@@ -26,24 +25,29 @@ completeness contracts and retains the extracted view modules. The old line is
 classified **UNSAFE / OBSOLETE REFERENCE** and will not be merged or imported;
 the remote ref has been deleted and the clean local evidence worktree is retained. No history was rewritten.
 
-The current architecture includes extracted pure Proxmox host-load and guest
-views in `integrations/homelab_views.py`, plus bounded Kuma, backup, activity,
-and inference views under `integrations/homelab-readonly/`. Hermes retains
-authorization, live source reads, identity/scope decisions, and routing. The
-adapter rejects malformed source rows locally; focused adapter, service-health,
-runtime, and safety checks are part of current Public CI.
-Change `d8013f94`, present in current main, also denies household and missing-subject named-host workload
-requests before fetching the summary. Tests assert zero source reads. The
+The current architecture includes pure Proxmox host-load, guest inventory,
+guest visibility, and named-host workload views in
+`integrations/homelab_views.py`, plus bounded Kuma, backup, activity, and
+inference views under `integrations/homelab-readonly/`. Hermes retains
+authorization, live source reads, identity/scope decisions, node matching,
+guest filtering, completeness, and routing. The adapter rejects malformed
+source rows locally; focused adapter, service-health, runtime, and safety
+checks are part of current Public CI.
+Change `d8013f94`, present in current main, also denies household and
+missing-subject named-host workload requests before fetching the summary. Tests assert zero source reads. The
 guest-visibility response renderer moved into `integrations/homelab_views.py`
 with direct/module-wrapper parity coverage; Hermes retains authorization and
 source reads. Current deployed overlay/adapter hashes are not verified in this
 epoch, so main CI does not establish runtime parity.
-The host-load response extraction moves two pure renderers into
-`integrations/homelab_views.py`; Hermes keeps the route, authorization, and
-live source reads. NYX-003/008 found no P1/P2 issue. NYX-004 found no safe
-remaining server projection to extract. NYX-005's direct linked-alias view
-assertion is in main. NYX-006/007's synthetic Kuma missing/malformed timestamp
-contracts now test heartbeat normalization through reconciliation and owner
+The host-load and named-host response extractions move pure renderers into
+`integrations/homelab_views.py`; Hermes keeps the route, authorization, identity
+matching, filtering, completeness decisions, and live source reads. NYX-007
+added complete/partial/cap/freshness test cases; NYX-008 extracted the
+named-host renderer with direct/module-wrapper parity. Unknown, ambiguous,
+unavailable, and no-node paths assert renderer non-invocation. The direct
+linked-alias view assertion remains in main. NYX-006/007's synthetic Kuma
+missing/malformed timestamp contracts now test heartbeat normalization through
+reconciliation and owner
 wording. Invalid timestamp text is retained in bounded source diagnostics but
 is not shown to the owner as a timestamp; freshness remains unknown. The focused
 adapter, service-health, runtime, and safety checks pass.
