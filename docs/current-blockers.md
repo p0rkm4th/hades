@@ -5,7 +5,7 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 05:52 UTC
+## Current convergence checkpoint — 2026-10-05 07:05 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
@@ -78,7 +78,7 @@ safety, and hosted CI runs `37264553916`, `37264554854`, and `37265041968`
 pass. Neither change is deployed. NYX-018 lineage and NYX-017 no-dispatch
 reviews are accepted. The hostile-household runtime regression and corrected
 partial-source contradiction assertion are committed in `2e62ffde` and exact
-Public CI `37273578676` passed. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox visibility extraction is accepted; the cherry-picked candidate passed exact Public CI `37274388982`, and public-tree/history checks pass. Docs refresh `7ba90aa7` passed exact CI `37274614406`. NYX-029 found helper failures abort before MCP/model dispatch without private leakage (P2 availability). NYX-030's loader/alias/renderer failure tests are committed in `1c4f280e` and the focused runtime contract passes locally and exact Public CI `37275149451` passed on head `71cf0497`. NYX-031 is auditing install/runtime provenance closure. The latest docs/status head `96561bc1aeed481775c2be4a3ac1865647201b77` passed exact Public CI `37275264433`. Package/provenance and provider reviews remain pending in the protected coordination record. A live household
+Public CI `37273578676` passed. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox visibility extraction is accepted; the cherry-picked candidate passed exact Public CI `37274388982`, and public-tree/history checks pass. Docs refresh `7ba90aa7` passed exact CI `37274614406`. NYX-029 found helper failures abort before MCP/model dispatch without private leakage (P2 availability). NYX-030's loader/alias/renderer failure tests are committed in `1c4f280e` and the focused runtime contract passes locally and exact Public CI `37275149451` passed on head `71cf0497`. NYX-031 found a P1 provenance bypass: a required `homelab-readonly` registration using an unbound `python -m` launch can be recorded as an external executable without binding package bytes. NYX-032 is implementing the fail-closed correction and adversarial tests in an isolated worktree. Exact Public CI run `37275450730` passed for docs/status head `1d9dda555e56e76d33a371104e23d0e807e231dc`. Package/provenance and provider reviews remain pending in the protected coordination record. A live household
 UI prompt exposed the intent-classification gap; no concrete host data was
 returned, and fresh post-deployment UI verification remains open. Runtime
 package parity and monitor observation-time output also remain open.
@@ -91,7 +91,7 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 **PARTIAL**. Exact runtime hashes, private topology, rollback paths, and raw
 acceptance transcripts remain in protected operator records.
 
-**Next:** finish NYX-031's package-guard and provider-boundary reviews, then promote only after review closure.
+**Next:** close the NYX-031 P1 provenance finding through NYX-032, then finish the provider-boundary review, then promote only after review closure.
 Prepare a coherent full-package deployment only after
 review and promotion. Then deploy the
 reviewed household boundary fix with hash-guarded rollback, recheck household
