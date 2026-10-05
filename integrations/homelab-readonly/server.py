@@ -1310,10 +1310,12 @@ def homelab_backup_status() -> dict:
                         normalized = []
                         unattributed = []
                         excluded_rows = 0
+                        task_rows_truncated = len(data) > 20
                         allowed_ids = set(task_scope.get("guest_ids") or [])
                         denied_ids = set(task_scope.get("excluded_guest_ids") or [])
                         for row in data[:20]:
                             if not isinstance(row, dict):
+                                excluded_rows += 1
                                 continue
                             raw_guest_id = row.get("id")
                             if raw_guest_id is None or raw_guest_id == "":
@@ -1366,18 +1368,23 @@ def homelab_backup_status() -> dict:
                                     item["endtime"], timezone.utc,
                                 ).isoformat()
                             normalized.append(item)
-                        return "HEALTHY", normalized, unattributed, None, excluded_rows
+                        return (
+                            "HEALTHY", normalized, unattributed, None,
+                            excluded_rows, task_rows_truncated,
+                        )
                     except (OSError, ValueError, UnicodeError, OverflowError) as exc:
-                        return "UNAVAILABLE", [], [], _source_error_code(exc), 0
+                        return "UNAVAILABLE", [], [], _source_error_code(exc), 0, False
 
                 with ThreadPoolExecutor(max_workers=min(8, len(nodes))) as pool:
                     task_reads = list(pool.map(read_tasks, nodes))
-                task_states = [state for state, _, _, _, _ in task_reads]
+                task_states = [state for state, _, _, _, _, _ in task_reads]
                 excluded_task_rows = 0
-                for state, node_tasks, node_unattributed, error, excluded_rows in task_reads:
+                task_rows_truncated = False
+                for state, node_tasks, node_unattributed, error, excluded_rows, node_truncated in task_reads:
                     tasks.extend(node_tasks)
                     unattributed_tasks.extend(node_unattributed)
                     excluded_task_rows += excluded_rows
+                    task_rows_truncated = task_rows_truncated or node_truncated
                     if error:
                         error_codes.append(error)
                 tasks.sort(key=lambda row: row.get("endtime", row.get("starttime", 0)), reverse=True)
@@ -1385,7 +1392,9 @@ def homelab_backup_status() -> dict:
                     key=lambda row: row.get("endtime", row.get("starttime", 0)),
                     reverse=True,
                 )
-                tasks_truncated = len(tasks) + len(unattributed_tasks) > 80
+                tasks_truncated = (
+                    task_rows_truncated or len(tasks) + len(unattributed_tasks) > 80
+                )
                 scope_is_partial = task_scope.get("scope") != "ALL_GUESTS"
                 tasks_status = "PARTIAL" if (
                     scope_is_partial or excluded_task_rows or nodes_truncated

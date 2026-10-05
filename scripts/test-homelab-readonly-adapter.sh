@@ -750,6 +750,44 @@ assert empty_jobs_endpoint["jobs_status"] == "HEALTHY", empty_jobs_endpoint
 assert "reports no configured vzdump jobs" in empty_jobs_text
 print("PASS Proxmox backup schedule parsing distinguishes malformed, partial, disabled, and valid-empty results")
 
+server._fetch = backup_rows_fetch([], [None])
+malformed_task_report = server.homelab_backup_status()
+malformed_task_endpoint = malformed_task_report["endpoints"][0]
+malformed_task_text = server.format_homelab_backup_status(malformed_task_report)
+assert malformed_task_report["status"] == "PARTIAL", malformed_task_report
+assert malformed_task_endpoint["status"] == "PARTIAL", malformed_task_endpoint
+assert malformed_task_endpoint["tasks_status"] == "PARTIAL", malformed_task_endpoint
+assert malformed_task_endpoint["tasks"] == [], malformed_task_endpoint
+assert "Archived vzdump task history is incomplete" in malformed_task_text
+assert "No archived vzdump task appears" not in malformed_task_text
+
+server._fetch = backup_rows_fetch(
+    [], [{"id": "102", "status": "OK", "endtime": 1700000300}, None]
+)
+mixed_task_report = server.homelab_backup_status()
+mixed_task_endpoint = mixed_task_report["endpoints"][0]
+mixed_task_text = server.format_homelab_backup_status(mixed_task_report)
+assert mixed_task_report["status"] == "PARTIAL", mixed_task_report
+assert mixed_task_endpoint["status"] == "PARTIAL", mixed_task_endpoint
+assert mixed_task_endpoint["tasks_status"] == "PARTIAL", mixed_task_endpoint
+assert [task["guest_id"] for task in mixed_task_endpoint["tasks"]] == ["102"]
+assert "reported OK" in mixed_task_text
+assert "read is partial" in mixed_task_text
+
+server._fetch = backup_rows_fetch(
+    [], [
+        {"id": str(100 + index), "status": "OK", "endtime": 1700000300 + index}
+        for index in range(21)
+    ]
+)
+truncated_task_report = server.homelab_backup_status()
+truncated_task_endpoint = truncated_task_report["endpoints"][0]
+assert truncated_task_report["status"] == "PARTIAL", truncated_task_report
+assert truncated_task_endpoint["tasks_status"] == "PARTIAL", truncated_task_endpoint
+assert truncated_task_endpoint["tasks_truncated"] is True
+assert len(truncated_task_endpoint["tasks"]) == 20
+print("PASS Proxmox archived-task malformed rows and per-node truncation remain partial")
+
 def selected_backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/access/permissions"):
         return {"data": {"/vms/102": {"VM.Audit": 1}}}
