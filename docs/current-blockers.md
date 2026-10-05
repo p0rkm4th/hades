@@ -7,37 +7,42 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-Latest public main docs checkpoint `ab036347e7e7f2b5328d7a88ff5ea0538f591695`
-passed Public CI [37325519564](https://github.com/p0rkm4th/hades/actions/runs/37325519564).
-It contains the code promotion `8f3209757f4c2cd4170bab9829285021f45b728b`, a
-fast-forward descendant of `4859acef7af95ff4611af83e8e1777a4fe355f6b`.
-The host-load view extraction at `9e11ff92f503fefeaaf24b30c478857bdd1b29f4`
-and combined code/docs revision passed Public CI runs
-[37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706) and
-[37324964236](https://github.com/p0rkm4th/hades/actions/runs/37324964236).
-Post-promotion run [37325121388](https://github.com/p0rkm4th/hades/actions/runs/37325121388)
-and subsequent main run `37325519564` passed. NYX-003/004 found no P1/P2
-issue; NYX-004 recommends no remaining low-risk server extraction. NYX-005
-identified a small direct-view test gap for a linked inventory alias; its
-expected-output assertion now passes locally but is not yet in CI. Local safety, service-health,
-and Hermes runtime checks pass. The candidate is not yet in main or deployed.
-Partial Proxmox guest visibility is now asserted to preserve uncertainty rather
-than infer source agreement. The old GPU-parity branch remains reference-only;
-no code or history from it is being promoted.
+Current public `main` is `d01d83b42bb4f00af4b2150ae3db30f440aedbc3`.
+Public CI passed both candidate run
+[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635)
+and post-promotion run
+[37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140).
+The candidate is a current-main descendant. The older GPU-parity branch was
+not imported or rewritten; its history fails public-history safety and Nyx-4
+found no safe unique capability to port.
 
-The production runtime provenance described below is the last protected
-read-only check, not a new live probe in this epoch. No production rollout,
-source ACL change, host change, or infrastructure mutation occurred. Private
-recovery remains owner-managed because no independent encrypted off-host
-destination has been specified; same-disk copies do not satisfy that gate.
+NYX-003 reviewed extraction of two pure host-load presenters into the existing
+view module; authorization, source reads, and routing remain in Hermes.
+NYX-004 found no additional low-risk adapter projection to move. NYX-005's
+direct linked-inventory alias output assertion is covered. NYX-006/007 added
+synthetic missing/malformed Kuma timestamp cases through heartbeat
+normalization and reconciliation. Such rows remain `UNKNOWN`; owner wording
+no longer labels malformed text as a timestamp. NYX-008 found no issue.
+Focused adapter, service-health, Hermes runtime, tree-safety, and compile
+checks pass. The live-read layer remains **PARTIAL**; these synthetic tests add
+no real owner dogfood or source-byte-parity evidence.
 
-Homelab code checkpoint `8ae97d13c9b31db715e56c6c2b622ff40ae0ff82`; Public CI run [37321354100](https://github.com/p0rkm4th/hades/actions/runs/37321354100) passed. It includes the reviewed backup and recent-activity presenter extractions; NYX-002/004 found no material P1/P2 gap. Sequential Kuma-outage coverage now verifies the following request performs a new Proxmox read and sees a changed guest state; NYX-011 reviewed that assertion. The old GPU-parity ref remains review material only; its introduced history fails public-history safety and it regresses current main contracts. No old history or code was imported.
+Last protected read-only production provenance is dated 2026-10-05 and remains
+the source for the statements below. It did not establish current-main package
+parity or fresh authenticated owner/household acceptance. Existing protected
+owner and Household A/B login inputs returned HTTP 400; they were not retried
+or reset. No current production deployment or infrastructure/source-ACL
+mutation occurred in this epoch.
 
-Fresh read-only provenance confirms the production Hermes process is active, has zero restarts, and selects the configured overlay. Its exact bytes match the protected deployment record and private deterministic per-slice builder. The running homelab MCP server maps to a public historical HADES commit, while current-main presenter refactors are not yet deployed; this does not establish byte parity with current main or fresh owner/household behavior. A private per-slice composition exists, but there is no single end-to-end public composition manifest. The existing protected owner and Household A/B sign-in inputs returned HTTP 400; no alternate passwords or account resets were attempted. Keep the read layer **PARTIAL** pending fresh authenticated owner/household dogfood and live stale/partial/conflict, service-health/placement, network-trend, and restoreability acceptance. No deployment, host, network, driver, source-ACL, or backup mutation occurred during this check.
+Private-infra recovery remains owner-managed: the checkout is dirty, no
+independent encrypted off-host target has been specified, and the owner confirms
+no off-site backup. Same-disk copies are not independent recovery.
 
-Private-infra recovery also remains gated: the current checkout is dirty, and independent encrypted off-host custody and restore proof are not established. The owner confirms there is no off-site backup at this time. Treat private-infra recovery as a known owner-managed limitation; do not represent same-host copies as independent recovery.
-
-**Next:** verify post-promotion Public CI, then validate this checkpoint correction. Keep the read layer PARTIAL and undeployed until current-main runtime composition and fresh authenticated owner/household acceptance are established. Independent private recovery remains an owner gate.
+**Next:** continue read-only source readiness and freshness checks using the
+documented access contract. Keep the homelab read layer **PARTIAL** until
+current-source composition, representative owner/household dogfood, and
+runtime provenance are verified. Do not deploy this read-only view refactor
+without a reproducible current-main composition and fresh behavior acceptance.
 
 ## Historical release baseline and prior evidence
 
