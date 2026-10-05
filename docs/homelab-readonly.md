@@ -1,15 +1,16 @@
 # Homelab read-only integration plan
 
 The owner has authorized read-only activation for the current connected LAN.
-Dedicated Proxmox, NetBox, and Uptime Kuma read-only inputs are provisioned and
-their live read paths are accepted through the owner-scoped HADES route. Kuma
+Dedicated Proxmox, NetBox, and Uptime Kuma read-only inputs are provisioned.
+Their live read paths were accepted through the owner-scoped HADES route in
+prior point-in-time checks; fresh owner-route acceptance remains open. Kuma
 is exposed to HADES through its LAN-scoped published status page only.
 The current upstream MCP candidate evaluation is recorded in
 [`docs/homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
 ## Current source and runtime checkpoint
 
-Aster clean candidate branch `codex/aster-homelab-clean-candidate-20261005` is at `f43a3096ccbc113fea0961545b79fe0163b2e15f`, a current-main descendant; focused runtime and service-health contracts pass, while exact Public CI and post-change current-tree/introduced-history safety are pending. It includes the manifest-bound overlay preservation path, pure host-load views, and the household named-host load no-dispatch correction. NYX-062 through NYX-069 findings are dispositioned. Private checkout/full-state recovery remains incomplete and owner-gated. The candidate is not promoted or deployed. Last recorded runtime inspection found missing `HADES_HERMES_WORKING_DIRECTORY`, adapter source/runtime parity drift, and fresh Kuma rows lacking `observed_at`; these are historical observations, not a fresh probe at this checkpoint.
+Aster clean candidate branch `codex/aster-homelab-clean-candidate-20261005` has code checkpoint `4ab862a37aa28ad4b73a76720d65b96a57591251`; exact Public CI `37299052704`, current-tree safety, and introduced-history safety pass. NYX-074's curly-quote/parenthesis cases pass focused runtime and service-health contracts. NYX-071/073 found quoted and parenthesized host names crossing to model dispatch without source reads; NYX-072/074 now cover these variants. Private checkout/full-state recovery remains incomplete and owner-gated. The candidate is not promoted or deployed. A strict-host-key read at 2026-10-05 10:35 UTC found Hermes active, a configured working directory, and an executable path indicating Hermes 0.21.2. The live MCP child uses an older adapter package: two modules differ from candidate source and five candidate modules are absent. The Hermes process lacks `HADES_HERMES_WORKING_DIRECTORY`, `PYTHONPATH`, and explicit adapter-path variables. Protected environment values were not read. Runtime package parity and provenance therefore remain open.
 
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` and its CI run
@@ -344,12 +345,14 @@ has not been deployed; the live overlay and adapter provenance must be freshly
 rechecked before any rollout. The deployed `reconcile.py` timestamp mismatch
 and broader owner/household acceptance remain open.
 
-The current candidate `f43a3096ccbc113fea0961545b79fe0163b2e15f` adds a
-household boundary denial for named-host load and CPU/memory detail prompts.
-Its synthetic Hermes runtime regression proves the prompt produces no model
-request, no homelab tool call, and no host label or metric disclosure. The
-runtime and service-health focused tests pass; full Public CI and post-change
-safety checks are pending. This fix is not deployed.
+The candidate initially denied unquoted host load prompts. NYX-071 and NYX-073
+then found straight-quoted, curly-quoted, and parenthesized host targets could
+still reach model dispatch, without reading homelab sources or disclosing host
+data. NYX-072/074 extend the denial to these delimiters and host-memory-use
+phrasing. The focused runtime regression requires zero model/API calls, zero
+homelab calls, and no host label, metric, or topology in the answer. Runtime
+and service-health tests pass locally; exact Public CI `37299052704` and both
+public safety checks pass for current code `4ab862a3`. No candidate code is deployed.
 
 
 Proxmox supplies hypervisor and guest runtime observations within its configured

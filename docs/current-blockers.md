@@ -5,9 +5,9 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 10:25 UTC
+## Current convergence checkpoint — 2026-10-05 10:51 UTC
 
-Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact CI `37254848424` passed. Active candidate `codex/aster-homelab-clean-candidate-20261005` is `f43a3096ccbc113fea0961545b79fe0163b2e15f`; focused runtime and service-health contracts pass, and exact CI plus post-change safety audits are pending. NYX-058/061 composition identity is integrated; NYX-062/063 trust findings were repaired, NYX-064 found no remaining P1/P2, NYX-065/066 extracted pure host-load views, and NYX-067 found no authority bypass. NYX-068 reproduced household named-host load fallthrough; NYX-069's denial/no-dispatch fix is integrated and independently tested by Aster. Private source+records+runtime recovery remains unproven and external custody owner-gated. Deployed adapter parity, fresh source observations, and representative owner/household live acceptance remain open. This candidate has not been promoted or rolled out.
+Canonical public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact CI `37254848424` passed. Candidate code checkpoint `4ab862a37aa28ad4b73a76720d65b96a57591251` includes NYX-074 coverage for curly-quoted and parenthesized host targets; exact Public CI `37299052704`, current-tree safety, and introduced-history safety pass. NYX-071/073 found prompts crossing into model dispatch without source reads or disclosure; NYX-069/072/074 add explicit denials and zero-dispatch regressions. A fresh read-only deployment inspection confirms adapter/package and process-environment drift: two active modules differ from current source, five current modules are absent from the active package, and required working-directory/PYTHONPATH markers are unset. Actual functional health and app provenance remain open; deployment rollback/composition contract is being independently reviewed. Private source+records+runtime recovery remains unproven and custody owner-gated. No candidate rollout has occurred.
 
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge

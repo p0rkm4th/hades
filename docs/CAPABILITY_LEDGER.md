@@ -7,9 +7,9 @@ state checks remain in the private acceptance record.
 Last reviewed: 2026-10-05
 
 
-## Current homelab source checkpoint — 2026-10-05 10:25 UTC
+## Current homelab source checkpoint — 2026-10-05 10:51 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Active candidate `codex/aster-homelab-clean-candidate-20261005` is `f43a3096ccbc113fea0961545b79fe0163b2e15f`; focused runtime and service-health contracts pass, exact Public CI is pending. Overlay composition identity spans installer, doctor, validator, and deployed provenance, with idempotent preservation and raw/composed permission checks. The Proxmox host-load renderers are pure views with wrapper parity tests. NYX-062 through NYX-069 findings are dispositioned; NYX-069's household no-dispatch fix is integrated. Private infra recovery/custody remains owner-gated; live source/runtime parity and owner/household acceptance remain open. This candidate has not been promoted or rolled out.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Current code checkpoint `4ab862a37aa28ad4b73a76720d65b96a57591251` includes NYX-069/072/074 household host-detail denials and zero-dispatch regression coverage; focused runtime and service-health contracts, exact Public CI `37299052704`, current-tree safety, and introduced-history safety pass. A live deployment inspection confirms adapter package/module drift and missing process environment markers, so runtime parity is not accepted. Overlay composition identity spans installer, doctor, validator, and deployed provenance. Private infra recovery/custody remains owner-gated; owner/household live acceptance remains open. No promotion or rollout has occurred.
 
 ## Gamma transition
 
