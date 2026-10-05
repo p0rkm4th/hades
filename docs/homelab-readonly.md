@@ -10,7 +10,7 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Canonical public `main` is `a2b67a165e7c959ec2e3ba0baf99fd5dfa0c3744`;
+Canonical public `main` is `67a3eb65d3d94347021f9cdb74dd93c7dcda41cd`;
 named-host workload renderer candidate/main Public CI runs
 [37355109128](https://github.com/p0rkm4th/hades/actions/runs/37355109128) and
 [37355337581](https://github.com/p0rkm4th/hades/actions/runs/37355337581), plus
@@ -19,9 +19,12 @@ documentation checkpoint runs
 [37356083937](https://github.com/p0rkm4th/hades/actions/runs/37356083937), passed. Current-main package/runtime parity and fresh authenticated
 owner/household acceptance are not verified. A fresh strict-key check
 confirmed the HADES Core identity, active Hermes gateway, healthy Open WebUI
-container, and direct health HTTP 200. DNS lookup for the configured
-owner-local name timed out from this client. No
-current-source deployment has been established. The old GPU-parity branch was
+container, and direct health HTTP 200. DNS lookup for the configured owner-local name timed out
+from this client. The selected adapter disk tree has 10 source files versus
+13 expected in current main; two differ, three are absent, and an extra cache
+directory makes exact-tree validation fail. The child command resolves to that
+path, but process-loaded bytes are not proven. No current-source deployment
+has been established. The old GPU-parity branch was
 `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its latest hosted
 CI run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
 failed, and the introduced-history safety audit currently reports one
@@ -95,19 +98,18 @@ generated root lacked the adapter package was inaccurate: protected files are
 present but inaccessible to the unprivileged SSH account. No deployment or host
 change was made. Runtime parity, feature parity for the promoted backup route,
 and authenticated live acceptance remain open; preserve the dirty checkout and
-compose any deployment from an exact reviewed bundle. The current provenance
-writer only attests path-backed MCP files tracked inside the clean HADES
-checkout; it cannot yet attest the full tree of an external generated bundle.
-The selected bundle's entrypoint matches a tracked historical HADES source
-revision, but its entrypoint and `reconcile.py` differ from current `main`,
-current `activity_view.py` and `backup_view.py` are missing, and other files
-match current sources. This is a mixed-version package rather than a coherent
-revision. A future package-tree digest would establish configured disk bytes,
-not which code a running MCP process has already imported. The provenance
-writer now has an explicit homelab-only mode that checks an external adapter's
-exact file set and contents against the clean tracked HADES package tree;
-generic external MCP sources remain rejected. The current live bundle fails
-that exact-tree check.
+compose any deployment from an exact reviewed bundle. The provenance writer
+has an explicit homelab-only mode that checks an external adapter's exact file set and contents against a clean tracked HADES package
+tree; generic external MCP sources remain rejected. This attests configured
+disk bytes, not which code a running MCP process has already imported. The
+selected live package currently fails that check: 10 source files are present
+versus 13 expected, two differ, three are absent, and an extra cache directory
+is present. Its entrypoint is selected by the running profile, but loaded-memory
+parity remains unknown. No tracked package composer or adapter-only
+hash-guarded deployment/rollback procedure exists. The synthetic copy in
+`scripts/test-deployed-provenance.sh` tests only the validator; it is not a
+production rollout path. The full installer is not a safe substitute because
+it also replaces tracked overlay and asset files.
 
 Fresh direct read-only composition through the active MCP reports overall
 `OK`, Proxmox guest visibility `COMPLETE / ALL_GUESTS`, and eleven Kuma monitor
