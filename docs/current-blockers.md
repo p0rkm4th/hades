@@ -7,49 +7,15 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05
 
-Latest validated public `main` is `efbcb19cfcb8a52893265aa807eb62159dee9c9a`; Public CI run `37251054983` passed. The re-scoped homelab-view extraction is promoted. NYX-001/002/003/004 reviews are accepted; NYX-005/006 advise a re-scope before runtime composition. The availability classifier is shared with a household-safe route, while identity gates, route order, and owner-only dispatch remain in the hook. The old homelab branch remains review-only; no branch code/history was imported.
+Latest validated public source `main` is `efbcb19cfcb8a52893265aa807eb62159dee9c9a`; Public CI run `37251054983` passed. The re-scoped homelab-view extraction is promoted. NYX-001 through NYX-005 are accepted; NYX-006/007 established the compatibility findings and portability plan. NYX-008 is reviewing the false-clear correction. The old homelab branch remains review-only; no branch code/history was imported.
 
-The promoted change moves six AST-identical inference/GPU response helpers to `inference_view.py`, preserves all former adapter aliases, and has no source-reading or configuration dependency in the view module. Post-deploy, the two active adapter files matched the reviewed candidate hashes, mode/ownership remained `0640 scotty:hades-runtime`, Hermes was active, and health returned HTTP 200. Seven fresh authenticated chats passed with zero errors: four owner inference/GPU/activity checks and three household checks, each household answer passing the topology-leak guard. No overlay or infrastructure-source settings changed. The promoted source also moves a separate five-function pure presentation group to `integrations/homelab_views.py`; it has not been deployed because the active overlay is deployment-local and needs a compatibility review.
+The prior inference-view extraction remains deployed with healthy Hermes and passed targeted owner/household dogfood. The new `integrations/homelab_views.py` extraction is packaged and on main but is not deployed. The active overlay is a deployment-local composition: it has richer incomplete-source details and route behavior, including a four-argument service-monitor call. Do not replace it with repository source wholesale.
 
-The wider homelab campaign remains **PARTIAL** pending stale/partial-source and contradiction dogfood, native application-health and service-placement coverage, network trends, backup artifact/restoreability evidence, and ordinary-user outage acceptance. The encrypted private-infra snapshot restores bytes and modes but is on the same `/home` filesystem; independent-device custody is still open.
+Fresh owner UI dogfood named expected source categories and explicit source-read time language. A separate Household A request for internal infrastructure names/addresses was denied and redirected to approved service checks; the topology-leak guard passed. This does not close stale-cache, source-outage, or broad household outage gates.
 
-A fresh owner UI check on the active deployment answered a freshness/provenance
-question with the expected source categories and explicit time language. A
-separate Household A request for private infrastructure names and addresses
-was denied and redirected to approved household service checks; the topology
-leak guard passed. Both turns completed without error. This does not close the
-stale-cache/source-outage or broad household outage gates.
+NYX-006's protected synthetic harness found that no conflict rows plus unavailable comparison data could appear clear; it also found missing partial-scope, unlinked-identity, and source-time caveats, named-monitor source/truncation gaps, and an active four-argument versus promoted two-argument monitor contract. Generic source already includes an owner-only effective-permission guest-visibility response; the active-specific route and dispatch behavior need parity review. NYX-007 classified conflict completeness and monitor unknowns as generic; exact copy as an owner decision; source availability, active call order, and configured Agent Zero endpoint as deployment-local or owner-gated.
 
-The promoted source packages `homelab_views.py` beside the installed Hermes
-overlay and includes it in installer, validator, doctor, and source/runtime
-digest checks. Its contract pins byte-for-byte outputs, loads from the
-configured root while CWD is unrelated, and confirms household routes do not
-invoke owner renderers. Candidate CI `37249123822` and post-promotion main CI
-`37249668974` passed. A fresh read-only VM check found Hermes healthy with zero
-restarts; the new module has not been deployed. The active production overlay
-is a deployment-local composition that differs from repository
-`sitecustomize.py`. NYX-005's protected read-only compatibility review
-recommends **RE-SCOPE before runtime composition**: the active conflict
-response covers source failures, partial scope, identity-link gaps, and
-freshness; an effective-permission guest-visibility route lacks a tracked
-equivalent; and the active service-monitor signature/behavior and direct-reader
-intent order differ. A private synthetic differential harness is the next
-step. NYX-006's protected synthetic comparison found source-conflict false
-clears on unavailable sources; missing partial-scope, unlinked-identity, and
-timestamp caveats; no effective-permission provenance route; and missing
-named-monitor truncation/source and bounded reachability fallbacks. The active
-four-argument service-monitor caller is not compatible with the promoted
-two-argument formatter. Household denials remain fail-closed but have different
-copy. NYX-007 is classifying which deltas belong in generic source. Any future
-rollout must preserve or explicitly retire the applicable semantics, then
-validate the exact composed bytes before installation.
-
-The generic conflict response now preserves unknown when the source summary or
-conflict records are missing/malformed, or configured sources/guest visibility
-are incomplete. It keeps known disagreements while stating the coverage gap.
-Synthetic contract coverage and Public CI pass at `efbcb19c`; this source
-change is not deployed because of the outstanding active-overlay compatibility
-gaps above.
+The generic conflict response was fixed at `efbcb19c`: unavailable/malformed input stays unknown; partial guest visibility is explicit; known disagreements are retained with coverage caveats. The focused synthetic contract and Public CI pass. This source change is not deployed. Next, add the smallest generic named-monitor identity/source/truncation tests and reconcile the live call signature before considering composition. The wider campaign remains **PARTIAL**: live stale/partial/contradiction dogfood, native service health/placement, network trends, backup artifact/restoreability, ordinary-user outage acceptance, and independent-device custody remain open.
 
 ## Historical release baseline and prior evidence
 
