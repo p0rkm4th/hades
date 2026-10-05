@@ -64,6 +64,14 @@ repair.
 
 Also establish these no-op conditions before apply:
 
+- Use `lstat` on every configured mutable path and every existing parent
+  component. Config, state, backup, profile, deployment, data, and secret
+  directories (including `overlay`, `adapters`, `assets`, `secrets`,
+  `searxng`, `runtime`, and `compose`) must be actual directories, never
+  symlinks. Existing files the installer or renderer may replace must be
+  regular non-symlink files. If any path is aliased, stop; do not back up a
+  resolved target while the installer will write through a different name.
+
 - `$HADES_OPEN_WEBUI_SECRET_SOURCE` already exists as a regular non-symlink
   mode-0600 file, and its containing secrets directory is already mode 0700.
   Stop if the installer would generate a replacement signing key.
