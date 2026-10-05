@@ -9,8 +9,10 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-Public HADES `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; exact Public CI
-run `37254848424` passed. This source includes the owner-only homelab reads and
+Public HADES `main` is `dff5375aaedd1cf6c649ca0a42b4aad88da229ac`; exact Public CI
+run `37312686411` passed. Candidate `c4d3c7d1` extracts the pure backup
+formatter into `backup_view.py` without moving source collection or VM.Audit
+scope logic; focused tests and NYX-002 review pass; full candidate CI is pending. This source includes the owner-only homelab reads and
 extracted response-view modules. NYX-001 completed semantic review of old GPU-parity ref
 `345cb1b6de5f9f51ad98986c88ab9f0693461921`: no safe unique capability needs
 porting, and no code was imported. The branch current tree passes its safety
@@ -20,6 +22,7 @@ service-health semantics, and inference freshness/count safeguards.
 The previous `b17ce8e7` monitor timestamp acceptance remains a source-level
 checkpoint, not a fresh runtime claim. Current main preserves the corresponding
 service-health and inference safeguards and has expanded adapter regressions.
+The candidate is not deployed.
 
 Source/runtime parity, active overlay/adapter digests, and authenticated
 owner/household behavior have not been freshly verified in this campaign epoch.
