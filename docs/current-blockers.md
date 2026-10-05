@@ -33,8 +33,10 @@ Its named service-health helper removes the owner-scope guard, and its route
 calls that helper without passing scope; the old contract tests the household
 boundary separately but does not exercise a household service-health call.
 Current main passes scope and asserts the household helper path returns no
-owner detail. This is a regression in the old tree, not evidence that a live
-household user received private topology. The old NetBox projection also drops
+owner detail. A synthetic direct-helper call on the old tree can return an
+injected monitor label, but every current callsite is owner-gated; this is a
+latent defense-in-depth/test regression, not evidence of a household-reachable
+or live disclosure. The old NetBox projection also drops
 pagination completeness, while its service-placement fallback treats an
 `OK` response with no rows and no explicit coverage as a confirmed empty
 catalog. Current main retains `UNKNOWN` unless coverage is explicitly
