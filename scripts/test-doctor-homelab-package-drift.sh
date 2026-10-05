@@ -169,7 +169,7 @@ export HADES_TEST_UNIT_WORKDIR="$working_tree"
 export HADES_TEST_ACTIVE_ENVFILES="$profile_home/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
 start_fake_hermes() {
-  local process_cwd=$1 source_extra=${2:-} clear_working_directory=${3:-false}
+  local process_cwd=$1 source_extra=${2:-} clear_working_directory=${3:-false} selected_profile=${4:-hades}
   (
     cd "$process_cwd"
     set -a
@@ -177,7 +177,7 @@ start_fake_hermes() {
     if [[ -n "$source_extra" ]]; then source "$source_extra"; fi
     if [[ "$clear_working_directory" == true ]]; then unset HADES_HERMES_WORKING_DIRECTORY; fi
     set +a
-    exec python3 -c 'import time; time.sleep(120)' -p hades gateway run
+    exec python3 -c 'import time; time.sleep(120)' -p "$selected_profile" gateway run
   ) &
   fake_hermes_pid=$!
   export HADES_TEST_MAINPID="$fake_hermes_pid"
@@ -224,6 +224,12 @@ expect_package_failure() {
     echo 'FAIL doctor exposed the configured working-directory path' >&2
     exit 1
   }
+  for private_path in "$profile_home" "$integration_root" "$generated_package"; do
+    ! grep -Fq "$private_path" <<<"$output" || {
+      echo 'FAIL doctor exposed a private selected-profile or integration path' >&2
+      exit 1
+    }
+  done
 }
 
 start_fake_hermes "$working_tree"
@@ -372,6 +378,21 @@ mv "$generated_package/reconcile.py.missing" "$generated_package/reconcile.py"
 printf '# synthetic selected extra module\n' > "$generated_package/extra.py"
 expect_package_failure 'selected Hermes homelab MCP package does not match the installed source revision'
 rm "$generated_package/extra.py"
+
+# Bind the package check to the profile selected by the active process. A
+# matching unit cwd and valid selected package must not hide a different
+# process HERMES_HOME or profile name.
+decoy_home="$fixture/decoy-hermes-home"
+decoy_home_env="$fixture/decoy-hermes-home.env"
+printf 'HERMES_HOME=%s\n' "$decoy_home" > "$decoy_home_env"
+stop_fake_hermes
+start_fake_hermes "$working_tree" "$decoy_home_env"
+expect_package_failure 'selected Hermes homelab MCP package does not match the installed source revision'
+stop_fake_hermes
+start_fake_hermes "$working_tree" '' false decoy-profile
+expect_package_failure 'selected Hermes homelab MCP package does not match the installed source revision'
+stop_fake_hermes
+start_fake_hermes "$working_tree"
 
 mv "$generated_package" "$fixture/generated-package-real"
 ln -s "$fixture/generated-package-real" "$generated_package"
