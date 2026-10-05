@@ -7,12 +7,17 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-The public repository is at `7bf554fe65c840d5926dc86199b6ad122f42d507` on
+The public repository is at `1b96f1eed6b74ba6df2282d7078bf19b496b06c1` on
 `main`; post-promotion Public CI run
-[37337091814](https://github.com/p0rkm4th/hades/actions/runs/37337091814)
+[37338894671](https://github.com/p0rkm4th/hades/actions/runs/37338894671)
 passed. The homelab code baseline is `0e468fff97567d4f85e4e50d76d2d039d58403ec`
 with its post-promotion Public CI passing in run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737).
+The bounded external-package provenance follow-up is on `main` at
+`1b96f1eed6b74ba6df2282d7078bf19b496b06c1`; candidate and post-promotion
+Public CI runs [37338721434](https://github.com/p0rkm4th/hades/actions/runs/37338721434)
+and [37338894671](https://github.com/p0rkm4th/hades/actions/runs/37338894671)
+passed, along with the focused provenance contract.
 The older GPU-parity branch was not imported or rewritten; its history fails
 public-history safety and Nyx-4 found no safe unique capability to port.
 
