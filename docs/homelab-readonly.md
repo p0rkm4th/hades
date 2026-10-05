@@ -245,27 +245,18 @@ the intended inventory source, Kuma is reported as stale availability
 observation, and writes return `405`. It is exercised in public CI; no real
 homelab endpoint or credential is involved.
 
-## Current activation state
+## Historical activation checkpoint — 2026-10-05
 
-Read sources are enabled only through protected deployment configuration and
-least-privilege credentials. Public source contains no concrete host identities,
-addresses, resource IDs, access paths, or private inventory. The protected
-operator matrix and acceptance records are maintained in `hades-infra`.
-
-Read-only deployment provenance was rechecked after the 2026-10-05 adapter
-rollout. Active `server.py` SHA-256 is `3c14a4bd22d4da57f773365860ecb24d7823360470bf0601ec65c52889d5e659` and active
-`inference_view.py` SHA-256 is `90cfb99901ab1c8b0cfd994eec88ebf730940f1dc7ee445d8533e9167d011a00`; both are mode `0640` with the HADES
-runtime owner/group and match reviewed candidate `6bc6063702f73665a9cf666ca14cf7057d5924e4`. Hermes was
-active and its configured health endpoint returned HTTP 200 after one restart.
-The adapter rollout made no Hermes overlay or source-access change. The last
-separately recorded composed overlay hash is
-`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91`; it is a
-composed runtime artifact, not the base public `sitecustomize.py`. Candidate
-`6bc6063702f73665a9cf666ca14cf7057d5924e4` passed Public CI `37245877931` and NYX-002 review. Seven fresh
-authenticated owner/household chats passed with zero turn errors; household
-topology checks were false. The candidate has not yet been promoted to public
-main. These are source/runtime and targeted dogfood facts; remaining campaign
-gaps stay open.
+An earlier adapter rollout record documents seven fresh owner/household chats
+for candidate `6bc6063702f73665a9cf666ca14cf7057d5924e`. The fresh provenance
+check above confirms that the process-selected adapter still maps to that
+public source revision, but the chats are historical acceptance for that
+rollout, not acceptance of current `main`. Current-main presenter refactors
+remain undeployed. The currently available protected owner sign-in inputs
+returned HTTP 400, so no fresh owner or household UI session was established.
+No alternate password or account reset was attempted. The current deployment
+is healthy at the Hermes service level; these facts do not establish all
+source or application health.
 
 
 Proxmox supplies hypervisor and guest runtime observations within its configured
