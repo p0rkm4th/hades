@@ -75,9 +75,12 @@ read-only inference catalog parsing while retaining credential/TLS transport,
 identity mapping, and composition in the server. The package-provenance
 fixture now covers the added provider sibling. Focused contracts, public
 safety, and hosted CI runs `37264553916`, `37264554854`, and `37265041968`
-pass. Neither change is deployed. NYX-018 is accepted; relevant package,
-provider, and privacy/extraction reviews remain pending in the protected
-coordination record. A live household
+pass. Neither change is deployed. NYX-018 lineage and NYX-017 no-dispatch
+reviews are accepted. The new hostile-household runtime regression and
+corrected partial-source contradiction assertion pass locally but remain
+uncommitted and have no hosted CI yet. NYX-026 identified stale review status
+in the docs; this uncommitted update corrects it. Package/provenance and
+provider reviews remain pending in the protected coordination record. A live household
 UI prompt exposed the intent-classification gap; no concrete host data was
 returned, and fresh post-deployment UI verification remains open. Runtime
 package parity and monitor observation-time output also remain open.
@@ -90,9 +93,9 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 **PARTIAL**. Exact runtime hashes, private topology, rollback paths, and raw
 acceptance transcripts remain in protected operator records.
 
-**Next:** finish the package-guard, provider-boundary, and
-household-privacy/extraction reviews, including NYX-017 against the exact
-`7b14df85` candidate. Prepare a coherent full-package deployment only after
+**Next:** commit the runtime regression and documentation correction, then
+run exact hosted CI and finish the package-guard and provider-boundary reviews.
+Prepare a coherent full-package deployment only after
 review and promotion. Then deploy the
 reviewed household boundary fix with hash-guarded rollback, recheck household
 denial and safe status in the live UI, and verify coherent runtime package

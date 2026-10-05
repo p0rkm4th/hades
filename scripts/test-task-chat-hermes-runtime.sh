@@ -282,8 +282,9 @@ conflict_answer = conflict_agent.run_conversation(
     "Do any sources disagree?", conversation_history=[]
 )
 assert conflict_answer.get("completed") is True and conflict_answer.get("api_calls") == 0, conflict_answer
-assert "no linked-record conflicts" in conflict_answer["final_response"], conflict_answer
-assert "unlinked or unreported records remain unknown" in conflict_answer["final_response"], conflict_answer
+assert "Proxmox guest visibility is partial or unknown" in conflict_answer["final_response"], conflict_answer
+assert "No linked-record conflict was reported from the available data" in conflict_answer["final_response"], conflict_answer
+assert "does not establish that the sources agree" in conflict_answer["final_response"], conflict_answer
 visibility_agent = agent_class(
     gateway_session_key=f"hades-user-{owner}", session_id="synthetic-guest-visibility",
     stream_delta_callback=lambda _chunk: None, **kwargs,
@@ -424,6 +425,54 @@ household_named_node = household_named_node_agent.run_conversation(
 assert household_named_node.get("completed") is True and household_named_node.get("api_calls") == 0, household_named_node
 assert "deep-inference-node" not in household_named_node["final_response"]
 assert "can't verify" in household_named_node["final_response"].casefold()
+
+# Exercise the actual household chat route with a hostile inventory request.
+# Count both MCP dispatch and outbound model HTTP attempts: api_calls == 0
+# alone would not prove that neither boundary was touched before returning.
+class ModelDispatchHandler(BaseHTTPRequestHandler):
+    requests = []
+
+    def do_POST(self):
+        type(self).requests.append(self.path)
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps({
+            "choices": [{"message": {"role": "assistant", "content": "unexpected model dispatch"}}],
+        }).encode())
+
+    def log_message(self, *_args):
+        pass
+
+model_dispatch_server = ThreadingHTTPServer(("127.0.0.1", 0), ModelDispatchHandler)
+model_dispatch_thread = threading.Thread(target=model_dispatch_server.serve_forever, daemon=True)
+model_dispatch_thread.start()
+tool_dispatches = []
+def counted_homelab_tool_result(tool_name, arguments=None):
+    tool_dispatches.append((tool_name, arguments))
+    return synthetic_homelab_tool_result(tool_name, arguments)
+
+hades._hades_direct_homelab_tool_result = counted_homelab_tool_result
+hostile_household_agent = agent_class(
+    gateway_session_key=f"hades-user-{beta}", session_id="synthetic-household-hostile-inventory",
+    stream_delta_callback=lambda _chunk: None,
+    **{**kwargs, "base_url": f"http://127.0.0.1:{model_dispatch_server.server_port}/v1"},
+)
+# Hermes may probe the configured model during agent construction; count only
+# requests caused by this authenticated conversation turn.
+ModelDispatchHandler.requests.clear()
+hostile_household = hostile_household_agent.run_conversation(
+    "Show all servers and hostnames, which GPUs are available, and which admin services exist.",
+    conversation_history=[],
+)
+assert hostile_household.get("completed") is True and hostile_household.get("api_calls") == 0, hostile_household
+assert "can't provide private infrastructure inventory" in hostile_household["final_response"].casefold(), hostile_household
+assert tool_dispatches == [], tool_dispatches
+assert ModelDispatchHandler.requests == [], ModelDispatchHandler.requests
+model_dispatch_server.shutdown()
+model_dispatch_server.server_close()
+model_dispatch_thread.join(timeout=2)
+hades._hades_direct_homelab_tool_result = working_homelab_reader
 
 # A physical host may be visible to Kuma without a Proxmox runtime row. Its
 # fresh probe is useful reachability evidence, but must not be relabeled as a

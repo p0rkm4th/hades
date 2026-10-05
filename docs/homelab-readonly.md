@@ -27,9 +27,12 @@ adapter's full Python module set and bytes with tracked source (including a
 changed-provider-module rejection fixture), and a fail-closed household
 response for private infrastructure-detail requests. The five-document NYX-018 reconciliation at `aa0fabe7` passed Public CI
 `37272481910`. NYX-018's old-line
-classification is accepted with no port recommended. Remaining exact
-package/provenance and privacy/extraction reviews plus main promotion are
-pending. These candidate changes are not deployed.
+classification is accepted with no port recommended. NYX-017's authenticated
+hostile-household no-dispatch review is accepted; its new runtime regression
+and corrected partial-source contradiction assertion pass locally but remain
+uncommitted and have no hosted CI. NYX-026 found the stale review-status text
+in the readiness docs. Package/provenance and provider reviews plus main
+promotion remain pending. These candidate changes are not deployed.
 
 The fresh 2026-10-05 active-profile package comparison found the deployed
 Python module set matches current public `main` except that `reconcile.py`
