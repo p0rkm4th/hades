@@ -30,10 +30,14 @@ deployed.
 
 The fresh 2026-10-05 active-profile package comparison found the deployed
 Python module set matches current public `main` except that `reconcile.py`
-differs; there are no extra Python modules. Candidate-only `backup_view.py`
-and `inference_provider.py` are absent as expected because that candidate is
-not deployed. The new household response helper is in the existing
-`homelab_views.py` asset and is not deployed. A fresh adapter read returned `OK` with 11 availability rows
+differs; there are no extra Python modules. A direct content comparison traced
+the deployed `reconcile.py` to the superseded GPU-parity tree, while the
+selected `server.py` matches current `main`. This explains the runtime drift:
+the superseded reconciler drops the monitor observation timestamp. Candidate-
+only `backup_view.py` and `inference_provider.py` are absent as expected
+because that candidate is not deployed. The new household response helper is
+in the existing `homelab_views.py` asset and is not deployed. A fresh adapter
+read returned `OK` with 11 availability rows
 marked fresh and zero `observed_at` values. This fails the tracked monitor-time
 contract. The NetBox application-service catalog remains empty, so placement
 is unknown. This is direct adapter evidence, not owner-UI acceptance or

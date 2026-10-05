@@ -52,7 +52,10 @@ unavailable-Kuma and missing-service-identity cases.
 Homelab main preserves Kuma `last_updated` as `observed_at`, independent of
 freshness. A fresh 2026-10-05 read-only package comparison confirms the active
 profile-selected adapter matches current public source except `reconcile.py`,
-with no additional Python modules. The active adapter read returned status
+with no additional Python modules. Direct content comparison shows the
+deployed `reconcile.py` matches the superseded GPU-parity tree, while its
+`server.py` matches current `main`; this is the concrete source of the observed
+fresh-without-`observed_at` mismatch. The active adapter read returned status
 `OK` and 11 availability rows marked fresh, but none had `observed_at`; the
 live timestamp contract therefore fails. The service catalog was empty, so
 placement remains unknown. This direct adapter result is not owner-UI or
