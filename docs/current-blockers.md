@@ -5,15 +5,16 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 07:05 UTC
+## Current convergence checkpoint — 2026-10-05 07:08 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
 passed on that exact commit. Aster's short-lived integration branch
-`codex/aster-homelab-checkpoint-redacted-20261004` has qualified source/test
-candidate `7b14df854d94c75ba08f697c6cacb37891258ecc`; exact-SHA run
-[37267763664](https://github.com/p0rkm4th/hades/actions/runs/37267763664)
-passed all 117 steps. This extracts the deterministic household homelab
+`codex/aster-homelab-checkpoint-redacted-20261004` has integrated source/test
+candidate `1c4f280e8587ed6fa6c17e1819bb10d56eb35ee8`; its test-bearing docs
+head `71cf0497` passed exact Public CI [37275149451](https://github.com/p0rkm4th/hades/actions/runs/37275149451).
+The latest status/docs head `0c927309ac65bc12d851d6b805388bc1197f2535` passed
+exact Public CI [37275891021](https://github.com/p0rkm4th/hades/actions/runs/37275891021). NYX-031 found a P1 provenance bypass; NYX-032 is implementing the fix/tests. Main remains unchanged, and no candidate is deployed. This extracts the deterministic household homelab
 response into the already packaged view module while retaining the early
 scope guard; the candidate also tests that missing Kuma observation time
 remains `UNKNOWN`. Previous source/test candidate `725f8357` passed
