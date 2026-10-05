@@ -5579,6 +5579,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
     node_load_target = _hades_homelab_proxmox_node_load_target(text)
     if node_load_target and scope != "owner":
         return "Detailed infrastructure load information is available only in an owner session."
+    host_workload_target = _hades_homelab_guest_index_host_target(text)
+    if host_workload_target and scope != "owner":
+        return "Detailed host and guest placement is available only in an owner session."
+    if host_workload_target and not subject:
+        return "I couldn't verify this owner session, so I can't read host and guest placement."
     if _hades_homelab_guest_inventory_intent(text):
         if scope != "owner":
             return "Detailed Proxmox VM and container inventory is available only in an owner session."

@@ -1355,9 +1355,11 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
     os.environ['HADES_HERMES_WORKING_DIRECTORY'] = temp_root
     os.environ.pop('HADES_CAPABILITY_MATRIX_FILE', None)
     os.environ['HERMES_HOME'] = str(Path(temp_root) / 'hermes-home')
+    summary_reads = []
     def synthetic_registry_read(tool_name, _args=None):
         if tool_name != 'homelab_summary':
             return {'status': 'UNKNOWN', 'machines': []}
+        summary_reads.append(tool_name)
         adapter_path = adapter_dir / 'server.py'
         spec = importlib.util.spec_from_file_location('synthetic_service_registry', adapter_path)
         module = importlib.util.module_from_spec(spec)
@@ -1478,9 +1480,26 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             "What's running on Synthetic Hypervisor?", 'synthetic-owner', 'owner'
         )
         assert 'Guested App VM 902 (RUNNING)' in host_workloads, host_workloads
-        assert direct_read(
+        reads_before_household_host_query = len(summary_reads)
+        household_host_workloads = direct_read(
             "What's running on Synthetic Hypervisor?", 'synthetic-household', 'household'
-        ).startswith('Detailed host and guest placement is available only in an owner session.'), 'household host details leaked'
+        )
+        assert household_host_workloads.startswith(
+            'Detailed host and guest placement is available only in an owner session.'
+        ), 'household host details leaked'
+        assert len(summary_reads) == reads_before_household_host_query, (
+            'household named-host workload query must be denied before homelab_summary read'
+        )
+        reads_before_unverified_host_query = len(summary_reads)
+        unverified_host_workloads = direct_read(
+            "What's running on Synthetic Hypervisor?", '', 'owner'
+        )
+        assert unverified_host_workloads.startswith("I couldn't verify this owner session"), (
+            unverified_host_workloads
+        )
+        assert len(summary_reads) == reads_before_unverified_host_query, (
+            'unverified owner named-host query must be denied before homelab_summary read'
+        )
         owner_placement = direct_read(
             'Where is Minecraft Server running?', 'synthetic-owner', 'owner'
         )
