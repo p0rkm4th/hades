@@ -7,21 +7,14 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-The homelab code baseline is `d01d83b42bb4f00af4b2150ae3db30f440aedbc3`; its
-candidate and post-promotion Public CI runs
-[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635) and
-[37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140)
-passed. The documentation reconciliations passed candidate run
-[37328247716](https://github.com/p0rkm4th/hades/actions/runs/37328247716),
-post-promotion run
-[37328612554](https://github.com/p0rkm4th/hades/actions/runs/37328612554),
-and the immediately preceding checkpoint's pointer-correction run
-[37328924100](https://github.com/p0rkm4th/hades/actions/runs/37328924100).
-Use the repository's `main` ref for its current tip; this document records the
-homelab code baseline rather than trying to encode its own commit hash.
-The candidate is a current-main descendant. The older GPU-parity branch was
-not imported or rewritten; its history fails public-history safety and Nyx-4
-found no safe unique capability to port.
+The public repository is at `a4edcea68c398b6d237f476f542c480c4ebf57fe` on
+`main`; post-promotion Public CI run
+[37335957136](https://github.com/p0rkm4th/hades/actions/runs/37335957136)
+passed. The homelab code baseline is `0e468fff97567d4f85e4e50d76d2d039d58403ec`
+with its post-promotion Public CI passing in run
+[37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737).
+The older GPU-parity branch was not imported or rewritten; its history fails
+public-history safety and Nyx-4 found no safe unique capability to port.
 
 NYX-003 reviewed extraction of two pure host-load presenters into the existing
 view module; authorization, source reads, and routing remain in Hermes.
@@ -62,11 +55,20 @@ post-promotion run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
 passed. It remains undeployed.
 
-A fresh strict-key read-only production check found Hermes active but its
-selected checkout dirty and divergent from current main. The active homelab
-adapter does not match the promoted source and is missing the new backup-view
-module dependency. No deployed files or host configuration changed. A reviewed
-package-complete composition is still required before runtime acceptance.
+A fresh strict-key read-only production check found Hermes active and its
+service working checkout dirty with local adapter/overlay edits. The selected
+`hades` profile points its homelab MCP at one of several versioned generated
+adapter bundles; that adapter differs from current `main` and does not include
+the newly promoted backup-view route. Another profile configuration points at a
+different release path and is not evidence of the running profile. The prior
+claim that the active generated root lacked the adapter package was inaccurate:
+the protected package exists but is inaccessible to the unprivileged SSH
+account. No deployed files or host configuration changed. Runtime parity and
+feature parity remain unproven; a reviewed package-complete composition is
+required before deployment or runtime acceptance. The current deployed-
+provenance writer accepts path-backed MCP source only from the clean tracked
+HADES checkout, so it cannot yet produce a complete tree identity for an
+external generated adapter bundle.
 
 Private-infra recovery remains owner-managed: the checkout is dirty, no
 independent encrypted off-host target has been specified, and the owner confirms

@@ -10,18 +10,13 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-The homelab code baseline is `d01d83b42bb4f00af4b2150ae3db30f440aedbc3`; its
-candidate and post-promotion Public CI runs
-[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635) and
-[37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140)
-passed. The documentation reconciliations passed candidate run
-[37328247716](https://github.com/p0rkm4th/hades/actions/runs/37328247716),
-post-promotion run
-[37328612554](https://github.com/p0rkm4th/hades/actions/runs/37328612554),
-and the immediately preceding checkpoint's pointer-correction run
-[37328924100](https://github.com/p0rkm4th/hades/actions/runs/37328924100).
-Use the repository's `main` ref for its current tip; this document records the
-homelab code baseline rather than trying to encode its own commit hash.
+The public repository is at `a4edcea68c398b6d237f476f542c480c4ebf57fe` on
+`main`; post-promotion Public CI run
+[37335957136](https://github.com/p0rkm4th/hades/actions/runs/37335957136)
+passed. The homelab code baseline is
+`0e468fff97567d4f85e4e50d76d2d039d58403ec`, with post-promotion CI run
+[37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
+passed.
 The host-load response extraction moves two pure renderers into
 `integrations/homelab_views.py`; Hermes keeps the route, authorization, and
 live source reads. NYX-003/008 found no P1/P2 issue. NYX-004 found no safe
@@ -58,12 +53,20 @@ post-promotion CI run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
 passed. It remains undeployed and adds no live-source evidence.
 
-A fresh strict-key, read-only production inspection confirmed the Hermes unit
-is active, but its selected checkout is dirty and diverges from current main;
-the active adapter differs from the promoted source and lacks the new
-`backup_view.py` dependency. No deployment or host change was made. A whole-file
-replacement would overwrite local runtime work and leave package closure
-unproven, so runtime parity and authenticated live acceptance remain open.
+A fresh strict-key, read-only inspection confirmed the Hermes unit is active.
+The service working checkout is dirty and contains local adapter/overlay edits.
+The selected `hades` profile separately points its homelab MCP at one of several
+versioned generated adapter bundles; that selected adapter differs from current
+`main` and does not contain the newly promoted backup-view route. A sibling
+default-profile configuration points at a different release path, so it is not
+evidence of the running profile. The previous statement that the active
+generated root lacked the adapter package was inaccurate: protected files are
+present but inaccessible to the unprivileged SSH account. No deployment or host
+change was made. Runtime parity, feature parity for the promoted backup route,
+and authenticated live acceptance remain open; preserve the dirty checkout and
+compose any deployment from an exact reviewed bundle. The current provenance
+writer only attests path-backed MCP files tracked inside the clean HADES
+checkout; it cannot yet attest the full tree of an external generated bundle.
 
 These changes are undeployed and provide no new live homelab evidence. The last
 protected production inspection on 2026-10-05 showed an active Hermes process,
