@@ -1243,6 +1243,7 @@ def homelab_backup_status() -> dict:
         tasks = []
         unattributed_tasks = []
         malformed_task_rows = 0
+        malformed_node_rows = 0
         task_pages_truncated = False
         jobs_status = "UNAVAILABLE"
         tasks_status = "UNAVAILABLE"
@@ -1303,12 +1304,19 @@ def homelab_backup_status() -> dict:
             raw_resources = runtime_payload.get("data")
             if not isinstance(raw_resources, list):
                 raise ValueError("Proxmox runtime response has an unsupported shape")
-            all_nodes = sorted({
-                row.get("node") for row in raw_resources
-                if isinstance(row, dict) and row.get("type") == "node"
-                and isinstance(row.get("node"), str)
-                and re.fullmatch(r"[A-Za-z0-9._-]{1,128}", row["node"])
-            })
+            discovered_nodes = set()
+            for row in raw_resources:
+                if not isinstance(row, dict) or not isinstance(row.get("type"), str):
+                    malformed_node_rows += 1
+                    continue
+                if row["type"] != "node":
+                    continue
+                node = row.get("node")
+                if not isinstance(node, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", node):
+                    malformed_node_rows += 1
+                    continue
+                discovered_nodes.add(node)
+            all_nodes = sorted(discovered_nodes)
             nodes_truncated = len(all_nodes) > 16
             nodes = all_nodes[:16]
             if not nodes:
@@ -1430,7 +1438,7 @@ def homelab_backup_status() -> dict:
                 tasks_truncated = len(tasks) + len(unattributed_tasks) > 80
                 scope_is_partial = task_scope.get("scope") != "ALL_GUESTS"
                 tasks_status = "PARTIAL" if (
-                    scope_is_partial or excluded_task_rows or nodes_truncated
+                    scope_is_partial or excluded_task_rows or nodes_truncated or malformed_node_rows
                     or tasks_truncated or task_pages_truncated or malformed_task_rows
                     or "PARTIAL" in task_states or "UNAVAILABLE" in task_states
                 ) else "HEALTHY"
@@ -1461,6 +1469,7 @@ def homelab_backup_status() -> dict:
             "unattributed_tasks": unattributed_tasks[:80],
             "malformed_job_rows": malformed_job_rows,
             "malformed_task_rows": malformed_task_rows,
+            "malformed_node_rows": malformed_node_rows,
             "jobs_truncated": jobs_truncated,
             "tasks_truncated": tasks_truncated or task_pages_truncated or nodes_truncated,
             "error_codes": sorted(set(error_codes)),

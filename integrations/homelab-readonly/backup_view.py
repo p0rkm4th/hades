@@ -90,6 +90,11 @@ def format_backup_status(
             sentences.append(
                 f"The archived task feed contained {malformed_task_rows} malformed row(s); task history is incomplete."
             )
+        malformed_node_rows = endpoint.get("malformed_node_rows")
+        if isinstance(malformed_node_rows, int) and not isinstance(malformed_node_rows, bool) and malformed_node_rows > 0:
+            sentences.append(
+                f"Proxmox returned {malformed_node_rows} malformed node-discovery row(s); backup task coverage may omit a node."
+            )
         if task_scope == "SELECTED_GUESTS":
             count_text = (
                 f"{visible_guest_count} selected guest(s)"

@@ -782,6 +782,32 @@ assert "task history is incomplete" in malformed_backup_text
 assert "reports no configured vzdump jobs" not in malformed_backup_text
 assert "No archived vzdump task appears" not in malformed_backup_text
 
+def malformed_backup_node_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {"/vms": {"VM.Audit": 1}}}
+    if url.endswith("/cluster/backup"):
+        return {"data": []}
+    if url.endswith("/cluster/resources"):
+        return {"data": [
+            {"type": "node", "node": "hypervisor-alpha"},
+            {"type": "node", "node": []},
+        ]}
+    if "/nodes/hypervisor-alpha/tasks?" in url:
+        return {"data": [{"id": "102", "status": "OK", "endtime": 1700000300}]}
+    raise AssertionError(f"unexpected malformed-node backup URL: {url}")
+
+server._fetch = malformed_backup_node_fetch
+malformed_node_report = server.homelab_backup_status()
+malformed_node_endpoint = malformed_node_report["endpoints"][0]
+assert malformed_node_report["status"] == "PARTIAL", malformed_node_report
+assert malformed_node_endpoint["tasks_status"] == "PARTIAL", malformed_node_endpoint
+assert malformed_node_endpoint["malformed_node_rows"] == 1, malformed_node_endpoint
+assert malformed_node_endpoint["tasks"][0]["guest_id"] == "102"
+malformed_node_text = server.format_homelab_backup_status(malformed_node_report)
+assert_backup_view_parity(malformed_node_report)
+assert "malformed node-discovery row" in malformed_node_text
+assert "task coverage may omit a node" in malformed_node_text
+
 def mixed_backup_rows_fetch(url, *_args, **_kwargs):
     if url.endswith("/access/permissions"):
         return {"data": {"/vms": {"VM.Audit": 1}, "/vms/103": {"NoAccess": 1}}}
