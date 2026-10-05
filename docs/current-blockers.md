@@ -39,10 +39,10 @@ pure Proxmox effective-permission policy and fails closed on malformed ACL
 rows/privilege values; backup task reads are skipped unless scope validates.
 The 14-module package was composed from this exact source; manifest digest
 `b0fd8052740e6cfd2950e308508c67f185ac3ce407e3f064e349da8a765b0a07`.
-It is protected local preparation only and is not deployed. The active runtime's
-package/overlay provenance remains unverified; the prior inventory showed its
-adapter tree differs from current source. No package rollout or ACL change
-occurred.
+It is protected local preparation only and is not deployed. The active Hermes service is healthy, but its selected adapter tree has 10
+Python modules versus 14 in current `main`: four expected modules are absent
+and two files are byte-different. Overlay/package provenance remains
+unverified. No package rollout or ACL change occurred.
 
 Aster established the approved owner/household route through a loopback-only
 SSH forward with strict host-key checking. Eight fresh prompts returned

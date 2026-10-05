@@ -29,9 +29,11 @@ production deployment passed eight fresh prompts: all eight persisted in their
 corresponding chats, with zero household topology leaks and zero turn errors.
 It used a loopback-only SSH tunnel, strict host-key checking, and protected
 credentials and labels. This does not prove current-main runtime/package
-parity. The active adapter and overlay provenance remain unverified; the known
-adapter disk tree differs from current main. No package rollout or source ACL
-change occurred. The bounded acceptance harness and synthetic redaction
+parity. A fresh strict-key host inspection found Hermes active, but its selected
+adapter tree has 10 Python modules versus 14 in current main: four expected
+modules are absent and two files are byte-different. Overlay/package
+provenance remains unverified. No package rollout or source ACL change
+occurred. The bounded acceptance harness and synthetic redaction
 contract are in main. Follow
 [`docs/homelab-package-rollout.md`](homelab-package-rollout.md) for the
 loopback-only procedure. Public history still contains the previously reported
