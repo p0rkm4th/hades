@@ -41,6 +41,15 @@ owner and Household A/B login inputs returned HTTP 400; they were not retried
 or reset. No current production deployment or infrastructure/source-ACL
 mutation occurred in this epoch.
 
+Reliability follow-up candidate `8847551eef86a24166fde77bba8d7be3e87dea63`
+on the Aster branch passed Public CI run
+[37332129769](https://github.com/p0rkm4th/hades/actions/runs/37332129769).
+It closes synthetic Proxmox backup-feed gaps for malformed rows, missing job
+IDs, malformed task identities under guest exclusions, and an exactly-full
+20-task response. The focused contracts and current-tree safety checks pass.
+It is not promoted or deployed; live-source, runtime-parity, and authenticated
+owner/household evidence remain unchanged.
+
 Private-infra recovery remains owner-managed: the checkout is dirty, no
 independent encrypted off-host target has been specified, and the owner confirms
 no off-site backup. Same-disk copies are not independent recovery.

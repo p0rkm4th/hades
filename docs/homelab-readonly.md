@@ -32,6 +32,18 @@ wording. Invalid timestamp text is retained in bounded source diagnostics but
 is not shown to the owner as a timestamp; freshness remains unknown. The focused
 adapter, service-health, runtime, and safety checks pass.
 
+A follow-up reliability candidate on `codex/aster-homelab-convergence-20261005`
+adds partial-coverage handling for malformed Proxmox backup rows, requires a
+stable ID before counting a backup job, drops malformed nonempty task IDs
+before applying guest-scope rules, and treats a full 20-row task page as
+possibly truncated. Synthetic controls cover malformed-only/mixed feeds,
+excluded-guest non-disclosure, and 19/20/21-row page boundaries. Candidate
+`8847551eef86a24166fde77bba8d7be3e87dea63` passed Public CI run
+[37332129769](https://github.com/p0rkm4th/hades/actions/runs/37332129769), and
+focused adapter, formatter, syntax, tree-safety, and whitespace checks pass.
+This candidate is not promoted or deployed and supplies no new live-source
+evidence.
+
 These changes are undeployed and provide no new live homelab evidence. The last
 protected production inspection on 2026-10-05 showed an active Hermes process,
 but its running homelab MCP server maps to an older public source revision;
