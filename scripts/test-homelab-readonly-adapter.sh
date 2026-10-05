@@ -384,6 +384,15 @@ import server
 assert server._proxmox_permissions_url(
     "https://pve.example.test:8006/api2/json/cluster/resources"
 ) == "https://pve.example.test:8006/api2/json/access/permissions"
+assert server._proxmox_permissions_url(
+    "https://pve.example.test:8006/api2/json/cluster/resources/?discard=yes#fragment"
+) == "https://pve.example.test:8006/api2/json/access/permissions"
+try:
+    server._proxmox_permissions_url("https://pve.example.test/api2/json/nodes/alpha/resources")
+except ValueError:
+    pass
+else:
+    raise AssertionError("unrecognized Proxmox resources URL was accepted")
 assert server._proxmox_guest_visibility({"data": {
     "/vms": {"VM.Audit": 1},
 }}) == {"status": "COMPLETE", "scope": "ALL_GUESTS", "scoped_guest_count": None}
@@ -396,6 +405,22 @@ assert server._proxmox_guest_visibility({"data": {
 assert server._proxmox_guest_visibility({"data": {
     "/pool/inference": {"VM.Audit": 1},
 }}) == {"status": "PARTIAL", "scope": "SELECTED_GUESTS", "scoped_guest_count": None}
+assert server._proxmox_guest_visibility({"data": {
+    "/": {"VM.Audit": 1}, "/vms/102": {"NoAccess": 1},
+}}) == {"status": "PARTIAL", "scope": "ALL_GUESTS_WITH_EXCLUSIONS", "scoped_guest_count": None}
+assert server._proxmox_guest_visibility({"data": {
+    "/vms/101": {"VM.Audit": True}, "/vms/102": {"VM.Audit": "1"},
+    "/vms/103": {"VM.Audit": 0}, "/vms/104": {"VM.Audit": "true"},
+}}) == {"status": "PARTIAL", "scope": "SELECTED_GUESTS", "scoped_guest_count": 2}
+assert server._proxmox_guest_visibility({"data": {
+    "/vms/0": {"VM.Audit": 1}, "/vms/01": {"VM.Audit": 1},
+}}) == {"status": "PARTIAL", "scope": "SELECTED_GUESTS", "scoped_guest_count": None}
+try:
+    server._proxmox_guest_visibility({"data": ["malformed"]})
+except ValueError:
+    pass
+else:
+    raise AssertionError("malformed effective-permission payload was accepted")
 assert server._proxmox_guest_visibility({"data": {}}) == {
     "status": "PARTIAL", "scope": "NO_GUEST_AUDIT", "scoped_guest_count": 0,
 }
@@ -809,6 +834,12 @@ assert pve_sources[0]["retrieved_at"] and pve_sources[0]["rows"] == 1
 assert pve_sources[1]["retrieved_at"] is None
 assert partial["proxmox_guest_visibility"]["status"] == "PARTIAL"
 assert partial["proxmox_guest_visibility"]["scope"] == "MIXED"
+assert [row["status"] for row in partial["proxmox_guest_visibility"]["endpoints"]] == [
+    "PARTIAL", "UNKNOWN",
+]
+visibility_observations = [row for row in partial["source_observations"]
+                           if row["source"].startswith("Proxmox guest visibility")]
+assert [row.get("error_code") for row in visibility_observations] == [None, "OSError"]
 partial_node_metrics = partial["proxmox_node_metrics"]
 assert partial_node_metrics["status"] == "PARTIAL", partial_node_metrics
 assert [row["status"] for row in partial_node_metrics["endpoints"]] == ["AVAILABLE", "UNAVAILABLE"]
