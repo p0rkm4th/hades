@@ -717,7 +717,7 @@ def malformed_backup_rows_fetch(url, *_args, **_kwargs):
     if url.endswith("/access/permissions"):
         return {"data": {"/vms": {"VM.Audit": 1}}}
     if url.endswith("/cluster/backup"):
-        return {"data": [None]}
+        return {"data": [None, {}]}
     if url.endswith("/cluster/resources"):
         return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
     if "/nodes/hypervisor-alpha/tasks?" in url:
@@ -730,7 +730,7 @@ malformed_backup_endpoint = malformed_backup_report["endpoints"][0]
 assert malformed_backup_report["status"] == "PARTIAL", malformed_backup_report
 assert malformed_backup_endpoint["jobs_status"] == "PARTIAL", malformed_backup_endpoint
 assert malformed_backup_endpoint["tasks_status"] == "PARTIAL", malformed_backup_endpoint
-assert malformed_backup_endpoint["malformed_job_rows"] == 1
+assert malformed_backup_endpoint["malformed_job_rows"] == 2
 assert malformed_backup_endpoint["malformed_task_rows"] == 1
 malformed_backup_text = server.format_homelab_backup_status(malformed_backup_report)
 assert_backup_view_parity(malformed_backup_report)
@@ -741,13 +741,17 @@ assert "No archived vzdump task appears" not in malformed_backup_text
 
 def mixed_backup_rows_fetch(url, *_args, **_kwargs):
     if url.endswith("/access/permissions"):
-        return {"data": {"/vms": {"VM.Audit": 1}}}
+        return {"data": {"/vms": {"VM.Audit": 1}, "/vms/103": {"NoAccess": 1}}}
     if url.endswith("/cluster/backup"):
-        return {"data": [{"id": "nightly-visible"}, None]}
+        return {"data": [{"id": "nightly-visible"}, {}, None]}
     if url.endswith("/cluster/resources"):
         return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
     if "/nodes/hypervisor-alpha/tasks?" in url:
-        return {"data": [{"id": "102", "status": "OK", "endtime": 1700000300}, None]}
+        return {"data": [
+            {"id": "102", "status": "OK", "endtime": 1700000300},
+            {"id": 103, "status": "ERROR: private failure detail", "endtime": 1700000200},
+            None,
+        ]}
     raise AssertionError(f"unexpected synthetic mixed-backup URL: {url}")
 
 server._fetch = mixed_backup_rows_fetch
@@ -756,12 +760,18 @@ mixed_backup_endpoint = mixed_backup_report["endpoints"][0]
 assert mixed_backup_report["status"] == "PARTIAL", mixed_backup_report
 assert mixed_backup_endpoint["jobs_status"] == "PARTIAL", mixed_backup_endpoint
 assert mixed_backup_endpoint["tasks_status"] == "PARTIAL", mixed_backup_endpoint
+assert mixed_backup_endpoint["malformed_job_rows"] == 2
+assert mixed_backup_endpoint["malformed_task_rows"] == 2
 assert [job["id"] for job in mixed_backup_endpoint["jobs"]] == ["nightly-visible"]
 assert [task["guest_id"] for task in mixed_backup_endpoint["tasks"]] == ["102"]
+assert mixed_backup_endpoint["unattributed_tasks"] == []
+assert "103" not in json.dumps(mixed_backup_endpoint)
+assert "private failure detail" not in json.dumps(mixed_backup_endpoint)
+assert "1700000200" not in json.dumps(mixed_backup_endpoint)
 mixed_backup_text = server.format_homelab_backup_status(mixed_backup_report)
 assert_backup_view_parity(mixed_backup_report)
 assert "at least 1 visible configured vzdump job(s)" in mixed_backup_text
-assert "1 malformed row(s)" in mixed_backup_text
+assert "2 malformed row(s)" in mixed_backup_text
 assert "reports no configured vzdump jobs" not in mixed_backup_text
 print("PASS malformed and mixed Proxmox backup rows preserve valid evidence as PARTIAL")
 

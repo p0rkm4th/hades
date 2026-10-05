@@ -1291,6 +1291,10 @@ def homelab_backup_status() -> dict:
                 if not isinstance(raw, dict):
                     malformed_job_rows += 1
                     continue
+                raw_job_id = raw.get("id")
+                if not isinstance(raw_job_id, str) or not _bounded_text(raw_job_id, 128):
+                    malformed_job_rows += 1
+                    continue
                 item = {}
                 for key in ("id", "schedule", "storage", "node", "mode"):
                     value = raw.get(key)
@@ -1380,11 +1384,14 @@ def homelab_backup_status() -> dict:
                                 unattributed.append(item)
                                 continue
                             guest_id = row.get("id")
-                            guest_id = (
-                                guest_id if isinstance(guest_id, str)
-                                and re.fullmatch(r"[1-9][0-9]{0,8}", guest_id)
-                                else None
-                            )
+                            if not isinstance(guest_id, str) or not re.fullmatch(r"[1-9][0-9]{0,8}", guest_id):
+                                # A malformed nonempty identity cannot be
+                                # safely classified against effective ACLs.
+                                # Drop it instead of treating it as an
+                                # unattributed task or allowing it through a
+                                # cluster-wide scope with exclusions.
+                                malformed_rows += 1
+                                continue
                             if task_scope.get("all_guests") is True:
                                 if guest_id in denied_ids:
                                     excluded_rows += 1
