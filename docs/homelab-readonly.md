@@ -244,17 +244,21 @@ least-privilege credentials. Public source contains no concrete host identities,
 addresses, resource IDs, access paths, or private inventory. The protected
 operator matrix and acceptance records are maintained in `hades-infra`.
 
-Read-only deployment provenance was last checked on 2026-10-04: the composed
-runtime hook is SHA-256
-`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91`; the
-active homelab adapter SHA-256
-`fe7dadebebe2345793c757ad5d3475bfbc0dbe0c9df93419c7a72ca2405d6e21` matches
-the pre-extraction `server.py` on main `c16071a`. The runtime hook is composed
-and is not byte-identical to the base public hook. Candidate `cd7a551` passes
-Public CI but is not deployed; it moves six AST-identical pure response helpers
-into `inference_view.py`. NYX-001 is accepted; NYX-002 review is pending. This
-is source/runtime provenance, not a claim that open homelab capability gaps
-are closed.
+Read-only deployment provenance was rechecked after the 2026-10-05 adapter
+rollout. Active `server.py` SHA-256 is `3c14a4bd22d4da57f773365860ecb24d7823360470bf0601ec65c52889d5e659` and active
+`inference_view.py` SHA-256 is `90cfb99901ab1c8b0cfd994eec88ebf730940f1dc7ee445d8533e9167d011a00`; both are mode `0640` with the HADES
+runtime owner/group and match reviewed candidate `6bc6063702f73665a9cf666ca14cf7057d5924e4`. Hermes was
+active and its configured health endpoint returned HTTP 200 after one restart.
+The adapter rollout made no Hermes overlay or source-access change. The last
+separately recorded composed overlay hash is
+`1e731bee9385d8f918ddceadb374796b5c730e52f0adae38e6dc758d7f777f91`; it is a
+composed runtime artifact, not the base public `sitecustomize.py`. Candidate
+`6bc6063702f73665a9cf666ca14cf7057d5924e4` passed Public CI `37245877931` and NYX-002 review. Seven fresh
+authenticated owner/household chats passed with zero turn errors; household
+topology checks were false. The candidate has not yet been promoted to public
+main. These are source/runtime and targeted dogfood facts; remaining campaign
+gaps stay open.
+
 
 Proxmox supplies hypervisor and guest runtime observations within its configured
 read scope. When the effective-permissions endpoint is readable, HADES reports

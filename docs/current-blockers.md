@@ -5,17 +5,15 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-04
+## Current convergence checkpoint — 2026-10-05
 
-Canonical public `main` is `c16071a54fdc750fb939a47b1bad0fcea5308e3e`, with Public CI run `37243849629` passing. Aster's branch `codex/inference-read-freshness-20261004` points to `cd7a551bb617ecf3fb7dadae04ef53762909a173`, a direct main descendant; candidate Public CI run `37245402704` passed, including current-tree and introduced-history checks. The candidate is not deployed.
+Canonical public `main` is `c16071a54fdc750fb939a47b1bad0fcea5308e3e`, with Public CI run `37243849629` passing. Aster's branch `codex/inference-read-freshness-20261004` has deployed candidate `6bc6063702f73665a9cf666ca14cf7057d5924e4`; its full Public CI run `37245877931` passed, including public-tree and introduced-history safety. NYX-001 and NYX-002 are complete and accepted. The old homelab branch remains review-only; no branch code/history was imported.
 
-NYX-001 is complete and accepted. No code or history from `codex/gpu-telemetry-parity-20261004` was imported. Its recorded history-safety run failed with 63 private-path/network findings, and the branch's NetBox service projection is weaker than main's pagination/completeness handling. NYX-002 is reviewing the pure inference-view extraction.
+The candidate moves six AST-identical inference/GPU response helpers to `inference_view.py`, preserves all former adapter aliases, and has no source-reading or configuration dependency in the view module. Post-deploy, the two active adapter files matched the reviewed candidate hashes, mode/ownership remained `0640 scotty:hades-runtime`, Hermes was active, and health returned HTTP 200. Seven fresh authenticated chats passed with zero errors: four owner inference/GPU/activity checks and three household checks, each household answer passing the topology-leak guard. The active production adapter is currently ahead of public main; no overlay or infrastructure-source settings changed.
 
-The candidate moves six AST-identical pure inference/GPU response helpers into `inference_view.py`; focused adapter, inference, service-health, capacity, GPU telemetry, restore, and Hermes owner/household routing checks pass. The active adapter remains the previously verified `c16071a` artifact and the candidate has not been rolled out. Last recorded runtime hashes remain in `CAMPAIGN_STATE.md`; no live recheck or deployment occurred with this candidate.
+The wider homelab campaign remains **PARTIAL** pending stale/partial-source and contradiction dogfood, native application-health and service-placement coverage, network trends, backup artifact/restoreability evidence, and ordinary-user outage acceptance. The encrypted private-infra snapshot restores bytes and modes but is on the same `/home` filesystem; independent-device custody is still open.
 
-The broader homelab campaign remains **PARTIAL** pending deployed stale/partial-source and contradiction dogfood, native application-health and service-placement coverage, network trends, backup artifact/restoreability evidence, and ordinary-user outage acceptance. Private recovery is verified for the recorded encrypted snapshot's bytes and modes, but its custody is on the same `/home` filesystem, not an independent device.
-
-## Release baseline
+## Historical release baseline and prior evidence
 
 Code checkpoint `f55bd0a` passed Public CI run `37240583967`. Earlier
 source checkpoint `07b0055` adds NetBox pagination completeness and
