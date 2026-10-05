@@ -7,9 +7,9 @@ state checks remain in the private acceptance record.
 Last reviewed: 2026-10-05
 
 
-## Current homelab source checkpoint — 2026-10-05 09:04 UTC
+## Current homelab source checkpoint — 2026-10-05 09:18 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Active candidate branch `codex/aster-homelab-clean-candidate-20261005` starts from `cbdbb399`, 73 commits ahead of main; its docs checkpoint and hosted CI are pending. A previous pushed checkpoint branch contains a superseded documentation commit that fails introduced-history safety due to a private local-worktree path; the current active candidate excludes that commit, preserving the safe source/test work. NYX-054's sequential Kuma heartbeat/config failure cases and earlier NYX-043/045 backup truth fixes, NYX-046/047 summary projection extraction, and NYX-051 direct edge coverage are included. The adapter suite passes locally. NYX-053 found no concrete stale-cache defect. Independent private-infra recovery and production/runtime owner acceptance remain open. Backup task history still does not prove artifact validity, custody, or restoreability. Production remains unchanged.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact Public CI `37254848424`. Active candidate `codex/aster-homelab-clean-candidate-20261005` is `40be64b1`, 74 commits ahead of main; exact Public CI `37288863179` passed all 117 reported steps, and current-tree and introduced-history safety pass. A previous pushed checkpoint branch retains a superseded documentation commit that fails introduced-history safety; the active branch excludes it without rewriting public history. NYX-054's sequential Kuma heartbeat/config failure cases and earlier NYX-043/045 backup truth fixes, NYX-046/047 summary projection extraction, and NYX-051 direct edge coverage are included. The adapter suite passes locally. NYX-053 found no concrete stale-cache defect; NYX-055 found no household source-failure leak; NYX-056 independent review is accepted. Independent private-infra recovery and production/runtime owner acceptance remain open. Backup task history still does not prove artifact validity, custody, or restoreability. Production remains unchanged.
 
 ## Gamma transition
 
