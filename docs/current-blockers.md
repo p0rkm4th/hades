@@ -77,7 +77,7 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 **PARTIAL**. Exact runtime hashes, private topology, rollback paths, and raw
 acceptance transcripts remain in protected operator records.
 
-**Next:** complete the current `ea606bac` source/test candidate CI and owner/runtime acceptance; resolve the protected recovery destination/recipient before creating an independent private-state artifact. Main promotion and deployment remain open.
+**Next:** await exact CI for the current docs checkpoint (`bd7a5e30`, run `37287079415`); then continue owner/runtime acceptance. Resolve the protected recovery destination/recipient before creating an independent private-state artifact. Main promotion and deployment remain open.
 Prepare a coherent full-package deployment only after
 review and promotion. Then deploy the
 reviewed household boundary fix with hash-guarded rollback, recheck household
