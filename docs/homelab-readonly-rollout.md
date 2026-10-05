@@ -89,6 +89,21 @@ Also establish these no-op conditions before apply:
 - The Open WebUI, Hindsight, and SearXNG data paths already exist as real
   directories and are the paths currently mounted by their services. Stop if
   any would need to be created or redirected.
+- `HADES_HERMES_RUNTIME_USER` and `HADES_HERMES_RUNTIME_GROUP` already resolve
+  to existing account/group entries. Their UID/GID must match the active
+  Hermes process and the `User=`/`Group=` of its active systemd unit. Stop on
+  any mismatch; the installer otherwise creates configured identities and
+  transfers the Hermes profile tree.
+- `/opt/hades-grocy-mcp` already exists as a non-symlink directory with its
+  venv executable, pinned `grocy-mcp` package version, and lock hash matching
+  this candidate. Verify it without installation using the existing-prefix
+  check in `scripts/install-grocy-mcp.sh`; stop before running that script if
+  the prefix is absent or drifted, since the installer would create a venv and
+  install packages that are outside this rollout's rollback set.
+- The parent directory of `$HADES_OPEN_WEBUI_SECRET_SOURCE` is an existing
+  non-symlink directory, already mode 0700, with no named/default ACLs. Capture
+  its owner, group, mode, and ACL with the secret backup; otherwise `install
+  -d` could follow a symlink or change ACL masks.
 - The required Docker bridges `hades-application-net`, `hades-private`, and
   `hades-grocy-net` already exist as local bridge networks. The installer
   creates a missing network, so stop if any is absent or incompatible.
@@ -158,6 +173,8 @@ up at least:
   regenerates this active SearXNG settings file from the protected secret;
 - `$HADES_CONFIG_ROOT/secrets/grocy-api-key` and
   `$HADES_OPEN_WEBUI_SECRET_SOURCE`, with ownership, mode, and hash recorded;
+- the parent directory of `$HADES_OPEN_WEBUI_SECRET_SOURCE`, including owner,
+  group, mode, and ACL metadata;
 - existing config/state/backup root and installed-layer directory metadata,
   including ACLs, even though the no-op preconditions above should preserve
   them;
