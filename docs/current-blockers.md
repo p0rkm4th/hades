@@ -21,9 +21,10 @@ NYX-001 classification against current `main`; its semantic dispositions are
 unchanged and the old branch still has no accepted unique behavior to port.
 NYX-008 accepted the source-level incomplete-conflict and named-monitor review.
 That was static source review, not live failure dogfood. NYX-009 completed a
-fresh read-only backup metadata pass. NYX-011 found one unnecessary protected
-custody detail in the public checkpoint. It was removed in candidate `cac23756`,
-which passed Public CI run `37254073685`; the targeted NYX-012 recheck is pending.
+fresh read-only backup metadata pass. NYX-011 found one unnecessary
+protected-custody detail; Aster removed it.
+The clean-lineage replacement candidate `d3b14c53` passed Public CI run
+`37254383967`; NYX-012 is rechecking this exact candidate. It remains unpromoted.
 
 The prior inference-view extraction remains deployed according to the last
 protected rollout record. The later pure `homelab_views.py` extraction remains
@@ -42,8 +43,9 @@ artifact/restore checks remain open for other components. The campaign remains
 **PARTIAL**. No current-turn runtime, host, network,
 source-ACL, or backup mutation occurred.
 
-**Next:** complete NYX-012 review of the corrected checkpoint claims; recheck
-backup task and snapshot metadata after the pending local schedules; verify
+**Next:** complete NYX-012 review of the clean-lineage candidate, then promote
+only after its main CI run passes; recheck backup task and snapshot metadata
+after the pending local schedules; verify
 active runtime provenance before any deployment decision; then take the
 smallest remaining evidence-backed adapter extraction or source-completeness
 fix. The dirty primary checkout is preserved; use the clean worktree based on

@@ -130,14 +130,13 @@ disabled; see
 ## Current next action
 
 Public `main` is `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9` with successful
-Public CI run `37252630983`. Docs checkpoint `85fa9934` passed run `37253674535`; NYX-011’s custody-detail
-correction is in `cac23756`, which passed run `37254073685`. NYX-012 recheck is
-pending. The Kuma
-observation-time preservation change is
-source-validated but not deployed; the active overlay still requires
-compatibility review. NYX-008 accepted static source review, NYX-009 completed the bounded backup
+Public CI run `37252630983`. The clean-lineage documentation candidate
+`d3b14c53` passed run `37254383967`; it is not promoted, and NYX-012 is
+rechecking it. The Kuma observation-time preservation change is source-validated
+but not deployed; the active overlay still requires compatibility review.
+NYX-008 accepted static source review, NYX-009 completed the bounded backup
 metadata pass, and NYX-010 revalidated the old-branch disposition against
-current `main`. NYX-012 is rechecking the custody-detail correction. Reconcile
+current `main`. Reconcile
 exact runtime behavior before considering deployment, keep current `main`
 canonical, and continue only the smallest evidence-backed read-only gap. No
 whole-branch promotion is permitted.
