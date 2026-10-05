@@ -7,7 +7,7 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-05 UTC
 
-Canonical public `main` is `786afe87290a45e8d3547b8fa1317c7c8841c20c`. Candidate Public CI run [37348035481](https://github.com/p0rkm4th/hades/actions/runs/37348035481) passed; post-promotion run [37348237613](https://github.com/p0rkm4th/hades/actions/runs/37348237613) is pending verification. The preceding main `50919421f8478ea49a2536d5d0c24669f3bff2cc` passed candidate run [37346019937](https://github.com/p0rkm4th/hades/actions/runs/37346019937) and post-promotion run [37346207557](https://github.com/p0rkm4th/hades/actions/runs/37346207557).
+Canonical public `main` is `786afe87290a45e8d3547b8fa1317c7c8841c20c`. Candidate Public CI run [37348035481](https://github.com/p0rkm4th/hades/actions/runs/37348035481) passed; post-promotion run [37348237613](https://github.com/p0rkm4th/hades/actions/runs/37348237613) passed. The preceding main `50919421f8478ea49a2536d5d0c24669f3bff2cc` passed candidate run [37346019937](https://github.com/p0rkm4th/hades/actions/runs/37346019937) and post-promotion run [37346207557](https://github.com/p0rkm4th/hades/actions/runs/37346207557).
 
 The homelab read layer remains **PARTIAL** as an owner-facing live capability. No current-main package/runtime byte parity or fresh authenticated owner/household acceptance was established, and no production deployment or canonical-source ACL mutation was performed. Seven authenticated chats on adapter revision `6bc6063702f73665a9cf666ca14cf7057d5924e` remain narrow historical evidence, not acceptance of current main.
 
@@ -21,7 +21,7 @@ Measured source sizes after the view/provider extractions: `hermes/sitecustomize
 
 Private infrastructure recovery remains owner-managed and unresolved: the owner confirmed no off-site backup currently exists and could not name an independent encrypted target or recipient. No recovery artifact was made; same-disk copies are not independent disaster recovery. Keep topology, credentials, and raw acceptance material in protected records.
 
-**Next exact action:** verify post-promotion CI `37348237613`, then continue read-only current-main owner/runtime parity work without claiming live acceptance or recovery PASS.
+**Next exact action:** continue read-only current-main owner/runtime parity work without claiming live acceptance or recovery PASS.
 
 ## Previous code and dogfood checkpoints — 2026-10-04
 
