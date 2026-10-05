@@ -7,6 +7,22 @@ is exposed to HADES through its LAN-scoped published status page only.
 The current upstream MCP candidate evaluation is recorded in
 [`docs/homelab-mcp-evaluation.md`](homelab-mcp-evaluation.md).
 
+## Current source and runtime checkpoint
+
+Public HADES `main` is `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`; Public CI
+run `37252630983` passed. The canonical summary retains the monitor source's
+`last_updated` value as `observed_at`; response freshness remains a separate
+field. This source change is not deployed. Runtime overlay and adapter hashes
+are kept in the protected operator record and must be rechecked before a
+rollout. The current active composition is not assumed to match repository
+source.
+
+The read layer remains **PARTIAL**: synthetic contracts and prior targeted
+owner/household dogfood do not establish live stale-source, contradiction,
+native service-health, network-trend, or restoreability acceptance. Backup job
+or task evidence does not prove artifact validation, independent custody, or a
+successful restore. Unknown and incomplete source coverage must remain explicit.
+
 ## Authority boundaries
 
 | Domain | Canonical source | Planned HADES access | Write authority |

@@ -5,24 +5,37 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05
+## Current convergence checkpoint — 2026-10-05 UTC
 
-Latest validated public source `main` is `4c423bf3d66437888599d175581b4ae317ae0d66`; Public CI run `37252027393` passed. The re-scoped homelab-view extraction is promoted. NYX-001 through NYX-005 are accepted; NYX-006/007 established the compatibility findings and portability plan. NYX-008 is reviewing the conflict and monitor corrections. The old homelab branch remains review-only; no branch code/history was imported.
+Public `main` is `b17ce8e733d777ae7e0c7a7d5af15a1948671ae9`; Public CI run
+[37252630983](https://github.com/p0rkm4th/hades/actions/runs/37252630983)
+completed successfully. The source checkpoint preserves Kuma observation time
+as `observed_at` in the canonical compact summary; the owner named-monitor
+response labels it as observation time and treats freshness separately. This
+checkpoint is not deployed. The active runtime is a deployment-local
+composition, and source/runtime parity remains unverified for this change.
 
-The prior inference-view extraction remains deployed with healthy Hermes and passed targeted owner/household dogfood. The new `integrations/homelab_views.py` extraction is packaged and on main but is not deployed. The active overlay is a deployment-local composition: it has richer incomplete-source details and route behavior, including a four-argument service-monitor call. Do not replace it with repository source wholesale.
+The older `codex/gpu-telemetry-parity-20261004` ref remains review-only; no
+code or history has been imported wholesale. NYX-001 was accepted against an
+earlier main base, so a bounded current-main recheck is active. NYX-008 is
+reviewing incomplete conflict and service-monitor semantics; NYX-009 is
+independently auditing backup evidence and custody. Their findings are pending.
 
-Fresh owner UI dogfood named expected source categories and explicit source-read time language. A separate Household A request for internal infrastructure names/addresses was denied and redirected to approved service checks; the topology-leak guard passed. This does not close stale-cache, source-outage, or broad household outage gates.
+The prior inference-view extraction remains deployed according to the last
+protected rollout record. The later pure `homelab_views.py` extraction remains
+in source but is not deployed. Existing owner/household dogfood covers source
+provenance, bounded change history, and denial of private topology requests;
+those targeted results do not close live stale/partial/contradiction tests,
+native application health/placement, network trends, backup artifact or restore
+verification, normal-user outage acceptance, or independent-device custody.
+The campaign remains **PARTIAL**. No current-turn runtime, host, network,
+source-ACL, or backup mutation occurred.
 
-A fresh owner coverage query reported the expected-service catalog empty, 11
-responding probes without claiming application readiness, and the read time; it
-did not fabricate a service list. A fresh change-history query reported no
-records in its bounded 24-hour scope, acknowledged no prior snapshot for
-comparison, and listed excluded event classes. This is bounded activity
-evidence, not a complete change log.
-
-NYX-006's protected synthetic harness found that no conflict rows plus unavailable comparison data could appear clear; it also found missing partial-scope, unlinked-identity, and source-time caveats, named-monitor source/truncation gaps, and an active four-argument versus promoted two-argument monitor contract. Generic source already includes an owner-only effective-permission guest-visibility response; the active-specific route and dispatch behavior need parity review. NYX-007 classified conflict completeness and monitor unknowns as generic; exact copy as an owner decision; source availability, active call order, and configured Agent Zero endpoint as deployment-local or owner-gated.
-
-The generic conflict response was fixed at `efbcb19c`: unavailable/malformed input stays unknown; partial guest visibility is explicit; known disagreements are retained with coverage caveats. Commit `4c423bf3` uses the canonical compact availability summary, supports the active four-argument monitor call, respects owner scope, and keeps source/identity/truncation gaps unknown. Focused synthetic contracts and Public CI pass. Neither change is deployed. Next, complete NYX-008's review, then assess a safe active-overlay composition. The wider campaign remains **PARTIAL**: live stale/partial/contradiction dogfood, native service health/placement, network trends, backup artifact/restoreability, ordinary-user outage acceptance, and independent-device custody remain open.
+**Next:** receive NYX-008/009 evidence and the current-base NYX-010 lineage
+recheck; then resolve the smallest generic source-completeness/monitor gap that
+remains and continue current-source dogfood only after runtime composition is
+safe. The dirty primary checkout is preserved; use the clean worktree based on
+public `main` for integration.
 
 ## Historical release baseline and prior evidence
 
