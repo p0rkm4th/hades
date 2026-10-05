@@ -7,14 +7,19 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-Current main contains `8f3209757f4c2cd4170bab9829285021f45b728b`, a
+Latest public main docs checkpoint `ab036347e7e7f2b5328d7a88ff5ea0538f591695`
+passed Public CI [37325519564](https://github.com/p0rkm4th/hades/actions/runs/37325519564).
+It contains the code promotion `8f3209757f4c2cd4170bab9829285021f45b728b`, a
 fast-forward descendant of `4859acef7af95ff4611af83e8e1777a4fe355f6b`.
 The host-load view extraction at `9e11ff92f503fefeaaf24b30c478857bdd1b29f4`
 and combined code/docs revision passed Public CI runs
 [37324585706](https://github.com/p0rkm4th/hades/actions/runs/37324585706) and
 [37324964236](https://github.com/p0rkm4th/hades/actions/runs/37324964236).
 Post-promotion run [37325121388](https://github.com/p0rkm4th/hades/actions/runs/37325121388)
-passed. NYX-003 found no P1/P2 issue. Local safety, service-health,
+and subsequent main run `37325519564` passed. NYX-003/004 found no P1/P2
+issue; NYX-004 recommends no remaining low-risk server extraction. NYX-005
+identified a small direct-view test gap for a linked inventory alias; its
+expected-output assertion now passes locally but is not yet in CI. Local safety, service-health,
 and Hermes runtime checks pass. The candidate is not yet in main or deployed.
 Partial Proxmox guest visibility is now asserted to preserve uncertainty rather
 than infer source agreement. The old GPU-parity branch remains reference-only;

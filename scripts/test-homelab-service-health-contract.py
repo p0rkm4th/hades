@@ -839,6 +839,14 @@ linked_host = {
     }]},
 }
 assert 'Proxmox reports Synthetic Compute Alpha online' in node_load_response(linked_host, 'Synthetic Compute Alpha')
+linked_host_alias_response = view_module._hades_homelab_proxmox_node_load_response(
+    linked_host, 'Synthetic Compute Alpha'
+)
+assert linked_host_alias_response == (
+    'Proxmox reports Synthetic Compute Alpha online; node metrics sampled at linked-host-time. '
+    'Host CPU reading is 10.0%. These are host/node readings; guest readings may overlap. '
+    'GPU and process-level use are separate.'
+)
 unmatched_host = node_load_response(linked_host, 'Unlisted Node')
 assert 'no current Proxmox node sample uniquely matched that machine' in unmatched_host
 assert view_module._hades_homelab_proxmox_node_load_response(

@@ -129,6 +129,9 @@ disabled; see
 
 ## Current next action
 
+The latest main documentation checkpoint
+`ab036347e7e7f2b5328d7a88ff5ea0538f591695` passed Public CI run
+[37325519564](https://github.com/p0rkm4th/hades/actions/runs/37325519564).
 For the homelab architecture slice, current main contains
 `8f3209757f4c2cd4170bab9829285021f45b728b`, fast-forwarded from
 `4859acef7af95ff4611af83e8e1777a4fe355f6b`. Implementation commit
@@ -142,6 +145,10 @@ passed; post-promotion CI [37325121388](https://github.com/p0rkm4th/hades/action
 also passed. This is not deployed or fresh owner acceptance. Private
 encrypted off-host recovery remains an owner-managed limitation: no independent
 destination has been specified.
+
+NYX-004 found no further low-risk presenter seam in the adapter. NYX-005
+identified one missing direct expected-output assertion for a linked inventory
+alias; it now passes locally and awaits CI. Homelab readiness remains PARTIAL.
 
 Homelab code checkpoint `8ae97d13c9b31db715e56c6c2b622ff40ae0ff82` is green (Public CI run [37321354100](https://github.com/p0rkm4th/hades/actions/runs/37321354100)). NYX-001 found no safe unique behavior to port from old branch `345cb1b6de5f9f51ad98986c88ab9f0693461921`; its introduced history fails public-history safety and it regresses newer main contracts. NYX-002/004 validated the backup and recent-activity presenter extractions. Read-only runtime provenance is now recorded; next, obtain fresh authenticated owner/household acceptance and reconcile current-main presenter refactors with the private overlay composition. Independent private-infra recovery remains an owner-managed limitation.
 Current infrastructure, owner-UI, recipe, voice, recovery-custody, and remaining homelab gates are tracked in [`current-blockers.md`](current-blockers.md).

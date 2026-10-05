@@ -25,6 +25,16 @@ passed; post-promotion CI [37325121388](https://github.com/p0rkm4th/hades/action
 also passed. This source change has not been deployed and provides no new
 live behavioral evidence.
 
+The latest sanitized main documentation checkpoint is
+`ab036347e7e7f2b5328d7a88ff5ea0538f591695` (Public CI
+[37325519564](https://github.com/p0rkm4th/hades/actions/runs/37325519564)
+passed). NYX-004 reviewed the remaining adapter seams and found no worthwhile
+low-risk projection to extract without moving identity, visibility, freshness,
+or truncation rules. NYX-005 found a direct-output assertion missing for a
+linked NetBox alias; the assertion is now added locally and the focused
+service-health test passes, pending commit and CI. No production behavior
+changed.
+
 Homelab code checkpoint `8ae97d13c9b31db715e56c6c2b622ff40ae0ff82`; Public CI run [37321354100](https://github.com/p0rkm4th/hades/actions/runs/37321354100) passed. This version includes the reviewed Proxmox backup response and recent-activity view extractions. NYX-002/004 found no material P1/P2 issue; focused direct-view and adapter-parity checks pass. The adapter regression sequences a successful Kuma read and a subsequent Kuma outage while Proxmox returns a changed guest state; it verifies a fresh Proxmox fetch and UNKNOWN availability without reusing Kuma's prior result. NYX-011 reviewed the test, and the focused adapter script passes. The CI service-health contract also requires household denial to return before direct homelab readers and includes a synthetic inserted-read regression. The presenter refactors have not been separately deployed.
 
 Fresh read-only production inspection on 2026-10-05 verified the Hermes service active with zero restarts and confirmed its running process selects the configured overlay. Overlay bytes match the protected deployment record and deterministic per-slice builder in private infra. The process-selected homelab MCP server bytes map to public HADES commit `6bc6063702f73665a9cf666ca14cf7057d5924e`; this is older than the current refactored adapter, so current-main source/runtime byte parity is not established. The private per-slice builder provides reproducible overlay lineage from its protected base and patch, but there is no single public end-to-end composition manifest. The full installer overwrites tracked layer files, so it is not a safe way to preserve deployment-local policy.
