@@ -5,25 +5,21 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
-## Current convergence checkpoint — 2026-10-05 07:08 UTC
+## Current convergence checkpoint — 2026-10-05 07:20 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI
 [37254848424](https://github.com/p0rkm4th/hades/actions/runs/37254848424)
 passed on that exact commit. Aster's short-lived integration branch
-`codex/aster-homelab-checkpoint-redacted-20261004` has integrated source/test
-candidate `1c4f280e8587ed6fa6c17e1819bb10d56eb35ee8`; its test-bearing docs
-head `71cf0497` passed exact Public CI [37275149451](https://github.com/p0rkm4th/hades/actions/runs/37275149451).
-The latest status/docs head `0c927309ac65bc12d851d6b805388bc1197f2535` passed
-exact Public CI [37275891021](https://github.com/p0rkm4th/hades/actions/runs/37275891021). NYX-031 found a P1 provenance bypass; NYX-032 is implementing the fix/tests. Main remains unchanged, and no candidate is deployed. This extracts the deterministic household homelab
-response into the already packaged view module while retaining the early
-scope guard; the candidate also tests that missing Kuma observation time
-remains `UNKNOWN`. Previous source/test candidate `725f8357` passed
-`37266372854`; the docs checkpoint `d31c6d0d` passed Public CI run
-`37269639394` after recording the exact deployed reconciler drift.
-The five-document NYX-018 reconciliation at `aa0fabe7dda3bb843db067bd5b3c32da9ce582cc`
-passed exact Public CI run [37272481910](https://github.com/p0rkm4th/hades/actions/runs/37272481910).
-The branch is not promoted or deployed. The primary local checkout is
-preserved and is not the integration base.
+`codex/aster-homelab-checkpoint-redacted-20261004` has source/test candidate
+`32d6a6a9875b985c6549ef548bfcbaf8a0d6b8a3`; exact Public CI
+[37276510518](https://github.com/p0rkm4th/hades/actions/runs/37276510518)
+passed. NYX-032 closed the required homelab package-identity bypass in source;
+its fix is not deployed. NYX-033 accepted the provider parser boundary and found a separate P1 for
+authenticated redirects. NYX-034 integrated fix `a8fc1535` rejects redirects
+for authenticated requests while preserving anonymous redirect behavior; its
+loopback regression and the complete adapter suite pass locally. Hosted CI is
+pending. NYX-035 is auditing installer working-directory package closure. Main is unchanged;
+no source candidate is promoted or deployed.
 
 The older `codex/gpu-telemetry-parity-20261004` reference is not a merge
 candidate. Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
@@ -79,7 +75,7 @@ safety, and hosted CI runs `37264553916`, `37264554854`, and `37265041968`
 pass. Neither change is deployed. NYX-018 lineage and NYX-017 no-dispatch
 reviews are accepted. The hostile-household runtime regression and corrected
 partial-source contradiction assertion are committed in `2e62ffde` and exact
-Public CI `37273578676` passed. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox visibility extraction is accepted; the cherry-picked candidate passed exact Public CI `37274388982`, and public-tree/history checks pass. Docs refresh `7ba90aa7` passed exact CI `37274614406`. NYX-029 found helper failures abort before MCP/model dispatch without private leakage (P2 availability). NYX-030's loader/alias/renderer failure tests are committed in `1c4f280e` and the focused runtime contract passes locally and exact Public CI `37275149451` passed on head `71cf0497`. NYX-031 found a P1 provenance bypass: an enabled required `homelab-readonly` registration can currently be recorded as HTTP or as an external executable without package identity. NYX-032 is implementing the fail-closed correction and adversarial tests in an isolated worktree. Earlier docs/status head `1d9dda555e56e76d33a371104e23d0e807e231dc` passed exact Public CI run `37275450730`. Package/provenance and provider reviews remain pending in the protected coordination record. A live household
+Public CI `37273578676` passed. NYX-026's stale review-status finding is corrected. NYX-028's Proxmox visibility extraction is accepted; the cherry-picked candidate passed exact Public CI `37274388982`, and public-tree/history checks pass. Docs refresh `7ba90aa7` passed exact CI `37274614406`. NYX-029 found helper failures abort before MCP/model dispatch without private leakage (P2 availability). NYX-030's loader/alias/renderer failure tests are committed in `1c4f280e` and the focused runtime contract passes locally and exact Public CI `37275149451` passed on head `71cf0497`. NYX-032 closed that P1: enabled required `homelab-readonly` registrations now require a path-backed `server.py` package identity; synthetic tests reject HTTP, `-m`, `-c`, and wrong-executor forms while preserving unrelated MCP transports. Aster independently reran provenance and reconstruction-closure tests; exact Public CI `37276510518` passed on candidate `32d6a6a9`. This source fix is not deployed. Earlier docs/status head `1d9dda555e56e76d33a371104e23d0e807e231dc` passed exact Public CI run `37275450730`. NYX-033 accepted the provider boundary but found an authenticated redirect P1. NYX-034 integrated fix `a8fc1535`; loopback regression and adapter suite pass locally, hosted CI pending. NYX-035 is auditing installer working-directory package closure. Main promotion and deployment remain pending. A live household
 UI prompt exposed the intent-classification gap; no concrete host data was
 returned, and fresh post-deployment UI verification remains open. Runtime
 package parity and monitor observation-time output also remain open.
@@ -92,7 +88,7 @@ trends, and normal-user outage acceptance remain open. The homelab campaign is
 **PARTIAL**. Exact runtime hashes, private topology, rollback paths, and raw
 acceptance transcripts remain in protected operator records.
 
-**Next:** close the NYX-031 P1 provenance finding through NYX-032, then finish the provider-boundary review, then promote only after review closure.
+**Next:** verify hosted CI for NYX-034, complete NYX-035 installer package-closure audit/fix, then promote only after all reviews and hosted CI pass.
 Prepare a coherent full-package deployment only after
 review and promotion. Then deploy the
 reviewed household boundary fix with hash-guarded rollback, recheck household
