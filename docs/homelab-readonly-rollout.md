@@ -37,10 +37,12 @@ running ones). Require no symlink at
 path. Require no ACL entry for the Hermes runtime UID on `$HADES_CONFIG_ROOT`,
 no `HADES_AGENT_ZERO_CREDENTIAL_FILE` or
 `HADES_AGENT_ZERO_OPERATOR_PASSWORD_FILE` input, and no active
-`agent-zero-client-auth.env`. Also require these optional generated records to
-be absent from `$HADES_DEPLOYMENT_DIR`: `agent-zero-operator-proxy.env`,
+`agent-zero-client-auth.env`. Require the generated
+`$HADES_DEPLOYMENT_DIR/agent-zero-client-auth.env` path itself to be absent,
+including symlinks. Also require these optional generated records to be absent
+from `$HADES_DEPLOYMENT_DIR`: `agent-zero-operator-proxy.env`,
 `agent-zero-operator-proxy.compose.yaml`, `agent-zero-operator-auth.env`, and
-`agent-zero-operator-auth.service`. The renderer removes them when their
+`agent-zero-operator-auth.service`. The renderer removes these paths when their
 corresponding inputs are disabled. If optional proxy or client-auth state is
 active/configured, stop; this homelab-only procedure does not authorize
 changing it.
