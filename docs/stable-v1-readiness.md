@@ -2,7 +2,7 @@
 
 ## Current homelab engineering checkpoint — 2026-10-05 09:04 UTC
 
-Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Current Aster candidate `cbdbb399` is a 73-commit main descendant; preceding checkpoint `df99ea5b` passed exact Public CI `37287324153`, while CI for the NYX-054 test addition is pending. Code includes NYX-043/045 backup truth corrections, NYX-046/047 summary-view extraction/tests, NYX-051 direct boundary cases, and NYX-054 sequential Kuma outage coverage. Production parity and owner/household acceptance remain open. NYX-053 found no concrete stale-cache defect. Independent private recovery remains a P1 pending owner-approved destination and recipient. No promotion or deployment occurred.
+Canonical `origin/main` `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9` passed exact CI `37254848424`. Current Aster candidate `cbdbb399` is a 73-commit main descendant; preceding checkpoint `df99ea5b` passed exact Public CI `37287324153`. Docs checkpoint `7f4766f1` failed `37288039572` because current-tree safety caught a private local-worktree path, now removed; corrected-head CI is pending. Code includes NYX-043/045 backup truth corrections, NYX-046/047 summary-view extraction/tests, NYX-051 direct boundary cases, and NYX-054 sequential Kuma outage coverage. Production parity and owner/household acceptance remain open. NYX-053 found no concrete stale-cache defect. Independent private recovery remains a P1 pending owner-approved destination and recipient. No promotion or deployment occurred.
 
 This is a readiness record for the deployment, not an installer or a new
 runtime layer. Most component observations below were last rechecked read-only
