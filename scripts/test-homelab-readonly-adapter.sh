@@ -797,6 +797,33 @@ assert over_limit_backup_endpoint["tasks_truncated"] is True, over_limit_backup_
 assert len(over_limit_backup_endpoint["tasks"]) == 20
 print("PASS over-limit per-node backup task responses remain partial")
 
+def capped_backup_fetch(row_count):
+    def fetch(url, *_args, **_kwargs):
+        if url.endswith("/access/permissions"):
+            return {"data": {"/vms": {"VM.Audit": 1}}}
+        if url.endswith("/cluster/backup"):
+            return {"data": []}
+        if url.endswith("/cluster/resources"):
+            return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+        if "/nodes/hypervisor-alpha/tasks?" in url:
+            return {"data": [
+                {"id": "102", "status": "OK", "endtime": 1700000000 + index}
+                for index in range(row_count)
+            ]}
+        raise AssertionError(f"unexpected synthetic capped-backup URL: {url}")
+    return fetch
+
+server._fetch = capped_backup_fetch(20)
+exact_limit_backup = server.homelab_backup_status()["endpoints"][0]
+assert exact_limit_backup["tasks_status"] == "PARTIAL", exact_limit_backup
+assert exact_limit_backup["tasks_truncated"] is True, exact_limit_backup
+
+server._fetch = capped_backup_fetch(19)
+below_limit_backup = server.homelab_backup_status()["endpoints"][0]
+assert below_limit_backup["tasks_status"] == "HEALTHY", below_limit_backup
+assert below_limit_backup["tasks_truncated"] is False, below_limit_backup
+print("PASS exact Proxmox task-page cap is partial while a below-cap response remains complete")
+
 def selected_backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/access/permissions"):
         return {"data": {"/vms/102": {"VM.Audit": 1}}}

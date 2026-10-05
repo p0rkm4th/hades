@@ -1355,7 +1355,10 @@ def homelab_backup_status() -> dict:
                         unattributed = []
                         excluded_rows = 0
                         malformed_rows = 0
-                        page_truncated = len(data) > 20
+                        # A full page may have been capped by Proxmox's
+                        # `limit=20` even when the response has no continuation
+                        # marker. Keep completeness unknown at the boundary.
+                        page_truncated = len(data) >= 20
                         allowed_ids = set(task_scope.get("guest_ids") or [])
                         denied_ids = set(task_scope.get("excluded_guest_ids") or [])
                         for row in data[:20]:
