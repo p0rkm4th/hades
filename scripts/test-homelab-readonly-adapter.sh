@@ -814,12 +814,16 @@ def capped_backup_fetch(row_count):
     return fetch
 
 server._fetch = capped_backup_fetch(20)
-exact_limit_backup = server.homelab_backup_status()["endpoints"][0]
+exact_limit_report = server.homelab_backup_status()
+exact_limit_backup = exact_limit_report["endpoints"][0]
+assert exact_limit_report["status"] == "PARTIAL", exact_limit_report
 assert exact_limit_backup["tasks_status"] == "PARTIAL", exact_limit_backup
 assert exact_limit_backup["tasks_truncated"] is True, exact_limit_backup
 
 server._fetch = capped_backup_fetch(19)
-below_limit_backup = server.homelab_backup_status()["endpoints"][0]
+below_limit_report = server.homelab_backup_status()
+below_limit_backup = below_limit_report["endpoints"][0]
+assert below_limit_report["status"] == "READABLE", below_limit_report
 assert below_limit_backup["tasks_status"] == "HEALTHY", below_limit_backup
 assert below_limit_backup["tasks_truncated"] is False, below_limit_backup
 print("PASS exact Proxmox task-page cap is partial while a below-cap response remains complete")
