@@ -8249,6 +8249,7 @@ def _hades_household_homelab_boundary_response(user_text):
     status = re.search(
         r"\b(?:okay|ok|well|working|healthy|health|status|down|up|running|online|offline|"
         r"trouble|wrong|broken|slow|available|alive|doing|responding|reachable|"
+        r"loaded|cpu|memory|usage|utilization|load|"
         r"can\s+we\s+use|which\s+.*(?:trouble|problem)|what\s+changed)\b",
         text,
         re.IGNORECASE,

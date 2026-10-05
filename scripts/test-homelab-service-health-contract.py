@@ -1013,6 +1013,15 @@ assert household_minecraft == (
 ), household_minecraft
 assert household_boundary('What does Minecraft do?') is None
 assert household_boundary('Can you help me pick a Minecraft skin?') is None
+for prompt in (
+    'How loaded is deep-inference-node?',
+    'How much memory does deep-inference-node use?',
+    'What is deep-inference-node CPU usage?',
+):
+    boundary_answer = household_boundary(prompt)
+    assert boundary_answer is not None, (prompt, boundary_answer)
+    assert 'deep-inference-node' not in boundary_answer
+    assert 'remembered' in boundary_answer or "can't verify" in boundary_answer, (prompt, boundary_answer)
 run_conversation = next(
     node for node in ast.walk(tree)
     if isinstance(node, ast.FunctionDef) and node.name == '_hades_run_conversation'
