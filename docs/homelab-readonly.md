@@ -12,33 +12,31 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 
 ## Current source and runtime checkpoint
 
-**Current repository checkpoint (2026-10-05):** public `main` code baseline
-is `0295a4ae757cc665553045e40f5263e39c437e0e`. Candidate Public CI
-[37367162037](https://github.com/p0rkm4th/hades/actions/runs/37367162037)
-passed on that exact source SHA. Post-promotion main CI
-[37367398725](https://github.com/p0rkm4th/hades/actions/runs/37367398725)
-was marked failed only because its sole job was cancelled before any steps ran;
-it is not a code/test failure or pass. Corrected docs candidate `ee9563ea`
-passed all 120 steps in Public CI
-[37369088801](https://github.com/p0rkm4th/hades/actions/runs/37369088801).
-The current-main 13-module adapter package was composed locally with manifest
-digest `d3a81bed0383ca1c998c90e5c0ff8830962bd0f91611866d9f324b712f4bf000`;
-this is preparation only and is not deployed.
+**Current repository checkpoint (2026-10-05):** public `main` is
+`c4a6de1b2f9e1ebdff08b0367b5046b028019776`. Its candidate Public CI run
+[37374922926](https://github.com/p0rkm4th/hades/actions/runs/37374922926)
+passed all 122 steps; post-promotion main CI
+[37375169299](https://github.com/p0rkm4th/hades/actions/runs/37375169299)
+is queued. The 14-module homelab adapter package was composed from this exact
+source with manifest digest
+`b0fd8052740e6cfd2950e308508c67f185ac3ce407e3f064e349da8a765b0a07`, but is
+not deployed. The source extracts pure Proxmox effective-permission policy
+and fails closed on malformed ACL rows or privilege values; backup task reads
+are not issued until guest scope validates.
 
-Aster established an authenticated owner/household route through a loopback-only
-SSH tunnel using the approved account and strict host-key checking. The WebUI
-returned HTTP 200. Eight fresh owner/household questions returned answers; all
-were verified in their corresponding persisted chats, and all household
-redaction checks passed. The harness and protected label-input contract are
-tracked in this candidate. This is narrow acceptance of the currently
-reachable deployment, not current-main package parity. The deployed adapter and
-overlay hashes are still unverified; the known package disk tree differs from
-current main. No package rollout occurred. Follow
+A bounded authenticated owner/household run on the currently reachable
+production deployment passed eight fresh prompts: all eight persisted in their
+corresponding chats, with zero household topology leaks and zero turn errors.
+It used a loopback-only SSH tunnel, strict host-key checking, and protected
+credentials and labels. This does not prove current-main runtime/package
+parity. The active adapter and overlay provenance remain unverified; the known
+adapter disk tree differs from current main. No package rollout or source ACL
+change occurred. The bounded acceptance harness and synthetic redaction
+contract are in main. Follow
 [`docs/homelab-package-rollout.md`](homelab-package-rollout.md) for the
-loopback-only procedure. Public history still contains the previously
-reported `.local` disclosure, with no history rewrite. Independent encrypted
-off-host recovery remains an owner-accepted limitation.
-
+loopback-only procedure. Public history still contains the previously reported
+`.local` disclosure, with no history rewrite. Independent encrypted off-host
+recovery remains an owner-accepted limitation.
 The remainder of this checkpoint records older repository and live observations
 as historical evidence; its cited revisions and CI runs do not supersede the
 current checkpoint above.

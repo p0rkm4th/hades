@@ -29,42 +29,31 @@ describe all reachable HADES history as sanitized.
 
 ### Current homelab repository checkpoint — 2026-10-05
 
-Current public `main` code baseline is
-`0295a4ae757cc665553045e40f5263e39c437e0e`; its candidate Public CI
-[37367162037](https://github.com/p0rkm4th/hades/actions/runs/37367162037)
-passed. Post-promotion main CI
-[37367398725](https://github.com/p0rkm4th/hades/actions/runs/37367398725)
-ended with its only job cancelled before any steps ran, so it is neither a
-code failure nor a test pass. The corrected docs checkpoint `ee9563ea` passed
-candidate Public CI [37369088801](https://github.com/p0rkm4th/hades/actions/runs/37369088801)
-with 120 steps. The 13-module adapter package was composed
-from the exact current source with manifest digest
-`d3a81bed0383ca1c998c90e5c0ff8830962bd0f91611866d9f324b712f4bf000`; this
-local artifact is not deployed. Aster established the approved owner/household
-route through a loopback-only SSH forward with strict host-key checking; the
-authenticated WebUI returned HTTP 200. Eight fresh owner/household prompts
-returned answers, all persisted in their chats after Markdown-tolerant
-same-turn verification, and all household leak checks passed. This is narrow
-dogfood of the currently reachable deployment, not proof that it runs the
-current-main package. The tracked bounded harness requires loopback, refuses
-login redirects, checks private labels from a protected mode-0600 file, and
-has synthetic redaction contracts in CI. Current-main runtime parity remains
-OPEN; no package rollout occurred. Historical `.local` names remain published;
-no history rewrite was performed. No independent encrypted off-host recovery
-target is configured by owner choice.
+Current public `main` is `c4a6de1b2f9e1ebdff08b0367b5046b028019776`,
+fast-forwarded from the qualified Aster candidate. Candidate Public CI
+[37374922926](https://github.com/p0rkm4th/hades/actions/runs/37374922926)
+passed all 122 steps. Post-promotion main CI
+[37375169299](https://github.com/p0rkm4th/hades/actions/runs/37375169299)
+is queued, so no post-promotion result is claimed yet. The candidate extracts
+pure Proxmox effective-permission policy and fails closed on malformed ACL
+rows/privilege values; backup task reads are skipped unless scope validates.
+The 14-module package was composed from this exact source; manifest digest
+`b0fd8052740e6cfd2950e308508c67f185ac3ce407e3f064e349da8a765b0a07`.
+It is protected local preparation only and is not deployed. The active runtime's
+package/overlay provenance remains unverified; the prior inventory showed its
+adapter tree differs from current source. No package rollout or ACL change
+occurred.
 
-The follow-up candidate extracted Proxmox effective-permission classification
-into a pure adapter module while keeping network reads and failure-to-UNKNOWN
-handling in the server. NYX-020 found an existing fail-open for malformed
-inner ACL values; the candidate now rejects malformed rows/privileges and
-proves backup task reads are skipped until guest scope is valid. The focused
-adapter, package/provenance, readiness-map, and public-safety checks pass
-locally. Public CI run [37373586779](https://github.com/p0rkm4th/hades/actions/runs/37373586779)
-completed 122 steps but failed at the readiness-map step because the homelab
-table row had an extra delimiter; that documentation shape is corrected in the
-current follow-up. This is not a completed CI qualification. No change is on
-main or production yet.
-
+Aster established the approved owner/household route through a loopback-only
+SSH forward with strict host-key checking. Eight fresh prompts returned
+answers, all persisted in their same chats after Markdown-tolerant verification;
+all household leak checks passed. This is narrow dogfood of the currently
+reachable deployment, not current-main package acceptance. The bounded harness
+is in main, requires protected labels/credentials and loopback, refuses login
+redirects, and has synthetic redaction contracts in CI. Current-main runtime
+parity remains **OPEN**. Historical `.local` names remain published; no history
+rewrite was performed. The owner accepts no independent encrypted off-host
+recovery target at present; no artifact was created.
 The following homelab details summarize earlier repository checkpoints and
 read-only production observations; they do not supersede the current checkpoint
 above.
