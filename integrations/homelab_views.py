@@ -1,5 +1,7 @@
 """Pure, source-independent views of normalized homelab observations."""
 
+import re
+
 def _hades_homelab_availability_groups(availability):
     """Separate current Kuma probe outcomes from stale or unusable observations."""
     groups = {"up": [], "down": [], "unknown": []}
@@ -421,4 +423,80 @@ def _hades_homelab_proxmox_node_load_response(summary, target):
     if len(parts) == 1:
         parts.append("No comparable current host CPU or memory values were returned.")
     parts.append("These are host/node readings; guest readings may overlap. GPU and process-level use are separate.")
+    return " ".join(parts)
+
+def _hades_homelab_guest_inventory_response(summary):
+    """List bounded current guest states without treating partial scope as empty."""
+    inventory = summary.get("proxmox_guest_inventory") if isinstance(summary, dict) else None
+    endpoints = inventory.get("endpoints") if isinstance(inventory, dict) else None
+    if not isinstance(endpoints, list) or not endpoints:
+        return "I can't verify configured Proxmox guest sources right now, so I can't list current guest power states."
+    complete = bool(
+        str(inventory.get("status") or "").upper() == "COMPLETE"
+        and all(
+            isinstance(endpoint, dict)
+            and str(endpoint.get("status") or "").upper() == "COMPLETE"
+            and str(endpoint.get("visibility_status") or "").upper() == "COMPLETE"
+            and str(endpoint.get("visibility_scope") or "").upper() == "ALL_GUESTS"
+            and endpoint.get("truncated") is not True
+            for endpoint in endpoints
+        )
+    )
+    guests = {}
+    ambiguous = set()
+    for endpoint in endpoints:
+        if not isinstance(endpoint, dict):
+            continue
+        source_id = str(endpoint.get("source_id") or "")
+        rows = endpoint.get("guests") if isinstance(endpoint.get("guests"), list) else []
+        for row in rows[:512]:
+            if not isinstance(row, dict):
+                continue
+            identity = row.get("source_identity")
+            kind = row.get("guest_type")
+            guest_id = str(row.get("guest_id") or "")
+            if (
+                not isinstance(identity, str)
+                or not re.fullmatch(rf"proxmox:{re.escape(source_id)}:(?:qemu|lxc):[1-9][0-9]{{0,19}}", identity)
+                or kind not in {"qemu", "lxc"}
+                or not re.fullmatch(r"[1-9][0-9]{0,19}", guest_id)
+            ):
+                continue
+            if identity in guests:
+                ambiguous.add(identity)
+            else:
+                guests[identity] = row
+    if ambiguous:
+        for identity in ambiguous:
+            guests[identity] = {"guest_type": "unknown", "guest_id": identity.rsplit(":", 1)[-1], "status": "UNKNOWN"}
+    states = {"RUNNING": [], "STOPPED": [], "UNKNOWN": []}
+    for row in guests.values():
+        kind = "VM" if row.get("guest_type") == "qemu" else "CT" if row.get("guest_type") == "lxc" else "guest"
+        guest_id = str(row.get("guest_id") or "")
+        name = " ".join(str(row.get("name") or "").split())[:100]
+        label = f"{name} ({kind} {guest_id})" if name else f"{kind} {guest_id}"
+        node = " ".join(str(row.get("node") or "").split())[:100]
+        if node:
+            label += f" on {node}"
+        state = str(row.get("status") or "UNKNOWN").upper()
+        states[state if state in {"RUNNING", "STOPPED"} else "UNKNOWN"].append(label)
+    parts = [
+        "Complete effective VM.Audit scope covers every configured Proxmox source."
+        if complete else
+        "This lists only guests visible in the configured Proxmox reads; combined guest scope is incomplete or unknown."
+    ]
+    if not guests and complete:
+        parts.append("Proxmox reports no VM or container guests.")
+    elif not guests:
+        parts.append("No visible guest rows were returned; that does not establish an empty cluster.")
+    for state, heading in (("RUNNING", "Running"), ("STOPPED", "Stopped"), ("UNKNOWN", "State unknown")):
+        labels = states[state]
+        if labels:
+            parts.append(f"{heading}: " + "; ".join(labels[:20]) + (f"; and {len(labels) - 20} more" if len(labels) > 20 else "."))
+    times = [str(row.get("retrieved_at"))[:64] for row in endpoints if isinstance(row, dict) and row.get("retrieved_at")]
+    if times:
+        parts.append("Proxmox guest reads completed at " + "; ".join(times[:8]) + ".")
+    else:
+        parts.append("Proxmox guest-read timestamps were not reported.")
+    parts.append("This is VM/container power state, not application or service health.")
     return " ".join(parts)

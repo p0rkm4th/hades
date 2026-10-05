@@ -31,10 +31,17 @@ assert set(view_functions) == {
     '_hades_homelab_conflict_response',
     '_hades_homelab_node_metrics_ranking_response',
     '_hades_homelab_proxmox_node_load_response',
+    '_hades_homelab_guest_inventory_response',
 }
-assert not any(isinstance(node, (ast.Import, ast.ImportFrom)) for node in view_tree.body)
+assert [
+    alias.name
+    for node in view_tree.body if isinstance(node, ast.Import)
+    for alias in node.names
+] == ['re'], 'view module may import only the standard-library regex helper'
+assert not any(isinstance(node, ast.ImportFrom) for node in view_tree.body)
 assert all(
     isinstance(node, ast.FunctionDef)
+    or isinstance(node, ast.Import)
     or isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant)
     and isinstance(node.value.value, str)
     for node in view_tree.body
@@ -229,6 +236,7 @@ ranking_intent = namespace['_hades_homelab_resource_ranking_intent']
 ranking_response = namespace['_hades_homelab_resource_ranking_response']
 guest_inventory_intent = namespace['_hades_homelab_guest_inventory_intent']
 guest_inventory_response = namespace['_hades_homelab_guest_inventory_response']
+guest_inventory_view = namespace['_hades_load_homelab_views']()._hades_homelab_guest_inventory_response
 workload_host_target = namespace['_hades_homelab_guest_index_host_target']
 workloads_on_host_response = namespace['_hades_homelab_guest_index_workloads_on_host_response']
 resolve_homelab_adapter_path = namespace['_hades_resolve_homelab_adapter_path']
@@ -505,6 +513,21 @@ complete_guest_state = guest_inventory_response({
         }],
     },
 })
+assert guest_inventory_view({
+    'proxmox_guest_inventory': {
+        'status': 'COMPLETE', 'endpoints': [{
+            'source_id': 'synthetic', 'status': 'COMPLETE',
+            'visibility_status': 'COMPLETE', 'visibility_scope': 'ALL_GUESTS',
+            'retrieved_at': 'synthetic-guest-read', 'truncated': False,
+            'guests': [
+                {'source_identity': 'proxmox:synthetic:qemu:102', 'guest_type': 'qemu',
+                 'guest_id': '102', 'name': 'Synthetic VM', 'node': 'Synthetic Node', 'status': 'RUNNING'},
+                {'source_identity': 'proxmox:synthetic:lxc:203', 'guest_type': 'lxc',
+                 'guest_id': '203', 'name': 'Synthetic CT', 'node': 'Synthetic Node', 'status': 'STOPPED'},
+            ],
+        }],
+    },
+}) == complete_guest_state, 'view output must match the Hermes wrapper byte-for-byte'
 assert 'Complete effective VM.Audit scope' in complete_guest_state, complete_guest_state
 assert 'Synthetic VM (VM 102) on Synthetic Node' in complete_guest_state, complete_guest_state
 assert 'Synthetic CT (CT 203) on Synthetic Node' in complete_guest_state, complete_guest_state
@@ -545,6 +568,93 @@ partial_guest_state = guest_inventory_response({
     }]},
 })
 assert 'does not establish an empty cluster' in partial_guest_state, partial_guest_state
+assert guest_inventory_view({
+    'proxmox_guest_inventory': {'status': 'PARTIAL', 'endpoints': [{
+        'source_id': 'synthetic', 'status': 'PARTIAL', 'visibility_scope': 'SELECTED_GUESTS',
+        'guests': [], 'truncated': False,
+    }]},
+}) == partial_guest_state, 'partial view output must match the Hermes wrapper byte-for-byte'
+duplicate_inventory = {'proxmox_guest_inventory': {'status': 'COMPLETE', 'endpoints': [{
+    'source_id': 'synthetic', 'status': 'COMPLETE', 'visibility_status': 'COMPLETE',
+    'visibility_scope': 'ALL_GUESTS', 'retrieved_at': 'synthetic-duplicate-read',
+    'truncated': False, 'guests': [
+        {'source_identity': 'proxmox:synthetic:qemu:304', 'guest_type': 'qemu',
+         'guest_id': '304', 'name': 'Synthetic Conflicting Name A', 'node': 'Node A', 'status': 'RUNNING'},
+        {'source_identity': 'proxmox:synthetic:qemu:304', 'guest_type': 'qemu',
+         'guest_id': '304', 'name': 'Synthetic Conflicting Name B', 'node': 'Node B', 'status': 'STOPPED'},
+        {'source_identity': 'proxmox:another-source:qemu:305', 'guest_type': 'qemu',
+         'guest_id': '305', 'name': 'Synthetic Malformed Identity', 'status': 'RUNNING'},
+    ],
+}]}}
+duplicate_identity_state = guest_inventory_response(duplicate_inventory)
+assert 'State unknown: guest 304' in duplicate_identity_state, duplicate_identity_state
+assert 'Synthetic Conflicting Name' not in duplicate_identity_state, duplicate_identity_state
+assert 'Synthetic Malformed Identity' not in duplicate_identity_state, duplicate_identity_state
+assert guest_inventory_view(duplicate_inventory) == duplicate_identity_state, 'duplicate/malformed view output must match the Hermes wrapper byte-for-byte'
+truncated_inventory = {'proxmox_guest_inventory': {'status': 'COMPLETE', 'endpoints': [{
+    'source_id': 'synthetic', 'status': 'COMPLETE', 'visibility_status': 'COMPLETE',
+    'visibility_scope': 'ALL_GUESTS', 'truncated': True, 'guests': [],
+}]}}
+truncated_guest_state = guest_inventory_response(truncated_inventory)
+assert 'scope is incomplete or unknown' in truncated_guest_state, truncated_guest_state
+assert 'does not establish an empty cluster' in truncated_guest_state, truncated_guest_state
+assert guest_inventory_view(truncated_inventory) == truncated_guest_state, 'truncated view output must match the Hermes wrapper byte-for-byte'
+bounded_inventory = {'proxmox_guest_inventory': {'status': 'PARTIAL', 'endpoints': [{
+    'source_id': 'synthetic', 'status': 'PARTIAL', 'visibility_scope': 'SELECTED_GUESTS',
+    'truncated': True, 'guests': [
+        {'source_identity': f'proxmox:synthetic:qemu:{guest_id}', 'guest_type': 'qemu',
+         'guest_id': str(guest_id), 'name': 'Synthetic Guest', 'status': 'RUNNING'}
+        for guest_id in range(1, 514)
+    ],
+}]}}
+bounded_guest_state = guest_inventory_response(bounded_inventory)
+assert 'Synthetic Guest (VM 20)' in bounded_guest_state, bounded_guest_state
+assert 'and 492 more' in bounded_guest_state, bounded_guest_state
+assert 'Synthetic Guest (VM 21)' not in bounded_guest_state, bounded_guest_state
+assert guest_inventory_view(bounded_inventory) == bounded_guest_state, 'bounded view output must match the Hermes wrapper byte-for-byte'
+unconfigured_inventory = {'proxmox_guest_inventory': {'status': 'NOT_CONFIGURED', 'endpoints': []}}
+unconfigured_inventory_response = guest_inventory_response(unconfigured_inventory)
+assert "can't list current guest power states" in unconfigured_inventory_response, unconfigured_inventory_response
+assert guest_inventory_view(unconfigured_inventory) == unconfigured_inventory_response, 'unconfigured view output must match wrapper output'
+long_label = {'proxmox_guest_inventory': {'status': 'COMPLETE', 'endpoints': [{
+    'source_id': 'synthetic', 'status': 'COMPLETE', 'visibility_status': 'COMPLETE',
+    'visibility_scope': 'ALL_GUESTS', 'truncated': False, 'guests': [{
+        'source_identity': 'proxmox:synthetic:qemu:777', 'guest_type': 'qemu', 'guest_id': '777',
+        'name': 'N' * 120, 'node': 'H' * 120, 'status': 'RUNNING',
+    }],
+}]}}
+long_label_response = guest_inventory_response(long_label)
+assert 'N' * 100 in long_label_response and 'N' * 101 not in long_label_response, long_label_response
+assert 'H' * 100 in long_label_response and 'H' * 101 not in long_label_response, long_label_response
+assert guest_inventory_view(long_label) == long_label_response, 'bounded labels must match wrapper output'
+many_timestamps = {'proxmox_guest_inventory': {'status': 'COMPLETE', 'endpoints': [
+    {'source_id': f'source-{index}', 'status': 'COMPLETE', 'visibility_status': 'COMPLETE',
+     'visibility_scope': 'ALL_GUESTS', 'truncated': False, 'retrieved_at': f'synthetic-time-{index}',
+     'guests': []}
+    for index in range(1, 10)
+]}}
+timestamp_response = guest_inventory_response(many_timestamps)
+assert 'synthetic-time-8' in timestamp_response and 'synthetic-time-9' not in timestamp_response, timestamp_response
+assert guest_inventory_view(many_timestamps) == timestamp_response, 'timestamp cap must match wrapper output'
+untimed_inventory = {
+    'proxmox_guest_inventory': {'status': 'COMPLETE', 'endpoints': [{
+        'source_id': 'synthetic', 'status': 'COMPLETE', 'visibility_status': 'COMPLETE',
+        'visibility_scope': 'ALL_GUESTS', 'truncated': False, 'guests': [],
+    }]},
+}
+untimed_response = guest_inventory_response(untimed_inventory)
+assert 'timestamps were not reported' in untimed_response, untimed_response
+assert guest_inventory_view(untimed_inventory) == untimed_response, 'untimed view output must match wrapper output'
+mixed_coverage = {'proxmox_guest_inventory': {'status': 'COMPLETE', 'endpoints': [
+    {'source_id': 'source-a', 'status': 'COMPLETE', 'visibility_status': 'COMPLETE',
+     'visibility_scope': 'ALL_GUESTS', 'truncated': False, 'guests': []},
+    {'source_id': 'source-b', 'status': 'PARTIAL', 'visibility_status': 'PARTIAL',
+     'visibility_scope': 'SELECTED_GUESTS', 'truncated': False, 'guests': []},
+]}}
+mixed_coverage_response = guest_inventory_response(mixed_coverage)
+assert 'scope is incomplete or unknown' in mixed_coverage_response, mixed_coverage_response
+assert 'does not establish an empty cluster' in mixed_coverage_response, mixed_coverage_response
+assert guest_inventory_view(mixed_coverage) == mixed_coverage_response, 'mixed source coverage must match wrapper output'
 coverage = coverage_response({
     'service_catalog': {'status': 'OK', 'coverage': 'EMPTY', 'services': []},
     'proxmox_guest_visibility': {'status': 'PARTIAL'},
