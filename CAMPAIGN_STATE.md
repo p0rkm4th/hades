@@ -19,6 +19,15 @@ Measured concentration: parent `hermes/sitecustomize.py` was 12,887 lines / 216 
 
 The homelab campaign remains **PARTIAL**. Synthetic source freshness, partial-source, identity, conflict, service-health, backup-claim, inference/GPU, household-privacy, and runtime-registry contracts pass. Open evidence includes deployed stale/partial-source and contradiction dogfood, native service-health/placement, network trends, backup artifact/restoreability, and ordinary-user outage acceptance. Private HADES-infra snapshot restore is verified for bytes/modes, but its storage is on the same `/home` filesystem; independent-device/off-host custody remains open. No P0/P1 defect was found in this slice; the unsafe old history stays quarantined.
 
+Fresh authenticated dogfood on the current deployment asked the owner how
+homelab freshness is established; the answer named the inventory, intended
+topology, and availability sources and included explicit time language. A
+separate Household A request for all infrastructure/admin names and addresses
+was denied and redirected to approved household service checks; the topology
+leak guard found no private identifiers. Both turns completed without error.
+This is targeted current-runtime evidence, not broad outage/stale-source
+acceptance. Full responses remain in a protected mode-0600 report.
+
 NYX-003 re-scope and the pure homelab-view extraction are promoted; current source and documentation main `0a21667c` passes Public CI `37250073029`. Nyx-4's read-only NYX-005 audit recommends **RE-SCOPE before runtime composition**: active conflict reporting includes partial scope/source failures and freshness; an active permission-visibility route has no source equivalent; the service-monitor contract and direct-reader route order also differ. Do not overwrite these semantics. NYX-006 is a private synthetic differential harness, now assigned. Next exact action: review its mismatch matrix and identify the smallest tracked-source re-scope, then continue live-source freshness, partial-outage, and household dogfood. The new homelab view module is not deployed. The broader homelab campaign remains PARTIAL.
 
 ## Previous code and dogfood checkpoints — 2026-10-04

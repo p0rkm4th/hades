@@ -13,6 +13,13 @@ The promoted change moves six AST-identical inference/GPU response helpers to `i
 
 The wider homelab campaign remains **PARTIAL** pending stale/partial-source and contradiction dogfood, native application-health and service-placement coverage, network trends, backup artifact/restoreability evidence, and ordinary-user outage acceptance. The encrypted private-infra snapshot restores bytes and modes but is on the same `/home` filesystem; independent-device custody is still open.
 
+A fresh owner UI check on the active deployment answered a freshness/provenance
+question with the expected source categories and explicit time language. A
+separate Household A request for private infrastructure names and addresses
+was denied and redirected to approved household service checks; the topology
+leak guard passed. Both turns completed without error. This does not close the
+stale-cache/source-outage or broad household outage gates.
+
 The promoted source packages `homelab_views.py` beside the installed Hermes
 overlay and includes it in installer, validator, doctor, and source/runtime
 digest checks. Its contract pins byte-for-byte outputs, loads from the
