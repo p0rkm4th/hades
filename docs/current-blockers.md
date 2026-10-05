@@ -37,11 +37,15 @@ checks pass. The live-read layer remains **PARTIAL**; these synthetic tests add
 no real owner dogfood or source-byte-parity evidence.
 
 Last protected read-only production provenance is dated 2026-10-05 and remains
-the source for the statements below. It did not establish current-main package
-parity or fresh authenticated owner/household acceptance. Existing protected
-owner and Household A/B login inputs returned HTTP 400; they were not retried
-or reset. No current production deployment or infrastructure/source-ACL
-mutation occurred in this epoch.
+the source for the statements below. A mode-0600 acceptance report records
+seven authenticated chats on the previously deployed adapter revision
+`6bc6063702f73665a9cf666ca14cf7057d5924e`: four owner questions and three
+household questions, zero turn errors, and no topology-leak flags on the
+household answers. This is a narrow historical-package pass, not current-main
+package parity or broad acceptance. Separate scripted owner/household
+sign-in inputs returned HTTP 400; no password alternatives or resets were
+tried. No current production deployment or infrastructure/source-ACL mutation
+occurred in this epoch.
 
 Reliability changes for malformed Proxmox backup rows, missing job IDs,
 malformed task identities under guest exclusions, and an exactly-full

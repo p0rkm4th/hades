@@ -90,15 +90,18 @@ service rows, so HADES cannot ground current application placement from that
 inventory yet. This direct adapter result does not establish owner or household
 natural-language behavior.
 
-These changes are undeployed and provide no new live homelab evidence. The last
-protected production inspection on 2026-10-05 showed an active Hermes process,
-but its running homelab MCP server maps to an older public source revision;
-current-main package byte parity was not established. Existing protected owner
-and Household A/B sign-in inputs returned HTTP 400. No alternative passwords
-or account resets were attempted. Fresh owner/household acceptance, live
-stale/partial/conflict behavior, service-native health/placement, network
-trends, and complete restoreability remain open. No production or source-ACL
-mutation occurred in this epoch.
+The provenance tool change and documentation updates are undeployed; the direct
+adapter read above adds live source evidence but does not validate current-main
+package parity. A protected acceptance report records seven authenticated chats
+on the previously deployed adapter revision
+`6bc6063702f73665a9cf666ca14cf7057d5924e`: four owner questions and three
+household questions, zero turn errors, and no topology-leak flags on the
+household answers. This narrow pass does not cover the current-main package,
+backup route, or broad owner question set. Separate protected scripted login
+inputs returned HTTP 400; no alternative passwords or account resets were
+attempted. Current-main owner/household behavior, live stale/partial/conflict
+handling, service-native placement, network trends, and restoreability remain
+open. No production or source-ACL mutation occurred.
 
 Independent encrypted off-host recovery is not configured. The owner confirms
 there is no off-site backup; do not call same-disk copies independent recovery.
