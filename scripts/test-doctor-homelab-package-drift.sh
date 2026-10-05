@@ -16,6 +16,9 @@ cp "$repo_dir/integrations/public-research/research.py" "$working_tree/integrati
 cp -a "$repo_dir/integrations/homelab-readonly" "$working_tree/integrations/homelab-readonly"
 printf '\nHADES_HERMES_WORKING_DIRECTORY=%s\n' "$working_tree" >> "$inputs"
 chmod 0600 "$inputs"
+printf 'HADES_HERMES_WORKING_DIRECTORY=%s\n' "$working_tree" \
+  > "$fixture/private/profile/hermes.env"
+chmod 0600 "$fixture/private/profile/hermes.env"
 
 # The doctor uses this read-only systemctl query to bind its check to the
 # active unit. The stub is synthetic and emits only the configured test path.
@@ -61,6 +64,22 @@ grep -Fq 'PASS active Hermes working directory matches operator input' "$fixture
   echo 'FAIL doctor exposed the configured working-directory path' >&2
   exit 1
 }
+
+sed "s#^HADES_HERMES_WORKING_DIRECTORY=.*#HADES_HERMES_WORKING_DIRECTORY=$fixture/other-environment-directory#" \
+  "$fixture/private/profile/hermes.env" > "$fixture/private/profile/hermes.env.next"
+mv "$fixture/private/profile/hermes.env.next" "$fixture/private/profile/hermes.env"
+if output=$(run_doctor 2>&1); then
+  echo 'FAIL doctor accepted a Hermes profile environment working-directory mismatch' >&2
+  exit 1
+fi
+grep -Fq 'FAIL Hermes profile environment working directory differs from the active service' <<<"$output"
+! grep -Fq "$working_tree" <<<"$output" || {
+  echo 'FAIL doctor exposed the configured working-directory path' >&2
+  exit 1
+}
+sed "s#^HADES_HERMES_WORKING_DIRECTORY=.*#HADES_HERMES_WORKING_DIRECTORY=$working_tree#" \
+  "$fixture/private/profile/hermes.env" > "$fixture/private/profile/hermes.env.next"
+mv "$fixture/private/profile/hermes.env.next" "$fixture/private/profile/hermes.env"
 
 mv "$working_tree/integrations/homelab-readonly/server.py" \
   "$working_tree/integrations/homelab-readonly/server.py.missing"

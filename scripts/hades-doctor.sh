@@ -65,7 +65,7 @@ hades_layer_digest() {
 }
 check_homelab_runtime_package() {
   local path=${HADES_HERMES_WORKING_DIRECTORY:-} package_root expected_modules runtime_modules module
-  local source_path source_mode active_working_directory
+  local source_path source_mode active_working_directory hermes_environment environment_working_directory
   if [[ "$installed_source_verified" != 1 || -z "$path" ]]; then
     echo 'WARN homelab runtime package identity is unknown; installed source or working-directory input is unavailable'
     return 0
@@ -82,6 +82,22 @@ check_homelab_runtime_package() {
   fi
   if [[ "$active_working_directory" != "$path" ]]; then
     echo 'FAIL configured Hermes working directory differs from the active service'
+    doctor_fail=1
+    return 0
+  fi
+  hermes_environment="${HADES_HERMES_PROFILE:-}/hermes.env"
+  if [[ ! -f "$hermes_environment" || -L "$hermes_environment" || ! -r "$hermes_environment" ]]; then
+    if ((test_mode)); then
+      echo 'WARN homelab runtime package identity is unknown; Hermes profile environment is unavailable'
+    else
+      echo 'FAIL Hermes profile environment cannot be verified'
+      doctor_fail=1
+    fi
+    return 0
+  fi
+  environment_working_directory=$(sed -n 's/^HADES_HERMES_WORKING_DIRECTORY=//p' "$hermes_environment")
+  if [[ "$environment_working_directory" != "$path" ]]; then
+    echo 'FAIL Hermes profile environment working directory differs from the active service'
     doctor_fail=1
     return 0
   fi
