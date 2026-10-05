@@ -117,7 +117,7 @@ awk -v secret="$(<"$HADES_SEARXNG_SECRET_FILE")" \
   '{gsub("__SEARXNG_SECRET__", secret); print}' \
   "$repo_dir/searxng/settings.yml" > "$HADES_CONFIG_ROOT/searxng/settings.yml"
 chmod 600 "$HADES_CONFIG_ROOT/searxng/settings.yml"
-revision=$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || printf 'unknown')
+revision=$(git -c "safe.directory=$repo_dir" -C "$repo_dir" rev-parse HEAD 2>/dev/null || printf 'unknown')
 manifest_sha=$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')
 
 render() {

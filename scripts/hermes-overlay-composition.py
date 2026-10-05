@@ -37,7 +37,10 @@ def _sha256(data: bytes) -> str:
 def _git(repo: Path, *args: str) -> str:
     try:
         result = subprocess.run(
-            ["git", "-C", str(repo), *args], check=True, capture_output=True, text=True
+            ["git", "-c", f"safe.directory={repo.resolve()}", "-C", str(repo), *args],
+            check=True,
+            capture_output=True,
+            text=True,
         )
     except (OSError, subprocess.CalledProcessError):
         raise ValueError("source repository identity is unavailable") from None
@@ -51,7 +54,15 @@ def _tracked_source(repo: Path) -> tuple[str, str, bytes]:
         raise ValueError("source repository identity is malformed")
     try:
         source = subprocess.run(
-            ["git", "-C", str(repo), "show", f"HEAD:{SOURCE_RELATIVE}"],
+            [
+                "git",
+                "-c",
+                f"safe.directory={repo.resolve()}",
+                "-C",
+                str(repo),
+                "show",
+                f"HEAD:{SOURCE_RELATIVE}",
+            ],
             check=True,
             capture_output=True,
         ).stdout

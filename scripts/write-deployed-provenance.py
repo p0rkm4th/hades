@@ -32,18 +32,26 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def git_run(
+    repo: Path, *arguments: str, text: bool = True
+) -> subprocess.CompletedProcess:
+    """Run read-only Git inspection for the exact validated repository root."""
+    root = repo.resolve()
+    return subprocess.run(
+        ["git", "-c", f"safe.directory={root}", "-C", str(root), *arguments],
+        check=False,
+        capture_output=True,
+        text=text,
+    )
+
+
 def verify_source_checkout(source_repo: Path, claimed_sha: str, label: str) -> str:
     if source_repo.is_symlink() or not source_repo.is_dir():
         raise SystemExit(f"{label} source repository must be a real directory")
     root = source_repo.resolve()
 
     def git(*args: str) -> str:
-        result = subprocess.run(
-            ["git", "-C", str(root), *args],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
+        result = git_run(root, *args)
         if result.returncode != 0:
             raise SystemExit(f"{label} source repository Git identity could not be verified")
         return result.stdout.strip()
@@ -333,11 +341,7 @@ def homelab_source_package_files(repo: Path) -> dict[str, str]:
     for directory in (repo / "integrations", package_directory):
         if directory.is_symlink() or not directory.is_dir():
             raise SystemExit("homelab MCP source package path is missing or not a real directory")
-    listed = subprocess.run(
-        ["git", "-C", str(repo), "ls-files", "-z", "--", package_relative],
-        check=False,
-        capture_output=True,
-    )
+    listed = git_run(repo, "ls-files", "-z", "--", package_relative, text=False)
     if listed.returncode != 0:
         raise SystemExit("homelab MCP package membership could not be verified")
 
@@ -359,11 +363,7 @@ def homelab_source_package_files(repo: Path) -> dict[str, str]:
             raise SystemExit("homelab MCP source package contains a missing or unsafe module path") from None
         if candidate.is_symlink() or resolved_candidate != candidate or not candidate.is_file():
             raise SystemExit("homelab MCP package contains a missing or non-regular Python module")
-        committed = subprocess.run(
-            ["git", "-C", str(repo), "show", f"HEAD:{relative}"],
-            check=False,
-            capture_output=True,
-        )
+        committed = git_run(repo, "show", f"HEAD:{relative}", text=False)
         if committed.returncode != 0:
             raise SystemExit("homelab MCP package module is not present at the claimed revision")
         file_sha = hashlib.sha256(candidate.read_bytes()).hexdigest()
@@ -522,17 +522,11 @@ def mcp_runtime_identity(
                 raise SystemExit(f"enabled MCP source is outside the clean HADES checkout: {name}") from None
             if target.is_symlink() or not resolved.is_file():
                 raise SystemExit(f"enabled MCP source is not a regular tracked file: {name}")
-            blob = subprocess.run(
-                ["git", "-C", str(repo), "rev-parse", f"HEAD:{relative}"],
-                check=False, capture_output=True, text=True,
-            )
+            blob = git_run(repo, "rev-parse", f"HEAD:{relative}")
             file_sha = digest(resolved)
             if blob.returncode != 0 or len(blob.stdout.strip()) != 40:
                 raise SystemExit(f"enabled MCP source is not tracked at the claimed HADES revision: {name}")
-            expected_bytes = subprocess.run(
-                ["git", "-C", str(repo), "show", f"HEAD:{relative}"],
-                check=False, capture_output=True,
-            )
+            expected_bytes = git_run(repo, "show", f"HEAD:{relative}", text=False)
             if expected_bytes.returncode != 0 or hashlib.sha256(expected_bytes.stdout).hexdigest() != file_sha:
                 raise SystemExit(f"enabled MCP source bytes differ from the claimed HADES revision: {name}")
             row.update({"transport": "stdio-source", "source": relative, "sha256": file_sha})

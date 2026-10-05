@@ -77,7 +77,7 @@ done
 }
 
 template="$repo_dir/deploy/templates/hermes.service.in"
-revision=$(git -C "$repo_dir" rev-parse HEAD)
+revision=$(git -c "safe.directory=$repo_dir" -C "$repo_dir" rev-parse HEAD)
 manifest_version=$(awk -F= '$1 == "HADES_MANIFEST_VERSION" {print $2; exit}' "$repo_dir/config/versions.env")
 [[ "$manifest_version" =~ ^[A-Za-z0-9._-]+$ ]] || {
   echo 'FAIL Hermes service renderer manifest version is invalid' >&2

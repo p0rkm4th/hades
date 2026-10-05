@@ -334,6 +334,26 @@ python scripts/write-deployed-provenance.py \
   --epsilon-manifest "$tmp/phase3-runtime-manifest.json" \
   --deployment-path /srv/hades \
   --service hades-hermes.service >/dev/null
+if (( EUID == 0 )) && id nobody >/dev/null 2>&1; then
+  nobody_uid=$(id -u nobody)
+  nobody_gid=$(id -g nobody)
+  chown -R "$nobody_uid:$nobody_gid" "$source_repo" "$infra_repo"
+  python scripts/write-deployed-provenance.py \
+    --output "$tmp/root-owned-source-provenance.json" \
+    --hades-sha "$hades_sha" \
+    --source-repo "$source_repo" \
+    --infra-sha "$infra_sha" \
+    --infra-repo "$infra_repo" \
+    --hermes-version 0.21.2 \
+    --hermes-executable "$tmp/active/hermes" \
+    --overlay "$tmp/active/sitecustomize.py" \
+    --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+    --task-store "$source_repo/integrations/task/store.py" \
+    --manifest "$source_repo/config/reconstruction-manifest.json" \
+    --epsilon-manifest "$tmp/phase3-runtime-manifest.json" \
+    --deployment-path /srv/hades \
+    --service hades-hermes.service >/dev/null
+fi
 chmod 0666 "$tmp/active/sitecustomize.py"
 if python scripts/write-deployed-provenance.py \
   --output "$tmp/unsafe-tracked-overlay-provenance.json" \

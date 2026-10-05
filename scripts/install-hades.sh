@@ -364,7 +364,7 @@ validate_hermes_working_directory() {
     fail 'Hermes homelab package must not contain symlinks'
   [[ -z "$(find "$package_root" -name '*.py' ! -type f -print -quit)" ]] ||
     fail 'Hermes homelab package contains a non-regular Python module'
-  expected_modules=$(git -C "$repo_dir" ls-files -- integrations/homelab-readonly | \
+  expected_modules=$(git -c "safe.directory=$repo_dir" -C "$repo_dir" ls-files -- integrations/homelab-readonly | \
     sed -n '/\.py$/s@^integrations/homelab-readonly/@@p' | LC_ALL=C sort) ||
     fail 'could not inspect tracked homelab package modules'
   runtime_modules=$(find "$package_root" -type f -name '*.py' -printf '%P\n' | LC_ALL=C sort) ||
