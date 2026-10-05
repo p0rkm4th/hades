@@ -32,6 +32,7 @@ assert set(view_functions) == {
     '_hades_homelab_node_metrics_ranking_response',
     '_hades_homelab_proxmox_node_load_response',
     '_hades_homelab_guest_inventory_response',
+    '_hades_homelab_guest_visibility_response',
 }
 assert [
     alias.name
@@ -776,6 +777,29 @@ partial_visibility = guest_visibility_response({
     'proxmox_guest_visibility': {'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS'}
 })
 assert 'selected guests only' in partial_visibility, partial_visibility
+guest_visibility_view = namespace['_hades_load_homelab_views']()
+visibility_cases = [
+    ({'status': 'COMPLETE', 'scope': 'ALL_GUESTS'}, 'all guests in scope'),
+    ({'status': 'PARTIAL', 'scope': 'SELECTED_GUESTS'}, 'selected guests only'),
+    ({'status': 'PARTIAL', 'scope': 'ALL_GUESTS_WITH_EXCLUSIONS'}, 'explicit exclusions'),
+    ({'status': 'PARTIAL', 'scope': 'NO_GUEST_AUDIT'}, 'no guest-audit visibility'),
+    ({'status': 'PARTIAL', 'scope': 'MIXED'}, 'mixed or incomplete'),
+    ({'status': 'NOT_CONFIGURED', 'scope': 'UNKNOWN'}, 'not configured'),
+    ({'status': 'UNKNOWN', 'scope': 'UNKNOWN'}, 'could not verify effective Proxmox permissions'),
+]
+for visibility, expected in visibility_cases:
+    summary = {
+        'proxmox_guest_visibility': visibility,
+        'source_observations': [{
+            'source': 'Proxmox guest visibility:synthetic',
+            'retrieved_at': 'synthetic-permission-read-time',
+        }],
+    }
+    wrapped = guest_visibility_response(summary)
+    direct = guest_visibility_view._hades_homelab_guest_visibility_response(summary)
+    assert direct == wrapped, (visibility, direct, wrapped)
+    assert expected in direct, (visibility, expected, direct)
+    assert 'synthetic-permission-read-time' in direct, direct
 assert placement_intent('Where is Agent Zero running?')
 assert namespace['_hades_is_homelab_intent']('Where is Agent Zero running?')
 intended_placement = placement_response('Where is Minecraft Server running?', {
