@@ -126,15 +126,15 @@ LLDAP membership, but neither is deployed or connected to n8n. Keep schedules
 disabled; see
 [`automation-boundary.md`](automation-boundary.md).
 
-## Current next action
+## Current next action — 2026-10-05 04:38 UTC
 
 Public `main` is `ae4cc444d323bd33e45c8bb73d40f4ff8e77e7a9`; Public CI run
 `37254848424` passed. The Aster candidate branch
 `codex/aster-homelab-checkpoint-redacted-20261004` is at
-`acf896751217db813511b190bcfa4418270ccd68`, with exact-SHA Public CI run
-`37263872345` passing all 117 steps. It contains a generated homelab package
-provenance guard and a deterministic household denial for owner-only
-infrastructure inventory requests, plus current-state documentation. Nyx's
+`f700e892cd3628deeeadb1dd6b375517a9cc07de`; duplicate exact-SHA runs
+`37264553916` and `37264554854` passed all 117 steps each. It contains the
+generated homelab package provenance guard, deterministic household denial,
+and an extracted provider-native read-only inference catalog boundary. Nyx's
 old-line classification and relevant code reviews remain pending. The
 candidate is not promoted or deployed. The live adapter package remains mixed
 and its output omits `observed_at`; the household fix requires post-deployment
