@@ -518,3 +518,38 @@ assert value["hermes_version"] == "0.21.2"
 assert len(value["hermes_executable_sha256"]) == 64
 print("PASS legacy Hermes Python-module launch provenance matches the running interpreter and package metadata")
 PY
+mkdir -p "$tmp/external-homelab-package"
+cp -a "$source_repo/integrations/homelab-readonly/." "$tmp/external-homelab-package/"
+printf 'mcp_servers:\n  homelab-readonly:\n    enabled: true\n    command: python3\n    args:\n      - %s/server.py\n' "$tmp/external-homelab-package" > "$tmp/hermes-home/profiles/hades/config.yaml"
+"$tmp/active/python" -m hermes_cli.main -p hades &
+module_pid=$!
+sleep 0.05
+export HADES_TEST_MAIN_PID="$module_pid"
+python scripts/write-deployed-provenance.py \
+  --output "$tmp/homelab-package-provenance.json" \
+  --hades-sha "$hades_sha" \
+  --source-repo "$source_repo" \
+  --infra-sha "$infra_sha" \
+  --infra-repo "$infra_repo" \
+  --hermes-version 0.21.2 \
+  --hermes-executable "$tmp/active/python" \
+  --overlay "$tmp/active/sitecustomize.py" \
+  --hermes-profile "$tmp/hermes-home/profiles/hades/config.yaml" \
+  --task-store "$source_repo/integrations/task/store.py" \
+  --manifest "$source_repo/config/reconstruction-manifest.json" \
+  --homelab-package-root "$tmp/external-homelab-package" \
+  --deployment-path /srv/hades \
+  --service hades-hermes.service >/dev/null
+python - "$tmp/homelab-package-provenance.json" <<'PY'
+import json, sys
+value = json.load(open(sys.argv[1]))
+assert len(value["mcp_runtime"]) == 1
+row = value["mcp_runtime"][0]
+assert row["name"] == "homelab-readonly"
+assert row["transport"] == "stdio-package-source"
+assert row["source"] == "integrations/homelab-readonly"
+assert row["file_count"] == 2
+assert len(row["package_tree_sha256"]) == 64
+assert "/external-homelab-package" not in json.dumps(value)
+print("PASS CLI provenance binds the selected external homelab package to the clean HADES tree")
+PY
