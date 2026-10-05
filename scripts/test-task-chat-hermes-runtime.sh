@@ -469,6 +469,67 @@ assert hostile_household.get("completed") is True and hostile_household.get("api
 assert "can't provide private infrastructure inventory" in hostile_household["final_response"].casefold(), hostile_household
 assert tool_dispatches == [], tool_dispatches
 assert ModelDispatchHandler.requests == [], ModelDispatchHandler.requests
+
+# Failures in the household boundary must abort the request before it can
+# fall through to model or homelab tool routing. Test each independently:
+# resolving the helper module, resolving a configured alias, and rendering.
+original_views_loader = hades._hades_load_homelab_views
+original_alias_matcher = hades._hades_configured_homelab_alias_match
+
+def failing_views_loader():
+    raise RuntimeError("synthetic helper module load failure")
+
+def failing_alias_matcher(_text):
+    raise RuntimeError("synthetic alias matcher failure")
+
+def failing_boundary_renderer(*_args):
+    raise RuntimeError("synthetic household renderer failure")
+
+failing_views = type(
+    "FailingHomelabViews",
+    (),
+    {"_hades_household_homelab_boundary_response": staticmethod(failing_boundary_renderer)},
+)()
+
+for failure_name, prompt, expected_error, inject_failure in (
+    (
+        "loader", "Are all the computers okay?", "synthetic helper module load failure",
+        lambda: setattr(hades, "_hades_load_homelab_views", failing_views_loader),
+    ),
+    (
+        "alias", "Is synthetic-alias-only-host okay?", "synthetic alias matcher failure",
+        lambda: setattr(hades, "_hades_configured_homelab_alias_match", failing_alias_matcher),
+    ),
+    (
+        "renderer", "Are all the computers okay?", "synthetic household renderer failure",
+        lambda: setattr(hades, "_hades_load_homelab_views", lambda: failing_views),
+    ),
+):
+    hades._hades_load_homelab_views = original_views_loader
+    hades._hades_configured_homelab_alias_match = original_alias_matcher
+    inject_failure()
+    failure_chunks = []
+    failure_agent = agent_class(
+        gateway_session_key=f"hades-user-{beta}",
+        session_id=f"synthetic-household-boundary-{failure_name}",
+        stream_delta_callback=failure_chunks.append,
+        **{**kwargs, "base_url": f"http://127.0.0.1:{model_dispatch_server.server_port}/v1"},
+    )
+    ModelDispatchHandler.requests.clear()
+    tool_dispatches.clear()
+    try:
+        failure_agent.run_conversation(prompt, conversation_history=[])
+    except RuntimeError as exc:
+        assert expected_error in str(exc), exc
+    else:
+        raise AssertionError(f"{failure_name} failure unexpectedly returned a conversation response")
+    assert failure_chunks == [], failure_chunks
+    assert tool_dispatches == [], tool_dispatches
+    assert ModelDispatchHandler.requests == [], ModelDispatchHandler.requests
+
+hades._hades_load_homelab_views = original_views_loader
+hades._hades_configured_homelab_alias_match = original_alias_matcher
+print("PASS household homelab boundary failures abort before tool/model dispatch (loader, alias matcher, renderer)")
 model_dispatch_server.shutdown()
 model_dispatch_server.server_close()
 model_dispatch_thread.join(timeout=2)
