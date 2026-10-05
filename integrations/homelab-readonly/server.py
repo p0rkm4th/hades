@@ -1214,6 +1214,7 @@ def homelab_backup_status() -> dict:
         jobs_status = "UNAVAILABLE"
         tasks_status = "UNAVAILABLE"
         jobs_truncated = False
+        invalid_job_rows = False
         nodes_truncated = False
         tasks_truncated = False
         error_codes = []
@@ -1234,11 +1235,24 @@ def homelab_backup_status() -> dict:
             if not isinstance(raw_jobs, list):
                 raise ValueError("Proxmox backup job response has an unsupported shape")
             jobs_truncated = len(raw_jobs) > 64
+            seen_job_ids: set[str] = set()
             for raw in raw_jobs[:64]:
                 if not isinstance(raw, dict):
+                    invalid_job_rows = True
                     continue
-                item = {}
-                for key in ("id", "schedule", "storage", "node", "mode"):
+                raw_job_id = raw.get("id")
+                job_id = _bounded_text(raw_job_id, 128)
+                if (
+                    not isinstance(raw_job_id, str)
+                    or not job_id
+                    or job_id != raw_job_id
+                    or job_id in seen_job_ids
+                ):
+                    invalid_job_rows = True
+                    continue
+                seen_job_ids.add(job_id)
+                item = {"id": job_id}
+                for key in ("schedule", "storage", "node", "mode"):
                     value = raw.get(key)
                     if isinstance(value, str):
                         bounded = _bounded_text(value, 128)
@@ -1256,7 +1270,7 @@ def homelab_backup_status() -> dict:
                 if isinstance(enabled, (bool, int)) and enabled in {0, 1, False, True}:
                     item["enabled"] = bool(enabled)
                 jobs.append(item)
-            jobs_status = "PARTIAL" if jobs_truncated else "HEALTHY"
+            jobs_status = "PARTIAL" if jobs_truncated or invalid_job_rows else "HEALTHY"
         except (OSError, ValueError, UnicodeError) as exc:
             error_codes.append(_source_error_code(exc))
 

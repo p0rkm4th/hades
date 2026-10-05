@@ -683,6 +683,73 @@ assert backup_report["retrieved_at"] in backup_text
 assert backup_report["formatted_summary"] == backup_text
 print("PASS Proxmox backup reads disclose scope/freshness and avoid artifact/restore claims")
 
+# A recorded task result is not artifact validation, and schedule parsing must
+# not turn malformed rows into a false empty/healthy configuration.
+def backup_rows_fetch(job_rows, task_rows):
+    def fetch(url, *_args, **_kwargs):
+        if url.endswith("/access/permissions"):
+            return {"data": {"/vms": {"VM.Audit": 1}}}
+        if url.endswith("/cluster/backup"):
+            return {"data": job_rows}
+        if url.endswith("/cluster/resources"):
+            return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+        if "/nodes/hypervisor-alpha/tasks?" in url:
+            return {"data": task_rows}
+        raise AssertionError(f"unexpected synthetic backup URL: {url}")
+    return fetch
+
+server._fetch = backup_rows_fetch(
+    [{"id": "disabled-nightly", "schedule": "02:00", "enabled": 0}],
+    [{"id": "102", "status": "OK", "endtime": 1700000300}],
+)
+disabled_report = server.homelab_backup_status()
+disabled_endpoint = disabled_report["endpoints"][0]
+disabled_text = server.format_homelab_backup_status(disabled_report)
+assert disabled_report["status"] == "READABLE", disabled_report
+assert disabled_endpoint["jobs"][0]["enabled"] is False
+assert "1 configured vzdump job(s) are disabled" in disabled_text
+assert "reported OK" in disabled_text
+assert "doesn't verify backup contents" in disabled_text
+assert "restoreability" in disabled_text
+assert "backup verified" not in disabled_text.casefold()
+
+for malformed_rows, label in (([None], "null row"), ([{"schedule": "02:00"}], "missing id")):
+    server._fetch = backup_rows_fetch(malformed_rows, [])
+    malformed_report = server.homelab_backup_status()
+    malformed_endpoint = malformed_report["endpoints"][0]
+    malformed_text = server.format_homelab_backup_status(malformed_report)
+    assert malformed_report["status"] == "PARTIAL", (label, malformed_report)
+    assert malformed_endpoint["status"] == "PARTIAL", (label, malformed_endpoint)
+    assert malformed_endpoint["jobs_status"] == "PARTIAL", (label, malformed_endpoint)
+    assert malformed_endpoint["jobs"] == [], (label, malformed_endpoint)
+    assert "configuration is incomplete" in malformed_text, (label, malformed_text)
+    assert "whether jobs are configured is unknown" in malformed_text, (label, malformed_text)
+    assert "no configured vzdump jobs" not in malformed_text, (label, malformed_text)
+
+server._fetch = backup_rows_fetch(
+    [None, {"id": "valid-nightly", "schedule": "03:00", "enabled": 1}], []
+)
+mixed_rows_report = server.homelab_backup_status()
+mixed_rows_endpoint = mixed_rows_report["endpoints"][0]
+mixed_rows_text = server.format_homelab_backup_status(mixed_rows_report)
+assert mixed_rows_report["status"] == "PARTIAL", mixed_rows_report
+assert mixed_rows_endpoint["status"] == "PARTIAL", mixed_rows_endpoint
+assert mixed_rows_endpoint["jobs_status"] == "PARTIAL", mixed_rows_endpoint
+assert [job["id"] for job in mixed_rows_endpoint["jobs"]] == ["valid-nightly"]
+assert "reports 1 configured vzdump job(s)" in mixed_rows_text
+assert "configuration is incomplete" in mixed_rows_text
+assert "malformed or omitted entries may exist" in mixed_rows_text
+
+server._fetch = backup_rows_fetch([], [])
+empty_jobs_report = server.homelab_backup_status()
+empty_jobs_endpoint = empty_jobs_report["endpoints"][0]
+empty_jobs_text = server.format_homelab_backup_status(empty_jobs_report)
+assert empty_jobs_report["status"] == "READABLE", empty_jobs_report
+assert empty_jobs_endpoint["status"] == "HEALTHY", empty_jobs_endpoint
+assert empty_jobs_endpoint["jobs_status"] == "HEALTHY", empty_jobs_endpoint
+assert "reports no configured vzdump jobs" in empty_jobs_text
+print("PASS Proxmox backup schedule parsing distinguishes malformed, partial, disabled, and valid-empty results")
+
 def selected_backup_fetch(url, *_args, **_kwargs):
     if url.endswith("/access/permissions"):
         return {"data": {"/vms/102": {"VM.Audit": 1}}}

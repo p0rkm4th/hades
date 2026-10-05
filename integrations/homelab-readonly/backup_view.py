@@ -33,6 +33,22 @@ def format_homelab_backup_status(
             jobs = endpoint.get("jobs") if isinstance(endpoint.get("jobs"), list) else []
             if jobs:
                 sentences.append(f"Proxmox {source_id} reports {len(jobs)} configured vzdump job(s).")
+                disabled_count = sum(
+                    1 for job in jobs
+                    if isinstance(job, dict) and job.get("enabled") is False
+                )
+                if disabled_count:
+                    sentences.append(
+                        f"{disabled_count} configured vzdump job(s) are disabled."
+                    )
+                if jobs_status == "PARTIAL":
+                    sentences.append(
+                        "Backup-job configuration is incomplete; malformed or omitted entries may exist."
+                    )
+            elif jobs_status == "PARTIAL":
+                sentences.append(
+                    "Backup-job configuration is incomplete; no valid job records were returned, so whether jobs are configured is unknown."
+                )
             else:
                 sentences.append(f"Proxmox {source_id} reports no configured vzdump jobs.")
         else:
