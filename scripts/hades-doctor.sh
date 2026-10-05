@@ -65,7 +65,8 @@ hades_layer_digest() {
 }
 check_homelab_runtime_package() {
   local path=${HADES_HERMES_WORKING_DIRECTORY:-} package_root expected_modules runtime_modules module
-  local source_path source_mode active_working_directory active_environment_files hermes_environment environment_working_directory
+  local source_path source_mode active_working_directory active_environment_files active_main_pid verified_main_pid
+  local active_process_working_directory active_process_cwd hermes_environment environment_working_directory
   if [[ "$installed_source_verified" != 1 || -z "$path" ]]; then
     echo 'WARN homelab runtime package identity is unknown; installed source or working-directory input is unavailable'
     return 0
@@ -117,7 +118,43 @@ check_homelab_runtime_package() {
     doctor_fail=1
     return 0
   fi
-  echo 'PASS active Hermes working directory matches operator input'
+  if ! active_main_pid=$(systemctl show -p MainPID --value hades-hermes.service 2>/dev/null) ||
+     [[ ! "$active_main_pid" =~ ^[1-9][0-9]*$ || ! -r "/proc/$active_main_pid/environ" ]]; then
+    if ((test_mode)); then
+      echo 'WARN homelab runtime package identity is unknown; active Hermes process identity is unavailable'
+    else
+      echo 'FAIL active Hermes process identity could not be verified'
+      doctor_fail=1
+    fi
+    return 0
+  fi
+  if ! active_process_cwd=$(readlink -e "/proc/$active_main_pid/cwd" 2>/dev/null); then
+    if ((test_mode)); then
+      echo 'WARN homelab runtime package identity is unknown; active Hermes process directory is unavailable'
+    else
+      echo 'FAIL active Hermes process directory could not be verified'
+      doctor_fail=1
+    fi
+    return 0
+  fi
+  active_process_working_directory=$(tr '\0' '\n' < "/proc/$active_main_pid/environ" 2>/dev/null |
+    sed -n 's/^HADES_HERMES_WORKING_DIRECTORY=//p') || active_process_working_directory=''
+  if [[ "$active_process_cwd" != "$path" || "$active_process_working_directory" != "$path" ]]; then
+    echo 'FAIL active Hermes process directory or environment differs from the configured package'
+    doctor_fail=1
+    return 0
+  fi
+  if ! verified_main_pid=$(systemctl show -p MainPID --value hades-hermes.service 2>/dev/null) ||
+     [[ "$verified_main_pid" != "$active_main_pid" ]]; then
+    if ((test_mode)); then
+      echo 'WARN homelab runtime package identity is unknown; active Hermes process changed during inspection'
+    else
+      echo 'FAIL active Hermes process changed during inspection'
+      doctor_fail=1
+    fi
+    return 0
+  fi
+  echo 'PASS active Hermes process directory and environment match the configured package'
   package_root="$path/integrations/homelab-readonly"
   if [[ "$path" != /* || -L "$path" || ! -d "$path" ||
         -L "$path/integrations" || ! -d "$path/integrations" ||

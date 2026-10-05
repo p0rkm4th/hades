@@ -3,7 +3,16 @@ set -Eeuo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 fixture=$(mktemp -d)
-trap 'find "$fixture" -depth -mindepth 1 -delete 2>/dev/null || true; rmdir "$fixture" 2>/dev/null || true' EXIT
+fake_hermes_pid=''
+cleanup() {
+  if [[ -n "$fake_hermes_pid" ]]; then
+    kill "$fake_hermes_pid" 2>/dev/null || true
+    wait "$fake_hermes_pid" 2>/dev/null || true
+  fi
+  find "$fixture" -depth -mindepth 1 -delete 2>/dev/null || true
+  rmdir "$fixture" 2>/dev/null || true
+}
+trap cleanup EXIT
 bash "$repo_dir/scripts/create-synthetic-private-fixture.sh" "$fixture/private" >/dev/null
 inputs="$fixture/private/operator.env"
 working_tree="$fixture/working"
@@ -30,6 +39,9 @@ if [[ "$*" == 'show -p WorkingDirectory --value hades-hermes.service' &&
 elif [[ "$*" == 'show -p EnvironmentFiles --value hades-hermes.service' &&
         -n "${HADES_TEST_ACTIVE_ENVFILES:-}" ]]; then
   printf '%s\n' "$HADES_TEST_ACTIVE_ENVFILES"
+elif [[ "$*" == 'show -p MainPID --value hades-hermes.service' &&
+        -n "${HADES_TEST_MAINPID:-}" ]]; then
+  printf '%s\n' "$HADES_TEST_MAINPID"
 else
   exit 1
 fi
@@ -40,10 +52,38 @@ bash "$repo_dir/scripts/install-hades.sh" --test-mode --root "$sandbox" --inputs
 export HADES_TEST_UNIT_WORKDIR="$working_tree"
 export HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
+start_fake_hermes() {
+  local process_cwd=$1 source_extra=${2:-}
+  (
+    cd "$process_cwd"
+    set -a
+    source "$fixture/private/profile/hermes.env"
+    if [[ -n "$source_extra" ]]; then source "$source_extra"; fi
+    set +a
+    exec sleep 120
+  ) &
+  fake_hermes_pid=$!
+  export HADES_TEST_MAINPID="$fake_hermes_pid"
+  for _attempt in {1..50}; do
+    [[ -r "/proc/$fake_hermes_pid/environ" ]] &&
+      [[ "$(readlink -e "/proc/$fake_hermes_pid/cwd" 2>/dev/null || true)" == "$process_cwd" ]] && return 0
+    sleep 0.02
+  done
+  echo 'FAIL synthetic Hermes process did not become inspectable' >&2
+  exit 1
+}
+stop_fake_hermes() {
+  if [[ -n "$fake_hermes_pid" ]]; then
+    kill "$fake_hermes_pid" 2>/dev/null || true
+    wait "$fake_hermes_pid" 2>/dev/null || true
+    fake_hermes_pid=''
+  fi
+}
 run_doctor() {
   PATH="$fixture/bin:$PATH" \
     HADES_TEST_UNIT_WORKDIR="${HADES_TEST_UNIT_WORKDIR:-}" \
     HADES_TEST_ACTIVE_ENVFILES="${HADES_TEST_ACTIVE_ENVFILES:-}" \
+    HADES_TEST_MAINPID="${HADES_TEST_MAINPID:-}" \
     bash "$repo_dir/scripts/hades-doctor.sh" --test-mode --root "$sandbox" --inputs "$inputs"
 }
 expect_package_failure() {
@@ -62,12 +102,13 @@ expect_package_failure() {
   }
 }
 
+start_fake_hermes "$working_tree"
 if ! HADES_TEST_UNIT_WORKDIR="$working_tree" run_doctor > "$fixture/doctor-pass.out" 2>&1; then
   cat "$fixture/doctor-pass.out" >&2
   exit 1
 fi
 grep -Fq 'PASS Hermes homelab runtime package matches the installed source revision' "$fixture/doctor-pass.out"
-grep -Fq 'PASS active Hermes working directory matches operator input' "$fixture/doctor-pass.out"
+grep -Fq 'PASS active Hermes process directory and environment match the configured package' "$fixture/doctor-pass.out"
 ! grep -Fq "$working_tree" "$fixture/doctor-pass.out" || {
   echo 'FAIL doctor exposed the configured working-directory path' >&2
   exit 1
@@ -101,6 +142,40 @@ grep -Fq 'FAIL active Hermes profile source differs from configured profile' <<<
 }
 HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
+
+# Reproduce ExecStart's later shell-source ordering: a loaded later env file
+# can override the value in hermes.env even while the unit's WorkingDirectory
+# and required profile-source checks still match.
+grocy_env="$fixture/private/records/grocy-mcp.env"
+printf 'HADES_HERMES_WORKING_DIRECTORY=%s\n' "$fixture/override-directory" > "$grocy_env"
+chmod 0600 "$grocy_env"
+stop_fake_hermes
+HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+$grocy_env (ignore_errors=yes)"
+start_fake_hermes "$working_tree" "$grocy_env"
+if output=$(run_doctor 2>&1); then
+  echo 'FAIL doctor accepted a running Hermes process redirected by a later environment source' >&2
+  exit 1
+fi
+grep -Fq 'FAIL active Hermes process directory or environment differs from the configured package' <<<"$output"
+! grep -Fq "$working_tree" <<<"$output" &&
+  ! grep -Fq "$fixture/override-directory" <<<"$output" || {
+  echo 'FAIL doctor exposed a private runtime path' >&2
+  exit 1
+}
+: > "$grocy_env"
+stop_fake_hermes
+HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
+$fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
+mkdir -p "$fixture/other-process-directory"
+start_fake_hermes "$fixture/other-process-directory"
+if output=$(run_doctor 2>&1); then
+  echo 'FAIL doctor accepted a running Hermes process with a decoy cwd' >&2
+  exit 1
+fi
+grep -Fq 'FAIL active Hermes process directory or environment differs from the configured package' <<<"$output"
+stop_fake_hermes
+start_fake_hermes "$working_tree"
 
 mv "$working_tree/integrations/homelab-readonly/server.py" \
   "$working_tree/integrations/homelab-readonly/server.py.missing"
@@ -146,6 +221,14 @@ else
 fi
 HADES_TEST_ACTIVE_ENVFILES="$fixture/private/profile/hermes.env (ignore_errors=yes)
 $fixture/deployment/hades-owner-policy.env (ignore_errors=yes)"
+HADES_TEST_MAINPID=''
+if output=$(run_doctor 2>&1); then
+  grep -Fq 'WARN homelab runtime package identity is unknown; active Hermes process identity is unavailable' <<<"$output"
+else
+  echo 'FAIL doctor rejected unavailable active Hermes process evidence in test mode' >&2
+  exit 1
+fi
+HADES_TEST_MAINPID="$fake_hermes_pid"
 
 unset HADES_TEST_UNIT_WORKDIR
 unset HADES_TEST_ACTIVE_ENVFILES
