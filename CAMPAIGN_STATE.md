@@ -7,21 +7,25 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-05 UTC
 
-The homelab code baseline is `d01d83b42bb4f00af4b2150ae3db30f440aedbc3`;
-its candidate and post-promotion Public CI runs
-[37327240635](https://github.com/p0rkm4th/hades/actions/runs/37327240635) and
-[37327487140](https://github.com/p0rkm4th/hades/actions/runs/37327487140)
-passed. The live-acceptance documentation reconciliation passed candidate run
-[37328247716](https://github.com/p0rkm4th/hades/actions/runs/37328247716) and
-post-promotion run
-[37328612554](https://github.com/p0rkm4th/hades/actions/runs/37328612554).
-The immediately preceding branch-pointer correction passed Public CI run
-[37328924100](https://github.com/p0rkm4th/hades/actions/runs/37328924100).
-Use `main` for the exact current public tip; this checkpoint names the stable
-code baseline and avoids a self-referential docs commit SHA.
-The implementation is a current-main descendant; the unsafe historic
-GPU-parity branch was not imported or rewritten. Its old tip remains reference
-material only.
+Canonical public `main` is `2c48aaffc9be349e818baeabcdb6465913e91ad8`;
+post-promotion Public CI run
+[37341433176](https://github.com/p0rkm4th/hades/actions/runs/37341433176)
+passed. This is a documentation/provenance descendant of the homelab
+implementation baseline `0e468fff97567d4f85e4e50d76d2d039d58403ec` and the
+profile-bound package-provenance additions `1b96f1eed6b74ba6df2282d7078bf19b496b06c1`
+and `fa2c7d710161b33e07aa29913b12509b39b810d5`. The previous homelab branch
+`codex/gpu-telemetry-parity-20261004` is reference-only: its latest hosted
+Public CI run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
+failed public-history safety. It was not merged or rewritten.
+
+The current mission is to classify its behavior against `main`, close
+achievable read-only reliability gaps, and make measured, contract-backed
+architecture extractions. Nyx-4's NYX-001 lineage/concentration review is in
+progress; no findings are claimed yet. Current measured sizes are
+`hermes/sitecustomize.py` 12,687 lines / 150 `_hades_*` definitions and
+`integrations/homelab-readonly/server.py` 1,948 lines, with reconciliation and
+configuration modules at 375 and 156 lines respectively. These are baseline
+measurements, not a reason by themselves to extract code.
 
 The host-load response extraction moved two pure renderer bodies into
 `integrations/homelab_views.py`, preserving Hermes wrappers, owner authorization,
@@ -40,19 +44,17 @@ operator diagnostics. NYX-008 found no issue. Focused adapter, service-health,
 Hermes task-chat runtime, public-tree safety, and Python compile checks pass.
 No live behavior was changed or deployed in this epoch.
 
-Current size observations after extraction: `hermes/sitecustomize.py` is
-12,661 lines / 217 AST functions / 174 `_hades_*` functions;
-`integrations/homelab_views.py` is 424 lines / 10 functions;
-`integrations/homelab-readonly/server.py` remains 1,919 lines / 40 functions.
-Keep this read adapter as the source/orchestration layer until a projection can
-consume already-resolved scope, identity, and freshness facts.
-
 The last protected production provenance is dated 2026-10-05 and is recorded
 in private operator evidence. It showed an active Hermes process, but its
 running homelab MCP server was older than current main; current-main byte parity
 and fresh authenticated owner/household acceptance were not established. The
-existing owner and Household A/B sign-in inputs returned HTTP 400; they were
-not retried or reset. No current deployment or live owner dogfood is claimed.
+existing scripted owner and Household A/B sign-in inputs returned HTTP 400;
+they were not retried or reset. A separate protected report records seven
+authenticated chats on the older adapter revision
+`6bc6063702f73665a9cf666ca14cf7057d5924e` (four owner, three household; zero
+turn errors and no household topology-leak flags). This is narrow
+historical-package acceptance, not current-main acceptance. No current
+deployment is claimed.
 
 Private infrastructure recovery remains owner-managed: the checkout is dirty,
 there is no independent off-host recovery destination, and no encrypted
@@ -60,12 +62,10 @@ recipient was specified. Same-disk copies are not independent recovery. No
 private topology, credentials, or raw acceptance transcripts belong in public
 HADES.
 
-**Next exact action:** inspect the documented read-only source path and current
-readiness without changing host/source configuration; if authenticated UI
-acceptance still cannot use an existing protected input, record the precise
-gate and continue closing source-freshness/partial-outage contracts. Do not
-call this campaign complete while live source composition, representative
-owner dogfood, and provenance parity remain open.
+**Next exact action:** finish NYX-001; disposition branch-only behavior and
+select one low-risk, contract-backed extraction or reliability fix. Preserve
+the private infra checkout: the owner has no off-site recovery destination to
+specify, and no independent encrypted backup was created.
 
 ## Previous code and dogfood checkpoints — 2026-10-04
 

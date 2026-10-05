@@ -7,9 +7,9 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current convergence checkpoint — 2026-10-05 UTC
 
-The public repository is at `1e46daf8e8224688cf747b2ff93fab0b1cb75a2a` on
+The public repository is at `2c48aaffc9be349e818baeabcdb6465913e91ad8` on
 `main`; post-promotion Public CI run
-[37340174840](https://github.com/p0rkm4th/hades/actions/runs/37340174840)
+[37341433176](https://github.com/p0rkm4th/hades/actions/runs/37341433176)
 passed. The homelab code baseline is `0e468fff97567d4f85e4e50d76d2d039d58403ec`
 with its post-promotion Public CI passing in run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737).
@@ -22,8 +22,10 @@ passed. The end-to-end CLI package provenance follow-up is on `main` at
 runs [37339416819](https://github.com/p0rkm4th/hades/actions/runs/37339416819)
 and [37339622965](https://github.com/p0rkm4th/hades/actions/runs/37339622965)
 passed, along with focused provenance contracts.
-The older GPU-parity branch was not imported or rewritten; its history fails
-public-history safety and Nyx-4 found no safe unique capability to port.
+The older GPU-parity branch at `345cb1b6de5f9f51ad98986c88ab9f0693461921` was
+not imported or rewritten; its latest hosted run [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
+failed public-history safety. NYX-001 is rechecking semantic branch-only value
+and current architecture concentration; findings are pending.
 
 NYX-003 reviewed extraction of two pure host-load presenters into the existing
 view module; authorization, source reads, and routing remain in Hermes.
@@ -34,7 +36,7 @@ normalization and reconciliation. Such rows remain `UNKNOWN`; owner wording
 no longer labels malformed text as a timestamp. NYX-008 found no issue.
 Focused adapter, service-health, Hermes runtime, tree-safety, and compile
 checks pass. The live-read layer remains **PARTIAL**; these synthetic tests add
-no real owner dogfood or source-byte-parity evidence.
+no current-main owner dogfood or source-byte-parity evidence.
 
 Last protected read-only production provenance is dated 2026-10-05 and remains
 the source for the statements below. A mode-0600 acceptance report records

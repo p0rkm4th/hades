@@ -10,10 +10,12 @@ The current upstream MCP candidate evaluation is recorded in
 
 ## Current source and runtime checkpoint
 
-The public repository is at `1e46daf8e8224688cf747b2ff93fab0b1cb75a2a` on
+The public repository is at `2c48aaffc9be349e818baeabcdb6465913e91ad8` on
 `main`; post-promotion Public CI run
-[37340174840](https://github.com/p0rkm4th/hades/actions/runs/37340174840)
-passed. The homelab code baseline is
+[37341433176](https://github.com/p0rkm4th/hades/actions/runs/37341433176)
+passed. The older GPU-parity branch remains reference-only; its latest hosted
+Public CI failed public-history safety, and NYX-001 is rechecking semantic
+uniqueness before any port is considered. The homelab code baseline is
 `0e468fff97567d4f85e4e50d76d2d039d58403ec`, with post-promotion CI run
 [37334505737](https://github.com/p0rkm4th/hades/actions/runs/37334505737)
 passed. The external-package provenance follow-up at `1b96f1eed6b74ba6df2282d7078bf19b496b06c1`
