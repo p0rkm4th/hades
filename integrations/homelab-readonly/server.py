@@ -9,8 +9,15 @@ import ssl
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import quote, urlencode, urljoin, urlsplit, urlunsplit
-from urllib.request import Request, urlopen
+from urllib.request import (
+    HTTPRedirectHandler,
+    HTTPSHandler,
+    Request,
+    build_opener,
+    urlopen,
+)
 
 import anyio
 import yaml
@@ -193,7 +200,23 @@ def _fetch(
         )
     request = Request(url, headers=headers, method="GET")
     context = ssl.create_default_context(cafile=ca_file) if ca_file else None
-    with urlopen(request, timeout=timeout_seconds, context=context) as response:
+    if token_file:
+        class RejectAuthenticatedRedirect(HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, response_headers, newurl):
+                fp.close()
+                raise HTTPError(
+                    req.full_url, code,
+                    "redirects are disabled for authenticated homelab requests",
+                    response_headers, None,
+                )
+
+        opener = build_opener(
+            RejectAuthenticatedRedirect(), HTTPSHandler(context=context),
+        )
+        response_context = opener.open(request, timeout=timeout_seconds)
+    else:
+        response_context = urlopen(request, timeout=timeout_seconds, context=context)
+    with response_context as response:
         body = response.read(max_response_bytes + 1)
     if len(body) > max_response_bytes:
         raise ValueError("homelab response exceeds bounded size")

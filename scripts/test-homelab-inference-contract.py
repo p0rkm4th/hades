@@ -7,7 +7,10 @@ import json
 import os
 import sys
 import tempfile
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
 import types
+from urllib.error import HTTPError
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,6 +49,7 @@ sys.modules.update({
 import config
 import inference_view
 import server
+real_transport_fetch = server._fetch
 
 # The MCP server keeps compatibility aliases while pure inference presentation
 # lives in its domain view module.
@@ -180,10 +184,83 @@ if old_netbox_url is None:
 else:
     os.environ["HADES_NETBOX_URL"] = old_netbox_url
 
+transport_fetch = real_transport_fetch
 server._fetch = lambda *args, **kwargs: (_ for _ in ()).throw(OSError("synthetic unavailable"))
 unavailable = server._read_inference_endpoint(endpoint, {})
 assert unavailable["status"] == "UNAVAILABLE"
 assert unavailable["models"] == [] and unavailable["read_only"] is True
+
+# Authenticated requests must not forward credentials across a redirect. Use
+# two loopback listeners so no private or external endpoint is contacted.
+source_authorization = []
+target_authorization = []
+target_url_holder = {}
+
+
+class RedirectSourceHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        source_authorization.append(self.headers.get("Authorization"))
+        self.send_response(302)
+        self.send_header("Location", target_url_holder["url"])
+        self.end_headers()
+
+    def log_message(self, *_args):
+        pass
+
+
+class RedirectTargetHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        target_authorization.append(self.headers.get("Authorization"))
+        body = b"{}"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *_args):
+        pass
+
+
+redirect_source = ThreadingHTTPServer(("127.0.0.1", 0), RedirectSourceHandler)
+redirect_target = ThreadingHTTPServer(("127.0.0.1", 0), RedirectTargetHandler)
+target_url_holder["url"] = f"http://127.0.0.1:{redirect_target.server_port}/target"
+source_thread = Thread(target=redirect_source.serve_forever, daemon=True)
+target_thread = Thread(target=redirect_target.serve_forever, daemon=True)
+source_thread.start()
+target_thread.start()
+try:
+    with tempfile.TemporaryDirectory(prefix="hades-provider-token-") as token_dir:
+        token_path = Path(token_dir) / "token"
+        token_path.write_text("synthetic-provider-token\n", encoding="utf-8")
+        token_path.chmod(0o600)
+        try:
+            transport_fetch(
+                f"http://127.0.0.1:{redirect_source.server_port}/source",
+                str(token_path), timeout_seconds=2,
+            )
+        except HTTPError as error:
+            assert error.code == 302
+            assert "redirects are disabled for authenticated homelab requests" in error.reason
+        else:
+            raise AssertionError("authenticated provider request followed a redirect")
+        assert source_authorization == ["Bearer synthetic-provider-token"]
+        assert target_authorization == [], target_authorization
+
+    # The unauthenticated transport keeps its prior redirect-following behavior.
+    assert transport_fetch(
+        f"http://127.0.0.1:{redirect_source.server_port}/anonymous",
+        timeout_seconds=2,
+    ) == {}
+    assert source_authorization[-1] is None
+    assert target_authorization == [None]
+finally:
+    redirect_source.shutdown()
+    redirect_target.shutdown()
+    redirect_source.server_close()
+    redirect_target.server_close()
+    source_thread.join(timeout=2)
+    target_thread.join(timeout=2)
 
 # Provider-native response parsing remains bounded and GET-only; OpenAI
 # compatibility has no residency route, while an Ollama /api/ps outage keeps
