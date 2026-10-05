@@ -613,6 +613,24 @@ conflict = conflict_response({'conflicts': [{
 assert 'Synthetic Node: NetBox intended node differs from Proxmox runtime node' in conflict, conflict
 assert 'kept those records separate' in conflict, conflict
 assert 'does not prove inventory coverage is complete' in conflict_response({'conflicts': []})
+unavailable_conflict = conflict_response({
+    'status': 'PARTIAL',
+    'conflicts': [],
+    'source_observations': [{'source': 'Synthetic NetBox', 'status': 'UNAVAILABLE'}],
+})
+assert "can't confirm whether the sources disagree" in unavailable_conflict, unavailable_conflict
+assert 'Synthetic NetBox' in unavailable_conflict and 'does not establish that the sources agree' in unavailable_conflict, unavailable_conflict
+known_conflict_partial_read = conflict_response({
+    'status': 'PARTIAL',
+    'conflicts': [{'name': 'Synthetic Node', 'reasons': ['intended and observed state differs']}],
+    'source_observations': [{'source': 'Synthetic Kuma', 'status': 'UNAVAILABLE'}],
+    'proxmox_guest_visibility': {'status': 'PARTIAL'},
+})
+assert 'Synthetic Node: intended and observed state differs' in known_conflict_partial_read, known_conflict_partial_read
+assert 'Synthetic Kuma' in known_conflict_partial_read and 'guest visibility is partial or unknown' in known_conflict_partial_read, known_conflict_partial_read
+assert 'does not mean the sources agree' in known_conflict_partial_read, known_conflict_partial_read
+assert 'couldn\'t determine whether' in conflict_response(None)
+assert 'conflict records were unavailable or malformed' in conflict_response({'conflicts': None})
 label_collision_only = conflict_response({'conflicts': [{
     'name': 'Synthetic Guest (node qemu 100)',
     'reasons': ['Display label is shared by multiple records; they remain separate by stable source identity'],

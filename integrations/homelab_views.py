@@ -185,8 +185,50 @@ def _hades_homelab_provenance_response(summary):
     )
 
 def _hades_homelab_conflict_response(summary):
-    conflicts = summary.get("conflicts", []) if isinstance(summary, dict) else []
-    if not isinstance(conflicts, list) or not conflicts:
+    if not isinstance(summary, dict):
+        return "I couldn't determine whether the current homelab sources conflict because the live summary is unavailable."
+    conflicts = summary.get("conflicts", [])
+    invalid_conflicts = not isinstance(conflicts, list)
+    conflicts = conflicts if isinstance(conflicts, list) else []
+    source_rows = summary.get("source_observations") or summary.get("sources") or []
+    source_rows = source_rows if isinstance(source_rows, list) else []
+    unavailable_sources = [
+        row for row in source_rows
+        if isinstance(row, dict)
+        and str(row.get("status") or "UNKNOWN").upper()
+        not in {"AVAILABLE", "READABLE", "HEALTHY", "OK", "COMPLETE"}
+    ]
+    incomplete = []
+    if summary.get("status") not in (None, "OK", "COMPLETE"):
+        incomplete.append("the overall source read is partial or unavailable")
+    if invalid_conflicts:
+        incomplete.append("the conflict records were unavailable or malformed")
+    if unavailable_sources:
+        labels = [
+            " ".join(str(row.get("source") or "A configured source").split())[:64]
+            for row in unavailable_sources[:4]
+        ]
+        incomplete.append("could not read " + ", ".join(labels))
+    visibility = summary.get("proxmox_guest_visibility")
+    if isinstance(visibility, dict):
+        visibility_status = str(visibility.get("status") or "UNKNOWN").upper()
+        if visibility_status not in {"COMPLETE", "NOT_CONFIGURED"}:
+            incomplete.append("Proxmox guest visibility is partial or unknown")
+    def incomplete_clause():
+        if not incomplete:
+            return ""
+        return (
+            " The comparison is incomplete because " + "; ".join(incomplete[:4])
+            + ". The absence of a reported disagreement does not mean the sources agree."
+        )
+
+    if not conflicts:
+        if incomplete:
+            return (
+                "I can't confirm whether the sources disagree because "
+                + "; ".join(incomplete[:4])
+                + ". No linked-record conflict was reported from the available data; that does not establish that the sources agree."
+            )
         return (
             "The current bounded source read reported no linked-record conflicts. "
             "That does not prove inventory coverage is complete; unlinked or unreported records remain unknown."
@@ -210,7 +252,7 @@ def _hades_homelab_conflict_response(summary):
         else:
             details.append(f"{name}: {'; '.join(clean_reasons) or 'sources do not align'}")
     if not details and not label_collisions:
-        return "The source read reported conflict rows in an unreadable form; I can't safely summarize them."
+        return "The source read reported conflict rows in an unreadable form; I can't safely summarize them." + incomplete_clause()
     if details:
         response = (
             "The current sources report these inventory/runtime disagreements: "
@@ -221,4 +263,4 @@ def _hades_homelab_conflict_response(summary):
         response = "I found no cross-source inventory disagreement among the records compared in this read."
     if label_collisions:
         response += " Shared display labels remain separate by stable source identity: " + ". ".join(label_collisions) + "."
-    return response
+    return response + incomplete_clause()
