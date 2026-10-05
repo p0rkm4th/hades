@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import os
 import re
@@ -15,10 +14,52 @@ import subprocess
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+from types import ModuleType
 
 
 def digest(path: Path) -> str:
     return hashlib.sha256(read_regular_file(path, "regular file required")).hexdigest()
+
+
+def tracked_python_module(repo: Path, relative: str, name: str) -> ModuleType:
+    """Compile only a stable working file that exactly matches its HEAD blob."""
+    root = Path(repo).resolve(strict=True)
+    target = root / relative
+    parent = root
+    for part in Path(relative).parts[:-1]:
+        parent = parent / part
+        if parent.is_symlink() or not parent.is_dir():
+            raise SystemExit("tracked verifier path is not a regular repository path")
+    listing = subprocess.run(
+        ["git", "-C", str(root), "ls-tree", "-z", "HEAD", "--", relative],
+        check=False, capture_output=True,
+    )
+    if listing.returncode != 0:
+        raise SystemExit("tracked verifier identity could not be verified")
+    records = [record for record in listing.stdout.split(b"\0") if record]
+    if len(records) != 1:
+        raise SystemExit("tracked verifier identity is absent or ambiguous")
+    try:
+        metadata, listed_path = records[0].split(b"\t", 1)
+        mode, kind, _object_id = metadata.decode("ascii").split()
+        if listed_path.decode("utf-8", errors="strict") != relative or mode not in {"100644", "100755"} or kind != "blob":
+            raise ValueError("not a regular Git blob")
+        expected = subprocess.run(
+            ["git", "-C", str(root), "show", f"HEAD:{relative}"],
+            check=True, capture_output=True,
+        ).stdout
+        actual = read_regular_file(target, "tracked verifier must be a stable regular file")
+    except (OSError, UnicodeError, ValueError, subprocess.CalledProcessError):
+        raise SystemExit("tracked verifier bytes do not match a regular Git blob") from None
+    if actual != expected:
+        raise SystemExit("tracked verifier bytes differ from the exact Git blob")
+    module = ModuleType(name)
+    module.__file__ = str(target)
+    try:
+        exec(compile(actual, module.__file__, "exec"), module.__dict__)
+    except (SyntaxError, ValueError):
+        raise SystemExit("tracked verifier source cannot be compiled") from None
+    return module
 
 
 def load_overlay_composition(manifest_path: Path, base_path: Path, source_repo: Path, final_bytes: bytes) -> tuple[dict, str, bytes]:
@@ -38,15 +79,10 @@ def load_overlay_composition(manifest_path: Path, base_path: Path, source_repo: 
         manifest = json.loads(manifest_bytes, object_pairs_hook=unique_object)
     except (UnicodeError, json.JSONDecodeError, ValueError):
         raise SystemExit("overlay composition manifest is malformed") from None
-    verifier_path = source_repo / "scripts/hermes-overlay-composition.py"
-    if verifier_path.is_symlink() or not verifier_path.is_file():
-        raise SystemExit("source revision has no tracked overlay composition verifier")
     try:
-        spec = importlib.util.spec_from_file_location("_hades_overlay_composition_verifier", verifier_path)
-        if spec is None or spec.loader is None:
-            raise ValueError("verifier import unavailable")
-        verifier = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(verifier)
+        verifier = tracked_python_module(
+            source_repo, "scripts/hermes-overlay-composition.py", "_hades_overlay_composition_verifier"
+        )
         verifier.verify_manifest(manifest, source_repo, final_bytes, base_bytes)
     except (OSError, ValueError, ImportError, SystemExit):
         raise SystemExit("overlay composition does not match the clean HADES source and selected overlay") from None

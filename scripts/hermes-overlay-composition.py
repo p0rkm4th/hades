@@ -5,19 +5,20 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import os
 import re
 import stat
 import subprocess
 import tempfile
+from types import ModuleType
 from pathlib import Path
 from typing import Any
 
 SCHEMA = "hades/hermes-overlay-composition/v1"
 SOURCE_RELATIVE = "hermes/sitecustomize.py"
 COMPOSER_RELATIVE = "scripts/prepare-homelab-overlay-candidate.py"
+MANIFEST_RELATIVE = "scripts/hermes-overlay-composition.py"
 FUNCTIONS = ("_hades_homelab_guest_visibility_response",)
 FIELDS = {"schema", "source_revision", "source_tree", "base_overlay_sha256", "wrapper_sha256", "final_overlay_sha256"}
 _GIT_SHA = re.compile(r"[0-9a-f]{40}\Z")
@@ -63,6 +64,39 @@ def _git(repo: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
+def _tracked_file_bytes(repo: Path, relative: str) -> bytes:
+    """Return a stable working file only when it exactly matches a regular Git blob."""
+    root = Path(repo).resolve(strict=True)
+    target = root / relative
+    current = root
+    for part in Path(relative).parts[:-1]:
+        current = current / part
+        if current.is_symlink() or not current.is_dir():
+            raise ValueError("tracked source path is not a regular repository path")
+    try:
+        tree_line = subprocess.run(
+            ["git", "-C", str(root), "ls-tree", "-z", "HEAD", "--", relative],
+            check=True, capture_output=True,
+        ).stdout
+        records = [record for record in tree_line.split(b"\0") if record]
+        if len(records) != 1:
+            raise ValueError("tracked source is absent or ambiguous")
+        metadata, listed_path = records[0].split(b"\t", 1)
+        mode, kind, _object_id = metadata.decode("ascii").split()
+        if listed_path.decode("utf-8", errors="strict") != relative or mode not in {"100644", "100755"} or kind != "blob":
+            raise ValueError("tracked source is not a regular Git file")
+        expected = subprocess.run(
+            ["git", "-C", str(root), "show", f"HEAD:{relative}"],
+            check=True, capture_output=True,
+        ).stdout
+        actual = read_regular(target)
+    except (OSError, UnicodeError, subprocess.CalledProcessError, ValueError):
+        raise ValueError("tracked source bytes are unavailable or unsafe") from None
+    if actual != expected:
+        raise ValueError("working source bytes differ from the exact Git blob")
+    return actual
+
+
 def _tracked_source(repo: Path) -> tuple[str, str, bytes]:
     repo = Path(repo)
     if repo.is_symlink() or not repo.is_dir():
@@ -77,24 +111,22 @@ def _tracked_source(repo: Path) -> tuple[str, str, bytes]:
     if _git(root, "status", "--porcelain", "--untracked-files=all"):
         raise ValueError("source repository must be clean")
     try:
-        source = subprocess.run(["git", "-C", str(root), "show", f"HEAD:{SOURCE_RELATIVE}"], check=True, capture_output=True).stdout
-        working = read_regular(root / SOURCE_RELATIVE)
-        composer = subprocess.run(["git", "-C", str(root), "show", f"HEAD:{COMPOSER_RELATIVE}"], check=True, capture_output=True).stdout
-        composer_working = read_regular(root / COMPOSER_RELATIVE)
-    except (OSError, subprocess.CalledProcessError, ValueError):
+        source = _tracked_file_bytes(root, SOURCE_RELATIVE)
+        _tracked_file_bytes(root, COMPOSER_RELATIVE)
+        recorded_manifest_tool = _tracked_file_bytes(root, MANIFEST_RELATIVE)
+        running_manifest_tool = read_regular(Path(__file__))
+    except ValueError:
         raise ValueError("tracked overlay source or composer is unavailable") from None
-    if working != source or composer_working != composer:
-        raise ValueError("overlay source/composer differs from the recorded Git revision")
+    if running_manifest_tool != recorded_manifest_tool:
+        raise ValueError("running manifest verifier differs from the exact Git blob")
     return revision, tree, source
 
 
 def _composer(repo: Path):
-    path = repo / COMPOSER_RELATIVE
-    spec = importlib.util.spec_from_file_location("_hades_overlay_composer", path)
-    if spec is None or spec.loader is None:
-        raise ValueError("overlay composer is unavailable")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    source = _tracked_file_bytes(repo, COMPOSER_RELATIVE)
+    module = ModuleType("_hades_overlay_composer")
+    module.__file__ = str(Path(repo) / COMPOSER_RELATIVE)
+    exec(compile(source, module.__file__, "exec"), module.__dict__)
     return module
 
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib._bootstrap_external
 import importlib.util
 import json
 import os
@@ -46,6 +47,27 @@ def must_fail(call, phrase: str) -> None:
         raise AssertionError(f"expected failure containing {phrase!r}")
 
 
+def plant_valid_timestamp_cache(path: Path) -> None:
+    """Plant a matching-stat pyc that raises if a path importer executes it."""
+    cache = Path(importlib.util.cache_from_source(str(path)))
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    stat_result = path.stat()
+    hostile_code = compile("raise RuntimeError('stale cache executed')", str(path), "exec")
+    cached = importlib._bootstrap_external._code_to_timestamp_pyc(
+        hostile_code, int(stat_result.st_mtime), stat_result.st_size
+    )
+    cache.write_bytes(cached)
+    spec = importlib.util.spec_from_file_location("hostile_cached_module", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except RuntimeError as exc:
+        assert str(exc) == "stale cache executed"
+    else:
+        raise AssertionError("synthetic timestamp-matched pyc was not exercised")
+
+
 with tempfile.TemporaryDirectory(prefix="hades-overlay-manifest-") as temp:
     root = Path(temp)
     repo = root / "source"
@@ -85,6 +107,10 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-manifest-") as temp:
     assert manifest_tool.verify_manifest(manifest, repo, final, base)
     assert manifest_tool.verify_manifest(manifest, repo, final, final)  # idempotent revalidation
 
+    composer_path = repo / "scripts/prepare-homelab-overlay-candidate.py"
+    plant_valid_timestamp_cache(composer_path)
+    assert manifest_tool.build_manifest(repo, base, final) == manifest
+
     base_path, final_path, output_path = root / "active.py", root / "candidate.py", root / "record.json"
     base_path.write_bytes(base)
     final_path.write_bytes(final)
@@ -110,10 +136,28 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-manifest-") as temp:
     (root / "base.py").write_bytes(base)
     loaded, recorded_sha, _ = provenance.load_overlay_composition(manifest_path, root / "base.py", repo, final)
     assert loaded == manifest and recorded_sha == hashlib.sha256(manifest_bytes).hexdigest()
+    verifier_path = repo / "scripts/hermes-overlay-composition.py"
+    plant_valid_timestamp_cache(verifier_path)
+    loaded, recorded_sha, _ = provenance.load_overlay_composition(manifest_path, root / "base.py", repo, final)
+    assert loaded == manifest and recorded_sha == hashlib.sha256(manifest_bytes).hexdigest()
     must_fail(
         lambda: provenance.load_overlay_composition(manifest_path, root / "base.py", repo, final + b"# tamper\n"),
         "does not match",
     )
+    original_verifier = verifier_path.read_bytes()
+    verifier_stat = verifier_path.stat()
+    mutated_verifier = original_verifier.replace(b"unsupported", b"changed!!!!")
+    assert mutated_verifier != original_verifier and len(mutated_verifier) == len(original_verifier)
+    verifier_path.write_bytes(mutated_verifier)
+    os.utime(verifier_path, ns=(verifier_stat.st_atime_ns, verifier_stat.st_mtime_ns))
+    subprocess.run(["git", "-C", str(repo), "update-index", "--assume-unchanged", "scripts/hermes-overlay-composition.py"], check=True)
+    assert git(repo, "status", "--porcelain", "--untracked-files=all") == ""
+    must_fail(
+        lambda: provenance.load_overlay_composition(manifest_path, root / "base.py", repo, final),
+        "does not match",
+    )
+    verifier_path.write_bytes(original_verifier)
+    subprocess.run(["git", "-C", str(repo), "update-index", "--no-assume-unchanged", "scripts/hermes-overlay-composition.py"], check=True)
 
     tampered = final + b"# changed\n"
     must_fail(lambda: manifest_tool.verify_manifest(manifest, repo, tampered, base), "differ")
