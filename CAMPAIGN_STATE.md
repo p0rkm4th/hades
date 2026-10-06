@@ -7,7 +7,7 @@ records.
 
 ## Current authoritative checkpoint — 2026-10-06 UTC
 
-**Repository:** public `origin/main` is `8e47674112d6797ccb56a5892a02ec3b5475e2b7`; its latest verified Public CI is [37392606825](https://github.com/p0rkm4th/hades/actions/runs/37392606825), passed. Clean current-main candidate `codex/aster-homelab-checkpoint-clean-20261006` contains code commit `868524d6` with the same source tree as `54afe585`; that tree passed Public CI [37394170918](https://github.com/p0rkm4th/hades/actions/runs/37394170918). The clean candidate has not yet been promoted; its documentation-inclusive CI is pending.
+**Repository:** public `origin/main` is `9acb3a57f7828d36360ae9f9c4430470a661d70c`; documentation-inclusive candidate CI [37394760162](https://github.com/p0rkm4th/hades/actions/runs/37394760162) and post-promotion main CI [37394882945](https://github.com/p0rkm4th/hades/actions/runs/37394882945) passed. The pure service-health view code is promoted; its source tree is identical to the candidate tree tested in [37394170918](https://github.com/p0rkm4th/hades/actions/runs/37394170918).
 
 **Lineage:** the old local parity tip is `345cb1b6de5f9f51ad98986c88ab9f0693461921`, with merge base `b903ad331dc0269becf46600bf29db8931707fef`; its remote ref is absent and recorded CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed public-history safety. NYX-001's capability-level review found no safe required read behavior missing from current main. Its host setup helper is a distinct deployment convenience and was not imported. The old line remains quarantined; no history rewrite or wholesale merge occurred.
 
@@ -17,7 +17,7 @@ records.
 
 **Recovery custody:** the owner confirms there is no off-site backup and could not identify a destination or encryption recipient; no artifact, checksum, or restore proof exists. This is an acknowledged current limitation. No private data was sent or recovery artifact invented.
 
-**Next exact action:** push the clean documentation reconciliation, require Public CI on the documentation-inclusive candidate, then fast-forward only that green current-main descendant and verify main CI. Keep production unchanged until a trusted host-key profile and byte-verified active-overlay base permit truthful read-only source/runtime acceptance.
+**Next exact action:** continue read-only runtime-provenance investigation from the protected operator record. Keep production unchanged until a trusted host-key profile and byte-verified active-overlay base permit truthful source/runtime acceptance.
 
 ## Historical code and dogfood checkpoints — superseded by the current checkpoint above
 

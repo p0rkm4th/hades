@@ -13,15 +13,14 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 ## Current source and runtime checkpoint
 
 At the 2026-10-06 checkpoint, public `origin/main` is
-`8e47674112d6797ccb56a5892a02ec3b5475e2b7` with Public CI
-[37392606825](https://github.com/p0rkm4th/hades/actions/runs/37392606825)
-passed. The clean current-main candidate code commit is `868524d6`; its source tree
-is identical to `54afe585`, which passed candidate Public CI
-[37394170918](https://github.com/p0rkm4th/hades/actions/runs/37394170918)
+`9acb3a57f7828d36360ae9f9c4430470a661d70c`; documentation-inclusive candidate
+CI [37394760162](https://github.com/p0rkm4th/hades/actions/runs/37394760162)
+and post-promotion main CI
+[37394882945](https://github.com/p0rkm4th/hades/actions/runs/37394882945)
 passed. It extracts the pure service-monitor response view while preserving
 owner authorization and service-target classification in Hermes. NYX-002
-accepted the final boundary and direct-view/wrapper parity tests. The candidate
-is not yet promoted or deployed.
+accepted the final boundary and direct-view/wrapper parity tests. The source
+change is promoted but not deployed.
 
 The old parity tip `345cb1b6de5f9f51ad98986c88ab9f0693461921` is preserved
 locally with merge base `b903ad331dc0269becf46600bf29db8931707fef`; its remote

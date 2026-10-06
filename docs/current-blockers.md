@@ -7,7 +7,7 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## Current mission checkpoint — 2026-10-06 UTC
 
-Canonical public `origin/main` is `8e47674112d6797ccb56a5892a02ec3b5475e2b7`; Public CI [37392606825](https://github.com/p0rkm4th/hades/actions/runs/37392606825) passed. Clean current-main candidate `codex/aster-homelab-checkpoint-clean-20261006` contains code commit `868524d6`, whose source tree matches candidate `54afe585`; that tree passed Public CI [37394170918](https://github.com/p0rkm4th/hades/actions/runs/37394170918). NYX-002 accepted the pure service-health view extraction; owner authorization and target classification remain in Hermes. The clean candidate has not been promoted or deployed.
+Canonical public `origin/main` is `9acb3a57f7828d36360ae9f9c4430470a661d70c`; documentation-inclusive candidate CI [37394760162](https://github.com/p0rkm4th/hades/actions/runs/37394760162) and post-promotion main CI [37394882945](https://github.com/p0rkm4th/hades/actions/runs/37394882945) passed. NYX-002 accepted the pure service-health view extraction; owner authorization and target classification remain in Hermes. The source change is promoted but has not been deployed.
 
 NYX-001 compared old local parity tip `345cb1b6de5f9f51ad98986c88ab9f0693461921` (merge base `b903ad331dc0269becf46600bf29db8931707fef`) against current main. It found no safe, required user-facing behavior missing from main. The old host GPU setup helper is not imported; the old branch remains quarantined because its recorded Public CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701) failed public-history safety. Its remote ref is absent; local evidence remains preserved.
 
@@ -15,7 +15,7 @@ Homelab remains **PARTIAL**. Focused synthetic contracts on the candidate pass f
 
 NYX-124 found no verified exact active-overlay base and no reusable protected runtime SSH host-key profile. Until both are established, no safe live artifact collection or current-source production acceptance can be claimed. The owner confirms no off-site backup or known independent destination/recipient; no recovery artifact or restore proof exists. No P0/P1 defect was found in this candidate review.
 
-`sitecustomize.py` is 12,339 lines with 150 top-level and 217 total functions; `homelab_views.py` is 919 lines with 14 top-level and 19 total functions; the adapter `server.py` remains 1,864 lines with 36 top-level and 40 total functions. Next: commit this docs checkpoint, require Public CI on the documentation-inclusive candidate, promote only a green current-main descendant, and verify post-promotion main CI. Keep the homelab capability PARTIAL and production unchanged.
+`sitecustomize.py` is 12,339 lines with 150 top-level and 217 total functions; `homelab_views.py` is 919 lines with 14 top-level and 19 total functions; the adapter `server.py` remains 1,864 lines with 36 top-level and 40 total functions. Next: continue read-only provenance investigation using protected runtime records; keep the homelab capability PARTIAL and production unchanged.
 
 ## Historical convergence checkpoint — superseded
 
