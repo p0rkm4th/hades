@@ -12,18 +12,22 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 
 ## Current source and runtime checkpoint
 
-At the 2026-10-06 checkpoint, public `origin/main` is
-The latest code-bearing main checkpoint is `9acb3a57f7828d36360ae9f9c4430470a661d70c`;
-candidate CI [37394760162](https://github.com/p0rkm4th/hades/actions/runs/37394760162)
-and post-promotion CI
-[37394882945](https://github.com/p0rkm4th/hades/actions/runs/37394882945)
-passed. Documentation-only main checkpoint `3a0d58272fd45e6e4835f9b28ee582fabc3db0ec`
-passed candidate CI [37395142242](https://github.com/p0rkm4th/hades/actions/runs/37395142242)
-and post-promotion CI [37395265749](https://github.com/p0rkm4th/hades/actions/runs/37395265749).
-It extracts the pure service-monitor response view while preserving
-owner authorization and service-target classification in Hermes. NYX-002
-accepted the final boundary and direct-view/wrapper parity tests. The source
-change is promoted but not deployed.
+At the 2026-10-06 checkpoint, code-bearing `main` is
+`fa050de7ccbf2052b2661d07ca68dd5b6a68d84c`, fast-forwarded from reviewed base
+`36ac9f2a84aff93ccf03ca124b61bd7a0f99d6ba`. Candidate CI
+[37396466369](https://github.com/p0rkm4th/hades/actions/runs/37396466369)
+passed; post-promotion main CI
+[37396606663](https://github.com/p0rkm4th/hades/actions/runs/37396606663) was
+running when this checkpoint was written. The current provider extraction
+moves bounded NetBox recent device/service update reads to
+`netbox_activity.py`; endpoint configuration and the shared bounded GET
+transport remain in `server.py`. Shared timestamp, text-bounding, and safe
+error-classification helpers live in `source_utils.py`. NYX-006 accepted the
+boundary and requested a mixed-endpoint outage case; it now verifies that
+successful rows survive, status is partial, both endpoints are attempted, and
+the failing endpoint's details are not disclosed. The exact clean 16-module
+package composed from the committed revision includes and imports both new
+modules. This is source/package evidence, not live acceptance or deployment.
 
 The old parity tip `345cb1b6de5f9f51ad98986c88ab9f0693461921` is preserved
 locally with merge base `b903ad331dc0269becf46600bf29db8931707fef`; its remote
@@ -33,19 +37,19 @@ read behavior missing from main. The old host GPU setup helper is a deployment
 convenience, not missing HADES capability, and was not imported. No old history
 was merged or rewritten.
 
-Focused candidate checks pass for adapter partial failures, freshness,
-contradictions, identity ambiguity, service health, backup semantics, inference
-and GPU boundaries, restore-task scope, household redaction, runtime registry,
+Focused checks pass for adapter partial failures, freshness, contradictions,
+identity ambiguity, service health, backup semantics, inference and GPU
+boundaries, restore-task scope, household redaction, runtime registry,
 source-tree safety, and introduced-history safety. These are synthetic/source
 contracts, not live acceptance.
 
-Current metrics after the extraction: `hermes/sitecustomize.py` is 12,339
-lines with 150 top-level and 217 total functions;
-`integrations/homelab_views.py` is 919 lines with 14 top-level and 19 total
-functions; `integrations/homelab-readonly/server.py` is 1,864 lines with 36
-top-level and 40 total functions. The adapter/package files already included
-by reconstruction continue to install `homelab_views.py`; no new package
-closure is required for this slice.
+Current metrics: `hermes/sitecustomize.py` is 12,344 lines with 150 top-level
+and 217 total functions; `integrations/homelab_views.py` is 916 lines with 14
+top-level and 19 total functions; `integrations/homelab-readonly/server.py` is
+1,737 lines with 33 top-level and 37 total functions;
+`netbox_activity.py` is 133 lines / 1 function and `source_utils.py` is 37
+lines / 3 functions. The package composer collects every tracked top-level
+Python module, and exact-revision composition verified closure for this slice.
 
 Homelab remains **PARTIAL**. NYX-124 found no verified exact active-overlay
 base or reusable protected runtime SSH host-key profile. Full deployed
