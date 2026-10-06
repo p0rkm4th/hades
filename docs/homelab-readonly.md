@@ -12,47 +12,50 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 
 ## Current source and runtime checkpoint
 
-**Current repository checkpoint (2026-10-05):** public `main` is
-`3a43d146561033e04f27ed171954607b85c92c9a`. Current-main Public CI
-[37386827640](https://github.com/p0rkm4th/hades/actions/runs/37386827640)
-passes. An earlier main run [37379431810](https://github.com/p0rkm4th/hades/actions/runs/37379431810)
-failed the public-history audit because its range contained one private local
-checkout path from an earlier checkpoint commit. It is absent from the current
-tree; public history was not rewritten. Current-tree and subsequent range
-checks pass. NYX-102's GPU response-view extraction and NYX-103's independent
-telemetry/provider error handling are on main; candidate and main CI both
-pass. Neither change has been deployed, and production package provenance
-remains unverified.
+At the 2026-10-06 checkpoint, public `origin/main` is
+`8e47674112d6797ccb56a5892a02ec3b5475e2b7` with Public CI
+[37392606825](https://github.com/p0rkm4th/hades/actions/runs/37392606825)
+passed. The clean current-main candidate code commit is `868524d6`; its source tree
+is identical to `54afe585`, which passed candidate Public CI
+[37394170918](https://github.com/p0rkm4th/hades/actions/runs/37394170918)
+passed. It extracts the pure service-monitor response view while preserving
+owner authorization and service-target classification in Hermes. NYX-002
+accepted the final boundary and direct-view/wrapper parity tests. The candidate
+is not yet promoted or deployed.
 
-A bounded authenticated owner/household run on the currently reachable
-production deployment passed eight fresh prompts: all eight persisted in their
-corresponding chats, with zero household topology leaks and zero turn errors.
-It used a loopback-only SSH tunnel, strict host-key checking, and protected
-credentials and labels. This does not prove current-main runtime/package
-parity. A fresh strict-key host inspection found Hermes active, but its selected
-adapter tree has 10 Python modules versus 14 in current main: four expected
-modules are absent and two files are byte-different. Overlay/package
-provenance remains incomplete. NYX-119 also found and Aster fixed a writer race that could mix process identities or file snapshots; focused tests pass and Nyx re-review confirms the P1 race is closed. The record classifies current-disk bytes only and does not establish in-memory code; hosted CI is pending. No package rollout or source ACL change
-occurred. The bounded acceptance harness and synthetic redaction contract are
-in main. The old GPU parity remote ref is deleted; its preserved local source
-tip has failed public-history safety and is not an integration base. Prior
-NYX-001 review found no safe unique capability missing from main; NYX-101 found no unique safe behavior missing from main; NYX-102 accepted the
-local authority-preserving extraction. Follow
-[`docs/homelab-package-rollout.md`](homelab-package-rollout.md) for the
-loopback-only procedure. Public history still contains the previously reported
-`.local` disclosure, with no history rewrite. Current source measurements are:
-`hermes/sitecustomize.py` is 12,475 lines (71 removed by the pure GPU
-response-view extraction, four net lines later added for independent
-source-failure handling, and two lines of classification/delegation glue in
-the service-placement presentation extraction), with 150 top-level functions
-and 217 total. `integrations/homelab_views.py` is 776 lines with 13 top-level
-and 18 total functions. The read-only adapter has 14 modules; `server.py` is
-1,864 lines with 36 top-level and 40 total functions. Proxmox visibility and
-service placement are existing domain/presentation boundaries; defer further
-server orchestration extraction until runtime package provenance is resolved.
-Independent encrypted off-host recovery remains an owner-accepted limitation. The remainder of this document
-records older repository and live observations as historical evidence; its
-cited revisions and CI runs do not supersede the current checkpoint above.
+The old parity tip `345cb1b6de5f9f51ad98986c88ab9f0693461921` is preserved
+locally with merge base `b903ad331dc0269becf46600bf29db8931707fef`; its remote
+ref is absent and recorded CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
+failed public-history safety. NYX-001 found no safe, required user-facing
+read behavior missing from main. The old host GPU setup helper is a deployment
+convenience, not missing HADES capability, and was not imported. No old history
+was merged or rewritten.
+
+Focused candidate checks pass for adapter partial failures, freshness,
+contradictions, identity ambiguity, service health, backup semantics, inference
+and GPU boundaries, restore-task scope, household redaction, runtime registry,
+source-tree safety, and introduced-history safety. These are synthetic/source
+contracts, not live acceptance.
+
+Current metrics after the extraction: `hermes/sitecustomize.py` is 12,339
+lines with 150 top-level and 217 total functions;
+`integrations/homelab_views.py` is 919 lines with 14 top-level and 19 total
+functions; `integrations/homelab-readonly/server.py` is 1,864 lines with 36
+top-level and 40 total functions. The adapter/package files already included
+by reconstruction continue to install `homelab_views.py`; no new package
+closure is required for this slice.
+
+Homelab remains **PARTIAL**. NYX-124 found no verified exact active-overlay
+base or reusable protected runtime SSH host-key profile. Full deployed
+adapter/profile/overlay lineage, in-memory loaded bytes, and fresh
+current-source owner/household acceptance remain unverified; no production
+change was made. The owner confirms no off-site backup or known independent
+destination/recipient; no artifact, checksum, or restore proof exists. The
+available synthetic checks do not establish live node health, network trends,
+guest OS state, filesystem utilization, or backup restoreability.
+
+The remaining sections below preserve prior dated engineering and live
+observations as historical evidence; they do not supersede this checkpoint.
 
 Homelab package code revision `2594e33b` is on `main`; docs/runbook checkpoint `85c1365a` passed candidate/main CI and includes the deterministic composer and CI contract; candidate Public CI [37359442217](https://github.com/p0rkm4th/hades/actions/runs/37359442217) passed; post-promotion main CI [37359854855](https://github.com/p0rkm4th/hades/actions/runs/37359854855) passed; the runbook/checkpoint update passed candidate CI [37360970057](https://github.com/p0rkm4th/hades/actions/runs/37360970057) and latest main CI [37361152596](https://github.com/p0rkm4th/hades/actions/runs/37361152596). The actual 13-module package composed from a clean candidate source passed the existing provenance validator. This does not establish production runtime parity;
 named-host workload renderer candidate/main Public CI runs
