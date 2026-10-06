@@ -1094,8 +1094,26 @@ activity_text = server.format_homelab_recent_activity(activity)
 assert activity_view.format_recent_activity(activity, server._bounded_text) == activity_text
 assert "Recent recorded activity" in activity_text and "complete homelab change log" in activity_text
 assert "private" not in activity_text.casefold()
+activity_task_reads = []
+def no_scope_activity_fetch(url, *_args, **_kwargs):
+    if url.endswith("/access/permissions"):
+        return {"data": {}}
+    if url.endswith("/cluster/resources"):
+        return {"data": [{"type": "node", "node": "hypervisor-alpha"}]}
+    if "/nodes/" in url and "/tasks?" in url:
+        activity_task_reads.append(url)
+        return {"data": [{"id": "102", "type": "qmstart", "status": "OK", "starttime": int(datetime.now().timestamp())}]}
+    if url.startswith("https://netbox.example.test/api/"):
+        return {"count": 0, "results": []}
+    raise AssertionError(f"unexpected no-scope activity URL: {url}")
+server._fetch = no_scope_activity_fetch
+no_scope_activity = server.homelab_recent_activity(24)
+assert no_scope_activity["endpoints"][0]["status"] == "UNKNOWN", no_scope_activity
+assert no_scope_activity["endpoints"][0]["events"] == []
+assert activity_task_reads == []
 server._fetch = original_fetch
 print("PASS recent activity composes scoped Proxmox tasks and NetBox timestamps without claiming a complete change log")
+print("PASS recent activity performs no task reads when effective VM.Audit scope is unknown")
 
 # A failed independent Proxmox endpoint must not discard rows retrieved from
 # another endpoint, and the summary must preserve per-source retrieval status.
@@ -1522,5 +1540,5 @@ print("PASS observed compute capability read is bounded, explicit, and read-only
 print("PASS owner snapshot preserves partial-source errors and authority boundaries")
 PY
 
-python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py integrations/homelab-readonly/kuma.py integrations/homelab-readonly/proxmox_visibility.py integrations/homelab-readonly/netbox_activity.py integrations/homelab-readonly/source_utils.py
+python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py integrations/homelab-readonly/kuma.py integrations/homelab-readonly/proxmox_visibility.py integrations/homelab-readonly/proxmox_tasks.py integrations/homelab-readonly/netbox_activity.py integrations/homelab-readonly/source_utils.py
 echo 'PASS homelab MCP adapter is syntax-valid and read-only by construction'

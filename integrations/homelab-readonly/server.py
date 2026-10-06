@@ -9,7 +9,7 @@ import ssl
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import quote, urlencode, urljoin, urlsplit, urlunsplit
+from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 import anyio
@@ -45,6 +45,7 @@ from config import (
 from gpu_telemetry import read_gpu_telemetry
 from kuma import normalize_public_status
 import proxmox_visibility
+from proxmox_tasks import read_archived_task_pages as _read_archived_task_pages
 from source_utils import (
     bounded_text as _bounded_text,
     retrieved_at as _retrieved_at,
@@ -1088,7 +1089,6 @@ def _proxmox_guest_task_scope(payload: dict) -> dict:
 
 def homelab_backup_status() -> dict:
     """Read vzdump schedules and only archived tasks in effective VM.Audit scope."""
-    from concurrent.futures import ThreadPoolExecutor
     from config import proxmox_specs, proxmox_source_ids, proxmox_token_ids
 
     try:
@@ -1222,115 +1222,58 @@ def homelab_backup_status() -> dict:
             nodes = all_nodes[:16]
             if not nodes:
                 raise ValueError("Proxmox runtime response contains no readable nodes")
-            can_read_guest_tasks = (
-                task_scope.get("all_guests") is True
-                or bool(task_scope.get("guest_ids"))
+            page_result = _read_archived_task_pages(
+                api_base, nodes, task_scope, mode="vzdump", fetch=_fetch,
+                token_file=token_file, ca_file=ca_file, token_id=token_id,
             )
-            if not can_read_guest_tasks:
+            task_reads = page_result.get("nodes", [])
+            if page_result.get("status") == "UNKNOWN":
                 tasks_status = "UNKNOWN"
-                task_states = []
+            elif not task_reads or all(row.get("status") == "UNAVAILABLE" for row in task_reads):
+                tasks_status = "UNAVAILABLE"
+                error_codes.extend(page_result.get("error_codes", []))
             else:
-                def read_tasks(node):
-                    try:
-                        endpoint = urljoin(
-                            api_base.rstrip("/") + "/",
-                            f"nodes/{quote(node, safe='')}/tasks?source=archive&limit=20&typefilter=vzdump",
-                        )
-                        payload = _fetch(endpoint, token_file, ca_file, token_id)
-                        data = payload.get("data")
-                        if not isinstance(data, list):
-                            raise ValueError("Proxmox task response has an unsupported shape")
-                        normalized = []
-                        unattributed = []
-                        excluded_rows = 0
-                        malformed_rows = 0
-                        # A full page may have been capped by Proxmox's
-                        # `limit=20` even when the response has no continuation
-                        # marker. Keep completeness unknown at the boundary.
-                        page_truncated = len(data) >= 20
-                        allowed_ids = set(task_scope.get("guest_ids") or [])
-                        denied_ids = set(task_scope.get("excluded_guest_ids") or [])
-                        for row in data[:20]:
-                            if not isinstance(row, dict):
-                                malformed_rows += 1
-                                continue
-                            raw_guest_id = row.get("id")
-                            if raw_guest_id is None or raw_guest_id == "":
-                                # Keep aggregate/job-level evidence separate:
-                                # without a guest ID it cannot prove that any
-                                # specific VM or container was backed up.
-                                raw_status = str(row.get("status") or "").strip().upper()
-                                status = "OK" if raw_status == "OK" else (
-                                    "RUNNING" if raw_status == "RUNNING" else
-                                    "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
-                                )
-                                item = {"node": node, "status": status}
-                                for key in ("starttime", "endtime"):
-                                    value = row.get(key)
-                                    if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
-                                        item[key] = value
-                                if "endtime" in item:
-                                    item["finished_at"] = datetime.fromtimestamp(
-                                        item["endtime"], timezone.utc,
-                                    ).isoformat()
-                                unattributed.append(item)
-                                continue
-                            guest_id = row.get("id")
-                            if not isinstance(guest_id, str) or not re.fullmatch(r"[1-9][0-9]{0,8}", guest_id):
-                                # A malformed nonempty identity cannot be
-                                # safely classified against effective ACLs.
-                                # Drop it instead of treating it as an
-                                # unattributed task or allowing it through a
-                                # cluster-wide scope with exclusions.
-                                malformed_rows += 1
-                                continue
-                            if task_scope.get("all_guests") is True:
-                                if guest_id in denied_ids:
-                                    excluded_rows += 1
-                                    continue
-                            elif guest_id not in allowed_ids:
-                                excluded_rows += 1
-                                continue
-                            raw_status = str(row.get("status") or "").strip().upper()
-                            status = "OK" if raw_status == "OK" else (
-                                "RUNNING" if raw_status == "RUNNING" else
-                                "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
-                            )
-                            item = {"node": node, "status": status}
-                            if guest_id:
-                                item["guest_id"] = guest_id
-                            for key in ("starttime", "endtime"):
-                                value = row.get(key)
-                                if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
-                                    item[key] = value
-                            if "endtime" in item:
-                                item["finished_at"] = datetime.fromtimestamp(
-                                    item["endtime"], timezone.utc,
-                                ).isoformat()
-                            normalized.append(item)
-                        state = "PARTIAL" if malformed_rows or page_truncated else "HEALTHY"
-                        return (
-                            state, normalized, unattributed, None, excluded_rows,
-                            malformed_rows, page_truncated,
-                        )
-                    except (OSError, ValueError, UnicodeError, OverflowError) as exc:
-                        return "UNAVAILABLE", [], [], _source_error_code(exc), 0, 0, False
-
-                with ThreadPoolExecutor(max_workers=min(8, len(nodes))) as pool:
-                    task_reads = list(pool.map(read_tasks, nodes))
-                task_states = [state for state, _, _, _, _, _, _ in task_reads]
+                task_states = [row.get("status", "UNKNOWN") for row in task_reads]
                 excluded_task_rows = 0
-                for (
-                    state, node_tasks, node_unattributed, error, excluded_rows,
-                    malformed_rows, page_truncated,
-                ) in task_reads:
-                    tasks.extend(node_tasks)
-                    unattributed_tasks.extend(node_unattributed)
-                    excluded_task_rows += excluded_rows
-                    malformed_task_rows += malformed_rows
-                    task_pages_truncated = task_pages_truncated or page_truncated
-                    if error:
-                        error_codes.append(error)
+                for node_result in task_reads:
+                    node = node_result["node"]
+                    excluded_task_rows += node_result["excluded_rows"]
+                    malformed_task_rows += node_result["malformed_rows"]
+                    task_pages_truncated = task_pages_truncated or node_result["truncated"]
+                    error_codes.extend(node_result["error_codes"])
+                    for raw in node_result["unattributed_rows"]:
+                        raw_status = str(raw.get("status") or "").strip().upper()
+                        status = "OK" if raw_status == "OK" else (
+                            "RUNNING" if raw_status == "RUNNING" else
+                            "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
+                        )
+                        item = {"node": node, "status": status}
+                        for key in ("starttime", "endtime"):
+                            value = raw.get(key)
+                            if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
+                                item[key] = value
+                        if "endtime" in item:
+                            item["finished_at"] = datetime.fromtimestamp(
+                                item["endtime"], timezone.utc,
+                            ).isoformat()
+                        unattributed_tasks.append(item)
+                    for raw in node_result["rows"]:
+                        guest_id = str(raw["id"])
+                        raw_status = str(raw.get("status") or "").strip().upper()
+                        status = "OK" if raw_status == "OK" else (
+                            "RUNNING" if raw_status == "RUNNING" else
+                            "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
+                        )
+                        item = {"node": node, "status": status, "guest_id": guest_id}
+                        for key in ("starttime", "endtime"):
+                            value = raw.get(key)
+                            if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0:
+                                item[key] = value
+                        if "endtime" in item:
+                            item["finished_at"] = datetime.fromtimestamp(
+                                item["endtime"], timezone.utc,
+                            ).isoformat()
+                        tasks.append(item)
                 tasks.sort(key=lambda row: row.get("endtime", row.get("starttime", 0)), reverse=True)
                 unattributed_tasks.sort(
                     key=lambda row: row.get("endtime", row.get("starttime", 0)),
@@ -1340,6 +1283,7 @@ def homelab_backup_status() -> dict:
                 scope_is_partial = task_scope.get("scope") != "ALL_GUESTS"
                 tasks_status = "PARTIAL" if (
                     scope_is_partial or excluded_task_rows or nodes_truncated or malformed_node_rows
+                    or page_result.get("nodes_truncated") or page_result.get("malformed_node_count")
                     or tasks_truncated or task_pages_truncated or malformed_task_rows
                     or "PARTIAL" in task_states or "UNAVAILABLE" in task_states
                 ) else "HEALTHY"
@@ -1482,78 +1426,65 @@ def homelab_recent_activity(window_hours: int = 24) -> dict:
             nodes_truncated = len(nodes) > 16
             nodes = nodes[:16]
 
-            def read_node_tasks(node: str) -> tuple[str, list[dict], str | None, bool]:
-                task_url = urljoin(
-                    api_base.rstrip("/") + "/",
-                    f"nodes/{quote(node, safe='')}/tasks?source=archive&limit=100&since={since}",
-                )
-                try:
-                    payload = _fetch(task_url, token_file, ca_file, token_id)
-                    rows = payload.get("data")
-                    if not isinstance(rows, list):
-                        raise ValueError("Proxmox task response has an unsupported shape")
-                    normalized = []
-                    for row in rows[:100]:
-                        if not isinstance(row, dict):
-                            continue
-                        guest_id = row.get("id")
-                        if not isinstance(guest_id, (str, int)):
-                            continue
-                        guest_id = str(guest_id)
-                        if not re.fullmatch(r"[1-9][0-9]{0,19}", guest_id):
-                            continue
-                        if task_scope["all_guests"]:
-                            if guest_id in task_scope["excluded_guest_ids"]:
-                                continue
-                        elif guest_id not in task_scope["guest_ids"]:
-                            continue
-                        started_at = row.get("starttime")
-                        if (
-                            not isinstance(started_at, (int, float))
-                            or isinstance(started_at, bool) or started_at < since
-                        ):
-                            continue
-                        task_type = row.get("type")
-                        if not isinstance(task_type, str) or not re.fullmatch(
-                            r"[A-Za-z][A-Za-z0-9_-]{0,31}", task_type,
-                        ):
-                            continue
-                        task_type = task_type.casefold()
-                        if not task_type.startswith(("qm", "vz")) and task_type != "vzdump":
-                            continue
-                        raw_status = str(row.get("status") or "").strip().upper()
-                        status = "OK" if raw_status == "OK" else (
-                            "RUNNING" if raw_status == "RUNNING" else
-                            "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
-                        )
-                        event = {
-                            "source_id": source_id, "node": node,
-                            "guest_id": guest_id, "task_type": task_type,
-                            "status": status, "starttime": int(started_at),
-                        }
-                        ended_at = row.get("endtime")
-                        if isinstance(ended_at, (int, float)) and not isinstance(ended_at, bool) and ended_at >= 0:
-                            event["endtime"] = int(ended_at)
-                        normalized.append(event)
-                    return "HEALTHY", normalized, None, len(rows) >= 100
-                except (OSError, ValueError, UnicodeError) as exc:
-                    return "UNAVAILABLE", [], _source_error_code(exc), False
-
-            with ThreadPoolExecutor(max_workers=min(8, max(1, len(nodes)))) as pool:
-                task_results = list(pool.map(read_node_tasks, nodes))
-            events = [event for _, rows, _, _ in task_results for event in rows]
-            errors = sorted({error for _, _, error, _ in task_results if error})
-            truncated = nodes_truncated or any(capped for _, _, _, capped in task_results)
-            task_states = [state for state, _, _, _ in task_results]
-            status = "HEALTHY"
-            if not nodes or not task_states or all(state == "UNAVAILABLE" for state in task_states):
+            page_result = _read_archived_task_pages(
+                api_base, nodes, task_scope, mode="since", since=since,
+                fetch=_fetch, token_file=token_file, ca_file=ca_file, token_id=token_id,
+            )
+            task_reads = page_result.get("nodes", [])
+            events = []
+            errors = list(page_result.get("error_codes", []))
+            malformed_task_rows = page_result.get("malformed_node_count", 0)
+            for node_result in task_reads:
+                errors.extend(node_result["error_codes"])
+                malformed_task_rows += node_result["malformed_rows"]
+                for row in node_result["rows"]:
+                    started_at = row.get("starttime")
+                    if (
+                        not isinstance(started_at, (int, float))
+                        or isinstance(started_at, bool) or started_at < since
+                    ):
+                        continue
+                    task_type = row.get("type")
+                    if not isinstance(task_type, str) or not re.fullmatch(
+                        r"[A-Za-z][A-Za-z0-9_-]{0,31}", task_type,
+                    ):
+                        continue
+                    task_type = task_type.casefold()
+                    if not task_type.startswith(("qm", "vz")) and task_type != "vzdump":
+                        continue
+                    raw_status = str(row.get("status") or "").strip().upper()
+                    status = "OK" if raw_status == "OK" else (
+                        "RUNNING" if raw_status == "RUNNING" else
+                        "ERROR" if raw_status.startswith("ERROR") else "UNKNOWN"
+                    )
+                    event = {
+                        "source_id": source_id, "node": node_result["node"],
+                        "guest_id": str(row["id"]), "task_type": task_type,
+                        "status": status, "starttime": int(started_at),
+                    }
+                    ended_at = row.get("endtime")
+                    if isinstance(ended_at, (int, float)) and not isinstance(ended_at, bool) and ended_at >= 0:
+                        event["endtime"] = int(ended_at)
+                    events.append(event)
+            task_states = [row.get("status", "UNKNOWN") for row in task_reads]
+            truncated = (
+                nodes_truncated or page_result.get("nodes_truncated", False)
+                or page_result.get("malformed_node_count", 0) > 0
+                or any(row["truncated"] for row in task_reads)
+            )
+            if page_result.get("status") == "UNKNOWN":
+                status = "UNKNOWN"
+            elif not task_states or all(state == "UNAVAILABLE" for state in task_states):
                 status = "UNAVAILABLE"
             elif (
-                "UNAVAILABLE" in task_states or truncated
+                "UNAVAILABLE" in task_states or truncated or malformed_task_rows
                 or task_scope["scope"] in {"PARTIAL", "SELECTED_GUESTS", "NO_GUEST_AUDIT"}
             ):
                 status = "PARTIAL"
+            else:
+                status = "HEALTHY"
             events.sort(key=lambda row: row["starttime"], reverse=True)
+            errors = sorted(set(errors))
             endpoints.append({
                 "source_id": source_id, "status": status,
                 "scope": task_scope["scope"], "retrieved_at": _retrieved_at(),
