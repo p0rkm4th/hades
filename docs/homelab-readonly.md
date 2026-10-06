@@ -13,52 +13,49 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 ## Current source and runtime checkpoint
 
 At the 2026-10-06 checkpoint, code-bearing `main` is
-`fa050de7ccbf2052b2661d07ca68dd5b6a68d84c`, fast-forwarded from reviewed base
-`36ac9f2a84aff93ccf03ca124b61bd7a0f99d6ba`. Candidate CI
-[37396466369](https://github.com/p0rkm4th/hades/actions/runs/37396466369)
-passed; post-promotion main CI
-[37396606663](https://github.com/p0rkm4th/hades/actions/runs/37396606663) was
-running when this checkpoint was written. The current provider extraction
-moves bounded NetBox recent device/service update reads to
-`netbox_activity.py`; endpoint configuration and the shared bounded GET
-transport remain in `server.py`. Shared timestamp, text-bounding, and safe
-error-classification helpers live in `source_utils.py`. NYX-006 accepted the
-boundary and requested a mixed-endpoint outage case; it now verifies that
-successful rows survive, status is partial, both endpoints are attempted, and
-the failing endpoint's details are not disclosed. The exact clean 16-module
-package composed from the committed revision includes and imports both new
-modules. This is source/package evidence, not live acceptance or deployment.
+`381543b0af21c1e1abcbf90642eb8b586f553d62`, fast-forwarded from reviewed base
+`0cba8008a5fd0ed1a6ea1b2633379490f6cec7d8`. NYX-007 accepted the scoped
+Proxmox archived-task provider; candidate CI
+[37398017938](https://github.com/p0rkm4th/hades/actions/runs/37398017938)
+passed and post-promotion main CI [37398145659](https://github.com/p0rkm4th/hades/actions/runs/37398145659) passed. The provider reads bounded
+archived-task pages for both backup and recent-activity paths. Configuration,
+credential resolution, transport, and effective guest-scope calculation stay
+in the server. Unknown or empty `VM.Audit` scope yields zero task reads. Rows
+are filtered by scope and projected to task identity/type/status/timestamps;
+raw UPIDs and unrelated source fields do not escape. The exact clean
+17-module package composed from the committed candidate includes/imports the
+provider. These are source/package contracts, not live acceptance or
+production deployment.
 
-The old parity tip `345cb1b6de5f9f51ad98986c88ab9f0693461921` is preserved
-locally with merge base `b903ad331dc0269becf46600bf29db8931707fef`; its remote
-ref is absent and recorded CI [37222211701](https://github.com/p0rkm4th/hades/actions/runs/37222211701)
-failed public-history safety. NYX-001 found no safe, required user-facing
-read behavior missing from main. The old host GPU setup helper is a deployment
-convenience, not missing HADES capability, and was not imported. No old history
-was merged or rewritten.
+NYX-006 accepted extraction of bounded NetBox recent device/service updates
+to `netbox_activity.py`; endpoint configuration and shared bounded transport
+remain in the adapter. NYX-002 accepted the pure service-health view
+extraction into `integrations/homelab_views.py`; authorization and target
+classification remain in Hermes. NYX-001 found no safe required old-branch
+behavior missing from main. No old history was merged or rewritten.
 
 Focused checks pass for adapter partial failures, freshness, contradictions,
 identity ambiguity, service health, backup semantics, inference and GPU
-boundaries, restore-task scope, household redaction, runtime registry,
-source-tree safety, and introduced-history safety. These are synthetic/source
-contracts, not live acceptance.
+boundaries, restore-task scope, household redaction, provider scope/caps,
+package composition, source-tree safety, and introduced-history safety. These
+are synthetic/source contracts, not live acceptance.
 
 Current metrics: `hermes/sitecustomize.py` is 12,344 lines with 150 top-level
 and 217 total functions; `integrations/homelab_views.py` is 916 lines with 14
 top-level and 19 total functions; `integrations/homelab-readonly/server.py` is
-1,737 lines with 33 top-level and 37 total functions;
-`netbox_activity.py` is 133 lines / 1 function and `source_utils.py` is 37
-lines / 3 functions. The package composer collects every tracked top-level
-Python module, and exact-revision composition verified closure for this slice.
+1,668 lines with 33 top-level and 35 total functions; `proxmox_tasks.py` is
+221 lines / 4 functions; `netbox_activity.py` is 133 lines / 1 function and
+`source_utils.py` is 37 lines / 3 functions. Exact-revision package
+composition verified closure for these extractions.
 
 Homelab remains **PARTIAL**. NYX-124 found no verified exact active-overlay
 base or reusable protected runtime SSH host-key profile. Full deployed
 adapter/profile/overlay lineage, in-memory loaded bytes, and fresh
 current-source owner/household acceptance remain unverified; no production
-change was made. The owner confirms no off-site backup or known independent
-destination/recipient; no artifact, checksum, or restore proof exists. The
-available synthetic checks do not establish live node health, network trends,
-guest OS state, filesystem utilization, or backup restoreability.
+change was made. The owner reports no off-site backup; no independent
+encrypted artifact, checksum, or restore proof exists. The available synthetic
+checks do not establish live node health, network trends, guest OS state,
+filesystem utilization, or backup restoreability.
 
 The remaining sections below preserve prior dated engineering and live
 observations as historical evidence; they do not supersede this checkpoint.
