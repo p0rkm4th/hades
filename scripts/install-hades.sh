@@ -377,6 +377,7 @@ preflight() {
     hermes/config.yaml.example
     hermes/env.example
     hermes/sitecustomize.py
+    hermes/workspace.py
     integrations/grocy-mcp/launch.py
     integrations/grocy-mcp/requirements.lock
     scripts/install-grocy-mcp.sh
@@ -588,6 +589,7 @@ if ((test_mode)); then
   install -d -m 0750 "$state_root/runtime" "$state_root/compose"
   install -d -m 0750 "$config_root/overlay" "$config_root/adapters" "$config_root/assets"
   install -m 0644 "$repo_dir/hermes/sitecustomize.py" "$config_root/overlay/sitecustomize.py"
+  install -m 0644 "$repo_dir/hermes/workspace.py" "$config_root/overlay/workspace.py"
   install -m 0644 "$repo_dir/integrations/homelab_views.py" "$config_root/overlay/homelab_views.py"
   install -m 0644 "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$config_root/adapters/grocy-recipe-authoring.py"
   install -m 0644 "$repo_dir/integrations/agent-zero-mcp/server.py" "$config_root/adapters/agent-zero-mcp.py"
@@ -600,7 +602,7 @@ if ((test_mode)); then
     printf 'manifest=%s\nreconstruction_manifest=%s\nlayer=%s\ninstalled_from=%s\n' \
       "$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')" \
       "$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')" \
-      "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
+      "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/hermes/workspace.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
       "$repo_dir"
     source_provenance_records
     printf 'phase=prepared\n'
@@ -628,6 +630,7 @@ install -m 0644 "$repo_dir/config/reconstruction-manifest.json" "$config_root/re
 install -d -m 0750 "$state_root/runtime" "$state_root/compose"
 install -d -m 0750 "$config_root/overlay" "$config_root/adapters" "$config_root/assets"
 install -m 0644 "$repo_dir/hermes/sitecustomize.py" "$config_root/overlay/sitecustomize.py"
+install -m 0644 "$repo_dir/hermes/workspace.py" "$config_root/overlay/workspace.py"
 install -m 0644 "$repo_dir/integrations/homelab_views.py" "$config_root/overlay/homelab_views.py"
 install -m 0644 "$repo_dir/integrations/grocy-mcp/launch.py" "$config_root/adapters/grocy-mcp-launch.py"
 install -m 0644 "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$config_root/adapters/grocy-recipe-authoring.py"
@@ -663,7 +666,7 @@ find "$config_root/overlay" "$config_root/adapters" "$config_root/assets" -type 
   printf 'manifest=%s\nreconstruction_manifest=%s\nlayer=%s\ninstalled_from=%s\n' \
     "$(sha256sum "$repo_dir/config/versions.env" | awk '{print $1}')" \
     "$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')" \
-    "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
+    "$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/hermes/workspace.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")" \
     "$repo_dir"
   source_provenance_records
   printf 'phase=prepared\n'

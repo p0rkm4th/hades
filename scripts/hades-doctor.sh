@@ -340,13 +340,13 @@ if [[ -f "$state" ]]; then
   expected_reconstruction_manifest=$(sha256sum "$repo_dir/config/reconstruction-manifest.json" | awk '{print $1}')
   installed_reconstruction_manifest=$(awk -F= '$1 == "reconstruction_manifest" {print $2}' "$state")
   [[ "$installed_reconstruction_manifest" == "$expected_reconstruction_manifest" ]] && echo 'PASS reconstruction manifest provenance' || { echo 'FAIL reconstruction manifest provenance is stale'; exit 1; }
-  expected_layer=$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")
+  expected_layer=$(hades_layer_digest "$repo_dir/hermes/sitecustomize.py" "$repo_dir/hermes/workspace.py" "$repo_dir/integrations/homelab_views.py" "$repo_dir/integrations/grocy-mcp/launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$repo_dir/integrations/grocy-recipe-authoring/server.py" "$repo_dir/integrations/agent-zero-mcp/server.py" "$repo_dir/webui/hades-theme.css" "$repo_dir/webui/hades-theme.js" "$repo_dir/webui/finance-upload.js" "$repo_dir/webui/receipt-upload.js")
   installed_layer=$(awk -F= '$1 == "layer" {print $2}' "$state")
   [[ "$installed_layer" == "$expected_layer" ]] && echo 'PASS HADES layer provenance' || { echo 'FAIL HADES layer provenance is stale'; exit 1; }
 else
   echo 'WARN installation marker missing'
 fi
-for file in overlay/sitecustomize.py overlay/homelab_views.py adapters/grocy-mcp-launch.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js assets/finance-upload.js assets/receipt-upload.js; do
+for file in overlay/sitecustomize.py overlay/workspace.py overlay/homelab_views.py adapters/grocy-mcp-launch.py adapters/grocy-recipe-authoring.py adapters/agent-zero-mcp.py assets/hades-theme.css assets/hades-theme.js assets/finance-upload.js assets/receipt-upload.js; do
   if [[ -f "$state" ]]; then
     [[ -f "$config_root/$file" ]] && echo "PASS HADES layer $file" || { echo "FAIL HADES layer missing: $file"; exit 1; }
   else
@@ -356,7 +356,7 @@ done
 if [[ -f "$state" ]]; then
   [[ -f "$config_root/reconstruction-manifest.json" ]] || { echo 'FAIL reconstruction manifest missing'; exit 1; }
   [[ "$(sha256sum "$config_root/reconstruction-manifest.json" | awk '{print $1}')" == "$expected_reconstruction_manifest" ]] || { echo 'FAIL installed reconstruction manifest differs from repository'; exit 1; }
-  installed_layer=$(hades_layer_digest "$config_root/overlay/sitecustomize.py" "$config_root/overlay/homelab_views.py" "$config_root/adapters/grocy-mcp-launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$config_root/adapters/grocy-recipe-authoring.py" "$config_root/adapters/agent-zero-mcp.py" "$config_root/assets/hades-theme.css" "$config_root/assets/hades-theme.js" "$config_root/assets/finance-upload.js" "$config_root/assets/receipt-upload.js")
+  installed_layer=$(hades_layer_digest "$config_root/overlay/sitecustomize.py" "$config_root/overlay/workspace.py" "$config_root/overlay/homelab_views.py" "$config_root/adapters/grocy-mcp-launch.py" "$repo_dir/integrations/grocy-mcp/requirements.lock" "$config_root/adapters/grocy-recipe-authoring.py" "$config_root/adapters/agent-zero-mcp.py" "$config_root/assets/hades-theme.css" "$config_root/assets/hades-theme.js" "$config_root/assets/finance-upload.js" "$config_root/assets/receipt-upload.js")
   [[ "$installed_layer" == "$expected_layer" ]] || { echo 'FAIL installed HADES layer differs from repository'; exit 1; }
   echo 'PASS reconstruction manifest'
 else
