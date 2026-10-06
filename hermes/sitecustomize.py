@@ -8838,6 +8838,7 @@ try:
         r"\b(?:remember(?:ed|ing)?|recall|forget|did i tell|do you remember|memory|"
         r"file|workspace|project|repository|repo|code|python|javascript|typescript|"
         r"edit|patch|debug|fix|repair|commit|run tests?|test suite|build|lint|format|"
+        r"function|class|traceback|exception|failing|broken|"
         r"\b[\w.-]+\.(?:py|js|ts|tsx|jsx|go|rs|java|c|cc|cpp|h|hpp|sh|bash|toml|yaml|yml|json|md|txt|sql|html|css)\b|"
         r"weather|forecast|temperature|search|look up|latest|news|web|"
         r"current|today|tonight|tomorrow|yesterday|recent(?:ly)?|newer|"

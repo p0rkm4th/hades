@@ -23,12 +23,33 @@ _DIRECT_ACTION = re.compile(
     r"\b(?:read|open|show|inspect|review|edit|modify|change|write|create|patch|"
     r"delete|rename|move|format|lint|run|execute|test|debug|fix|repair|commit)\b"
     r".{0,90}\b(?:file|folder|directory|project|repo(?:sitory)?|code|script|"
-    r"test|bug|function|class|workspace|branch|diff)\b|"
+    r"test|bug|function|class|workspace|branch|diff|config(?:uration)?|settings?|manifest)\b|"
     r"\b(?:file|folder|directory|project|repo(?:sitory)?|code|script|test|"
-    r"bug|function|class|workspace|branch|diff)\b.{0,90}\b"
+    r"bug|function|class|workspace|branch|diff|config(?:uration)?|settings?|manifest)\b.{0,90}\b"
     r"(?:read|open|show|inspect|review|edit|modify|change|write|create|patch|"
     r"delete|rename|move|format|lint|run|execute|test|debug|fix|repair|commit)\b",
-    re.IGNORECASE | re.DOTALL,
+    re.IGNORECASE,
+)
+_CODE_EXPLANATION = re.compile(
+    r"\b(?:explain|describe|summari[sz]e|what\s+does|what\s+is|how\s+does|"
+    r"how\s+is|why\s+does|why\s+is|where\s+is)\b[^.!?\n]{0,80}\b"
+    r"(?:file|code|function|class|script|test|bug|error|traceback|exception|"
+    r"project|repo(?:sitory)?|config(?:uration)?|settings?|manifest)\b|"
+    r"\b(?:file|code|function|class|script|test|bug|error|traceback|exception|"
+    r"project|repo(?:sitory)?|config(?:uration)?|settings?|manifest)\b[^.!?\n]{0,80}\b"
+    r"(?:explain|describe|summari[sz]e|what\s+does|what\s+is|how\s+does|"
+    r"how\s+is|why\s+does|why\s+is|where\s+is)\b",
+    re.IGNORECASE,
+)
+_CODE_FAILURE_DIAGNOSIS = re.compile(
+    r"\b(?:why\s+(?:is|does)|what\s+(?:is|caused|causes)|diagnos[ei])\b"
+    r"[^.!?\n]{0,100}\b(?:python|javascript|typescript|code|file|function|class|"
+    r"script|test|bug|error|traceback|exception|repo(?:sitory)?)\b[^.!?\n]{0,60}"
+    r"\b(?:fail(?:s|ed|ing)?|break(?:s|ing)?|error|exception|wrong|crash(?:es|ed)?)\b|"
+    r"\b(?:python|javascript|typescript|code|file|function|class|script|test|"
+    r"bug|error|traceback|exception|repo(?:sitory)?)\b[^.!?\n]{0,100}"
+    r"\b(?:fail(?:s|ed|ing)?|break(?:s|ing)?|error|exception|wrong|crash(?:es|ed)?)\b",
+    re.IGNORECASE,
 )
 _PATH = re.compile(
     r"(?:^|\s)(?:\.?\.?/)?[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*\.(?:py|js|ts|tsx|jsx|go|rs|java|c|cc|cpp|h|hpp|sh|bash|toml|yaml|yml|json|md|txt|sql|html|css)(?=$|[\s?!.,])",
@@ -60,7 +81,12 @@ def workspace_enabled() -> bool:
 def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None = None) -> bool:
     """Recognize explicit file/code actions and terse continuations of them."""
     text = str(user_message or "")
-    if _DIRECT_ACTION.search(text) or _PATH.search(text.strip()):
+    if (
+        _DIRECT_ACTION.search(text)
+        or _CODE_EXPLANATION.search(text)
+        or _CODE_FAILURE_DIAGNOSIS.search(text)
+        or _PATH.search(text.strip())
+    ):
         return True
     if not _FOLLOW_UP.fullmatch(text):
         return False

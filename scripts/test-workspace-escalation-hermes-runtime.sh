@@ -40,8 +40,23 @@ import workspace as workspace_policy
 from tools.file_tools import read_file_tool
 from tools.terminal_scope import get_terminal_scope, terminal_env
 
+workspace_cases=(
+  "Why is this Python test failing?",
+  "Explain this function.",
+  "Can you read the config and tell me what it does?",
+  "I have a test tomorrow. Can you explain photosynthesis?",
+  "That test result was weird, why?",
+  "Tell me about workspace design patterns.",
+)
+
 repo,work=Path(sys.argv[1]),Path(sys.argv[2])
 assert run_agent.AIAgent.run_conversation.__name__ == '_hades_run_conversation'
+assert workspace_policy.is_workspace_request(workspace_cases[0])
+assert workspace_policy.is_workspace_request(workspace_cases[1])
+assert workspace_policy.is_workspace_request(workspace_cases[2])
+assert not workspace_policy.is_workspace_request(workspace_cases[3])
+assert not workspace_policy.is_workspace_request(workspace_cases[4])
+assert not workspace_policy.is_workspace_request(workspace_cases[5])
 assert not workspace_policy.sandbox_runtime_available(), 'test host should not qualify as rootless'
 # Exercise HADES/Hermes workspace wiring with the available rootful test engine;
 # the production runtime gate remains the unmocked rootless check above.

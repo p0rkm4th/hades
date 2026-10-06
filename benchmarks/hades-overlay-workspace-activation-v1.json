@@ -18,6 +18,8 @@
     "data": "temporary synthetic files and identities only"
   },
   "route_checks": {
+    "natural_request_activation": "PASS: 'Why is this Python test failing?', 'Explain this function.', and 'Can you read the config and tell me what it does?' activate workspace handling",
+    "ordinary_language_non_activation": "PASS: casual test mention, unrelated test-result question, and workspace-design discussion do not activate workspace handling",
     "owner_workspace_read": "PASS: read_file returned the exact temporary fixture token from /workspace",
     "exposed_tools": [
       "read_file",
