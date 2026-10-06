@@ -13,11 +13,14 @@ documented in [`docs/homelab-package-rollout.md`](homelab-package-rollout.md).
 ## Current source and runtime checkpoint
 
 At the 2026-10-06 checkpoint, public `origin/main` is
-`9acb3a57f7828d36360ae9f9c4430470a661d70c`; documentation-inclusive candidate
-CI [37394760162](https://github.com/p0rkm4th/hades/actions/runs/37394760162)
-and post-promotion main CI
+The latest code-bearing main checkpoint is `9acb3a57f7828d36360ae9f9c4430470a661d70c`;
+candidate CI [37394760162](https://github.com/p0rkm4th/hades/actions/runs/37394760162)
+and post-promotion CI
 [37394882945](https://github.com/p0rkm4th/hades/actions/runs/37394882945)
-passed. It extracts the pure service-monitor response view while preserving
+passed. Documentation-only main checkpoint `3a0d58272fd45e6e4835f9b28ee582fabc3db0ec`
+passed candidate CI [37395142242](https://github.com/p0rkm4th/hades/actions/runs/37395142242)
+and post-promotion CI [37395265749](https://github.com/p0rkm4th/hades/actions/runs/37395265749).
+It extracts the pure service-monitor response view while preserving
 owner authorization and service-target classification in Hermes. NYX-002
 accepted the final boundary and direct-view/wrapper parity tests. The source
 change is promoted but not deployed.
