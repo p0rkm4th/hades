@@ -20,6 +20,7 @@ from mcp.types import CallToolResult, ListToolsResult, TextContent, Tool
 
 from activity_view import format_recent_activity
 from backup_view import format_backup_status
+from netbox_activity import read_recent_inventory_updates as _read_recent_netbox_inventory_updates
 from inference_view import (
     _format_node_activity_fallback,
     _inference_monitor_is_linked_to_target,
@@ -44,6 +45,11 @@ from config import (
 from gpu_telemetry import read_gpu_telemetry
 from kuma import normalize_public_status
 import proxmox_visibility
+from source_utils import (
+    bounded_text as _bounded_text,
+    retrieved_at as _retrieved_at,
+    source_error_code as _source_error_code,
+)
 
 
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
@@ -535,10 +541,6 @@ def _read_proxmox_guest_visibility(
             "observation": {"source": source, "status": "UNKNOWN", "scope": "UNKNOWN",
                             "retrieved_at": retrieved_at, "error_code": type(exc).__name__},
         }
-
-
-def _retrieved_at() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 def _kuma_config_url() -> str:
@@ -1080,34 +1082,6 @@ def homelab_inference_capacity() -> dict:
 
 
 
-def _bounded_text(value: object, limit: int = 256) -> str | None:
-    if not isinstance(value, str):
-        return None
-    normalized = " ".join("".join(char if char.isprintable() else " " for char in value).split())
-    return normalized[:limit] or None
-
-
-def _source_error_code(exc: BaseException) -> str:
-    """Return useful failure classes without exposing exception text or URLs."""
-    from urllib.error import HTTPError, URLError
-
-    if isinstance(exc, HTTPError):
-        return f"HTTP_{exc.code}"
-    if isinstance(exc, URLError) and isinstance(exc.reason, TimeoutError):
-        return "TIMEOUT"
-    if isinstance(exc, (TimeoutError,)):
-        return "TIMEOUT"
-    if isinstance(exc, URLError):
-        return "SOURCE_UNREACHABLE"
-    if isinstance(exc, json.JSONDecodeError):
-        return "INVALID_JSON"
-    if isinstance(exc, ValueError):
-        return "INVALID_RESPONSE_OR_CONFIGURATION"
-    if isinstance(exc, OSError):
-        return "SOURCE_IO_ERROR"
-    return "SOURCE_ERROR"
-
-
 def _proxmox_guest_task_scope(payload: dict) -> dict:
     return proxmox_visibility.guest_task_scope(payload)
 
@@ -1428,114 +1402,13 @@ def format_homelab_backup_status(report: dict) -> str:
 
 
 def _netbox_recent_inventory_updates(since: int) -> dict:
-    """Read recent NetBox device/service timestamps without exposing change payloads."""
-    device_url, device_token = supporting_source_specs()[0]
-    configured = [("device", device_url, device_token), ("service", *netbox_services_spec())]
-    configured = [(kind, url, token) for kind, url, token in configured if url]
-    if not configured:
-        return {
-            "status": "NOT_CONFIGURED", "retrieved_at": None,
-            "coverage": [], "objects": [], "truncated": False,
-            "error_codes": [], "read_only": True,
-        }
-
-    since_text = datetime.fromtimestamp(since, timezone.utc).isoformat()
-    objects = []
-    endpoints = []
-    for kind, endpoint, token_file in configured:
-        started = time.monotonic()
-        try:
-            parsed = urlsplit(endpoint)
-            if (
-                parsed.scheme not in {"http", "https"} or not parsed.hostname
-                or parsed.username or parsed.password or parsed.query or parsed.fragment
-            ):
-                raise ValueError("invalid NetBox inventory endpoint")
-            query = urlencode({"limit": 100, "last_updated__gte": since_text})
-            url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, query, ""))
-            payload = _fetch(url, token_file, timeout_seconds=8)
-            rows = payload.get("results")
-            count = payload.get("count")
-            if (
-                not isinstance(rows, list)
-                or type(count) is not int or count < 0
-            ):
-                raise ValueError("NetBox inventory update response has an unsupported shape")
-            invalid_rows = False
-            for row in rows[:100]:
-                if not isinstance(row, dict):
-                    invalid_rows = True
-                    continue
-                raw_id = row.get("id")
-                raw_name = row.get("name")
-                raw_updated = row.get("last_updated")
-                if (
-                    isinstance(raw_id, bool)
-                    or not isinstance(raw_id, (str, int))
-                    or not re.fullmatch(r"[1-9][0-9]{0,19}", str(raw_id))
-                    or not isinstance(raw_name, str)
-                    or not isinstance(raw_updated, str)
-                ):
-                    invalid_rows = True
-                    continue
-                try:
-                    updated = datetime.fromisoformat(raw_updated.replace("Z", "+00:00"))
-                    if updated.tzinfo is None:
-                        raise ValueError("NetBox update timestamp is not timezone-aware")
-                    updated = updated.astimezone(timezone.utc)
-                except (ValueError, OverflowError):
-                    invalid_rows = True
-                    continue
-                if int(updated.timestamp()) < since:
-                    continue
-                name = _bounded_text(raw_name, 100)
-                if not name:
-                    invalid_rows = True
-                    continue
-                objects.append({
-                    "object_type": kind,
-                    "object_id": str(raw_id),
-                    "name": name,
-                    "last_updated": updated.isoformat(),
-                })
-            truncated = count > len(rows) or len(rows) > 100
-            status = "PARTIAL" if truncated or invalid_rows else "HEALTHY"
-            endpoints.append({
-                "object_type": kind, "status": status,
-                "retrieved_at": _retrieved_at(),
-                "duration_ms": round((time.monotonic() - started) * 1000, 2),
-                "returned": min(len(rows), 100), "total": count,
-                "truncated": truncated,
-                "error_codes": [],
-            })
-        except (OSError, ValueError, UnicodeError, OverflowError) as exc:
-            endpoints.append({
-                "object_type": kind, "status": "UNAVAILABLE",
-                "retrieved_at": _retrieved_at(),
-                "duration_ms": round((time.monotonic() - started) * 1000, 2),
-                "returned": 0, "total": None, "truncated": False,
-                "error_codes": [_source_error_code(exc)],
-            })
-
-    states = [row["status"] for row in endpoints]
-    status = "READABLE" if all(state == "HEALTHY" for state in states) else (
-        "SOURCE_UNAVAILABLE" if all(state == "UNAVAILABLE" for state in states)
-        else "PARTIAL"
+    """Keep source configuration and shared GET transport at the adapter seam."""
+    return _read_recent_netbox_inventory_updates(
+        since,
+        device_spec=supporting_source_specs()[0],
+        service_spec=netbox_services_spec(),
+        fetch=_fetch,
     )
-    objects.sort(key=lambda row: row["last_updated"], reverse=True)
-    truncated = any(row["truncated"] for row in endpoints) or len(objects) > 200
-    return {
-        "status": status,
-        "retrieved_at": _retrieved_at(),
-        "coverage": [row["object_type"] for row in endpoints],
-        "endpoints": endpoints,
-        "objects": objects[:200],
-        "truncated": truncated,
-        "error_codes": sorted({
-            code for row in endpoints for code in row.get("error_codes", [])
-        }),
-        "read_only": True,
-    }
 
 def homelab_recent_activity(window_hours: int = 24) -> dict:
     """Read bounded Proxmox guest tasks and NetBox inventory timestamps."""

@@ -1522,5 +1522,5 @@ print("PASS observed compute capability read is bounded, explicit, and read-only
 print("PASS owner snapshot preserves partial-source errors and authority boundaries")
 PY
 
-python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py integrations/homelab-readonly/kuma.py integrations/homelab-readonly/proxmox_visibility.py
+python -m py_compile integrations/homelab-readonly/reconcile.py integrations/homelab-readonly/server.py integrations/homelab-readonly/kuma.py integrations/homelab-readonly/proxmox_visibility.py integrations/homelab-readonly/netbox_activity.py integrations/homelab-readonly/source_utils.py
 echo 'PASS homelab MCP adapter is syntax-valid and read-only by construction'
