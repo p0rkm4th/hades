@@ -774,3 +774,143 @@ def _hades_homelab_gpu_execution_response(inventory, telemetry=None):
     if retrieved_at:
         response += f" Provider inventory was read at {retrieved_at[:80]}."
     return response + " Provider catalog or residency responses do not verify driver health, GPU execution, or successful generation; no generation request was made."
+
+
+def _hades_homelab_service_monitor_response(target_query, resources, summary):
+    """Render evidence for a target already resolved by the owner-scoped Hermes route."""
+    if not target_query:
+        return None
+    target_words, target = target_query
+    if isinstance(summary, dict) and isinstance(summary.get("availability_summary"), list):
+        monitor_resources = [
+            {
+                "name": row.get("name"),
+                "availability": {
+                    "name": row.get("name"),
+                    "status": row.get("status") or "unknown",
+                    "last_updated": row.get("observed_at") or row.get("last_updated"),
+                },
+                "availability_freshness": row.get("freshness") or "UNKNOWN",
+            }
+            for row in summary["availability_summary"]
+            if isinstance(row, dict)
+        ]
+    else:
+        monitor_resources = []
+        for resource in resources if isinstance(resources, list) else []:
+            if not isinstance(resource, dict):
+                continue
+            availability = resource.get("availability")
+            if not isinstance(availability, dict) and "availability_status" in resource:
+                availability = {
+                    "name": resource.get("name"),
+                    "status": resource.get("availability_status"),
+                }
+            if isinstance(availability, dict):
+                monitor_resources.append({
+                    **resource,
+                    "availability": availability,
+                    "availability_freshness": resource.get("availability_freshness") or "UNKNOWN",
+                })
+    matches = []
+    for resource in monitor_resources:
+        if not isinstance(resource, dict):
+            continue
+        availability = resource.get("availability") or {}
+        if not isinstance(availability, dict):
+            continue
+        monitor_name = str(availability.get("name") or resource.get("name") or "")
+        name_words = {word.casefold() for word in re.findall(r"[a-z0-9]+", monitor_name.casefold())}
+        if all(word in name_words for word in target_words):
+            matches.append((monitor_name, availability, str(resource.get("availability_freshness") or "UNKNOWN").upper()))
+    if not matches:
+        incomplete_sources = []
+        if isinstance(summary, dict):
+            summary_status = str(summary.get("status") or "").upper()
+            source_rows = summary.get("source_observations") or summary.get("sources") or []
+            source_rows = source_rows if isinstance(source_rows, list) else []
+            incomplete_sources = [
+                " ".join(str(row.get("source") or "A configured source").split())[:64]
+                for row in source_rows
+                if isinstance(row, dict)
+                and str(row.get("status") or "UNKNOWN").upper()
+                not in {"AVAILABLE", "READABLE", "HEALTHY", "OK", "COMPLETE"}
+            ]
+            counts = summary.get("source_counts") if isinstance(summary.get("source_counts"), dict) else {}
+            unlinked = counts.get("identity_unlinked_resources", 0)
+            monitor_count = counts.get("kuma_monitor_rows")
+            availability_count = (
+                len(summary.get("availability_summary", []))
+                if isinstance(summary.get("availability_summary"), list)
+                else None
+            )
+            missing_identity = type(unlinked) is int and unlinked > 0
+            omitted_monitors = (
+                type(monitor_count) is int and availability_count is not None
+                and monitor_count > availability_count
+            )
+            truncated_without_summary = (
+                isinstance(summary.get("resources_truncated"), dict)
+                and availability_count is None
+            )
+            summary_unavailable = summary_status in {
+                "UNKNOWN", "UNAVAILABLE", "SOURCE_UNAVAILABLE", "NOT_CONFIGURED", "CONFIGURATION_ERROR",
+            }
+            incomplete_read = (
+                incomplete_sources or missing_identity or omitted_monitors
+                or truncated_without_summary or summary_unavailable
+            )
+            if incomplete_read:
+                reasons = []
+                if summary_unavailable:
+                    reasons.append("the live homelab summary is unavailable")
+                if incomplete_sources:
+                    reasons.append("could not read " + ", ".join(dict.fromkeys(incomplete_sources[:4])))
+                if omitted_monitors:
+                    reasons.append("some Uptime Kuma monitors lack a verified service identity")
+                elif missing_identity:
+                    reasons.append("some source records lack a verified cross-source identity")
+                if truncated_without_summary:
+                    reasons.append("the returned resource details are truncated")
+                return (
+                    f"I couldn't verify a current monitor matching {target} because "
+                    + "; ".join(reasons)
+                    + ". Whether a matching check exists is unknown; missing data does not show the service is absent."
+                )
+        return (
+            f"I couldn't verify a current Uptime Kuma service monitor matching {target}. "
+            "A Proxmox host or VM being online does not show whether its application accepts connections or is usable, so I can't call it healthy."
+        )
+    if len(matches) > 1:
+        names = ", ".join(" ".join(name.split())[:80] for name, _availability, _freshness in matches[:5])
+        return f"I found more than one Uptime Kuma check matching {target}: {names}. Which check did you mean?"
+    monitor_name, availability, freshness = matches[0]
+    observed_status = str(availability.get("status") or "unknown").casefold()
+    timestamp = " ".join(str(availability.get("last_updated") or "").split())[:64]
+    if timestamp:
+        from datetime import datetime
+        try:
+            datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        except ValueError:
+            # Retain malformed source data for diagnostics, but don't present
+            # it to the owner as a meaningful timestamp.
+            timestamp = ""
+    checked = f" The last observation is timestamped {timestamp}." if timestamp else ""
+    label = " ".join(monitor_name.split())[:80] or target
+    if freshness != "FRESH":
+        state = observed_status if observed_status in {"up", "down", "offline", "unknown"} else "unknown"
+        return (
+            f"Uptime Kuma's {label} check last reported {state}, but that observation is {freshness.casefold()}."
+            f"{checked} I can't verify current service health from stale or unknown data."
+        )
+    if observed_status in {"up", "online"}:
+        return (
+            f"Uptime Kuma's configured check for {label} is up.{checked} "
+            "That confirms only that the configured probe responded; it does not verify an application login, usable session, or workload state, so I can't guarantee it is ready for use."
+        )
+    if observed_status in {"down", "offline"}:
+        return (
+            f"Uptime Kuma's configured check for {label} is down.{checked} "
+            "That shows the probe failed, but not why; I can't call the service healthy."
+        )
+    return f"Uptime Kuma reports the status of {label} as unknown.{checked} I can't verify current service health."

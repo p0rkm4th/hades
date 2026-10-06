@@ -37,6 +37,7 @@ assert set(view_functions) == {
     '_hades_homelab_guest_index_workloads_view',
     '_hades_homelab_guest_visibility_response',
     '_hades_homelab_gpu_execution_response',
+    '_hades_homelab_service_monitor_response',
 }
 assert [
     alias.name
@@ -135,6 +136,7 @@ namespace['__file__'] = str(repository_root / 'hermes' / 'sitecustomize.py')
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
 target = namespace['_hades_service_health_target']
 answer = namespace['_hades_service_monitor_response']
+service_monitor_view = namespace['_hades_load_homelab_views']()._hades_homelab_service_monitor_response
 groups = namespace['_hades_homelab_availability_groups']
 broad_status_intent = namespace['_hades_broad_homelab_status_intent']
 health_summary_response = namespace['_hades_homelab_health_summary_response']
@@ -1569,6 +1571,9 @@ up = answer('Is Minecraft healthy enough for tonight?', fresh_minecraft)
 assert "Uptime Kuma's configured check for Minecraft Server is up." in up, up
 assert 'does not verify an application login, usable session, or workload state' in up, up
 assert 'guarantee it is ready for use' in up, up
+assert service_monitor_view(
+    target('Is Minecraft healthy enough for tonight?'), fresh_minecraft, None
+) == up, 'direct service-health view differs from the Hermes compatibility wrapper'
 
 # Match the compact, provenance-preserving summary returned by the live adapter
 # and preserve the active four-argument caller contract.
@@ -1585,6 +1590,9 @@ compact_up = answer('Is Minecraft healthy enough for tonight?', [], compact_mine
 assert 'configured check for Minecraft Server is up' in compact_up, compact_up
 assert 'last observation is timestamped 2026-10-05T01:00:00Z' in compact_up, compact_up
 assert answer('Is Minecraft healthy enough for tonight?', [], compact_minecraft_summary, 'household') is None
+assert service_monitor_view(
+    target('Is Minecraft healthy enough for tonight?'), [], compact_minecraft_summary
+) == compact_up, 'direct compact-summary view differs from the Hermes compatibility wrapper'
 compact_stale = answer('Is Minecraft online?', [], {
     **compact_minecraft_summary,
     'availability_summary': [{
@@ -1647,6 +1655,19 @@ ambiguous = fresh_minecraft + [{
 ambiguous_answer = answer('Is Minecraft up?', ambiguous)
 assert 'more than one Uptime Kuma check' in ambiguous_answer, ambiguous_answer
 assert answer('Are all the computers okay?', fresh_minecraft) is None
+
+# The owner boundary runs before either target classification or view loading.
+original_target = namespace['_hades_service_health_target']
+original_loader = namespace['_hades_load_homelab_views']
+def forbidden_owner_only_work(*_args, **_kwargs):
+    raise AssertionError('household service-health denial evaluated owner-only work')
+namespace['_hades_service_health_target'] = forbidden_owner_only_work
+namespace['_hades_load_homelab_views'] = forbidden_owner_only_work
+try:
+    assert answer('Is Minecraft healthy?', fresh_minecraft, scope='household') is None
+finally:
+    namespace['_hades_service_health_target'] = original_target
+    namespace['_hades_load_homelab_views'] = original_loader
 
 # Exercise the actual owner shortcut through its configured working directory.
 # The temporary adapter makes this a synthetic end-to-end route check; a
