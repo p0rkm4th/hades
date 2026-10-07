@@ -47,6 +47,7 @@ MODEL_PARAMETER_FIELDS = {
     "temperature", "think", "top_k", "top_p",
 }
 IMAGE = "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d"
+REQUIRED_TERMINAL_CHOICE = {"type": "function", "function": {"name": "terminal"}}
 TOKEN = "ORCHID-9472"
 PROMPT = "Read /workspace/answer.txt and tell me the exact token from the file. Reply with only the token."
 DIAGNOSE_PROMPT = "Why is this Python test failing?"
@@ -446,6 +447,75 @@ def wait_gateway(port: int, proc: subprocess.Popen, log: pathlib.Path) -> None:
     raise RuntimeError(f"gateway did not become healthy (exit={proc.poll()}): {log.read_text(errors='replace')[-3000:]}")
 
 
+def install_required_terminal_experiment(agent: Any) -> tuple[dict[str, Any], Any]:
+    """Prototype a named Hermes tool choice after a workspace code mutation.
+
+    This benchmark-only intervention observes successful code writes at Hermes'
+    existing tool executor boundary. The next action-turn generation must call
+    the native terminal tool once. It restores the prior request overrides after
+    that call so a failed test can be repaired and a passing test can be reported.
+    """
+    from hermes.workspace import has_successful_workspace_code_mutation, workspace_code_test_status
+
+    state: dict[str, Any] = {
+        "active": False,
+        "pending": False,
+        "forced_terminal_calls": 0,
+        "terminal_result_status": None,
+        "required_choice_installed": False,
+    }
+    original_execute = agent._execute_tool_calls
+
+    def restore_choice() -> None:
+        saved = state.pop("saved_request_overrides", None)
+        if isinstance(saved, dict):
+            agent.request_overrides = saved
+        state["pending"] = False
+
+    def experimental_execute(assistant_message: Any, messages: list, effective_task_id: str, api_call_count: int = 0) -> None:
+        if not state["active"]:
+            return original_execute(assistant_message, messages, effective_task_id, api_call_count)
+
+        calls = list(getattr(assistant_message, "tool_calls", None) or [])
+        terminal_calls = [
+            call for call in calls
+            if str(getattr(getattr(call, "function", None), "name", "")) == "terminal"
+        ]
+        was_pending = bool(state["pending"])
+        results_start = len(messages)
+        original_execute(assistant_message, messages, effective_task_id, api_call_count)
+
+        if was_pending and terminal_calls:
+            state["forced_terminal_calls"] += len(terminal_calls)
+            current_start = next(
+                (
+                    idx for idx in range(len(messages) - 1, -1, -1)
+                    if isinstance(messages[idx], dict)
+                    and messages[idx].get("role") == "user"
+                    and messages[idx].get("content") == state.get("current_user_message")
+                ),
+                None,
+            )
+            current_messages = messages[current_start:] if current_start is not None else []
+            state["terminal_result_status"] = workspace_code_test_status(current_messages)
+            restore_choice()
+
+        # Inspect only results appended by this tool batch. If patch and terminal
+        # appeared together, require a fresh follow-up after the mutation so a
+        # parallel/stale test result cannot stand in for post-patch verification.
+        if has_successful_workspace_code_mutation(messages[results_start:]):
+            state["saved_request_overrides"] = dict(getattr(agent, "request_overrides", {}) or {})
+            agent.request_overrides = {
+                **state["saved_request_overrides"],
+                "tool_choice": REQUIRED_TERMINAL_CHOICE,
+            }
+            state["pending"] = True
+            state["required_choice_installed"] = True
+
+    agent._execute_tool_calls = experimental_execute
+    return state, original_execute
+
+
 def child(args: argparse.Namespace) -> int:
     fixture_case = FIXTURE_CASES[args.fixture_case]
     fixture_names = (fixture_case["source"], fixture_case["test"])
@@ -556,6 +626,10 @@ def child(args: argparse.Namespace) -> int:
         skip_background_review=True,
         load_soul_identity=False,
     )
+    tool_choice_experiment = None
+    original_tool_executor = None
+    if args.prototype_force_terminal_after_mutation and args.stack == "hades":
+        tool_choice_experiment, original_tool_executor = install_required_terminal_experiment(agent)
     started = time.perf_counter()
     try:
         prompts = [PROMPT] if args.scenario == "read" else [DIAGNOSE_PROMPT, FIX_PROMPT]
@@ -565,6 +639,9 @@ def child(args: argparse.Namespace) -> int:
             phase_name = "read" if args.scenario == "read" else ("diagnose" if phase == 0 else "fix")
             stream_state["phase"] = phase_name
             stream_state["started"] = time.perf_counter()
+            if tool_choice_experiment is not None:
+                tool_choice_experiment["active"] = phase_name == "fix"
+                tool_choice_experiment["current_user_message"] = prompt
             prior_history = history
             result = agent.run_conversation(
                 user_message=prompt,
@@ -753,10 +830,20 @@ def child(args: argparse.Namespace) -> int:
             "tool_result_contains_fixture": any(t["tool_result_contains_fixture"] for t in turns),
             "assistant_messages": [t["final_response"] for t in turns],
             "final_response": turns[-1]["final_response"] if turns else "",
+            "tool_choice_experiment": ({
+                key: value for key, value in tool_choice_experiment.items()
+                if key not in {"saved_request_overrides", "current_user_message"}
+            } if tool_choice_experiment is not None else None),
         }
         print("RESULT:" + json.dumps(summary, ensure_ascii=False))
         return 0
     finally:
+        if original_tool_executor is not None:
+            agent._execute_tool_calls = original_tool_executor
+        if tool_choice_experiment is not None and tool_choice_experiment.get("pending"):
+            saved = tool_choice_experiment.get("saved_request_overrides")
+            if isinstance(saved, dict):
+                agent.request_overrides = saved
         agent.close()
         clear_task_env_overrides(task_id)
         reset_terminal_scope(token)
@@ -776,6 +863,10 @@ def main() -> int:
     parser.add_argument(
         "--workspace-context-hint", action="store_true",
         help="give both stacks the same supported agent.environment_hint describing the /workspace mount",
+    )
+    parser.add_argument(
+        "--prototype-force-terminal-after-mutation", action="store_true",
+        help="benchmark-only HADES experiment: use Hermes tool_choice to require one terminal call after a successful workspace code mutation",
     )
     parser.add_argument("--child", action="store_true")
     parser.add_argument("--stack", choices=("plain", "hades"))
@@ -961,6 +1052,8 @@ def main() -> int:
                           "--hindsight-plugin", str(args.hindsight_plugin),
                           "--home", str(home), "--workspace", str(workspace),
                           "--provider-url", f"http://127.0.0.1:{proxy_port}/v1"]
+                if args.prototype_force_terminal_after_mutation:
+                    command.append("--prototype-force-terminal-after-mutation")
                 if stack == "hades":
                     command.append("--overlay")
                 started = time.perf_counter()
@@ -1106,6 +1199,10 @@ def main() -> int:
                 "scenario": args.scenario,
                 "fixture_layout": args.fixture_layout if args.scenario == "escalation" else None,
                 "fixture_case": args.fixture_case if args.scenario == "escalation" else None,
+                "workspace_verification_experiment": (
+                    "after a successful workspace code mutation in an action turn, set Hermes request_overrides.tool_choice to the named native terminal tool for one follow-up tool round; restore prior overrides after that round"
+                    if args.prototype_force_terminal_after_mutation else None
+                ),
                 "workspace_context_hint": WORKSPACE_ENVIRONMENT_HINT if args.workspace_context_hint else None,
                 "prompts": [PROMPT] if args.scenario == "read" else [DIAGNOSE_PROMPT, FIX_PROMPT],
                 "subject": "synthetic owner identity; private fixture only",

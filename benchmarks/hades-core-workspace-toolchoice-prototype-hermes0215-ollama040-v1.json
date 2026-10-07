@@ -1,0 +1,124 @@
+{
+  "date": "2026-10-07",
+  "source_revision": "714aa9aa837d713ff6c089283d9842a45dda3f56",
+  "result": "FAILURE_DIAGNOSTIC_ONLY",
+  "excluded_from_preference_and_completion_rates": true,
+  "method": {
+    "hermes": "Hermes Agent v0.21.5; HADES arm loaded the current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.40.0",
+    "context_tokens": 65536,
+    "actual_context_source": "Ollama GET /api/ps after warmup and each provider request",
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "escalation",
+    "experiment": "After a successful workspace code mutation in an action turn, set Hermes request_overrides.tool_choice to named native terminal for one follow-up tool round; restore prior overrides after that round.",
+    "repeats": 2,
+    "order": [
+      "plain",
+      "hades",
+      "hades",
+      "plain"
+    ],
+    "raw_prompts_responses_tool_arguments_and_file_contents_published": false
+  },
+  "summary": {
+    "plain_median_task_elapsed_ms": 42350.9,
+    "hades_median_task_elapsed_ms": 41902.9,
+    "plain_median_model_generations": 10.0,
+    "hades_median_model_generations": 6.5,
+    "plain_median_tool_results": 14.5,
+    "hades_median_tool_results": 7.5,
+    "named_choice_requests_returned_named_terminal_call": 1,
+    "named_choice_requests_total": 2,
+    "unmodified_baseline_hades_action_test_calls": 1,
+    "independent_tests_and_diff_checks_passed": 4,
+    "tasks_total": 4
+  },
+  "trials": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "task_elapsed_ms": 53571.8,
+      "model_generations": 12,
+      "tool_results": 17,
+      "max_exposed_tool_schemas": 8,
+      "max_tool_schema_bytes": 12590,
+      "diagnosis_tool_results": 15,
+      "action_tool_results": 2,
+      "action_generations": 3,
+      "experiment_state": null,
+      "independent_test_passed": true,
+      "independent_diff_check_passed": true,
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "task_elapsed_ms": 48954.4,
+      "model_generations": 7,
+      "tool_results": 8,
+      "max_exposed_tool_schemas": 5,
+      "max_tool_schema_bytes": 9575,
+      "diagnosis_tool_results": 7,
+      "action_tool_results": 1,
+      "action_generations": 2,
+      "experiment_state": {
+        "active": true,
+        "pending": true,
+        "forced_terminal_calls": 0,
+        "terminal_result_status": null,
+        "required_choice_installed": true
+      },
+      "independent_test_passed": true,
+      "independent_diff_check_passed": true,
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "task_elapsed_ms": 34851.4,
+      "model_generations": 6,
+      "tool_results": 7,
+      "max_exposed_tool_schemas": 5,
+      "max_tool_schema_bytes": 9575,
+      "diagnosis_tool_results": 5,
+      "action_tool_results": 2,
+      "action_generations": 3,
+      "experiment_state": {
+        "active": true,
+        "pending": false,
+        "forced_terminal_calls": 1,
+        "terminal_result_status": "passed",
+        "required_choice_installed": true
+      },
+      "independent_test_passed": true,
+      "independent_diff_check_passed": true,
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "task_elapsed_ms": 31130.0,
+      "model_generations": 8,
+      "tool_results": 12,
+      "max_exposed_tool_schemas": 8,
+      "max_tool_schema_bytes": 12590,
+      "diagnosis_tool_results": 10,
+      "action_tool_results": 2,
+      "action_generations": 3,
+      "experiment_state": null,
+      "independent_test_passed": true,
+      "independent_diff_check_passed": true,
+      "only_expected_source_changed": true
+    }
+  ],
+  "limitations": [
+    "Two paired repeats are insufficient to estimate a reliable success rate, latency effect, or owner preference.",
+    "The provider returned HTTP 200 for both streamed named-choice requests. One ended with finish_reason stop and no tool call; the other ended with finish_reason tool_calls and returned terminal. This shows the intervention was not reliable in these observations; it does not establish a provider specification violation.",
+    "HADES generated a fresh terminal test call in only one of two prototype runs, the same observed frequency as the unmodified HADES baseline. No improvement is established.",
+    "Independent post-run tests establish final workspace correctness only; they do not establish assistant verification or a natural owner experience.",
+    "This synthetic geometry task is diagnostic only and excluded from HADES-vs-PLAIN preference scoring."
+  ]
+}
