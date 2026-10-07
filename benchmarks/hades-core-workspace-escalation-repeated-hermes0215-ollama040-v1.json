@@ -1,0 +1,213 @@
+{
+  "date": "2026-10-07",
+  "scenario": "synthetic multi-file coding diagnosis followed by an action follow-up",
+  "samples_per_stack": 2,
+  "sample_order": [
+    "plain",
+    "hades",
+    "hades",
+    "plain"
+  ],
+  "source": {
+    "commit": "89ea8d49832b40f1ac4e1ed05de5ccb610ec4c53"
+  },
+  "controls": {
+    "hermes": "0.21.5",
+    "ollama": "0.40.0",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "context_tokens": 65536,
+    "reasoning": "disabled",
+    "sampling": "phase-matched seed, shared warm model process",
+    "docker_engine": "29.8.2 rootless",
+    "rootlesskit": "3.2.0",
+    "slirp4netns": "1.3.6",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "sandbox_network": "disabled",
+    "slirp4netns_package_sha256_checked_against_official_arch_database": "d8b45f654b33ded8e08a6747ee18d39edebb73f37c8fedeecf04092e473b70ae",
+    "package_signature": "not independently verified; host keyring did not contain signer"
+  },
+  "per_sample": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "task_elapsed_ms": 53447.0,
+      "outer_wall_ms": 56141.1,
+      "model_generations": 11,
+      "tool_results": 15,
+      "phases": {
+        "diagnosis": {
+          "model_generations": 3,
+          "tool_results": 2,
+          "max_tools_exposed": 8,
+          "max_tool_schema_bytes": 12590,
+          "first_model_content_ms": 13119.6,
+          "first_visible_delta_ms": 18085.0,
+          "terminal_calls": 1,
+          "terminal_test_calls": 0,
+          "workspace_changed": false
+        },
+        "action": {
+          "model_generations": 8,
+          "tool_results": 13,
+          "max_tools_exposed": 8,
+          "max_tool_schema_bytes": 12590,
+          "first_model_content_ms": 636.7,
+          "first_visible_delta_ms": 642.8,
+          "terminal_calls": 8,
+          "terminal_test_calls": 4,
+          "workspace_changed": true
+        }
+      },
+      "truthful_unverified_notice": false,
+      "independent_test_exit_code": 0,
+      "independent_diff_check_exit_code": 0,
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "task_elapsed_ms": 45230.0,
+      "outer_wall_ms": 48755.5,
+      "model_generations": 6,
+      "tool_results": 8,
+      "phases": {
+        "diagnosis": {
+          "model_generations": 3,
+          "tool_results": 6,
+          "max_tools_exposed": 2,
+          "max_tool_schema_bytes": 3662,
+          "first_model_content_ms": 9046.1,
+          "first_visible_delta_ms": 307.4,
+          "terminal_calls": 0,
+          "terminal_test_calls": 0,
+          "workspace_changed": false
+        },
+        "action": {
+          "model_generations": 3,
+          "tool_results": 2,
+          "max_tools_exposed": 5,
+          "max_tool_schema_bytes": 9575,
+          "first_model_content_ms": 836.5,
+          "first_visible_delta_ms": 85.7,
+          "terminal_calls": 1,
+          "terminal_test_calls": 1,
+          "workspace_changed": true
+        }
+      },
+      "truthful_unverified_notice": false,
+      "independent_test_exit_code": 0,
+      "independent_diff_check_exit_code": 0,
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "task_elapsed_ms": 45709.2,
+      "outer_wall_ms": 49116.2,
+      "model_generations": 6,
+      "tool_results": 8,
+      "phases": {
+        "diagnosis": {
+          "model_generations": 4,
+          "tool_results": 7,
+          "max_tools_exposed": 2,
+          "max_tool_schema_bytes": 3662,
+          "first_model_content_ms": 1396.7,
+          "first_visible_delta_ms": 291.9,
+          "terminal_calls": 1,
+          "terminal_test_calls": 1,
+          "workspace_changed": false
+        },
+        "action": {
+          "model_generations": 2,
+          "tool_results": 1,
+          "max_tools_exposed": 5,
+          "max_tool_schema_bytes": 9575,
+          "first_model_content_ms": 923.5,
+          "first_visible_delta_ms": 81.2,
+          "terminal_calls": 0,
+          "terminal_test_calls": 0,
+          "workspace_changed": true
+        }
+      },
+      "truthful_unverified_notice": true,
+      "independent_test_exit_code": 0,
+      "independent_diff_check_exit_code": 0,
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "task_elapsed_ms": 26975.9,
+      "outer_wall_ms": 28751.3,
+      "model_generations": 8,
+      "tool_results": 10,
+      "phases": {
+        "diagnosis": {
+          "model_generations": 7,
+          "tool_results": 10,
+          "max_tools_exposed": 8,
+          "max_tool_schema_bytes": 12590,
+          "first_model_content_ms": 1361.1,
+          "first_visible_delta_ms": 6447.7,
+          "terminal_calls": 4,
+          "terminal_test_calls": 0,
+          "workspace_changed": true
+        },
+        "action": {
+          "model_generations": 1,
+          "tool_results": 0,
+          "max_tools_exposed": 8,
+          "max_tool_schema_bytes": 12590,
+          "first_model_content_ms": 744.5,
+          "first_visible_delta_ms": 753.4,
+          "terminal_calls": 0,
+          "terminal_test_calls": 0,
+          "workspace_changed": true
+        }
+      },
+      "truthful_unverified_notice": false,
+      "independent_test_exit_code": 0,
+      "independent_diff_check_exit_code": 0,
+      "only_expected_source_changed": true
+    }
+  ],
+  "summary": {
+    "plain": {
+      "task_elapsed_ms_median": 40211.45,
+      "task_elapsed_ms_range": [
+        26975.9,
+        53447.0
+      ],
+      "model_generations_median": 9.5,
+      "tool_results_median": 12.5,
+      "diagnosis_workspace_mutations": 1,
+      "action_terminal_test_calls": 4,
+      "action_turns": 2,
+      "unverified_guard_responses": 0
+    },
+    "hades": {
+      "task_elapsed_ms_median": 45469.6,
+      "task_elapsed_ms_range": [
+        45230.0,
+        45709.2
+      ],
+      "model_generations_median": 6.0,
+      "tool_results_median": 8.0,
+      "diagnosis_workspace_mutations": 0,
+      "action_terminal_test_calls": 1,
+      "action_turns": 2,
+      "unverified_guard_responses": 1
+    }
+  },
+  "latency_delta_ms": 5258.1500000000015,
+  "interpretation": {
+    "preference": "not rated; two synthetic samples do not qualify owner preference",
+    "test_loop": "HADES ran an action-phase terminal test in 1/2 runs. In the other, it applied a patch, ran no action-phase test, and its guard returned an unverified notice. PLAIN changed files during diagnosis in 1/2 runs; that action follow-up then performed no tool work.",
+    "latency": "HADES median task time was about 5.3 seconds slower in this small run set. PLAIN varied from 27.0 to 53.4 seconds; this is too little data to infer stable latency or preference.",
+    "visible_progress": "HADES first visible deltas include a host-generated progress preface and are recorded separately from first model content; do not report them as model TTFT.",
+    "qualification": "diagnostic only; direct AIAgent route does not qualify Open WebUI persistence/authentication, broad coding quality, Git workflows, or owner preference"
+  },
+  "privacy": "No prompt text, response text, transcript, file content, command text, tool arguments, local paths, or identity data is included."
+}
