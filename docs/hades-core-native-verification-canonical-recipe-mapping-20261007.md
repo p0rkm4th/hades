@@ -26,6 +26,7 @@ local filesystem paths.
 | Median tool results | 11.5 | 12.0 |
 | Median action phase | 7,402 ms | 21,710 ms |
 | Diagnosis/action schemas | 8 / 8 | 2 / 5 |
+| Cached input tokens on first diagnosis generation | 5,448 / 5,448 | 0 / 0 |
 | Cached input tokens on first action generation | 7,338–7,758 | 0 / 0 |
 
 All four action turns recorded fresh passing evidence for the canonical test
@@ -36,12 +37,27 @@ nudge needed. HADES
 rejected two attempted diagnosis-time mutations, and no diagnosis turn changed
 the workspace.
 
-The HADES schema transition from two diagnosis schemas to five action schemas
-coincided with a prompt-cache miss on both action follow-ups. PLAIN kept eight
-schemas throughout and reused 7,338–7,758 cached input tokens on its first
-action generation. The action phase took about 14.3 seconds longer in HADES at
-the median. This is the strongest measured HADES tax in this sample; the pair
-does not isolate the schema transition as its sole cause.
+HADES had zero cached input tokens on the first generation in both diagnosis
+turns and both action follow-ups. PLAIN reused 5,448 cached input tokens on
+both first diagnosis generations and 7,338–7,758 on the action follow-ups.
+Therefore, the cache gap is present before HADES changes from two diagnosis
+schemas to five action schemas; the schema transition cannot explain the whole
+gap. The transition coincided with the action-phase cache miss, but this sample
+does not isolate its effect from other differences in HADES request or prompt
+construction. The action phase took about 14.3 seconds longer in HADES at the
+median. Treat cache non-reuse as a measured HADES tax and the schema transition
+as one unproven contributor, not the established cause.
+
+An earlier two-repeat
+[stable-schema candidate v5](../benchmarks/hades-core-owner-coding-escalation-hermes0215-ollama040-v5.json)
+kept five schemas in both HADES phases and left only read/search executable
+during diagnosis. In that separate fixture, both first action generations
+reused about 4.8k cached tokens and the first patch calls took about 3.1
+seconds, versus 13.6 seconds in its dynamic-schema baseline. HADES still took
+27.50 seconds median versus PLAIN's 21.25 seconds, and its first diagnosis
+could still pay a cold-prefix cost. This is promising mechanism evidence, not
+a qualified fix; the fixture and protocol differ from the canonical-recipe
+pair above.
 
 ## Decision and limits
 
@@ -53,8 +69,13 @@ owner preference.
 
 Keep native verify-on-stop out of production until the smallest supported
 workspace mapping is proven in the deployed path. Keep the diagnosis mutation
-gate. Investigate the diagnosis-to-action schema transition and cache miss as a
-usability bottleneck: HADES was about 22.5 seconds slower overall and exceeded
-the 30-second composed-task target, despite correct final tests and authority
-boundaries. This two-pair synthetic sample is diagnostic, not a general
-performance or quality qualification.
+gate. Investigate HADES prompt/request construction and cache non-reuse before
+isolating the diagnosis-to-action schema transition. Re-run the stable-schema
+candidate on the current canonical-recipe fixture with a matched PLAIN arm,
+and capture the first-use as well as follow-up cache counts. Preserve the
+read-only `valid_tool_names` gate and reject the candidate if diagnosis
+mutation attempts or completion quality regress. HADES was about 22.5 seconds
+slower overall in the dynamic-schema pair and exceeded the 30-second
+composed-task target, despite correct final tests and authority boundaries.
+The small synthetic samples are diagnostic, not a general performance or
+quality qualification.
