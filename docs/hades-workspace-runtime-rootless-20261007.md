@@ -1,0 +1,9 @@
+# Rootless workspace runtime qualification (2026-10-07)
+
+Ran `scripts/test-workspace-escalation-hermes-runtime.sh` against an isolated Docker 29.8.2 daemon running as UID 1000 in RootlessKit 3.2.0 with slirp4netns 1.3.6. The daemon used private state under `/var/tmp`; slirp4netns was fetched from the official Arch package mirror and extracted without system installation. The host keyring did not contain its signing key, so package signature verification was unavailable; this test-only network helper was not used in production. The exact pinned sandbox image `docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d` was pulled and verified by the daemon. No system package or production service was changed.
+
+The harness passed all 12 assertions, including the real rootless runtime/image gates, two-schema diagnosis versus five-schema action exposure, verified terminal access rooted at `/workspace`, no sibling host file visibility, no default network route, owner-only activation, distinct subject workspace mounts, and return to an empty ordinary-chat tool catalog after the action turn. The test used synthetic owner subjects and fixture files; it did not call a model or use real owner data. This qualifies the HADES/Hermes runtime and authority contract, not coding task quality, latency, or Scotty preference.
+
+Source: `hermes/sitecustomize.py`, `hermes/workspace.py`, and this runtime harness were byte-identical between campaign source `0cef34eb9b65f53eec14a2dce64636ba5395f786` and the sanitized review source `3178f8e06a256e15de31542e3610933b2379c339` at execution time.
+
+The daemon and temporary test files were removed after the run. Next: run a matched, model-backed diagnosis → edit → verify task against HADES and PLAIN STACK, preserving the same model/runtime controls and recording actual tool results without retaining response text.
