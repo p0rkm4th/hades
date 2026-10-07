@@ -28,7 +28,7 @@ from typing import Any
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SHARED = pathlib.Path("/opt/hades-stage/hades-core-usability-reset")
+SHARED = pathlib.Path(os.environ.get("HADES_STAGE_ROOT", "/opt/hades-stage"))
 # Keep the default aligned with the current stable release qualified by this
 # campaign. Historical replays can still select an older install explicitly
 # with --hermes-root; the artifact records the actual runtime version.

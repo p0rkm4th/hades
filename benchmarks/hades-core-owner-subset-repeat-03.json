@@ -6,8 +6,8 @@
   "runtime": {
     "ollama_url": "http://127.0.0.1:11445",
     "ollama_version": "0.35.1",
-    "hermes": "/opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate",
-    "hermes_version": "Hermes Agent v0.21.5 (2026.9.24)\nInstall directory: /opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate\nInstall method: git\nPython: 3.13.14\nOpenAI SDK: 2.24.0\nUpdate available: 8082 commits behind — run 'hermes update'",
+    "hermes": "/opt/hades-stage/Hermes-v0.21.5-hades-candidate",
+    "hermes_version": "Hermes Agent v0.21.5 (2026.9.24)\nInstall directory: /opt/hades-stage/Hermes-v0.21.5-hades-candidate\nInstall method: git\nPython: 3.13.14\nOpenAI SDK: 2.24.0\nUpdate available: 8082 commits behind — run 'hermes update'",
     "model": "qwen3.6:35b",
     "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
     "model_size_bytes": 22621314381,

@@ -2,7 +2,7 @@
   "date": "2026-10-07",
   "source_revision": "1ee5f524d14dc823b6b8aeaf0e69af514e8bddae",
   "method": {
-    "hermes": "Hermes Agent v0.21.3 (2026.9.14)\nInstall directory: /opt/hades-stage/hades-core-usability-reset/hermes-v0.21.3-stable/install/source\nInstall method: unknown\nPython: 3.13.14\nOpenAI SDK: 2.24.0 clean install for both arms; HADES arm loads current sitecustomize overlay",
+    "hermes": "Hermes Agent v0.21.3 (2026.9.14)\nInstall directory: /opt/hades-stage/hermes-v0.21.3-stable/install/source\nInstall method: unknown\nPython: 3.13.14\nOpenAI SDK: 2.24.0 clean install for both arms; HADES arm loads current sitecustomize overlay",
     "model": "qwen3.6:35b",
     "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
     "ollama": "0.35.1",

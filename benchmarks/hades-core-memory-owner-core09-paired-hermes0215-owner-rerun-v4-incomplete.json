@@ -579,7 +579,6 @@
       }
     }
   ],
-  "hindsight_ollama_calls": [],
   "preference_bucket": "UNASSIGNED; no owner dogfood",
   "limitations": [
     "The rootless Docker bridge could not resolve/reach the host proxy. Hindsight made zero Ollama calls; owner-bank retain work did not drain. Automatic recall, lifecycle timing, and stack-comparison conclusions are invalid. Direct explicit memory routes remain observed but this incomplete artifact makes no preference claim."

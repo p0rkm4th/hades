@@ -19,7 +19,7 @@ import time
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SHARED = pathlib.Path("/opt/hades-stage/hades-core-usability-reset")
+SHARED = pathlib.Path(os.environ.get("HADES_STAGE_ROOT", "/opt/hades-stage"))
 HERMES = SHARED / "Hermes-v0.21.5-hades-candidate"
 MODEL = "qwen3.6:35b"
 KEY = "synthetic-grocy-ui-key"

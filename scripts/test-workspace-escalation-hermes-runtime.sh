@@ -2,7 +2,9 @@
 set -Eeuo pipefail
 umask 077
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-hermes_source=/opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate
+stage_root=${HADES_STAGE_ROOT:-/opt/hades-stage}
+export HADES_STAGE_ROOT="$stage_root"
+hermes_source=$stage_root/Hermes-v0.21.5-hades-candidate
 hermes_python=${HADES_WORKSPACE_TEST_HERMES_PYTHON:-$hermes_source/.venv/bin/python}
 [[ -x "$hermes_python" ]] || { echo 'FAIL Hermes 0.21.5 candidate Python is unavailable' >&2; exit 2; }
 [[ -d "$hermes_source" ]] || { echo 'FAIL Hermes 0.21.5 candidate source is unavailable' >&2; exit 2; }
@@ -23,7 +25,7 @@ mkdir -m 700 "$work/hermes/plugins"
 mkdir -m 700 "$work/overlay"
 cp "$repo_dir/hermes/sitecustomize.py" "$work/overlay/sitecustomize.py"
 cp "$repo_dir/hermes/workspace.py" "$work/overlay/workspace.py"
-cp -a /opt/hades-stage/hades-core-usability-reset/HADES_HOME/plugins/hindsight "$work/hermes/plugins/hindsight"
+cp -a "$stage_root/HADES_HOME/plugins/hindsight" "$work/hermes/plugins/hindsight"
 HOME="$work/home" HERMES_HOME="$work/hermes" \
 PYTHONPATH="$work/overlay:$repo_dir:$hermes_source" \
 HADES_OWNER_SUBJECT_IDS=synthetic-owner,synthetic-owner-two \

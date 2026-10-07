@@ -20,7 +20,13 @@ import time
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-HERMES = pathlib.Path("/opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate")
+HERMES = pathlib.Path(
+    os.environ.get(
+        "HADES_HERMES_CANDIDATE",
+        str(pathlib.Path(os.environ.get("HADES_STAGE_ROOT", "/opt/hades-stage"))
+            / "Hermes-v0.21.5-hades-candidate"),
+    )
+)
 API_KEY = "synthetic-title-upgrade-key-2026"
 PROMPT = "Explain why Python generators help with streaming data."
 requests: list[dict] = []

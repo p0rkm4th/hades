@@ -32,10 +32,18 @@ from typing import Any
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DEFAULT_HERMES = pathlib.Path(
-    "/opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate"
+    os.environ.get(
+        "HADES_HERMES_CANDIDATE",
+        str(pathlib.Path(os.environ.get("HADES_STAGE_ROOT", "/opt/hades-stage"))
+            / "Hermes-v0.21.5-hades-candidate"),
+    )
 )
 DEFAULT_PLUGIN = pathlib.Path(
-    "/opt/hades-stage/hades-core-usability-reset/HADES_HOME/plugins/hindsight"
+    os.environ.get(
+        "HADES_HINDSIGHT_PLUGIN",
+        str(pathlib.Path(os.environ.get("HADES_STAGE_ROOT", "/opt/hades-stage"))
+            / "HADES_HOME/plugins/hindsight"),
+    )
 )
 MODEL = "qwen3.6:35b"
 API_KEY = "synthetic-local-owner-subset-key-2026"

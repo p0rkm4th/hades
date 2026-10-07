@@ -27,7 +27,11 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DEFAULT_HERMES = pathlib.Path(
-    "/opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate"
+    os.environ.get(
+        "HADES_HERMES_CANDIDATE",
+        str(pathlib.Path(os.environ.get("HADES_STAGE_ROOT", "/opt/hades-stage"))
+            / "Hermes-v0.21.5-hades-candidate"),
+    )
 )
 DEFAULT_IMAGE = (
     "sha256:5135da5a53c99cbfd25e1d6f94ddad3da50b1f00f7527c251b35baa514ec81b3"

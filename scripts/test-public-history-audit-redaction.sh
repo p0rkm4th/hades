@@ -16,7 +16,8 @@ safe_base=$(git -C "$tmp" rev-parse HEAD)
 
 mkdir -p "$tmp/fixtures"
 synthetic_address=$(printf '%s.%s.%s.%s' 192 168 77 23)
-printf 'synthetic address %s\n' "$synthetic_address" >"$tmp/fixtures/private.txt"
+synthetic_stage_root=$(printf '/%s/%s/%s' mnt shared synthetic-stage)
+printf 'synthetic address %s staging root %s\n' "$synthetic_address" "$synthetic_stage_root" >"$tmp/fixtures/private.txt"
 mkdir -p "$tmp/operator"
 printf '%s\n' 'synthetic credential path fixture' >"$tmp/operator/example.credentials.json"
 git -C "$tmp" add fixtures/private.txt operator/example.credentials.json
@@ -32,7 +33,7 @@ if (( status != 1 )); then
   echo 'FAIL audit did not reject synthetic private history' >&2
   exit 1
 fi
-if grep -Fq "$synthetic_address" <<<"$output" || grep -Eq 'fixtures/private\.txt|example\.credentials\.json' <<<"$output"; then
+if grep -Fq "$synthetic_address" <<<"$output" || grep -Fq "$synthetic_stage_root" <<<"$output" || grep -Eq 'fixtures/private\.txt|example\.credentials\.json' <<<"$output"; then
   echo 'FAIL audit output disclosed a synthetic matched value or path' >&2
   exit 1
 fi
@@ -47,7 +48,7 @@ if (( range_status != 1 )); then
   echo 'FAIL range audit did not reject newly introduced synthetic findings' >&2
   exit 1
 fi
-if grep -Fq "$synthetic_address" <<<"$range_output" || grep -Eq 'fixtures/private\.txt|example\.credentials\.json' <<<"$range_output"; then
+if grep -Fq "$synthetic_address" <<<"$range_output" || grep -Fq "$synthetic_stage_root" <<<"$range_output" || grep -Eq 'fixtures/private\.txt|example\.credentials\.json' <<<"$range_output"; then
   echo 'FAIL range audit disclosed a synthetic matched value or path' >&2
   exit 1
 fi
@@ -69,7 +70,7 @@ if (( tree_status != 1 )); then
   echo 'FAIL current-tree guard did not reject synthetic private content' >&2
   exit 1
 fi
-if grep -Fq "$synthetic_address" <<<"$tree_output" || grep -Eq 'fixtures/private\.txt|example\.credentials\.json' <<<"$tree_output"; then
+if grep -Fq "$synthetic_address" <<<"$tree_output" || grep -Fq "$synthetic_stage_root" <<<"$tree_output" || grep -Eq 'fixtures/private\.txt|example\.credentials\.json' <<<"$tree_output"; then
   echo 'FAIL current-tree guard disclosed a synthetic matched value or path' >&2
   exit 1
 fi

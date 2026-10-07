@@ -43,6 +43,12 @@ with tempfile.TemporaryDirectory(prefix="hades-finance-window-") as temporary:
     assert "1 pending" in result, result
     assert str(path) not in result, "local private path leaked"
 
+    os.environ.pop("HADES_FINANCE_CSV_PATH", None)
+    assert module._hades_direct_finance_guidance(
+        "How much did I spend on utilities?"
+    ) is None, "finance history must not use an implicit local file path"
+    os.environ["HADES_FINANCE_CSV_PATH"] = str(path)
+
     path.write_text(
         "Date,Description,Amount,Category,Status\n"
         "2026-08-01,Electric Utility,-90.00,Utilities,Posted\n"

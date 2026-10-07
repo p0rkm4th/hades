@@ -544,7 +544,6 @@
       }
     }
   ],
-  "hindsight_ollama_calls": [],
   "preference_bucket": "UNASSIGNED; no owner dogfood",
   "post_run_review": "Post-run harness review: these owner-scoped runs queried the household-style bank hades-user-hades-synthetic for lifecycle and visibility. HADES maps the synthetic owner subject to hades-owner. Treat the recorded retained-fact visibility/lifecycle values and barrier failure as invalid; user-facing turn outputs remain observed run data. No stack preference can be assigned."
 }

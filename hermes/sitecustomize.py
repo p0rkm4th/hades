@@ -3575,7 +3575,10 @@ def _hades_direct_finance_guidance(user_text):
     if not explicit_finance_request:
         return None
     lowered_text = text.casefold()
-    csv_path = Path(os.environ.get("HADES_FINANCE_CSV_PATH", "/opt/hades-stage/Downloads/bk_download.csv"))
+    configured_csv_path = os.environ.get("HADES_FINANCE_CSV_PATH")
+    if not configured_csv_path:
+        return None
+    csv_path = Path(configured_csv_path)
     if csv_path.is_file() and csv_path.stat().st_size <= 25 * 1024 * 1024:
         try:
             import csv

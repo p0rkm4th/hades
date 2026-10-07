@@ -2,7 +2,9 @@
 set -Eeuo pipefail
 umask 077
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-hermes_source=/opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate
+stage_root=${HADES_STAGE_ROOT:-/opt/hades-stage}
+export HADES_STAGE_ROOT="$stage_root"
+hermes_source=$stage_root/Hermes-v0.21.5-hades-candidate
 hermes_python=${HADES_WORKSPACE_TEST_HERMES_PYTHON:-$hermes_source/.venv/bin/python}
 hermes_bin=$hermes_source/.venv/bin/hermes
 [[ -x "$hermes_python" && -x "$hermes_bin" ]] || { echo 'FAIL Hermes candidate runtime unavailable' >&2; exit 2; }
@@ -23,7 +25,7 @@ trap cleanup EXIT
 
 mkdir -m 700 "$work/home" "$work/hermes" "$work/overlay" "$work/bin"
 mkdir -m 700 "$work/hermes/plugins"
-cp -a /opt/hades-stage/hades-core-usability-reset/HADES_HOME/plugins/hindsight "$work/hermes/plugins/hindsight"
+cp -a "$stage_root/HADES_HOME/plugins/hindsight" "$work/hermes/plugins/hindsight"
 cp "$repo_dir/hermes/sitecustomize.py" "$work/overlay/sitecustomize.py"
 cp "$repo_dir/hermes/workspace.py" "$work/overlay/workspace.py"
 # This stub qualifies the workspace path and services only Hermes' runtime preflight. It creates
@@ -128,7 +130,7 @@ with socket.socket() as sock:
     f"      port: {gateway_port}\n      key: {api_key}\n", encoding="utf-8")
 os.chmod(work / "hermes" / "config.yaml", 0o600)
 gateway_env = dict(os.environ, HOME=str(work / "home"), HERMES_HOME=str(work / "hermes"),
-                   PYTHONPATH=f"{work / 'overlay'}:{repo}:{Path('/opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate')}",
+                   PYTHONPATH=f"{work / 'overlay'}:{repo}:{Path(os.environ['HADES_STAGE_ROOT']) / 'Hermes-v0.21.5-hades-candidate'}",
                    API_SERVER_ENABLED="true", API_SERVER_KEY=api_key,
                    API_SERVER_HOST="127.0.0.1", API_SERVER_PORT=str(gateway_port),
                    OPENAI_API_KEY="synthetic-only", MODEL="qwen3.6:35b",
