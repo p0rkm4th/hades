@@ -455,6 +455,7 @@ def install_required_terminal_experiment(agent: Any) -> tuple[dict[str, Any], An
     the native terminal tool once. It restores the prior request overrides after
     that call so a failed test can be repaired and a passing test can be reported.
     """
+    from types import SimpleNamespace
     from hermes.workspace import has_successful_workspace_code_mutation, workspace_code_test_status
 
     state: dict[str, Any] = {
@@ -690,6 +691,12 @@ def child(args: argparse.Namespace) -> int:
                     )),
                     "exit_code": parsed.get("exit_code") if isinstance(parsed, dict) else None,
                     "structured_result_keys": sorted(parsed) if isinstance(parsed, dict) else None,
+                    "verification_evidence_status": (
+                        (parsed.get("verification_evidence") or {}).get("status")
+                        if isinstance(parsed, dict)
+                        and isinstance(parsed.get("verification_evidence"), dict)
+                        else None
+                    ),
                     "structured_list_counts": {
                         key: len(value) for key, value in parsed.items()
                         if isinstance(parsed, dict) and isinstance(value, list)
@@ -834,7 +841,61 @@ def child(args: argparse.Namespace) -> int:
                 key: value for key, value in tool_choice_experiment.items()
                 if key not in {"saved_request_overrides", "current_user_message"}
             } if tool_choice_experiment is not None else None),
+            "native_verification_stop_nudges": int(
+                getattr(agent, "_verification_stop_nudges", 0) or 0
+            ),
+            "native_verification_snapshot": None,
         }
+        try:
+            from agent.coding_context import project_facts_for
+            from agent.verification_evidence import verification_status
+            from agent.verification_stop import verify_on_stop_enabled
+
+            mutation_paths = sorted(
+                str(path) for path in (getattr(agent, "_turn_file_mutation_paths", set()) or set())
+                if path
+            )
+            path_rows = []
+            for path in mutation_paths:
+                cwd = str(pathlib.Path(path).parent)
+                facts = project_facts_for(cwd)
+                status = verification_status(
+                    session_id=getattr(agent, "session_id", None), cwd=cwd
+                )
+                path_rows.append({
+                    "project_facts_recognized": bool(facts),
+                    "evidence_status": status.get("status"),
+                    "workspace_mount_path": pathlib.PurePosixPath(path).parts[:2] == ("/", "workspace"),
+                    "host_workspace_path": pathlib.Path(path).is_relative_to(args.workspace.resolve()),
+                })
+            runtime_cwd = None
+            try:
+                from agent.runtime_cwd import resolve_agent_cwd
+                runtime_cwd = resolve_agent_cwd()
+            except Exception:
+                pass
+            runtime_facts = project_facts_for(runtime_cwd) if runtime_cwd else None
+            host_workspace_facts = project_facts_for(args.workspace)
+            host_workspace_status = verification_status(
+                session_id=getattr(agent, "session_id", None), cwd=args.workspace
+            )
+            summary["native_verification_snapshot"] = {
+                "enabled": bool(verify_on_stop_enabled()),
+                "mutated_code_path_count": len(mutation_paths),
+                "project_facts_recognized_count": sum(
+                    row["project_facts_recognized"] for row in path_rows
+                ),
+                "evidence_statuses": [row["evidence_status"] for row in path_rows],
+                "container_workspace_path_count": sum(row["workspace_mount_path"] for row in path_rows),
+                "host_workspace_path_count": sum(row["host_workspace_path"] for row in path_rows),
+                "runtime_cwd_project_facts_recognized": bool(runtime_facts),
+                "host_workspace_project_facts_recognized": bool(host_workspace_facts),
+                "host_workspace_evidence_status": host_workspace_status.get("status"),
+            }
+        except Exception as exc:
+            summary["native_verification_snapshot"] = {
+                "capture_error_type": type(exc).__name__,
+            }
         print("RESULT:" + json.dumps(summary, ensure_ascii=False))
         return 0
     finally:
@@ -1133,6 +1194,8 @@ def main() -> int:
 
             for stack in ("plain", "hades"):
                 stack_records = [r for r in records if r["stack"] == stack]
+                if not stack_records:
+                    continue
                 summary[f"{stack}_median_task_elapsed_ms"] = median([r["elapsed_ms"] for r in stack_records])
                 summary[f"{stack}_median_model_api_calls_per_task"] = median([
                     sum(phase["api_calls"] for phase in r["turns"]) for r in stack_records

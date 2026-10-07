@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-07",
+  "source_revision_before_run": "bf1e573f31ac931669f6c624f383915929c6ff4f",
+  "result": "INTEGRATION_GAP_CONFIRMED_DIAGNOSTIC_ONLY",
+  "excluded_from_preference_and_completion_rates": true,
+  "method": {
+    "hermes": "0.21.5",
+    "verify_on_stop": "HERMES_VERIFY_ON_STOP=1 in both arms",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.40.0",
+    "context_tokens": 65536,
+    "docker_engine": "29.8.2 rootless; VFS",
+    "sandbox_image_digest": "sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "sandbox_image_id": "sha256:d14ae8d7fcee933e82c9f62eded621110f227bc96363ca5449d36897af7bea1c",
+    "task_container_network": "none",
+    "scenario": "synthetic diagnosis then coding action",
+    "repeats": 1,
+    "order": [
+      "plain",
+      "hades"
+    ],
+    "raw_prompts_responses_tool_arguments_and_file_contents_published": false
+  },
+  "summary": {
+    "tasks_total": 2,
+    "plain_median_task_elapsed_ms": 29592.3,
+    "hades_median_task_elapsed_ms": 37522.6,
+    "plain_median_model_generations": 10,
+    "hades_median_model_generations": 7,
+    "plain_median_tool_results": 9,
+    "hades_median_tool_results": 8,
+    "native_verify_stop_nudges": 0,
+    "diagnosis_mutating_tool_attempts": 0,
+    "independent_tests_passed": 2,
+    "independent_diff_checks_passed": 2,
+    "expected_source_only_changes": 2
+  },
+  "workspace_mapping": {
+    "plain": {
+      "enabled": true,
+      "mutated_code_paths": 1,
+      "changed_paths_using_container_workspace_mount": 1,
+      "changed_paths_resolving_to_host_workspace": 0,
+      "changed_paths_with_project_facts": 0,
+      "changed_path_evidence_statuses": [
+        "not_applicable"
+      ],
+      "runtime_cwd_project_facts_recognized": true,
+      "host_workspace_project_facts_recognized": true,
+      "host_workspace_evidence_status": "unverified"
+    },
+    "hades": {
+      "enabled": true,
+      "mutated_code_paths": 1,
+      "changed_paths_using_container_workspace_mount": 1,
+      "changed_paths_resolving_to_host_workspace": 0,
+      "changed_paths_with_project_facts": 0,
+      "changed_path_evidence_statuses": [
+        "not_applicable"
+      ],
+      "runtime_cwd_project_facts_recognized": true,
+      "host_workspace_project_facts_recognized": true,
+      "host_workspace_evidence_status": "unverified"
+    }
+  },
+  "limitations": [
+    "One paired synthetic task; no causal latency, quality, or owner-preference conclusion.",
+    "Independent test success verifies final files, not in-turn assistant verification.",
+    "This exercises the benchmark's isolated Docker workspace mapping and does not by itself prove behavior for every deployed HADES workspace backend.",
+    "The native gate was explicitly enabled for the diagnostic; this does not qualify enabling it in production."
+  ]
+}
