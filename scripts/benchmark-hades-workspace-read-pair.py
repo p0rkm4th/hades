@@ -1113,12 +1113,15 @@ def main() -> int:
                 else:
                     (workspace / fixture_case["source"]).write_text(fixture_case["source_content"])
                     (workspace / fixture_case["test"]).write_text(fixture_case["test_content"])
+                    (workspace / "Makefile").write_text(
+                        "test:\n\tpython -B -m unittest discover -v\n"
+                    )
+                    (workspace / "README.md").write_text(
+                        "# Sample project\n\nRun the project tests with `make test`.\n"
+                    )
                     if args.fixture_layout == "multifile":
                         for name, content in fixture_case["support"].items():
                             (workspace / name).write_text(content)
-                        (workspace / "README.md").write_text(
-                            "# Sample project\n\nRun all tests with `python -m unittest discover -v`.\n"
-                        )
                     subprocess.run(["git", "init", "-q"], cwd=workspace, check=True)
                     subprocess.run(["git", "config", "user.name", "Synthetic HADES Benchmark"], cwd=workspace, check=True)
                     subprocess.run(["git", "config", "user.email", "hades-benchmark@example.invalid"], cwd=workspace, check=True)
@@ -1342,6 +1345,10 @@ def main() -> int:
                 "scenario": args.scenario,
                 "fixture_layout": args.fixture_layout if args.scenario == "escalation" else None,
                 "fixture_case": args.fixture_case if args.scenario == "escalation" else None,
+                "canonical_project_test_recipe": (
+                    "make test (python -B -m unittest discover -v)"
+                    if args.scenario == "escalation" else None
+                ),
                 "workspace_verification_experiment": (
                     "after a successful workspace code mutation in an action turn, set Hermes request_overrides.tool_choice to the named native terminal tool for one follow-up tool round; restore prior overrides after that round"
                     if args.prototype_force_terminal_after_mutation else None
