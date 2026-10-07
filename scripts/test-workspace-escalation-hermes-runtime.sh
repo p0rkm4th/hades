@@ -59,6 +59,63 @@ assert workspace_policy.workspace_code_verification_notice([patch_result,test_ca
 assert 'did not pass' in workspace_policy.workspace_code_verification_notice([
  patch_result,test_call,{'role':'tool','name':'terminal','tool_call_id':'test-1','content':'{"exit_code":1,"output":"FAILED"}'},
 ]).lower()
+test_call_two={'role':'assistant','tool_calls':[{'id':'test-2','type':'function','function':{'name':'terminal','arguments':'{"command":"python -m unittest"}'}}]}
+failed_test={'role':'tool','name':'terminal','tool_call_id':'test-1','content':'{"exit_code":1,"output":"FAILED"}'}
+passing_test_two={'role':'tool','name':'terminal','tool_call_id':'test-2','content':'{"exit_code":0,"output":"Ran 2 tests in 0.01s\\n\\nOK"}'}
+assert workspace_policy.workspace_code_verification_notice([
+ patch_result,test_call,failed_test,test_call_two,passing_test_two,
+]) is None
+assert 'did not pass' in workspace_policy.workspace_code_verification_notice([
+ patch_result,test_call_two,passing_test_two,test_call,failed_test,
+]).lower()
+assert workspace_policy.workspace_code_verification_notice([
+ patch_result,test_call,passing_test,test_call_two,
+])
+prior_user={'role':'user','content':'Fix the previous geometry test.'}
+prior_test_history=[prior_user,test_call,passing_test]
+current_user={'role':'user','content':'Fix a different current failure.'}
+current_patch_result={'role':'tool','name':'patch','content':'{"files_modified":["/workspace/current.py"]}'}
+stale_test_transcript=prior_test_history+[current_user,current_patch_result]
+current_turn_result={
+ 'messages':stale_test_transcript,'current_turn_user_idx':3,
+ 'turn_id':'turn-current',
+}
+current_turn=workspace_policy.current_workspace_turn_messages(
+ current_turn_result,expected_turn_id='turn-current',
+ expected_user_message=current_user['content'],
+)
+assert current_turn == [current_user,current_patch_result],current_turn
+assert workspace_policy.workspace_code_test_status(current_turn) == 'unverified'
+assert workspace_policy.workspace_code_verification_notice(current_turn)
+stale_tool_transcript=prior_test_history+[current_user]
+assert not workspace_policy.has_workspace_tool_result(
+ workspace_policy.current_workspace_turn_messages({
+  'messages':stale_tool_transcript,'current_turn_user_idx':3,'turn_id':'turn-current',
+ },expected_turn_id='turn-current',expected_user_message=current_user['content'])
+)
+assert workspace_policy.current_workspace_turn_messages({
+ 'messages':stale_test_transcript,
+},expected_turn_id='turn-current',expected_user_message=current_user['content']) == []
+assert workspace_policy.current_workspace_turn_messages({
+ 'messages':stale_test_transcript,'current_turn_user_idx':True,'turn_id':'turn-current',
+},expected_turn_id='turn-current',expected_user_message=current_user['content']) == []
+assert workspace_policy.current_workspace_turn_messages({
+ 'messages':stale_test_transcript,'current_turn_user_idx':0,'turn_id':'turn-current',
+},expected_turn_id='turn-current',expected_user_message=current_user['content']) == []
+assert workspace_policy.current_workspace_turn_messages({
+ 'messages':stale_test_transcript,'current_turn_user_idx':3,'turn_id':'stale-turn',
+},expected_turn_id='turn-current',expected_user_message=current_user['content']) == []
+assert workspace_policy.current_workspace_turn_messages({
+ 'messages':stale_test_transcript,'current_turn_user_idx':3,'turn_id':'turn-current',
+},expected_turn_id='turn-current',expected_user_message='A different active request.') == []
+fresh_test_transcript=prior_test_history+[
+ current_user,current_patch_result,test_call_two,passing_test_two,
+]
+assert workspace_policy.workspace_code_verification_notice(
+ workspace_policy.current_workspace_turn_messages({
+  'messages':fresh_test_transcript,'current_turn_user_idx':3,'turn_id':'turn-current',
+ },expected_turn_id='turn-current',expected_user_message=current_user['content'])
+) is None
 unrelated_call={'role':'assistant','tool_calls':[{'id':'pwd-1','type':'function','function':{'name':'terminal','arguments':'{"command":"pwd"}'}}]}
 assert workspace_policy.workspace_code_verification_notice([patch_result,unrelated_call,
  {'role':'tool','name':'terminal','tool_call_id':'pwd-1','content':'{"exit_code":0,"output":"/workspace"}'}])
@@ -136,8 +193,13 @@ if not real_rootless:
  fallback_tools=[]
  def ordinary_diagnosis(agent,*args,**kwargs):
   fallback_tools.extend(t['function']['name'] for t in agent.tools)
-  return {'final_response':'I can explain from the details here; paste the test output or code if you want me to inspect it.',
-   'messages':[{'role':'assistant','content':'I can explain from the details here; paste the test output or code if you want me to inspect it.'}],
+  prompt=args[0] if args else kwargs.get('user_message','')
+  agent._current_turn_id='synthetic-diagnosis-fallback-turn'
+  response='I can explain from the details here; paste the test output or code if you want me to inspect it.'
+  return {'final_response':response,
+   'messages':[{'role':'user','content':prompt},{'role':'assistant','content':response}],
+   'current_turn_user_idx':0,
+   'turn_id':agent._current_turn_id,
    'api_calls':1,'completed':True}
  hades._hades_original_run_conversation=ordinary_diagnosis
  fallback=fallback_agent.run_conversation('Why is this Python test failing?',task_id='synthetic-diagnosis-fallback')
@@ -152,6 +214,7 @@ agent=create_agent('synthetic-owner','synthetic-inspection-chat')
 inspection_catalog=[]
 inspection_deltas=[]
 def native_inspection(agent,user_message,*args,**kwargs):
+ agent._current_turn_id='synthetic-inspection-turn'
  assert inspection_deltas and inspection_deltas[0] == 'I’ll read the relevant files and explain what I find.\n\n',inspection_deltas
  names={t['function']['name'] for t in agent.tools}
  inspection_catalog.append((names,set(agent.valid_tool_names)))
@@ -165,9 +228,12 @@ def native_inspection(agent,user_message,*args,**kwargs):
  assert 'do not run or claim commands or tests' in prompt,prompt
  assert 'do not pass a directory to read_file' in prompt,prompt
  assert get_terminal_scope() is not None
- return {'final_response':'The test uses addition where rectangle area requires multiplication.',
-  'messages':[{'role':'tool','name':'read_file','content':'geometry.py: return width + height'},
-              {'role':'assistant','content':'The test uses addition where rectangle area requires multiplication.'}],
+ response='The test uses addition where rectangle area requires multiplication.'
+ return {'final_response':response,
+  'messages':[{'role':'user','content':user_message},
+              {'role':'tool','name':'read_file','content':'geometry.py: return width + height'},
+              {'role':'assistant','content':response}], 'current_turn_user_idx':0,
+  'turn_id':agent._current_turn_id,
   'api_calls':1,'completed':True}
 hades._hades_original_run_conversation=native_inspection
 inspection_agent=create_agent('synthetic-owner','synthetic-inspection-chat',inspection_deltas.append)
@@ -181,11 +247,13 @@ calls=[]
 terminal_results=[]
 action_deltas=[]
 def native_read(agent,user_message,*args,**kwargs):
+ agent._current_turn_id='synthetic-native-read-turn'
  assert action_deltas and action_deltas[0] == 'I’ll inspect the workspace, make the requested change, and verify it before reporting back.\n\n',action_deltas
  names={t['function']['name'] for t in agent.tools}
  assert names == {'read_file','search_files','write_file','patch','terminal'}, names
  assert set(agent.valid_tool_names) == names,agent.valid_tool_names
  prompt=agent.ephemeral_system_prompt.lower()
+ assert 'after a successful code patch or write, do not end the turn until a terminal call runs' in prompt,prompt
  assert 'a patch or write result is not test evidence' in prompt,prompt
  assert 'terminal result shows that test completed with exit code 0' in prompt,prompt
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
@@ -211,9 +279,13 @@ def native_read(agent,user_message,*args,**kwargs):
    terminal_results.append(__import__('json').loads(terminal_result))
   except Exception as exc:
    terminal_results.append({'exception_type':type(exc).__name__,'exception':str(exc)[:500]})
- return {'final_response':f'The token is {token}.','messages':[
+ response=f'The token is {token}.'
+ return {'final_response':response,'messages':[
+  {'role':'user','content':user_message},
   {'role':'tool','name':'read_file','content':raw},
-  {'role':'assistant','content':f'The token is {token}.'}], 'api_calls':1,'completed':True}
+  {'role':'assistant','content':response}], 'current_turn_user_idx':0,
+  'turn_id':agent._current_turn_id,
+  'api_calls':1,'completed':True}
 
 hades._hades_original_run_conversation=native_read
 agent=create_agent('synthetic-owner','synthetic-work-chat',action_deltas.append)
@@ -238,9 +310,13 @@ print('PASS HADES exposes only the five native file/shell tools for an authentic
 print('PASS HADES binds Hermes Docker cwd to the owner workspace and disables network/env forwarding')
 
 def fabricated_answer(agent,user_message,*args,**kwargs):
+ agent._current_turn_id='synthetic-fabricated-answer-turn'
  assert {t['function']['name'] for t in agent.tools} == {'read_file','search_files','write_file','patch','terminal'}
  return {'final_response':'I read it; the token is MADE-UP-001.','messages':[
-  {'role':'assistant','content':'I read it; the token is MADE-UP-001.'}], 'api_calls':1,'completed':True}
+  {'role':'user','content':user_message},
+  {'role':'assistant','content':'I read it; the token is MADE-UP-001.'}],
+  'current_turn_user_idx':0,'turn_id':agent._current_turn_id,
+  'api_calls':1,'completed':True}
 
 hades._hades_original_run_conversation=fabricated_answer
 guarded=agent.run_conversation('Read answer.txt and tell me the exact token.',task_id='synthetic-work-chat')
@@ -249,10 +325,14 @@ assert 'MADE-UP-001' not in guarded.get('final_response',''),guarded
 print('PASS HADES suppresses a fabricated workspace result when Hermes returns no tool response')
 
 def fabricated_test_claim(agent,user_message,*args,**kwargs):
+ agent._current_turn_id='synthetic-fabricated-test-turn'
  return {'final_response':'Both tests passed.','messages':[
+  {'role':'user','content':user_message},
   {'role':'assistant','tool_calls':[{'id':'patch-1','type':'function','function':{'name':'patch','arguments':'{}'}}]},
   {'role':'tool','name':'patch','tool_call_id':'patch-1','content':'{"files_modified":["/workspace/geometry.py"]}'},
-  {'role':'assistant','content':'Both tests passed.'}], 'api_calls':1,'completed':True}
+  {'role':'assistant','content':'Both tests passed.'}],
+  'current_turn_user_idx':0,'turn_id':agent._current_turn_id,
+  'api_calls':1,'completed':True}
 
 hades._hades_original_run_conversation=fabricated_test_claim
 unverified=agent.run_conversation('Fix the failing test in geometry.py.',task_id='synthetic-work-chat')
@@ -260,6 +340,26 @@ assert 'didn\'t receive a successful test result' in unverified.get('final_respo
 assert 'Both tests passed' not in unverified.get('final_response',''),unverified
 assert action_deltas[-1] == unverified.get('final_response'),action_deltas
 print('PASS HADES replaces an unsupported passing-test claim after a successful code mutation')
+
+def missing_current_assistant(agent,user_message,*args,**kwargs):
+ agent._current_turn_id='synthetic-missing-current-assistant-turn'
+ prior_user={'role':'user','content':'Explain the earlier failure.'}
+ prior_assistant={'role':'assistant','content':'Earlier answer must remain intact.'}
+ return {'final_response':'Both tests passed.','messages':[
+  prior_user,prior_assistant,{'role':'user','content':user_message},
+  {'role':'assistant','tool_calls':[{'id':'patch-2','type':'function','function':{'name':'patch','arguments':'{}'}}]},
+  {'role':'tool','name':'patch','tool_call_id':'patch-2','content':'{"files_modified":["/workspace/geometry.py"]}'}],
+  'current_turn_user_idx':2,'turn_id':agent._current_turn_id,
+  'api_calls':1,'completed':True}
+
+hades._hades_original_run_conversation=missing_current_assistant
+historical_safe=agent.run_conversation('Fix the failing test in geometry.py.',task_id='synthetic-work-chat')
+assert 'Earlier answer must remain intact.' in [
+ m.get('content') for m in historical_safe.get('messages',[]) if isinstance(m,dict)
+],historical_safe
+assert historical_safe.get('messages',[])[-1].get('content') == historical_safe.get('final_response'),historical_safe
+assert 'didn\'t receive a successful test result' in historical_safe.get('final_response','').lower(),historical_safe
+print('PASS current-turn verification notice preserves historical assistant content')
 
 ordinary_prompt_before = agent.ephemeral_system_prompt
 def ordinary_chat(agent,user_message,*args,**kwargs):

@@ -396,6 +396,35 @@ def has_workspace_tool_result(messages: Any) -> bool:
     return False
 
 
+def current_workspace_turn_messages(
+    result: Any,
+    *,
+    expected_turn_id: Any = None,
+    expected_user_message: Any = None,
+) -> list[dict[str, Any]]:
+    """Return only a boundary bound to this request; fail closed on ambiguity."""
+    if not isinstance(result, dict):
+        return []
+    messages = result.get("messages")
+    start = result.get("current_turn_user_idx")
+    if (
+        not isinstance(messages, list)
+        or not isinstance(start, int)
+        or isinstance(start, bool)
+        or not 0 <= start < len(messages)
+    ):
+        return []
+    if not isinstance(messages[start], dict) or messages[start].get("role") != "user":
+        return []
+    if not isinstance(expected_turn_id, str) or not expected_turn_id:
+        return []
+    if result.get("turn_id") != expected_turn_id:
+        return []
+    if messages[start].get("content") != expected_user_message:
+        return []
+    return messages[start:]
+
+
 def _workspace_message_payload(message: dict[str, Any]) -> dict[str, Any] | None:
     content = message.get("content")
     if isinstance(content, list):
@@ -455,7 +484,7 @@ def workspace_code_test_status(messages: Any) -> str:
     """Return passed/failed/unverified from a matched native test call and result."""
     if not isinstance(messages, list):
         return "unverified"
-    test_call_ids: set[str] = set()
+    test_call_ids: list[str] = []
     unkeyed_test_calls = 0
     for message in messages:
         if not isinstance(message, dict) or message.get("role") != "assistant":
@@ -476,49 +505,50 @@ def workspace_code_test_status(messages: Any) -> str:
                 continue
             call_id = str(call.get("id") or "").strip()
             if call_id:
-                test_call_ids.add(call_id)
+                test_call_ids.append(call_id)
             else:
                 unkeyed_test_calls += 1
 
-    matched_results = []
-    for message in messages:
-        if not isinstance(message, dict) or message.get("role") != "tool":
-            continue
-        if str(message.get("name") or message.get("tool_name") or "") != "terminal":
-            continue
-        call_id = str(message.get("tool_call_id") or "").strip()
-        if call_id and call_id in test_call_ids:
-            matched_results.append(message)
-    if not matched_results and unkeyed_test_calls == 1:
-        terminal_results = [
-            message for message in messages
-            if isinstance(message, dict) and message.get("role") == "tool"
-            and str(message.get("name") or message.get("tool_name") or "") == "terminal"
+    terminal_results = [
+        message for message in messages
+        if isinstance(message, dict) and message.get("role") == "tool"
+        and str(message.get("name") or message.get("tool_name") or "") == "terminal"
+    ]
+    if test_call_ids:
+        # The newest relevant invocation is authoritative. A failed first run
+        # followed by a passing rerun must not be reported as still failing,
+        # and an older pass must not hide a later failed or missing result.
+        latest_call_id = test_call_ids[-1]
+        matched_results = [
+            message for message in terminal_results
+            if str(message.get("tool_call_id") or "").strip() == latest_call_id
         ]
-        if len(terminal_results) == 1:
-            matched_results = terminal_results
+        if not matched_results:
+            return "unverified"
+        message = matched_results[-1]
+    elif unkeyed_test_calls == 1 and len(terminal_results) == 1:
+        message = terminal_results[0]
+    else:
+        return "unverified"
 
-    for message in matched_results:
-        payload = _workspace_message_payload(message)
-        if not isinstance(payload, dict):
-            continue
-        output = str(payload.get("output") or "")
-        exit_code = payload.get("exit_code")
-        if exit_code != 0:
-            return "failed"
-        if re.search(r"\bFAILED\b|\b(?:\d+\s+)?failed\b|\bFailures:\s*[1-9]\d*", output, re.IGNORECASE):
-            return "failed"
-        passed = (
-            bool(re.search(r"Ran\s+[1-9]\d*\s+tests?", output) and re.search(r"(?:^|\n)OK(?:\s|$)", output))
-            or bool(re.search(r"\b[1-9]\d*\s+passed\b", output, re.IGNORECASE))
-            or bool(re.search(r"test result: ok\.\s+[1-9]\d* passed", output, re.IGNORECASE))
-            or bool(re.search(r"\bTest Suites?:\s*[1-9]\d* passed\b", output, re.IGNORECASE))
-            or bool(re.search(r"^ok\s+[^\s]+(?:\s+[\d.]+s)?\s*$", output, re.MULTILINE))
-            or bool(re.search(r"Passed:\s*[1-9]\d*", output, re.IGNORECASE))
-        )
-        if passed:
-            return "passed"
-    return "unverified"
+    payload = _workspace_message_payload(message)
+    if not isinstance(payload, dict):
+        return "unverified"
+    output = str(payload.get("output") or "")
+    exit_code = payload.get("exit_code")
+    if exit_code != 0:
+        return "failed"
+    if re.search(r"\bFAILED\b|\b(?:\d+\s+)?failed\b|\bFailures:\s*[1-9]\d*", output, re.IGNORECASE):
+        return "failed"
+    passed = (
+        bool(re.search(r"Ran\s+[1-9]\d*\s+tests?", output) and re.search(r"(?:^|\n)OK(?:\s|$)", output))
+        or bool(re.search(r"\b[1-9]\d*\s+passed\b", output, re.IGNORECASE))
+        or bool(re.search(r"test result: ok\.\s+[1-9]\d* passed", output, re.IGNORECASE))
+        or bool(re.search(r"\bTest Suites?:\s*[1-9]\d* passed\b", output, re.IGNORECASE))
+        or bool(re.search(r"^ok\s+[^\s]+(?:\s+[\d.]+s)?\s*$", output, re.MULTILINE))
+        or bool(re.search(r"Passed:\s*[1-9]\d*", output, re.IGNORECASE))
+    )
+    return "passed" if passed else "unverified"
 
 
 def workspace_code_verification_notice(messages: Any) -> str | None:

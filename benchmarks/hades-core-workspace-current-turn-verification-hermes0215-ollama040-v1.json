@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-07",
+  "scenario": "synthetic multi-file coding diagnosis followed by “Fix it” action",
+  "sample_count_per_stack": 1,
+  "source": {
+    "base_commit": "86d7aaaff83b225d0631f98ec3b0aebda0ae3a91",
+    "code_worktree_diff_sha256": "cb8cdbbcbefa994b75e784861e83b56a374f7d226ca77b575e4592d3f1f6c184"
+  },
+  "controls": {
+    "hermes": "0.21.5",
+    "ollama": "0.40.0",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "context_tokens": 65536,
+    "reasoning": "disabled",
+    "docker_engine": "29.8.2 rootless",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "sandbox_network": "disabled",
+    "sampling": "phase-matched seed; one paired sample; shared warm model process"
+  },
+  "results": {
+    "plain": {
+      "task_elapsed_ms": 35733.8,
+      "outer_wall_ms": 38334.2,
+      "model_generations": 10,
+      "tool_results": 20,
+      "phases": {
+        "diagnosis": {
+          "model_generations": 7,
+          "tool_results": 9,
+          "max_tools_exposed": 8,
+          "max_tool_schema_bytes": 12590
+        },
+        "action": {
+          "model_generations": 3,
+          "tool_results": 11,
+          "max_tools_exposed": 8,
+          "max_tool_schema_bytes": 12590
+        }
+      },
+      "independent_test_exit_code": 0,
+      "independent_diff_check_exit_code": 0,
+      "only_expected_source_changed": true
+    },
+    "hades": {
+      "task_elapsed_ms": 48474.1,
+      "outer_wall_ms": 51971.9,
+      "model_generations": 7,
+      "tool_results": 10,
+      "phases": {
+        "diagnosis": {
+          "model_generations": 3,
+          "tool_results": 7,
+          "max_tools_exposed": 2,
+          "max_tool_schema_bytes": 3662
+        },
+        "action": {
+          "model_generations": 4,
+          "tool_results": 3,
+          "max_tools_exposed": 5,
+          "max_tool_schema_bytes": 9575
+        }
+      },
+      "independent_test_exit_code": 0,
+      "independent_diff_check_exit_code": 0,
+      "only_expected_source_changed": true
+    }
+  },
+  "interpretation": {
+    "hades_task_latency_delta_ms": 12740.3,
+    "preference": "not rated; one synthetic sample is insufficient",
+    "qualification": "diagnostic only; does not qualify owner preference, deployed UI continuity, broad coding quality, or Git workflows"
+  },
+  "privacy": "No prompt text, answer text, transcript, file content, tool arguments, local paths, or identity values are included."
+}
