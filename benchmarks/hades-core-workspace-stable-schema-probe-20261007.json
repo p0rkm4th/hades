@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-07",
+  "source_revision": "adb739f5cf495330868599f8e329fd2970a3cfd2",
+  "prototype_state": "local benchmark-only changes layered on source_revision; not production-enabled",
+  "method": {
+    "scenario": "synthetic geometry coding escalation (diagnose, then explicit fix)",
+    "repeats_per_run": 2,
+    "order": "order-balanced within each run",
+    "hermes": "0.21.5 (2026.9.24)",
+    "ollama": "0.40.0",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "context_tokens": 65536,
+    "docker_engine": "29.8.2 rootless",
+    "docker_storage_driver": "vfs",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "network": "none",
+    "same_workspace_context_hint": true,
+    "native_verify_on_stop": true,
+    "host_workspace_verification_mapping": "benchmark-only",
+    "stable_schema_candidate": "HADES advertises the same five workspace schemas in diagnosis and action; valid_tool_names allows only read_file and search_files during diagnosis",
+    "dynamic_baseline": "HADES advertises read/search during diagnosis and all five workspace schemas during action"
+  },
+  "stable_schema_candidate": {
+    "plain": {
+      "median_task_elapsed_ms": 30894.75,
+      "median_model_api_calls_per_task": 7.0,
+      "median_tool_results_per_task": 8.0
+    },
+    "hades": {
+      "median_task_elapsed_ms": 44639.95,
+      "median_model_api_calls_per_task": 11.0,
+      "median_tool_results_per_task": 11.0
+    },
+    "diagnosis_mutating_tool_attempts": 1,
+    "diagnosis_mutating_tool_calls_rejected_by_validation": 1,
+    "diagnosis_workspace_changed_turns": 0,
+    "independent_tests_passed": 4,
+    "diff_checks_passed": 4,
+    "expected_source_only_changes": 4
+  },
+  "dynamic_schema_rerun": {
+    "plain": {
+      "median_task_elapsed_ms": 28847.2,
+      "median_model_api_calls_per_task": 9.0,
+      "median_tool_results_per_task": 10.0
+    },
+    "hades": {
+      "median_task_elapsed_ms": 42359.05,
+      "median_model_api_calls_per_task": 6.0,
+      "median_tool_results_per_task": 6.0
+    },
+    "diagnosis_mutating_tool_attempts": 0,
+    "diagnosis_workspace_changed_turns": 0,
+    "independent_tests_passed": 4,
+    "diff_checks_passed": 4,
+    "expected_source_only_changes": 4
+  },
+  "decision": "Do not adopt stable schemas as a product fix. In this small fixture, HADES remained about 13.5 seconds slower than PLAIN in both runs; the stable-schema candidate used more HADES model calls and was slightly slower than the dynamic-schema HADES rerun.",
+  "limitations": [
+    "Two repeats per arm are diagnostic; local generation variance is substantial.",
+    "Synthetic one-file coding task does not establish broad task quality or owner preference.",
+    "PLAIN behavior varied between the two runs, including model API calls and tool results.",
+    "This direct AIAgent benchmark does not qualify Open WebUI persistence, deployed gateway authentication, Git commit behavior, or larger coding tasks.",
+    "The stable-schema prototype was uncommitted during measurement; the source_revision identifies its base, not the complete experimental tree."
+  ],
+  "privacy": "Metrics only; no prompt/response text, tool arguments, fixture contents, or local paths included."
+}

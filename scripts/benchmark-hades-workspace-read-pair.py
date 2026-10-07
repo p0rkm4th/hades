@@ -1006,6 +1006,10 @@ def main() -> int:
         "--prototype-host-workspace-verification-mapping", action="store_true",
         help="benchmark-only prototype: map container /workspace edit/evidence paths to the current fixture root",
     )
+    parser.add_argument(
+        "--prototype-stable-workspace-schemas", action="store_true",
+        help="benchmark-only HADES experiment: keep all five workspace schemas and the workspace instruction stable across diagnosis/action; retain read-only diagnosis execution allowlist",
+    )
     parser.add_argument("--child", action="store_true")
     parser.add_argument("--stack", choices=("plain", "hades"))
     parser.add_argument("--repeat", type=int, default=0)
@@ -1175,6 +1179,8 @@ def main() -> int:
                                 "HADES_HERMES_EXECUTABLE": str(hermes_executable(args.hermes_root)),
                                 "HADES_HERMES_WORKING_DIRECTORY": str(ROOT),
                                 "HADES_INTEGRATIONS_ROOT": str(ROOT)})
+                    if args.prototype_stable_workspace_schemas:
+                        env["HADES_BENCHMARK_STABLE_WORKSPACE_SCHEMAS"] = "true"
                 else:
                     env["PYTHONPATH"] = str(hermes_source(args.hermes_root))
                 child_env = env.copy()
@@ -1197,6 +1203,8 @@ def main() -> int:
                     command.append("--prototype-force-terminal-after-mutation")
                 if args.prototype_host_workspace_verification_mapping:
                     command.append("--prototype-host-workspace-verification-mapping")
+                if args.prototype_stable_workspace_schemas:
+                    command.append("--prototype-stable-workspace-schemas")
                 if stack == "hades":
                     command.append("--overlay")
                 started = time.perf_counter()

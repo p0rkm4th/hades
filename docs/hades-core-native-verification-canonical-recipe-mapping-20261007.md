@@ -69,13 +69,22 @@ owner preference.
 
 Keep native verify-on-stop out of production until the smallest supported
 workspace mapping is proven in the deployed path. Keep the diagnosis mutation
-gate. Investigate HADES prompt/request construction and cache non-reuse before
-isolating the diagnosis-to-action schema transition. Re-run the stable-schema
-candidate on the current canonical-recipe fixture with a matched PLAIN arm,
-and capture the first-use as well as follow-up cache counts. Preserve the
-read-only `valid_tool_names` gate and reject the candidate if diagnosis
-mutation attempts or completion quality regress. HADES was about 22.5 seconds
-slower overall in the dynamic-schema pair and exceeded the 30-second
-composed-task target, despite correct final tests and authority boundaries.
-The small synthetic samples are diagnostic, not a general performance or
-quality qualification.
+gate. A matched two-repeat stable-schema experiment on the same geometry
+escalation fixture kept all five workspace schemas present in both HADES
+phases, while `valid_tool_names` continued to allow only read/search during
+diagnosis. The diagnosis mutation attempt in that arm was rejected and neither
+diagnosis workspace changed. HADES median task time was 44.64 seconds, with 11
+model API calls and 11 tool results; its matched PLAIN arm was 30.89 seconds,
+with 7 calls and 8 tool results. The dynamic-schema rerun measured HADES at
+42.36 seconds, 6 calls, and 6 tool results versus PLAIN at 28.85 seconds, 9
+calls, and 10 tool results. Every action passed independent tests and diff
+checks. The schema-stability candidate therefore did not improve HADES latency
+or calls in this fixture and remains rejected as a product fix. The persistent
+roughly 13.5-second gap points to other HADES workspace-path costs; these small
+samples do not isolate their causes or qualify owner preference. Details are
+in [`hades-core-workspace-stable-schema-probe-20261007.json`](../benchmarks/hades-core-workspace-stable-schema-probe-20261007.json).
+
+The earlier canonical-recipe dynamic-schema pair measured HADES about 22.5
+seconds slower overall than PLAIN and exceeded the 30-second composed-task
+target, despite correct final tests and authority boundaries. Both benchmark
+runs are diagnostic, not general performance or quality qualifications.
