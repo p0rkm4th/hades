@@ -308,10 +308,16 @@ jobs:
           if [[ "$base" =~ ^0+$ ]]; then
             base="$(git merge-base origin/main "$head" 2>/dev/null || true)"
           fi
-          if [[ -n "$base" ]] && git cat-file -e "$base^{commit}" 2>/dev/null; then
+          if [[ -n "$base" ]] && git cat-file -e "$base^{commit}" 2>/dev/null &&
+            git merge-base --is-ancestor "$base" "$head"; then
             bash scripts/public-history-audit.sh "$base..$head"
           else
-            bash scripts/public-history-audit.sh "$head"
+            fallback_base="$(git merge-base origin/main "$head" 2>/dev/null || true)"
+            if [[ -n "$fallback_base" ]]; then
+              bash scripts/public-history-audit.sh "$fallback_base..$head"
+            else
+              bash scripts/public-history-audit.sh "$head"
+            fi
           fi
 
       - name: Validate shell scripts
