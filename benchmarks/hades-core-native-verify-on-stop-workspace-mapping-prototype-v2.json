@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-07",
+  "campaign_head_before_run": "f854347ec3e78e27c627289ea8903ea30908fc94",
+  "result": "MAPPING_PROTOTYPE_PARTIAL_DIAGNOSTIC_ONLY",
+  "excluded_from_preference_and_completion_rates": true,
+  "method": {
+    "hermes": "0.21.5 (2026.9.24)",
+    "hermes_latest_stable_source": "https://github.com/NousResearch/hermes-agent/releases/tag/v2026.9.24",
+    "verify_on_stop": "HERMES_VERIFY_ON_STOP=1 in both arms",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.40.0",
+    "context_tokens": 65536,
+    "docker_engine": "29.8.2 rootless; VFS",
+    "sandbox_image_digest": "sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "sandbox_image_id": "sha256:d14ae8d7fcee933e82c9f62eded621110f227bc96363ca5449d36897af7bea1c",
+    "task_container_network": "none",
+    "action_scenario": "synthetic diagnosis then coding action",
+    "action_repeats": 2,
+    "action_order": ["plain", "hades", "hades", "plain"],
+    "read_control_repeats": 1,
+    "read_control_order": ["plain", "hades"],
+    "prototype": "Map container /workspace mutation paths to the active synthetic host workspace; map terminal evidence cwd the same way; preserve Hermes session ID; reject traversal or paths escaping the root.",
+    "raw_prompts_responses_tool_arguments_and_file_contents_published": false
+  },
+  "action_summary": {
+    "tasks_total": 4,
+    "plain_median_task_elapsed_ms": 99506.95,
+    "hades_median_task_elapsed_ms": 69871.4,
+    "plain_median_model_api_calls_per_task": 29.5,
+    "hades_median_model_api_calls_per_task": 19.0,
+    "plain_median_tool_results_per_task": 48.0,
+    "hades_median_tool_results_per_task": 18.5,
+    "native_stop_nudges_by_trial": {
+      "plain_repeat_0": 2,
+      "hades_repeat_0": 2,
+      "hades_repeat_1": 0,
+      "plain_repeat_1": 0
+    },
+    "tasks_with_independent_tests_passing": 3,
+    "tasks_with_expected_source_only_changes": 3,
+    "diagnosis_mutating_tool_attempts": 9,
+    "diagnosis_mutating_tool_attempts_rejected_in_hades": 1,
+    "diagnosis_changed_workspace_turns": {
+      "plain": 2,
+      "hades": 0
+    },
+    "tasks_with_recognized_native_passed_evidence": 1
+  },
+  "read_control": {
+    "tasks_total": 2,
+    "plain_correct_final_answers": 1,
+    "hades_correct_final_answers": 1,
+    "plain_native_stop_nudges": 0,
+    "hades_native_stop_nudges": 0,
+    "mutated_code_paths": 0
+  },
+  "focused_synthetic_contract_probe": {
+    "canonical_host_root_recognized": true,
+    "missing_or_stale_evidence_nudged": true,
+    "fresh_passing_evidence_cleared_nudge": true,
+    "session_isolation_preserved": true,
+    "workspace_path_traversal_rejected": true,
+    "no_edit_turn_did_not_nudge": true,
+    "note": "Ephemeral probe of the benchmark-only mapping helper and Hermes verification ledger; not a production adapter integration test."
+  },
+  "limitations": [
+    "Four model-backed action tasks are too few and too variable for causal latency or owner-preference claims.",
+    "The compact synthetic project has no explicit canonical test recipe; model-selected tests were often not accepted as native ledger evidence.",
+    "One HADES action task did not modify code and the seeded failing test remained failing; that is an incomplete task, not verification success.",
+    "The benchmark-only path mapping is not wired into production HADES or upstream Hermes.",
+    "The no-edit read control has one paired repeat and does not qualify all unaffected turn types."
+  ]
+}

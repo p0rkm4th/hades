@@ -525,6 +525,76 @@ def install_required_terminal_experiment(agent: Any) -> tuple[dict[str, Any], An
     return state, original_execute
 
 
+def install_host_workspace_verification_mapping(
+    agent: Any, workspace: pathlib.Path,
+) -> tuple[dict[str, Any], Any, Any]:
+    """Prototype mapping Hermes Docker paths to this isolated host project.
+
+    This is benchmark-only. Production support would need to obtain the current
+    task's validated mounted host root at the upstream finalizer boundary.
+    """
+    from tools import terminal_tool_result
+
+    root = workspace.resolve(strict=True)
+    state = {
+        "active": True,
+        "mapped_mutation_path_count": 0,
+        "mapped_terminal_evidence_cwd_count": 0,
+    }
+
+    def map_workspace_path(raw: Any) -> str | None:
+        if not isinstance(raw, (str, pathlib.Path)):
+            return None
+        try:
+            path = pathlib.PurePosixPath(str(raw))
+            prefix = ("/", "workspace")
+            if path.parts[:2] != prefix:
+                return None
+            relative = pathlib.Path(*path.parts[2:])
+            if ".." in relative.parts:
+                return None
+            candidate = (root / relative).resolve(strict=False)
+            if not candidate.is_relative_to(root):
+                return None
+            return str(candidate)
+        except (OSError, RuntimeError, ValueError):
+            return None
+
+    original_record_mutation = agent._record_file_mutation_result
+
+    def record_mutation_with_host_paths(
+        tool_name: str, args: dict[str, Any], result: Any, is_error: bool,
+        *, task_id: str | None = None,
+    ) -> None:
+        original_record_mutation(tool_name, args, result, is_error, task_id=task_id)
+        changed_paths = getattr(agent, "_turn_file_mutation_paths", None)
+        if not isinstance(changed_paths, set):
+            return
+        replacements = {
+            raw: mapped for raw in tuple(changed_paths)
+            if (mapped := map_workspace_path(raw)) is not None
+        }
+        if replacements:
+            changed_paths.difference_update(replacements)
+            changed_paths.update(replacements.values())
+            state["mapped_mutation_path_count"] += len(replacements)
+
+    original_verification_evidence = terminal_tool_result._verification_evidence
+
+    def record_evidence_with_host_cwd(
+        command: Any, cwd: Any, session_id: Any, returncode: Any, output: Any,
+    ) -> Any:
+        mapped = map_workspace_path(cwd)
+        if mapped is not None and pathlib.Path(mapped).is_relative_to(root):
+            state["mapped_terminal_evidence_cwd_count"] += 1
+            cwd = mapped
+        return original_verification_evidence(command, cwd, session_id, returncode, output)
+
+    agent._record_file_mutation_result = record_mutation_with_host_paths
+    terminal_tool_result._verification_evidence = record_evidence_with_host_cwd
+    return state, original_record_mutation, original_verification_evidence
+
+
 def child(args: argparse.Namespace) -> int:
     fixture_case = FIXTURE_CASES[args.fixture_case]
     fixture_names = (fixture_case["source"], fixture_case["test"])
@@ -639,8 +709,20 @@ def child(args: argparse.Namespace) -> int:
     original_tool_executor = None
     if args.prototype_force_terminal_after_mutation and args.stack == "hades":
         tool_choice_experiment, original_tool_executor = install_required_terminal_experiment(agent)
+    workspace_mapping_experiment = None
+    original_mutation_recorder = None
+    original_verification_evidence = None
     started = time.perf_counter()
     try:
+        if args.prototype_host_workspace_verification_mapping:
+            from agent.verification_stop import verify_on_stop_enabled
+            if not verify_on_stop_enabled():
+                raise RuntimeError("host workspace mapping prototype requires native verify-on-stop")
+            (
+                workspace_mapping_experiment,
+                original_mutation_recorder,
+                original_verification_evidence,
+            ) = install_host_workspace_verification_mapping(agent, args.workspace)
         prompts = [PROMPT] if args.scenario == "read" else [DIAGNOSE_PROMPT, FIX_PROMPT]
         history: list[dict[str, Any]] = []
         turns = []
@@ -852,6 +934,13 @@ def child(args: argparse.Namespace) -> int:
             "native_verification_stop_nudges": int(
                 getattr(agent, "_verification_stop_nudges", 0) or 0
             ),
+            "native_verification_terminal_evidence_statuses": [
+                result.get("verification_evidence_status")
+                for turn in turns
+                for result in turn.get("sanitized_tool_results", [])
+                if result.get("verification_evidence_status") is not None
+            ],
+            "host_workspace_mapping_experiment": workspace_mapping_experiment,
             "native_verification_snapshot": None,
         }
         try:
@@ -899,6 +988,7 @@ def child(args: argparse.Namespace) -> int:
                 "runtime_cwd_project_facts_recognized": bool(runtime_facts),
                 "host_workspace_project_facts_recognized": bool(host_workspace_facts),
                 "host_workspace_evidence_status": host_workspace_status.get("status"),
+                "mapping_experiment_active": bool(workspace_mapping_experiment),
             }
         except Exception as exc:
             summary["native_verification_snapshot"] = {
@@ -909,6 +999,11 @@ def child(args: argparse.Namespace) -> int:
     finally:
         if original_tool_executor is not None:
             agent._execute_tool_calls = original_tool_executor
+        if original_mutation_recorder is not None:
+            agent._record_file_mutation_result = original_mutation_recorder
+        if original_verification_evidence is not None:
+            from tools import terminal_tool_result
+            terminal_tool_result._verification_evidence = original_verification_evidence
         if tool_choice_experiment is not None and tool_choice_experiment.get("pending"):
             saved = tool_choice_experiment.get("saved_request_overrides")
             if isinstance(saved, dict):
@@ -936,6 +1031,10 @@ def main() -> int:
     parser.add_argument(
         "--prototype-force-terminal-after-mutation", action="store_true",
         help="benchmark-only HADES experiment: use Hermes tool_choice to require one terminal call after a successful workspace code mutation",
+    )
+    parser.add_argument(
+        "--prototype-host-workspace-verification-mapping", action="store_true",
+        help="benchmark-only prototype: map container /workspace edit/evidence paths to the current fixture root",
     )
     parser.add_argument("--child", action="store_true")
     parser.add_argument("--stack", choices=("plain", "hades"))
@@ -1123,6 +1222,8 @@ def main() -> int:
                           "--provider-url", f"http://127.0.0.1:{proxy_port}/v1"]
                 if args.prototype_force_terminal_after_mutation:
                     command.append("--prototype-force-terminal-after-mutation")
+                if args.prototype_host_workspace_verification_mapping:
+                    command.append("--prototype-host-workspace-verification-mapping")
                 if stack == "hades":
                     command.append("--overlay")
                 started = time.perf_counter()
@@ -1273,6 +1374,10 @@ def main() -> int:
                 "workspace_verification_experiment": (
                     "after a successful workspace code mutation in an action turn, set Hermes request_overrides.tool_choice to the named native terminal tool for one follow-up tool round; restore prior overrides after that round"
                     if args.prototype_force_terminal_after_mutation else None
+                ),
+                "host_workspace_verification_mapping_experiment": (
+                    "benchmark-only mapping of container /workspace mutation paths and terminal evidence cwd to the current fixture's canonical host project root"
+                    if args.prototype_host_workspace_verification_mapping else None
                 ),
                 "workspace_context_hint": WORKSPACE_ENVIRONMENT_HINT if args.workspace_context_hint else None,
                 "prompts": [PROMPT] if args.scenario == "read" else [DIAGNOSE_PROMPT, FIX_PROMPT],
