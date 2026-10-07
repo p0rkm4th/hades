@@ -29,6 +29,8 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
+from benchmark_child_environment import benchmark_child_environment
+
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DEFAULT_HERMES = pathlib.Path(
@@ -602,7 +604,7 @@ def main() -> int:
                 plugins.mkdir()
                 (plugins / "hindsight").symlink_to(args.hindsight_plugin.resolve(), target_is_directory=True)
 
-            env = os.environ.copy()
+            env = benchmark_child_environment()
             env.update(
                 {
                     "HOME": str(home),

@@ -30,6 +30,8 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
+from benchmark_child_environment import benchmark_child_environment
+
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DEFAULT_HERMES = pathlib.Path(
@@ -1164,7 +1166,7 @@ def main() -> int:
                 config_path.write_text(yaml.safe_dump(config, sort_keys=False))
                 os.chmod(config_path, 0o600)
                 api_port = unused_port()
-                env = os.environ.copy()
+                env = benchmark_child_environment()
                 env.update({"HOME": str(home), "HERMES_HOME": str(home),
                             "HERMES_DOCKER_BINARY": docker_bin,
                             "HADES_HERMES_SANDBOX_IMAGE": args.sandbox_image,

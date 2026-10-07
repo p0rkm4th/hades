@@ -172,6 +172,16 @@ assert recipe_requests == [
 ], recipe_requests
 print("PASS an available canonical recipe read completes before the no-source fallback")
 
+with patch("urllib.request.urlopen", side_effect=OSError("synthetic source offline")):
+    expiry_result = agent.run_conversation("Help me check the pantry expiry list.")
+assert expiry_result.get("completed") is True, expiry_result
+assert expiry_result.get("api_calls") == 0, expiry_result
+assert expiry_result.get("final_response") == (
+    "I can't check the pantry's expiry dates right now because the pantry data "
+    "isn't available. I haven't changed anything."
+), expiry_result
+print("PASS an unavailable expiry source returns a task-specific limitation without a model guess")
+
 hades._hades_direct_household_grocy_read = synthetic_read
 
 from agent.memory_manager import memory_provider_tools_exposed

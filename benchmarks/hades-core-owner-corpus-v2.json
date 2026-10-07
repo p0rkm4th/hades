@@ -920,10 +920,18 @@
       }
     },
     "latest_core4_ordinary_chat_comparison": {
-      "source_revision": "a03d678cbda596d628e6bd103add29c025f5afc1",
-      "classification": "synthetic core-4 subset, two repeats, twelve turns per stack; no owner preference or quality scoring",
-      "result": "At Hermes 0.21.5, Ollama 0.40.0, qwen3.6:35b Q4_K_M and verified 65,536 loaded context, all 24 turns completed with content and exactly one provider generation each. Neither stack emitted tool calls or tool schemas. PLAIN median TTFT/total 1.176/1.821s; HADES 1.201/2.076s. Median prompt tokens were 719.5/718.5 and the system prompt was 11 bytes smaller in HADES. This small paired subset shows no meaningful context/tool catalog tax; its approximately 0.25s total-latency difference needs further repeats and is not an owner preference verdict.",
-      "limitations": "Two repeats across four chat cases; synthetic owner-pattern prompts; no human naturalness review; does not measure memory, tools, workspace actions, Open WebUI, or production model/runtime parity."
+      "source_revision": "58c2ee18a3dfa6b103b7f581f68ad543eb3f92cb",
+      "classification": "five balanced synthetic repeats across core-01–core-04; 30 turns per stack; no response quality or owner-preference scoring",
+      "result": "At Hermes 0.21.5, Ollama 0.40.0, qwen3.6:35b Q4_K_M, and verified 65,536 loaded context, all 60 turns returned content. Each stack made 30 provider generations, emitted zero tool calls, and sent zero tool schemas. PLAIN median TTFT/total 1.157/1.745s; HADES 1.194/1.551s. Paired median HADES-minus-PLAIN deltas were +37 ms TTFT and -48 ms total. Median prompt tokens were 727.5/722.5. This sample shows a thin ordinary chat path and no material HADES overhead; it does not measure answer quality or preference.",
+      "limitations": "Five repeats across four synthetic chat cases; no human naturalness review or owner preference. Does not measure memory, domain tools, workspace actions, Open WebUI, or production deployment parity.",
+      "metrics_record": "benchmarks/hades-core-ordinary-core4-five-repeat-20261007.json"
+    },
+    "latest_followup_set_comparison": {
+      "source_revision": "58c2ee18a3dfa6b103b7f581f68ad543eb3f92cb",
+      "classification": "three balanced synthetic repeats over eight owner-pattern cases; 48 turns per stack; no owner-preference labels",
+      "result": "All 96 turns returned content, with zero tool schemas and zero model tool calls. PLAIN made 48 provider generations; HADES made 45 because its three core-08 pantry-expiry requests returned through the explicit canonical-source-unavailable fast path. Excluding all of core-08 to avoid comparing different follow-up histories leaves 42 model turns per stack: median TTFT/total was 1.015/1.626s PLAIN and 1.082/1.568s HADES; paired median deltas were -37 ms TTFT and -13 ms total. The missing-source path returned content at a 40 ms median and its task-specific response is covered by the Grocy runtime contract test.",
+      "limitations": "Synthetic conversation prompts; no quality or naturalness scoring. The fixture intentionally has no household source or domain tools. No owner preference or production/Open WebUI parity. The 55-case corpus still has 36 IDs without direct replay and zero preference labels.",
+      "metrics_record": "benchmarks/hades-core-conversation-v1-three-repeat-20261007.json"
     }
   }
 }

@@ -388,3 +388,46 @@ Historical snapshot: official release pages were re-queried on 2026-10-06. At th
 - The HADES-first fresh-volume artifact is now available at [`hades-core-memory-v6-hades-first-rerun-v1.json`](../benchmarks/hades-core-memory-v6-hades-first-rerun-v1.json). It showed a 2.25s HADES greeting vs 8.08s PLAIN in this single order, but HADES automatic recall missed after 44.8s. Across the one-sample/order artifacts, memory latency and correctness vary substantially; preference remains unassigned.
 - Both orders exposed a P1 domain-routing defect: the synthetic lactose-intolerance coffee-order turn caused the direct-finance shortcut to return an owner CSV dining summary without a model generation. The shortcut previously treated the category word “coffee” as sufficient finance intent. Category-only triggers are removed; coffee recommendations do not activate finance, while explicit coffee-spending questions still route through spending intent. The source-window regression covers both paths. The finance answer text was redacted from both benchmark artifacts, and the paired runner now redacts this class of unrelated owner-finance response before persistence.
 - Focused finance source-window, paired runner/drain-barrier, memory-intent, explicit-memory, and public-research tests pass. No deployment occurred. **Next:** run relevant full regression/CI, review the sanitized diff, and converge the fix; continue investigating memory long-tail latency and owner dogfood. This diagnostic replay does not qualify usability or owner preference.
+
+## Isolated ordinary-chat and follow-up replay (2026-10-07)
+
+- Rechecked the official stable pages during this pass: Open WebUI 0.11.4,
+  Hermes 0.21.5, Ollama 0.40.0, and Hindsight 0.10.2 remain the current
+  stable releases. Production pins and deployment provenance remain
+  unqualified; no production versions changed.
+- Extended the synthetic `core-01`–`core-04` chat subset to five balanced
+  repeats on persistent Hermes 0.21.5 gateways. Each stack returned content
+  on all 30 turns, made one provider generation per turn, exposed zero tool
+  schemas, and emitted no tool calls. PLAIN median TTFT/total was 1.157/1.745s;
+  HADES was 1.194/1.551s. Paired median HADES-minus-PLAIN deltas were +37ms
+  TTFT and -48ms total. The small difference is not a user-preference or
+  answer-quality result. See
+  [`hades-core-ordinary-core4-five-repeat-20261007.json`](../benchmarks/hades-core-ordinary-core4-five-repeat-20261007.json).
+- Replayed eight owner-pattern conversation cases, including multi-turn
+  follow-ups and topic changes, three times each. Both profiles returned
+  content on all 48 turns and exposed no schemas or tool calls. HADES made 45
+  model generations because its three `core-08` pantry-expiry turns used the
+  missing-source response path. The real Hermes runtime contract now asserts
+  that an unavailable expiry source returns the task-specific limitation
+  without a model guess. Excluding the entire `core-08` conversation to avoid
+  comparing different follow-up histories, 42 model turns per stack had
+  paired median TTFT/total deltas of -37/-13ms for HADES. This is effectively
+  equivalent timing evidence for this small synthetic subset; quality,
+  naturalness, and owner preference were not collected. See
+  [`hades-core-conversation-v1-three-repeat-20261007.json`](../benchmarks/hades-core-conversation-v1-three-repeat-20261007.json).
+- Review found the paired benchmark gateways inherited the entire parent
+  process environment. No Grocy or HADES credential variables were present in
+  the measured parent process, but the inherited-environment design could
+  expose credentials or live service configuration if reused elsewhere. Both
+  ordinary and workspace benchmark runners now pass only basic locale/temp
+  settings plus loopback no-proxy values, then add their explicit synthetic
+  profile settings. A regression test checks that service credentials, proxy
+  variables, `PYTHONPATH`, and loader injection variables do not cross into
+  child gateways. This improves benchmark privacy and reproducibility; it does
+  not change production behavior.
+- The 55-case corpus remains partial: 36 case IDs have no direct replay and no
+  owner preference labels exist. These results do not qualify Open WebUI, live
+  memory quality, domain actions, coding/workspace completion, or production
+  parity. Next: continue matched task-backed corpus replay, investigate the
+  workspace-action latency gap, and collect direct owner dogfood before any
+  usability qualification.
