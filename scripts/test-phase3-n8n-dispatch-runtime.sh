@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 
-image=${HADES_N8N_IMAGE:-docker.n8n.io/n8nio/n8n@sha256:9f693fd5565539efd5e75ad168526c8041a6af516d9e50bc4d9cb1c9c5031523}
+image=${HADES_N8N_IMAGE:-docker.n8n.io/n8nio/n8n@sha256:9c0862a08090c79122069e23131d27529c250b92e90c9d51a6ec406fe1527c4e}
 [[ "$image" =~ ^[^[:space:]=]+@sha256:[0-9a-f]{64}$ ]] || {
   echo 'FAIL HADES_N8N_IMAGE must be an immutable image digest' >&2
   exit 2

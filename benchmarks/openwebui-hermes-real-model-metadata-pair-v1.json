@@ -1,0 +1,143 @@
+{
+  "date": "2026-10-06",
+  "source_revision": "00e6efd7efcfe64d52ed7678d6cd705f069cdacb",
+  "purpose": "Compare authenticated Open WebUI metadata tasks enabled and disabled through staged Hermes with one real local-model browser prompt.",
+  "environment": {
+    "open_webui": "0.11.4 candidate image sha256:5135da5a53c99cbfd25e1d6f94ddad3da50b1f00f7527c251b35baa514ec81b3",
+    "hermes": "0.21.5 source f97608f178d1ffeca59860195ab7da295f7c8e5f; HADES overlay disabled",
+    "ollama": "0.35.1, loopback 127.0.0.1:11445, OLLAMA_NO_CLOUD=1",
+    "model": "Qwen3.6 35B Q4_K_M, local manifest digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "hardware": "NVIDIA RTX 3080 Ti Laptop GPU, 16 GiB",
+    "effective_context": 65536,
+    "hermes_title_upgrade": false,
+    "tools": "none exposed; zero tool schemas",
+    "browser": "Playwright Chromium, disposable synthetic owner; candidate UI and data only"
+  },
+  "runner": {
+    "python": "scripts/benchmark-openwebui-hermes-browser.py",
+    "python_sha256": "a3e48ecfdda239dd5800910fd1e7ea94a9a64214dc04fc0d8cb43e56038c0ea1",
+    "browser": "scripts/benchmark-openwebui-hermes-local-browser.js",
+    "browser_sha256": "ce96aaf723395890da54103c88c4c495d8d1602845e795c88521464d5998dce5"
+  },
+  "samples": [
+    {
+      "metadata_tasks": "off",
+      "order": "first / coldish model load",
+      "answer_visible_ms": 13023,
+      "visible_after_reload": true,
+      "title_after_reload": "What is 18% of 250? Reply with just the number.",
+      "provider_posts": [
+        {
+          "class": "empty setup",
+          "status": 400,
+          "duration_ms": 1,
+          "generation": false
+        },
+        {
+          "class": "chat stream",
+          "status": 200,
+          "duration_ms": 12113,
+          "request_bytes": 3102,
+          "tool_schema_count": 0,
+          "generation": true
+        }
+      ],
+      "model_generations": 1
+    },
+    {
+      "metadata_tasks": "on",
+      "order": "warm",
+      "answer_visible_ms": 4911,
+      "visible_after_reload": true,
+      "title_before_and_after_reload": "Percentage Calculation",
+      "provider_posts": [
+        {
+          "class": "empty setup",
+          "status": 400,
+          "duration_ms": 1,
+          "generation": false
+        },
+        {
+          "class": "empty setup",
+          "status": 400,
+          "duration_ms": 1,
+          "generation": false
+        },
+        {
+          "class": "empty setup",
+          "status": 400,
+          "duration_ms": 1,
+          "generation": false
+        },
+        {
+          "class": "chat stream",
+          "status": 200,
+          "duration_ms": 4001,
+          "request_bytes": 3102,
+          "tool_schema_count": 0,
+          "generation": true
+        },
+        {
+          "class": "title stream",
+          "status": 200,
+          "duration_ms": 18143,
+          "request_bytes": 4174,
+          "generation": true
+        },
+        {
+          "class": "follow-up stream",
+          "status": 200,
+          "duration_ms": 40574,
+          "request_bytes": 4107,
+          "generation": true
+        }
+      ],
+      "model_generations": 3,
+      "tag_generation_observed": false,
+      "task_stop_request_observed": true,
+      "task_stop_status_and_effect": "not captured; no cancellation claim",
+      "follow_up_visible_in_ui": "not measured"
+    },
+    {
+      "metadata_tasks": "off",
+      "order": "warm repeat after ON",
+      "answer_visible_ms": 4929,
+      "visible_after_reload": true,
+      "title_before_and_after_reload": "What is 18% of 250? Reply with just the number.",
+      "provider_posts": [
+        {
+          "class": "empty setup",
+          "status": 400,
+          "duration_ms": 1,
+          "generation": false
+        },
+        {
+          "class": "chat stream",
+          "status": 200,
+          "duration_ms": 4213,
+          "request_bytes": 3102,
+          "tool_schema_count": 0,
+          "generation": true
+        }
+      ],
+      "model_generations": 1,
+      "task_stop_request_observed": false
+    }
+  ],
+  "interpretation": {
+    "warm_answer_visible_ms_on_minus_off": -18,
+    "finding": "The useful shorter title persisted in the enabled run. Warm answer visibility and main chat-stream durations were similar in this one prompt. Enabling metadata produced two additional observed generations (title and follow-up); their individual durations are not aggregate task-tail time and overlap/next-turn impact was not measured.",
+    "classification": "insufficient evidence to prefer either configuration; owner preference not collected",
+    "limitations": [
+      "one simple arithmetic prompt and one sample per condition",
+      "no PLAIN STACK comparison",
+      "not a TTFT measurement",
+      "follow-up quality/visibility and effect on a subsequent user turn unmeasured",
+      "no Scotty dogfood",
+      "REST chat summarizer omitted the assistant while browser reload rendered it; only visible reload persistence is claimed",
+      "task-stop request appeared only in the ON run; response status and causal effect were not captured",
+      "staged local model/runtime and candidate UI do not establish production behavior"
+    ]
+  },
+  "cleanup": "Ollama stopped; loopback port 11445 closed; disposable browser containers/networks removed; no production settings changed."
+}

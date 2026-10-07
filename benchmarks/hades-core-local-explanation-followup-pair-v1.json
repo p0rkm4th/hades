@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "title": "HADES vs PLAIN STACK ordinary explanation and follow-up probe",
+  "date": "2026-10-06",
+  "status": "exploratory matched direct-agent probe; no owner preference",
+  "conditions": {
+    "hermes": "0.21.5, source commit f97608f178d1ffeca59860195ab7da295f7c8e5f, same candidate venv",
+    "ollama": "0.35.1 staged official archive SHA-256 9fcd79ac4575b2bd31b992eee18b1000c8ad126b451627c8f8cd091714cfbb10 at loopback port 11445",
+    "model": "qwen3.6:35b Q4_K_M, digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "hardware": "same local RTX 3080 Ti laptop; staged inference host, model stayed loaded during sample",
+    "runtime_context": "Ollama server log reported n_ctx_slot=4096; both stacks used same staged runtime/model/context behavior",
+    "reasoning": "reasoning_config={\"enabled\":false}; direct Hermes agent constructor, max_tokens=512",
+    "tools": "Hermes AIAgent enabled_toolsets=[] on both stacks; 0 tools exposed/called",
+    "measurement": "one AIAgent run per process/turn; streaming callback first nonempty delta for TTFT; timer excludes Python/Hermes import and AIAgent construction, includes run_conversation and HADES routing. One model API call per request. Conversation history preserved independently for each stack.",
+    "case_order": "Paired case order alternated PLAIN/HADES then HADES/PLAIN across five owner-corpus prompts. Exclude first conversation turn per stack from warm medians: the first PLAIN prompt was repeated by the corrected harness after an earlier harness-print error, so its model prefix was warmer than the first HADES prompt. Subsequent turns are order-balanced but prefix cache and model batching cannot be fully controlled."
+  },
+  "cases": [
+    {
+      "id": "core-03a"
+    },
+    {
+      "id": "core-03b"
+    },
+    {
+      "id": "core-04a"
+    },
+    {
+      "id": "core-04b"
+    },
+    {
+      "id": "core-02"
+    }
+  ],
+  "plain_stack": {
+    "turns": 5,
+    "api_calls_per_turn": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "tools_exposed_per_turn": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "warm_turns_excluding_first": 4,
+    "warm_median_ttft_ms": 880.5,
+    "warm_median_wall_ms": 2336.55,
+    "records": [
+      {
+        "ttft_ms": 322.4,
+        "wall_ms": 3143.9,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-03a"
+      },
+      {
+        "ttft_ms": 955.9,
+        "wall_ms": 2333.8,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-03b"
+      },
+      {
+        "ttft_ms": 789.5,
+        "wall_ms": 2339.3,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-04a"
+      },
+      {
+        "ttft_ms": 871.2,
+        "wall_ms": 2536.0,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-04b"
+      },
+      {
+        "ttft_ms": 889.8,
+        "wall_ms": 936.9,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-02"
+      }
+    ]
+  },
+  "hades": {
+    "turns": 5,
+    "api_calls_per_turn": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "tools_exposed_per_turn": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "warm_turns_excluding_first": 4,
+    "warm_median_ttft_ms": 1403.3000000000002,
+    "warm_median_wall_ms": 2544.1499999999996,
+    "records": [
+      {
+        "ttft_ms": 2279.5,
+        "wall_ms": 3334.8,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-03a"
+      },
+      {
+        "ttft_ms": 1303.5,
+        "wall_ms": 2484.2,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-03b"
+      },
+      {
+        "ttft_ms": 1486.2,
+        "wall_ms": 2664.2,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-04a"
+      },
+      {
+        "ttft_ms": 1320.4,
+        "wall_ms": 2604.1,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-04b"
+      },
+      {
+        "ttft_ms": 1524.8,
+        "wall_ms": 1569.3,
+        "api_calls": 1,
+        "tools": 0,
+        "case": "core-02"
+      }
+    ]
+  },
+  "interpretation": {
+    "plain_warm_median_ttft_ms": 880.5,
+    "hades_warm_median_ttft_ms": 1403.3,
+    "plain_warm_median_wall_ms": 2336.6,
+    "hades_warm_median_wall_ms": 2544.2,
+    "observation": "In this small no-tool direct-agent probe, HADES had about 523 ms higher warm median TTFT and 208 ms higher warm median total time. All requests used one model generation and no tools. Replies were generally correct and context-aware for “Why?” and “Examples?” on both sides. This points to a remaining HADES prefill/routing cost even with no domain tools, but does not establish owner preference or production latency.",
+    "product_preference": "not collected from Scotty"
+  },
+  "limitations": [
+    "Five synthetic prompts only; no natural owner dogfood or blind preference scoring.",
+    "Direct AIAgent calls omit Open WebUI, live API gateway, MCP/domain services, Hindsight recall, owner data and deployed process startup.",
+    "The model/runtime/hardware are staged and differ from production; production model digest is not matched.",
+    "The initial PLAIN generator question was repeated before this run after a harness error; exclude each stack’s first conversation turn from warm medians.",
+    "No exposed tools means this measures ordinary explanation/follow-up quality and middleware overhead, not the 19-tool default plain catalog or action capability.",
+    "A 512 max-token cap was supplied equally; no truncation warning occurred in this controlled rerun."
+  ]
+}

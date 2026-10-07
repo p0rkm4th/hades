@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-06",
+  "measurement_head": "ee473e78780c70ad4e6738610c6da588f63477a5",
+  "scenario": "HADES-only repeat checking test-claim evidence in workspace action turn",
+  "method": {
+    "hermes": "0.21.5 clean source both arms; HADES additionally loads overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "runtime": "Docker 29.8.2 rootless via RootlessKit 3.2.0",
+    "image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "image_provenance": "source image Config and RootFS compared with disposable rootless image before run",
+    "context": "65536 requested; effective loaded context not recorded",
+    "measurement": "total direct AIAgent wall time; not frontend TTFT or streamed progress",
+    "owner_preference": "not measured"
+  },
+  "stacks": [
+    {
+      "stack": "hades",
+      "elapsed_ms": 66277.3,
+      "provider_generations": 18,
+      "diagnosis_tool_schema_count": 2,
+      "diagnosis_tool_schema_bytes": 3433,
+      "action_tool_schema_count": 5,
+      "action_tool_schema_bytes": 9346,
+      "workspace_task_containers": 3,
+      "workspace_task_containers_rootless_network_none_at_workspace": true,
+      "diagnosis": {
+        "provider_generations": 8,
+        "schema_count": 2,
+        "schema_bytes": 3433,
+        "out_of_catalog_tool_attempts": 1,
+        "test_commands": 0,
+        "terminal_results": []
+      },
+      "action": {
+        "provider_generations": 10,
+        "schema_count": 5,
+        "schema_bytes": 9346,
+        "out_of_catalog_tool_attempts": 0,
+        "test_commands": 1,
+        "terminal_results": [
+          {
+            "exit_code": 0
+          },
+          {
+            "exit_code": 0
+          },
+          {
+            "exit_code": 0
+          },
+          {
+            "exit_code": 0
+          }
+        ]
+      },
+      "independent_test_exit_code": 0,
+      "diff_check_exit_code": 0,
+      "changed_paths": [
+        "geometry.py"
+      ]
+    }
+  ],
+  "limitations": [
+    "single HADES sample; no PLAIN comparison in this repeat",
+    "no owner preference; synthetic direct-agent test",
+    "the action used 18 provider generations and exceeded the <30s composed-task target",
+    "this repeat predates the action-specific “discover/read relevant files once” instruction now in the working tree",
+    "full messages and workspace contents are not retained"
+  ],
+  "source_hash_note": "These hashes identify current candidate files at artifact assembly, not exact historical run snapshots. measurement_head is the base commit. The working runner changes included the /tmp-to-/home fixture correction (a measurement-method change) plus sanitized tracing; each artifact states which HADES prompt milestone it measured. Current sitecustomize.py contains later action-discovery wording not present in the model samples.",
+  "current_candidate_source_sha256": {
+    "runner_sha256": "f3e0e66c12e071836b7bcd3bf896a454e01f1846cdfdaf54a88bcdb2da273b6e",
+    "workspace_policy_sha256": "babc877cea686046ec4697bb5ea2586eb75461a90fedbee75a26969fb944bcb1",
+    "sitecustomize_sha256": "6a8473005bcd7bd78197ec6703222fef35a7d7c829d863e51ef324a2ac9ae4e7"
+  }
+}

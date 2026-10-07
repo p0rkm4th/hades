@@ -1,0 +1,210 @@
+{
+  "date": "2026-10-06",
+  "source_revision": "5ab28f6bc48dd9baab4e4184e139b500cca4b8c3",
+  "result": "BOTH_STACKS_VERIFIED; OWNER_PREFERENCE_UNASSESSED",
+  "method": {
+    "hermes": "0.21.5 clean source for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "context": 65536,
+    "requested_context": 65536,
+    "actual_context_source": "Ollama GET /api/ps after warmup",
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "escalation",
+    "subject": "synthetic owner identity; private fixture only"
+  },
+  "corpus_slice": {
+    "size": 2,
+    "task": "diagnose failing Python test, then explicit “Fix it.” continuation",
+    "repeats": 2,
+    "categories": [
+      "workspace read",
+      "follow-up context",
+      "coding edit",
+      "test verification"
+    ],
+    "synthetic_only": true
+  },
+  "comparison": {
+    "tests_passed": 4,
+    "tests_total": 4,
+    "PLAIN_preference": "not assigned; no owner evidence",
+    "HADES_preference": "not assigned; no owner evidence",
+    "equivalent": "not assigned; task is synthetic",
+    "plain_task_median_ms": 30958.05,
+    "hades_task_median_ms": 46580.7,
+    "plain_tool_schemas_per_request": 8,
+    "plain_generations_per_task": [
+      7,
+      9
+    ],
+    "hades_generations_per_task": [
+      7,
+      10
+    ],
+    "hades_diagnosis_action_boundary": "No successful patch/write tool result during diagnosis; both HADES edits occurred after the explicit Fix it turn. One invalid patch call was rejected during diagnosis.",
+    "plain_diagnosis_action_boundary": "One PLAIN repeat returned a successful patch and test result during diagnosis before the user said Fix it."
+  },
+  "trials": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "elapsed_ms": 35858.7,
+      "rootless_and_network_disabled": true,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 28619.4,
+          "stream_progress": {
+            "delta_count": 142,
+            "character_count": 614,
+            "first_delta_ms": 16781.6,
+            "last_delta_ms": 28612.4
+          },
+          "provider_generations": 4,
+          "invalid_tool_result_count": 0
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 35858.6,
+          "stream_progress": {
+            "delta_count": 56,
+            "character_count": 226,
+            "first_delta_ms": 4710.3,
+            "last_delta_ms": 7198.4
+          },
+          "provider_generations": 3,
+          "invalid_tool_result_count": 0
+        }
+      ],
+      "verified_test_exit_code": 0,
+      "changed_paths": [
+        "geometry.py"
+      ],
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "elapsed_ms": 45701.9,
+      "rootless_and_network_disabled": true,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 23093.1,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 383,
+            "first_delta_ms": 630.4,
+            "last_delta_ms": 23092.2
+          },
+          "provider_generations": 3,
+          "invalid_tool_result_count": 0
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 45701.9,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 193,
+            "first_delta_ms": 498.8,
+            "last_delta_ms": 22608.1
+          },
+          "provider_generations": 4,
+          "invalid_tool_result_count": 0
+        }
+      ],
+      "verified_test_exit_code": 0,
+      "changed_paths": [
+        "geometry.py"
+      ],
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "elapsed_ms": 47459.5,
+      "rootless_and_network_disabled": true,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 25848.3,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 460,
+            "first_delta_ms": 630.9,
+            "last_delta_ms": 25847.3
+          },
+          "provider_generations": 7,
+          "invalid_tool_result_count": 1
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 47459.5,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 217,
+            "first_delta_ms": 476.6,
+            "last_delta_ms": 21610.3
+          },
+          "provider_generations": 3,
+          "invalid_tool_result_count": 0
+        }
+      ],
+      "verified_test_exit_code": 0,
+      "changed_paths": [
+        "geometry.py"
+      ],
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "elapsed_ms": 26057.4,
+      "rootless_and_network_disabled": true,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 25111.3,
+          "stream_progress": {
+            "delta_count": 123,
+            "character_count": 520,
+            "first_delta_ms": 5479.5,
+            "last_delta_ms": 25103.7
+          },
+          "provider_generations": 8,
+          "invalid_tool_result_count": 0
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 26057.4,
+          "stream_progress": {
+            "delta_count": 18,
+            "character_count": 91,
+            "first_delta_ms": 626.7,
+            "last_delta_ms": 941.8
+          },
+          "provider_generations": 1,
+          "invalid_tool_result_count": 0
+        }
+      ],
+      "verified_test_exit_code": 0,
+      "changed_paths": [
+        "geometry.py"
+      ],
+      "only_expected_source_changed": true
+    }
+  ],
+  "limitations": [
+    "Two synthetic repeats do not establish Scotty preference.",
+    "PLAIN acted during diagnosis in one repeat, so its lower elapsed time does not represent the requested explain-then-act interaction.",
+    "HADES was slower overall and used slightly more model generations; the visible progress preface arrived sooner.",
+    "This result applies to the specified Hermes 0.21.5/Ollama 0.35.1/Qwen3.6 35B configuration only."
+  ],
+  "working_tree_changes_at_run": [
+    "hermes/workspace.py: workspace-scoped search_files schema deep-copied and target made required",
+    "scripts/benchmark-hades-workspace-read-pair.py: sanitized per-message size/context markers and actual loaded-context reporting after warmup"
+  ]
+}

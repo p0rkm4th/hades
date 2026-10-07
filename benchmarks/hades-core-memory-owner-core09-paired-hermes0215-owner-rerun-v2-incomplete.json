@@ -1,0 +1,546 @@
+{
+  "schema_version": 1,
+  "classification": "incomplete; no preference or stack comparison",
+  "source_revision": "ce19fa43213bf72814e40a5a8c40b7b4b7b2af0f",
+  "failure": {
+    "stage": "hindsight_idle_before_plain_sample_2",
+    "error_type": "RuntimeError",
+    "safe_detail": "Hindsight pending operation status unavailable (HTTPError)"
+  },
+  "repetitions": [
+    {
+      "sample": 1,
+      "first_stack": "plain",
+      "stacks": {
+        "plain": {
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": true,
+          "automatic_retained_fact_visible": null,
+          "automatic_retention_state_before_recall": null,
+          "core09_recall_correct": false,
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1309.2,
+              "total_ms": 1778.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3457,
+                "completion_tokens": 28,
+                "request_bytes": 14676,
+                "message_bytes": 11039,
+                "system_message_bytes": 10981
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 2987.0,
+              "total_ms": 3381.0,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7058,
+                "completion_tokens": 80,
+                "request_bytes": 29844,
+                "message_bytes": 22568,
+                "system_message_bytes": 21962
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 1659.8,
+              "total_ms": 1901.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3518,
+                "completion_tokens": 14,
+                "request_bytes": 15039,
+                "message_bytes": 11402,
+                "system_message_bytes": 11350
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 2887.7,
+              "total_ms": 3103.2,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7186,
+                "completion_tokens": 73,
+                "request_bytes": 30614,
+                "message_bytes": 23338,
+                "system_message_bytes": 22700
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 1265.2,
+              "total_ms": 1366.9,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3533,
+                "completion_tokens": 7,
+                "request_bytes": 15090,
+                "message_bytes": 11453,
+                "system_message_bytes": 11385
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 2765.4,
+              "total_ms": 2910.3,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7199,
+                "completion_tokens": 64,
+                "request_bytes": 30681,
+                "message_bytes": 23405,
+                "system_message_bytes": 22770
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 4051.6,
+              "total_ms": 4222.1,
+              "metrics": {
+                "provider_generations": 3,
+                "tool_schema_exposures": 3,
+                "tool_schema_bytes_exposed": 10347,
+                "tool_calls_emitted": 2,
+                "prompt_tokens": 11168,
+                "completion_tokens": 156,
+                "request_bytes": 47571,
+                "message_bytes": 36648,
+                "system_message_bytes": 34155
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1303.0,
+              "total_ms": 1404.2,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3542,
+                "completion_tokens": 3,
+                "request_bytes": 15112,
+                "message_bytes": 11475,
+                "system_message_bytes": 11418
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1215.7,
+              "total_ms": 1313.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3540,
+                "completion_tokens": 3,
+                "request_bytes": 15109,
+                "message_bytes": 11472,
+                "system_message_bytes": 11418
+              }
+            }
+          ]
+        },
+        "hades": {
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": false,
+          "automatic_retained_fact_visible": false,
+          "automatic_retention_state_before_recall": {
+            "operations": {
+              "pending": {
+                "error": "HTTPError"
+              },
+              "processing": {
+                "error": "HTTPError"
+              }
+            },
+            "stats": {
+              "error": "HTTPError"
+            }
+          },
+          "core09_recall_correct": true,
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1404.0,
+              "total_ms": 1652.2,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 734,
+                "completion_tokens": 13,
+                "request_bytes": 3154,
+                "message_bytes": 2977,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 1257.7,
+              "total_ms": 1354.5,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 737,
+                "completion_tokens": 5,
+                "request_bytes": 3150,
+                "message_bytes": 2973,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 9219.8,
+              "total_ms": 9340.8,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 733,
+                "completion_tokens": 5,
+                "request_bytes": 3148,
+                "message_bytes": 2971,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 146.3,
+              "total_ms": 146.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 58.3,
+              "total_ms": 58.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 108.5,
+              "total_ms": 108.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 78.1,
+              "total_ms": 78.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 50.3,
+              "total_ms": 50.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 47.5,
+              "total_ms": 47.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sample": 2,
+      "first_stack": "hades",
+      "stacks": {
+        "hades": {
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": false,
+          "automatic_retained_fact_visible": false,
+          "automatic_retention_state_before_recall": {
+            "operations": {
+              "pending": {
+                "error": "HTTPError"
+              },
+              "processing": {
+                "error": "HTTPError"
+              }
+            },
+            "stats": {
+              "error": "HTTPError"
+            }
+          },
+          "core09_recall_correct": true,
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1158.9,
+              "total_ms": 1331.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 734,
+                "completion_tokens": 7,
+                "request_bytes": 3154,
+                "message_bytes": 2977,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 1189.9,
+              "total_ms": 1273.8,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 737,
+                "completion_tokens": 5,
+                "request_bytes": 3150,
+                "message_bytes": 2973,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 9223.9,
+              "total_ms": 9371.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 733,
+                "completion_tokens": 5,
+                "request_bytes": 3148,
+                "message_bytes": 2971,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 112.3,
+              "total_ms": 112.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 59.2,
+              "total_ms": 59.9,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 95.4,
+              "total_ms": 95.7,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 75.1,
+              "total_ms": 75.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 53.3,
+              "total_ms": 53.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 48.0,
+              "total_ms": 48.1,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "hindsight_ollama_calls": [],
+  "preference_bucket": "UNASSIGNED; no owner dogfood",
+  "post_run_review": "Post-run harness review: these owner-scoped runs queried the household-style bank hades-user-hades-synthetic for lifecycle and visibility. HADES maps the synthetic owner subject to hades-owner. Treat the recorded retained-fact visibility/lifecycle values and barrier failure as invalid; user-facing turn outputs remain observed run data. No stack preference can be assigned."
+}

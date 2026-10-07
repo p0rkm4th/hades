@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "purpose": "Isolate Hermes API gateway's model-based session-title upgrade from the user-facing chat generation.",
+  "classification": "upstream behavior probe; synthetic, no owner preference",
+  "runtime": {
+    "hermes_version": "0.21.5",
+    "api": "loopback only, synthetic API key",
+    "provider": "synthetic OpenAI-compatible provider bound to loopback",
+    "model": "synthetic-model",
+    "api_toolsets": [],
+    "open_webui": false,
+    "hades_overlay": false
+  },
+  "method": {
+    "turns": 2,
+    "comparison": "first with auxiliary.title_generation.model_upgrade_enabled=true, then false after gateway restart; title generation otherwise enabled",
+    "provider_capture": "request metadata only: whether prompt matched Hermes title template, streaming flag, message count, roles; no prompt or answer text persisted"
+  },
+  "results": {
+    "model_upgrade_enabled": {
+      "main_turn_http": 200,
+      "main_answer_streamed": true,
+      "title_generation_requests": 1,
+      "other_empty_message_nonstream_posts_observed": 4
+    },
+    "model_upgrade_disabled": {
+      "main_turn_http": 200,
+      "main_answer_streamed": true,
+      "title_generation_requests": 0,
+      "other_empty_message_nonstream_posts_observed": 4
+    },
+    "difference": {
+      "extra_title_model_generations_on_first_titleable_turn": 1
+    },
+    "title_visibility": "The API returned session IDs, but the probe did not locate a persisted title row in the queried state database. User-visible API/Open WebUI title behavior is not established by this run."
+  },
+  "upstream_source_evidence": {
+    "implementation": "Hermes agent/title_generator.py::maybe_auto_title applies an instant derived title before checking model_upgrade_enabled; false returns without spawning the title upgrade thread.",
+    "upstream_test": "tests/agent/test_title_generator.py::test_model_upgrade_disabled_keeps_derived_title_and_spawns_no_thread asserts the derived title remains, and asserts no thread or LLM call. Inspected, not run in this campaign."
+  },
+  "interpretation": [
+    "A titleable first turn with the native model upgrade enabled caused one additional nonstream provider request. Setting model_upgrade_enabled=false removed that request while leaving the main streamed answer successful.",
+    "This validates the native call-count effect, not the title's visibility or owner value. The setting is not changed in HADES pending API/UI title-path evidence.",
+    "Four nonstream provider posts with empty messages appeared across the two gateway runs. Their purpose was not identified and they are excluded from the title-call comparison.",
+    "No live model, production endpoint, owner session, or external service was used. The probe used unmodified Hermes and does not qualify HADES overlay, Open WebUI, production latency, or user preference."
+  ]
+}

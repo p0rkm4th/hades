@@ -1,0 +1,808 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "title": "Counterbalanced ordinary-chat and explicit-memory PLAIN/HADES comparison",
+  "classification": "synthetic local comparative benchmark; no owner preference or release qualification",
+  "source_revision": "3f302ee33cf13c1d570236156a915223acf0dc4d",
+  "method": {
+    "samples": 2,
+    "counterbalance": "Alternating PLAIN-first and HADES-first; requests serialized; each gateway has one warmup before samples.",
+    "sequence": [
+      "ordinary chat",
+      "automatic personal-fact retain",
+      "fresh-session canonical-memory recall",
+      "save mango",
+      "correct to pear",
+      "fresh-session implicit personal-history recall",
+      "fresh-session explicit recall"
+    ],
+    "model": "qwen3.6:35b",
+    "ollama_version": "0.35.1",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "model_quantization": "Q4_K_M",
+    "ollama_reported_loaded_context": 65536,
+    "hermes_ollama_context_configured": 65536,
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight@sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70",
+    "reasoning": "disabled per request",
+    "max_output_tokens": 512,
+    "plain_toolset": [
+      "memory"
+    ],
+    "hades_toolset": [],
+    "warmups": {
+      "plain": {
+        "status": 200,
+        "provider_generations": 1
+      },
+      "hades": {
+        "status": 200,
+        "provider_generations": 1
+      }
+    },
+    "data": "Synthetic favorite-fruit preference only. Five repeated saves/corrections in one profile per stack test current-value recall as old assertions accumulate. Temporary homes, container and database volume.",
+    "privacy": "Ollama endpoint restricted to loopback; Docker bridge forwarder bound only to bridge gateway; Ollama server launched with OLLAMA_NO_CLOUD=1."
+  },
+  "summary_by_stack_and_turn": {
+    "plain.ordinary": {
+      "samples": 2,
+      "median_ttft_ms": 1252.2,
+      "median_total_ms": 1686.4,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 1.0,
+      "median_tool_schema_bytes_exposed": 3449.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 3471.5,
+      "median_request_bytes": 14800.5,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "plain.automatic_retain": {
+      "samples": 2,
+      "median_ttft_ms": 1995.2,
+      "median_total_ms": 2429.7,
+      "median_provider_generations": 1.5,
+      "median_tool_schema_exposures": 1.5,
+      "median_tool_schema_bytes_exposed": 5173.5,
+      "median_tool_calls": 0.5,
+      "median_prompt_tokens": 5263.5,
+      "median_request_bytes": 22346.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "plain.automatic_recall": {
+      "samples": 2,
+      "median_ttft_ms": 1225.4,
+      "median_total_ms": 1632.7,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 1.0,
+      "median_tool_schema_bytes_exposed": 3449.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 3501.5,
+      "median_request_bytes": 14979.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": 2
+    },
+    "plain.save": {
+      "samples": 2,
+      "median_ttft_ms": 3549.7,
+      "median_total_ms": 3696.7,
+      "median_provider_generations": 2.5,
+      "median_tool_schema_exposures": 2.5,
+      "median_tool_schema_bytes_exposed": 8622.5,
+      "median_tool_calls": 1.5,
+      "median_prompt_tokens": 9000.5,
+      "median_request_bytes": 38489.5,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "plain.correction": {
+      "samples": 2,
+      "median_ttft_ms": 2959.5,
+      "median_total_ms": 3125.8,
+      "median_provider_generations": 2.5,
+      "median_tool_schema_exposures": 2.5,
+      "median_tool_schema_bytes_exposed": 8622.5,
+      "median_tool_calls": 1.5,
+      "median_prompt_tokens": 9602.5,
+      "median_request_bytes": 41003.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "plain.implicit_recall": {
+      "samples": 2,
+      "median_ttft_ms": 1234.9,
+      "median_total_ms": 1307.3,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 1.0,
+      "median_tool_schema_bytes_exposed": 3449.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 3506.0,
+      "median_request_bytes": 14997.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": 2,
+      "implicit_recalls_with_stale_mango": 0,
+      "correct_automatic_recalls": null
+    },
+    "plain.fresh_recall": {
+      "samples": 2,
+      "median_ttft_ms": 1222.7,
+      "median_total_ms": 1313.7,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 1.0,
+      "median_tool_schema_bytes_exposed": 3449.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 3504.0,
+      "median_request_bytes": 14994.0,
+      "correct_fresh_recalls": 2,
+      "fresh_recalls_with_stale_mango": 0,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.ordinary": {
+      "samples": 2,
+      "median_ttft_ms": 1232.3,
+      "median_total_ms": 1553.1,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 752.0,
+      "median_request_bytes": 3277.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.automatic_retain": {
+      "samples": 2,
+      "median_ttft_ms": 1166.2,
+      "median_total_ms": 1495.8,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 755.0,
+      "median_request_bytes": 3273.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.automatic_recall": {
+      "samples": 2,
+      "median_ttft_ms": 686.0,
+      "median_total_ms": 787.3,
+      "median_provider_generations": 0.5,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 375.5,
+      "median_request_bytes": 1635.5,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": 0
+    },
+    "hades.save": {
+      "samples": 2,
+      "median_ttft_ms": 134.8,
+      "median_total_ms": 135.1,
+      "median_provider_generations": 0.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 0.0,
+      "median_request_bytes": 0.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.correction": {
+      "samples": 2,
+      "median_ttft_ms": 79.0,
+      "median_total_ms": 79.5,
+      "median_provider_generations": 0.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 0.0,
+      "median_request_bytes": 0.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.implicit_recall": {
+      "samples": 2,
+      "median_ttft_ms": 48.8,
+      "median_total_ms": 49.2,
+      "median_provider_generations": 0.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 0.0,
+      "median_request_bytes": 0.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": 2,
+      "implicit_recalls_with_stale_mango": 0,
+      "correct_automatic_recalls": null
+    },
+    "hades.fresh_recall": {
+      "samples": 2,
+      "median_ttft_ms": 50.0,
+      "median_total_ms": 50.4,
+      "median_provider_generations": 0.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 0.0,
+      "median_request_bytes": 0.0,
+      "correct_fresh_recalls": 2,
+      "fresh_recalls_with_stale_mango": 0,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    }
+  },
+  "hades_hindsight_diagnostics": {
+    "eligible_private_retains": 0,
+    "prefetch_result_counts": []
+  },
+  "repetitions": [
+    {
+      "sample": 1,
+      "first_stack": "plain",
+      "stacks": {
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1223.9,
+              "total_ms": 1507.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3437,
+                "completion_tokens": 12,
+                "request_bytes": 14603,
+                "message_bytes": 10997,
+                "system_message_bytes": 10939
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 2766.0,
+              "total_ms": 3432.0,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7018,
+                "completion_tokens": 88,
+                "request_bytes": 29698,
+                "message_bytes": 22484,
+                "system_message_bytes": 21878
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 1200.3,
+              "total_ms": 1731.3,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3498,
+                "completion_tokens": 23,
+                "request_bytes": 14966,
+                "message_bytes": 11360,
+                "system_message_bytes": 11308
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 2720.7,
+              "total_ms": 2891.3,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7129,
+                "completion_tokens": 62,
+                "request_bytes": 30458,
+                "message_bytes": 23244,
+                "system_message_bytes": 22616
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 2113.7,
+              "total_ms": 2302.7,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7472,
+                "completion_tokens": 77,
+                "request_bytes": 31816,
+                "message_bytes": 24594,
+                "system_message_bytes": 22616
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1244.4,
+              "total_ms": 1341.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3506,
+                "completion_tokens": 3,
+                "request_bytes": 14997,
+                "message_bytes": 11391,
+                "system_message_bytes": 11334
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1215.4,
+              "total_ms": 1308.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3504,
+                "completion_tokens": 3,
+                "request_bytes": 14994,
+                "message_bytes": 11388,
+                "system_message_bytes": 11334
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": true
+        },
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1289.2,
+              "total_ms": 1579.2,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 752,
+                "completion_tokens": 12,
+                "request_bytes": 3277,
+                "message_bytes": 3131,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 1159.6,
+              "total_ms": 1319.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 755,
+                "completion_tokens": 9,
+                "request_bytes": 3273,
+                "message_bytes": 3127,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 1261.9,
+              "total_ms": 1464.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 751,
+                "completion_tokens": 10,
+                "request_bytes": 3271,
+                "message_bytes": 3125,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 152.9,
+              "total_ms": 153.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 79.3,
+              "total_ms": 79.9,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 49.9,
+              "total_ms": 50.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 46.7,
+              "total_ms": 47.1,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": false
+        }
+      }
+    },
+    {
+      "sample": 2,
+      "first_stack": "hades",
+      "stacks": {
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1175.5,
+              "total_ms": 1526.9,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 752,
+                "completion_tokens": 14,
+                "request_bytes": 3277,
+                "message_bytes": 3131,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 1172.8,
+              "total_ms": 1672.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 755,
+                "completion_tokens": 18,
+                "request_bytes": 3273,
+                "message_bytes": 3127,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 110.1,
+              "total_ms": 110.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 116.6,
+              "total_ms": 116.7,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 78.8,
+              "total_ms": 79.1,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 47.8,
+              "total_ms": 48.2,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 53.4,
+              "total_ms": 53.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": false
+        },
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1280.5,
+              "total_ms": 1865.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3506,
+                "completion_tokens": 24,
+                "request_bytes": 14998,
+                "message_bytes": 11392,
+                "system_message_bytes": 11334
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 1224.3,
+              "total_ms": 1427.3,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3509,
+                "completion_tokens": 10,
+                "request_bytes": 14994,
+                "message_bytes": 11388,
+                "system_message_bytes": 11334
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 1250.5,
+              "total_ms": 1534.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3505,
+                "completion_tokens": 15,
+                "request_bytes": 14992,
+                "message_bytes": 11386,
+                "system_message_bytes": 11334
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 4378.6,
+              "total_ms": 4502.1,
+              "metrics": {
+                "provider_generations": 3,
+                "tool_schema_exposures": 3,
+                "tool_schema_bytes_exposed": 10347,
+                "tool_calls_emitted": 2,
+                "prompt_tokens": 10872,
+                "completion_tokens": 119,
+                "request_bytes": 46521,
+                "message_bytes": 35697,
+                "system_message_bytes": 34002
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 3805.3,
+              "total_ms": 3949.0,
+              "metrics": {
+                "provider_generations": 3,
+                "tool_schema_exposures": 3,
+                "tool_schema_bytes_exposed": 10347,
+                "tool_calls_emitted": 2,
+                "prompt_tokens": 11733,
+                "completion_tokens": 139,
+                "request_bytes": 50190,
+                "message_bytes": 39348,
+                "system_message_bytes": 34002
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1225.4,
+              "total_ms": 1273.5,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3506,
+                "completion_tokens": 2,
+                "request_bytes": 14997,
+                "message_bytes": 11391,
+                "system_message_bytes": 11334
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1230.0,
+              "total_ms": 1319.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3504,
+                "completion_tokens": 3,
+                "request_bytes": 14994,
+                "message_bytes": 11388,
+                "system_message_bytes": 11334
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": true
+        }
+      }
+    }
+  ],
+  "preference_bucket": "UNASSIGNED; no owner dogfood",
+  "limitations": [
+    "The model digest is staged local Qwen; this does not prove equality with production model weights.",
+    "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
+    "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
+    "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review."
+  ]
+}

@@ -39,6 +39,8 @@ HERMES_MAX_ITERATIONS=12
 HADES_GROCY_URL=http://127.0.0.1:7003
 HADES_GROCY_API_KEY_FILE=$output/config/secrets/grocy-api-key
 HADES_HERMES_WORKING_DIRECTORY=$repo_dir
+HADES_WORKSPACE_ENABLED=false
+HADES_HERMES_SANDBOX_IMAGE=
 EOF
 chmod 600 "$output/profile/hermes.env"
 for secret in jwt_secret key_seed admin_password; do

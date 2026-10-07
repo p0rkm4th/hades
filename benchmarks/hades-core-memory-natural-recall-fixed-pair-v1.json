@@ -1,0 +1,1164 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "title": "Counterbalanced ordinary-chat and explicit-memory PLAIN/HADES comparison",
+  "classification": "synthetic local comparative benchmark; no owner preference or release qualification",
+  "source_revision": "3f302ee33cf13c1d570236156a915223acf0dc4d",
+  "method": {
+    "samples": 5,
+    "counterbalance": "Alternating PLAIN-first and HADES-first; requests serialized; each gateway has one warmup before samples.",
+    "sequence": [
+      "ordinary chat",
+      "save mango",
+      "correct to pear",
+      "fresh-session implicit personal-history recall",
+      "fresh-session explicit recall"
+    ],
+    "model": "qwen3.6:35b",
+    "ollama_version": "0.35.1",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "model_quantization": "Q4_K_M",
+    "ollama_reported_loaded_context": 65536,
+    "hermes_ollama_context_configured": 65536,
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight@sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70",
+    "reasoning": "disabled per request",
+    "max_output_tokens": 512,
+    "plain_toolset": [
+      "memory"
+    ],
+    "hades_toolset": [],
+    "warmups": {
+      "plain": {
+        "status": 200,
+        "provider_generations": 1
+      },
+      "hades": {
+        "status": 200,
+        "provider_generations": 1
+      }
+    },
+    "data": "Synthetic favorite-fruit preference only. Five repeated saves/corrections in one profile per stack test current-value recall as old assertions accumulate. Temporary homes, container and database volume.",
+    "privacy": "Ollama endpoint restricted to loopback; Docker bridge forwarder bound only to bridge gateway; Ollama server launched with OLLAMA_NO_CLOUD=1."
+  },
+  "summary_by_stack_and_turn": {
+    "plain.ordinary": {
+      "samples": 5,
+      "median_ttft_ms": 1228.4,
+      "median_total_ms": 1566.4,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3551,
+      "median_request_bytes": 15331,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null
+    },
+    "plain.save": {
+      "samples": 5,
+      "median_ttft_ms": 5019.4,
+      "median_total_ms": 5278.4,
+      "median_provider_generations": 3,
+      "median_tool_schema_exposures": 3,
+      "median_tool_schema_bytes_exposed": 10347,
+      "median_tool_calls": 2,
+      "median_prompt_tokens": 11131,
+      "median_request_bytes": 47981,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null
+    },
+    "plain.correction": {
+      "samples": 5,
+      "median_ttft_ms": 2220.6,
+      "median_total_ms": 2358.8,
+      "median_provider_generations": 2,
+      "median_tool_schema_exposures": 2,
+      "median_tool_schema_bytes_exposed": 6898,
+      "median_tool_calls": 1,
+      "median_prompt_tokens": 8206,
+      "median_request_bytes": 35053,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null
+    },
+    "plain.implicit_recall": {
+      "samples": 5,
+      "median_ttft_ms": 1287.1,
+      "median_total_ms": 1375.0,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3551,
+      "median_request_bytes": 15330,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": 3,
+      "implicit_recalls_with_stale_mango": 2
+    },
+    "plain.fresh_recall": {
+      "samples": 5,
+      "median_ttft_ms": 1230.1,
+      "median_total_ms": 1290.2,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3549,
+      "median_request_bytes": 15327,
+      "correct_fresh_recalls": 4,
+      "fresh_recalls_with_stale_mango": 1,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null
+    },
+    "hades.ordinary": {
+      "samples": 5,
+      "median_ttft_ms": 229.3,
+      "median_total_ms": 418.6,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 755,
+      "median_request_bytes": 3277,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null
+    },
+    "hades.save": {
+      "samples": 5,
+      "median_ttft_ms": 90.3,
+      "median_total_ms": 90.8,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null
+    },
+    "hades.correction": {
+      "samples": 5,
+      "median_ttft_ms": 92.1,
+      "median_total_ms": 92.6,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null
+    },
+    "hades.implicit_recall": {
+      "samples": 5,
+      "median_ttft_ms": 52.0,
+      "median_total_ms": 52.4,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": 5,
+      "implicit_recalls_with_stale_mango": 0
+    },
+    "hades.fresh_recall": {
+      "samples": 5,
+      "median_ttft_ms": 48.6,
+      "median_total_ms": 49.0,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "correct_fresh_recalls": 5,
+      "fresh_recalls_with_stale_mango": 0,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null
+    }
+  },
+  "repetitions": [
+    {
+      "sample": 1,
+      "first_stack": "plain",
+      "stacks": {
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1186.8,
+              "total_ms": 1399.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3441,
+                "completion_tokens": 13,
+                "request_bytes": 14603,
+                "message_bytes": 10997,
+                "system_message_bytes": 10939
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 2694.0,
+              "total_ms": 3008.1,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7013,
+                "completion_tokens": 68,
+                "request_bytes": 29720,
+                "message_bytes": 22506,
+                "system_message_bytes": 21878
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 2220.6,
+              "total_ms": 2358.8,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7368,
+                "completion_tokens": 76,
+                "request_bytes": 31116,
+                "message_bytes": 23894,
+                "system_message_bytes": 21878
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1197.1,
+              "total_ms": 1250.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3496,
+                "completion_tokens": 2,
+                "request_bytes": 14962,
+                "message_bytes": 11356,
+                "system_message_bytes": 11299
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1202.9,
+              "total_ms": 1263.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3494,
+                "completion_tokens": 2,
+                "request_bytes": 14959,
+                "message_bytes": 11353,
+                "system_message_bytes": 11299
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false
+        },
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1311.2,
+              "total_ms": 1504.8,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 755,
+                "completion_tokens": 10,
+                "request_bytes": 3277,
+                "message_bytes": 3131,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 159.6,
+              "total_ms": 160.0,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 92.1,
+              "total_ms": 92.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 47.2,
+              "total_ms": 47.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 53.2,
+              "total_ms": 53.5,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false
+        }
+      }
+    },
+    {
+      "sample": 2,
+      "first_stack": "hades",
+      "stacks": {
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 129.1,
+              "total_ms": 334.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 755,
+                "completion_tokens": 7,
+                "request_bytes": 3277,
+                "message_bytes": 3131,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 87.5,
+              "total_ms": 88.0,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 79.6,
+              "total_ms": 80.1,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 52.0,
+              "total_ms": 52.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 48.6,
+              "total_ms": 49.0,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false
+        },
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1286.4,
+              "total_ms": 1624.9,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3496,
+                "completion_tokens": 18,
+                "request_bytes": 14963,
+                "message_bytes": 11357,
+                "system_message_bytes": 11299
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 6015.4,
+              "total_ms": 6215.7,
+              "metrics": {
+                "provider_generations": 4,
+                "tool_schema_exposures": 4,
+                "tool_schema_bytes_exposed": 13796,
+                "tool_calls_emitted": 3,
+                "prompt_tokens": 14838,
+                "completion_tokens": 180,
+                "request_bytes": 63507,
+                "message_bytes": 49071,
+                "system_message_bytes": 45196
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 3765.0,
+              "total_ms": 3986.7,
+              "metrics": {
+                "provider_generations": 3,
+                "tool_schema_exposures": 3,
+                "tool_schema_bytes_exposed": 10347,
+                "tool_calls_emitted": 2,
+                "prompt_tokens": 12259,
+                "completion_tokens": 138,
+                "request_bytes": 52492,
+                "message_bytes": 41644,
+                "system_message_bytes": 33897
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1594.0,
+              "total_ms": 1690.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3551,
+                "completion_tokens": 4,
+                "request_bytes": 15330,
+                "message_bytes": 11724,
+                "system_message_bytes": 11667
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1230.1,
+              "total_ms": 1295.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3549,
+                "completion_tokens": 2,
+                "request_bytes": 15327,
+                "message_bytes": 11721,
+                "system_message_bytes": 11667
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": false,
+          "implicit_recall_stale_mango_present": true
+        }
+      }
+    },
+    {
+      "sample": 3,
+      "first_stack": "plain",
+      "stacks": {
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1227.5,
+              "total_ms": 1418.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3551,
+                "completion_tokens": 10,
+                "request_bytes": 15331,
+                "message_bytes": 11725,
+                "system_message_bytes": 11667
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 4573.3,
+              "total_ms": 4756.3,
+              "metrics": {
+                "provider_generations": 3,
+                "tool_schema_exposures": 3,
+                "tool_schema_bytes_exposed": 10347,
+                "tool_calls_emitted": 2,
+                "prompt_tokens": 11131,
+                "completion_tokens": 129,
+                "request_bytes": 47981,
+                "message_bytes": 37157,
+                "system_message_bytes": 35001
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 2075.0,
+              "total_ms": 2175.9,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7948,
+                "completion_tokens": 73,
+                "request_bytes": 34084,
+                "message_bytes": 26858,
+                "system_message_bytes": 23334
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1242.5,
+              "total_ms": 1384.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3551,
+                "completion_tokens": 7,
+                "request_bytes": 15330,
+                "message_bytes": 11724,
+                "system_message_bytes": 11667
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1226.5,
+              "total_ms": 1280.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3549,
+                "completion_tokens": 2,
+                "request_bytes": 15327,
+                "message_bytes": 11721,
+                "system_message_bytes": 11667
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": false,
+          "implicit_recall_stale_mango_present": true
+        },
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 229.3,
+              "total_ms": 418.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 755,
+                "completion_tokens": 12,
+                "request_bytes": 3277,
+                "message_bytes": 3131,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 90.3,
+              "total_ms": 90.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 92.5,
+              "total_ms": 93.0,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 52.1,
+              "total_ms": 52.5,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 48.3,
+              "total_ms": 48.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false
+        }
+      }
+    },
+    {
+      "sample": 4,
+      "first_stack": "hades",
+      "stacks": {
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 121.7,
+              "total_ms": 292.2,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 755,
+                "completion_tokens": 8,
+                "request_bytes": 3277,
+                "message_bytes": 3131,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 89.6,
+              "total_ms": 89.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 85.9,
+              "total_ms": 86.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 49.0,
+              "total_ms": 49.2,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 54.6,
+              "total_ms": 54.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false
+        },
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1297.4,
+              "total_ms": 1566.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3551,
+                "completion_tokens": 19,
+                "request_bytes": 15331,
+                "message_bytes": 11725,
+                "system_message_bytes": 11667
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 5019.4,
+              "total_ms": 5278.4,
+              "metrics": {
+                "provider_generations": 3,
+                "tool_schema_exposures": 3,
+                "tool_schema_bytes_exposed": 10347,
+                "tool_calls_emitted": 2,
+                "prompt_tokens": 11077,
+                "completion_tokens": 159,
+                "request_bytes": 47836,
+                "message_bytes": 37012,
+                "system_message_bytes": 35001
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 3861.5,
+              "total_ms": 4034.3,
+              "metrics": {
+                "provider_generations": 3,
+                "tool_schema_exposures": 3,
+                "tool_schema_bytes_exposed": 10347,
+                "tool_calls_emitted": 2,
+                "prompt_tokens": 12039,
+                "completion_tokens": 153,
+                "request_bytes": 51792,
+                "message_bytes": 40950,
+                "system_message_bytes": 35001
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1287.3,
+              "total_ms": 1375.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3551,
+                "completion_tokens": 3,
+                "request_bytes": 15330,
+                "message_bytes": 11724,
+                "system_message_bytes": 11667
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1237.2,
+              "total_ms": 1290.2,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3549,
+                "completion_tokens": 2,
+                "request_bytes": 15327,
+                "message_bytes": 11721,
+                "system_message_bytes": 11667
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false
+        }
+      }
+    },
+    {
+      "sample": 5,
+      "first_stack": "plain",
+      "stacks": {
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1228.4,
+              "total_ms": 1639.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3551,
+                "completion_tokens": 16,
+                "request_bytes": 15331,
+                "message_bytes": 11725,
+                "system_message_bytes": 11667
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 6695.6,
+              "total_ms": 6878.2,
+              "metrics": {
+                "provider_generations": 4,
+                "tool_schema_exposures": 4,
+                "tool_schema_bytes_exposed": 13796,
+                "tool_calls_emitted": 3,
+                "prompt_tokens": 15120,
+                "completion_tokens": 220,
+                "request_bytes": 65015,
+                "message_bytes": 50579,
+                "system_message_bytes": 46668
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 2081.5,
+              "total_ms": 2207.1,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 8206,
+                "completion_tokens": 82,
+                "request_bytes": 35053,
+                "message_bytes": 27823,
+                "system_message_bytes": 23334
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1287.1,
+              "total_ms": 1334.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3553,
+                "completion_tokens": 2,
+                "request_bytes": 15339,
+                "message_bytes": 11733,
+                "system_message_bytes": 11676
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1252.4,
+              "total_ms": 1300.2,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3551,
+                "completion_tokens": 3,
+                "request_bytes": 15336,
+                "message_bytes": 11730,
+                "system_message_bytes": 11676
+              }
+            }
+          ],
+          "fresh_recall_correct": false,
+          "fresh_recall_stale_mango_present": true,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false
+        },
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 237.1,
+              "total_ms": 491.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 755,
+                "completion_tokens": 11,
+                "request_bytes": 3277,
+                "message_bytes": 3131,
+                "system_message_bytes": 3073
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 91.8,
+              "total_ms": 92.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 93.2,
+              "total_ms": 93.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 60.2,
+              "total_ms": 60.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 41.1,
+              "total_ms": 41.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false
+        }
+      }
+    }
+  ],
+  "preference_bucket": "UNASSIGNED; no owner dogfood",
+  "limitations": [
+    "The model digest is staged local Qwen; this does not prove equality with production model weights.",
+    "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
+    "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
+    "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review."
+  ]
+}

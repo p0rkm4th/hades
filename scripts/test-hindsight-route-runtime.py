@@ -151,7 +151,7 @@ def exercise_hades_route(api: str, bank: str, subject: str) -> None:
         return str(payload["answer"])
 
     first = call("Remember that I like violet comet-42 markers.")
-    if "stored that as private memory" not in first:
+    if "I'll remember that privately" not in first:
         raise RuntimeError("actual HADES retain route did not confirm the synthetic private retain")
     second = call("What do you remember about violet comet-42?")
     if "I remember:" not in second or "violet comet-42" not in second.casefold():
@@ -159,7 +159,7 @@ def exercise_hades_route(api: str, bank: str, subject: str) -> None:
 
     for fact in ("My favorite fruit is mango.", "My favorite fruit is pear."):
         retained = call(f"Remember that {fact}")
-        if "stored that as private memory" not in retained:
+        if "I'll remember that privately" not in retained:
             raise RuntimeError("actual HADES correction fixture was not retained")
     fixture_rows = json.load(urllib.request.urlopen(
         f"{api}/v1/default/banks/{bank}/memories/list"

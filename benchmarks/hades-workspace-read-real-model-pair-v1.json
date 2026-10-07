@@ -1,0 +1,182 @@
+{
+  "date": "2026-10-06",
+  "source_revision": "c28b38e7cf6b2fff21590ba4f0d471ff95c7a825",
+  "runner_revision": "4ef34d5a602a99aa44a2d5af2e28ae323d1866f9 plus effective-config assertion added before the verified pair",
+  "runner_sha256": "a63156b7e13d0f88fb96e772f291dc5312a078d4b41d2156f81be9b6562ba318",
+  "valid_for_plain_vs_hades_comparison": false,
+  "method": {
+    "hermes": "0.21.5 clean source for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "context": 65536,
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "subject": "synthetic owner identity; private fixture only",
+    "terminal_configuration": "Both profiles use the supported Hermes YAML key terminal.backend=docker. The additional verified pair asserted effective env_type=docker, cwd=/workspace, docker_mount_cwd_to_workspace=true, docker_network=false in both profiles."
+  },
+  "effective_terminal_verified": {
+    "env_type": "docker",
+    "cwd": "/workspace",
+    "docker_mount_cwd_to_workspace": true,
+    "docker_network": false
+  },
+  "methodology": "Three HADES and three PLAIN direct AIAgent turns total, alternating PLAIN/HADES then HADES/PLAIN, followed by a final verified PLAIN/HADES pair. Same local model/runtime/image and private synthetic fixtures; no UI or production services.",
+  "turns": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "elapsed_ms": 12976.3,
+      "outer_wall_ms": 15467.3,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false
+      },
+      "effective_config_asserted": false,
+      "api_calls": 2,
+      "tool_result_count": 1,
+      "fixture_read_succeeded": false,
+      "correct_final_answer": false
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "elapsed_ms": 16758.1,
+      "outer_wall_ms": 19330.4,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false
+      },
+      "effective_config_asserted": false,
+      "api_calls": 2,
+      "tool_result_count": 1,
+      "fixture_read_succeeded": true,
+      "correct_final_answer": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "elapsed_ms": 8328.1,
+      "outer_wall_ms": 11600.9,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false
+      },
+      "effective_config_asserted": false,
+      "api_calls": 2,
+      "tool_result_count": 1,
+      "fixture_read_succeeded": true,
+      "correct_final_answer": true
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "elapsed_ms": 4146.7,
+      "outer_wall_ms": 6386.3,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false
+      },
+      "effective_config_asserted": false,
+      "api_calls": 3,
+      "tool_result_count": 2,
+      "fixture_read_succeeded": true,
+      "correct_final_answer": true
+    },
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "elapsed_ms": 8419.7,
+      "outer_wall_ms": 10698.5,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false
+      },
+      "effective_config_asserted": true,
+      "api_calls": 2,
+      "tool_result_count": 1,
+      "fixture_read_succeeded": false,
+      "correct_final_answer": false
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "elapsed_ms": 8369.0,
+      "outer_wall_ms": 11048.3,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false
+      },
+      "effective_config_asserted": true,
+      "api_calls": 2,
+      "tool_result_count": 1,
+      "fixture_read_succeeded": true,
+      "correct_final_answer": true
+    }
+  ],
+  "summary": {
+    "plain": {
+      "runs": 3,
+      "fixture_successes": 1,
+      "correct_final_answers": 1,
+      "model_calls": 7,
+      "tool_calls": 4,
+      "median_run_conversation_ms": 8419.7,
+      "median_outer_wall_ms": 10698.5,
+      "tool_schema_count": 8,
+      "tool_schema_bytes": 12590,
+      "tool_schema_names": [
+        "patch",
+        "read_file",
+        "search_files",
+        "terminal",
+        "write_file",
+        "tool_search",
+        "tool_describe",
+        "tool_call"
+      ]
+    },
+    "hades": {
+      "runs": 3,
+      "fixture_successes": 3,
+      "correct_final_answers": 3,
+      "model_calls": 6,
+      "tool_calls": 3,
+      "median_run_conversation_ms": 8369.0,
+      "median_outer_wall_ms": 11600.9,
+      "tool_schema_count": 5,
+      "tool_schema_bytes": 9346,
+      "tool_schema_names": [
+        "patch",
+        "read_file",
+        "search_files",
+        "terminal",
+        "write_file"
+      ]
+    }
+  },
+  "limitations": [
+    "Synthetic one-file read only; no editing, tests, Git, follow-up, direct owner preference, or production service.",
+    "Three samples per stack are exploratory and local model/tool behavior varies. No textual TTFT occurred before tool choice; provider tool-call latency is recorded, but this is not a full UI TTFT measure.",
+    "AIAgent direct route excludes Open WebUI persistence/metadata and does not qualify deployed gateway authentication.",
+    "Clean Hermes succeeded once in three runs; that successful run needed two read_file calls. The cause of its inconsistent native file result is not established.",
+    "A failed assertion-only setup attempt using unsupported terminal.env_type was excluded; Hermes configuration uses terminal.backend."
+  ],
+  "interpretation": [
+    "Retained as a historical diagnostic only. Do not use its success rates, latency, or schema comparisons to claim a PLAIN-versus-HADES difference."
+  ],
+  "invalidating_setup_issue": "The direct AIAgent harness omitted Hermes native register_task_env_overrides session-workspace registration. With Docker session isolation enabled, _resolve_task_host_cwd refuses to bind the process-level host cwd for an unregistered task. HADES registered its workspace; PLAIN did not. The recorded PLAIN misses/rates are invalid for comparison.",
+  "superseded_by": "benchmarks/hades-workspace-read-real-model-pair-v2.json"
+}

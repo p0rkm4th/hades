@@ -1,0 +1,133 @@
+{
+  "date": "2026-10-06",
+  "measurement_head": "ee473e78780c70ad4e6738610c6da588f63477a5",
+  "scenario": "Corrected /home workspace-path diagnostic before explicit file-discovery guidance",
+  "method": {
+    "hermes": "0.21.5 clean source both arms; HADES additionally loads overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "runtime": "Docker 29.8.2 rootless via RootlessKit 3.2.0",
+    "image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "image_provenance": "source image Config and RootFS compared with disposable rootless image before run",
+    "context": "65536 requested; effective loaded context not recorded",
+    "measurement": "total direct AIAgent wall time; not frontend TTFT or streamed progress",
+    "owner_preference": "not measured"
+  },
+  "stacks": [
+    {
+      "stack": "plain",
+      "elapsed_ms": 33489.8,
+      "provider_generations": 9,
+      "diagnosis_tool_schema_count": 8,
+      "diagnosis_tool_schema_bytes": 12590,
+      "action_tool_schema_count": 8,
+      "action_tool_schema_bytes": 12590,
+      "workspace_task_containers": 2,
+      "diagnosis": {
+        "provider_generations": 8,
+        "schema_count": 8,
+        "schema_bytes": 12590,
+        "out_of_catalog_tool_attempts": 0,
+        "test_commands": 0,
+        "terminal_results": [
+          {
+            "exit_code": 0,
+            "test_output_markers": null
+          },
+          {
+            "exit_code": 0,
+            "test_output_markers": null
+          },
+          {
+            "exit_code": 1,
+            "test_output_markers": null
+          },
+          {
+            "exit_code": 0,
+            "test_output_markers": null
+          }
+        ]
+      },
+      "action": {
+        "provider_generations": 1,
+        "schema_count": 8,
+        "schema_bytes": 12590,
+        "out_of_catalog_tool_attempts": 0,
+        "test_commands": 0,
+        "terminal_results": []
+      },
+      "independent_test_exit_code": 0,
+      "diff_check_exit_code": 0,
+      "changed_paths": [
+        "geometry.py"
+      ],
+      "rootless_workspace_mounted_containers_ok": true,
+      "elapsed_ms_and_generations_are_n1": true
+    },
+    {
+      "stack": "hades",
+      "elapsed_ms": 62105.9,
+      "provider_generations": 15,
+      "diagnosis_tool_schema_count": 2,
+      "diagnosis_tool_schema_bytes": 3433,
+      "action_tool_schema_count": 5,
+      "action_tool_schema_bytes": 9346,
+      "workspace_task_containers": 3,
+      "diagnosis": {
+        "provider_generations": 6,
+        "schema_count": 2,
+        "schema_bytes": 3433,
+        "out_of_catalog_tool_attempts": 0,
+        "test_commands": 0,
+        "terminal_results": [
+          {
+            "exit_code": null,
+            "test_output_markers": null
+          },
+          {
+            "exit_code": null,
+            "test_output_markers": null
+          }
+        ]
+      },
+      "action": {
+        "provider_generations": 9,
+        "schema_count": 5,
+        "schema_bytes": 9346,
+        "out_of_catalog_tool_attempts": 0,
+        "test_commands": 0,
+        "terminal_results": [
+          {
+            "exit_code": 0,
+            "test_output_markers": null
+          },
+          {
+            "exit_code": 0,
+            "test_output_markers": null
+          }
+        ]
+      },
+      "independent_test_exit_code": 0,
+      "diff_check_exit_code": 0,
+      "changed_paths": [
+        "geometry.py"
+      ],
+      "rootless_workspace_mounted_containers_ok": true,
+      "elapsed_ms_and_generations_are_n1": true
+    }
+  ],
+  "finding": "The prior /tmp fixture path was a harness confound because Hermes classifies /home paths as host cwd requiring /workspace remapping but does not classify arbitrary /tmp paths. This /home repeat proves the intended workspace mount/workdir; HADES still answered that it was empty and made repeated unproductive reads before the follow-up.",
+  "limitations": [
+    "one sample per stack; plain then HADES",
+    "no user preference; synthetic direct-agent test",
+    "the pair precedes the explicit file-discovery instruction",
+    "full messages and workspace contents are not retained"
+  ],
+  "source_hash_note": "These hashes identify current candidate files at artifact assembly, not exact historical run snapshots. measurement_head is the base commit. The working runner changes included the /tmp-to-/home fixture correction (a measurement-method change) plus sanitized tracing; each artifact states which HADES prompt milestone it measured. Current sitecustomize.py contains later action-discovery wording not present in the model samples.",
+  "current_candidate_source_sha256": {
+    "runner_sha256": "f3e0e66c12e071836b7bcd3bf896a454e01f1846cdfdaf54a88bcdb2da273b6e",
+    "workspace_policy_sha256": "babc877cea686046ec4697bb5ea2586eb75461a90fedbee75a26969fb944bcb1",
+    "sitecustomize_sha256": "6a8473005bcd7bd78197ec6703222fef35a7d7c829d863e51ef324a2ac9ae4e7"
+  }
+}

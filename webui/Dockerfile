@@ -1,5 +1,6 @@
 ARG OPEN_WEBUI_BASE_IMAGE=ghcr.io/open-webui/open-webui@sha256:6bb1fbe8ab0a3e0456067f493044ffb66a30a65a34be47f6a5862176a370dd16
 FROM ${OPEN_WEBUI_BASE_IMAGE}
+ARG HADES_APPLY_CHANNEL_COMPAT=true
 
 COPY webui/hades-theme.css /app/backend/open_webui/static/hades-theme.css
 COPY webui/hades-theme.js /app/backend/open_webui/static/hades-theme.js
@@ -19,7 +20,8 @@ COPY webui/hades_stream_disconnect_compat.py /opt/hades/hades_stream_disconnect_
 COPY integrations/actual-finance-import /opt/hades/finance-import
 COPY webui/channel_response_compat.py /opt/hades/channel_response_compat.py
 COPY webui/entrypoint.sh /opt/hades/entrypoint.sh
-RUN python3 /opt/hades/channel_response_compat.py \
+RUN if [ "$HADES_APPLY_CHANNEL_COMPAT" = "true" ]; then python3 /opt/hades/channel_response_compat.py; \
+    elif [ "$HADES_APPLY_CHANNEL_COMPAT" != "false" ]; then echo 'invalid HADES_APPLY_CHANNEL_COMPAT value' >&2; exit 1; fi \
     && python3 /opt/hades/finance_upload_compat.py \
     && python3 /opt/hades/receipt_upload_compat.py \
     && python3 /opt/hades/task_notification_compat.py \

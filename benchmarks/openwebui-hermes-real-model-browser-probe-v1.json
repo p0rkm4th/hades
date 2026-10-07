@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "classification": "single exploratory local-model authenticated browser turn; no PLAIN comparison or owner preference",
+  "source_revision": "0a94fc95c49dd25fd876cdd5343881f475b0d221",
+  "method": {
+    "open_webui": "0.11.4 no-channel-shim candidate image sha256:5135da5a53c99cbfd25e1d6f94ddad3da50b1f00f7527c251b35baa514ec81b3",
+    "hermes": "0.21.5 commit f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "ollama": "0.35.1 staged binary; OLLAMA_NO_CLOUD=1; bound to 127.0.0.1:11445",
+    "model": "qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "hardware": "NVIDIA GeForce RTX 3080 Ti Laptop 16 GiB",
+    "effective_context": 4096,
+    "hermes_overlay": false,
+    "api_toolsets": [],
+    "hermes_session_title_upgrade": false,
+    "openwebui_metadata_tasks": "title, follow-up and tags explicitly disabled for this run via authenticated candidate task config",
+    "authentication": "fresh synthetic owner signup; browser session uses authenticated owner cookie",
+    "network": "Hermes and Ollama bound to loopback; Open WebUI on internal Docker bridge; host Chromium reached candidate by bridge address"
+  },
+  "results": {
+    "provider_posts": [
+      {
+        "kind": "empty Hermes setup request",
+        "status": 400,
+        "duration_ms": 1,
+        "counted_as_generation": false
+      },
+      {
+        "kind": "user chat stream",
+        "status": 200,
+        "duration_ms": 3866,
+        "counted_as_generation": true
+      }
+    ],
+    "answer_visible_after_page_reload": true,
+    "openwebui_chat_title": "What is 18% of 250? Reply with just the number.",
+    "structured_hermes_title_generation": 0,
+    "tool_schemas": 0,
+    "reasoning_option": "Hermes default; no per-request override was injected",
+    "ttft_ms": null,
+    "total_browser_latency_ms": null
+  },
+  "limitations": [
+    "One turn only; no PLAIN STACK paired run and no owner preference.",
+    "The 3,866 ms value is provider stream duration, not browser TTFT or total latency.",
+    "The effective Ollama context was 4,096 tokens; do not compare directly with earlier 65,536-context gateway samples.",
+    "The probe's REST message summarizer did not find the assistant among the messages it enumerated; browser reload rendered the answer again, but the persisted Open WebUI message schema needs separate inspection.",
+    "Metadata tasks were explicitly disabled; their real-model output quality and default candidate task-state behavior are not established by this record."
+  ],
+  "interpretation": "A real local model answered the browser chat and the answer remained visible after reloading the authenticated Open WebUI page. This proves one candidate UI turn can traverse the staged local path; it is not a latency benchmark or an end-to-end HADES usability qualification."
+}

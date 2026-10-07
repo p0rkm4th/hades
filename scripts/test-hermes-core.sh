@@ -7,8 +7,9 @@ set -euo pipefail
 # connection-tracing assertion documented in docs/hermes-staging-evaluation.md.
 
 CANDIDATE=${1:-}
+HINDSIGHT_PLUGIN_DIR=${2:-}
 if [[ -z "$CANDIDATE" || ! -d "$CANDIDATE" ]]; then
-  printf 'usage: %s HERMES_CANDIDATE_DIRECTORY\n' "$0" >&2
+  printf 'usage: %s HERMES_CANDIDATE_DIRECTORY [HINDSIGHT_PLUGIN_DIRECTORY]\n' "$0" >&2
   exit 2
 fi
 
@@ -52,9 +53,26 @@ tests=(
   tests/agent/transports/test_hermes_tools_mcp_server.py
   tests/gateway/relay/test_auth.py
   tests/gateway/relay/test_identity_token_resolver.py
-  tests/plugins/memory/test_hindsight_provider.py
-  tests/test_hermes_state.py
 )
+
+if [[ -f "$CANDIDATE/tests/test_hermes_state.py" ]]; then
+  tests+=(tests/test_hermes_state.py)
+elif [[ -f "$CANDIDATE/tests/hermes_state/test_hermes_state.py" ]]; then
+  tests+=(tests/hermes_state/test_hermes_state.py)
+else
+  printf 'FAIL candidate Hermes state test missing\n' >&2
+  exit 1
+fi
+
+bundled_hindsight_test="$CANDIDATE/tests/plugins/memory/test_hindsight_provider.py"
+if [[ -f "$bundled_hindsight_test" ]]; then
+  tests+=(tests/plugins/memory/test_hindsight_provider.py)
+elif [[ -n "$HINDSIGHT_PLUGIN_DIR" && -f "$HINDSIGHT_PLUGIN_DIR/tests/test_provider.py" ]]; then
+  : # Current Hermes releases ship the provider as a catalog plugin.
+else
+  printf 'FAIL candidate Hindsight provider test missing; pass its pinned catalog plugin directory\n' >&2
+  exit 1
+fi
 
 for test in "${tests[@]}"; do
   [[ -f "$CANDIDATE/$test" ]] || {
@@ -70,6 +88,10 @@ set +e
   -q --disable-warnings --file-retries 0
 status=$?
 set -e
+if (( status == 0 )) && [[ ! -f "$bundled_hindsight_test" ]]; then
+  "$PYTHON" -m pytest "$HINDSIGHT_PLUGIN_DIR/tests" -q --disable-warnings
+  status=$?
+fi
 if ! candidate_clean; then
   printf 'FAIL candidate checkout changed during qualification\n' >&2
   exit 1

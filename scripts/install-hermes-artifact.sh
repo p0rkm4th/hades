@@ -20,8 +20,12 @@ cleanup() {
 }
 trap cleanup EXIT
 if [[ -f "$repo_dir/config/versions.env" ]]; then
+  requested_hermes_version=${HADES_HERMES_VERSION:-}
+  requested_source_version=${HADES_HERMES_SOURCE_VERSION:-}
   # shellcheck disable=SC1091
   source "$repo_dir/config/versions.env"
+  [[ -z "$requested_hermes_version" ]] || HADES_HERMES_VERSION=$requested_hermes_version
+  [[ -z "$requested_source_version" ]] || HADES_HERMES_SOURCE_VERSION=$requested_source_version
 fi
 uv_version=${HADES_HERMES_UV_VERSION:-}
 if [[ -z "$uv_bin" ]]; then
@@ -83,9 +87,23 @@ mv "$source_dir" "$prefix/source"
 "$python_bin" -m venv "$prefix/venv"
 (
   cd "$prefix/source"
+  # Hermes 0.21.5 moved Hindsight out of its project extras into the plugin
+  # catalog. Keep using the locked extra on releases that still declare it;
+  # newer releases install the catalog plugin and its pinned dependencies
+  # through Hermes' plugin manager instead.
+  if "$prefix/venv/bin/python" - <<'PY'
+import pathlib, tomllib
+project = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+raise SystemExit(0 if "hindsight" in project.get("project", {}).get("optional-dependencies", {}) else 1)
+PY
+  then
+    extras=(--extra all --extra hindsight --locked)
+  else
+    extras=(--extra all --locked)
+  fi
   UV_PROJECT_ENVIRONMENT="$prefix/venv" \
     UV_PYTHON="$prefix/venv/bin/python" \
-    "$uv_bin" sync --extra all --extra hindsight --locked
+    "$uv_bin" sync "${extras[@]}"
 )
 install -d -m 0755 "$prefix/bin"
 printf '%s\n' '#!/usr/bin/env bash' "exec $prefix/venv/bin/python -m hermes_cli.main \"\$@\"" > "$prefix/bin/hermes"

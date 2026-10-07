@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "control": "PLAIN STACK",
+  "date": "2026-10-06",
+  "status": "small baseline only; not a HADES comparison",
+  "conditions": {
+    "hermes": "0.21.5, commit f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "ollama": "0.31.1 (existing HADES inference endpoint; 0.35.1 not staged)",
+    "model": "qwen3.6:35b",
+    "model_digest": "096fdbd02fe620fc10cbeb6537e080f8041aece851e5d696aed024d4f70f2e47e",
+    "quantization": "Q4_K_M",
+    "configured_context": 65536,
+    "configured_max_output_tokens": 1024,
+    "tool_mode": "Hermes native default hermes-cli toolset; no HADES/MCP tools"
+  },
+  "runs": [
+    {
+      "case_id": "core-01",
+      "state": "cold model start; Ollama /api/ps was empty immediately before the turn",
+      "model_generations": 1,
+      "input_tokens": 13456,
+      "output_tokens": 60,
+      "total_tokens": 13516,
+      "tools_exposed": null,
+      "tools_called": 0,
+      "total_latency_ms": null,
+      "ttft_ms": null,
+      "note": "Completed with a natural greeting. The first run was polled at coarse intervals, so timing was not captured accurately and is intentionally left null."
+    },
+    {
+      "case_id": "core-02",
+      "state": "warm model; model already loaded",
+      "model_generations": 1,
+      "tools_exposed": 33,
+      "tool_schema_bytes": 43243,
+      "tools_called": 0,
+      "request_bytes": 56937,
+      "message_bytes": 14475,
+      "input_tokens": 13460,
+      "output_tokens": 44,
+      "total_tokens": 13504,
+      "ttft_ms": 4890.2,
+      "upstream_first_event_ms": 3871.7,
+      "model_request_completion_ms": 4960.9,
+      "total_latency_ms": 8457.9,
+      "note": "Aggregate-only local proxy captured request sizes and streaming timing; it did not store prompt or response text. The Ollama API reported size_vram=25,751,296,403 bytes at context_length=65,536 while the model was loaded."
+    }
+  ],
+  "limits": [
+    "Two prompts do not constitute the full comparative corpus.",
+    "Owner preference is not recorded.",
+    "HADES production Hermes version, selected route, prompt, context, and authenticated request path were not observable from this session.",
+    "The warm ordinary-chat TTFT is above the mission target of 2 seconds, while total latency is below the 10 second target.",
+    "No second cold-start inference was run; no cold TTFT claim is made."
+  ]
+}

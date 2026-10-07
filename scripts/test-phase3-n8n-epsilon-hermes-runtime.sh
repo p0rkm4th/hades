@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 
-image=${HADES_N8N_IMAGE:-docker.n8n.io/n8nio/n8n@sha256:9f693fd5565539efd5e75ad168526c8041a6af516d9e50bc4d9cb1c9c5031523}
+image=${HADES_N8N_IMAGE:-docker.n8n.io/n8nio/n8n@sha256:9c0862a08090c79122069e23131d27529c250b92e90c9d51a6ec406fe1527c4e}
 [[ "$image" =~ ^[^[:space:]=]+@sha256:[0-9a-f]{64}$ ]] || {
   echo 'FAIL HADES_N8N_IMAGE must be an immutable image digest' >&2
   exit 2
@@ -195,6 +195,7 @@ with tempfile.TemporaryDirectory(prefix="hades-phase3-joined-runtime-", dir=cach
         "-e", "ENABLE_OLLAMA_API=false", "-e", "RAG_EMBEDDING_ENGINE=ollama",
         "-e", f"HADES_TASK_NOTIFICATIONS_HERMES_API_BASE_URL=http://host.docker.internal:{gateway_port}/v1",
         "-e", f"HADES_TASK_NOTIFICATIONS_HERMES_API_KEY={api_key}",
+        "-v", f"{repo / 'webui/hades-theme.js'}:/app/build/static/hades-theme.js:ro",
         "-v", f"{webui_volume}:/app/backend/data", webui_image,
     ], check=True, capture_output=True, text=True)
     webui_inspection = json.loads(subprocess.run(
@@ -560,22 +561,57 @@ ThreadingHTTPServer((module.BIND, module.PORT), module.Handler).serve_forever()
             "MODEL": "synthetic-no-call",
             "HERMES_ACCEPT_HOOKS": "1",
         })
+        # The HADES overlay requires its pinned Hindsight provider. Install it
+        # into this disposable profile so the joined runtime test exercises the
+        # real supported integration instead of failing startup with a 503.
+        plugin_env = dict(hermes_env)
+        plugin_env.pop("PYTHONPATH", None)
+        hindsight_plugin = subprocess.run(
+            [hermes_bin, "plugins", "install", "hindsight", "--ref",
+             "d56c4acdf59c41957613d399094cdf8c489b060c", "--no-deps", "--enable"],
+            cwd=repo, env=plugin_env, capture_output=True, text=True, timeout=120,
+        )
+        if hindsight_plugin.returncode:
+            raise RuntimeError("pinned Hindsight plugin installation failed")
+        extra_pythonpath = os.environ.get("HADES_PHASE3_HERMES_EXTRA_PYTHONPATH", "")
+        if extra_pythonpath:
+            hermes_env["PYTHONPATH"] += os.pathsep + extra_pythonpath
         profile = subprocess.run(
             [hermes_bin, "profile", "create", "hades", "--no-alias", "--no-skills"],
             cwd=repo, env=hermes_env, capture_output=True, text=True, timeout=60,
         )
         if profile.returncode:
             raise RuntimeError("temporary Hermes profile creation failed")
+        for key, value in (("model.provider", "openai"), ("model.default", "synthetic-no-call")):
+            configured = subprocess.run(
+                [hermes_bin, "-p", "hades", "config", "set", key, value, "--force"],
+                cwd=repo, env=hermes_env, capture_output=True, text=True, timeout=30,
+            )
+            if configured.returncode:
+                raise RuntimeError(f"temporary Hermes profile {key} could not be configured")
+        standalone = subprocess.run(
+            [hermes_bin, "-p", "hades", "config", "set", "gateway.standalone", "true", "--force"],
+            cwd=repo, env=hermes_env, capture_output=True, text=True, timeout=30,
+        )
+        if standalone.returncode:
+            raise RuntimeError("temporary Hermes profile standalone mode could not be configured")
         hermes_log = (tmp / "hermes-gateway.log").open("w", encoding="utf-8")
         gateway_process = subprocess.Popen(
-            [hermes_bin, "-p", "hades", "gateway", "run", "--quiet"],
+            [hermes_bin, "-p", "hades", "gateway", "run", "-vv"],
             cwd=repo, env=hermes_env, stdout=hermes_log, stderr=subprocess.STDOUT,
         )
         try:
             gateway_url = f"http://127.0.0.1:{gateway_port}"
             for attempt in range(90):
                 if gateway_process.poll() is not None:
-                    raise RuntimeError("temporary Hermes gateway exited before readiness")
+                    hermes_log.flush()
+                    startup_log = (tmp / "hermes-gateway.log").read_text(
+                        encoding="utf-8", errors="replace",
+                    )[-3000:]
+                    raise RuntimeError(
+                        "temporary Hermes gateway exited before readiness; "
+                        f"startup log tail:\n{startup_log}"
+                    )
                 try:
                     urllib.request.urlopen(gateway_url + "/health", timeout=2).read()
                     break
@@ -625,7 +661,20 @@ ThreadingHTTPServer((module.BIND, module.PORT), module.Handler).serve_forever()
                     cwd=repo, env=environment, capture_output=True, text=True, timeout=120,
                 )
                 if result.returncode:
-                    raise RuntimeError("authenticated disposable Open WebUI result acceptance failed\n" + result.stdout + result.stderr[-2500:])
+                    hermes_log.flush()
+                    startup_log = (tmp / "hermes-gateway.log").read_text(
+                        encoding="utf-8", errors="replace",
+                    )[-5000:]
+                    epsilon_log = subprocess.run(
+                        ["journalctl", "--user", "-u", epsilon_unit, "--no-pager", "-n", "40"],
+                        capture_output=True, text=True, check=False,
+                    ).stdout[-5000:]
+                    raise RuntimeError(
+                        "authenticated disposable Open WebUI result acceptance failed\n"
+                        + result.stdout + result.stderr[-2500:]
+                        + "\nHermes gateway log tail:\n" + startup_log
+                        + "\nEpsilon service log tail:\n" + epsilon_log
+                    )
                 return result.stdout.strip()
 
             initial_report = tmp / "phase3-ui-initial.json"

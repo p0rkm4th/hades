@@ -114,6 +114,7 @@
       "restore_check": "source/runtime match and policy smoke contract",
       "installed_layer_files": [
         "overlay/sitecustomize.py",
+        "overlay/workspace.py",
         "overlay/homelab_views.py",
         "adapters/grocy-mcp-launch.py",
         "adapters/grocy-recipe-authoring.py",
@@ -125,6 +126,7 @@
       ],
       "layer_digest_sources": [
         "hermes/sitecustomize.py",
+        "hermes/workspace.py",
         "integrations/homelab_views.py",
         "integrations/grocy-mcp/launch.py",
         "integrations/grocy-mcp/requirements.lock",

@@ -1,0 +1,177 @@
+{
+  "date": "2026-10-06",
+  "source_revision": "c0d9aa4e81e5e8a04fe0dfab9da0fa3c47c6f880",
+  "method": {
+    "hermes": "0.21.5 clean source for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "context": 65536,
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "escalation",
+    "subject": "synthetic owner identity; private fixture only"
+  },
+  "result": "FAILURE_DIAGNOSTIC_ONLY",
+  "excluded_from_preference_and_completion_rates": true,
+  "summary": {
+    "plain_fixture_tool_successes": 0,
+    "hades_fixture_tool_successes": 0,
+    "plain_correct_final_answers": 0,
+    "hades_correct_final_answers": 0,
+    "verified_tests_passed": 0,
+    "expected_source_only_changes": 0,
+    "repeats": 2
+  },
+  "trials": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "elapsed_ms": 22882.5,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 17435.6,
+          "stream_progress": {
+            "delta_count": 137,
+            "character_count": 590,
+            "first_delta_ms": 15209.5,
+            "last_delta_ms": 17424.7
+          },
+          "api_calls": 1,
+          "tool_result_count": 0,
+          "tool_call_count": 0
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 22882.5,
+          "stream_progress": {
+            "delta_count": 91,
+            "character_count": 370,
+            "first_delta_ms": 3859.1,
+            "last_delta_ms": 5442.8
+          },
+          "api_calls": 1,
+          "tool_result_count": 0,
+          "tool_call_count": 0
+        }
+      ],
+      "verified_test_exit_code": 1,
+      "changed_paths": [],
+      "mounts_rootless_network_disabled": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "elapsed_ms": 45549.8,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 37170.9,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 410,
+            "first_delta_ms": 615.2,
+            "last_delta_ms": 37169.7
+          },
+          "api_calls": 9,
+          "tool_result_count": 8,
+          "tool_call_count": 8
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 45549.8,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 1376,
+            "first_delta_ms": 465.1,
+            "last_delta_ms": 8378.7
+          },
+          "api_calls": 1,
+          "tool_result_count": 0,
+          "tool_call_count": 0
+        }
+      ],
+      "verified_test_exit_code": 1,
+      "changed_paths": [],
+      "mounts_rootless_network_disabled": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "elapsed_ms": 20559.3,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 14951.6,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 194,
+            "first_delta_ms": 622.2,
+            "last_delta_ms": 14951.1
+          },
+          "api_calls": 3,
+          "tool_result_count": 3,
+          "tool_call_count": 3
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 20559.3,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 292,
+            "first_delta_ms": 498.0,
+            "last_delta_ms": 5607.5
+          },
+          "api_calls": 1,
+          "tool_result_count": 0,
+          "tool_call_count": 0
+        }
+      ],
+      "verified_test_exit_code": 1,
+      "changed_paths": [],
+      "mounts_rootless_network_disabled": true
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "elapsed_ms": 15370.2,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 8941.9,
+          "stream_progress": {
+            "delta_count": 40,
+            "character_count": 195,
+            "first_delta_ms": 8144.3,
+            "last_delta_ms": 8930.6
+          },
+          "api_calls": 1,
+          "tool_result_count": 0,
+          "tool_call_count": 0
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 15370.2,
+          "stream_progress": {
+            "delta_count": 159,
+            "character_count": 633,
+            "first_delta_ms": 4048.6,
+            "last_delta_ms": 6423.4
+          },
+          "api_calls": 1,
+          "tool_result_count": 0,
+          "tool_call_count": 0
+        }
+      ],
+      "verified_test_exit_code": 1,
+      "changed_paths": [],
+      "mounts_rootless_network_disabled": true
+    }
+  ],
+  "limitations": [
+    "Both arms failed all four end-to-end tasks; no comparative task preference can be assigned.",
+    "The local Ollama usage counters are inconsistent with serialized message byte counts across requests; do not treat prompt_tokens as a reliable HADES-context-tax comparison until token accounting is validated.",
+    "Synthetic coding fixture and direct Hermes AIAgent runner; not owner dogfood or full Open WebUI interaction."
+  ]
+}

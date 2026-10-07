@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "title": "HADES overlay reasoning option pass-through — v1",
+  "status": "synthetic route smoke; pass-through proven; no fast-path change",
+  "date": "2026-10-06",
+  "method": {
+    "hermes": "0.21.5 candidate",
+    "overlay": "campaign hermes/sitecustomize.py loaded from current worktree",
+    "inference": "qwen3.6:35b Q4_K_M, Ollama 0.31.1, exact candidate digest 096fdbd02fe620fc10cbeb6537e080f8041aece851e5d696aed024d4f70f2e47e",
+    "identity": "loopback API key plus synthetic X-Hermes-Session-Key mapped server-side to synthetic-owner; overlay logged owner scope",
+    "variable": "model_options.reasoning.enabled false vs true",
+    "tools": "overlay logged zero inherited tools for both requests; no tool call",
+    "limitations": "single warm pair; synthetic identity only; no production endpoint, memory service, MCP server, household user, tool action, owner corpus preference, or Open WebUI request formation tested"
+  },
+  "results": [
+    {
+      "reasoning_enabled": false,
+      "client_first_visible_content_ms": 2479.4,
+      "client_total_ms": 2731.7,
+      "Hermes_generated_tokens_including_reasoning": 11,
+      "Hermes_model_call_latency_logged": "2.5s"
+    },
+    {
+      "reasoning_enabled": true,
+      "client_first_visible_content_ms": 5468.6,
+      "client_total_ms": 5735.5,
+      "Hermes_generated_tokens_including_reasoning": 190,
+      "Hermes_model_call_latency_logged": "5.7s"
+    }
+  ],
+  "interpretation": {
+    "finding": "Explicit per-request reasoning options reach the Hermes agent through the HADES overlay; the overlay did not overwrite reasoning_config. The enabled request took longer and generated more reasoning tokens in this one greeting pair.",
+    "not_proven": "This does not prove an automatic ordinary-chat rule, quality across real use, correct explicit-option propagation from Open WebUI, or preservation of reasoning/tool use on action turns.",
+    "preference": "No owner preference collected."
+  }
+}

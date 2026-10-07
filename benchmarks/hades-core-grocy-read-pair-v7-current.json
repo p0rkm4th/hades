@@ -1,0 +1,483 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "title": "Synthetic canonical Grocy expiry, recipe-use, and feasibility reads: HADES direct route vs Hermes MCP",
+  "classification": "synthetic local tool-path probe; no owner preference or release qualification",
+  "source_revision": "3f8cffe74efeeb11317e9ad7e5d94baa10b2f743",
+  "benchmark_script": "scripts/benchmark-hades-grocy-read-pair.py",
+  "benchmark_script_sha256": "fda80801c6e4ac78d0db26648d9fc5768079d6dfb81af11dba41eeabb8d559b4",
+  "method": {
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "quantization": "Q4_K_M",
+    "runtime": "Ollama 0.40.0",
+    "effective_context_tokens": 65536,
+    "reasoning": "disabled by benchmark request",
+    "hermes": "0.21.5 staged candidate",
+    "plain_path": "one allowlisted native Hermes MCP read tool with expiry, saved-recipe-use, or recipe-name feasibility parameters",
+    "hades_path": "direct canonical Grocy reads",
+    "repeats": 2,
+    "order": "All available-source repeats run before a separate repeated 503 block; PLAIN/HADES order alternates per pair; v5 records post-outage recovery behavior",
+    "writes": "fixture requests audited; expected GET only"
+  },
+  "turns": [
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 17296.3,
+      "total_ms": 17973.6,
+      "elapsed_ms": 17973.8,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 420.9,
+      "total_ms": 421.1,
+      "elapsed_ms": 421.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 38.5,
+      "total_ms": 38.6,
+      "elapsed_ms": 38.8,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 5794.7,
+      "total_ms": 7499.6,
+      "elapsed_ms": 7499.8,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "tool_calls_emitted": 3,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6058.2,
+      "total_ms": 7910.4,
+      "elapsed_ms": 7910.6,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "tool_calls_emitted": 3,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 76.3,
+      "total_ms": 76.7,
+      "elapsed_ms": 76.9,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 39.7,
+      "total_ms": 39.8,
+      "elapsed_ms": 39.9,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 12500.9,
+      "total_ms": 13865.7,
+      "elapsed_ms": 13866.0,
+      "provider_generations": 5,
+      "tool_schema_count": 15,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 5734.0,
+      "total_ms": 6898.5,
+      "elapsed_ms": 6898.8,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "tool_calls_emitted": 3,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 38.9,
+      "total_ms": 39.0,
+      "elapsed_ms": 39.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 53.0,
+      "total_ms": 53.1,
+      "elapsed_ms": 53.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 5864.2,
+      "total_ms": 7016.1,
+      "elapsed_ms": 7016.3,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "tool_calls_emitted": 3,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4147.3,
+      "total_ms": 4777.0,
+      "elapsed_ms": 4777.3,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 39.4,
+      "total_ms": 39.6,
+      "elapsed_ms": 39.7,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 36.4,
+      "total_ms": 36.5,
+      "elapsed_ms": 36.7,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 30222.3,
+      "total_ms": 31326.9,
+      "elapsed_ms": 31327.2,
+      "provider_generations": 6,
+      "tool_schema_count": 18,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 5572.0,
+      "total_ms": 6087.2,
+      "elapsed_ms": 6087.4,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "tool_calls_emitted": 3,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 43.7,
+      "total_ms": 44.1,
+      "elapsed_ms": 44.3,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 38.4,
+      "total_ms": 38.5,
+      "elapsed_ms": 38.6,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 7733.8,
+      "total_ms": 10017.0,
+      "elapsed_ms": 10017.3,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 7407.6,
+      "total_ms": 8908.1,
+      "elapsed_ms": 8908.4,
+      "provider_generations": 5,
+      "tool_schema_count": 15,
+      "tool_calls_emitted": 4,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 38.6,
+      "total_ms": 38.7,
+      "elapsed_ms": 38.9,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 47.7,
+      "total_ms": 48.1,
+      "elapsed_ms": 48.3,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 2818.8,
+      "total_ms": 7695.5,
+      "elapsed_ms": 7695.9,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "tool_calls_emitted": 3,
+      "error_type": null
+    }
+  ],
+  "summary": {
+    "available.expiry": {
+      "plain": {
+        "samples": 2,
+        "median_elapsed_ms": 15919.9,
+        "median_ttft_ms": 14898.6,
+        "provider_generations": [
+          3,
+          5
+        ]
+      },
+      "hades": {
+        "samples": 2,
+        "median_elapsed_ms": 230.5,
+        "median_ttft_ms": 230.3,
+        "provider_generations": [
+          0,
+          0
+        ]
+      }
+    },
+    "available.expiry_and_use": {
+      "plain": {
+        "samples": 2,
+        "median_elapsed_ms": 7199.3,
+        "median_ttft_ms": 5764.4,
+        "provider_generations": [
+          4,
+          4
+        ]
+      },
+      "hades": {
+        "samples": 2,
+        "median_elapsed_ms": 39.0,
+        "median_ttft_ms": 38.7,
+        "provider_generations": [
+          0,
+          0
+        ]
+      }
+    },
+    "available.recipe_feasibility": {
+      "plain": {
+        "samples": 2,
+        "median_elapsed_ms": 7463.5,
+        "median_ttft_ms": 5961.2,
+        "provider_generations": [
+          4,
+          4
+        ]
+      },
+      "hades": {
+        "samples": 2,
+        "median_elapsed_ms": 65.1,
+        "median_ttft_ms": 64.7,
+        "provider_generations": [
+          0,
+          0
+        ]
+      }
+    },
+    "unavailable.expiry": {
+      "plain": {
+        "samples": 2,
+        "median_elapsed_ms": 7397.3,
+        "median_ttft_ms": 5940.6,
+        "provider_generations": [
+          3,
+          4
+        ]
+      },
+      "hades": {
+        "samples": 2,
+        "median_elapsed_ms": 39.2,
+        "median_ttft_ms": 38.9,
+        "provider_generations": [
+          0,
+          0
+        ]
+      }
+    },
+    "unavailable.expiry_and_use": {
+      "plain": {
+        "samples": 2,
+        "median_elapsed_ms": 20117.8,
+        "median_ttft_ms": 18815.0,
+        "provider_generations": [
+          6,
+          5
+        ]
+      },
+      "hades": {
+        "samples": 2,
+        "median_elapsed_ms": 37.8,
+        "median_ttft_ms": 37.5,
+        "provider_generations": [
+          0,
+          0
+        ]
+      }
+    },
+    "unavailable.recipe_feasibility": {
+      "plain": {
+        "samples": 2,
+        "median_elapsed_ms": 6891.6,
+        "median_ttft_ms": 4195.4,
+        "provider_generations": [
+          4,
+          4
+        ]
+      },
+      "hades": {
+        "samples": 2,
+        "median_elapsed_ms": 46.3,
+        "median_ttft_ms": 45.7,
+        "provider_generations": [
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

@@ -20,7 +20,7 @@ required = (
     '_hades_service_health_target',
     '_hades_should_skip_automatic_memory',
     '_hades_explicit_memory_intent',
-    'skipping automatic hindsight retain for non-personal or transient-error turn',
+    'skipping automatic hindsight retain for non-personal, transient-error, or recall-only turn',
     '_hindsight.hindsightmemoryprovider.sync_turn = _hades_sync_turn',
     'stale personal semantic-memory claims',
     '_hades_grocy_action_intent',
@@ -83,6 +83,28 @@ for personal in ('I prefer basil', 'I hate mushrooms', 'my favorite dinner is pa
 # wrapper. Assistant/tool output must not promote or demote a personal user
 # turn except for the explicit transient-error suppression rule.
 assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The web result says rain.") is False
+assert overlay._hades_should_skip_automatic_memory(
+    "Where did I say I moved?", "You said Denver in 2024.",
+    memory_recall_requested=True,
+) is True
+assert overlay._hades_should_skip_automatic_memory(
+    "What do you remember about my preferences?", "You prefer basil.",
+    memory_recall_requested=True,
+) is True
+assert overlay._hades_should_skip_automatic_memory(
+    "Remember that I prefer basil", "Saved.",
+    memory_recall_requested=True,
+    explicit_memory_write_requested=True,
+) is False
+preference_correction = "Correction: only keep it concise when I ask a simple question; I want detail for research."
+assert overlay._hades_nonpersonal_state_turn(preference_correction) is False
+assert overlay._hades_should_skip_automatic_memory(preference_correction, "Use more detail for research.") is False
+corpus_preference_correction = "Correction: I only want short answers for simple questions; I want detail for research."
+assert overlay._hades_should_skip_automatic_memory(corpus_preference_correction, "Preference corrected.") is False
+explicit_style_memory = "Remember that I prefer short answers for quick questions and more detail for research."
+assert overlay._hades_should_skip_automatic_memory(explicit_style_memory, "Preference saved.") is False
+assert overlay._hades_should_skip_automatic_memory("Research the public launch date of Synthetic Product.", "Synthetic public-source result.") is True
+assert overlay._hades_should_skip_automatic_memory("I want detailed research about Synthetic Product.", "Synthetic public-source result.") is True
 assert overlay._hades_should_skip_automatic_memory("Grocy says there are 2 cartons of milk", "Current stock: 2 cartons.") is True
 assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The service is unavailable.") is True
 assert overlay._hades_should_skip_automatic_memory("HADES_TASK_NOTIFICATION_FEED_V1", '{"version":1,"tasks":[]}') is True

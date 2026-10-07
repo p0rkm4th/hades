@@ -27,6 +27,12 @@ with tempfile.TemporaryDirectory(prefix="hades-finance-window-") as temporary:
     expected_mtime = datetime(2026, 9, 20, 12, 30, tzinfo=timezone.utc).timestamp()
     os.utime(path, (expected_mtime, expected_mtime))
     os.environ["HADES_FINANCE_CSV_PATH"] = str(path)
+    assert module._hades_direct_finance_guidance(
+        "I'm lactose intolerant. What would be a good coffee order for me?"
+    ) is None, "a coffee recommendation must not expose owner finance history"
+    assert module._hades_direct_finance_guidance(
+        "How much did I spend on coffee?"
+    ) is not None, "an explicit coffee-spending question should retain finance support"
     result = module._hades_direct_finance_guidance("How much did I spend on utilities?")
     assert "Statement dates: 2026-01-15 through 2026-09-10" in result, result
     assert "span crosses 9 calendar months; rows appear in 2 months; first month is partial, last month is partial" in result, result

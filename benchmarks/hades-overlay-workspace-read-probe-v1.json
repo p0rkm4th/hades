@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "title": "HADES overlay workspace read escalation — v1",
+  "status": "synthetic paired route probe; HADES failure reproduced",
+  "date": "2026-10-06",
+  "method": {
+    "hermes": "0.21.5 candidate API gateway",
+    "inference": "qwen3.6:35b Q4_K_M; same Ollama 0.31.1 endpoint and digest 096fdbd02fe620fc10cbeb6537e080f8041aece851e5d696aed024d4f70f2e47e",
+    "model_option": "reasoning.enabled=false in both requests",
+    "workspace": "temporary synthetic workspace; terminal.cwd configured explicitly; fixture contained ORCHID-9472",
+    "limitations": "one synthetic pair; tests one read-only file action only; no broader coding, write, household, domain, or owner-preference qualification"
+  },
+  "plain_stack": {
+    "enabled_toolsets": [
+      "file"
+    ],
+    "tool_schemas_exposed": 4,
+    "tool_schema_bytes": 5673,
+    "client_ttfc_ms": 6917.3,
+    "client_wall_ms": 7293.3,
+    "result": "PASS"
+  },
+  "hades": {
+    "inherited_tool_count_logged_by_overlay": 4,
+    "tool_schemas_exposed_to_model": 0,
+    "tool_calls": 0,
+    "client_ttfc_ms": 2384.5,
+    "client_wall_ms": 3408.1,
+    "result": "FAIL: model fabricated a file value after HADES removed the only relevant tools"
+  },
+  "interpretation": {
+    "product_tax": "HADES suppresses ordinary irrelevant schemas as intended but also suppresses the native file capability on an explicit workspace read. The model then claimed an action result without evidence.",
+    "priority": "P1: workspace escalation is not coherent; tool result was fabricated after capability suppression.",
+    "required_repair": "Expose the minimum authorized native workspace tools for an explicit owner workspace task, bound them to the selected workspace, or report clearly that the workspace is unavailable. Do not claim a file result without a tool result.",
+    "preference": "No owner preference collected."
+  }
+}

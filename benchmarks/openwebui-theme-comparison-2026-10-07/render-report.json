@@ -1,0 +1,62 @@
+{
+  "candidate": {
+    "title": "Open WebUI",
+    "theme": "hades-theme-odysseus-neon",
+    "effect": "hades-effect-none",
+    "composerVisible": true,
+    "themeStylesheet": true,
+    "themeScript": true,
+    "viewport": {
+      "width": 1365,
+      "height": 850
+    },
+    "background": "rgb(10, 10, 15)",
+    "bodyTextLength": 496,
+    "versionNotice": null,
+    "pageErrors": [],
+    "serverErrors": [
+      {
+        "url": "/api/v1/hades/tasks/notifications",
+        "status": 503
+      },
+      {
+        "url": "/api/v1/hades/tasks/notifications",
+        "status": 503
+      },
+      {
+        "url": "/api/v1/hades/automations/notifications",
+        "status": 503
+      }
+    ]
+  },
+  "baseline": {
+    "title": "Open WebUI",
+    "theme": "hades-theme-odysseus-neon",
+    "effect": "hades-effect-none",
+    "composerVisible": true,
+    "themeStylesheet": true,
+    "themeScript": true,
+    "viewport": {
+      "width": 1365,
+      "height": 850
+    },
+    "background": "rgb(10, 10, 15)",
+    "bodyTextLength": 586,
+    "versionNotice": "A new version (v0.11.4) is now available. Update for the latest features and improvements.",
+    "pageErrors": [],
+    "serverErrors": [
+      {
+        "url": "/api/v1/hades/automations/notifications",
+        "status": 503
+      },
+      {
+        "url": "/api/v1/hades/tasks/notifications",
+        "status": 503
+      },
+      {
+        "url": "/api/v1/hades/tasks/notifications",
+        "status": 503
+      }
+    ]
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "title": "HADES Core Ordinary Chat Paired Probe — v1",
+  "status": "three matched synthetic greeting pairs; directional only; no owner preference",
+  "date": "2026-10-06",
+  "method": {
+    "warm_state": "Ollama model was already loaded; runs were sequential and order was reversed",
+    "same_model": "qwen3.6:35b, Q4_K_M, Ollama digest 096fdbd02fe620fc10cbeb6537e080f8041aece851e5d696aed024d4f70f2e47e",
+    "same_runtime_and_hardware": "Ollama 0.31.1 on the same private inference host and endpoint for both stacks; network address omitted",
+    "context_and_sampling": "both Hermes configs set 65536 context and 1024 max output; Hermes defaults otherwise; system prompt differs because the HADES overlay is active",
+    "capture": "127.0.0.1 aggregate-only proxy records request sizes, tool schema counts, TTFC, total upstream generation, and Ollama token usage; prompt/response bodies are not persisted"
+  },
+  "pairs": [
+    {
+      "pair": 1,
+      "order": [
+        "HADES",
+        "PLAIN STACK"
+      ],
+      "hades": {
+        "upstream_model_ttfc_ms": 16155.8,
+        "user_visible_ttfc_ms": null,
+        "cli_completion_wall_ms": 31327,
+        "generation_total_ms": 16360.3,
+        "input_tokens": 732,
+        "output_tokens": 539,
+        "message_bytes": 3095,
+        "tools_exposed": 0,
+        "tool_schema_bytes": 0,
+        "tools_called": 0
+      },
+      "plain_stack": {
+        "upstream_model_ttfc_ms": 36397.7,
+        "user_visible_ttfc_ms": null,
+        "cli_completion_wall_ms": 39120,
+        "generation_total_ms": 37123.1,
+        "input_tokens": 14952,
+        "output_tokens": 62,
+        "message_bytes": 20475,
+        "tools_exposed": 33,
+        "tool_schema_bytes": 43354,
+        "tools_called": 0
+      },
+      "classification": "HADES lower context and faster in this pair; response token count differed substantially"
+    },
+    {
+      "pair": 2,
+      "order": [
+        "PLAIN STACK",
+        "HADES"
+      ],
+      "hades": {
+        "upstream_model_ttfc_ms": 6884.4,
+        "user_visible_ttfc_ms": null,
+        "cli_completion_wall_ms": 10444,
+        "generation_total_ms": 7231.8,
+        "input_tokens": 732,
+        "output_tokens": 230,
+        "message_bytes": 3095,
+        "tools_exposed": 0,
+        "tool_schema_bytes": 0,
+        "tools_called": 0
+      },
+      "plain_stack": {
+        "upstream_model_ttfc_ms": 4949.4,
+        "user_visible_ttfc_ms": null,
+        "cli_completion_wall_ms": 7341,
+        "generation_total_ms": 5345.1,
+        "input_tokens": 14952,
+        "output_tokens": 47,
+        "message_bytes": 20475,
+        "tools_exposed": 33,
+        "tool_schema_bytes": 43354,
+        "tools_called": 0
+      },
+      "classification": "PLAIN STACK faster in this pair; visible answers both concise and natural"
+    },
+    {
+      "pair": 3,
+      "order": [
+        "PLAIN STACK",
+        "HADES"
+      ],
+      "stream_json_capture": true,
+      "hades": {
+        "user_visible_ttfc_ms": 23982.6,
+        "upstream_model_ttfc_ms": 21090.9,
+        "generation_total_ms": 21295.8,
+        "cli_completion_wall_ms": 24465.9,
+        "input_tokens": 732,
+        "output_tokens": 783,
+        "message_bytes": 3095,
+        "tools_exposed": 0,
+        "tool_schema_bytes": 0,
+        "tools_called": 0
+      },
+      "plain_stack": {
+        "user_visible_ttfc_ms": 37385.8,
+        "upstream_model_ttfc_ms": 35634.1,
+        "generation_total_ms": 36038.9,
+        "cli_completion_wall_ms": 38030.0,
+        "input_tokens": 14952,
+        "output_tokens": 36,
+        "message_bytes": 20475,
+        "tools_exposed": 33,
+        "tool_schema_bytes": 43354,
+        "tools_called": 0
+      },
+      "classification": "HADES had lower user-visible TTFC and completion wall; both missed the 2 s TTFC and 10 s completion targets"
+    }
+  ],
+  "interpretation": {
+    "tool_and_context_tax": "On these ordinary greeting turns HADES omitted 33 irrelevant native tool schemas (43,354 bytes) and reduced model input from 14,952 to 732 tokens (95.1%). No tool was called by either stack.",
+    "latency": "Upstream TTFC varied sharply by order/state. HADES was faster in pairs 1 and 3 and slower in pair 2. Only pair 3 captured end-to-end user-visible TTFC; both stacks missed 2 seconds and 10 seconds there. Three pairs are insufficient to establish a stable latency advantage. CLI wall minus model-generation duration was 14.97 s for HADES pair 1, then 3.21 s and 3.17 s for pairs 2 and 3; PLAIN was about 2.0 s in every pair. That gap combines pre-request startup/context work and postprocessing/teardown, so it is not yet stage attribution.",
+    "completion_tokens": "HADES output-token usage (539, 230, 783) exceeded PLAIN (62, 47, 36), despite concise visible answers. The difference may include hidden reasoning tokens; the aggregate proxy does not capture token fields or explanations, so this requires follow-up profiling.",
+    "preference": "No owner preference was collected. Automated output comparison is not treated as owner dogfood.",
+    "scope_limit": "The candidate HADES profile did not configure household, memory, research, homelab, or workspace MCP servers. This proves ordinary-chat tool suppression in the staged overlay, not correct progressive activation of those capabilities or the full deployed request path.",
+    "metric_limit": "Proxy TTFC is measured from upstream request start, not Hermes process launch. Only pair 3 measured first text from the Hermes CLI at process launch; pairs 1–2 provide completion wall and upstream TTFC only. The Hermes pre/post-generation gap is not split into startup, routing, context construction, or postprocessing."
+  },
+  "excluded_exploratory_runs": [
+    "An earlier candidate run used an editable venv resolving some modules to the PLAIN source checkout; its timings are excluded.",
+    "A route-helper arity error and missing HADES_INTEGRATIONS_ROOT initially prevented an arithmetic-turn replay. Both startup defects were repaired and contract-tested; those failed attempts are excluded from comparative latency."
+  ],
+  "owner_corpus_status": "50-case seed exists; replay and owner qualification remain pending"
+}

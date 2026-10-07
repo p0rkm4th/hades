@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "title": "HADES workspace escalation route and isolation gate",
+  "date": "2026-10-06",
+  "status": "candidate integration passes; rootless deployment runner gate remains",
+  "baseline": "069e072319e3033241c6d86b8a14fa1ca99694d4",
+  "hermes": {
+    "version": "0.21.5 / v2026.9.24",
+    "source_commit": "f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "container_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "container_manifest_platform": "linux/amd64"
+  },
+  "runtime": {
+    "candidate": "HADES Hermes 0.21.5 overlay under a synthetic API owner identity",
+    "tool_runtime_actual": "local rootful Docker, network disabled",
+    "rootless_predicate": "mocked true only to exercise the route; a separate unmocked check rejected this rootful host",
+    "model": "deterministic in-process tool-loop stub; no inference request",
+    "data": "temporary synthetic files and identities only"
+  },
+  "route_checks": {
+    "ordinary_language_non_activation": "PASS: casual test mention, unrelated test-result question, and workspace-design discussion do not activate workspace handling",
+    "owner_workspace_read": "PASS: read_file returned the exact temporary fixture token from /workspace",
+    "exposed_tools": [
+      "read_file",
+      "search_files",
+      "write_file",
+      "patch",
+      "terminal"
+    ],
+    "terminal_policy": "PASS: per-chat Docker container, only the authenticated subject workspace mounted at /workspace, network disabled, no environment forwarding",
+    "host_sibling_secret": "PASS: sibling host fixture was not visible in container read result",
+    "subject_isolation": "PASS: two authenticated synthetic subjects received distinct workspace mounts and fixture contents",
+    "household_boundary": "PASS: household subject received no workspace tools and no model invocation",
+    "rootful_runtime_denial": "PASS: unmocked rootless runtime check denied this host",
+    "ordinary_turn_reset": "PASS: next greeting had zero tools and no terminal scope"
+  },
+  "limitations": [
+    "The real rootless Podman/Docker execution path is unavailable on this host and is not qualified.",
+    "No live model generation, workspace edit, focused test, Git inspection/commit, long-running task, or owner dogfood was performed.",
+    "The test's deterministic fake tool loop verifies HADES route binding and evidence suppression, not model task success or answer quality.",
+    "Production Hermes remains on the tracked 0.21.2 pin and deployed provenance remains unknown; workspace actions default disabled."
+  ],
+  "tests": {
+    "result": "PASS",
+    "supporting": [
+      "scripts/test-live-hermes-overlay-contract.sh: PASS",
+      "scripts/test-health-watch-contract.sh: PASS"
+    ]
+  },
+  "product_preference": "not collected"
+}

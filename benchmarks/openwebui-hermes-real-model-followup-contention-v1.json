@@ -1,0 +1,134 @@
+{
+  "date": "2026-10-06",
+  "source_revision": "63c2c089088bf9f7f47ad66377fc3e5bb7b25607",
+  "purpose": "Observe a natural 'Why?' continuation while Open WebUI metadata tasks may still be using the same local model.",
+  "runner": {
+    "python": "scripts/benchmark-openwebui-hermes-browser.py",
+    "python_sha256": "d56632290671f3156d6e4b153cc59c25adb8b054961d39663f817646cbabe173",
+    "browser": "scripts/benchmark-openwebui-hermes-local-browser.js",
+    "browser_sha256": "841a96e3bb35f5bdcb0d46e0cdc0cc268770626054cd846caaa3433c619e5c30"
+  },
+  "environment": {
+    "open_webui": "0.11.4 candidate image sha256:5135da5a53c99cbfd25e1d6f94ddad3da50b1f00f7527c251b35baa514ec81b3",
+    "hermes": "0.21.5 source f97608f178d1ffeca59860195ab7da295f7c8e5f; HADES overlay disabled",
+    "ollama": "0.35.1, loopback 127.0.0.1:11445, OLLAMA_NO_CLOUD=1, OLLAMA_NUM_PARALLEL=1",
+    "model": "Qwen3.6 35B Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "hardware": "NVIDIA RTX 3080 Ti Laptop GPU, 16 GiB; effective context 65,536",
+    "tools": "none exposed; zero tool schemas",
+    "followup": "Why?",
+    "composer_settlement": "Wait 6 s after the first answer appears before submitting the follow-up, then verify the Stop control is absent. This avoids a prior immediate-submit probe that did not produce a second provider request."
+  },
+  "samples": [
+    {
+      "tasks": "on",
+      "composer_ready_after_answer_ms": 3110,
+      "first_answer_visible_ms": 6974,
+      "followup_visible_ms": 68459,
+      "provider_generation_count": 4,
+      "provider_durations_ms_in_completion_order": {
+        "first_chat": 6271,
+        "title": 11202,
+        "follow_up": 43830,
+        "second_chat": 68614
+      },
+      "note": "Exploratory outlier. This run used Stop-control settlement without the later fixed 6 s pause; no provider start timestamps were recorded."
+    },
+    {
+      "tasks": "off",
+      "composer_ready_after_answer_ms": 6003,
+      "first_answer_visible_ms": 7457,
+      "followup_visible_ms": 18266,
+      "provider_generation_count": 2,
+      "provider_second_chat_duration_ms": 18468
+    },
+    {
+      "tasks": "on",
+      "composer_ready_after_answer_ms": 6004,
+      "first_answer_visible_ms": 3419,
+      "followup_visible_ms": 22457,
+      "provider_generation_count": 4,
+      "provider_durations_ms_in_completion_order": {
+        "first_chat": 2464,
+        "title": 13502,
+        "follow_up": 22161,
+        "second_chat": 22704
+      }
+    },
+    {
+      "tasks": "on",
+      "composer_ready_after_answer_ms": 6004,
+      "first_answer_visible_ms": 5956,
+      "followup_visible_ms": 19379,
+      "provider_generation_count": 4,
+      "provider_intervals_epoch_ms": {
+        "first_chat": [
+          1791332291109,
+          1791332296226
+        ],
+        "title": [
+          1791332291110,
+          1791332301624
+        ],
+        "follow_up": [
+          1791332296311,
+          1791332316416
+        ],
+        "second_chat": [
+          1791332302604,
+          1791332322058
+        ]
+      },
+      "provider_durations_ms": {
+        "first_chat": 5117,
+        "title": 10514,
+        "follow_up": 20105,
+        "second_chat": 19453
+      },
+      "provider_sse_data_frames": {
+        "first_chat": 198,
+        "title": 176,
+        "follow_up": 740,
+        "second_chat": 228
+      }
+    },
+    {
+      "tasks": "off",
+      "composer_ready_after_answer_ms": 6004,
+      "first_answer_visible_ms": 3928,
+      "followup_visible_ms": 24684,
+      "provider_generation_count": 2,
+      "provider_second_chat_interval_epoch_ms": [
+        1791332384801,
+        1791332409494
+      ],
+      "provider_second_chat_duration_ms": 24693,
+      "provider_second_chat_sse_data_frames": 1321
+    }
+  ],
+  "summary": {
+    "two_fixed_settlement_samples_followup_visible_ms": {
+      "metadata_on": [
+        22457,
+        19379
+      ],
+      "metadata_off": [
+        18266,
+        24684
+      ],
+      "median_on": 20918,
+      "median_off": 21475
+    },
+    "interpretation": "Two fixed-settlement samples show no stable follow-up latency penalty; medians differ by -557 ms, far below this model's observed turn-to-turn variance. A separate ON exploratory sample took 68.459 s, showing a high-latency tail that needs more repetitions and queue instrumentation. Metadata calls demonstrably overlap the second chat request in one trace, but timing alone does not prove the runtime's internal scheduling or causation. Metadata adds two provider generations each conversation. The short 'Why?' answers were weak in both arms and are not quality-qualified.",
+    "stop_route": "UI issued two POST /api/tasks/chat/{id}/stop requests after completed turns in ON runs; both returned HTTP 200. The metadata generations still completed in the captured traces. Do not interpret these successful cleanup responses as metadata cancellation.",
+    "limitations": [
+      "synthetic browser account, candidate services and one local model; no PLAIN STACK arm or owner preference",
+      "two fixed-settlement samples per arm, with run order not counterbalanced",
+      "warm/cold model state and output sampling contribute variance",
+      "the 68.459 s ON sample was exploratory and did not include provider interval timestamps",
+      "SSE frame counts are transport events, not token counts",
+      "answer correctness/naturalness was not independently graded",
+      "notification endpoint returned fixture 503 because feed credentials/URL were omitted; unrelated to per-turn metadata calls"
+    ]
+  },
+  "cleanup": "Temporary Ollama process stopped, port 11445 closed, candidate containers/network removed; production configuration unchanged."
+}

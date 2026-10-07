@@ -1,0 +1,316 @@
+{
+  "date": "2026-10-07",
+  "source_revision": "dec7cfb841b55241d42ab4009e38734ecb8e828c",
+  "method": {
+    "hermes": "Hermes Agent v0.21.3 (2026.9.14)\nInstall directory: /opt/hades-stage/hades-core-usability-reset/hermes-v0.21.3-stable/install/source\nInstall method: unknown\nPython: 3.13.14\nOpenAI SDK: 2.24.0 clean install for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.40.0",
+    "openai_chat_context_probe_prompt_tokens": 7010,
+    "openai_chat_context_probe_minimum_tokens": 5000,
+    "docker_engine": "29.8.2",
+    "docker_security_options": [
+      "name=seccomp,profile=builtin",
+      "name=rootless",
+      "name=cgroupns"
+    ],
+    "docker_storage_driver": "vfs",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "sandbox_image_id": "sha256:d14ae8d7fcee933e82c9f62eded621110f227bc96363ca5449d36897af7bea1c",
+    "context": 65536,
+    "requested_context": 65536,
+    "actual_context_source": "Ollama GET /api/ps after warmup and after each provider request",
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "escalation",
+    "subject": "synthetic owner identity; private fixture only"
+  },
+  "turns": [
+    {
+      "scenario": "escalation",
+      "stack": "plain",
+      "repeat": 0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 37850.9,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 36939.5,
+          "stream_progress": {
+            "delta_count": 143,
+            "character_count": 607,
+            "first_delta_ms": 17296.0,
+            "last_delta_ms": 36931.0
+          },
+          "api_calls": 8,
+          "tool_result_count": 9,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [
+            "geometry.py"
+          ],
+          "messages_added": 18
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 37849.5,
+          "stream_progress": {
+            "delta_count": 12,
+            "character_count": 53,
+            "first_delta_ms": 600.7,
+            "last_delta_ms": 904.3
+          },
+          "api_calls": 1,
+          "tool_result_count": 0,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [
+            "geometry.py"
+          ],
+          "messages_added": 2
+        }
+      ],
+      "api_calls": 9,
+      "tool_result_count": 9,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 39838.6,
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "changed_paths": [
+          "geometry.py"
+        ],
+        "only_expected_source_changed": true,
+        "working_tree_status": [
+          " M geometry.py",
+          "?? __pycache__/"
+        ]
+      }
+    },
+    {
+      "scenario": "escalation",
+      "stack": "hades",
+      "repeat": 0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 44238.4,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 24098.1,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 399,
+            "first_delta_ms": 238.4,
+            "last_delta_ms": 24097.5
+          },
+          "api_calls": 5,
+          "tool_result_count": 6,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 12
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 44236.7,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 212,
+            "first_delta_ms": 79.1,
+            "last_delta_ms": 20135.5
+          },
+          "api_calls": 4,
+          "tool_result_count": 3,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [
+            "geometry.py"
+          ],
+          "messages_added": 8
+        }
+      ],
+      "api_calls": 9,
+      "tool_result_count": 9,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 46993.4,
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "changed_paths": [
+          "geometry.py"
+        ],
+        "only_expected_source_changed": true,
+        "working_tree_status": [
+          " M geometry.py",
+          "?? __pycache__/"
+        ]
+      }
+    },
+    {
+      "scenario": "escalation",
+      "stack": "hades",
+      "repeat": 1,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 35477.2,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 16731.1,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 408,
+            "first_delta_ms": 235.6,
+            "last_delta_ms": 16730.2
+          },
+          "api_calls": 5,
+          "tool_result_count": 6,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 12
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 35476.1,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 168,
+            "first_delta_ms": 78.3,
+            "last_delta_ms": 18742.3
+          },
+          "api_calls": 3,
+          "tool_result_count": 2,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [
+            "geometry.py"
+          ],
+          "messages_added": 6
+        }
+      ],
+      "api_calls": 8,
+      "tool_result_count": 8,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 38031.6,
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "changed_paths": [
+          "geometry.py"
+        ],
+        "only_expected_source_changed": true,
+        "working_tree_status": [
+          " M geometry.py",
+          "?? __pycache__/"
+        ]
+      }
+    },
+    {
+      "scenario": "escalation",
+      "stack": "plain",
+      "repeat": 1,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 23362.4,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 17082.4,
+          "stream_progress": {
+            "delta_count": 104,
+            "character_count": 417,
+            "first_delta_ms": 5348.8,
+            "last_delta_ms": 17073.8
+          },
+          "api_calls": 5,
+          "tool_result_count": 6,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 12
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 23360.9,
+          "stream_progress": {
+            "delta_count": 23,
+            "character_count": 69,
+            "first_delta_ms": 5897.6,
+            "last_delta_ms": 6273.9
+          },
+          "api_calls": 3,
+          "tool_result_count": 2,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [
+            "geometry.py"
+          ],
+          "messages_added": 6
+        }
+      ],
+      "api_calls": 8,
+      "tool_result_count": 8,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 25844.3,
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "changed_paths": [
+          "geometry.py"
+        ],
+        "only_expected_source_changed": true,
+        "working_tree_status": [
+          " M geometry.py",
+          "?? __pycache__/"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "plain_fixture_tool_successes": 0,
+    "hades_fixture_tool_successes": 0,
+    "plain_correct_final_answers": 0,
+    "hades_correct_final_answers": 0,
+    "verified_tests_passed": 4,
+    "expected_source_only_changes": 4,
+    "repeats": 2,
+    "plain_median_task_ms": 30606.65,
+    "hades_median_task_ms": 39857.8,
+    "hades_median_latency_delta_ms": 9251.15,
+    "owner_preference": "unassigned",
+    "hades_invalid_tool_calls_in_diagnosis": 0,
+    "plain_invalid_tool_calls_in_diagnosis": 0,
+    "hades_diagnosis_exposed_tools": [
+      "read_file",
+      "search_files"
+    ],
+    "interpretation": "The clarified diagnosis prompt eliminated out-of-catalog tool attempts in two repeats while preserving the diagnose-then-act boundary. All tests passed; no material latency change is established. HADES remains slower than PLAIN and repeats four searches per diagnosis. PLAIN edited during diagnosis once."
+  },
+  "limitations": [
+    "Two order-balanced repeats per stack on one synthetic one-file coding escalation; this does not qualify larger coding tasks, Git commit behavior, or owner preference.",
+    "Independent fixture tests and diff checks run after chat completion; all four test runs passed and only geometry.py changed.",
+    "Direct Hermes AIAgent route excludes Open WebUI persistence/metadata and does not qualify deployed gateway authentication.",
+    "The 7k-token chat-route context probe completed under a 180-second setup timeout; setup time is excluded from task latency."
+  ],
+  "owner_preference": null,
+  "comparative_assessment": "MIXED; no owner preference label. After the updated diagnosis prompt, HADES used only the two exposed read/search tools and made zero out-of-catalog calls in both repeats, down from 1 and 2 in v3. It held file edits until “Fix it”; PLAIN still edited during diagnosis once. All independent tests passed. HADES median whole-task time was 39.86s vs PLAIN 30.61s, essentially unchanged from v3 and still slower. HADES made four file searches per diagnosis in each repeat, leaving avoidable discovery overhead."
+}

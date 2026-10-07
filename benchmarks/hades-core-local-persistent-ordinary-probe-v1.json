@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "title": "HADES vs PLAIN STACK ordinary greeting — persistent agent process probe",
+  "date": "2026-10-06",
+  "status": "one synthetic persistent-process sequence per stack; exploratory; no owner preference",
+  "conditions": {
+    "hermes": "0.21.5, source commit f97608f178d1ffeca59860195ab7da295f7c8e5f, same candidate venv",
+    "ollama": "0.35.1 staged official archive SHA-256 9fcd79ac4575b2bd31b992eee18b1000c8ad126b451627c8f8cd091714cfbb10 at loopback port 11445",
+    "model": "qwen3.6:35b Q4_K_M, digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "context_length": 65536,
+    "reasoning": "disabled explicitly",
+    "host": "same local RTX 3080 Ti laptop; Ollama model stayed loaded",
+    "order_and_cache": "PLAIN sequence ran first, then HADES sequence. Each profile/prompt already had earlier calls in the same Ollama server; first turn, prefix-cache and stack order effects are not controlled. Warm turns are shown separately but remain exploratory."
+  },
+  "plain_stack": {
+    "tools_exposed": 19,
+    "tool_schema_bytes": 35631,
+    "prompt_tokens_each_turn": 2050,
+    "turns": [
+      {
+        "turn": 1,
+        "state": "first turn in process",
+        "ttft_ms": 5311.2,
+        "wall_ms": 5958.1,
+        "output_tokens": 45
+      },
+      {
+        "turn": 2,
+        "state": "warm repeat",
+        "ttft_ms": 209.5,
+        "wall_ms": 372.7,
+        "output_tokens": 15
+      },
+      {
+        "turn": 3,
+        "state": "warm repeat",
+        "ttft_ms": 229.2,
+        "wall_ms": 613.9,
+        "output_tokens": 27
+      },
+      {
+        "turn": 4,
+        "state": "warm repeat",
+        "ttft_ms": 226.7,
+        "wall_ms": 605.5,
+        "output_tokens": 29
+      }
+    ]
+  },
+  "hades": {
+    "tools_exposed": 0,
+    "tool_schema_bytes": 0,
+    "prompt_tokens_each_turn": 572,
+    "turns": [
+      {
+        "turn": 1,
+        "state": "first turn in process",
+        "ttft_ms": 2095.9,
+        "wall_ms": 2318.9,
+        "output_tokens": 11
+      },
+      {
+        "turn": 2,
+        "state": "warm repeat",
+        "ttft_ms": 93.5,
+        "wall_ms": 181.2,
+        "output_tokens": 5
+      },
+      {
+        "turn": 3,
+        "state": "warm repeat",
+        "ttft_ms": 96.3,
+        "wall_ms": 219.5,
+        "output_tokens": 8
+      },
+      {
+        "turn": 4,
+        "state": "warm repeat",
+        "ttft_ms": 99.6,
+        "wall_ms": 147.6,
+        "output_tokens": 3
+      }
+    ]
+  },
+  "summary": {
+    "plain_warm_median_ttft_ms": 226.7,
+    "hades_warm_median_ttft_ms": 96.3,
+    "plain_warm_median_wall_ms": 605.5,
+    "hades_warm_median_wall_ms": 181.2,
+    "prompt_reduction_percent": 72.1,
+    "tool_schema_bytes_removed": 35631,
+    "interpretation": "After each stack's profile had warmed, HADES turns were faster on this sequence and used fewer output tokens. The first turns cannot be compared because run order and cache state differed. Warm HADES answers were also notably curt and two resembled system-health responses. This does not establish owner preference or a general latency win."
+  },
+  "limitations": [
+    "Single prompt and one sequence per stack; order and model prefix cache were not balanced.",
+    "Direct AIAgent calls omit Open WebUI, the running API gateway, MCP/domain services, Hindsight recall, and owner data.",
+    "Staged model digest and laptop hardware differ from the existing production inference endpoint; this is not production-equivalent.",
+    "Warm repetitions use identical text and profile, which is a narrow best-case prefix reuse pattern.",
+    "Scotty did not provide preference feedback."
+  ],
+  "product_preference": "not collected from Scotty"
+}

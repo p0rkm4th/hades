@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "title": "Isolated Hindsight 0.10.2 local extraction and HADES memory visibility probe",
+  "classification": "synthetic, HADES-only exploratory evidence; not a PLAIN/HADES preference comparison",
+  "source_revision": "a768e00a67573cab0863f3aa205880855c80283b",
+  "runtime": {
+    "hermes": "0.21.5",
+    "hindsight": "0.10.2",
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight@sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70",
+    "hindsight_source_commit": "5fc4ce20917b916240cef27c212c387a177f115b",
+    "ollama": "0.35.1",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "hardware": "NVIDIA GeForce RTX 3080 Ti Laptop GPU",
+    "context_tokens": 65536
+  },
+  "privacy_boundary": {
+    "inference_cloud_features": "disabled with OLLAMA_NO_CLOUD=1",
+    "ollama_listener": "127.0.0.1:11445",
+    "container_route": "temporary TCP forwarder bound only to Docker bridge gateway 172.17.0.1:11446 and forwarding to loopback Ollama",
+    "hindsight_api": "ephemeral container, API and control ports published on host loopback only",
+    "data": "synthetic tea preference only; isolated disposable Hindsight volume",
+    "production_data_or_credentials": false
+  },
+  "direct_hindsight_smoke": {
+    "bank_create_ms": 8,
+    "retain": {
+      "result": "success",
+      "duration_ms": 21127,
+      "retain_async": false,
+      "description": "Stored a synthetic chamomile preference through the pinned Hindsight client and local Qwen extraction endpoint."
+    },
+    "recall": {
+      "duration_ms": 45,
+      "result": "The synthetic chamomile preference was returned for a matching query."
+    },
+    "service_log": {
+      "extract_llm_ms": 11690,
+      "retain_complete_ms": 11729
+    }
+  },
+  "hades_gateway_probe": {
+    "owner_subject": "synthetic-owner",
+    "turns": [
+      {
+        "duration_ms": 6448.8,
+        "http_status": 200,
+        "provider_requests_observed": 1
+      },
+      {
+        "duration_ms": 61.8,
+        "http_status": 200,
+        "provider_requests_observed": 0
+      },
+      {
+        "duration_ms": 46.5,
+        "http_status": 200,
+        "provider_requests_observed": 0
+      },
+      {
+        "duration_ms": 72.6,
+        "http_status": 200,
+        "provider_requests_observed": 0
+      }
+    ],
+    "later_followup_after_background_processing": {
+      "duration_ms": 566.2,
+      "provider_requests_observed": 1,
+      "canonical_bank_state": "Hindsight later listed the corrected mint fact plus its consolidated observation, while the prior chamomile raw fact remained valid."
+    },
+    "interpretation": [
+      "The assistant acknowledged retain before Hindsight extraction made the new preference visible to an immediate follow-up; the next-turn lookup returned a false memory miss.",
+      "Hindsight's local extraction was not synchronous with the assistant acknowledgement in this gateway path. The service later completed extraction and consolidated the correction.",
+      "The delayed answer repeated one preference because the observation and its first-person source fact were grouped under different lexical subjects. An ensuing source change now groups those wordings and has a regression fixture; the end-to-end replay after that fix remains open.",
+      "One provider request was observed for the initial turn. This probe did not capture enough payload structure to classify that request, so it is not attributed to answer generation or title generation."
+    ]
+  },
+  "direct_route_replay": {
+    "classification": "synthetic, isolated direct HADES route replay; no gateway or owner preference",
+    "owner_subject": "synthetic-owner-ux-replay",
+    "save_ack_ms": 26.9,
+    "save_ack_text_claimed_completed": true,
+    "immediate_valid_tagged_items": 0,
+    "immediate_recall": "I couldn't find a matching private memory for this account. I did not use another user's bank.",
+    "three_second_recall": "I couldn't find a matching private memory for this account. I did not use another user's bank.",
+    "service_observation": "The explicit route passed retain_async=false to the synchronous client helper, but HADES' monkeypatched aretain_batch wrapper overwrote it with true. Hindsight correctly reported var_async=true and queued processing; this was an overlay bug, not Hindsight ignoring the flag. The queued runs included a 20.651s extraction and a later extraction/consolidation interval reaching 57.424s.",
+    "change": "Both HADES async wrappers now default retain_async to true only when the caller omitted it. Explicit false survives the sync client's delegation. The route also keeps honest queued wording as a defensive fallback if an upstream service still returns var_async=true.",
+    "post_fix_runtime_replay": {
+      "harness": "scripts/test-hindsight-route-runtime.py with installed Hermes 0.21.5 Python, pinned Hindsight 0.10.2 image, and deterministic synthetic extraction model",
+      "result": "PASS actual explicit retain, immediate fresh recall, newest correction after a two-word typo, paraphrase recall, and Alpha/Beta bank isolation",
+      "fresh_process_route_ms": {
+        "direct_match_recall": 1457.0,
+        "typo_correction_recall": 1410.7,
+        "semantic_paraphrase_recall": 1659.1
+      },
+      "limitations": "Includes fresh Python startup and synthetic extraction provider; not representative of real local LLM extraction latency or owner-preferred UX."
+    },
+    "post_fix_real_local_model_replay": {
+      "classification": "synthetic owner fact, isolated Hindsight and local-only model; no gateway or owner preference",
+      "model": "Qwen3.6 35B Q4_K_M, digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+      "explicit_request_retain_async_argument": false,
+      "save_route_ms": 26364.5,
+      "service_fact_extraction_ms": 26250,
+      "immediate_fresh_recall_ms": 13.6,
+      "immediate_fresh_recall_result": "The saved synthetic hibiscus preference was returned.",
+      "outcome": "PASS save completion preceded an accurate immediate fresh-session recall; save latency missed the 15s simple-memory target by 11.4s.",
+      "ollama": "0.35.1, OLLAMA_NO_CLOUD=1, loopback listener; disposable bridge and Hindsight container/volume removed after measurement.",
+      "limitations": "Single synthetic local sample on RTX 3080 Ti; no Hindsight/Gateway UI, no PLAIN comparison, no owner preference."
+    },
+    "focused_regression": "scripts/test-hindsight-explicit-memory-route.py covers completed and queued acknowledgement variants.",
+    "limitations": [
+      "The corrected real-model save/recall path was replayed once and did guarantee immediate availability, but its 26.36s write latency misses the simple-memory target.",
+      "If an upstream endpoint independently queues a write, HADES reports that accurately but still has no completion notification.",
+      "No Open WebUI gateway replay, PLAIN comparison, owner preference, or production path was exercised."
+    ]
+  },
+  "hindsight_named_chunks_strategy_probe": {
+    "classification": "synthetic Hindsight 0.10.2 native capability probe; not yet integrated into HADES route",
+    "strategy": "per-bank named retain strategy with retain_extraction_mode=chunks",
+    "provider": "configured OpenAI-compatible endpoint was unreachable; chunks mode made no extraction request",
+    "outcome": "Hindsight created one canonical valid tagged memory and semantic recall returned its raw text for a natural preference query.",
+    "retain": {
+      "latency_ms": 71.0,
+      "success": true,
+      "items_count": 1,
+      "var_async": false,
+      "operation_id": null
+    },
+    "service_timings": {
+      "fact_extraction_seconds": 0.0,
+      "embedding_seconds": 0.015,
+      "store_seconds": 0.043,
+      "recall_seconds": 0.042
+    },
+    "integration_notes": [
+      "The Hindsight v0.10 API accepts strategy per retain item and named strategy maps in bank configuration; the exact schema was exercised against the staged 0.10.2 image/client.",
+      "Updating retain_strategies replaces that override map. An integration must merge with the existing bank-level overrides to preserve other strategy entries.",
+      "This is only a synthetic candidate. It has not been tested with the default observation/consolidation setting, existing production bank configuration, HADES route code, PLAIN, or owner-preferred UX."
+    ],
+    "recommendation": "The no-extraction native capability was adopted in a subject-isolated explicit-memory bank. The integrated path disables observations/auto-consolidation on that dedicated bank, avoiding same-bank background LLM work."
+  },
+  "post_fix_isolated_explicit_bank_replay": {
+    "classification": "synthetic HADES direct route against Hindsight 0.10.2 and local-only Ollama; no gateway or owner preference",
+    "source_revision": "campaign HEAD before this result was committed: 58e59e49a3d0cfd5a305221d906aa45ddf6c4dc4 plus current isolated-bank working diff",
+    "bank_scope": "hades-user-synthetic-isolated-route-20261006-explicit, derived only from the trusted authenticated subject; owner bank uses a corresponding owner-only suffix",
+    "bank_config": {
+      "retain_extraction_mode": "chunks",
+      "enable_observations": false,
+      "enable_auto_consolidation": false
+    },
+    "real_local_model_save": {
+      "save_route_ms": 78.8,
+      "response_var_async": false,
+      "immediate_recall_route_ms": 24.5,
+      "immediate_recall_result": "The saved synthetic hibiscus preference was returned.",
+      "service_retain_ms": 39,
+      "embedding_ms": 12,
+      "fact_extraction_llm_calls": 0,
+      "consolidation_jobs_queued": 0
+    },
+    "synthetic_actual_route_qualification": {
+      "harness": "scripts/test-hindsight-route-runtime.py; installed Hermes 0.21.5 Python, Hindsight 0.10.2, deterministic synthetic extraction provider",
+      "result": "PASS explicit retain, immediate fresh recall, correction after two-word typo, paraphrase recall, and Alpha/Beta isolation",
+      "fresh_process_route_ms": {
+        "direct_match": 1448.9,
+        "typo_correction": 1436.8,
+        "semantic_paraphrase": 1697.3
+      },
+      "note": "Includes Python startup and mock provider service; no real extraction call should occur on the fast explicit bank."
+    },
+    "same_bank_background_consolidation_diagnostic": {
+      "same_bank_chunks_save_route_ms": 83.0,
+      "observations_enabled": true,
+      "consolidation_llm_ms": 20462,
+      "consolidation_total_ms": 20518,
+      "ordinary_chat_before_ms": {
+        "ttft": 9098.4,
+        "total": 9180.7
+      },
+      "ordinary_chat_started_during_consolidation_ms": {
+        "ttft": 33902.4,
+        "total": 33939.5
+      },
+      "interpretation": "One order-fixed concurrent pair showed a 24.8s total-latency increase while Hindsight consolidation occupied the same local model. A separate no-consolidation control remained highly variable (29.7s before vs 56.5s after), so this is a contention warning, not a stable causal estimate. The integrated explicit bank avoids the observed consolidation job."
+    },
+    "limitations": [
+      "All data synthetic, one owner-subject fixture, staged RTX 3080 Ti/Qwen 35B; no production service, Open WebUI gateway, PLAIN preference comparison, or dogfood.",
+      "The explicit-memory lookup checks both legacy per-user bank and isolated explicit bank, and semantic fallback queries both, but broader natural-language memory discovery and the full corpus remain unqualified.",
+      "The real local timing is one save/recall sample; current production Hindsight is older than the staged 0.10.2 API and follows synchronous legacy fallback until upgraded."
+    ]
+  },
+  "tracked_legacy_api_fallback_probe": {
+    "server_image_digest": "sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028",
+    "server_version": "0.9.2",
+    "client_version": "0.10.2",
+    "probe": "Current HADES overlay _hades_explicit_memory_bank(client, authenticated_subject_bank, create=False) against the disposable tracked 0.9.2 image.",
+    "observed_api_version": "0.9.2",
+    "selected_explicit_bank": null,
+    "result": "PASS feature detection selects canonical-bank fallback; no -explicit bank was requested or created.",
+    "runtime_contract": "scripts/test-hindsight-runtime.sh also passed on the pinned 0.9.2 image: API/control plane/worker startup, tagged-memory-list response, and worker recovery isolation.",
+    "tracked_client_route_replay": {
+      "client_version": "0.6.1",
+      "server_version": "0.9.2",
+      "model": "synthetic extraction endpoint bound only to Docker bridge gateway",
+      "result": "PASS explicit retain acknowledged as stored, followed by fresh-process recall of violet comet-42 markers from the canonical subject bank.",
+      "synthetic_extraction_requests": 3,
+      "claim_scope": "One synthetic fact; no correction ordering, latency target, production runtime, or owner preference claim."
+    },
+    "repeated_route_latency_smoke": {
+      "client_version": "0.6.1",
+      "server_version": "0.9.2",
+      "samples": [
+        {
+          "save_route_ms": 1049.0,
+          "fresh_typo_recall_route_ms": 944.8
+        },
+        {
+          "save_route_ms": 1001.5,
+          "fresh_typo_recall_route_ms": 929.4
+        },
+        {
+          "save_route_ms": 988.2,
+          "fresh_typo_recall_route_ms": 946.7
+        },
+        {
+          "save_route_ms": 964.8,
+          "fresh_typo_recall_route_ms": 940.8
+        },
+        {
+          "save_route_ms": 982.7,
+          "fresh_typo_recall_route_ms": 936.9
+        }
+      ],
+      "median_save_route_ms": 988.2,
+      "median_fresh_typo_recall_route_ms": 940.8,
+      "synthetic_model_requests": 11,
+      "method": "Five independent authenticated synthetic subject banks; each route ran in a fresh Hermes 0.21.2 Python process. Hindsight extraction endpoint returned immediately without inference.",
+      "claim_scope": "Direct-route process/service overhead smoke only. Excludes real extraction/generation, gateway, Open WebUI, and owner interaction; not evidence of product memory latency target compliance."
+    },
+    "tracked_client_correction_replay": {
+      "client_version": "0.6.1",
+      "server_version": "0.9.2",
+      "sequence": [
+        "Remember that my favorite fruit is mango.",
+        "Remember that my favorite fruit is pear.",
+        "What is my favrite frut?"
+      ],
+      "initial_failure": "Real legacy memory-list result contained full text 'My favorite fruit is pear.' and entities 'user, pear, favorite fruit'; equal fuzzy-overlap scores made HADES answer only 'I remember: favorite fruit'.",
+      "fix": "Prefer complete memory text when its overlap ties an entity fragment, and strip the known Hindsight ' | Involving: ...' serialization suffix from direct-memory answers.",
+      "result_after_fix": "PASS latest corrected value returned as 'I remember: My favorite fruit is pear.'; mango absent; serialization suffix absent.",
+      "synthetic_extraction_requests": 5,
+      "claim_scope": "One synthetic correction sequence on disposable data; not a repeated-latency, real-model, gateway, or owner-preference result."
+    },
+    "limitations": [
+      "The API feature-detection probe used the staged 0.10.2 client against the 0.9.2 server; a separate route replay did use tracked client 0.6.1.",
+      "The tracked-client route replay used a disposable 0.9.2 service, synthetic fact/extraction endpoint, and temporary database volume; production deployment and data were untouched. Correction ordering and latency were not measured."
+    ]
+  },
+  "limitations": [
+    "HADES-only and synthetic; no PLAIN stack, owner preference, or human naturalness review.",
+    "This did not exercise Open WebUI, production Hindsight, or production authentication.",
+    "Provider instrumentation retained request counts only for the HADES gateway turns; it did not record schema counts or context sizes.",
+    "The isolated Hindsight volume and containers were removed after the measurements."
+  ]
+}

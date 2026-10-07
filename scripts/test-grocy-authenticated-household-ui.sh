@@ -445,6 +445,24 @@ with open(path, 'w', encoding='utf-8') as stream:
 PY
   chmod 600 "$HERMES_HOME/profiles/hades/config.yaml"
 fi
+if [[ -n ${HADES_GROCY_UI_HINDSIGHT_PLUGIN_REF:-} ]]; then
+  [[ "$HADES_GROCY_UI_HINDSIGHT_PLUGIN_REF" =~ ^[0-9a-f]{40}$ ]] || {
+    echo 'FAIL HADES_GROCY_UI_HINDSIGHT_PLUGIN_REF must be an immutable 40-character commit' >&2
+    exit 2
+  }
+  # The HADES overlay imports the provider during interpreter startup, before
+  # Hermes applies the selected profile override; install it at process-home scope.
+  hermes plugins install hindsight \
+    --ref "$HADES_GROCY_UI_HINDSIGHT_PLUGIN_REF" --no-deps --enable >/dev/null
+fi
+if [[ ${HADES_GROCY_UI_GATEWAY_STANDALONE:-0} == 1 ]]; then
+  # Hermes 0.21.5 requires standalone=true for this disposable single-profile
+  # gateway; production multiplexing remains a separate deployment contract.
+  cat >>"$HERMES_HOME/profiles/hades/config.yaml" <<'YAML'
+gateway:
+  standalone: true
+YAML
+fi
 export PYTHONPATH="$hermes_overlay_dir:$repo_dir:$hermes_source"
 export HADES_HERMES_WORKING_DIRECTORY=${HADES_HERMES_WORKING_DIRECTORY:-$repo_dir}
 export HADES_TASK_STATE_FILE="$work/tasks.sqlite" HADES_EPSILON_STATE_FILE="$work/epsilon.sqlite" HADES_GROCY_AUDIT_FILE="$work/grocy-audit.jsonl"
@@ -691,7 +709,15 @@ else:
     positions_reads=sum(row['method']=='GET' and row['path']=='/api/objects/recipes_pos' for row in requests)
     assert 15 <= positions_reads <= 17, ('recipe-position read count outside bounded journey', positions_reads)
     conversions=[row for row in requests if row['method']=='GET' and row['path'].startswith('/api/objects/quantity_unit_conversions_resolved?')]
-    assert 21 <= len(conversions) <= 23 and all('query%5B%5D=product_id%3D' in row['path'] for row in conversions), ('unit-conversion reads outside bounded journey', len(conversions))
+    conversion_paths=[row['path'] for row in conversions]
+    # The 2026-10-07 paired 0.11.1/0.11.4 UI replay produced identical
+    # 13-read traces. Require both journey products, and cap duplicate reads;
+    # the former 21-read floor encoded an older redundant request pattern.
+    assert (2 <= len(conversions) <= 15
+            and all('query%5B%5D=product_id%3D' in path for path in conversion_paths)
+            and {path.rsplit('product_id%3D', 1)[-1] for path in conversion_paths} == {'14', '15'}), (
+        'unit-conversion reads must cover both journey products without a duplicate-read storm',
+        len(conversions), conversion_paths)
     writes=[row for row in requests if row['method']=='POST' and row['path']=='/api/objects/shopping_list']
     assert len(writes)==3, writes
     assert sum(row['method']=='GET' and row['path']=='/api/objects/shopping_list' for row in requests)>=(21 if owner_serving else 19), requests

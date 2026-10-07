@@ -1,0 +1,147 @@
+{
+  "date": "2026-10-06",
+  "source_revision": "0053e8d9fc6410bf31a86bd5ceadeef550cbdbf9",
+  "method": {
+    "hermes": "0.21.5 clean source for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "context": 65536,
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "subject": "synthetic owner identity; private fixture only",
+    "workspace_registration": "Both profiles call Hermes register_task_env_overrides(task_id, {cwd: host workspace, cwd_source: session, env_type: docker}) before the turn, matching Hermes gateway/TUI workspace lifecycle and Docker session isolation. HADES overlay may perform the same registration again for its authenticated owner policy."
+  },
+  "runner_sha256": "9974dfe19d0169a68f5a5b96999ddc934c5ce026a807bbd9f41f8e980ea78509",
+  "valid_for_plain_vs_hades_comparison": true,
+  "image_verification": "The rootful registry-pulled digest and rootless Docker-loaded image had matching Config and RootFS layer arrays. A temporary test wrapper delegated immutable repository-digest inspection to rootful Docker after comparing Config+RootFS, then translated docker run from the digest name to the rootless image ID. Workspace containers still ran rootless with docker_network=false.",
+  "methodology": "Two order-balanced repeats per stack; same Hermes 0.21.5, Qwen3.6 35B digest, Ollama 0.35.1, requested 65,536 context, pinned sandbox image content, private fixtures, direct AIAgent. No UI, memory or production services.",
+  "turns": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "elapsed_ms": 18145.8,
+      "outer_wall_ms": 20082.0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "api_calls": 2,
+      "tool_result_count": 1,
+      "fixture_read_succeeded": true,
+      "correct_final_answer": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "elapsed_ms": 16881.6,
+      "outer_wall_ms": 20174.5,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "api_calls": 2,
+      "tool_result_count": 1,
+      "fixture_read_succeeded": true,
+      "correct_final_answer": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "elapsed_ms": 8533.7,
+      "outer_wall_ms": 11901.5,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "api_calls": 2,
+      "tool_result_count": 1,
+      "fixture_read_succeeded": true,
+      "correct_final_answer": true
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "elapsed_ms": 8321.7,
+      "outer_wall_ms": 10195.4,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "api_calls": 2,
+      "tool_result_count": 1,
+      "fixture_read_succeeded": true,
+      "correct_final_answer": true
+    }
+  ],
+  "summary": {
+    "plain": {
+      "runs": 2,
+      "fixture_successes": 2,
+      "correct_final_answers": 2,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "median_run_conversation_ms": 13233.75,
+      "median_outer_wall_ms": 15138.7,
+      "schemas_exposed": 8,
+      "schema_bytes": 12590,
+      "schema_names": [
+        "patch",
+        "read_file",
+        "search_files",
+        "terminal",
+        "write_file",
+        "tool_search",
+        "tool_describe",
+        "tool_call"
+      ]
+    },
+    "hades": {
+      "runs": 2,
+      "fixture_successes": 2,
+      "correct_final_answers": 2,
+      "model_calls": 4,
+      "tool_calls": 2,
+      "median_run_conversation_ms": 12707.65,
+      "median_outer_wall_ms": 16038.0,
+      "schemas_exposed": 5,
+      "schema_bytes": 9346,
+      "schema_names": [
+        "patch",
+        "read_file",
+        "search_files",
+        "terminal",
+        "write_file"
+      ]
+    }
+  },
+  "interpretation": [
+    "Both profiles passed effective terminal checks in all four turns: env_type=docker, cwd=/workspace, mounted host workspace registered for that session, networking disabled. The runtime host_cwd equaled each profile fixture workspace.",
+    "Both stacks read the token and returned the correct answer in 2/2 turns, with one read_file call and two model generations per turn. This is equal task completion on the tiny sample.",
+    "Median run_conversation time was 12.707 s HADES / 13.234 s PLAIN; outer wall medians were 16.038 s / 15.139 s. First model content was absent before tool choice; these are total turn times and not TTFT. n=2 and not a stable speed ranking.",
+    "HADES exposed five schemas / 9,346 serialized bytes; PLAIN exposed eight / 12,590 bytes, including dynamic tool-search wrappers. These narrow direct-profile measurements are not owner preference or broad capability evidence."
+  ],
+  "limitations": [
+    "One synthetic file read only; no owner preference, coding/edit, test, Git, follow-up or UI behavior.",
+    "Two order-balanced samples per profile; runtime/model latency variance is high.",
+    "Direct AIAgent route excludes Open WebUI persistence/auth and full Hermes gateway behavior.",
+    "Requested context was 65,536; Ollama effective context must be read from current runtime if reused.",
+    "Rootless engine was temporary. The wrapper compared image config and rootfs layers against the verified registry digest, then ran the rootless Docker-loaded equivalent by immutable local image ID."
+  ]
+}

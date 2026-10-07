@@ -1,0 +1,812 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "title": "Synthetic canonical Grocy expiry, recipe-use, and feasibility reads: HADES direct route vs Hermes MCP",
+  "classification": "synthetic local tool-path probe; no owner preference or release qualification",
+  "source_revision": "7b052631f9228740e50c074d045a9dd08beea178",
+  "benchmark_script": "scripts/benchmark-hades-grocy-read-pair.py",
+  "benchmark_script_sha256": "d61ef592cd5de06c67c3e6a3f69f84f41c6cca120110e2eaa762d37fe455d3f5",
+  "method": {
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "quantization": "Q4_K_M",
+    "runtime": "Ollama 0.35.1",
+    "effective_context_tokens": 65536,
+    "reasoning": "disabled by benchmark request",
+    "hermes": "0.21.5 staged candidate",
+    "plain_path": "one allowlisted native Hermes MCP read tool with expiry, saved-recipe-use, or recipe-name feasibility parameters",
+    "hades_path": "direct canonical Grocy reads",
+    "repeats": 3,
+    "order": "Alternating stack order per prompt/state pair across repeats; source available and HTTP 503 states",
+    "writes": "fixture requests audited; expected GET only"
+  },
+  "turns": [
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 3650.4,
+      "total_ms": 4992.4,
+      "elapsed_ms": 4992.6,
+      "provider_generations": 2,
+      "tool_schema_count": 6,
+      "tool_calls_emitted": 1,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 449.2,
+      "total_ms": 449.3,
+      "elapsed_ms": 449.4,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 37.0,
+      "total_ms": 37.1,
+      "elapsed_ms": 37.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4369.3,
+      "total_ms": 6391.2,
+      "elapsed_ms": 6391.4,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 7673.9,
+      "total_ms": 9079.6,
+      "elapsed_ms": 9079.8,
+      "provider_generations": 5,
+      "tool_schema_count": 15,
+      "tool_calls_emitted": 4,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 77.0,
+      "total_ms": 77.1,
+      "elapsed_ms": 77.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6066.9,
+      "total_ms": 6530.5,
+      "elapsed_ms": 6530.7,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "tool_calls_emitted": 1,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 39.0,
+      "total_ms": 39.2,
+      "elapsed_ms": 39.3,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 42.1,
+      "total_ms": 42.2,
+      "elapsed_ms": 42.3,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 2856.4,
+      "total_ms": 4814.8,
+      "elapsed_ms": 4815.0,
+      "provider_generations": 2,
+      "tool_schema_count": 6,
+      "tool_calls_emitted": 1,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 7194.3,
+      "total_ms": 11377.2,
+      "elapsed_ms": 11377.4,
+      "provider_generations": 6,
+      "tool_schema_count": 18,
+      "tool_calls_emitted": 5,
+      "error_type": null
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 45.7,
+      "total_ms": 46.1,
+      "elapsed_ms": 46.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 36.6,
+      "total_ms": 36.7,
+      "elapsed_ms": 36.9,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4317.6,
+      "total_ms": 7430.2,
+      "elapsed_ms": 7430.4,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 9071.7,
+      "total_ms": 14182.2,
+      "elapsed_ms": 14182.5,
+      "provider_generations": 7,
+      "tool_schema_count": 21,
+      "tool_calls_emitted": 6,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 49.5,
+      "total_ms": 49.6,
+      "elapsed_ms": 49.8,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 57.1,
+      "total_ms": 57.2,
+      "elapsed_ms": 57.4,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6513.4,
+      "total_ms": 7748.9,
+      "elapsed_ms": 7749.1,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "tool_calls_emitted": 3,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 36.1,
+      "total_ms": 36.3,
+      "elapsed_ms": 36.4,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4410.4,
+      "total_ms": 5348.0,
+      "elapsed_ms": 5348.3,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 5932.1,
+      "total_ms": 21547.7,
+      "elapsed_ms": 21548.0,
+      "provider_generations": 10,
+      "tool_schema_count": 30,
+      "tool_calls_emitted": 9,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 41.4,
+      "total_ms": 41.5,
+      "elapsed_ms": 41.7,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 58.0,
+      "total_ms": 58.4,
+      "elapsed_ms": 58.6,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6063.9,
+      "total_ms": 6799.6,
+      "elapsed_ms": 6799.9,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "tool_calls_emitted": 3,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 5990.9,
+      "total_ms": 10983.8,
+      "elapsed_ms": 10984.1,
+      "provider_generations": 5,
+      "tool_schema_count": 15,
+      "tool_calls_emitted": 4,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 46.4,
+      "total_ms": 46.6,
+      "elapsed_ms": 46.7,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 48.3,
+      "total_ms": 48.4,
+      "elapsed_ms": 48.6,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4506.4,
+      "total_ms": 8952.9,
+      "elapsed_ms": 8953.2,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 7717.9,
+      "total_ms": 12641.4,
+      "elapsed_ms": 12641.8,
+      "provider_generations": 6,
+      "tool_schema_count": 18,
+      "tool_calls_emitted": 5,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 58.4,
+      "total_ms": 58.5,
+      "elapsed_ms": 58.7,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 3052.6,
+      "total_ms": 8958.4,
+      "elapsed_ms": 8958.8,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "tool_calls_emitted": 2,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 45.7,
+      "total_ms": 45.9,
+      "elapsed_ms": 46.1,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 53.0,
+      "total_ms": 53.1,
+      "elapsed_ms": 53.3,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 7581.4,
+      "total_ms": 10235.8,
+      "elapsed_ms": 10236.2,
+      "provider_generations": 5,
+      "tool_schema_count": 15,
+      "tool_calls_emitted": 4,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6846.1,
+      "total_ms": 9698.1,
+      "elapsed_ms": 9698.4,
+      "provider_generations": 5,
+      "tool_schema_count": 15,
+      "tool_calls_emitted": 4,
+      "error_type": null
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 50.0,
+      "total_ms": 50.4,
+      "elapsed_ms": 50.7,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    }
+  ],
+  "summary": {
+    "available.expiry": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 7430.4,
+        "median_ttft_ms": 4317.6,
+        "provider_generations": [
+          2,
+          3,
+          5
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 46.7,
+        "median_ttft_ms": 46.4,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "available.expiry_and_use": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 8953.2,
+        "median_ttft_ms": 4506.4,
+        "provider_generations": [
+          3,
+          7,
+          3
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 48.6,
+        "median_ttft_ms": 48.3,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "available.recipe_feasibility": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 9079.8,
+        "median_ttft_ms": 7673.9,
+        "provider_generations": [
+          5,
+          4,
+          6
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 58.7,
+        "median_ttft_ms": 58.4,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "unavailable.expiry": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 6530.7,
+        "median_ttft_ms": 4410.4,
+        "provider_generations": [
+          3,
+          3,
+          3
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 39.3,
+        "median_ttft_ms": 39.0,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "unavailable.expiry_and_use": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 10236.2,
+        "median_ttft_ms": 5932.1,
+        "provider_generations": [
+          2,
+          10,
+          5
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 42.3,
+        "median_ttft_ms": 42.1,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "unavailable.recipe_feasibility": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 9698.4,
+        "median_ttft_ms": 6846.1,
+        "provider_generations": [
+          6,
+          4,
+          5
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 50.7,
+        "median_ttft_ms": 50.0,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "interpretation": {
+    "sequence_carryover": "The gateway profiles persist across all three repeats. The unavailable block follows each repeat’s available block. Repeats 2 and 3 therefore measure post-503 recovery, not independent healthy controls. The aggregate median summary includes these recovery turns and must not be read as a clean available-source latency estimate.",
+    "first_healthy_available_sample": {
+      "expiry": {
+        "plain": {
+          "elapsed_ms": 4992.6,
+          "ttft_ms": 3650.4,
+          "provider_generations": 2,
+          "tool_calls_emitted": 1
+        },
+        "hades": {
+          "elapsed_ms": 449.4,
+          "ttft_ms": 449.2,
+          "provider_generations": 0,
+          "tool_calls_emitted": 0
+        }
+      },
+      "expiry_and_use": {
+        "plain": {
+          "elapsed_ms": 6391.4,
+          "ttft_ms": 4369.3,
+          "provider_generations": 3,
+          "tool_calls_emitted": 2
+        },
+        "hades": {
+          "elapsed_ms": 37.2,
+          "ttft_ms": 37.0,
+          "provider_generations": 0,
+          "tool_calls_emitted": 0
+        }
+      },
+      "recipe_feasibility": {
+        "plain": {
+          "elapsed_ms": 9079.8,
+          "ttft_ms": 7673.9,
+          "provider_generations": 5,
+          "tool_calls_emitted": 4
+        },
+        "hades": {
+          "elapsed_ms": 77.2,
+          "ttft_ms": 77.0,
+          "provider_generations": 0,
+          "tool_calls_emitted": 0
+        }
+      }
+    },
+    "post_outage_available_turns": [
+      {
+        "repeat": 2,
+        "scenario": "expiry",
+        "stack": "plain",
+        "elapsed_ms": 7430.4,
+        "provider_generations": 3,
+        "tool_calls_emitted": 2
+      },
+      {
+        "repeat": 2,
+        "scenario": "expiry",
+        "stack": "hades",
+        "elapsed_ms": 36.9,
+        "provider_generations": 0,
+        "tool_calls_emitted": 0
+      },
+      {
+        "repeat": 3,
+        "scenario": "expiry",
+        "stack": "plain",
+        "elapsed_ms": 10984.1,
+        "provider_generations": 5,
+        "tool_calls_emitted": 4
+      },
+      {
+        "repeat": 3,
+        "scenario": "expiry",
+        "stack": "hades",
+        "elapsed_ms": 46.7,
+        "provider_generations": 0,
+        "tool_calls_emitted": 0
+      },
+      {
+        "repeat": 2,
+        "scenario": "expiry_and_use",
+        "stack": "plain",
+        "elapsed_ms": 14182.5,
+        "provider_generations": 7,
+        "tool_calls_emitted": 6
+      },
+      {
+        "repeat": 2,
+        "scenario": "expiry_and_use",
+        "stack": "hades",
+        "elapsed_ms": 49.8,
+        "provider_generations": 0,
+        "tool_calls_emitted": 0
+      },
+      {
+        "repeat": 3,
+        "scenario": "expiry_and_use",
+        "stack": "plain",
+        "elapsed_ms": 8953.2,
+        "provider_generations": 3,
+        "tool_calls_emitted": 2
+      },
+      {
+        "repeat": 3,
+        "scenario": "expiry_and_use",
+        "stack": "hades",
+        "elapsed_ms": 48.6,
+        "provider_generations": 0,
+        "tool_calls_emitted": 0
+      },
+      {
+        "repeat": 2,
+        "scenario": "recipe_feasibility",
+        "stack": "plain",
+        "elapsed_ms": 7749.1,
+        "provider_generations": 4,
+        "tool_calls_emitted": 3
+      },
+      {
+        "repeat": 2,
+        "scenario": "recipe_feasibility",
+        "stack": "hades",
+        "elapsed_ms": 57.4,
+        "provider_generations": 0,
+        "tool_calls_emitted": 0
+      },
+      {
+        "repeat": 3,
+        "scenario": "recipe_feasibility",
+        "stack": "plain",
+        "elapsed_ms": 12641.8,
+        "provider_generations": 6,
+        "tool_calls_emitted": 5
+      },
+      {
+        "repeat": 3,
+        "scenario": "recipe_feasibility",
+        "stack": "hades",
+        "elapsed_ms": 58.7,
+        "provider_generations": 0,
+        "tool_calls_emitted": 0
+      }
+    ],
+    "recipe_feasibility_finding": "On the first healthy PLAIN sample, the only MCP call supplied include_recipes=true and recipe_name=\"\". The resulting endpoints identify Synthetic Pancakes as using expiring eggs, but do not return ingredient quantities. PLAIN nevertheless answered yes, all ingredients were available. The synthetic recipe requires two eggs and the fixture has one. HADES read the recipe, stock, and product records and correctly reported one egg missing.",
+    "recovery_finding": "After the first 503, all six PLAIN source-available turns in repeats 2 and 3 received no complete recipe/expiry read. Five had no fixture request; one recipe-feasibility turn fetched only /api/stock. The assistant replies said MCP calls were being rejected or paused. HADES completed the relevant canonical reads on all six source-available recovery turns. Treat this as observed path recovery failure in this isolated gateway, not a proven general Hermes defect.",
+    "hades_route_optimization": "Before the exact-name evaluation filter, the synthetic feasibility request triggered two unrelated unit-conversion GETs for other recipes. After filtering evaluation to the exact saved recipe name, the focused route test passed and the paired runtime recorded zero conversion-endpoint requests for that task.",
+    "preference": "unassigned; synthetic evidence only"
+  }
+}

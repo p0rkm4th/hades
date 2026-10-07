@@ -31,6 +31,28 @@ token is rejected and that both records are gone. Automatic directory-event
 synchronization is not implemented and remains a separate future architecture
 decision.
 
+The HADES-built Open WebUI 0.11.4 candidate also passed fresh LLDAP sign-in
+for synthetic owner and household accounts on the pinned LLDAP image. Their
+Open WebUI subject IDs remained distinct and unchanged after a WebUI restart
+and fresh LDAP login. On an empty WebUI database, the first LDAP account is
+created as `admin` and the next as `pending`, without regard to their LLDAP
+groups. A reversed-order replay made the household account `admin` and the
+owner account `pending`. This is Open WebUI's first-account bootstrap behavior,
+not group-based authorization. On a new deployment, authenticate and verify
+the intended owner as the first account before allowing household sign-in;
+confirm the resulting owner mapping and keep subsequent household accounts
+pending until their identity and access are reviewed. Existing production
+state was not involved in these tests.
+
+The same candidate acceptance promoted the synthetic household account only
+after its fixture group was verified, uploaded a private text file through
+Open WebUI's authenticated file API, read it back as the owner, and confirmed
+the household account could not retrieve it. The file survived a WebUI
+restart. The served HADES theme CSS/JS and finance/receipt upload assets
+matched their tracked source bytes exactly. This verifies API upload and static
+asset delivery; it does not yet verify the rendered theme or browser file
+picker.
+
 ## Migration order
 
 1. Run `scripts/prepare-shared-identity.sh` locally. It creates a private
@@ -40,6 +62,9 @@ decision.
 2. Start LLDAP and create the owner account through its administrator
    interface. The owner chooses the username and password; neither is placed in Git or
    sent through HADES chat.
+   On a fresh Open WebUI database, make the owner the first LDAP login and
+   verify the account receives the intended administrator role before any
+   household login. LDAP groups do not control Open WebUI's first-account role.
 3. Attach only the Grocy container to the identity network and configure
    Grocy's `LdapAuthMiddleware` with a read-only bind account.
 4. Enable Open WebUI LDAP authentication while retaining local login during

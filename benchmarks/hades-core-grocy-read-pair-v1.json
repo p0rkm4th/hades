@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "title": "Synthetic canonical Grocy read: HADES direct route vs Hermes MCP",
+  "classification": "synthetic local tool-path probe; no owner preference or release qualification",
+  "source_revision": "0793304d53236575477b6bbc2e1761a6c06c9e29",
+  "method": {
+    "model": "qwen3.6:35b",
+    "hermes": "0.21.5 staged candidate",
+    "plain_path": "one allowlisted native Hermes MCP read tool",
+    "hades_path": "direct canonical expiry route",
+    "order": "PLAIN then HADES with source available; HADES then PLAIN during outage",
+    "writes": "fixture requests audited; expected GET only",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "quantization": "Q4_K_M",
+    "runtime": "Ollama 0.35.1",
+    "effective_context_tokens": 65536,
+    "reasoning": "disabled by benchmark request"
+  },
+  "turns": [
+    {
+      "state": "available",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 15981.4,
+      "total_ms": 16669.2,
+      "elapsed_ms": 16669.2,
+      "provider_generations": 2,
+      "tool_schema_count": 6,
+      "tool_calls_emitted": 1,
+      "error_type": null
+    },
+    {
+      "state": "available",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 444.5,
+      "total_ms": 444.7,
+      "elapsed_ms": 444.7,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "state": "unavailable",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 34.1,
+      "total_ms": 34.2,
+      "elapsed_ms": 34.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "tool_calls_emitted": 0,
+      "error_type": null
+    },
+    {
+      "state": "unavailable",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 1621.6,
+      "total_ms": 2215.3,
+      "elapsed_ms": 2215.3,
+      "provider_generations": 2,
+      "tool_schema_count": 6,
+      "tool_calls_emitted": 1,
+      "error_type": null
+    }
+  ],
+  "summary": {
+    "available": {
+      "plain": {
+        "state": "available",
+        "stack": "plain",
+        "status": 200,
+        "ttft_ms": 15981.4,
+        "total_ms": 16669.2,
+        "elapsed_ms": 16669.2,
+        "provider_generations": 2,
+        "tool_schema_count": 6,
+        "tool_calls_emitted": 1,
+        "error_type": null
+      },
+      "hades": {
+        "state": "available",
+        "stack": "hades",
+        "status": 200,
+        "ttft_ms": 444.5,
+        "total_ms": 444.7,
+        "elapsed_ms": 444.7,
+        "provider_generations": 0,
+        "tool_schema_count": 0,
+        "tool_calls_emitted": 0,
+        "error_type": null
+      }
+    },
+    "unavailable": {
+      "plain": {
+        "state": "unavailable",
+        "stack": "plain",
+        "status": 200,
+        "ttft_ms": 1621.6,
+        "total_ms": 2215.3,
+        "elapsed_ms": 2215.3,
+        "provider_generations": 2,
+        "tool_schema_count": 6,
+        "tool_calls_emitted": 1,
+        "error_type": null
+      },
+      "hades": {
+        "state": "unavailable",
+        "stack": "hades",
+        "status": 200,
+        "ttft_ms": 34.1,
+        "total_ms": 34.2,
+        "elapsed_ms": 34.2,
+        "provider_generations": 0,
+        "tool_schema_count": 0,
+        "tool_calls_emitted": 0,
+        "error_type": null
+      }
+    }
+  }
+}

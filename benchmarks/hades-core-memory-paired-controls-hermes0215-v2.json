@@ -1,0 +1,1072 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "title": "Counterbalanced ordinary-chat and Hindsight memory PLAIN/HADES comparison",
+  "classification": "synthetic diagnostic; matched Hermes sampler controls and captured Hindsight Ollama work; only two paired samples and no between-arm async-work drain, so no owner preference or latency qualification",
+  "source_revision": "b1c18aaa421a283795be0d35b65169238d0951e6",
+  "method": {
+    "samples": 2,
+    "hermes_version": "Hermes Agent v0.21.5 (2026.9.24)",
+    "counterbalance": "Alternating PLAIN-first and HADES-first; requests serialized; each gateway has one warmup before samples.",
+    "sequence": [
+      "ordinary chat",
+      "automatic personal-fact retain",
+      "fresh-session canonical-memory recall",
+      "save mango",
+      "correct to pear",
+      "fresh-session implicit personal-history recall",
+      "fresh-session explicit recall"
+    ],
+    "model": "qwen3.6:35b",
+    "ollama_version": "0.40.0",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "model_quantization": "Q4_K_M",
+    "ollama_reported_loaded_context": 65536,
+    "hermes_ollama_context_configured": 65536,
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight@sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70",
+    "reasoning": "disabled per request",
+    "max_output_tokens": 512,
+    "plain_toolset": [
+      "memory"
+    ],
+    "hades_toolset": [],
+    "hindsight_inference_accounting": "The Docker bridge proxy records Hindsight-to-Ollama API route, safe scalar controls, byte counts, response timing, and Ollama usage counters; request/response bodies, prompts, facts, and credentials are never persisted. These background calls are additional HADES inference and are reported separately from user-facing Hermes provider generations.",
+    "warmups": {
+      "plain": {
+        "status": 200,
+        "provider_generations": 1
+      },
+      "hades": {
+        "status": 200,
+        "provider_generations": 1
+      }
+    },
+    "data": "Synthetic favorite-fruit preference only. Five repeated saves/corrections in one profile per stack test current-value recall as old assertions accumulate. Temporary homes, container and database volume.",
+    "privacy": "Ollama endpoint restricted to loopback; Docker bridge forwarder bound only to bridge gateway; Ollama server launched with OLLAMA_NO_CLOUD=1.",
+    "user_generation_overrides": {
+      "temperature": 0.1,
+      "top_p": 0.95,
+      "applied": "common local aggregate proxy to every Hermes OpenAI-compatible generation in both arms"
+    },
+    "effective_sampler_capture": "Provider trace confirms temperature=0.1 and top_p=0.95 for all Hermes calls in both arms; Hindsight Ollama options are separately recorded per request.",
+    "hindsight_background_summary": {
+      "successful_api_chat_calls": 12,
+      "prompt_eval_tokens": 31203,
+      "completion_eval_tokens": 1094,
+      "sum_elapsed_ms": 67084.9,
+      "note": "These calls are an additional shared-runtime workload and cannot be attributed one-to-one to user turns in this diagnostic."
+    }
+  },
+  "summary_by_stack_and_turn": {
+    "plain.ordinary": {
+      "samples": 2,
+      "median_ttft_ms": 2560.9,
+      "median_total_ms": 2923.6,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 1.0,
+      "median_tool_schema_bytes_exposed": 3449.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 3491.5,
+      "median_request_bytes": 14873.5,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "plain.automatic_retain": {
+      "samples": 2,
+      "median_ttft_ms": 10583.3,
+      "median_total_ms": 10921.5,
+      "median_provider_generations": 2.0,
+      "median_tool_schema_exposures": 2.0,
+      "median_tool_schema_bytes_exposed": 6898.0,
+      "median_tool_calls": 1.0,
+      "median_prompt_tokens": 7118.5,
+      "median_request_bytes": 30233.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "plain.automatic_recall": {
+      "samples": 2,
+      "median_ttft_ms": 1463.6,
+      "median_total_ms": 1693.1,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 1.0,
+      "median_tool_schema_bytes_exposed": 3449.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 3521.5,
+      "median_request_bytes": 15052.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": 2
+    },
+    "plain.save": {
+      "samples": 2,
+      "median_ttft_ms": 2858.3,
+      "median_total_ms": 2965.7,
+      "median_provider_generations": 2.0,
+      "median_tool_schema_exposures": 2.0,
+      "median_tool_schema_bytes_exposed": 6898.0,
+      "median_tool_calls": 1.0,
+      "median_prompt_tokens": 7188.0,
+      "median_request_bytes": 30694.5,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "plain.correction": {
+      "samples": 2,
+      "median_ttft_ms": 3720.4,
+      "median_total_ms": 3892.0,
+      "median_provider_generations": 3.0,
+      "median_tool_schema_exposures": 3.0,
+      "median_tool_schema_bytes_exposed": 10347.0,
+      "median_tool_calls": 2.0,
+      "median_prompt_tokens": 11067.5,
+      "median_request_bytes": 47277.5,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "plain.implicit_recall": {
+      "samples": 2,
+      "median_ttft_ms": 1274.7,
+      "median_total_ms": 1364.3,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 1.0,
+      "median_tool_schema_bytes_exposed": 3449.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 3526.0,
+      "median_request_bytes": 15070.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": 2,
+      "implicit_recalls_with_stale_mango": 0,
+      "correct_automatic_recalls": null
+    },
+    "plain.fresh_recall": {
+      "samples": 2,
+      "median_ttft_ms": 1229.5,
+      "median_total_ms": 1313.3,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 1.0,
+      "median_tool_schema_bytes_exposed": 3449.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 3524.0,
+      "median_request_bytes": 15067.0,
+      "correct_fresh_recalls": 2,
+      "fresh_recalls_with_stale_mango": 0,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.ordinary": {
+      "samples": 2,
+      "median_ttft_ms": 2467.8,
+      "median_total_ms": 2671.8,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 734.0,
+      "median_request_bytes": 3154.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.automatic_retain": {
+      "samples": 2,
+      "median_ttft_ms": 2575.1,
+      "median_total_ms": 2667.6,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 737.0,
+      "median_request_bytes": 3150.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.automatic_recall": {
+      "samples": 2,
+      "median_ttft_ms": 9932.1,
+      "median_total_ms": 10059.1,
+      "median_provider_generations": 1.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 844.0,
+      "median_request_bytes": 3697.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": 2
+    },
+    "hades.save": {
+      "samples": 2,
+      "median_ttft_ms": 108.8,
+      "median_total_ms": 109.0,
+      "median_provider_generations": 0.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 0.0,
+      "median_request_bytes": 0.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.correction": {
+      "samples": 2,
+      "median_ttft_ms": 104.2,
+      "median_total_ms": 104.9,
+      "median_provider_generations": 0.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 0.0,
+      "median_request_bytes": 0.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    },
+    "hades.implicit_recall": {
+      "samples": 2,
+      "median_ttft_ms": 47.0,
+      "median_total_ms": 47.3,
+      "median_provider_generations": 0.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 0.0,
+      "median_request_bytes": 0.0,
+      "correct_fresh_recalls": null,
+      "fresh_recalls_with_stale_mango": null,
+      "correct_implicit_recalls": 2,
+      "implicit_recalls_with_stale_mango": 0,
+      "correct_automatic_recalls": null
+    },
+    "hades.fresh_recall": {
+      "samples": 2,
+      "median_ttft_ms": 44.9,
+      "median_total_ms": 45.4,
+      "median_provider_generations": 0.0,
+      "median_tool_schema_exposures": 0.0,
+      "median_tool_schema_bytes_exposed": 0.0,
+      "median_tool_calls": 0.0,
+      "median_prompt_tokens": 0.0,
+      "median_request_bytes": 0.0,
+      "correct_fresh_recalls": 2,
+      "fresh_recalls_with_stale_mango": 0,
+      "correct_implicit_recalls": null,
+      "implicit_recalls_with_stale_mango": null,
+      "correct_automatic_recalls": null
+    }
+  },
+  "hindsight_ollama_calls": [
+    {
+      "route": "other",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 90,
+      "status": 200,
+      "elapsed_ms": 9038.0,
+      "response_bytes": 910,
+      "prompt_eval_count": null,
+      "eval_count": null,
+      "total_duration_ns": null,
+      "load_duration_ns": null,
+      "generation_controls": {}
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18850,
+      "status": 200,
+      "elapsed_ms": 6508.7,
+      "response_bytes": 349,
+      "prompt_eval_count": 2187,
+      "eval_count": 10,
+      "total_duration_ns": 6507898390,
+      "load_duration_ns": 4852227,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18899,
+      "status": 200,
+      "elapsed_ms": 2475.6,
+      "response_bytes": 352,
+      "prompt_eval_count": 2196,
+      "eval_count": 10,
+      "total_duration_ns": 2474914036,
+      "load_duration_ns": 5231006,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18865,
+      "status": 200,
+      "elapsed_ms": 4885.4,
+      "response_bytes": 786,
+      "prompt_eval_count": 2193,
+      "eval_count": 153,
+      "total_duration_ns": 4884669851,
+      "load_duration_ns": 4544071,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 15133,
+      "status": 200,
+      "elapsed_ms": 8993.2,
+      "response_bytes": 678,
+      "prompt_eval_count": 3331,
+      "eval_count": 121,
+      "total_duration_ns": 8992513328,
+      "load_duration_ns": 5669363,
+      "generation_controls": {
+        "temperature": 0.0
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18882,
+      "status": 200,
+      "elapsed_ms": 2825.0,
+      "response_bytes": 674,
+      "prompt_eval_count": 2199,
+      "eval_count": 107,
+      "total_duration_ns": 2824213996,
+      "load_duration_ns": 5237251,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 15051,
+      "status": 200,
+      "elapsed_ms": 3899.7,
+      "response_bytes": 681,
+      "prompt_eval_count": 3271,
+      "eval_count": 120,
+      "total_duration_ns": 3898928295,
+      "load_duration_ns": 5630713,
+      "generation_controls": {
+        "temperature": 0.0
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18899,
+      "status": 200,
+      "elapsed_ms": 5025.5,
+      "response_bytes": 352,
+      "prompt_eval_count": 2196,
+      "eval_count": 10,
+      "total_duration_ns": 5024833971,
+      "load_duration_ns": 3294420,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18899,
+      "status": 200,
+      "elapsed_ms": 6369.5,
+      "response_bytes": 352,
+      "prompt_eval_count": 2196,
+      "eval_count": 10,
+      "total_duration_ns": 6368726465,
+      "load_duration_ns": 4853029,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18865,
+      "status": 200,
+      "elapsed_ms": 6482.2,
+      "response_bytes": 709,
+      "prompt_eval_count": 2193,
+      "eval_count": 115,
+      "total_duration_ns": 6481345436,
+      "load_duration_ns": 5477337,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18851,
+      "status": 200,
+      "elapsed_ms": 6499.1,
+      "response_bytes": 644,
+      "prompt_eval_count": 2188,
+      "eval_count": 96,
+      "total_duration_ns": 6498294526,
+      "load_duration_ns": 2917883,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 15730,
+      "status": 200,
+      "elapsed_ms": 7649.2,
+      "response_bytes": 791,
+      "prompt_eval_count": 3596,
+      "eval_count": 170,
+      "total_duration_ns": 7648502222,
+      "load_duration_ns": 3063241,
+      "generation_controls": {
+        "temperature": 0.0
+      }
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 15494,
+      "status": 200,
+      "elapsed_ms": 5471.8,
+      "response_bytes": 792,
+      "prompt_eval_count": 3457,
+      "eval_count": 172,
+      "total_duration_ns": 5470988432,
+      "load_duration_ns": 5967847,
+      "generation_controls": {
+        "temperature": 0.0
+      }
+    }
+  ],
+  "repetitions": [
+    {
+      "sample": 1,
+      "first_stack": "plain",
+      "stacks": {
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1294.7,
+              "total_ms": 1764.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3457,
+                "completion_tokens": 28,
+                "request_bytes": 14676,
+                "message_bytes": 11039,
+                "system_message_bytes": 10981
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 8039.9,
+              "total_ms": 8434.6,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7058,
+                "completion_tokens": 80,
+                "request_bytes": 29844,
+                "message_bytes": 22568,
+                "system_message_bytes": 21962
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 1682.9,
+              "total_ms": 1920.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3518,
+                "completion_tokens": 14,
+                "request_bytes": 15039,
+                "message_bytes": 11402,
+                "system_message_bytes": 11350
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 2760.5,
+              "total_ms": 2812.9,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7169,
+                "completion_tokens": 56,
+                "request_bytes": 30604,
+                "message_bytes": 23328,
+                "system_message_bytes": 22700
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 5408.2,
+              "total_ms": 5586.0,
+              "metrics": {
+                "provider_generations": 4,
+                "tool_schema_exposures": 4,
+                "tool_schema_bytes_exposed": 13796,
+                "tool_calls_emitted": 3,
+                "prompt_tokens": 14873,
+                "completion_tokens": 208,
+                "request_bytes": 63529,
+                "message_bytes": 48961,
+                "system_message_bytes": 45400
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1277.2,
+              "total_ms": 1373.3,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3526,
+                "completion_tokens": 3,
+                "request_bytes": 15070,
+                "message_bytes": 11433,
+                "system_message_bytes": 11376
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1209.0,
+              "total_ms": 1295.3,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3524,
+                "completion_tokens": 3,
+                "request_bytes": 15067,
+                "message_bytes": 11430,
+                "system_message_bytes": 11376
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": true,
+          "automatic_retained_fact_visible": null,
+          "automatic_retention_state_before_recall": null
+        },
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1307.9,
+              "total_ms": 1518.5,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 734,
+                "completion_tokens": 13,
+                "request_bytes": 3154,
+                "message_bytes": 2977,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 1214.6,
+              "total_ms": 1309.9,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 737,
+                "completion_tokens": 5,
+                "request_bytes": 3150,
+                "message_bytes": 2973,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 15871.4,
+              "total_ms": 16068.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 839,
+                "completion_tokens": 14,
+                "request_bytes": 3685,
+                "message_bytes": 3508,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 115.8,
+              "total_ms": 116.1,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 127.4,
+              "total_ms": 128.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 50.4,
+              "total_ms": 50.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 49.2,
+              "total_ms": 49.5,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": true,
+          "automatic_retained_fact_visible": true,
+          "automatic_retention_state_before_recall": {
+            "operations": {
+              "pending": {
+                "batch_retain": 1
+              },
+              "processing": {
+                "retain": 1
+              }
+            },
+            "stats": {
+              "pending_operations": 3,
+              "pending_consolidation": 0,
+              "total_observations": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "sample": 2,
+      "first_stack": "hades",
+      "stacks": {
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 3627.6,
+              "total_ms": 3825.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 734,
+                "completion_tokens": 13,
+                "request_bytes": 3154,
+                "message_bytes": 2977,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 3935.7,
+              "total_ms": 4025.2,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 737,
+                "completion_tokens": 5,
+                "request_bytes": 3150,
+                "message_bytes": 2973,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 3992.8,
+              "total_ms": 4049.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 849,
+                "completion_tokens": 2,
+                "request_bytes": 3709,
+                "message_bytes": 3532,
+                "system_message_bytes": 2919
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 101.7,
+              "total_ms": 101.9,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 81.1,
+              "total_ms": 81.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 43.7,
+              "total_ms": 43.9,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 40.6,
+              "total_ms": 41.2,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": true,
+          "automatic_retained_fact_visible": true,
+          "automatic_retention_state_before_recall": {
+            "operations": {
+              "pending": {
+                "batch_retain": 1
+              },
+              "processing": {
+                "retain": 1
+              }
+            },
+            "stats": {
+              "pending_operations": 3,
+              "pending_consolidation": 0,
+              "total_observations": 0
+            }
+          }
+        },
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 3827.1,
+              "total_ms": 4083.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3526,
+                "completion_tokens": 15,
+                "request_bytes": 15071,
+                "message_bytes": 11434,
+                "system_message_bytes": 11376
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 13126.7,
+              "total_ms": 13408.4,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7179,
+                "completion_tokens": 75,
+                "request_bytes": 30622,
+                "message_bytes": 23346,
+                "system_message_bytes": 22752
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 1244.3,
+              "total_ms": 1465.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3525,
+                "completion_tokens": 14,
+                "request_bytes": 15065,
+                "message_bytes": 11428,
+                "system_message_bytes": 11376
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 2956.1,
+              "total_ms": 3118.4,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7207,
+                "completion_tokens": 72,
+                "request_bytes": 30785,
+                "message_bytes": 23509,
+                "system_message_bytes": 22752
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 2032.6,
+              "total_ms": 2198.0,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7262,
+                "completion_tokens": 78,
+                "request_bytes": 31026,
+                "message_bytes": 23746,
+                "system_message_bytes": 22752
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1272.1,
+              "total_ms": 1355.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3526,
+                "completion_tokens": 3,
+                "request_bytes": 15070,
+                "message_bytes": 11433,
+                "system_message_bytes": 11376
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1249.9,
+              "total_ms": 1331.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3524,
+                "completion_tokens": 3,
+                "request_bytes": 15067,
+                "message_bytes": 11430,
+                "system_message_bytes": 11376
+              }
+            }
+          ],
+          "fresh_recall_correct": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_correct": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_correct": true,
+          "automatic_retained_fact_visible": null,
+          "automatic_retention_state_before_recall": null
+        }
+      }
+    }
+  ],
+  "preference_bucket": "UNASSIGNED; no owner dogfood",
+  "limitations": [
+    "The model digest is staged local Qwen; this does not prove equality with production model weights.",
+    "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
+    "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
+    "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review.",
+    "Only two pairs were run. The harness did not wait for Hindsight pending/processing operations to drain before switching from HADES back to PLAIN, so asynchronous retain work may contaminate the second PLAIN sample. Use the capture for workload evidence, not stack latency preference."
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "title": "HADES workspace route with a real rootless Docker terminal",
+  "date": "2026-10-06",
+  "source_revision": "c28b38e7cf6b2fff21590ba4f0d471ff95c7a825",
+  "status": "rootless runtime and native terminal execution passed; model-driven task still unqualified",
+  "hermes": {
+    "version": "0.21.5 / v2026.9.24",
+    "source_commit": "f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "workspace_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d"
+  },
+  "runtime": {
+    "docker_engine": "29.8.2, commit 8af9fe3a36",
+    "rootlesskit": "3.2.0",
+    "rootlesskit_archive_sha256": "ff612d1d35854a52569acc4a4e9152f41504e69dcc13ff4c94cc9040dc28b3d9",
+    "rootlesskit_checksum_manifest_sha256": "ca5a2b31a58b6e6ed476cb43a725cef9d380087293683c6f085c006fffdf3808",
+    "security_options": [
+      "seccomp",
+      "rootless",
+      "cgroupns"
+    ],
+    "storage_driver": "vfs",
+    "daemon_network": "none",
+    "container_network": "none",
+    "image_id": "sha256:d14ae8d7fcee933e82c9f62eded621110f227bc96363ca5449d36897af7bea1c",
+    "image_repo_digest": "sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d"
+  },
+  "test": {
+    "model": "deterministic in-process test stub; no inference generation",
+    "result": "PASS: native Hermes terminal ran in /workspace, returned the fixture token, could not see the sibling host file, and had no default network route",
+    "additional_contracts": [
+      "workspace tools activated only for synthetic owner scope",
+      "fabricated response without a successful tool result was suppressed",
+      "ordinary follow-up restored an empty tool catalog and cleared terminal scope",
+      "household subject was denied before model invocation",
+      "two synthetic owner subjects resolved distinct workspace fixture contents",
+      "rootful-only default test still denied workspace activation"
+    ]
+  },
+  "limitations": [
+    "No real model chose or called the workspace tool; model-driven end-to-end coding/read behavior remains unqualified.",
+    "No file was edited, no test was run inside the workspace, and no Git action was exercised.",
+    "No PLAIN STACK comparison or Scotty preference was collected.",
+    "Temporary user-level daemon and test fixtures only; no production daemon/configuration or owner data was used."
+  ],
+  "cleanup": "Rootless daemon is temporary and must be stopped after the paired model probe; outer rootful Docker service and host /run paths were not modified."
+}

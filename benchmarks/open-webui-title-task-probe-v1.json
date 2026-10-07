@@ -1,0 +1,32 @@
+{
+  "probe": "Open WebUI title task endpoint against fake provider",
+  "date": "2026-10-06",
+  "open_webui": {
+    "version": "0.11.4",
+    "image": "hades-open-webui:0.11.4-candidate",
+    "image_id": "sha256:606aee1147dd9e7814f34f6b09a3006767e875c7352e743a32933c676e4d1808"
+  },
+  "environment": {
+    "network": "Docker bridge with --internal",
+    "account": "synthetic disposable signup",
+    "provider": "fake OpenAI-compatible HTTP server",
+    "model": "synthetic-model",
+    "production_or_external_services_contacted": false
+  },
+  "enabled": {
+    "setting": "ENABLE_TITLE_GENERATION=true",
+    "http_status": 200,
+    "provider_requests": 1
+  },
+  "disabled": {
+    "setting": "ENABLE_TITLE_GENERATION=false",
+    "http_status": 200,
+    "provider_requests": 0
+  },
+  "limitations": [
+    "This isolates the Open WebUI title task route; it is not a full /api/chat/completions UI session or persistence test.",
+    "It does not establish deployed Open WebUI task settings.",
+    "It does not prove Open WebUI and Hermes both generate titles for the same deployed turn.",
+    "Title quality and owner preference were not measured."
+  ]
+}

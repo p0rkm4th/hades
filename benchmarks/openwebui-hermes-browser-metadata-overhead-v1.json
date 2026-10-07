@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "classification": "single synthetic authenticated browser chat per configuration; no owner preference",
+  "source_revision": "2b6444bd9a5052c469a5116067059442831a0fb4",
+  "method": {
+    "open_webui": "0.11.4 no-channel-shim candidate image sha256:5135da5a53c99cbfd25e1d6f94ddad3da50b1f00f7527c251b35baa514ec81b3",
+    "hermes": "0.21.5 commit f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "browser": "Chromium via Playwright 1.63.0",
+    "provider": "loopback synthetic OpenAI-compatible server",
+    "model": "synthetic-model",
+    "hardware": "same host and synthetic services for paired disposable runs; no inference hardware or real model involved",
+    "network": "internal Docker bridge; UI reached by host browser over bridge IP; Hermes bound to that bridge gateway only",
+    "identity": "fresh synthetic owner account per run",
+    "measurement": "provider captured stream/schema/setup metadata only; Playwright verified visible answer and authenticated chat API persistence",
+    "limitations": [
+      "One run per configuration with instantaneous fake provider; no latency, quality, owner preference, or real-model claim.",
+      "The UI task model generated a synthetic title, but the chat retained the derived first-line title; title UX acceptance failed.",
+      "Follow-up and tag task completions were requested but no visible output appeared in the captured conversation body.",
+      "Open WebUI main answer was visible and persisted in both configurations.",
+      "Hermes API session titles are separate metadata and were not shown in the Open WebUI chat list.",
+      "The HADES task notification endpoint was deliberately unconfigured in this isolated fixture; its UI poll occurs at page load and every 30 seconds, not per chat message. Production compose requires the feed URL and API key."
+    ]
+  },
+  "results": {
+    "candidate_default_metadata_tasks_and_hermes_title_upgrade_enabled": {
+      "setup_provider_posts": 4,
+      "user_chat_generations": 1,
+      "openwebui_metadata_generations": {
+        "title": 1,
+        "follow_up_questions": 1,
+        "tags": 1
+      },
+      "hermes_structured_session_title_generations": 4,
+      "total_model_generations": 8,
+      "answer_persisted": true,
+      "chat_title": "Explain why Python generators help with…",
+      "openwebui_task_title_visible_or_persisted": false,
+      "visible_follow_up_or_tag_output": false,
+      "hades_task_notification_poll": "One GET /api/v1/hades/tasks/notifications returned HTTP 503 because this fixture omitted the required task-feed configuration"
+    },
+    "metadata_tasks_disabled_and_hermes_title_upgrade_disabled": {
+      "setup_provider_posts": 1,
+      "user_chat_generations": 1,
+      "openwebui_metadata_generations": {
+        "title": 0,
+        "follow_up_questions": 0,
+        "tags": 0
+      },
+      "hermes_structured_session_title_generations": 0,
+      "total_model_generations": 1,
+      "answer_persisted": true,
+      "chat_title": "Explain why Python generators help with…",
+      "hades_task_notification_poll": "One GET /api/v1/hades/tasks/notifications returned HTTP 503 because this fixture omitted the required task-feed configuration"
+    }
+  },
+  "interpretation": "In this candidate browser flow, default Open WebUI title/follow-up/tag work plus Hermes title upgrades added seven generations to one user answer without a better persisted chat title or visible follow-up/tag output. Disabling the three Open WebUI tasks and Hermes model title upgrade preserved the visible and persisted answer at one generation. This is a strong configuration candidate for usability staging, not a production setting decision: deployed task settings and Hermes title-upgrade state are unknown, and the fake provider cannot qualify task quality. The single task-notification 503 is explained by omitted fixture configuration; production compose requires those settings."
+}

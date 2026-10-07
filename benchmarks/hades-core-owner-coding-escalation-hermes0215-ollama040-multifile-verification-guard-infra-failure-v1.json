@@ -1,0 +1,281 @@
+{
+  "date": "2026-10-07",
+  "source_revision": "0cc8de3be11a1fdee71b3e689ac446d4cb971d09",
+  "method": {
+    "hermes": "Hermes Agent v0.21.5 (2026.9.24)\nInstall directory: /opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate\nInstall method: git\nPython: 3.13.14\nOpenAI SDK: 2.24.0\nUpdate available: 8583 commits behind — run 'hermes update' clean install for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.40.0",
+    "openai_chat_context_probe_prompt_tokens": 7010,
+    "openai_chat_context_probe_minimum_tokens": 5000,
+    "docker_engine": "29.8.2",
+    "docker_security_options": [
+      "name=seccomp,profile=builtin",
+      "name=rootless",
+      "name=cgroupns"
+    ],
+    "docker_storage_driver": "vfs",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "sandbox_image_id": "sha256:d14ae8d7fcee933e82c9f62eded621110f227bc96363ca5449d36897af7bea1c",
+    "context": 65536,
+    "requested_context": 65536,
+    "actual_context_source": "Ollama GET /api/ps after warmup and after each provider request",
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "escalation",
+    "workspace_context_hint": "The active project workspace for file and coding tasks is mounted at /workspace. Use /workspace as the root for file tools; do not assume it is the Hermes host filesystem.",
+    "subject": "synthetic owner identity; private fixture only"
+  },
+  "turns": [
+    {
+      "scenario": "escalation",
+      "stack": "plain",
+      "repeat": 0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 97554.4,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 60637.9,
+          "stream_progress": {
+            "delta_count": 257,
+            "character_count": 1258,
+            "first_delta_ms": 17943.9,
+            "last_delta_ms": 60590.1
+          },
+          "api_calls": 6,
+          "tool_result_count": 6,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 13
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 97553.0,
+          "stream_progress": {
+            "delta_count": 462,
+            "character_count": 2205,
+            "first_delta_ms": 9647.4,
+            "last_delta_ms": 36871.9
+          },
+          "api_calls": 6,
+          "tool_result_count": 5,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 12
+        }
+      ],
+      "api_calls": 12,
+      "tool_result_count": 11,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 99871.0,
+      "independent_verification": {
+        "test_exit_code": 125,
+        "diff_check_exit_code": 0,
+        "changed_paths": [],
+        "only_expected_source_changed": false,
+        "working_tree_status": []
+      }
+    },
+    {
+      "scenario": "escalation",
+      "stack": "hades",
+      "repeat": 0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 63385.7,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 40652.9,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 1017,
+            "first_delta_ms": 295.6,
+            "last_delta_ms": 40650.3
+          },
+          "api_calls": 3,
+          "tool_result_count": 5,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 9
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 63384.1,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 774,
+            "first_delta_ms": 79.2,
+            "last_delta_ms": 22728.7
+          },
+          "api_calls": 3,
+          "tool_result_count": 2,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 6
+        }
+      ],
+      "api_calls": 6,
+      "tool_result_count": 7,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 65964.1,
+      "independent_verification": {
+        "test_exit_code": 125,
+        "diff_check_exit_code": 0,
+        "changed_paths": [],
+        "only_expected_source_changed": false,
+        "working_tree_status": []
+      }
+    },
+    {
+      "scenario": "escalation",
+      "stack": "hades",
+      "repeat": 1,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 51765.5,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 36161.6,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 798,
+            "first_delta_ms": 302.3,
+            "last_delta_ms": 36159.5
+          },
+          "api_calls": 5,
+          "tool_result_count": 4,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 10
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 51763.8,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 590,
+            "first_delta_ms": 69.4,
+            "last_delta_ms": 15600.1
+          },
+          "api_calls": 2,
+          "tool_result_count": 1,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 4
+        }
+      ],
+      "api_calls": 7,
+      "tool_result_count": 5,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 54384.4,
+      "independent_verification": {
+        "test_exit_code": 125,
+        "diff_check_exit_code": 0,
+        "changed_paths": [],
+        "only_expected_source_changed": false,
+        "working_tree_status": []
+      }
+    },
+    {
+      "scenario": "escalation",
+      "stack": "plain",
+      "repeat": 1,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 50439.4,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 22877.3,
+          "stream_progress": {
+            "delta_count": 166,
+            "character_count": 766,
+            "first_delta_ms": 5582.0,
+            "last_delta_ms": 22829.3
+          },
+          "api_calls": 3,
+          "tool_result_count": 2,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 6
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 50438.0,
+          "stream_progress": {
+            "delta_count": 181,
+            "character_count": 875,
+            "first_delta_ms": 702.1,
+            "last_delta_ms": 27553.3
+          },
+          "api_calls": 4,
+          "tool_result_count": 5,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 10
+        }
+      ],
+      "api_calls": 7,
+      "tool_result_count": 7,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 52882.1,
+      "independent_verification": {
+        "test_exit_code": 125,
+        "diff_check_exit_code": 0,
+        "changed_paths": [],
+        "only_expected_source_changed": false,
+        "working_tree_status": []
+      }
+    }
+  ],
+  "summary": {
+    "repeats": 2,
+    "plain_median_task_elapsed_ms": 73996.9,
+    "plain_median_model_api_calls_per_task": 9.5,
+    "plain_median_tool_results_per_task": 9.0,
+    "hades_median_task_elapsed_ms": 57575.6,
+    "hades_median_model_api_calls_per_task": 6.5,
+    "hades_median_tool_results_per_task": 6.0,
+    "verified_tests_passed": 0,
+    "expected_source_only_changes": 0,
+    "diagnosis_mutating_tool_attempts": 0,
+    "diagnosis_mutating_tool_calls_rejected_by_validation": 0,
+    "diagnosis_changed_workspace_turns_by_stack": {
+      "plain": 0,
+      "hades": 0
+    }
+  },
+  "limitations": [
+    "Synthetic multi-file coding escalation; independent fixture tests and diff checks are recorded, but this does not qualify larger coding tasks, Git commit behavior, or owner preference.",
+    "Only two order-balanced samples by default; local-model generation variance remains.",
+    "AIAgent direct route excludes Open WebUI persistence/metadata and does not qualify deployed gateway authentication."
+  ]
+}

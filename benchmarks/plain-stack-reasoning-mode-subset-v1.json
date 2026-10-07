@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "title": "PLAIN STACK reasoning mode subset — v1",
+  "status": "synthetic matched subset; single pass; not owner-qualified",
+  "date": "2026-10-06",
+  "method": {
+    "hermes": "0.21.5, isolated candidate API gateway, no HADES overlay",
+    "api_toolsets": "platform_toolsets.api_server: [] (zero enabled toolsets)",
+    "model": "qwen3.6:35b Q4_K_M, Ollama digest 096fdbd02fe620fc10cbeb6537e080f8041aece851e5d696aed024d4f70f2e47e",
+    "runtime": "Ollama 0.31.1, same private inference host and endpoint",
+    "context": "65,536 configured context; 1,024 max output",
+    "variable": "default Hermes reasoning configuration versus per-request model_options.reasoning.enabled=false",
+    "timing": "client first visible content and full streamed request wall; aggregate-only proxy independently captured model request/token metrics",
+    "cold_start": "first ordinary greeting followed gateway startup and isolated profile initialization; retain it in results",
+    "limitations": "single pass; only greeting and arithmetic order alternated; explanation arms ran default then disabled; no owner preference or HADES gateway qualification; model answers judged manually for relevance/correctness, not by automatic text matching"
+  },
+  "cases": [
+    {
+      "id": "core-01",
+      "category": "ordinary greeting",
+      "default": {
+        "client_ttfc_ms": 49894.4,
+        "client_wall_ms": 50245.1,
+        "visible_characters": 50,
+        "manual_review": "Natural and relevant. First request/candidate startup behavior is included in this timing."
+      },
+      "reasoning_disabled": {
+        "client_ttfc_ms": 661.8,
+        "client_wall_ms": 993.6,
+        "visible_characters": 43,
+        "manual_review": "Natural, brief, and relevant."
+      }
+    },
+    {
+      "id": "core-02",
+      "category": "short factual arithmetic",
+      "default": {
+        "client_ttfc_ms": 3681.6,
+        "client_wall_ms": 3754.1,
+        "manual_review": "Correct and concise."
+      },
+      "reasoning_disabled": {
+        "client_ttfc_ms": 2921.9,
+        "client_wall_ms": 2991.3,
+        "manual_review": "Correct and concise."
+      }
+    },
+    {
+      "id": "core-03",
+      "category": "explanation and one-word follow-up",
+      "turns": [
+        "Can you explain why Python generators are useful?",
+        "Why?"
+      ],
+      "default": {
+        "first_turn_client_ttfc_ms": 12774.2,
+        "first_turn_client_wall_ms": 16120.3,
+        "follow_up_client_ttfc_ms": 21745.5,
+        "follow_up_client_wall_ms": 23849.8,
+        "manual_review": "Correct, but both turns are more elaborate than the short follow-up needed."
+      },
+      "reasoning_disabled": {
+        "first_turn_client_ttfc_ms": 2531.9,
+        "first_turn_client_wall_ms": 8154.2,
+        "follow_up_client_ttfc_ms": 2056.7,
+        "follow_up_client_wall_ms": 2804.2,
+        "manual_review": "Follow-up is correct, concise, and directly addresses why. Initial explanation is correct but adds an unrequested code sample and is more verbose than needed."
+      }
+    }
+  ],
+  "interpretation": {
+    "latency": "Reasoning-disabled responses were faster in this sample, especially the explanation follow-up; the initial default-reasoning greeting includes candidate-startup cost and is not an apples-to-apples warm-turn estimate. Keep all observations. More repeats are required.",
+    "quality": "No answer correctness regression was observed in these three synthetic cases. Reasoning-disabled explanation was more verbose on the first turn, but substantially more direct on the one-word follow-up. This is not enough evidence to change the default globally.",
+    "owner_preference": "Not collected."
+  }
+}

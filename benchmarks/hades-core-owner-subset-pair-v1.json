@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "title": "Paired local PLAIN/HADES ordinary and follow-up subset replay",
+  "classification": "synthetic seeded owner-pattern subset; comparative timing and outputs; no owner preference",
+  "runtime": {
+    "ollama": "0.35.1",
+    "model": "qwen3.6:35b",
+    "digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "hardware": "RTX 3080 Ti; staged local runtime",
+    "hermes": "0.21.5 commit f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "tools": "API toolsets empty, no tool invocation expected",
+    "reasoning": "disabled",
+    "max_output_tokens": 512,
+    "title_upgrade": "disabled both stacks to isolate main user turns",
+    "warmup": "one identical short streamed request per stack in independent warmup session",
+    "pair_order": "alternated by case",
+    "context_tokens": 65536
+  },
+  "cases": [
+    "core-01",
+    "core-02",
+    "core-03",
+    "core-04"
+  ],
+  "first_unmeasured_warmup": {
+    "per_stack": 1
+  },
+  "turns": [
+    {
+      "stack": "plain",
+      "case": "core-01",
+      "turn": 1,
+      "status": 200,
+      "ttft_ms": 1140.2,
+      "total_ms": 1409.3,
+      "answer_chars": 43
+    },
+    {
+      "stack": "hades",
+      "case": "core-01",
+      "turn": 1,
+      "status": 200,
+      "ttft_ms": 1178.1,
+      "total_ms": 1427.1,
+      "answer_chars": 42
+    },
+    {
+      "stack": "hades",
+      "case": "core-02",
+      "turn": 1,
+      "status": 200,
+      "ttft_ms": 1152.5,
+      "total_ms": 1209.3,
+      "answer_chars": 2
+    },
+    {
+      "stack": "plain",
+      "case": "core-02",
+      "turn": 1,
+      "status": 200,
+      "ttft_ms": 1167.3,
+      "total_ms": 1220.0,
+      "answer_chars": 2
+    },
+    {
+      "stack": "plain",
+      "case": "core-03",
+      "turn": 1,
+      "status": 200,
+      "ttft_ms": 1093.4,
+      "total_ms": 2773.8,
+      "answer_chars": 442
+    },
+    {
+      "stack": "hades",
+      "case": "core-03",
+      "turn": 1,
+      "status": 200,
+      "ttft_ms": 1201.2,
+      "total_ms": 3790.6,
+      "answer_chars": 644
+    },
+    {
+      "stack": "plain",
+      "case": "core-03",
+      "turn": 2,
+      "status": 200,
+      "ttft_ms": 729.6,
+      "total_ms": 1909.1,
+      "answer_chars": 306
+    },
+    {
+      "stack": "hades",
+      "case": "core-03",
+      "turn": 2,
+      "status": 200,
+      "ttft_ms": 857.6,
+      "total_ms": 1258.7,
+      "answer_chars": 102
+    },
+    {
+      "stack": "hades",
+      "case": "core-04",
+      "turn": 1,
+      "status": 200,
+      "ttft_ms": 1146.4,
+      "total_ms": 2278.7,
+      "answer_chars": 260
+    },
+    {
+      "stack": "plain",
+      "case": "core-04",
+      "turn": 1,
+      "status": 200,
+      "ttft_ms": 1172.7,
+      "total_ms": 1701.7,
+      "answer_chars": 135
+    },
+    {
+      "stack": "hades",
+      "case": "core-04",
+      "turn": 2,
+      "status": 200,
+      "ttft_ms": 623.3,
+      "total_ms": 2388.9,
+      "answer_chars": 388
+    },
+    {
+      "stack": "plain",
+      "case": "core-04",
+      "turn": 2,
+      "status": 200,
+      "ttft_ms": 533.2,
+      "total_ms": 1075.5,
+      "answer_chars": 88
+    }
+  ],
+  "limits": [
+    "No Scotty preference or product quality scoring collected.",
+    "Synthetic subset only; not full 50-case corpus.",
+    "Staged model digest differs from production candidate digest; not a strict production A/B.",
+    "Gateway local timings do not include Open WebUI.",
+    "Provider generation counts and actual per-request prompt bytes were not captured in this run.",
+    "One pass over six turns per stack is descriptive only; caches and generation lengths remain noisy.",
+    "The synthetic Qwen 3.6 weights match by digest across the two local profiles, but that digest differs from the production Ollama candidate digest."
+  ],
+  "methodology": {
+    "gateway_processes": "one persistent Hermes API gateway per profile",
+    "gateway_ports": [
+      "127.0.0.1:8642",
+      "127.0.0.1:8643"
+    ],
+    "pair_order": "alternated by case; serialized requests",
+    "independent_history": true,
+    "configuration": "same base model/provider/context/output cap/reasoning settings; HADES overlay only on HADES profile",
+    "ordinary_tool_surface": "PLAIN API toolsets configured empty; HADES runtime logged zero inherited tools cleared per request",
+    "sampling": "same Hermes provider defaults; not separately pinned in artifact",
+    "generation_count": "not instrumented at provider boundary; successful assistant stream per user turn confirmed"
+  },
+  "summary": {
+    "successful_turns_per_stack": 6,
+    "failures": 0,
+    "plain_median_ttft_ms": 1116.8000000000002,
+    "hades_median_ttft_ms": 1149.45,
+    "hades_minus_plain_median_ttft_ms": 32.65,
+    "plain_median_total_ms": 1555.5,
+    "hades_median_total_ms": 1852.8999999999999,
+    "hades_minus_plain_median_total_ms": 297.4,
+    "plain_total_answer_chars": 1016,
+    "hades_total_answer_chars": 1438,
+    "hades_minus_plain_answer_chars": 422,
+    "owner_preference": "not collected",
+    "corpus_preference_classification": "not assigned; owner review required"
+  }
+}

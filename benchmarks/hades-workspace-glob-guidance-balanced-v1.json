@@ -1,0 +1,292 @@
+{
+  "date": "2026-10-06",
+  "source_revision": "1006e11b4e3c3ddb256c1a60c4eb6116dc327577",
+  "scenario": "same-chat failing unittest diagnosis followed by “Fix it”; current glob-vs-regex guidance",
+  "method": {
+    "hermes": "0.21.5 clean source both arms; HADES overlay only in HADES arm",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "requested_context": 65536,
+    "effective_context": "not captured",
+    "runtime": "Docker 29.8.2 rootless via RootlessKit 3.2.0",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d9f7d71f1ce919d",
+    "image_provenance": "saved archive index contained pinned digest; rootless-loaded image config and RootFS diff IDs matched archive config before run",
+    "workspace": "synthetic private Git repository below /home path; same unittest fixture per profile/repeat",
+    "order": "two repeats, order alternated plain/HADES then HADES/plain",
+    "task_containers": "trace confirmed exact fixture bind at /workspace, workdir /workspace, network none for every measured task container",
+    "owner_preference": "not measured"
+  },
+  "source_sha256": {
+    "runner": "5c5d3009c59544825c94cd48808f0d24121386253b7e1bc00c68f5c42f3dcdfc",
+    "workspace_policy": "babc877cea686046ec4697bb5ea2586eb75461a90fedbee75a26969fb944bcb1",
+    "sitecustomize": "820f1f008e4e1c6b0dce09ded0a93b9c97a9dde991d097ffb0891d62f7652ac1"
+  },
+  "stacks": [
+    {
+      "stack": "plain",
+      "samples": [
+        {
+          "repeat": 0,
+          "elapsed_ms": 32805.6,
+          "provider_generations": 11,
+          "workspace_task_container_count": 2,
+          "workspace_mount_workdir_network_contract_passed": true,
+          "diagnosis_mutated_fixture": true,
+          "phases": [
+            {
+              "phase": "diagnose",
+              "provider_generations": 10,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "tool_paths": [
+                "pyproject.toml",
+                "test_geometry.py",
+                "geometry.py",
+                "/workspace/geometry.py",
+                "/workspace/test_geometry.py",
+                "/workspace/geometry.py"
+              ],
+              "unavailable_tool_attempts": 0,
+              "unittest_calls": 3,
+              "terminal_results": [
+                {
+                  "exit_code": 0,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 0,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 0,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 1,
+                  "unittest_summary": true
+                },
+                {
+                  "exit_code": 0,
+                  "unittest_summary": true
+                }
+              ]
+            },
+            {
+              "phase": "fix",
+              "provider_generations": 1,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "tool_paths": [],
+              "unavailable_tool_attempts": 0,
+              "unittest_calls": 0,
+              "terminal_results": []
+            }
+          ],
+          "independent_verification": {
+            "test_exit_code": 0,
+            "diff_check_exit_code": 0,
+            "changed_paths": [
+              "geometry.py"
+            ],
+            "only_expected_source_changed": true
+          }
+        },
+        {
+          "repeat": 1,
+          "elapsed_ms": 23296.1,
+          "provider_generations": 9,
+          "workspace_task_container_count": 2,
+          "workspace_mount_workdir_network_contract_passed": true,
+          "diagnosis_mutated_fixture": true,
+          "phases": [
+            {
+              "phase": "diagnose",
+              "provider_generations": 8,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "tool_paths": [
+                "/workspace/geometry.py",
+                "/workspace/test_geometry.py",
+                "/workspace/geometry.py"
+              ],
+              "unavailable_tool_attempts": 0,
+              "unittest_calls": 2,
+              "terminal_results": [
+                {
+                  "exit_code": 1,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 1,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 0,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 0,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 1,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 0,
+                  "unittest_summary": true
+                }
+              ]
+            },
+            {
+              "phase": "fix",
+              "provider_generations": 1,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "tool_paths": [],
+              "unavailable_tool_attempts": 0,
+              "unittest_calls": 0,
+              "terminal_results": []
+            }
+          ],
+          "independent_verification": {
+            "test_exit_code": 0,
+            "diff_check_exit_code": 0,
+            "changed_paths": [
+              "geometry.py"
+            ],
+            "only_expected_source_changed": true
+          }
+        }
+      ],
+      "median_elapsed_ms": 28050.85,
+      "median_provider_generations": 10.0,
+      "task_completions": 2,
+      "diagnosis_mutations": 2
+    },
+    {
+      "stack": "hades",
+      "samples": [
+        {
+          "repeat": 0,
+          "elapsed_ms": 41589.7,
+          "provider_generations": 7,
+          "workspace_task_container_count": 3,
+          "workspace_mount_workdir_network_contract_passed": true,
+          "diagnosis_mutated_fixture": false,
+          "phases": [
+            {
+              "phase": "diagnose",
+              "provider_generations": 3,
+              "schema_count": 2,
+              "schema_bytes": 3433,
+              "tool_paths": [
+                "/workspace",
+                "/workspace",
+                "/workspace/README.md",
+                "/workspace/geometry.py",
+                "/workspace/test_geometry.py"
+              ],
+              "unavailable_tool_attempts": 0,
+              "unittest_calls": 0,
+              "terminal_results": []
+            },
+            {
+              "phase": "fix",
+              "provider_generations": 4,
+              "schema_count": 5,
+              "schema_bytes": 9346,
+              "tool_paths": [
+                "/workspace/geometry.py"
+              ],
+              "unavailable_tool_attempts": 0,
+              "unittest_calls": 2,
+              "terminal_results": [
+                {
+                  "exit_code": 0,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 0,
+                  "unittest_summary": true
+                }
+              ]
+            }
+          ],
+          "independent_verification": {
+            "test_exit_code": 0,
+            "diff_check_exit_code": 0,
+            "changed_paths": [
+              "geometry.py"
+            ],
+            "only_expected_source_changed": true
+          }
+        },
+        {
+          "repeat": 1,
+          "elapsed_ms": 37862.4,
+          "provider_generations": 7,
+          "workspace_task_container_count": 3,
+          "workspace_mount_workdir_network_contract_passed": true,
+          "diagnosis_mutated_fixture": false,
+          "phases": [
+            {
+              "phase": "diagnose",
+              "provider_generations": 3,
+              "schema_count": 2,
+              "schema_bytes": 3433,
+              "tool_paths": [
+                "/workspace",
+                "/workspace/geometry.py",
+                "/workspace/test_geometry.py"
+              ],
+              "unavailable_tool_attempts": 0,
+              "unittest_calls": 0,
+              "terminal_results": []
+            },
+            {
+              "phase": "fix",
+              "provider_generations": 4,
+              "schema_count": 5,
+              "schema_bytes": 9346,
+              "tool_paths": [
+                "/workspace/geometry.py"
+              ],
+              "unavailable_tool_attempts": 0,
+              "unittest_calls": 2,
+              "terminal_results": [
+                {
+                  "exit_code": 1,
+                  "unittest_summary": false
+                },
+                {
+                  "exit_code": 0,
+                  "unittest_summary": true
+                }
+              ]
+            }
+          ],
+          "independent_verification": {
+            "test_exit_code": 0,
+            "diff_check_exit_code": 0,
+            "changed_paths": [
+              "geometry.py"
+            ],
+            "only_expected_source_changed": true
+          }
+        }
+      ],
+      "median_elapsed_ms": 39726.05,
+      "median_provider_generations": 7.0,
+      "task_completions": 2,
+      "diagnosis_mutations": 0
+    }
+  ],
+  "limitations": [
+    "two samples per stack; local model variance remains",
+    "direct AIAgent only, no Open WebUI, deployed authentication, personal data, domains, or owner preference",
+    "total agent time, not frontend TTFT or progress latency",
+    "hosted CI/deployment not included"
+  ]
+}

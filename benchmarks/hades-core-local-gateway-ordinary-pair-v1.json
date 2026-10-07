@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "purpose": "Compare persistent Hermes API gateway ordinary-chat behavior with and without the HADES overlay on matched staged local inference.",
+  "classification": "synthetic diagnostic; not owner preference evidence",
+  "source": {
+    "hermes_version": "0.21.5",
+    "hermes_source_commit": "f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "ollama_version": "0.35.1",
+    "model": "qwen3.6:35b",
+    "model_digest_prefix": "a7eb95c",
+    "hardware": "RTX 3080 Ti",
+    "ollama_context_tokens": 4096
+  },
+  "controls": {
+    "same_model_runtime_hardware": true,
+    "reasoning": "disabled in both profiles",
+    "max_output_tokens": 512,
+    "api_toolsets": [],
+    "streaming": true,
+    "gateway_processes": "one persistent loopback-only Hermes API gateway per profile",
+    "auth": "synthetic API key and synthetic owner session key",
+    "front_end": "excluded",
+    "hindsight_and_domain_services": "not connected",
+    "source_difference": "HADES gateway loads campaign overlay and tracked public-research privacy-policy source; PLAIN uses unmodified upstream Hermes profile"
+  },
+  "method": {
+    "cases": [
+      {
+        "id": "core-01",
+        "category": "ordinary greeting",
+        "history": "independent per profile"
+      },
+      {
+        "id": "core-02",
+        "category": "short factual",
+        "history": "independent per profile"
+      },
+      {
+        "id": "core-03a",
+        "category": "explanation",
+        "history": "independent per profile"
+      },
+      {
+        "id": "core-03b",
+        "category": "one-word follow-up",
+        "history": "continues core-03a within profile"
+      },
+      {
+        "id": "core-04a",
+        "category": "concept explanation",
+        "history": "independent per profile"
+      },
+      {
+        "id": "core-04b",
+        "category": "one-word follow-up",
+        "history": "continues core-04a within profile"
+      }
+    ],
+    "order": "alternated PLAIN/HADES order by case; each pair was sequential, not concurrent",
+    "timing": "client-observed first streamed assistant content (TTFT) and final stream completion; one paired pass"
+  },
+  "results": {
+    "plain": {
+      "turns": 6,
+      "http_successes": 6,
+      "tool_calls": 0,
+      "ttft_ms": [
+        1534.7,
+        1060.1,
+        2121.5,
+        509.1,
+        1010.8,
+        474.3
+      ],
+      "ttft_median_ms": 1035.45,
+      "total_ms": [
+        1734.0,
+        1105.9,
+        2829.2,
+        1234.1,
+        1416.5,
+        1137.5
+      ],
+      "total_median_ms": 1325.5,
+      "assistant_characters": 802
+    },
+    "hades": {
+      "turns": 6,
+      "http_successes": 6,
+      "tool_calls": 0,
+      "ttft_ms": [
+        1754.3,
+        846.4,
+        1871.4,
+        474.7,
+        2015.9,
+        570.1
+      ],
+      "ttft_median_ms": 1300.4,
+      "total_ms": [
+        1942.7,
+        890.9,
+        3117.4,
+        1396.7,
+        3324.6,
+        1977.1
+      ],
+      "total_median_ms": 1959.9,
+      "assistant_characters": 1324
+    },
+    "delta_hades_minus_plain": {
+      "ttft_median_ms": 264.95,
+      "total_median_ms": 634.4,
+      "assistant_characters": 522
+    }
+  },
+  "interpretation": [
+    "Both profiles stayed below the 2 s median TTFT target in this six-turn warm staged sample; PLAIN median TTFT was about 265 ms lower.",
+    "HADES median completion was about 634 ms slower and emitted 65% more assistant characters in this sample. The explanation/follow-up wording merits review for unnecessary verbosity; this is not a quality score.",
+    "Per-pair alternating order reduces a simple stack-order bias but one pair per case remains noisy. Generation speed, output length, cache state, and GPU scheduling vary between sequential requests.",
+    "No Scotty interaction or preference was collected. This does not qualify Open WebUI, owner authentication, memory, domain tools, workspace/action behavior, production provenance, or production latency."
+  ],
+  "individual_turns": [
+    {
+      "stack": "plain",
+      "case": "core-01",
+      "ttft_ms": 1534.7,
+      "total_ms": 1734.0,
+      "assistant_characters": 45
+    },
+    {
+      "stack": "hades",
+      "case": "core-01",
+      "ttft_ms": 1754.3,
+      "total_ms": 1942.7,
+      "assistant_characters": 41
+    },
+    {
+      "stack": "hades",
+      "case": "core-02",
+      "ttft_ms": 846.4,
+      "total_ms": 890.9,
+      "assistant_characters": 2
+    },
+    {
+      "stack": "plain",
+      "case": "core-02",
+      "ttft_ms": 1060.1,
+      "total_ms": 1105.9,
+      "assistant_characters": 2
+    },
+    {
+      "stack": "plain",
+      "case": "core-03a",
+      "ttft_ms": 2121.5,
+      "total_ms": 2829.2,
+      "assistant_characters": 225
+    },
+    {
+      "stack": "hades",
+      "case": "core-03a",
+      "ttft_ms": 1871.4,
+      "total_ms": 3117.4,
+      "assistant_characters": 325
+    },
+    {
+      "stack": "hades",
+      "case": "core-03b",
+      "ttft_ms": 474.7,
+      "total_ms": 1396.7,
+      "assistant_characters": 261
+    },
+    {
+      "stack": "plain",
+      "case": "core-03b",
+      "ttft_ms": 509.1,
+      "total_ms": 1234.1,
+      "assistant_characters": 256
+    },
+    {
+      "stack": "plain",
+      "case": "core-04a",
+      "ttft_ms": 1010.8,
+      "total_ms": 1416.5,
+      "assistant_characters": 103
+    },
+    {
+      "stack": "hades",
+      "case": "core-04a",
+      "ttft_ms": 2015.9,
+      "total_ms": 3324.6,
+      "assistant_characters": 359
+    },
+    {
+      "stack": "hades",
+      "case": "core-04b",
+      "ttft_ms": 570.1,
+      "total_ms": 1977.1,
+      "assistant_characters": 336
+    },
+    {
+      "stack": "plain",
+      "case": "core-04b",
+      "ttft_ms": 474.3,
+      "total_ms": 1137.5,
+      "assistant_characters": 170
+    }
+  ]
+}

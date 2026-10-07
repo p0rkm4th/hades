@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "purpose": "Determine whether HADES direct Grocy recipe classification is a meaningful ordinary-chat latency target and record the routine-message logging defect found during tracing.",
+  "source_base": "4ef836d241a57b9a251b6e1e27587cb6374fe3ea",
+  "probe": {
+    "function": "hermes/sitecustomize.py::_hades_direct_grocy_recipe_read",
+    "implementation": "AST-extracted exact function, helper and regex constants; logger replaced with no-op; no HADES module initialization or service connections",
+    "cases": [
+      "Hey, how's your morning going?",
+      "What's 18% of 250?",
+      "Can you explain why Python generators are useful?",
+      "Why?",
+      "What's the difference between RAM and storage?",
+      "Examples?",
+      "nah",
+      "fix it",
+      "continue",
+      "That's not what I meant"
+    ],
+    "repetitions_per_case_per_batch": 100,
+    "batches": 9,
+    "all_calls_returned_without_grocy_access": true,
+    "median_cpu_wall_ns_per_call": 4763,
+    "estimated_two_calls_per_owner_or_household_turn_ms": 0.0095,
+    "latency_conclusion": "The regex classifier is not a meaningful latency target in this sample; retain its domain routing until broader evidence justifies changing it. The timing excludes configured log-handler I/O."
+  },
+  "privacy_finding_and_change": {
+    "before": "The classifier emitted the first 240 characters of every inspected owner/household message at INFO, including ordinary chat. The staged gateway log confirmed this on generator/RAM conversation turns.",
+    "change": "Removed the raw-message INFO log. No recipe classification, routing, Grocy access, or authority behavior changed.",
+    "verification": "Python compilation succeeded; source search confirms the raw-text log is gone. The existing Grocy Hermes runtime contract passed after making the pinned Hindsight provider available only under the temporary test HERMES_HOME. A new regression assertion routes a synthetic private sentinel through the classifier and proves no INFO log contains it.",
+    "runtime_retest": "Synthetic HADES Hermes runtime route coverage passed; no production runtime or service was changed. The isolated Hermes title/API harness remains inconclusive due profile startup constraints."
+  },
+  "limitations": [
+    "Synthetic ordinary messages only; not a full owner corpus.",
+    "No production or owner data was read.",
+    "No production deployment, hosted CI run, or owner dogfood was performed."
+  ]
+}

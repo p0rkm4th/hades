@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "title": "Note-only unconfirmed-memory model check",
+  "classification": "single synthetic direct-model diagnostic; instruction-following reviewed manually; not an end-to-end HADES or stack comparison; no owner preference",
+  "source_revision": "4eb21f73a1189abd8fdbc1fbbe1776df35c73d58",
+  "method": {
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.40.0",
+    "loaded_context": 65536,
+    "sampling": {
+      "temperature": 0.2,
+      "top_p": 0.95,
+      "num_predict": 192,
+      "think": false
+    },
+    "transport": "Ollama /api/chat, one request, no Hindsight service or concurrent extractor",
+    "system_context": "The exact note-only context returned by the HADES unconfirmed-retain path; context wording and synthetic user question only, no prior recalled facts."
+  },
+  "result": {
+    "elapsed_ms": 8417.2,
+    "prompt_eval_tokens": 60,
+    "generated_tokens": 69,
+    "loaded_context_observed": 65536,
+    "manual_review": "The model said it could not confirm the location, did not deny the user had mentioned moving, and invited the user to remind it.",
+    "answer_text_persisted": false
+  },
+  "limitations": [
+    "This checks the model response to the exact note but bypasses Hermes request assembly, HADES gateway injection, and the Hindsight status observer.",
+    "One synthetic prompt, one sample, no PLAIN comparison or owner preference.",
+    "The shared laptop and production model/runtime placement are not qualified by this check."
+  ]
+}

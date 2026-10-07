@@ -1,0 +1,311 @@
+{
+  "date": "2026-10-07",
+  "source_revision": "6ee892ea3bd682bd8318688c939a44a4c239af25",
+  "method": {
+    "hermes": "Hermes Agent v0.21.5 (2026.9.24)\nInstall directory: /opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate\nInstall method: git\nPython: 3.13.14\nOpenAI SDK: 2.24.0\nUpdate available: 8583 commits behind — run 'hermes update' clean install for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.40.0",
+    "openai_chat_context_probe_prompt_tokens": 7010,
+    "openai_chat_context_probe_minimum_tokens": 5000,
+    "docker_engine": "29.8.2",
+    "docker_security_options": [
+      "name=seccomp,profile=builtin",
+      "name=rootless",
+      "name=cgroupns"
+    ],
+    "docker_storage_driver": "vfs",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "sandbox_image_id": "sha256:d14ae8d7fcee933e82c9f62eded621110f227bc96363ca5449d36897af7bea1c",
+    "context": 65536,
+    "requested_context": 65536,
+    "actual_context_source": "Ollama GET /api/ps after warmup and after each provider request",
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "escalation",
+    "workspace_context_hint": "The active project workspace for file and coding tasks is mounted at /workspace. Use /workspace as the root for file tools; do not assume it is the Hermes host filesystem.",
+    "subject": "synthetic owner identity; private fixture only"
+  },
+  "turns": [
+    {
+      "scenario": "escalation",
+      "stack": "plain",
+      "repeat": 0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 38770.9,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 11266.4,
+          "stream_progress": {
+            "delta_count": 315,
+            "character_count": 1455,
+            "first_delta_ms": 5157.7,
+            "last_delta_ms": 11253.8
+          },
+          "api_calls": 1,
+          "tool_result_count": 0,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 2
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 38768.6,
+          "stream_progress": {
+            "delta_count": 155,
+            "character_count": 595,
+            "first_delta_ms": 1024.6,
+            "last_delta_ms": 27494.1
+          },
+          "api_calls": 11,
+          "tool_result_count": 16,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [
+            "temperature.py"
+          ],
+          "messages_added": 28
+        }
+      ],
+      "api_calls": 12,
+      "tool_result_count": 16,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 41088.1,
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "changed_paths": [
+          "temperature.py"
+        ],
+        "only_expected_source_changed": true,
+        "expected_source": "temperature.py",
+        "working_tree_status": [
+          " M temperature.py",
+          "?? __pycache__/"
+        ]
+      }
+    },
+    {
+      "scenario": "escalation",
+      "stack": "hades",
+      "repeat": 0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 35499.4,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 29671.6,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 562,
+            "first_delta_ms": 306.3,
+            "last_delta_ms": 29670.4
+          },
+          "api_calls": 4,
+          "tool_result_count": 7,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 12
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 35497.6,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 206,
+            "first_delta_ms": 67.8,
+            "last_delta_ms": 5824.3
+          },
+          "api_calls": 2,
+          "tool_result_count": 1,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [
+            "temperature.py"
+          ],
+          "messages_added": 4
+        }
+      ],
+      "api_calls": 6,
+      "tool_result_count": 8,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 38425.4,
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "changed_paths": [
+          "temperature.py"
+        ],
+        "only_expected_source_changed": true,
+        "expected_source": "temperature.py",
+        "working_tree_status": [
+          " M temperature.py"
+        ]
+      }
+    },
+    {
+      "scenario": "escalation",
+      "stack": "hades",
+      "repeat": 1,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 38369.2,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 26371.0,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 98,
+            "first_delta_ms": 406.1,
+            "last_delta_ms": 26369.1
+          },
+          "api_calls": 5,
+          "tool_result_count": 7,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 13
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 38367.5,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 206,
+            "first_delta_ms": 83.2,
+            "last_delta_ms": 11994.9
+          },
+          "api_calls": 3,
+          "tool_result_count": 5,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [
+            "temperature.py"
+          ],
+          "messages_added": 9
+        }
+      ],
+      "api_calls": 8,
+      "tool_result_count": 12,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 41587.0,
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "changed_paths": [
+          "temperature.py"
+        ],
+        "only_expected_source_changed": true,
+        "expected_source": "temperature.py",
+        "working_tree_status": [
+          " M temperature.py"
+        ]
+      }
+    },
+    {
+      "scenario": "escalation",
+      "stack": "plain",
+      "repeat": 1,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 25648.8,
+      "turns": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 18944.5,
+          "stream_progress": {
+            "delta_count": 150,
+            "character_count": 542,
+            "first_delta_ms": 5460.4,
+            "last_delta_ms": 18935.5
+          },
+          "api_calls": 5,
+          "tool_result_count": 8,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [],
+          "messages_added": 14
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 25647.2,
+          "stream_progress": {
+            "delta_count": 28,
+            "character_count": 94,
+            "first_delta_ms": 6164.5,
+            "last_delta_ms": 6662.8
+          },
+          "api_calls": 3,
+          "tool_result_count": 2,
+          "tool_result_contains_fixture": false,
+          "workspace_diff_paths_after_turn": [
+            "temperature.py"
+          ],
+          "messages_added": 6
+        }
+      ],
+      "api_calls": 8,
+      "tool_result_count": 10,
+      "tool_result_contains_fixture": false,
+      "outer_wall_ms": 27945.9,
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "changed_paths": [
+          "temperature.py"
+        ],
+        "only_expected_source_changed": true,
+        "expected_source": "temperature.py",
+        "working_tree_status": [
+          " M temperature.py",
+          "?? __pycache__/"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "repeats": 2,
+    "plain_median_task_elapsed_ms": 32209.85,
+    "plain_median_model_api_calls_per_task": 10.0,
+    "plain_median_tool_results_per_task": 13.0,
+    "hades_median_task_elapsed_ms": 36934.3,
+    "hades_median_model_api_calls_per_task": 7.0,
+    "hades_median_tool_results_per_task": 10.0,
+    "verified_tests_passed": 4,
+    "expected_source_only_changes": 4,
+    "diagnosis_mutating_tool_attempts": 0,
+    "diagnosis_mutating_tool_calls_rejected_by_validation": 0,
+    "diagnosis_changed_workspace_turns_by_stack": {
+      "plain": 0,
+      "hades": 0
+    }
+  },
+  "limitations": [
+    "Synthetic temperature multi-file coding escalation; independent fixture tests and diff checks are recorded, but this does not qualify larger coding tasks, Git commit behavior, or owner preference.",
+    "Only two order-balanced samples by default; local-model generation variance remains.",
+    "AIAgent direct route excludes Open WebUI persistence/metadata and does not qualify deployed gateway authentication."
+  ]
+}

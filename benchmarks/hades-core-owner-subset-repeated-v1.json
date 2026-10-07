@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "title": "Four order-balanced PLAIN/HADES ordinary and follow-up gateway repeats",
+  "classification": "synthetic owner-pattern subset; timing/context evidence only; no owner preference",
+  "source_revision": "6d04927bb8cabc01ecc493d930f3c4bae4df0d8c",
+  "runtime": {
+    "ollama_url": "http://127.0.0.1:11445",
+    "ollama_version": "0.35.1",
+    "hermes": "/opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate",
+    "hermes_version": "Hermes Agent v0.21.5 (2026.9.24)\nInstall directory: /opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate\nInstall method: git\nPython: 3.13.14\nOpenAI SDK: 2.24.0\nUpdate available: 8082 commits behind — run 'hermes update'",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "model_size_bytes": 22621314381,
+    "model_details": {
+      "parent_model": "qwen3.6-source:35b-a3b-mtp-q4_K_M-20260824",
+      "format": "gguf",
+      "family": "qwen35moe",
+      "families": [
+        "qwen35moe"
+      ],
+      "parameter_size": "35.5B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2048
+    },
+    "hardware": [
+      "NVIDIA GeForce RTX 3080 Ti Laptop GPU, 16384 MiB"
+    ],
+    "context_tokens": 65536,
+    "ollama_loaded_context_tokens": 65536,
+    "max_output_tokens": 512,
+    "reasoning": "disabled",
+    "title_model_upgrade": "disabled in both temporary profiles"
+  },
+  "local_only": {
+    "ollama_bind": "127.0.0.1",
+    "cloud_features_disabled": "OLLAMA_NO_CLOUD=1 verified in the live server environment",
+    "temporary_gateways_and_proxies": "loopback only; stopped after runs"
+  },
+  "methodology": {
+    "runs": 4,
+    "cases_per_run": [
+      "core-01",
+      "core-02",
+      "core-03",
+      "core-04"
+    ],
+    "turns_per_stack": 24,
+    "order_offsets": [
+      0,
+      1,
+      0,
+      1
+    ],
+    "case_order_balanced": "each case has two repeats PLAIN-first and two HADES-first",
+    "warmup": "one identical short turn per profile/run",
+    "reasoning": "disabled",
+    "api_tools": [],
+    "title_model_upgrade": "disabled in both temporary profiles",
+    "provider_capture": "request counts, sizes, role byte counts, schemas, tool call counts, timing, token usage; no provider message or completion text stored"
+  },
+  "summary": {
+    "plain": {
+      "turns": 24,
+      "successful_turns": 24,
+      "median_ttft_ms": 1155.1999999999998,
+      "median_total_ms": 1558.1,
+      "median_provider_first_content_ms": 1116.5180885000154,
+      "median_client_minus_provider_ms": 40.5613530001545,
+      "mean_input_tokens": 738.2083333333334,
+      "total_input_tokens": 17717,
+      "mean_output_tokens": 37.916666666666664,
+      "total_output_tokens": 910,
+      "mean_message_bytes": 3078.7083333333335,
+      "provider_generations": 24,
+      "tool_schemas_exposed": 0,
+      "tool_schema_bytes": 0,
+      "tool_calls_emitted": 0,
+      "answer_characters": 4448,
+      "median_answer_characters": 169.0
+    },
+    "hades": {
+      "turns": 24,
+      "successful_turns": 24,
+      "median_ttft_ms": 1158.45,
+      "median_total_ms": 1632.3,
+      "median_provider_first_content_ms": 1100.1783674983017,
+      "median_client_minus_provider_ms": 57.93608149809302,
+      "mean_input_tokens": 769.7916666666666,
+      "total_input_tokens": 18475,
+      "mean_output_tokens": 38,
+      "total_output_tokens": 912,
+      "mean_message_bytes": 3252.4166666666665,
+      "provider_generations": 24,
+      "tool_schemas_exposed": 0,
+      "tool_schema_bytes": 0,
+      "tool_calls_emitted": 0,
+      "answer_characters": 4449,
+      "median_answer_characters": 136.5
+    }
+  },
+  "per_repeat": [
+    {
+      "repeat": 1,
+      "order_offset": 0,
+      "plain": {
+        "median_ttft_ms": 1147.9,
+        "median_total_ms": 1580.3000000000002,
+        "input_tokens": 4401,
+        "output_tokens": 218,
+        "answer_characters": 1040
+      },
+      "hades": {
+        "median_ttft_ms": 1131.5500000000002,
+        "median_total_ms": 1405.95,
+        "input_tokens": 4604,
+        "output_tokens": 178,
+        "answer_characters": 915
+      }
+    },
+    {
+      "repeat": 2,
+      "order_offset": 1,
+      "plain": {
+        "median_ttft_ms": 1144.1,
+        "median_total_ms": 1735.0,
+        "input_tokens": 4445,
+        "output_tokens": 245,
+        "answer_characters": 1261
+      },
+      "hades": {
+        "median_ttft_ms": 1165.25,
+        "median_total_ms": 1589.5,
+        "input_tokens": 4609,
+        "output_tokens": 229,
+        "answer_characters": 1166
+      }
+    },
+    {
+      "repeat": 3,
+      "order_offset": 0,
+      "plain": {
+        "median_ttft_ms": 1154.0,
+        "median_total_ms": 1375.4499999999998,
+        "input_tokens": 4441,
+        "output_tokens": 186,
+        "answer_characters": 939
+      },
+      "hades": {
+        "median_ttft_ms": 1161.3000000000002,
+        "median_total_ms": 1949.25,
+        "input_tokens": 4625,
+        "output_tokens": 267,
+        "answer_characters": 1289
+      }
+    },
+    {
+      "repeat": 4,
+      "order_offset": 1,
+      "plain": {
+        "median_ttft_ms": 1155.1999999999998,
+        "median_total_ms": 1637.75,
+        "input_tokens": 4430,
+        "output_tokens": 261,
+        "answer_characters": 1208
+      },
+      "hades": {
+        "median_ttft_ms": 1165.75,
+        "median_total_ms": 1910.1999999999998,
+        "input_tokens": 4637,
+        "output_tokens": 238,
+        "answer_characters": 1079
+      }
+    }
+  ],
+  "paired_turn_deltas": [
+    {
+      "repeat": 1,
+      "case": "core-01",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": 14.3,
+      "hades_minus_plain_total_ms": 223.2,
+      "hades_minus_plain_answer_chars": 56
+    },
+    {
+      "repeat": 1,
+      "case": "core-02",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": -63.2,
+      "hades_minus_plain_total_ms": -71.4,
+      "hades_minus_plain_answer_chars": 0
+    },
+    {
+      "repeat": 1,
+      "case": "core-03",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": 102.2,
+      "hades_minus_plain_total_ms": 806.6,
+      "hades_minus_plain_answer_chars": 225
+    },
+    {
+      "repeat": 1,
+      "case": "core-03",
+      "turn": 2,
+      "hades_minus_plain_ttft_ms": 109.1,
+      "hades_minus_plain_total_ms": -251.9,
+      "hades_minus_plain_answer_chars": -60
+    },
+    {
+      "repeat": 1,
+      "case": "core-04",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": -89.2,
+      "hades_minus_plain_total_ms": -757.1,
+      "hades_minus_plain_answer_chars": -151
+    },
+    {
+      "repeat": 1,
+      "case": "core-04",
+      "turn": 2,
+      "hades_minus_plain_ttft_ms": -83.5,
+      "hades_minus_plain_total_ms": -926.4,
+      "hades_minus_plain_answer_chars": -195
+    },
+    {
+      "repeat": 2,
+      "case": "core-01",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": -0.4,
+      "hades_minus_plain_total_ms": 132.2,
+      "hades_minus_plain_answer_chars": 30
+    },
+    {
+      "repeat": 2,
+      "case": "core-02",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": 92.5,
+      "hades_minus_plain_total_ms": 71.5,
+      "hades_minus_plain_answer_chars": 0
+    },
+    {
+      "repeat": 2,
+      "case": "core-03",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": -71.0,
+      "hades_minus_plain_total_ms": -361.3,
+      "hades_minus_plain_answer_chars": -26
+    },
+    {
+      "repeat": 2,
+      "case": "core-03",
+      "turn": 2,
+      "hades_minus_plain_ttft_ms": -47.4,
+      "hades_minus_plain_total_ms": 781.5,
+      "hades_minus_plain_answer_chars": 106
+    },
+    {
+      "repeat": 2,
+      "case": "core-04",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": 83.0,
+      "hades_minus_plain_total_ms": -227.2,
+      "hades_minus_plain_answer_chars": -76
+    },
+    {
+      "repeat": 2,
+      "case": "core-04",
+      "turn": 2,
+      "hades_minus_plain_ttft_ms": -230.3,
+      "hades_minus_plain_total_ms": -955.2,
+      "hades_minus_plain_answer_chars": -129
+    },
+    {
+      "repeat": 3,
+      "case": "core-01",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": 38.1,
+      "hades_minus_plain_total_ms": 46.8,
+      "hades_minus_plain_answer_chars": 5
+    },
+    {
+      "repeat": 3,
+      "case": "core-02",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": -43.3,
+      "hades_minus_plain_total_ms": -48.0,
+      "hades_minus_plain_answer_chars": 0
+    },
+    {
+      "repeat": 3,
+      "case": "core-03",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": 138.1,
+      "hades_minus_plain_total_ms": 58.6,
+      "hades_minus_plain_answer_chars": -116
+    },
+    {
+      "repeat": 3,
+      "case": "core-03",
+      "turn": 2,
+      "hades_minus_plain_ttft_ms": 48.0,
+      "hades_minus_plain_total_ms": 1242.4,
+      "hades_minus_plain_answer_chars": 331
+    },
+    {
+      "repeat": 3,
+      "case": "core-04",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": -58.4,
+      "hades_minus_plain_total_ms": -75.7,
+      "hades_minus_plain_answer_chars": -22
+    },
+    {
+      "repeat": 3,
+      "case": "core-04",
+      "turn": 2,
+      "hades_minus_plain_ttft_ms": -59.8,
+      "hades_minus_plain_total_ms": 709.9,
+      "hades_minus_plain_answer_chars": 152
+    },
+    {
+      "repeat": 4,
+      "case": "core-01",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": -56.5,
+      "hades_minus_plain_total_ms": 250.6,
+      "hades_minus_plain_answer_chars": 53
+    },
+    {
+      "repeat": 4,
+      "case": "core-02",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": 104.1,
+      "hades_minus_plain_total_ms": 103.7,
+      "hades_minus_plain_answer_chars": 0
+    },
+    {
+      "repeat": 4,
+      "case": "core-03",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": -56.3,
+      "hades_minus_plain_total_ms": -4.8,
+      "hades_minus_plain_answer_chars": -44
+    },
+    {
+      "repeat": 4,
+      "case": "core-03",
+      "turn": 2,
+      "hades_minus_plain_ttft_ms": 29.1,
+      "hades_minus_plain_total_ms": 757.6,
+      "hades_minus_plain_answer_chars": 206
+    },
+    {
+      "repeat": 4,
+      "case": "core-04",
+      "turn": 1,
+      "hades_minus_plain_ttft_ms": 123.0,
+      "hades_minus_plain_total_ms": 417.4,
+      "hades_minus_plain_answer_chars": 77
+    },
+    {
+      "repeat": 4,
+      "case": "core-04",
+      "turn": 2,
+      "hades_minus_plain_ttft_ms": 91.7,
+      "hades_minus_plain_total_ms": -1745.7,
+      "hades_minus_plain_answer_chars": -421
+    }
+  ],
+  "limitations": [
+    "Four synthetic cases only; the full 50-case corpus, memory, domain tools, Open WebUI, coding/action and production path are not measured.",
+    "No owner quality score or preference was captured.",
+    "The local model digest is not the production candidate digest.",
+    "Output token and answer-length variation is stochastic; no stable verbosity winner is inferred."
+  ],
+  "benchmark_script_sha256": "90b03d254c8ffab04f3bbd07bd166d3817d934b0207c933ea1bb9b693fa90046"
+}

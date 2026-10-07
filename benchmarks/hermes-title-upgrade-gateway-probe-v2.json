@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "classification": "synthetic isolated Hermes API title behavior probe; no owner preference",
+  "source_revision": "f5f0eb04bfaff913b3a4cf4cef0efd87bd6d4ae2",
+  "benchmark_script": "scripts/benchmark-hermes-title-upgrade.py",
+  "benchmark_script_sha256": "6fe90c340296dcc97b6d8b13c032385bcba250717b38e3678ab0d4fde47d9170",
+  "method": {
+    "hermes_version": "0.21.5",
+    "hermes_source": "staged immutable v2026.9.24 candidate",
+    "hermes_commit": "f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "model": "synthetic-model",
+    "provider": "loopback synthetic OpenAI-compatible server",
+    "overlay": false,
+    "tools": [],
+    "open_webui": false,
+    "title_model_output": "Python generators",
+    "session_title_readback": "authenticated GET /api/sessions/{id}",
+    "source": "two separate temporary profiles; title upgrade true/false; all services loopback"
+  },
+  "results": {
+    "upgrade_enabled": {
+      "main_stream_completed": true,
+      "persisted_title": "Python generators",
+      "provider_posts": 3,
+      "model_generations": 2,
+      "title_model_generations": 1
+    },
+    "upgrade_disabled": {
+      "main_stream_completed": true,
+      "persisted_title": "Explain why Python generators help with…",
+      "provider_posts": 2,
+      "model_generations": 1,
+      "title_model_generations": 0
+    }
+  },
+  "interpretation": "Hermes synchronously persists the derived title before its stream completes; enabled model upgrade makes one extra nonstream structured title generation and later replaces the persisted title. Disabled upgrade preserves the derived title and makes zero title-model calls. This proves title visibility on Hermes session API, not Open WebUI title UI integration or owner preference."
+}

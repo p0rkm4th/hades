@@ -1,0 +1,27 @@
+{
+  "theme": "odysseus-neon",
+  "effect": "none",
+  "model": "synthetic-reconstruction-model",
+  "viewport": {
+    "width": 1365,
+    "height": 850
+  },
+  "images": {
+    "baseline": {
+      "image_id": "sha256:75df14805e0e95157166b9672678e2285ce2ae58126c71232d68d6a95a30b629",
+      "reported_version": {
+        "version": "0.11.1",
+        "deployment_id": ""
+      },
+      "settings_saved": true
+    },
+    "candidate": {
+      "image_id": "sha256:606aee1147dd9e7814f34f6b09a3006767e875c7352e743a32933c676e4d1808",
+      "reported_version": {
+        "version": "0.11.4",
+        "deployment_id": ""
+      },
+      "settings_saved": true
+    }
+  }
+}

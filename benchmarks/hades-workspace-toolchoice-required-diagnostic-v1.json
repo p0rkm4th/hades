@@ -1,0 +1,161 @@
+{
+  "date": "2026-10-06",
+  "source_revision": "5ab28f6bc48dd9baab4e4184e139b500cca4b8c3 + temporary tool_choice=required probe",
+  "result": "FAILURE_DIAGNOSTIC_ONLY",
+  "excluded_from_preference_and_completion_rates": true,
+  "method": {
+    "hermes": "0.21.5 clean source for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "context": 65536,
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "escalation",
+    "subject": "synthetic owner identity; private fixture only",
+    "requested_context": 65536,
+    "observed_ollama_context_length": 4096,
+    "context_source": "GET /api/ps after the paired run; actual loaded context was 4096 despite 65536 request metadata/warmup",
+    "temporary_change": "HADES workspace action turns set tool_choice=required; this patch was removed after the run because both calls still returned finish_reason=stop without tool calls."
+  },
+  "summary": {
+    "plain_fixture_tool_successes": 0,
+    "hades_fixture_tool_successes": 0,
+    "plain_correct_final_answers": 0,
+    "hades_correct_final_answers": 0,
+    "verified_tests_passed": 0,
+    "expected_source_only_changes": 0,
+    "repeats": 2
+  },
+  "trials": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "elapsed_ms": 23881.0,
+      "verified_test_exit_code": 1,
+      "changed_paths": [],
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 17462.5,
+          "stream_progress": {
+            "delta_count": 131,
+            "character_count": 515,
+            "first_delta_ms": 15164.9,
+            "last_delta_ms": 17452.1
+          },
+          "api_calls": 1
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 23881.0,
+          "stream_progress": {
+            "delta_count": 134,
+            "character_count": 648,
+            "first_delta_ms": 3828.9,
+            "last_delta_ms": 6414.9
+          },
+          "api_calls": 1
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "elapsed_ms": 19664.0,
+      "verified_test_exit_code": 1,
+      "changed_paths": [],
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 14515.9,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 170,
+            "first_delta_ms": 619.4,
+            "last_delta_ms": 14515.6
+          },
+          "api_calls": 1
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 19664.0,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 208,
+            "first_delta_ms": 424.6,
+            "last_delta_ms": 5147.9
+          },
+          "api_calls": 1
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "elapsed_ms": 26821.0,
+      "verified_test_exit_code": 1,
+      "changed_paths": [],
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 23694.0,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 521,
+            "first_delta_ms": 628.6,
+            "last_delta_ms": 23693.2
+          },
+          "api_calls": 5
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 26821.0,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 169,
+            "first_delta_ms": 435.5,
+            "last_delta_ms": 3126.8
+          },
+          "api_calls": 1
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "elapsed_ms": 14535.3,
+      "verified_test_exit_code": 1,
+      "changed_paths": [],
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 9319.9,
+          "stream_progress": {
+            "delta_count": 75,
+            "character_count": 292,
+            "first_delta_ms": 8007.7,
+            "last_delta_ms": 9309.5
+          },
+          "api_calls": 1
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 14535.3,
+          "stream_progress": {
+            "delta_count": 77,
+            "character_count": 306,
+            "first_delta_ms": 4032.4,
+            "last_delta_ms": 5174.9
+          },
+          "api_calls": 1
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "All four end-to-end trials failed independent verification and changed no source files.",
+    "Required tool choice reached Ollama on both HADES action requests, but did not force a tool call. No preference claim is valid.",
+    "Ollama reported an effective 4096-token context; these trials do not qualify a 65536-token context comparison."
+  ]
+}

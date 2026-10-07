@@ -1,0 +1,169 @@
+{
+  "date": "2026-10-06",
+  "scenario": "A same-conversation synthetic coding escalation: diagnose the failing Python test, then respond to the terse follow-up “Fix it.”",
+  "campaign_head_before_commit": "d064c38b1808368486afb4532efff580106037b7",
+  "source_sha256": {
+    "hermes/workspace.py": "8ad03c8ef735660c0b73fa04702fbf07404c280a8abf769f0fd2aace2a18b4f6",
+    "hermes/sitecustomize.py": "df7439fc9b0ddb80a4f715b3aec0d90717cc64dbb03de26156890e663a159bdb",
+    "scripts/test-workspace-escalation-hermes-runtime.sh": "8d691d86d6f2374942908e516d29e54f8c164c11383805ab6da3cbb26d9f82fe",
+    "scripts/benchmark-hades-workspace-read-pair.py": "1956ab26d887346302321d105ed42ddf1ec4e7c1b1401e8f45606a93711fb8e0"
+  },
+  "method": {
+    "hermes": "0.21.5 clean source for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "context": 65536,
+    "reasoning": "disabled; max output 512 tokens per generation",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "escalation",
+    "subject": "synthetic owner identity; private fixture only",
+    "requested_context": 65536,
+    "workspace": "Private synthetic Git repository, initially failing unittest; same starting source and test in each profile.",
+    "session_cwd": "Both profiles called register_task_env_overrides with cwd_source=session before the conversation. Effective Docker workspace mounted at /workspace; network disabled.",
+    "rootless_image": "Rootless Docker; pinned source image Config and RootFS layers were compared to local rootless image before use; rootless run used matching image ID and --network=none.",
+    "independent_verification": "After model conversation, run python -B -m unittest -v inside a new rootless network-none container; inspect git diff --check, changed paths and worktree status."
+  },
+  "turns": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "total_two_turn_elapsed_ms": 45707.9,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "provider_generations": 6,
+      "independent_verification": {
+        "test_exit_code": 1,
+        "diff_check_exit_code": 0,
+        "changed_paths": [],
+        "only_expected_source_changed": false,
+        "working_tree_status": []
+      }
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "total_two_turn_elapsed_ms": 33321.9,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "provider_generations": 4,
+      "independent_verification": {
+        "test_exit_code": 1,
+        "diff_check_exit_code": 0,
+        "changed_paths": [],
+        "only_expected_source_changed": false,
+        "working_tree_status": []
+      }
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "total_two_turn_elapsed_ms": 41034.8,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "provider_generations": 10,
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "changed_paths": [
+          "geometry.py"
+        ],
+        "only_expected_source_changed": true,
+        "working_tree_status": [
+          " M geometry.py",
+          "?? __pycache__/"
+        ]
+      }
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "total_two_turn_elapsed_ms": 90928.0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd": "/workspace",
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "provider_generations": 24,
+      "independent_verification": {
+        "test_exit_code": 1,
+        "diff_check_exit_code": 0,
+        "changed_paths": [],
+        "only_expected_source_changed": false,
+        "working_tree_status": []
+      }
+    }
+  ],
+  "summary": {
+    "plain": {
+      "repeats": 2,
+      "diagnostic_schema_count_set": [
+        8
+      ],
+      "diagnostic_schema_bytes_set": [
+        12590
+      ],
+      "diagnostic_mutating_or_terminal_tool_calls": 4,
+      "fix_schema_count_set": [
+        8
+      ],
+      "total_provider_generations": 30,
+      "independent_tests_passed": 0,
+      "only_expected_source_changed": 0,
+      "median_two_turn_elapsed_ms": 68317.95
+    },
+    "hades": {
+      "repeats": 2,
+      "diagnostic_schema_count_set": [
+        2
+      ],
+      "diagnostic_schema_bytes_set": [
+        3433
+      ],
+      "diagnostic_mutating_or_terminal_tool_calls": 0,
+      "fix_schema_count_set": [
+        5
+      ],
+      "total_provider_generations": 14,
+      "independent_tests_passed": 1,
+      "only_expected_source_changed": 1,
+      "median_two_turn_elapsed_ms": 37178.350000000006
+    }
+  },
+  "limitations": [
+    "Two repeats per stack only; synthetic one-function bug and one local model. No owner preference.",
+    "Direct AIAgent probe, not Open WebUI or full gateway/UI path. Requested context is recorded; effective loaded context was not captured in this run.",
+    "The PLAIN profile returned repeated empty-workspace claims despite fixture mounts; one run hallucinated a different geometry defect and claimed the test passed when independent verification failed. This is observed output, not a proven general Hermes defect; investigate tool arguments/results and effective container mounts.",
+    "One HADES run did not complete the fix; the other corrected only geometry.py and passed. The sample does not qualify the action workflow as reliable.",
+    "HADES median two-turn AIAgent time was 37.18s, above the 30s composed-task target; TTFT is not separately measured here.",
+    "A successful HADES run left an untracked __pycache__ directory after model-run tests, while the tracked diff was only geometry.py.",
+    "Temporary image-identity wrapper compared Config+RootFS against the pinned host image and routed containers to the rootless local image ID. No production daemon/configuration used."
+  ],
+  "analysis": [
+    "HADES read-only diagnosis calls exposed only read_file/search_files (2 schemas, 3,433 bytes); no patch/write_file/terminal schema or tool call appeared in either diagnostic phase. This held in both repeats.",
+    "On the explicit “Fix it.” follow-up, HADES exposed its five bounded workspace tools (9,346 bytes). One of two HADES repeats patched only geometry.py and passed the independent unittest; the other asked for more files and left the failing fixture unchanged.",
+    "PLAIN exposed eight schemas (12,590 bytes), including dynamic tool-search wrappers, in both phases. Both PLAIN repeats failed independent verification; one made 24 provider generations in its two-turn conversation and returned an unrelated triangle-area diagnosis. The PLAIN tool output described an empty workspace even though the external rootless verifier mounted and saw the fixture.",
+    "The HADES no-write diagnosis boundary is an improvement over an earlier exploratory run where the model patched during the “Why?” turn. But action reliability remains mixed, HADES latency misses the composed-task target, and PLAIN setup/tool behavior needs investigation. No preference conclusion."
+  ]
+}

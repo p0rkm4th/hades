@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "classification": "synthetic endpoint-level composition probe; no owner data or preference",
+  "source_revision": "6914700ba23c30b16b9031c0141885220b1dcab3",
+  "method": {
+    "open_webui": "0.11.4 candidate sha256:5135da5a53c99cbfd25e1d6f94ddad3da50b1f00f7527c251b35baa514ec81b3",
+    "hermes": "0.21.5 commit f97608f178d1ffeca59860195ab7da295f7c8e5f",
+    "provider": "loopback synthetic OpenAI-compatible server",
+    "model": "synthetic-model",
+    "overlay": false,
+    "tools": [],
+    "network": "internal Docker network; Hermes bound to that bridge gateway only",
+    "owner": "synthetic account",
+    "sequence": "one authenticated Open WebUI /api/chat/completions request, followed by one authenticated /api/v1/tasks/title/completions request; task result persisted using authenticated chat API",
+    "limitations": [
+      "No browser-driven UI run; frontend title-task trigger cadence is unknown.",
+      "Open WebUI main chat API returned an empty immediate choices body in this synthetic fixture; answer persistence and owner-visible rendering were not qualified.",
+      "The two endpoint calls were explicitly sequenced by the harness; this does not claim the UI invokes both for every chat."
+    ]
+  },
+  "results": {
+    "hermes_model_upgrade_enabled": {
+      "provider_posts": 6,
+      "provider_setup_posts": 2,
+      "streamed_model_generations": 2,
+      "structured_hermes_title_generations": 2,
+      "total_model_generations": 4,
+      "openwebui_title_task_reply": "Open WebUI generated title",
+      "openwebui_title_persisted": true,
+      "hermes_session_titles": [
+        "Hermes API Session Title",
+        "Hermes API Session Title #2"
+      ]
+    },
+    "hermes_model_upgrade_disabled": {
+      "provider_posts": 4,
+      "provider_setup_posts": 2,
+      "streamed_model_generations": 2,
+      "structured_hermes_title_generations": 0,
+      "total_model_generations": 2,
+      "openwebui_title_task_reply": "Open WebUI generated title",
+      "openwebui_title_persisted": true,
+      "hermes_session_titles": [
+        "Explain why Python generators help with…",
+        "### Task:"
+      ]
+    }
+  },
+  "interpretation": "For these explicit API calls, disabling Hermes title upgrades removed two structured title generations while preserving the Open WebUI task title response and persistence. The Open WebUI chat API endpoint did not itself call the title-task endpoint. The result supports staging model_upgrade_enabled=false for UI-routed traffic, but is not browser or owner acceptance and does not decide whether Open WebUI title generation should remain enabled."
+}

@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "title": "Owner core-09 savings recall and synthetic memory correction comparison",
+  "classification": "incomplete staging diagnostic; no preference or release qualification",
+  "source_revision": "3bde9df45fc5be9bb7e6263f820e5ab86494c906",
+  "method": {
+    "samples_requested": 2,
+    "hades_scope": "owner; synthetic subject hades-synthetic",
+    "hindsight_model": "qwen3:14b",
+    "model": "qwen3.6:35b",
+    "ollama_version": "0.40.0",
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight@sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70",
+    "context": "65,536 configured for the main model; per-call context/residency trace was not written because the runner aborted before finalization",
+    "sampler": {
+      "temperature": 0.1,
+      "top_p": 0.95
+    },
+    "synthetic_data_only": true,
+    "owner_corpus_cases": [
+      "core-01",
+      "core-09"
+    ],
+    "counterbalance": "sample 1 PLAIN first; sample 2 HADES first; serialized requests",
+    "preference_bucket": "UNASSIGNED; no owner dogfood"
+  },
+  "completed_turns": [
+    {
+      "sample": 1,
+      "stack": "plain",
+      "turn": "ordinary",
+      "total_ms": 1576.3,
+      "provider_generations": 1
+    },
+    {
+      "sample": 1,
+      "stack": "plain",
+      "turn": "automatic_recall",
+      "total_ms": 1424.9,
+      "provider_generations": 1,
+      "correct": true
+    },
+    {
+      "sample": 1,
+      "stack": "plain",
+      "turn": "core09_recall",
+      "total_ms": 1340.6,
+      "provider_generations": 1,
+      "correct": false
+    },
+    {
+      "sample": 1,
+      "stack": "plain",
+      "turn": "save",
+      "total_ms": 2935.7,
+      "provider_generations": 2,
+      "tool_calls": 1
+    },
+    {
+      "sample": 1,
+      "stack": "plain",
+      "turn": "correction",
+      "total_ms": 2267.3,
+      "provider_generations": 2,
+      "tool_calls": 1
+    },
+    {
+      "sample": 1,
+      "stack": "plain",
+      "turn": "implicit_recall",
+      "total_ms": 1324.5,
+      "provider_generations": 1,
+      "correct": true
+    },
+    {
+      "sample": 1,
+      "stack": "plain",
+      "turn": "fresh_recall",
+      "total_ms": 1321.5,
+      "provider_generations": 1,
+      "correct": true
+    },
+    {
+      "sample": 1,
+      "stack": "hades",
+      "turn": "ordinary",
+      "total_ms": 2213.4,
+      "provider_generations": 1
+    },
+    {
+      "sample": 1,
+      "stack": "hades",
+      "turn": "automatic_recall",
+      "total_ms": 30445.7,
+      "provider_generations": 1,
+      "correct": false,
+      "retained_fact_visible": false
+    },
+    {
+      "sample": 1,
+      "stack": "hades",
+      "turn": "core09_recall",
+      "total_ms": 50.8,
+      "provider_generations": 0,
+      "correct": true
+    },
+    {
+      "sample": 1,
+      "stack": "hades",
+      "turn": "save",
+      "total_ms": 92.6,
+      "provider_generations": 0
+    },
+    {
+      "sample": 1,
+      "stack": "hades",
+      "turn": "correction",
+      "total_ms": 82.1,
+      "provider_generations": 0
+    },
+    {
+      "sample": 1,
+      "stack": "hades",
+      "turn": "implicit_recall",
+      "total_ms": 45.0,
+      "provider_generations": 0,
+      "correct": true
+    },
+    {
+      "sample": 1,
+      "stack": "hades",
+      "turn": "fresh_recall",
+      "total_ms": 43.5,
+      "provider_generations": 0,
+      "correct": true
+    },
+    {
+      "sample": 2,
+      "stack": "hades",
+      "turn": "ordinary",
+      "total_ms": 44464.0,
+      "provider_generations": 1
+    },
+    {
+      "sample": 2,
+      "stack": "hades",
+      "turn": "automatic_recall",
+      "total_ms": 27761.2,
+      "provider_generations": 1,
+      "correct": true,
+      "retained_fact_visible": false
+    },
+    {
+      "sample": 2,
+      "stack": "hades",
+      "turn": "core09_recall",
+      "total_ms": 49.4,
+      "provider_generations": 0,
+      "correct": true
+    },
+    {
+      "sample": 2,
+      "stack": "hades",
+      "turn": "save",
+      "total_ms": 92.2,
+      "provider_generations": 0
+    },
+    {
+      "sample": 2,
+      "stack": "hades",
+      "turn": "correction",
+      "total_ms": 76.2,
+      "provider_generations": 0
+    },
+    {
+      "sample": 2,
+      "stack": "hades",
+      "turn": "implicit_recall",
+      "total_ms": 46.4,
+      "provider_generations": 0,
+      "correct": true
+    },
+    {
+      "sample": 2,
+      "stack": "hades",
+      "turn": "fresh_recall",
+      "total_ms": 47.7,
+      "provider_generations": 0,
+      "correct": true
+    }
+  ],
+  "failure": {
+    "stage": "hindsight_idle_before_plain_after_sample_2_hades",
+    "error_type": "RuntimeError",
+    "safe_reason": "Hindsight pending operation status unavailable; fail-closed barrier aborted before the PLAIN arm",
+    "incomplete_sample": 2,
+    "plain_sample_2": "NOT RUN",
+    "preference_or_stack_comparison": "INVALID"
+  },
+  "findings": [
+    "The exact core-09 wording correctly retrieved the synthetic owner-scoped fact in both HADES repeats in about 50 ms with zero model generations.",
+    "The separate automatic Denver recall was mixed (1/2) and slow (27.8–30.4 s); the fact was not visible in the bank list before either recall.",
+    "The shared runtime remained highly contended; the second HADES ordinary turn took 44.5 s.",
+    "The barrier failed closed and prevented an unisolated PLAIN sample. Completed turns are retained, but this artifact cannot rank the stacks."
+  ],
+  "limitations": [
+    "Synthetic owner identity and facts only; no owner preference was collected.",
+    "One PLAIN repeat and two HADES repeats are incomplete and order-imbalanced.",
+    "The working benchmark runner did not yet persist a partial artifact automatically; these completed turn metrics were copied from its live output, and per-call residency/context details are absent.",
+    "Production hardware, runtime placement, and deployment parity remain unverified."
+  ],
+  "post_run_review": "Post-run harness review: these owner-scoped runs queried the household-style bank hades-user-hades-synthetic for lifecycle and visibility. HADES maps the synthetic owner subject to hades-owner. Treat the recorded retained-fact visibility/lifecycle values and barrier failure as invalid; user-facing turn outputs remain observed run data. No stack preference can be assigned."
+}

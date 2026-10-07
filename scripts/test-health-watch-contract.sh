@@ -83,11 +83,17 @@ with tempfile.TemporaryDirectory() as directory:
         "_hades_logger": logging.getLogger("hades.health-watch-test"),
     }
     exec(compile(ast.Module(body=route_functions, type_ignores=[]), "sitecustomize.py", "exec"), route_namespace)
+    route = route_namespace["_hades_health_watch_response"]
+    route_namespace["_hades_health_watch_state_path"] = lambda: (_ for _ in ()).throw(
+        AssertionError("ordinary chat touched health-watch state")
+    )
+    assert route("Hey, how are you doing?", "owner", "owner", "ordinary-chat") is None
+    assert route("Is everything okay with the servers?", "owner", "owner", "ordinary-chat") is None
+    route_namespace["_hades_health_watch_state_path"] = lambda: str(store.path)
     route_preview = service.preview(
         "owner", owner=True, resource_id="hades-core", display_name="Route Watch",
         interval_minutes=10, conversation_id="conversation-alpha",
     )
-    route = route_namespace["_hades_health_watch_response"]
     cross_chat = route("yes", "owner", "owner", "conversation-beta")
     assert "couldn't match that confirmation" in cross_chat.lower()
     assert store.latest_preview("owner", conversation_id="conversation-alpha")["preview_id"] == route_preview["preview_id"]

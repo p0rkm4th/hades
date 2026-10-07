@@ -111,6 +111,21 @@ activity_answer = hades._hades_direct_homelab_recent_activity(
 )
 assert "synthetic recent homelab activity" in activity_answer, activity_answer
 assert hades._hades_direct_homelab_recent_activity(
+    "What changed?", owner, "owner",
+    [
+        {"role": "user", "content": "Research the latest Python release online."},
+        {"role": "assistant", "content": "I found the release notes."},
+    ],
+) is None
+activity_after_research = hades._hades_direct_homelab_recent_activity(
+    "What changed in my homelab since yesterday?", owner, "owner",
+    [
+        {"role": "user", "content": "Research the latest Python release online."},
+        {"role": "assistant", "content": "I found the release notes."},
+    ],
+)
+assert "synthetic recent homelab activity" in activity_after_research, activity_after_research
+assert hades._hades_direct_homelab_recent_activity(
     "What changed since yesterday?", beta, "household"
 ) is None
 model_location_answer = hades._hades_direct_homelab_inference_read(
@@ -417,6 +432,11 @@ actual_compound_status = actual_compound_agent.run_conversation(
 assert actual_compound_status.get("completed") is True and actual_compound_status.get("api_calls") == 0, actual_compound_status
 assert "Live Proxmox currently reports: synthetic-core-node." in actual_compound_status["final_response"], actual_compound_status
 assert "No Backup Check exists yet." in actual_compound_status["final_response"], actual_compound_status
+missing_shared_backup = actual_backup_read(
+    "Check the backup status.", beta, "household", "synthetic-missing-shared-backup"
+)
+assert missing_shared_backup == "I can't verify current backup status from the information available here.", missing_shared_backup
+assert "Backup Check" not in missing_shared_backup, missing_shared_backup
 hades._hades_phase2_backup_response = lambda *_args, **_kwargs: None
 assert store.get("task-owner-approval01", owner)["status"] == TaskStatus.AWAITING_APPROVAL.value
 

@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-06",
+  "source_revision": "18f9f3947d40c5cdd0765b8d63af923d3ae3a272",
+  "method": {
+    "hermes": "0.21.5 clean source for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.35.1",
+    "context": 65536,
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "escalation",
+    "subject": "synthetic owner identity; private fixture only"
+  },
+  "validity": {
+    "task_completion_result": "INVALID_FOR_COMPARATIVE_QUALITY",
+    "reason": "Neither stack edited the synthetic source; independent tests remained failing. HADES diagnosis hit the provider output limit. Retain as a recorded failure, exclude from task-success and preference rates.",
+    "task_completion_success": false,
+    "owner_preference_measured": false
+  },
+  "turns": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "elapsed_ms": 28816.9,
+      "provider_generations": 4,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 22507.2,
+          "stream_progress": {
+            "delta_count": 141,
+            "character_count": 557,
+            "first_delta_ms": 15268.0,
+            "last_delta_ms": 22496.9
+          },
+          "output_limit_failure": false
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 28816.9,
+          "stream_progress": {
+            "delta_count": 154,
+            "character_count": 645,
+            "first_delta_ms": 3889.5,
+            "last_delta_ms": 6272.4
+          },
+          "output_limit_failure": false
+        }
+      ],
+      "independent_test": {
+        "exit_code": 1,
+        "unittest_failures": 1,
+        "changed_paths": [],
+        "working_tree_status": []
+      }
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "elapsed_ms": 43235.4,
+      "provider_generations": 9,
+      "phases": [
+        {
+          "phase": "diagnose",
+          "elapsed_ms": 32529.8,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 290,
+            "first_delta_ms": 611.0,
+            "last_delta_ms": 32529.1
+          },
+          "output_limit_failure": true
+        },
+        {
+          "phase": "fix",
+          "elapsed_ms": 43235.4,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 316,
+            "first_delta_ms": 508.3,
+            "last_delta_ms": 10705.5
+          },
+          "output_limit_failure": false
+        }
+      ],
+      "independent_test": {
+        "exit_code": 1,
+        "unittest_failures": 1,
+        "changed_paths": [],
+        "working_tree_status": []
+      }
+    }
+  ]
+}
