@@ -8100,28 +8100,18 @@ try:
     _hades_logger = logging.getLogger("hades.overlay")
     _hades_memory_local = threading.local()
     def _hades_grocy_tool_definitions(_get_tool_definitions):
-        """Return the canonical Grocy tools plus the serving companion.
+        """Return raw schemas for the intent- and scope-filtered HADES Grocy catalog.
 
-        Hermes can defer MCP schemas behind its generic tool-search bridge.
-        In that mode ``get_tool_definitions`` returns only the three bridge
-        functions even after MCP discovery has populated the registry. Merge
-        direct definitions from the exact HADES MCP toolsets before applying
-        scope and intent filters, so the API route cannot silently narrow a
-        Grocy turn to an empty catalog.
+        HADES narrows this domain catalog after native lookup, so keep Hermes'
+        generic Tool Search bridge out of the model-visible direct schema list.
+        The global deferred dispatcher retains its separate HADES authorization
+        checks for turns that use Tool Search.
         """
         definitions = _get_tool_definitions(
-            enabled_toolsets=_HADES_GROCY_TOOLSETS, quiet_mode=True
+            enabled_toolsets=_HADES_GROCY_TOOLSETS,
+            quiet_mode=True,
+            skip_tool_search_assembly=True,
         )
-        try:
-            from tools.registry import registry as _hades_registry
-            for toolset in _HADES_GROCY_TOOLSETS:
-                names = _hades_registry.get_tool_names_for_toolset(toolset)
-                if names:
-                    definitions.extend(
-                        _hades_registry.get_definitions(set(names), quiet=True)
-                    )
-        except Exception as exc:
-            _hades_logger.warning("Grocy MCP registry reconciliation failed: %s", exc)
         companion_names = {"mcp_grocy_recipe_authoring_recipe_set_servings"}
         missing = {
             name for name in companion_names
@@ -8133,22 +8123,21 @@ try:
                 definitions.extend(_hades_registry.get_definitions(missing, quiet=True))
             except Exception as exc:
                 _hades_logger.warning("Grocy/recipe tool reconciliation failed: %s", exc)
-        unique = {}
-        for tool in definitions:
-            name = tool.get("function", {}).get("name")
-            if name:
-                unique[name] = tool
         _hades_logger.warning(
-            "Grocy tool catalog reconciled: total=%d serving_tool=%s",
-            len(unique), "mcp_grocy_recipe_authoring_recipe_set_servings" in unique,
+            "Grocy tool catalog loaded: total=%d serving_tool=%s",
+            len(definitions), "mcp_grocy_recipe_authoring_recipe_set_servings" in {
+                tool.get("function", {}).get("name") for tool in definitions
+            },
         )
-        return list(unique.values())
+        return definitions
 
     def _hades_homelab_tool_definitions(_get_tool_definitions):
         """Return only the registered read-only homelab tool catalog."""
         global _HADES_HOMELAB_DISCOVERY_ATTEMPTED
         definitions = _get_tool_definitions(
-            enabled_toolsets=_HADES_HOMELAB_TOOLSETS, quiet_mode=True
+            enabled_toolsets=_HADES_HOMELAB_TOOLSETS,
+            quiet_mode=True,
+            skip_tool_search_assembly=True,
         )
         if not definitions and not _HADES_HOMELAB_DISCOVERY_ATTEMPTED:
             _HADES_HOMELAB_DISCOVERY_ATTEMPTED = True
@@ -8156,7 +8145,9 @@ try:
                 from tools.mcp_tool import discover_mcp_tools
                 discover_mcp_tools()
                 definitions = _get_tool_definitions(
-                    enabled_toolsets=_HADES_HOMELAB_TOOLSETS, quiet_mode=True
+                    enabled_toolsets=_HADES_HOMELAB_TOOLSETS,
+                    quiet_mode=True,
+                    skip_tool_search_assembly=True,
                 )
             except Exception as exc:
                 _hades_logger.warning("Homelab MCP lazy discovery failed: %s", exc)
@@ -8196,14 +8187,18 @@ try:
     def _hades_homelab_control_tool_definitions(_get_tool_definitions):
         """Return only the owner-scoped homelab write/provisioning tools."""
         definitions = _get_tool_definitions(
-            enabled_toolsets=_HADES_HOMELAB_CONTROL_TOOLSETS, quiet_mode=True
+            enabled_toolsets=_HADES_HOMELAB_CONTROL_TOOLSETS,
+            quiet_mode=True,
+            skip_tool_search_assembly=True,
         )
         if not definitions:
             try:
                 from tools.mcp_tool import discover_mcp_tools
                 discover_mcp_tools()
                 definitions = _get_tool_definitions(
-                    enabled_toolsets=_HADES_HOMELAB_CONTROL_TOOLSETS, quiet_mode=True
+                    enabled_toolsets=_HADES_HOMELAB_CONTROL_TOOLSETS,
+                    quiet_mode=True,
+                    skip_tool_search_assembly=True,
                 )
             except Exception as exc:
                 _hades_logger.warning("Homelab control MCP discovery failed: %s", exc)

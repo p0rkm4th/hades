@@ -59,6 +59,7 @@ names = [
     "mcp_grocy_recipe_add_to_shopping_tool",
 ]
 from tools.registry import registry as deferred_registry
+import model_tools
 for name in (
     "mcp__grocy__stock_overview_tool",
     "mcp__grocy__shopping_list_view_tool",
@@ -72,21 +73,119 @@ for name in (
         }},
         handler=lambda **_kwargs: "synthetic registry result",
     )
-deferred_catalog = hades._hades_grocy_tool_definitions(
-    lambda **_kwargs: [
-        {"type": "function", "function": {
-            "name": name, "description": "deferred MCP bridge",
-            "parameters": {"type": "object", "properties": {}},
-        }}
-        for name in ("tool_search", "tool_describe", "tool_call")
-    ]
+native_deferred = model_tools.get_tool_definitions(
+    enabled_toolsets=hades._HADES_GROCY_TOOLSETS, quiet_mode=True,
 )
-deferred_names = {row["function"]["name"] for row in deferred_catalog}
-assert "mcp__grocy__stock_overview_tool" in deferred_names, deferred_names
-assert "mcp__grocy__shopping_list_view_tool" in deferred_names, deferred_names
-assert "mcp__grocy__shopping_list_add_tool" in deferred_names, deferred_names
-assert {"tool_search", "tool_describe", "tool_call"}.issubset(deferred_names), deferred_names
-print("PASS deferred Hermes MCP catalog reconciles direct Grocy schemas before intent filtering")
+native_raw = model_tools.get_tool_definitions(
+    enabled_toolsets=hades._HADES_GROCY_TOOLSETS,
+    quiet_mode=True,
+    skip_tool_search_assembly=True,
+)
+native_deferred_names = {
+    row["function"]["name"] for row in native_deferred
+}
+native_raw_names = {row["function"]["name"] for row in native_raw}
+assert {"tool_search", "tool_describe", "tool_call"}.issubset(native_deferred_names), native_deferred_names
+assert not ({"tool_search", "tool_describe", "tool_call"} & native_raw_names), native_raw_names
+assert {
+    "mcp__grocy__stock_overview_tool",
+    "mcp__grocy__shopping_list_view_tool",
+    "mcp__grocy__shopping_list_add_tool",
+}.issubset(native_raw_names), native_raw_names
+from tools import tool_search
+from unittest.mock import patch
+model_tools._clear_tool_defs_cache()
+with patch.object(
+    tool_search,
+    "load_config",
+    return_value=tool_search.ToolSearchConfig.from_raw({"enabled": "off"}),
+):
+    native_eager = model_tools.get_tool_definitions(
+        enabled_toolsets=hades._HADES_GROCY_TOOLSETS, quiet_mode=True,
+    )
+model_tools._clear_tool_defs_cache()
+assert {row["function"]["name"] for row in native_eager} == native_raw_names
+native_hades_catalog = hades._hades_grocy_tool_definitions(
+    model_tools.get_tool_definitions
+)
+native_hades_names = {
+    row["function"]["name"] for row in native_hades_catalog
+}
+assert native_hades_names == native_raw_names, (native_hades_names, native_raw_names)
+assert len(native_hades_catalog) == len(native_hades_names), native_hades_catalog
+print("PASS HADES Grocy catalog uses Hermes raw schemas without redundant search bridge")
+
+homelab_read_names = {
+    "mcp_homelab_readonly_homelab_summary",
+    "mcp_homelab_readonly_homelab_recent_activity",
+    "mcp_homelab_readonly_homelab_backup_status",
+}
+for name in homelab_read_names:
+    deferred_registry.register(
+        name=name,
+        toolset="mcp-homelab-readonly",
+        schema={"description": "synthetic homelab schema", "parameters": {
+            "type": "object", "properties": {}, "required": [],
+        }},
+        handler=lambda **_kwargs: "synthetic registry result",
+    )
+homelab_native_deferred = model_tools.get_tool_definitions(
+    enabled_toolsets=hades._HADES_HOMELAB_TOOLSETS, quiet_mode=True,
+)
+homelab_native_raw = model_tools.get_tool_definitions(
+    enabled_toolsets=hades._HADES_HOMELAB_TOOLSETS,
+    quiet_mode=True,
+    skip_tool_search_assembly=True,
+)
+homelab_native_names = {
+    row["function"]["name"] for row in homelab_native_raw
+}
+assert {"tool_search", "tool_describe", "tool_call"}.issubset({
+    row["function"]["name"] for row in homelab_native_deferred
+})
+assert homelab_read_names.issubset(homelab_native_names), homelab_native_names
+assert not ({"tool_search", "tool_describe", "tool_call"} & homelab_native_names)
+homelab_hades_catalog = hades._hades_homelab_tool_definitions(
+    model_tools.get_tool_definitions
+)
+assert {
+    row["function"]["name"] for row in homelab_hades_catalog
+} == homelab_native_names
+assert hades._hades_filter_tools_for_scope(
+    homelab_hades_catalog, "household"
+) == []
+print("PASS HADES read-only homelab catalog uses Hermes raw schemas without redundant search bridge")
+
+control_names = {
+    "mcp__homelab_control__homelab_control_templates",
+    "mcp__homelab_control__homelab_provision_guest",
+}
+for name in control_names:
+    deferred_registry.register(
+        name=name,
+        toolset="mcp-homelab-control",
+        schema={"description": "synthetic homelab control schema", "parameters": {
+            "type": "object", "properties": {}, "required": [],
+        }},
+        handler=lambda **_kwargs: "synthetic registry result",
+    )
+control_native_raw = model_tools.get_tool_definitions(
+    enabled_toolsets=hades._HADES_HOMELAB_CONTROL_TOOLSETS,
+    quiet_mode=True,
+    skip_tool_search_assembly=True,
+)
+control_native_names = {
+    row["function"]["name"] for row in control_native_raw
+}
+control_hades_catalog = hades._hades_homelab_control_tool_definitions(
+    model_tools.get_tool_definitions
+)
+assert {
+    row["function"]["name"] for row in control_hades_catalog
+} == control_native_names == control_names
+assert hades._hades_filter_tools_for_scope(control_hades_catalog, "household") == []
+print("PASS owner homelab control catalog uses Hermes raw schemas with exact-name bounds")
+
 catalog = [
     {"type": "function", "function": {
         "name": name, "description": "synthetic scope fixture",
