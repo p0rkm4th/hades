@@ -297,32 +297,6 @@ class ProviderProxy(ThreadingHTTPServer):
                             if isinstance(m, dict) and isinstance(m.get("role"), str)
                         })
                     },
-                    "message_content_sha256_by_role": {
-                        role: hashlib.sha256("\n".join(
-                            str(m.get("content") or "")
-                            for m in messages
-                            if isinstance(m, dict) and m.get("role") == role
-                        ).encode("utf-8", errors="replace")).hexdigest()
-                        for role in sorted({
-                            m.get("role") for m in messages
-                            if isinstance(m, dict) and isinstance(m.get("role"), str)
-                        })
-                    },
-                    "message_content_512byte_chunk_sha256_by_role": {
-                        role: [
-                            hashlib.sha256(content[offset:offset + 512]).hexdigest()
-                            for offset in range(0, len(content), 512)
-                        ]
-                        for role in sorted({
-                            m.get("role") for m in messages
-                            if isinstance(m, dict) and isinstance(m.get("role"), str)
-                        })
-                        for content in ["\n".join(
-                            str(m.get("content") or "")
-                            for m in messages
-                            if isinstance(m, dict) and m.get("role") == role
-                        ).encode("utf-8", errors="replace")]
-                    },
                     "message_content_markers": {
                         "prior_user_has_diagnosis_prompt": any(
                             isinstance(m, dict) and m.get("role") == "user"
@@ -630,7 +604,6 @@ def child(args: argparse.Namespace) -> int:
         mount_traces.append({
             "task_id_matches": str(task_id).endswith(str(args.repeat)),
             "host_cwd_matches_fixture": normalized_host == os.path.abspath(str(args.workspace)),
-            "host_cwd_basename": os.path.basename(normalized_host) if normalized_host else None,
             "auto_mount_cwd": bool(auto_mount_cwd),
             "workspace_volume_target_present": "/workspace" in targets,
             "workspace_tmpfs_present": any(
@@ -638,7 +611,7 @@ def child(args: argparse.Namespace) -> int:
                 and writable_args[i + 1].startswith("/workspace")
                 for i, arg in enumerate(writable_args)
             ),
-            "workdir": self.cwd if isinstance(getattr(self, "cwd", None), str) else None,
+            "workdir_is_workspace": getattr(self, "cwd", None) == "/workspace",
         })
         return volume_args, writable_args
 
@@ -655,7 +628,7 @@ def child(args: argparse.Namespace) -> int:
     terminal_config = _get_env_config()
     effective_terminal = {
         "env_type": terminal_config.get("env_type"),
-        "cwd": terminal_config.get("cwd"),
+        "cwd_is_fixture": terminal_config.get("cwd") == str(args.workspace),
         "docker_mount_cwd_to_workspace": terminal_config.get("docker_mount_cwd_to_workspace"),
         "docker_network": terminal_config.get("docker_network"),
         "session_workspace_registered": True,
@@ -838,11 +811,11 @@ def child(args: argparse.Namespace) -> int:
                     safe_tool_calls.append({
                         "name": function.get("name"),
                         "argument_keys": sorted(str(key) for key in raw_arguments),
-                        "paths": [
-                            value if value == "/workspace" or value.startswith("/workspace/")
-                            else os.path.basename(value.rstrip("/\\"))
+                        "path_count": len(path_values),
+                        "all_paths_in_workspace": all(
+                            value == "/workspace" or value.startswith("/workspace/")
                             for value in path_values
-                        ],
+                        ),
                         "mentions_fixture_name": any(
                             name in value for value in path_values
                             for name in fixture_names
@@ -878,13 +851,6 @@ def child(args: argparse.Namespace) -> int:
                             isinstance(raw_arguments.get("pattern"), str)
                             and bool(raw_arguments["pattern"].strip())
                         ) if function.get("name") == "search_files" else None,
-                        "search_file_glob": raw_arguments.get("pattern")
-                        if function.get("name") == "search_files"
-                        and raw_arguments.get("target") == "files"
-                        and isinstance(raw_arguments.get("pattern"), str)
-                        and len(raw_arguments["pattern"]) <= 80
-                        and re.fullmatch(r"[A-Za-z0-9_.*?\[\]{}!+-]+", raw_arguments["pattern"])
-                        else None,
                         "search_target": raw_arguments.get("target")
                         if function.get("name") == "search_files"
                         and raw_arguments.get("target") in {"content", "files", "grep", "find"}
@@ -892,13 +858,15 @@ def child(args: argparse.Namespace) -> int:
                     })
             turns.append({
                 "phase": phase_name,
-                "prompt": prompt,
+                "prompt_id": phase_name,
                 "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
                 "stream_progress": stream_metrics.get(phase_name, {
                     "delta_count": 0, "character_count": 0,
                     "first_delta_ms": None, "last_delta_ms": None,
                 }),
-                "final_response": final_text,
+                "response_present": bool(final_text),
+                "response_characters": len(final_text),
+                "response_contains_expected_token": TOKEN in final_text,
                 "api_calls": result.get("api_calls") if isinstance(result, dict) else None,
                 "tool_result_count": len(tool_messages),
                 "tool_result_names": [m.get("name") for m in tool_messages],
@@ -907,9 +875,9 @@ def child(args: argparse.Namespace) -> int:
                 "tool_result_contains_fixture": any(
                     TOKEN in str(m.get("content") or "") for m in tool_messages
                 ),
-                "workspace_diff_paths_after_turn": subprocess.check_output(
+                "workspace_changed_after_turn": bool(subprocess.check_output(
                     ["git", "diff", "--name-only"], cwd=args.workspace, text=True,
-                ).splitlines() if args.scenario == "escalation" else [],
+                ).splitlines()) if args.scenario == "escalation" else False,
                 "messages_added": len(turn_messages),
             })
             history = next_history
@@ -925,8 +893,10 @@ def child(args: argparse.Namespace) -> int:
             "tool_result_names": [name for t in turns for name in t["tool_result_names"]],
             "mount_traces": mount_traces,
             "tool_result_contains_fixture": any(t["tool_result_contains_fixture"] for t in turns),
-            "assistant_messages": [t["final_response"] for t in turns],
-            "final_response": turns[-1]["final_response"] if turns else "",
+            "assistant_response_count": sum(t["response_present"] for t in turns),
+            "final_response_contains_expected_token": any(
+                t["response_contains_expected_token"] for t in turns
+            ),
             "tool_choice_experiment": ({
                 key: value for key, value in tool_choice_experiment.items()
                 if key not in {"saved_request_overrides", "current_user_message"}
@@ -1244,7 +1214,10 @@ def main() -> int:
                 result_line = next((line[len("RESULT:"):] for line in output.splitlines()
                                     if line.startswith("RESULT:")), None)
                 if code or result_line is None:
-                    raise RuntimeError(f"{stack} workspace probe failed (exit={code}): {output[-3000:]}")
+                    raise RuntimeError(
+                        f"{stack} workspace probe failed (exit={code}, "
+                        f"sanitized_result_present={result_line is not None})"
+                    )
                 turn = json.loads(result_line)
                 turn["outer_wall_ms"] = round((time.perf_counter() - started) * 1000, 1)
                 if docker_trace_path.exists():
@@ -1254,7 +1227,7 @@ def main() -> int:
                             trace_rows.append(json.loads(line))
                         except ValueError:
                             continue
-                    turn["docker_cli_trace"] = trace_rows
+                    turn["docker_cli_trace_count"] = len(trace_rows)
                 turn["tool_schema_requests"] = proxy.snapshot()
                 # Keep each turn's provider calls distinct; no content is stored in proxy records.
                 if args.scenario == "escalation":
@@ -1269,17 +1242,15 @@ def main() -> int:
                     ).splitlines()
                     turn["independent_verification"] = {
                         "test_exit_code": verification.returncode,
-                        "test_output": (verification.stdout + verification.stderr)[-1600:],
                         "diff_check_exit_code": subprocess.run(
                             ["git", "diff", "--check"], cwd=workspace,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                         ).returncode,
-                        "changed_paths": changed,
                         "only_expected_source_changed": changed == [FIXTURE_CASES[args.fixture_case]["source"]],
-                        "expected_source": FIXTURE_CASES[args.fixture_case]["source"],
-                        "working_tree_status": subprocess.check_output(
+                        "changed_path_count": len(changed),
+                        "working_tree_has_uncommitted_changes": bool(subprocess.check_output(
                             ["git", "status", "--short"], cwd=workspace, text=True
-                        ).splitlines(),
+                        ).splitlines()),
                     }
                 records.append(turn)
                 with proxy.records_lock:
@@ -1290,8 +1261,8 @@ def main() -> int:
             summary.update({
                 "plain_fixture_tool_successes": sum(r["tool_result_contains_fixture"] for r in records if r["stack"] == "plain"),
                 "hades_fixture_tool_successes": sum(r["tool_result_contains_fixture"] for r in records if r["stack"] == "hades"),
-                "plain_correct_final_answers": sum(TOKEN in r["final_response"] for r in records if r["stack"] == "plain"),
-                "hades_correct_final_answers": sum(TOKEN in r["final_response"] for r in records if r["stack"] == "hades"),
+                "plain_correct_final_answers": sum(r["final_response_contains_expected_token"] for r in records if r["stack"] == "plain"),
+                "hades_correct_final_answers": sum(r["final_response_contains_expected_token"] for r in records if r["stack"] == "hades"),
             })
         else:
             def median(values):
@@ -1341,7 +1312,7 @@ def main() -> int:
                 },
                 "diagnosis_changed_workspace_turns_by_stack": {
                     stack: sum(
-                        bool(phase.get("workspace_diff_paths_after_turn"))
+                        bool(phase.get("workspace_changed_after_turn"))
                         for r in records if r["stack"] == stack
                         for phase in r["turns"] if phase["phase"] == "diagnose"
                     ) for stack in ("plain", "hades")
@@ -1380,7 +1351,7 @@ def main() -> int:
                     if args.prototype_host_workspace_verification_mapping else None
                 ),
                 "workspace_context_hint": WORKSPACE_ENVIRONMENT_HINT if args.workspace_context_hint else None,
-                "prompts": [PROMPT] if args.scenario == "read" else [DIAGNOSE_PROMPT, FIX_PROMPT],
+                "prompt_ids": ["read"] if args.scenario == "read" else ["diagnose", "fix"],
                 "subject": "synthetic owner identity; private fixture only",
             },
             "turns": records,
