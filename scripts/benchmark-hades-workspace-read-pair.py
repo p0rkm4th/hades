@@ -38,7 +38,7 @@ DEFAULT_HERMES = pathlib.Path(
     os.environ.get(
         "HADES_HERMES_ROOT",
         str(pathlib.Path(os.environ.get("HADES_STAGE_ROOT", "/opt/hades-stage"))
-            / "hermes-v0.21.3-stable/install"),
+            / "Hermes-v0.21.5-hades-candidate"),
     )
 )
 DEFAULT_PLUGIN = pathlib.Path(

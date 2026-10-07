@@ -54,6 +54,14 @@ Next: create or verify a clean stable 0.21.5 installation with no HADES overlay,
 
 Execution-time follow-up: the HADES authenticated household browser workflow and owner-versus-household raw tool-schema boundary now pass on Hermes 0.21.5 when the pinned Hindsight provider is installed at process-home scope and this single-profile test sets `gateway.standalone=true`. This qualifies the household route and tool boundary on the candidate stack only; production profile multiplexing, Hindsight server behavior, and broad native-vs-overlay capability comparison remain unqualified.
 
+The workspace comparison runner's implicit Hermes root was still set to the
+0.21.3 install. It now defaults to the staged 0.21.5 candidate used by this
+comparison campaign; `HADES_HERMES_ROOT` and `--hermes-root` remain explicit
+overrides. This prevents an unqualified stale upstream version from silently
+entering future comparisons. No live run followed the correction because the
+staged Hermes install and Ollama service are absent from this checkout
+environment.
+
 ## Hermes native schema retrieval trial
 
 Hermes 0.21.5 exposes `get_tool_definitions(..., skip_tool_search_assembly=True)` for retrieving raw schemas before the generic deferred-tool bridge is assembled. Hermes documents this option as intended for its Tool Search bridge. HADES uses it only inside its already toolset-bounded Grocy and homelab catalog helpers, where HADES subsequently applies explicit domain intent and authenticated scope filters; the global deferred dispatcher and its HADES authorization wrappers remain in place. The option also exists in the production-pinned Hermes 0.21.2 source, so this call does not require production promotion first. [Hermes 0.21.5 implementation](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/model_tools.py#L213-L221), [Hermes 0.21.2 implementation](https://github.com/NousResearch/hermes-agent/blob/v2026.9.11/model_tools.py#L188-L195).
