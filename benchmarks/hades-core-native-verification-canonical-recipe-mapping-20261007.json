@@ -1,0 +1,241 @@
+{
+  "comparisons": [
+    {
+      "action": {
+        "blocked_mutation_attempts": 0,
+        "cached_prompt_tokens_first_generation": 7758,
+        "elapsed_ms": 7438.9,
+        "model_generations": 3,
+        "schema_bytes": 12590,
+        "schema_count": 8,
+        "tool_events": 2,
+        "tools_used": {
+          "patch": 1,
+          "terminal": 1
+        },
+        "workspace_mutated": true
+      },
+      "diagnosis": {
+        "blocked_mutation_attempts": 0,
+        "cached_prompt_tokens_first_generation": 5448,
+        "elapsed_ms": 26297.0,
+        "model_generations": 7,
+        "schema_bytes": 12590,
+        "schema_count": 8,
+        "tool_events": 10,
+        "tools_used": {
+          "read_file": 7,
+          "terminal": 1,
+          "tool_search": 2
+        },
+        "workspace_mutated": false
+      },
+      "diff_check_passed": true,
+      "elapsed_ms": 33737.4,
+      "final_test_passed": true,
+      "model_generations": 10,
+      "native_evidence_statuses": [
+        "passed"
+      ],
+      "only_expected_source_changed": true,
+      "repeat": 0,
+      "stack": "plain",
+      "stop_nudges": 0,
+      "tool_events": 12
+    },
+    {
+      "action": {
+        "blocked_mutation_attempts": 0,
+        "cached_prompt_tokens_first_generation": 0,
+        "elapsed_ms": 22628.0,
+        "model_generations": 3,
+        "schema_bytes": 9575,
+        "schema_count": 5,
+        "tool_events": 2,
+        "tools_used": {
+          "terminal": 1,
+          "write_file": 1
+        },
+        "workspace_mutated": true
+      },
+      "diagnosis": {
+        "blocked_mutation_attempts": 2,
+        "cached_prompt_tokens_first_generation": 0,
+        "elapsed_ms": 37379.6,
+        "model_generations": 9,
+        "schema_bytes": 3662,
+        "schema_count": 2,
+        "tool_events": 12,
+        "tools_used": {
+          "patch": 2,
+          "read_file": 8,
+          "search_files": 2
+        },
+        "workspace_mutated": false
+      },
+      "diff_check_passed": true,
+      "elapsed_ms": 60009.5,
+      "final_test_passed": true,
+      "model_generations": 12,
+      "native_evidence_statuses": [
+        "passed"
+      ],
+      "only_expected_source_changed": true,
+      "repeat": 0,
+      "stack": "hades",
+      "stop_nudges": 0,
+      "tool_events": 14
+    },
+    {
+      "action": {
+        "blocked_mutation_attempts": 0,
+        "cached_prompt_tokens_first_generation": 0,
+        "elapsed_ms": 20791.7,
+        "model_generations": 3,
+        "schema_bytes": 9575,
+        "schema_count": 5,
+        "tool_events": 2,
+        "tools_used": {
+          "patch": 1,
+          "terminal": 1
+        },
+        "workspace_mutated": true
+      },
+      "diagnosis": {
+        "blocked_mutation_attempts": 0,
+        "cached_prompt_tokens_first_generation": 0,
+        "elapsed_ms": 26115.0,
+        "model_generations": 4,
+        "schema_bytes": 3662,
+        "schema_count": 2,
+        "tool_events": 8,
+        "tools_used": {
+          "read_file": 5,
+          "search_files": 3
+        },
+        "workspace_mutated": false
+      },
+      "diff_check_passed": true,
+      "elapsed_ms": 46908.6,
+      "final_test_passed": true,
+      "model_generations": 7,
+      "native_evidence_statuses": [
+        "passed"
+      ],
+      "only_expected_source_changed": true,
+      "repeat": 1,
+      "stack": "hades",
+      "stop_nudges": 0,
+      "tool_events": 10
+    },
+    {
+      "action": {
+        "blocked_mutation_attempts": 0,
+        "cached_prompt_tokens_first_generation": 7338,
+        "elapsed_ms": 7364.1,
+        "model_generations": 3,
+        "schema_bytes": 12590,
+        "schema_count": 8,
+        "tool_events": 2,
+        "tools_used": {
+          "patch": 1,
+          "terminal": 1
+        },
+        "workspace_mutated": true
+      },
+      "diagnosis": {
+        "blocked_mutation_attempts": 0,
+        "cached_prompt_tokens_first_generation": 5448,
+        "elapsed_ms": 20831.8,
+        "model_generations": 5,
+        "schema_bytes": 12590,
+        "schema_count": 8,
+        "tool_events": 9,
+        "tools_used": {
+          "read_file": 5,
+          "terminal": 3,
+          "tool_search": 1
+        },
+        "workspace_mutated": false
+      },
+      "diff_check_passed": true,
+      "elapsed_ms": 28197.8,
+      "final_test_passed": true,
+      "model_generations": 8,
+      "native_evidence_statuses": [
+        "passed"
+      ],
+      "only_expected_source_changed": true,
+      "repeat": 1,
+      "stack": "plain",
+      "stop_nudges": 0,
+      "tool_events": 11
+    }
+  ],
+  "date": "2026-10-07",
+  "limitations": [
+    "Synthetic benchmark only; two pairs do not establish owner preference or broad coding quality.",
+    "The mapping is benchmark-only and does not qualify deployed HADES gateway/workspace provenance.",
+    "The HADES schema transition coincided with a prompt-cache miss; this sample does not isolate that transition as the sole latency cause."
+  ],
+  "method": {
+    "context_tokens": 65536,
+    "hermes": "0.21.5 (2026.9.24)",
+    "host_workspace_mapping_prototype": true,
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "native_verify_on_stop": true,
+    "ollama": "0.40.0",
+    "reasoning": "disabled",
+    "rootless_engine": "Docker 29.8.2; VFS storage",
+    "sandbox_image_digest": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "scenario": "two order-balanced diagnosis-to-action pairs on a synthetic multi-file Python project",
+    "shared_workspace_context_hint": true,
+    "task_network": "none",
+    "test_recipe": "make test (python -B -m unittest discover -v)"
+  },
+  "source_revision": "176a76941275cec5b33639b07d077c4187119e1b",
+  "summary": {
+    "hades": {
+      "all_final_tests_and_diff_checks_passed": true,
+      "all_native_evidence_statuses_passed": true,
+      "median_action_elapsed_ms": 21709.8,
+      "median_model_generations": 9.5,
+      "median_task_elapsed_ms": 53459.1,
+      "median_tool_events": 12.0,
+      "task_count": 2,
+      "total_blocked_diagnosis_mutation_attempts": 2
+    },
+    "hades_tax_observations": {
+    "first_action_cached_token_counts": {
+        "hades": [
+          0,
+          0
+        ],
+        "plain": [
+          7758,
+          7338
+        ]
+      },
+      "hades_schema_bytes_diagnosis_to_action": [
+        3662,
+        9575
+      ],
+      "hades_schema_count_diagnosis_to_action": [
+        2,
+        5
+      ],
+      "median_elapsed_delta_hades_minus_plain_ms": 22491.5
+    },
+    "plain": {
+      "all_final_tests_and_diff_checks_passed": true,
+      "all_native_evidence_statuses_passed": true,
+      "median_action_elapsed_ms": 7401.5,
+      "median_model_generations": 9.0,
+      "median_task_elapsed_ms": 30967.6,
+      "median_tool_events": 11.5,
+      "task_count": 2,
+      "total_blocked_diagnosis_mutation_attempts": 0
+    }
+  }
+}

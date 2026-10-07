@@ -39,3 +39,11 @@ remains unjustified until a model-backed PLAIN/HADES pair proves that mutation
 paths and terminal evidence resolve to the same canonical workspace and that
 fresh test evidence appears after the final edit. Keep the current truthful
 unverified report and diagnosis mutation boundary meanwhile.
+
+## Follow-up
+
+The later model-backed follow-up completed with a separate rootless VFS store
+under a filesystem with adequate space. It verified Hermes' terminal evidence
+path with the same canonical recipe and mapped project root. See
+[`hades-core-native-verification-canonical-recipe-mapping-20261007.md`](hades-core-native-verification-canonical-recipe-mapping-20261007.md)
+for the paired result and the remaining HADES latency tax.
