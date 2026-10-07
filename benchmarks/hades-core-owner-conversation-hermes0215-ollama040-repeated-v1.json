@@ -1,0 +1,3484 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "title": "Paired local PLAIN/HADES conversation-v1 owner-pattern gateway conversation subset with provider aggregation",
+  "classification": "synthetic seeded owner-pattern subset; no owner preference",
+  "runtime": {
+    "ollama_url": "http://127.0.0.1:11445",
+    "ollama_version": "0.40.0",
+    "hermes": "/opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate",
+    "hermes_version": "Hermes Agent v0.21.5 (2026.9.24)\nInstall directory: /opt/hades-stage/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate\nInstall method: git\nPython: 3.13.14\nOpenAI SDK: 2.24.0\nUpdate available: 8679 commits behind — run 'hermes update'",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "model_size_bytes": 22621314381,
+    "model_details": {
+      "parent_model": "qwen3.6-source:35b-a3b-mtp-q4_K_M-20260824",
+      "format": "gguf",
+      "family": "qwen35moe",
+      "families": [
+        "qwen35moe"
+      ],
+      "parameter_size": "35.5B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 2048,
+      "runner": "llamacpp"
+    },
+    "hardware": [
+      "NVIDIA GeForce RTX 3080 Ti Laptop GPU, 16384 MiB"
+    ],
+    "context_tokens": 65536,
+    "configured_context_length": 65536,
+    "configured_ollama_num_ctx": 65536,
+    "ollama_loaded_context_tokens": 65536,
+    "loaded_context_matches_configuration": true,
+    "max_output_tokens": 512,
+    "reasoning": "disabled",
+    "title_model_upgrade": "disabled in both temporary profiles"
+  },
+  "source_revision": "a0f009a9b34af6dbc16f0badcff5899ef3fa4819",
+  "methodology": {
+    "persistent_gateways": true,
+    "same_local_provider_runtime": true,
+    "local_proxy_capture": "counts and sizes only; no prompt, completion or credential text is retained",
+    "warmup_per_stack": {
+      "plain": {
+        "status": 200,
+        "provider_requests": 1
+      },
+      "hades": {
+        "status": 200,
+        "provider_requests": 1
+      }
+    },
+    "pair_order": "alternated by case and repeat with order offset 1; serialized requests",
+    "case_set": "conversation-v1",
+    "history_source": "client-supplied messages array; X-Hermes-Session-Id omitted to prevent stored-session history from overriding this replay's history",
+    "case_scope": null,
+    "repeats": 2,
+    "independent_conversation_history": true,
+    "api_toolsets": [],
+    "title_generation_enabled": true,
+    "title_model_upgrade_enabled": false,
+    "provider_generation_count": "measured as provider proxy requests associated with each serialized user turn",
+    "user_preference": "not collected"
+  },
+  "cases": [
+    "core-01",
+    "core-02",
+    "core-03",
+    "core-04",
+    "core-05",
+    "core-07",
+    "core-08",
+    "core-39"
+  ],
+  "case_lineage": {
+    "core-01": [
+      "core-01"
+    ],
+    "core-02": [
+      "core-02"
+    ],
+    "core-03": [
+      "core-03"
+    ],
+    "core-04": [
+      "core-04"
+    ],
+    "core-05": [
+      "core-05",
+      "core-42"
+    ],
+    "core-07": [
+      "core-07"
+    ],
+    "core-08": [
+      "core-08"
+    ],
+    "core-39": [
+      "core-02",
+      "core-39"
+    ]
+  },
+  "preference_bucket": "UNASSIGNED; no owner review",
+  "summary": {
+    "plain": {
+      "turns": 32,
+      "successful_turns": 32,
+      "http_200_turns": 32,
+      "content_turns": 32,
+      "no_content_turns": 0,
+      "median_ttft_ms": 1008.1,
+      "median_total_ms": 1599.85,
+      "provider_generations": 32,
+      "total_prompt_tokens": 24488,
+      "total_completion_tokens": 1020,
+      "median_prompt_tokens": 743.5,
+      "median_provider_first_content_ms": 974.6296669982257,
+      "client_minus_provider_ttft_ms": [
+        45.7,
+        36.4,
+        32.2,
+        40.7,
+        34.3,
+        35.5,
+        31.2,
+        32.0,
+        39.2,
+        34.8,
+        99.1,
+        35.9,
+        42.7,
+        34.3,
+        44.3,
+        39.9,
+        35.7,
+        36.0,
+        41.6,
+        37.5,
+        48.2,
+        42.2,
+        39.9,
+        37.2,
+        38.3,
+        30.5,
+        97.9,
+        39.3,
+        49.7,
+        36.9,
+        34.6,
+        33.3
+      ],
+      "mean_message_bytes_per_generation": 3162.875,
+      "tool_schema_counts_per_generation": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tool_schema_bytes_per_generation": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tool_calls_emitted": 0,
+      "answer_characters": 4362
+    },
+    "hades": {
+      "turns": 32,
+      "successful_turns": 32,
+      "http_200_turns": 32,
+      "content_turns": 32,
+      "no_content_turns": 0,
+      "median_ttft_ms": 1072.25,
+      "median_total_ms": 1455.6,
+      "provider_generations": 30,
+      "total_prompt_tokens": 23169,
+      "total_completion_tokens": 1244,
+      "median_prompt_tokens": 754.0,
+      "median_provider_first_content_ms": 1101.9420765005634,
+      "client_minus_provider_ttft_ms": [
+        53.5,
+        55.2,
+        55.9,
+        55.5,
+        49.4,
+        48.2,
+        63.3,
+        57.3,
+        49.8,
+        52.3,
+        113.8,
+        51.5,
+        null,
+        63.7,
+        55.6,
+        52.0,
+        60.0,
+        47.2,
+        54.8,
+        54.5,
+        55.5,
+        64.2,
+        58.1,
+        60.8,
+        70.3,
+        59.8,
+        51.5,
+        105.9,
+        null,
+        51.3,
+        56.7,
+        56.2
+      ],
+      "mean_message_bytes_per_generation": 3185.3,
+      "tool_schema_counts_per_generation": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tool_schema_bytes_per_generation": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tool_calls_emitted": 0,
+      "answer_characters": 5623
+    }
+  },
+  "turns": [
+    {
+      "stack": "hades",
+      "case": "core-01",
+      "status": 200,
+      "ttft_ms": 1186.0,
+      "total_ms": 1432.0,
+      "content_received": true,
+      "stream_event_count": 9,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-01-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3115,
+          "message_count": 2,
+          "message_bytes": 2969,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1132.5047530117445,
+          "first_content_ms": 1132.5250140071148,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 723,
+            "completion_tokens": 8,
+            "total_tokens": 731
+          },
+          "elapsed_ms": 1367.1006220101845,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-01",
+      "status": 200,
+      "ttft_ms": 1259.6,
+      "total_ms": 1410.6,
+      "content_received": true,
+      "stream_event_count": 7,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-01-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3115,
+          "message_count": 2,
+          "message_bytes": 2969,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1213.879884002381,
+          "first_content_ms": 1213.9064020011574,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 721,
+            "completion_tokens": 6,
+            "total_tokens": 727
+          },
+          "elapsed_ms": 1358.5579950013198,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-02",
+      "status": 200,
+      "ttft_ms": 1150.9,
+      "total_ms": 1219.2,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-02-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3103,
+          "message_count": 2,
+          "message_bytes": 2957,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1114.448281005025,
+          "first_content_ms": 1114.4677639967995,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 725,
+            "completion_tokens": 3,
+            "total_tokens": 728
+          },
+          "elapsed_ms": 1175.0100619974546,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-02",
+      "status": 200,
+      "ttft_ms": 1246.7,
+      "total_ms": 1315.8,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-02-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3103,
+          "message_count": 2,
+          "message_bytes": 2957,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1191.508411007817,
+          "first_content_ms": 1191.5329320036108,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 727,
+            "completion_tokens": 3,
+            "total_tokens": 730
+          },
+          "elapsed_ms": 1253.570392000256,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-03",
+      "status": 200,
+      "ttft_ms": 1136.8,
+      "total_ms": 5728.0,
+      "content_received": true,
+      "stream_event_count": 223,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-03-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3132,
+          "message_count": 2,
+          "message_bytes": 2986,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1080.8305029931944,
+          "first_content_ms": 1080.855648004217,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 724,
+            "completion_tokens": 246,
+            "total_tokens": 970
+          },
+          "elapsed_ms": 5664.241569000296,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-03",
+      "status": 200,
+      "ttft_ms": 1235.6,
+      "total_ms": 2250.9,
+      "content_received": true,
+      "stream_event_count": 42,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-03-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3132,
+          "message_count": 2,
+          "message_bytes": 2986,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1203.4249799908139,
+          "first_content_ms": 1203.4462409937987,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 722,
+            "completion_tokens": 41,
+            "total_tokens": 763
+          },
+          "elapsed_ms": 2209.0851169923553,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-03",
+      "status": 200,
+      "ttft_ms": 1007.7,
+      "total_ms": 5265.5,
+      "content_received": true,
+      "stream_event_count": 192,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-03-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 4335,
+          "message_count": 4,
+          "message_bytes": 4187,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 952.2034390101908,
+          "first_content_ms": 952.2272260073805,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 981,
+            "completion_tokens": 201,
+            "total_tokens": 1182
+          },
+          "elapsed_ms": 5203.858395005227,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-03",
+      "status": 200,
+      "ttft_ms": 659.0,
+      "total_ms": 1778.2,
+      "content_received": true,
+      "stream_event_count": 38,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-03-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3421,
+          "message_count": 4,
+          "message_bytes": 3273,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 618.309733006754,
+          "first_content_ms": 618.3306500024628,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 774,
+            "completion_tokens": 37,
+            "total_tokens": 811
+          },
+          "elapsed_ms": 1726.8337630084716,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-04",
+      "status": 200,
+      "ttft_ms": 1151.6,
+      "total_ms": 1907.1,
+      "content_received": true,
+      "stream_event_count": 41,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-04-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3131,
+          "message_count": 2,
+          "message_bytes": 2985,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1117.3076819977723,
+          "first_content_ms": 1117.3448879999341,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 722,
+            "completion_tokens": 40,
+            "total_tokens": 762
+          },
+          "elapsed_ms": 1865.2776299859397,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-04",
+      "status": 200,
+      "ttft_ms": 1247.1,
+      "total_ms": 2096.3,
+      "content_received": true,
+      "stream_event_count": 43,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-04-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3131,
+          "message_count": 2,
+          "message_bytes": 2985,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1197.6677480124636,
+          "first_content_ms": 1197.6902420137776,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 724,
+            "completion_tokens": 42,
+            "total_tokens": 766
+          },
+          "elapsed_ms": 2039.3290810025064,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-04",
+      "status": 200,
+      "ttft_ms": 637.6,
+      "total_ms": 1493.8,
+      "content_received": true,
+      "stream_event_count": 45,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-04-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3375,
+          "message_count": 4,
+          "message_bytes": 3227,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 602.0922830066411,
+          "first_content_ms": 602.1127200074261,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 773,
+            "completion_tokens": 50,
+            "total_tokens": 823
+          },
+          "elapsed_ms": 1447.1411450067535,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-04",
+      "status": 200,
+      "ttft_ms": 656.7,
+      "total_ms": 1704.9,
+      "content_received": true,
+      "stream_event_count": 55,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-04-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3400,
+          "message_count": 4,
+          "message_bytes": 3252,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 608.4422069980064,
+          "first_content_ms": 608.464521006681,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 777,
+            "completion_tokens": 55,
+            "total_tokens": 832
+          },
+          "elapsed_ms": 1645.2781569969375,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 1273.0,
+      "total_ms": 2393.3,
+      "content_received": true,
+      "stream_event_count": 52,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-05-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3146,
+          "message_count": 2,
+          "message_bytes": 3000,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1209.6773499943083,
+          "first_content_ms": 1209.6977780020097,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 737,
+            "completion_tokens": 51,
+            "total_tokens": 788
+          },
+          "elapsed_ms": 2320.0842030055355,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 1360.6,
+      "total_ms": 2364.4,
+      "content_received": true,
+      "stream_event_count": 42,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-05-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3146,
+          "message_count": 2,
+          "message_bytes": 3000,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1329.423527000472,
+          "first_content_ms": 1329.4425810017856,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 735,
+            "completion_tokens": 42,
+            "total_tokens": 777
+          },
+          "elapsed_ms": 2318.3588550018612,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 743.8,
+      "total_ms": 926.5,
+      "content_received": true,
+      "stream_event_count": 8,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-05-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3397,
+          "message_count": 4,
+          "message_bytes": 3249,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 686.4790980034741,
+          "first_content_ms": 686.49876100244,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 802,
+            "completion_tokens": 7,
+            "total_tokens": 809
+          },
+          "elapsed_ms": 858.2166720007081,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 713.2,
+      "total_ms": 878.4,
+      "content_received": true,
+      "stream_event_count": 11,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-05-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3410,
+          "message_count": 4,
+          "message_bytes": 3262,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 681.2071399908746,
+          "first_content_ms": 681.2275249976665,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 791,
+            "completion_tokens": 10,
+            "total_tokens": 801
+          },
+          "elapsed_ms": 833.1850239919731,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 385.9,
+      "total_ms": 1249.8,
+      "content_received": true,
+      "stream_event_count": 37,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 3,
+      "repeat": 1,
+      "session_case": "core-05-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3512,
+          "message_count": 6,
+          "message_bytes": 3362,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 336.0467820020858,
+          "first_content_ms": 336.0758040071232,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 829,
+            "completion_tokens": 36,
+            "total_tokens": 865
+          },
+          "elapsed_ms": 1185.2915619965643,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 452.9,
+      "total_ms": 1436.1,
+      "content_received": true,
+      "stream_event_count": 44,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 3,
+      "repeat": 1,
+      "session_case": "core-05-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3536,
+          "message_count": 6,
+          "message_bytes": 3386,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 413.64213000633754,
+          "first_content_ms": 413.6634180031251,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 821,
+            "completion_tokens": 45,
+            "total_tokens": 866
+          },
+          "elapsed_ms": 1384.5606329996372,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 759.3,
+      "total_ms": 1105.4,
+      "content_received": true,
+      "stream_event_count": 19,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 4,
+      "repeat": 1,
+      "session_case": "core-05-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3764,
+          "message_count": 8,
+          "message_bytes": 3612,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 706.9615310028894,
+          "first_content_ms": 706.9858920003753,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 880,
+            "completion_tokens": 18,
+            "total_tokens": 898
+          },
+          "elapsed_ms": 1041.4757130056387,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 831.8,
+      "total_ms": 1731.4,
+      "content_received": true,
+      "stream_event_count": 42,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 4,
+      "repeat": 1,
+      "session_case": "core-05-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3847,
+          "message_count": 8,
+          "message_bytes": 3695,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 797.0187259925297,
+          "first_content_ms": 797.0442709920462,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 881,
+            "completion_tokens": 42,
+            "total_tokens": 923
+          },
+          "elapsed_ms": 1687.2965170041425,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-07",
+      "status": 200,
+      "ttft_ms": 1244.6,
+      "total_ms": 1937.4,
+      "content_received": true,
+      "stream_event_count": 35,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-07-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3117,
+          "message_count": 2,
+          "message_bytes": 2971,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1145.4569790075766,
+          "first_content_ms": 1145.4835800104775,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 720,
+            "completion_tokens": 34,
+            "total_tokens": 754
+          },
+          "elapsed_ms": 1888.2710550096817,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-07",
+      "status": 200,
+      "ttft_ms": 1369.5,
+      "total_ms": 1887.8,
+      "content_received": true,
+      "stream_event_count": 31,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-07-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3117,
+          "message_count": 2,
+          "message_bytes": 2971,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1255.6602920085425,
+          "first_content_ms": 1255.6802150065778,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 722,
+            "completion_tokens": 30,
+            "total_tokens": 752
+          },
+          "elapsed_ms": 1817.5739650032483,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-07",
+      "status": 200,
+      "ttft_ms": 621.1,
+      "total_ms": 1176.1,
+      "content_received": true,
+      "stream_event_count": 25,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-07-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3406,
+          "message_count": 4,
+          "message_bytes": 3258,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 585.2222260000417,
+          "first_content_ms": 585.2465010102605,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 775,
+            "completion_tokens": 24,
+            "total_tokens": 799
+          },
+          "elapsed_ms": 1130.7951680064434,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-07",
+      "status": 200,
+      "ttft_ms": 669.3,
+      "total_ms": 1466.7,
+      "content_received": true,
+      "stream_event_count": 39,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-07-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3387,
+          "message_count": 4,
+          "message_bytes": 3239,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 617.7437169972109,
+          "first_content_ms": 617.7658870001324,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 773,
+            "completion_tokens": 38,
+            "total_tokens": 811
+          },
+          "elapsed_ms": 1402.7577079978073,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-08",
+      "status": 200,
+      "ttft_ms": 30.3,
+      "total_ms": 30.4,
+      "content_received": true,
+      "stream_event_count": 3,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-08-repeat-1",
+      "provider_requests": 0,
+      "provider_metrics": []
+    },
+    {
+      "stack": "plain",
+      "case": "core-08",
+      "status": 200,
+      "ttft_ms": 1309.5,
+      "total_ms": 3011.9,
+      "content_received": true,
+      "stream_event_count": 84,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-08-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3120,
+          "message_count": 2,
+          "message_bytes": 2974,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1266.7927450092975,
+          "first_content_ms": 1266.8185910006287,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 721,
+            "completion_tokens": 91,
+            "total_tokens": 812
+          },
+          "elapsed_ms": 2959.6050860127434,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-08",
+      "status": 200,
+      "ttft_ms": 1413.3,
+      "total_ms": 2060.7,
+      "content_received": true,
+      "stream_event_count": 37,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-08-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3348,
+          "message_count": 4,
+          "message_bytes": 3200,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1349.5687139948132,
+          "first_content_ms": 1349.5971980009926,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 768,
+            "completion_tokens": 36,
+            "total_tokens": 804
+          },
+          "elapsed_ms": 1983.4784620034043,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-08",
+      "status": 200,
+      "ttft_ms": 843.6,
+      "total_ms": 1457.2,
+      "content_received": true,
+      "stream_event_count": 31,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-08-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3497,
+          "message_count": 4,
+          "message_bytes": 3349,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 809.3127610045485,
+          "first_content_ms": 809.332529999665,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 831,
+            "completion_tokens": 30,
+            "total_tokens": 861
+          },
+          "elapsed_ms": 1412.9556999978377,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-39",
+      "status": 200,
+      "ttft_ms": 1200.7,
+      "total_ms": 1258.3,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-39-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3103,
+          "message_count": 2,
+          "message_bytes": 2957,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1156.4178000116954,
+          "first_content_ms": 1156.4368380059022,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 725,
+            "completion_tokens": 3,
+            "total_tokens": 728
+          },
+          "elapsed_ms": 1205.4712750104954,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-39",
+      "status": 200,
+      "ttft_ms": 1290.1,
+      "total_ms": 1355.9,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 1,
+      "session_case": "core-39-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3103,
+          "message_count": 2,
+          "message_bytes": 2957,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1234.4600139913382,
+          "first_content_ms": 1234.4832319940906,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 727,
+            "completion_tokens": 3,
+            "total_tokens": 730
+          },
+          "elapsed_ms": 1292.347256996436,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-39",
+      "status": 200,
+      "ttft_ms": 402.5,
+      "total_ms": 463.4,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-39-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3229,
+          "message_count": 4,
+          "message_bytes": 3081,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 362.5816029962152,
+          "first_content_ms": 362.60520499490667,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 752,
+            "completion_tokens": 3,
+            "total_tokens": 755
+          },
+          "elapsed_ms": 413.16372599976603,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-39",
+      "status": 200,
+      "ttft_ms": 385.8,
+      "total_ms": 441.2,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 1,
+      "session_case": "core-39-repeat-1",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3229,
+          "message_count": 4,
+          "message_bytes": 3081,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 333.74872100830544,
+          "first_content_ms": 333.77118600765243,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 754,
+            "completion_tokens": 3,
+            "total_tokens": 757
+          },
+          "elapsed_ms": 375.5338020127965,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-01",
+      "status": 200,
+      "ttft_ms": 1342.8,
+      "total_ms": 1554.1,
+      "content_received": true,
+      "stream_event_count": 11,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-01-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3115,
+          "message_count": 2,
+          "message_bytes": 2969,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1307.062299005338,
+          "first_content_ms": 1307.085475011263,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 721,
+            "completion_tokens": 10,
+            "total_tokens": 731
+          },
+          "elapsed_ms": 1509.338337011286,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-01",
+      "status": 200,
+      "ttft_ms": 1262.9,
+      "total_ms": 1431.4,
+      "content_received": true,
+      "stream_event_count": 11,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-01-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3115,
+          "message_count": 2,
+          "message_bytes": 2969,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1202.8991660044994,
+          "first_content_ms": 1202.9218380048405,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 723,
+            "completion_tokens": 10,
+            "total_tokens": 733
+          },
+          "elapsed_ms": 1361.8035789986607,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-02",
+      "status": 200,
+      "ttft_ms": 1182.7,
+      "total_ms": 1240.1,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-02-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3103,
+          "message_count": 2,
+          "message_bytes": 2957,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1135.470877008629,
+          "first_content_ms": 1135.491812005057,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 727,
+            "completion_tokens": 3,
+            "total_tokens": 730
+          },
+          "elapsed_ms": 1176.851046999218,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-02",
+      "status": 200,
+      "ttft_ms": 1316.0,
+      "total_ms": 1388.6,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-02-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3103,
+          "message_count": 2,
+          "message_bytes": 2957,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1280.0118680024752,
+          "first_content_ms": 1280.0314909982262,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 725,
+            "completion_tokens": 3,
+            "total_tokens": 728
+          },
+          "elapsed_ms": 1341.5817500062985,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-03",
+      "status": 200,
+      "ttft_ms": 1191.5,
+      "total_ms": 2363.6,
+      "content_received": true,
+      "stream_event_count": 47,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-03-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3132,
+          "message_count": 2,
+          "message_bytes": 2986,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1149.9055559979752,
+          "first_content_ms": 1149.9283140001353,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 722,
+            "completion_tokens": 46,
+            "total_tokens": 768
+          },
+          "elapsed_ms": 2313.3534160006093,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-03",
+      "status": 200,
+      "ttft_ms": 1248.1,
+      "total_ms": 2296.3,
+      "content_received": true,
+      "stream_event_count": 56,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-03-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3132,
+          "message_count": 2,
+          "message_bytes": 2986,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1193.2779060007306,
+          "first_content_ms": 1193.302876999951,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 724,
+            "completion_tokens": 55,
+            "total_tokens": 779
+          },
+          "elapsed_ms": 2229.9018150079064,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-03",
+      "status": 200,
+      "ttft_ms": 627.8,
+      "total_ms": 1616.3,
+      "content_received": true,
+      "stream_event_count": 41,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-03-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3469,
+          "message_count": 4,
+          "message_bytes": 3321,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 590.2471350127598,
+          "first_content_ms": 590.2696040138835,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 779,
+            "completion_tokens": 40,
+            "total_tokens": 819
+          },
+          "elapsed_ms": 1566.5830120124156,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-03",
+      "status": 200,
+      "ttft_ms": 662.9,
+      "total_ms": 1194.7,
+      "content_received": true,
+      "stream_event_count": 20,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-03-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3522,
+          "message_count": 4,
+          "message_bytes": 3374,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 608.3631690125912,
+          "first_content_ms": 608.3842050138628,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 790,
+            "completion_tokens": 19,
+            "total_tokens": 809
+          },
+          "elapsed_ms": 1126.4942640118534,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-04",
+      "status": 200,
+      "ttft_ms": 1178.5,
+      "total_ms": 1665.7,
+      "content_received": true,
+      "stream_event_count": 31,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-04-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3131,
+          "message_count": 2,
+          "message_bytes": 2985,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1123.009215996717,
+          "first_content_ms": 1123.0285049969098,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 724,
+            "completion_tokens": 30,
+            "total_tokens": 754
+          },
+          "elapsed_ms": 1599.501231990871,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-04",
+      "status": 200,
+      "ttft_ms": 1315.4,
+      "total_ms": 2443.4,
+      "content_received": true,
+      "stream_event_count": 44,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-04-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3131,
+          "message_count": 2,
+          "message_bytes": 2985,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1267.1621709887404,
+          "first_content_ms": 1267.1880470006727,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 722,
+            "completion_tokens": 43,
+            "total_tokens": 765
+          },
+          "elapsed_ms": 2384.316771000158,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-04",
+      "status": 200,
+      "ttft_ms": 565.4,
+      "total_ms": 1480.5,
+      "content_received": true,
+      "stream_event_count": 48,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-04-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3339,
+          "message_count": 4,
+          "message_bytes": 3191,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 501.2014699896099,
+          "first_content_ms": 501.2236059992574,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 765,
+            "completion_tokens": 48,
+            "total_tokens": 813
+          },
+          "elapsed_ms": 1401.6830689943163,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-04",
+      "status": 200,
+      "ttft_ms": 688.8,
+      "total_ms": 1583.4,
+      "content_received": true,
+      "stream_event_count": 48,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-04-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3397,
+          "message_count": 4,
+          "message_bytes": 3249,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 646.5922269999282,
+          "first_content_ms": 646.6160300042247,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 776,
+            "completion_tokens": 47,
+            "total_tokens": 823
+          },
+          "elapsed_ms": 1523.6992400023155,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 1207.1,
+      "total_ms": 2353.9,
+      "content_received": true,
+      "stream_event_count": 57,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-05-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3146,
+          "message_count": 2,
+          "message_bytes": 3000,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1167.2257850004826,
+          "first_content_ms": 1167.2499460109975,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 735,
+            "completion_tokens": 58,
+            "total_tokens": 793
+          },
+          "elapsed_ms": 2297.6515670015942,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 1265.6,
+      "total_ms": 2667.3,
+      "content_received": true,
+      "stream_event_count": 74,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-05-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3146,
+          "message_count": 2,
+          "message_bytes": 3000,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1207.5264879968017,
+          "first_content_ms": 1207.5498680060264,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 737,
+            "completion_tokens": 74,
+            "total_tokens": 811
+          },
+          "elapsed_ms": 2590.3487110044807,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 796.6,
+      "total_ms": 2304.0,
+      "content_received": true,
+      "stream_event_count": 48,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-05-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3444,
+          "message_count": 4,
+          "message_bytes": 3296,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 759.3339479935821,
+          "first_content_ms": 759.3583849957213,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 807,
+            "completion_tokens": 49,
+            "total_tokens": 856
+          },
+          "elapsed_ms": 2257.908483996289,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 903.8,
+      "total_ms": 1047.6,
+      "content_received": true,
+      "stream_event_count": 11,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-05-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3531,
+          "message_count": 4,
+          "message_bytes": 3383,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 842.9866899969056,
+          "first_content_ms": 843.0079630052205,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 825,
+            "completion_tokens": 10,
+            "total_tokens": 835
+          },
+          "elapsed_ms": 974.2604229977587,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 747.1,
+      "total_ms": 2351.9,
+      "content_received": true,
+      "stream_event_count": 73,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 3,
+      "repeat": 2,
+      "session_case": "core-05-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3761,
+          "message_count": 6,
+          "message_bytes": 3611,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 708.8179190031951,
+          "first_content_ms": 708.8424770045094,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 876,
+            "completion_tokens": 72,
+            "total_tokens": 948
+          },
+          "elapsed_ms": 2297.619561999454,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 432.7,
+      "total_ms": 1444.5,
+      "content_received": true,
+      "stream_event_count": 48,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 3,
+      "repeat": 2,
+      "session_case": "core-05-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3657,
+          "message_count": 6,
+          "message_bytes": 3507,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 362.32539599586744,
+          "first_content_ms": 362.3507209995296,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 855,
+            "completion_tokens": 47,
+            "total_tokens": 902
+          },
+          "elapsed_ms": 1358.9150539919501,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 865.3,
+      "total_ms": 1767.9,
+      "content_received": true,
+      "stream_event_count": 44,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 4,
+      "repeat": 2,
+      "session_case": "core-05-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 4197,
+          "message_count": 8,
+          "message_bytes": 4045,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 834.7706069907872,
+          "first_content_ms": 834.791569999652,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 963,
+            "completion_tokens": 43,
+            "total_tokens": 1006
+          },
+          "elapsed_ms": 1721.3458990008803,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-05",
+      "status": 200,
+      "ttft_ms": 778.2,
+      "total_ms": 2116.9,
+      "content_received": true,
+      "stream_event_count": 65,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 4,
+      "repeat": 2,
+      "session_case": "core-05-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3959,
+          "message_count": 8,
+          "message_bytes": 3807,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 718.3960089896573,
+          "first_content_ms": 718.4212199936155,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 917,
+            "completion_tokens": 64,
+            "total_tokens": 981
+          },
+          "elapsed_ms": 2039.1561879951041,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-07",
+      "status": 200,
+      "ttft_ms": 1179.3,
+      "total_ms": 1591.6,
+      "content_received": true,
+      "stream_event_count": 21,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-07-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3117,
+          "message_count": 2,
+          "message_bytes": 2971,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1127.8178169886814,
+          "first_content_ms": 1127.838332002284,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 722,
+            "completion_tokens": 20,
+            "total_tokens": 742
+          },
+          "elapsed_ms": 1527.9517769959057,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-07",
+      "status": 200,
+      "ttft_ms": 1380.1,
+      "total_ms": 2116.4,
+      "content_received": true,
+      "stream_event_count": 35,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-07-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3117,
+          "message_count": 2,
+          "message_bytes": 2971,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1282.1422810084186,
+          "first_content_ms": 1282.1674590086332,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 720,
+            "completion_tokens": 34,
+            "total_tokens": 754
+          },
+          "elapsed_ms": 2056.031100000837,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-07",
+      "status": 200,
+      "ttft_ms": 635.0,
+      "total_ms": 1848.1,
+      "content_received": true,
+      "stream_event_count": 52,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-07-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3332,
+          "message_count": 4,
+          "message_bytes": 3184,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 529.0773669985356,
+          "first_content_ms": 529.0978109987918,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 763,
+            "completion_tokens": 51,
+            "total_tokens": 814
+          },
+          "elapsed_ms": 1783.072304999223,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-07",
+      "status": 200,
+      "ttft_ms": 710.5,
+      "total_ms": 1105.6,
+      "content_received": true,
+      "stream_event_count": 23,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-07-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3417,
+          "message_count": 4,
+          "message_bytes": 3269,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 671.1986669979524,
+          "first_content_ms": 671.2231740093557,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 775,
+            "completion_tokens": 22,
+            "total_tokens": 797
+          },
+          "elapsed_ms": 1052.4603450030554,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-08",
+      "status": 200,
+      "ttft_ms": 1263.7,
+      "total_ms": 2006.4,
+      "content_received": true,
+      "stream_event_count": 40,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-08-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3120,
+          "message_count": 2,
+          "message_bytes": 2974,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1213.9918780012522,
+          "first_content_ms": 1214.0159559930908,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 721,
+            "completion_tokens": 40,
+            "total_tokens": 761
+          },
+          "elapsed_ms": 1949.397577001946,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-08",
+      "status": 200,
+      "ttft_ms": 32.3,
+      "total_ms": 32.4,
+      "content_received": true,
+      "stream_event_count": 3,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-08-repeat-2",
+      "provider_requests": 0,
+      "provider_metrics": []
+    },
+    {
+      "stack": "plain",
+      "case": "core-08",
+      "status": 200,
+      "ttft_ms": 598.2,
+      "total_ms": 692.2,
+      "content_received": true,
+      "stream_event_count": 7,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-08-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3359,
+          "message_count": 4,
+          "message_bytes": 3211,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 561.2933380034519,
+          "first_content_ms": 561.3172120065428,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 780,
+            "completion_tokens": 6,
+            "total_tokens": 786
+          },
+          "elapsed_ms": 641.7178400006378,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-08",
+      "status": 200,
+      "ttft_ms": 1290.9,
+      "total_ms": 1882.0,
+      "content_received": true,
+      "stream_event_count": 31,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-08-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3348,
+          "message_count": 4,
+          "message_bytes": 3200,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1239.530933991773,
+          "first_content_ms": 1239.5604449993698,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 768,
+            "completion_tokens": 30,
+            "total_tokens": 798
+          },
+          "elapsed_ms": 1815.8129469957203,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-39",
+      "status": 200,
+      "ttft_ms": 1202.9,
+      "total_ms": 1261.9,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-39-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3103,
+          "message_count": 2,
+          "message_bytes": 2957,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1146.2204809940886,
+          "first_content_ms": 1146.2422829936258,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 727,
+            "completion_tokens": 3,
+            "total_tokens": 730
+          },
+          "elapsed_ms": 1196.2759570014896,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-39",
+      "status": 200,
+      "ttft_ms": 1377.5,
+      "total_ms": 1433.1,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 1,
+      "repeat": 2,
+      "session_case": "core-39-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3103,
+          "message_count": 2,
+          "message_bytes": 2957,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 1342.9002279881388,
+          "first_content_ms": 1342.9255609953543,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 725,
+            "completion_tokens": 3,
+            "total_tokens": 728
+          },
+          "elapsed_ms": 1384.2577329924097,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "hades",
+      "case": "core-39",
+      "status": 200,
+      "ttft_ms": 341.0,
+      "total_ms": 405.1,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-39-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "hades",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3229,
+          "message_count": 4,
+          "message_bytes": 3081,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 284.74165200896095,
+          "first_content_ms": 284.76451900496613,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 754,
+            "completion_tokens": 3,
+            "total_tokens": 757
+          },
+          "elapsed_ms": 336.2676460092189,
+          "completed": true
+        }
+      ]
+    },
+    {
+      "stack": "plain",
+      "case": "core-39",
+      "status": 200,
+      "ttft_ms": 407.3,
+      "total_ms": 476.6,
+      "content_received": true,
+      "stream_event_count": 4,
+      "finish_reasons": [
+        "stop"
+      ],
+      "turn": 2,
+      "repeat": 2,
+      "session_case": "core-39-repeat-2",
+      "provider_requests": 1,
+      "provider_metrics": [
+        {
+          "stack": "plain",
+          "path": "/v1/chat/completions",
+          "model": "qwen3.6:35b",
+          "requested_num_ctx": 65536,
+          "generation_controls": {
+            "reasoning_effort": "none",
+            "options": {
+              "num_ctx": 65536
+            }
+          },
+          "stream": true,
+          "request_bytes": 3229,
+          "message_count": 4,
+          "message_bytes": 3081,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "status": 200,
+          "first_event_ms": 373.96556000749115,
+          "first_content_ms": 373.99100000038743,
+          "tool_calls_emitted": 0,
+          "finish_reasons": [
+            "stop"
+          ],
+          "usage": {
+            "prompt_tokens": 752,
+            "completion_tokens": 3,
+            "total_tokens": 755
+          },
+          "elapsed_ms": 429.9969610001426,
+          "completed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Synthetic chat-only subset; this does not qualify the 50-case corpus.",
+    "Owner preference and quality review were not collected.",
+    "Memory, domain tools, Open WebUI, coding/action and production parity were not measured; recovery prompts intentionally run without their required data/tools to inspect graceful limitation handling.",
+    "HTTP success is reported separately from content-bearing turns; a blank answer is retained with finish/tool metadata instead of aborting the run.",
+    "The HADES-only overlay instruction changes the model request; that is part of the measured product tax."
+  ]
+}

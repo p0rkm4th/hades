@@ -9,6 +9,7 @@ credentials are never written to the measurement records.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import http.client
 import json
 import os
@@ -105,6 +106,22 @@ CASE_LINEAGE = {
 }
 
 
+def public_turn_record(row: dict[str, Any]) -> dict[str, Any]:
+    """Keep measurements while excluding synthetic or owner conversation text."""
+    return {
+        key: value
+        for key, value in row.items()
+        if key not in {"prompt", "answer"}
+    }
+
+
+def apply_request_overrides(
+    request: dict[str, Any], overrides: dict[str, Any]
+) -> dict[str, Any]:
+    """Apply benchmark controls at the provider boundary, where they take effect."""
+    return request | overrides
+
+
 def unused_port() -> int:
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
@@ -191,7 +208,9 @@ class AggregateProxy(ThreadingHTTPServer):
                 except (ValueError, TypeError):
                     request = {}
                 if isinstance(request, dict) and parent.generation_overrides:
-                    request.update(parent.generation_overrides)
+                    request = apply_request_overrides(
+                        request, parent.generation_overrides
+                    )
                     raw = json.dumps(request, ensure_ascii=False, separators=(",", ":")).encode()
                 messages = request.get("messages")
                 messages = messages if isinstance(messages, list) else []
@@ -526,6 +545,7 @@ def main() -> int:
         for stack in ("plain", "hades"):
             provider_port = unused_port()
             proxy = AggregateProxy(("127.0.0.1", provider_port), stack, args.ollama_url)
+            proxy.generation_overrides = {"max_tokens": args.max_tokens}
             thread = threading.Thread(target=proxy.serve_forever, daemon=True)
             thread.start()
             proxies[stack] = proxy
@@ -630,6 +650,11 @@ def main() -> int:
             )
             after = len(proxies[stack].snapshot())
             warmups[stack] = {"status": row["status"], "provider_requests": after - before}
+            if any(
+                call["generation_controls"].get("max_tokens") != args.max_tokens
+                for call in proxies[stack].snapshot()[before:]
+            ):
+                raise RuntimeError(f"{stack} warmup did not receive the configured output cap")
             if not row["answer"]:
                 raise RuntimeError(f"{stack} warmup returned no assistant content")
 
@@ -655,6 +680,13 @@ def main() -> int:
                             args.max_tokens,
                         )
                         after = proxies[stack].snapshot()
+                        if any(
+                            call["generation_controls"].get("max_tokens") != args.max_tokens
+                            for call in after[before:]
+                        ):
+                            raise RuntimeError(
+                                f"{stack} {case} turn did not receive the configured output cap"
+                            )
                         row.update(
                             {
                                 "turn": turn_index + 1,
@@ -676,7 +708,6 @@ def main() -> int:
                         print(
                             json.dumps(
                                 {key: row[key] for key in ("stack", "case", "turn", "status", "content_received", "finish_reasons", "tool_call_names", "ttft_ms", "total_ms", "provider_requests")}
-                                | ({"answer": row["answer"][:240]} if row["provider_requests"] == 0 else {})
                             ),
                             flush=True,
                         )
@@ -774,6 +805,9 @@ def main() -> int:
             "source_revision": subprocess.run(
                 ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, timeout=5
             ).stdout.strip(),
+            "benchmark_runner_script_sha256": hashlib.sha256(
+                pathlib.Path(__file__).read_bytes()
+            ).hexdigest(),
             "methodology": {
                 "persistent_gateways": True,
                 "same_local_provider_runtime": True,
@@ -792,6 +826,7 @@ def main() -> int:
                 "title_generation_enabled": True,
                 "title_model_upgrade_enabled": False,
                 "provider_generation_count": "measured as provider proxy requests associated with each serialized user turn",
+                "max_output_tokens_enforcement": "same max_tokens override applied at the loopback provider boundary and verified on every captured request",
                 "user_preference": "not collected",
             },
             "cases": [case for case, _ in selected_cases],
@@ -800,7 +835,7 @@ def main() -> int:
             },
             "preference_bucket": "UNASSIGNED; no owner review",
             "summary": per_stack,
-            "turns": records,
+            "turns": [public_turn_record(row) for row in records],
             "limitations": [
             "Synthetic chat-only subset; this does not qualify the 50-case corpus.",
             "Owner preference and quality review were not collected.",
