@@ -500,24 +500,48 @@ def hindsight_bank_lifecycle(url: str, bank_id: str) -> dict[str, Any]:
 
 def hindsight_all_bank_lifecycle(url: str, _bank_id: str = "") -> dict[str, Any]:
     """Aggregate operation state across this benchmark's disposable Hindsight DB."""
-    endpoint = f"{url.rstrip('/')}/v1/default/banks?limit=100&offset=0"
+    base = f"{url.rstrip('/')}/v1/default/banks"
+    rows = []
+    offset = 0
+    total = None
     try:
-        with urllib.request.urlopen(endpoint, timeout=3) as response:
-            payload = json.load(response)
+        while total is None or offset < total:
+            query = urllib.parse.urlencode({"limit": 100, "offset": offset})
+            with urllib.request.urlopen(f"{base}?{query}", timeout=3) as response:
+                payload = json.load(response)
+            if (not isinstance(payload, dict)
+                    or not isinstance(payload.get("banks"), list)
+                    or not isinstance(payload.get("total"), int)):
+                raise ValueError("UnexpectedBankListShape")
+            page = payload["banks"]
+            page_total = payload["total"]
+            if total is not None and page_total != total:
+                raise ValueError("BankListTotalChanged")
+            total = page_total
+            if any(
+                not isinstance(row, dict)
+                or not isinstance(row.get("bank_id"), str)
+                or not row["bank_id"]
+                for row in page
+            ):
+                raise ValueError("UnexpectedBankListShape")
+            rows.extend(page)
+            if not page and offset < total:
+                raise ValueError("IncompleteBankListPage")
+            offset += len(page)
+        if len(rows) != total:
+            raise ValueError("IncompleteBankListPage")
     except Exception as exc:
         return {"operations": {
             "pending": {"error": type(exc).__name__},
             "processing": {"error": type(exc).__name__},
         }}
-    rows = payload.get("items", []) if isinstance(payload, dict) else []
     result: dict[str, Any] = {
         "banks": {}, "operations": {"pending": {}, "processing": {}},
         "stats": {"pending_operations": 0, "operations_by_status": {}},
     }
     for row in rows:
-        if not isinstance(row, dict) or not isinstance(row.get("id"), str):
-            continue
-        bank_id = row["id"]
+        bank_id = row["bank_id"]
         lifecycle = hindsight_bank_lifecycle(url, bank_id)
         for status in ("pending", "processing"):
             counts = lifecycle.get("operations", {}).get(status, {})
