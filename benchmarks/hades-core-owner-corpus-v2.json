@@ -1053,6 +1053,25 @@
       "limitations": "Two pairs on one synthetic coding fixture; no owner preference, human quality rating, Git commit behavior, Open WebUI persistence, or deployment parity. Ollama does not expose reasoning internals on this endpoint. Prior stable-schema candidate restored cache but worsened end-to-end behavior and increased invalid diagnosis calls.",
       "metrics_record": "benchmarks/hades-core-workspace-escalation-tool-delta-ollama0401-20261008.json",
       "report": "docs/hades-core-workspace-escalation-ollama0401-2026-10-08.md"
+    },
+    "latest_chat_subset_ollama0401_current_source": {
+      "source_revision": "fa608b4aa0f12ce9684ae62eaeb399b3efb2fa5e",
+      "classification": "three counterbalanced synthetic owner-pattern conversation replays on current review source; owner preference and answer-quality review unassigned",
+      "case_ids": [
+        "core-01",
+        "core-02",
+        "core-03",
+        "core-04",
+        "core-05",
+        "core-07",
+        "core-08",
+        "core-39"
+      ],
+      "repeats": 3,
+      "result": "Hermes 0.21.5 / Ollama 0.40.1 / Qwen3.6:35b Q4_K_M, verified 65,536 loaded context, same model digest and sampling controls. All 96 turns returned content; PLAIN/HADES median TTFT was 1,063.7/1,066.2 ms and median total was 1,601.9/1,453.6 ms. HADES used 45 provider generations vs PLAIN 48 because its three core-08 missing-source turns returned through the fast missing-source path. Excluding all core-08 turns leaves 42 model-backed turns per stack; median TTFT/total was unchanged at 1,063.7/1,066.2 ms and 1,601.9/1,453.6 ms. Median prompt tokens on that slice were 763.5/760.5. These are descriptive latency and context measurements only; no response quality or owner preference was measured.",
+      "limitations": "Synthetic chat-only gateway replay with no API toolsets/source data, memory, coding actions, Open WebUI persistence, or production parity. Core-08 missing-source behavior is intentionally reported separately; no owner preference or human naturalness review.",
+      "metrics_record": "benchmarks/hades-core-owner-conversation-current-fa608b4-ollama0401-20261008.json",
+      "report": "docs/hades-core-owner-conversation-current-ollama0401-2026-10-08.md"
     }
   }
 }
