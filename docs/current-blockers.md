@@ -5,6 +5,34 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
+## HADES core usability campaign checkpoint — 2026-10-08 UTC
+
+The review branch is `codex/hades-core-usability-reset-review-20261007` at
+`0973acfa9bfeeed606e28595b4104253d33c703c`, pushed to its matching origin
+branch. It is 118 commits ahead of `main` (`627b7c5fc4fa875bdab78abc25133897b50a882d`)
+and zero commits behind. Hosted CI for this exact review-branch SHA passed in
+[run 37786716625](https://github.com/p0rkm4th/hades/actions/runs/37786716625).
+GitHub rejected draft PR creation with HTTP 403, so the branch is reviewable
+directly and no PR is open. This is a broad campaign checkpoint, not a
+usability release qualification.
+
+The current stable synthetic control is Hermes 0.21.5, Ollama 0.40.1,
+Qwen3.6:35b Q4_K_M, and disposable Hindsight 0.10.2. The latest measured
+ordinary-chat subset showed comparable HADES and PLAIN latency with a thin
+HADES tool/context path; it did not measure answer quality or owner preference.
+The 55-case corpus has 33 cases without direct replay and no owner preference
+labels. Current coding escalation evidence shows HADES preserving the
+diagnosis-before-mutation boundary, with material latency and completion
+tradeoffs that remain unresolved. See the linked reports in
+[`hades-core-owner-corpus-v2.json`](../benchmarks/hades-core-owner-corpus-v2.json)
+and the [current workspace escalation report](hades-core-workspace-escalation-ollama0401-2026-10-08.md).
+
+Next engineering work: continue the unreplayed corpus with current-source
+workspace/action cases, record completion and verification behavior, and reduce
+avoidable HADES action-path latency without weakening the diagnosis and
+authorization boundary. Direct Scotty dogfood and preference labels remain a
+release gate; synthetic results must not stand in for them.
+
 ## Open WebUI security priority — 2026-10-07 UTC
 
 A protected read-only check found that the active Open WebUI is within the
@@ -70,10 +98,14 @@ quality or owner preference rating. Treat ordinary-chat timing as descriptive.
 The exact control settings, loaded context, results, and sanitized aggregate
 artifacts are in
 [`hades-core-memory-full-comparison-2026-10-08.md`](hades-core-memory-full-comparison-2026-10-08.md).
-Next experiment: test raw-fact recall during active consolidation against
-corrected facts and unrelated same-subject facts. Keep the current subject
-binding and fail-closed behavior until stale-value rejection, paraphrase, and
-concurrent-subject isolation pass. No production settings changed.
+The active-consolidation raw-result probe and correction checks are now
+recorded in the [full comparison report](hades-core-memory-full-comparison-2026-10-08.md).
+Adding all Hindsight result types did not improve the synthetic recall cases.
+The fast chunk correction surfaced the stale value ahead of the new value and
+did not provide a trustworthy relation for removing it. Therefore no automatic
+memory-policy change is justified; retain the authenticated subject binding
+and fail-closed behavior. Return the next comparison work to the unreplayed
+owner corpus and non-memory action path. No production memory settings changed.
 
 ## Current mission checkpoint — 2026-10-06 UTC
 
