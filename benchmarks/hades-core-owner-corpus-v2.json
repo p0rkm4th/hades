@@ -745,7 +745,7 @@
       "core-23"
     ],
     "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; v6 has three clean available-source repeats followed by three 503 observations; v5 records persistent-gateway recovery after outage; no mutations. Added core-24 coding diagnosis→“Fix it” escalation with two counterbalanced repeats per stack at stable Hermes 0.21.3/Ollama 0.40.0 and 0.35.1, same model/context and isolated sandbox. All fixture tests passed; HADES preserved the action boundary but was slower, while PLAIN mutated during diagnosis in one repeat. Context-mismatched runs are diagnostic only. Owner preference unassigned. Added core-22 project request-timeout search on current Hermes 0.21.5/Ollama 0.40.1 using synthetic local fixtures; two order-balanced repeats per stack, both returned path/value; no owner preference. Added core-21 README run-instructions comprehension on current Hermes 0.21.5/Ollama 0.40.1 using a synthetic project README and Makefile; two order-balanced repeats per stack, both returned the documented command and test runner; no owner preference. Added core-23 synthetic explain-file task on current Hermes 0.21.5/Ollama 0.40.1 with two order-balanced reads of the named function; semantic quality and owner preference remain unreviewed.",
-    "unreplayed_case_count": 33,
+    "unreplayed_case_count": 32,
     "owner_preference_labels": 0,
     "owner_preference_status": "unassigned",
     "chat_only_case_replay_details": {
@@ -1037,6 +1037,12 @@
         ],
         "reason": "The original pronoun-only task lacked prior code context, so it was revised to name discount.py and discounted_total before replay. Both stacks read the named source in both order-balanced repeats. Current HADES named-path guidance reduced median tool results from 3 to 2.5 versus the preceding two-repeat candidate, while median model calls became equal to PLAIN at 3.5; HADES still searched before reading in each repeat. Median times were 28.04s HADES and 28.45s PLAIN, but the sample is too small and variable for a latency claim. No answer text or semantic-quality score is retained.",
         "next_replay": "Review a natural file-explanation task with Scotty, including whether the selected file is implicit in the conversation or must be named; collect human correctness, clarity, and preference rather than adding phrase-match grading."
+      },
+      "core-25": {
+        "status": "two synthetic order-balanced pairs; all file-scope/test checks passed; owner preference unassigned",
+        "result": "HADES median 28.45s versus PLAIN 32.19s, 4 versus 5.5 provider generations, and 2 versus 3.5 tool results. Both stacks left the workspace unchanged during inspection; HADES read the named file directly in both repeats while PLAIN searched twice before reading once.",
+        "metrics_record": "benchmarks/hades-core-owner-small-edit-current-stable-20261008.json",
+        "report": "docs/hades-core-owner-small-edit-current-stable-2026-10-08.md"
       }
     },
     "latest_workspace_escalation_ollama0401": {
@@ -1112,6 +1118,42 @@
       "limitations": "One synthetic fixture and one manually reviewed task family; no owner preference, real household data, mutations, or production parity. Content-free public metrics; qualitative labels were checked against the synthetic fixture, not a general response-quality rubric.",
       "metrics_record": "benchmarks/hades-core-grocy-read-current-ollama0401-20261008.json",
       "report": "docs/hades-core-grocy-read-current-ollama0401-2026-10-08.md"
+    },
+    "latest_small_edit_current_stable": {
+      "case_id": "core-25",
+      "source_revision": "c6c40a7670f5943c0ac934e92025a12e9c888215",
+      "classification": "two order-balanced synthetic current-source PLAIN/HADES small-edit pairs; owner preference and human quality review unassigned",
+      "runtime": "Hermes 0.21.5, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, same immutable sandbox image and workspace hint",
+      "order": "PLAIN then HADES; HADES then PLAIN",
+      "result": "Both stacks identified the existing error text in 2/2 inspections and did not change the workspace before the explicit edit. All four final independent test runs passed, git diff checks passed, and only the expected source file changed. HADES median task time was 28.45s versus PLAIN 32.19s, with 4 versus 5.5 median provider generations and 2 versus 3.5 median tool results. HADES read the named file directly in both repeats; PLAIN searched twice before reading in one repeat.",
+      "task_seconds_by_stack": {
+        "plain": [
+          35.7464,
+          28.6435
+        ],
+        "hades": [
+          29.2295,
+          27.6723
+        ]
+      },
+      "median_task_seconds": {
+        "plain": 32.19495,
+        "hades": 28.4509
+      },
+      "median_provider_generations_per_task": {
+        "plain": 5.5,
+        "hades": 4
+      },
+      "median_tool_results_per_task": {
+        "plain": 3.5,
+        "hades": 2
+      },
+      "independent_test_passes": 4,
+      "expected_source_only_changes": 4,
+      "owner_preference": "UNASSIGNED",
+      "limitations": "Two synthetic pairs for one small edit; no human quality review, Open WebUI persistence, production gateway authentication, Git commit behavior, or direct Scotty preference. Independent tests ran after the interaction rather than as part of the requested edit.",
+      "metrics_record": "benchmarks/hades-core-owner-small-edit-current-stable-20261008.json",
+      "report": "docs/hades-core-owner-small-edit-current-stable-2026-10-08.md"
     }
   },
   "latest_workspace_read_pair_comparison": {
@@ -1151,5 +1193,14 @@
     "result": "Both stacks read the named discount.py source in 2/2 repeats. HADES median task time was 28.04s versus PLAIN 28.45s; median model calls 3.5 each and tool results 2.5 each. HADES exposed five schemas / 10,088 bytes versus PLAIN eight / 12,590. In the previous two-repeat candidate, HADES performed two search_files calls before reading in 2/2 runs; the stronger named-path instruction reduced this to one search before read in one run and two searches in the other. This is a directional tool-overhead result, not a stable latency improvement.",
     "limitations": "Two repeats of one synthetic source/function; semantic quality, naturalness and owner preference were not reviewed. The original pronoun-only seed lacked conversation context and was made explicit for the workspace replay. No Open WebUI, deployed gateway, edits, tests, Git, memory or domain integrations.",
     "metrics_record": "benchmarks/hades-workspace-explain-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json"
+  },
+  "latest_workspace_small_edit_comparison": {
+    "source_revision": "c6c40a7670f5943c0ac934e92025a12e9c888215",
+    "classification": "two order-balanced synthetic PLAIN/HADES replay pairs of corpus core-25; owner preference unassigned",
+    "case_id": "core-25",
+    "result": "HADES task median 28.45s versus PLAIN 32.19s. HADES used fewer median provider generations (4 versus 5.5) and tool results (2 versus 3.5). Both stacks preserved the inspect-then-edit boundary; all four independent tests passed and only the expected source file changed.",
+    "limitations": "One small-edit task, two pairs, direct AIAgent path, no human answer-quality or owner-preference scoring, no Open WebUI or deployed gateway qualification.",
+    "metrics_record": "benchmarks/hades-core-owner-small-edit-current-stable-20261008.json",
+    "report": "docs/hades-core-owner-small-edit-current-stable-2026-10-08.md"
   }
 }
