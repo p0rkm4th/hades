@@ -79,15 +79,18 @@ diagnostics are in
 | `low`, observations | 27.4 s | missed | 42.5 s | 10.3 s | found in 1.8 s |
 | `mid`, all types | 28.6 s | missed | 43.5 s | 10.3 s | found in 1.8 s |
 
-These one-sample probes do not support promoting `low` or all recall types.
-Including raw types did not change the immediate outcome. The rank-one
-semantic score was around 0.629 in all three runs, while the reranker score
-varied substantially and remained low. The all-types run also had a world
-candidate with semantic score 0.690 and reranker score 0.000218. Since result
-text was not retained, this does not show whether either candidate was the
-expected fact. Hindsight v0.10.2 uses cross-encoder relevance as the primary
-score and multiplies it by recency, temporal, and proof-count boosts; see the
-pinned [score calculation](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L187-L205)
+In each HADES run, one batch retain was pending and one retain was processing
+before recall. The expected fact was not visible in the bank after the
+immediate turn, then became visible after the idle barrier. That points to
+write readiness as the first issue to diagnose. These one-sample probes do
+not support promoting `low` or all recall types.
+
+Score rows in the artifact come from the settled lookups after idle, not the
+immediate lookup. Semantic scores were high while cross-encoder scores were
+much lower, but result text was not retained, so candidate identity is
+unknown. Hindsight v0.10.2 uses cross-encoder relevance as its primary score
+and multiplies it by recency, temporal, and proof-count boosts; see the pinned
+[score calculation](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L187-L205)
 and [combined-score assignment](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L288-L303).
 
 ## Next evidence needed
@@ -95,21 +98,15 @@ and [combined-score assignment](https://github.com/vectorize-io/hindsight/blob/v
 - The one-pass safe score diagnostic is recorded in
   [`hades-core-recall-score-diagnostic-20261008.json`](../benchmarks/hades-core-recall-score-diagnostic-20261008.json).
   It reproduced a 28.9-second immediate HADES miss versus a 1.8-second PLAIN
-  hit; after a 43.6-second idle drain, HADES found the marker in 10.0 seconds.
-  The top observation's semantic score was 0.629, its reranker score was
-  0.019, and its final score was 0.021. Hindsight v0.10.2 uses the
-  cross-encoder score as its primary relevance signal, then applies
-  multiplicative recency, temporal, and proof-count boosts. Here the final
-  score is about 1.1 times the reranker score; the large score change occurs
-  between semantic retrieval and reranking. The captured artifact excludes
-  result text, so it cannot prove whether reranking dropped the expected fact.
-  See the pinned [Hindsight v0.10.2 score calculation](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L187-L205)
-  and [combined-score assignment](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L288-L303).
-  Ordinary-turn timings were also single samples and do not establish a
-  latency win.
-- Repeat the safe diagnostic with counterbalanced order and controlled
-  retain-operation state. Preserve only aggregate ranks, types, scores, and
-  timings. The one-pass `low` probe is too weak to change HADES config.
+  hit. The score rows describe HADES recall after the 43.6-second idle drain,
+  when HADES found the marker in 10.0 seconds; before idle the expected fact
+  was not visible and retain operations were active. Do not use settled score
+  values to explain the immediate miss. Ordinary-turn timings were also
+  single samples and do not establish a latency win.
+- Repeat with counterbalanced order and capture only safe per-stage timings for
+  operation visibility, provider prefetch, and inference. Retain-only state
+  must remain fail-closed. The one-pass `low` probe is too weak to change
+  HADES config.
 - Compare concise extraction with observations disabled separately from raw
   `chunks`; do not infer that switching off observations is equivalent to
   disabling fact extraction.
