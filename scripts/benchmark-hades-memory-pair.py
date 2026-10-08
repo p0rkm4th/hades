@@ -371,7 +371,8 @@ def wait_hindsight(url: str, container: str, timeout: int = 120) -> None:
     raise RuntimeError(f"Hindsight startup timed out:\n{logs}")
 
 
-def retained_fact_visible(url: str, bank_id: str, needle: str) -> bool:
+def retained_fact_visible(url: str, bank_id: str, needle: str,
+                          required_tag: str | None = None) -> bool:
     query = urllib.parse.urlencode({"state": "valid", "limit": 100})
     endpoint = (
         f"{url.rstrip('/')}/v1/default/banks/"
@@ -383,6 +384,10 @@ def retained_fact_visible(url: str, bank_id: str, needle: str) -> bool:
         rows = payload.get("items", []) if isinstance(payload, dict) else []
         return any(
             needle.casefold() in str(row.get("text") or "").casefold()
+            and (
+                required_tag is None
+                or required_tag in (row.get("tags") or [])
+            )
             for row in rows if isinstance(row, dict)
         )
     except Exception:
@@ -1433,6 +1438,10 @@ def main() -> int:
                         ),
                         "explicit_bank": retained_fact_visible(
                             hindsight_url, memory_bank + "-explicit", "$3,000"
+                        ),
+                        "explicit_bank_tagged": retained_fact_visible(
+                            hindsight_url, memory_bank + "-explicit", "$3,000",
+                            required_tag="hades-explicit-memory",
                         ),
                     }
                     sample_result["stacks"]["hades"][
