@@ -22,6 +22,10 @@ the response boundary. PLAIN must remain resident at the requested context.
 
 Artifacts: [`HADES-first`](../benchmarks/hades-core-memory-effective-context-hades-first-20261008.json) and [`PLAIN-first`](../benchmarks/hades-core-memory-effective-context-plain-first-20261008.json)
 
+The full synthetic memory slice was subsequently replayed under the same
+context control in both orders; see
+[`hades-core-memory-full-comparison-2026-10-08.md`](hades-core-memory-full-comparison-2026-10-08.md).
+
 The run used Hermes 0.21.5, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest
 `a7eb95c5…`, and Hindsight 0.10.2 with its immutable image pin. The model was
 launched on the loopback-only staging service with
@@ -58,7 +62,8 @@ ordinary prompt to 3,425–3,433 tokens, while HADES exposed no tools and used
 configuration and should be evaluated alongside a separate PLAIN chat-only
 profile.
 
-Repeat the memory pair in reverse order and replay core-09 explicit memory
-under the effective-context control. Keep HADES automatic memory readiness as
-an open product defect; do not infer that faster settled recall makes the
-immediate miss acceptable.
+Keep HADES automatic memory readiness as an open product defect; do not infer
+that faster settled recall makes the immediate miss acceptable. The next
+repair should give natural personal-history queries a fast, truthful response
+while a subject-scoped retain is active, then repeat the two-order comparison
+and broader owner corpus.

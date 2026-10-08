@@ -6,8 +6,8 @@
 > 65k-context comparison. The effective-context control is now implemented and
 > its separate automatic-memory replay is recorded in
 > [`hades-core-memory-context-correction-2026-10-08.md`](hades-core-memory-context-correction-2026-10-08.md).
-> Core-09 must be replayed again under that control before its timings are used
-> as a matched 65k result.
+> Core-09 was replayed under the effective-context control in both stack orders;
+> see the [`full synthetic memory comparison`](hades-core-memory-full-comparison-2026-10-08.md).
 
 ## Scope
 
