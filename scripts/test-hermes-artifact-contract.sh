@@ -31,6 +31,8 @@ grep -q 'installation=python-venv-uv-locked-editable' "$repo_dir/scripts/install
 ! grep -qE 'cp .*venv|copy.*venv' "$repo_dir/scripts/install-hermes-artifact.sh"
 mkdir -p "$fixture/source"
 printf '[project]\nname = "hermes-agent"\n[project.optional-dependencies]\nhindsight = []\n' > "$fixture/source/pyproject.toml"
+mkdir -p "$fixture/source/scripts"
+printf '# test stub\n' > "$fixture/source/scripts/write_install_stamp.py"
 tar -czf "$fixture/source.tar.gz" -C "$fixture" source
 sha=$(sha256sum "$fixture/source.tar.gz" | awk '{print $1}')
 cat > "$fixture/python315" <<'PY'
@@ -74,11 +76,18 @@ manifest.write_text("\n".join(
     for line in lines
 ) + "\n")
 PY
+HERMES_TEST_STAMP_ARGS="$fixture/production-stamp.args" \
+HADES_HERMES_VERSION=9.9.9 HADES_HERMES_SOURCE_VERSION=9.9.9 \
+HADES_HERMES_SOURCE_COMMIT=deadbeefdeadbeefdeadbeefdeadbeefdeadbeef \
 HADES_HERMES_PYTHON="$fixture/python313" HADES_UV_EXECUTABLE="$fixture/uv" \
   bash "$production_repo/scripts/install-hermes-artifact.sh" --prefix "$fixture/uv-prefix" \
   --artifact "$fixture/source.tar.gz" >"$fixture/uv.out" 2>&1
 grep -q 'PASS Hermes 0.21.2 installed' "$fixture/uv.out"
 test -f "$fixture/uv-prefix/provenance"
+grep -q '^artifact_version=0.21.2$' "$fixture/uv-prefix/provenance"
+grep -q '^source_commit=2222222222222222222222222222222222222222$' "$fixture/uv-prefix/provenance"
+grep -q '^0.21.2$' "$fixture/production-stamp.args"
+grep -q '^2222222222222222222222222222222222222222$' "$fixture/production-stamp.args"
 mkdir -p "$fixture/candidate-source"
 mkdir -p "$fixture/candidate-source/scripts"
 printf '[project]\nname = "hermes-agent"\n[project.optional-dependencies]\nall = []\n' > "$fixture/candidate-source/pyproject.toml"

@@ -24,14 +24,8 @@ cleanup() {
 }
 trap cleanup EXIT
 if [[ -f "$repo_dir/config/versions.env" ]]; then
-  requested_hermes_version=${HADES_HERMES_VERSION:-}
-  requested_source_version=${HADES_HERMES_SOURCE_VERSION:-}
-  requested_source_commit=${HADES_HERMES_SOURCE_COMMIT:-}
   # shellcheck disable=SC1091
   source "$repo_dir/config/versions.env"
-  [[ -z "$requested_hermes_version" ]] || HADES_HERMES_VERSION=$requested_hermes_version
-  [[ -z "$requested_source_version" ]] || HADES_HERMES_SOURCE_VERSION=$requested_source_version
-  [[ -z "$requested_source_commit" ]] || HADES_HERMES_SOURCE_COMMIT=$requested_source_commit
 fi
 uv_version=${HADES_HERMES_UV_VERSION:-}
 if [[ -z "$uv_bin" ]]; then
