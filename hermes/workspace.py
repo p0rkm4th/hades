@@ -71,7 +71,7 @@ _PRIOR_WORK = re.compile(
     re.IGNORECASE,
 )
 _READ_ONLY_WORKSPACE_ACTION = re.compile(
-    r"\b(?:read|open|show|inspect|review|search|find|explain|describe|summari[sz]e|why)\b",
+    r"\b(?:read|open|show|inspect|review|search|find|explain|describe|summari[sz]e|why|what|which|tell\s+me)\b",
     re.IGNORECASE,
 )
 _WORKSPACE_OBJECT = re.compile(
@@ -85,11 +85,20 @@ _MUTATING_WORKSPACE_ACTION = re.compile(
     r"fix|repair|commit)\b",
     re.IGNORECASE,
 )
+_GIT_INSPECTION_OBJECT = re.compile(
+    r"\b(?:diff|branch|working\s+tree|local\s+changes|git\s+(?:status|diff|branch))\b",
+    re.IGNORECASE,
+)
+_GIT_INSPECTION_ACTION = re.compile(
+    r"\b(?:show|inspect|review|check|what|which|tell\s+me|list|compare)\b",
+    re.IGNORECASE,
+)
 
 WORKSPACE_TOOL_NAMES = frozenset({
     "read_file", "search_files", "write_file", "patch", "terminal",
 })
 WORKSPACE_READ_ONLY_TOOL_NAMES = frozenset({"read_file", "search_files"})
+WORKSPACE_READ_ONLY_GIT_TOOL_NAMES = WORKSPACE_READ_ONLY_TOOL_NAMES | frozenset({"terminal"})
 _WORKSPACE_CODE_SUFFIXES = frozenset({
     ".py", ".pyi", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".go",
     ".rs", ".java", ".c", ".cc", ".cpp", ".h", ".hpp", ".sh", ".bash",
@@ -107,10 +116,23 @@ def is_workspace_follow_up_text(user_message: str) -> bool:
     return bool(_FOLLOW_UP.fullmatch(str(user_message or "")))
 
 
+def is_workspace_git_inspection_request(user_message: str) -> bool:
+    """Recognize explicit read-only Git status, branch, and diff questions."""
+    text = str(user_message or "")
+    if _MUTATING_WORKSPACE_ACTION.search(text):
+        return False
+    return bool(
+        _GIT_INSPECTION_OBJECT.search(text)
+        and _GIT_INSPECTION_ACTION.search(text)
+    )
+
+
 def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None = None) -> bool:
     """Recognize explicit file/code actions and terse continuations of them."""
     text = str(user_message or "")
     if _DIRECT_ACTION.search(text) or _PATH.search(text.strip()):
+        return True
+    if workspace_enabled() and is_workspace_git_inspection_request(text):
         return True
     # Code questions often need the model to ask for a missing snippet or
     # traceback. When workspace capability is disabled, keep those turns on
@@ -268,8 +290,12 @@ def sandbox_runtime_available() -> bool:
         return False
 
 
-def get_workspace_tools(*, read_only: bool = False) -> list[dict[str, Any]]:
+def get_workspace_tools(
+    *, read_only: bool = False, git_inspection: bool = False,
+) -> list[dict[str, Any]]:
     """Load native workspace tools; code questions get file inspection only."""
+    if git_inspection and not read_only:
+        raise ValueError("Git inspection tools require a read-only workspace request")
     from model_tools import get_tool_definitions
 
     definitions = get_tool_definitions(
@@ -279,6 +305,7 @@ def get_workspace_tools(*, read_only: bool = False) -> list[dict[str, Any]]:
     selected = [
         copy.deepcopy(item) for item in definitions
         if item.get("function", {}).get("name") in (
+            WORKSPACE_READ_ONLY_GIT_TOOL_NAMES if git_inspection else
             WORKSPACE_READ_ONLY_TOOL_NAMES if read_only else WORKSPACE_TOOL_NAMES
         )
     ]
@@ -317,16 +344,33 @@ def get_workspace_tools(*, read_only: bool = False) -> list[dict[str, Any]]:
         required = parameters.setdefault("required", [])
         if "target" not in required:
             required.append("target")
+    if git_inspection:
+        terminal = next(
+            item for item in selected
+            if item.get("function", {}).get("name") == "terminal"
+        )
+        function = terminal["function"]
+        function["description"] = (
+            str(function.get("description") or "").rstrip()
+            + " This read-only Git review turn has a read-only /workspace mount and no network. "
+            "Use only git status, git branch --show-current, or git diff inspection commands; "
+            "do not edit files or run other commands."
+        )
     names = {item.get("function", {}).get("name") for item in selected}
-    expected = WORKSPACE_READ_ONLY_TOOL_NAMES if read_only else WORKSPACE_TOOL_NAMES
+    expected = (
+        WORKSPACE_READ_ONLY_GIT_TOOL_NAMES if git_inspection else
+        WORKSPACE_READ_ONLY_TOOL_NAMES if read_only else WORKSPACE_TOOL_NAMES
+    )
     if names != expected:
         raise RuntimeError("Hermes native workspace tool catalog is incomplete")
     return selected
 
 
-def terminal_policy(workspace: Path, image: str) -> dict[str, str]:
+def terminal_policy(
+    workspace: Path, image: str, *, read_only_git: bool = False,
+) -> dict[str, str]:
     """Complete minimum terminal scope for a single isolated workspace turn."""
-    return {
+    policy = {
         "TERMINAL_ENV": "docker",
         "TERMINAL_CWD": str(workspace),
         "TERMINAL_DOCKER_IMAGE": image,
@@ -341,6 +385,16 @@ def terminal_policy(workspace: Path, image: str) -> dict[str, str]:
         "TERMINAL_CONTAINER_CPU": "2",
         "TERMINAL_CONTAINER_MEMORY": "8192",
     }
+    if read_only_git:
+        root = workspace.resolve(strict=True)
+        if not root.is_dir():
+            raise ValueError("read-only Git workspace is not a directory")
+        policy.update({
+            "TERMINAL_CWD": "/workspace",
+            "TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE": "false",
+            "TERMINAL_DOCKER_VOLUMES": json.dumps([f"{root}:/workspace:ro"]),
+        })
+    return policy
 
 
 def register_workspace_session(task_id: str, workspace: Path, image: str) -> bool:
