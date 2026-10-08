@@ -20,6 +20,22 @@ The existing HADES research completion hook already fills source citations and r
 
 After the change, the same compact-guidance authenticated UI conflict case passed. The postprocessor supplied the returned publisher dates; the model remained responsible for assessing the conflicting claims. The observed first-visible/completion time was 30.14 seconds. This is one synthetic task and is not a latency comparison or owner-preference result.
 
+## Warm latency attribution
+
+The opt-in phase diagnostics were used with the same loaded Qwen3.6 35B digest and 65,536 context for a small HADES-only profile comparison. Each case used one synthetic owner, one public-research call, the same Open WebUI candidate, and a 1,024-token output cap. Ollama was prewarmed and `/api/ps` confirmed the loaded digest/context before the measured sequence; it remained resident across these short runs. The only changed setting was Hermes `agent.reasoning_effort`.
+
+| Synthetic case | Reasoning effort | UI first-visible / complete | HADES turn | Model generations | Research tool | Post-tool processing | Model output tokens |
+|---|---|---:|---:|---:|---:|---:|---:|
+| One source | default | 21.90 s / 21.90 s | 21.11 s | 2 | 0.12 s | 0.8 ms | 583 |
+| One source | `none` | 12.96 s / 12.96 s | 12.23 s | 2 | 0.13 s | 1.2 ms | 151 |
+| Conflicting sources | default | 20.12 s / 20.12 s | 19.49 s | 2 | 0.13 s | 1.6 ms | 472 |
+| Conflicting sources | `none` | 17.27 s / 17.28 s | 16.70 s | 2 | 0.12 s | 1.0 ms | 361 |
+| Hostile snippet | `none` | 15.01 s / 15.01 s | 14.32 s | 2 | 0.18 s | 1.2 ms | 219 |
+
+All three `none` runs passed their synthetic answer checks, including exact citations, date handling, and hostile-instruction refusal. In these samples model generations account for nearly all turn time; collector and post-tool processing do not explain the latency. The one-source case crossed below 15 seconds, while the conflicting-source case remained near 17 seconds.
+
+These are one sample per case/setting, executed sequentially without counterbalanced order or a PLAIN STACK arm. They show a useful model-setting candidate for further evaluation, not a causal latency estimate or a blanket default recommendation. More complex research and coding tasks may need reasoning; measure their answer quality before routing them to `none`.
+
 A preceding attempt encountered low `/tmp` capacity and a Playwright page crash. The accepted rerun used a private scratch `TMPDIR` on persistent storage; no temporary benchmark contents were retained.
 
 ## Harness support
@@ -28,4 +44,4 @@ The disposable authenticated UI harness can stage an explicitly supplied `HADES_
 
 ## Limits
 
-These are two narrow synthetic model-backed cases. They do not qualify broad research quality, real-source behavior, production parity, the full owner corpus, or Scotty's preference. The measured 30-second research turn is above the normal composed-task target and needs separate stage attribution; the samples do not isolate the guidance's effect on latency.
+These are narrow synthetic model-backed cases. They do not qualify broad research quality, real-source behavior, production parity, the full owner corpus, or Scotty's preference. Default-effort runs took about 20–22 seconds, and the phase profile attributes nearly all of that to model generation. The reasoning-effort comparison is exploratory and does not isolate the guidance's effect on latency.
