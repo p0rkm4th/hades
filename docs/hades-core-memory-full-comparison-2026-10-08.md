@@ -83,3 +83,36 @@ The remaining product issue is timely natural recall during and after
 background retention. Never guess or imply that a missing fact was never
 mentioned. Improve readiness/recall without weakening the authenticated,
 subject-scoped memory boundary, then repeat this slice and the broader corpus.
+
+## Hindsight retention-mode probe
+
+To test whether extraction work caused the long pending window, the same
+effective-context harness was run in both stack orders with Hindsight's
+`retain_mode=chunks`, first with observations enabled and then disabled. The
+control was Hermes 0.21.5, Ollama 0.40.1, the same Qwen3.6:35b digest, and the
+same immutable Hindsight v0.10.2 image. Each artifact is one fresh-volume pair;
+these are candidate settings, not production configuration.
+
+| Hindsight settings | Drain after HADES | HADES immediate recall | HADES after idle | HADES synthetic supplement markers |
+| --- | --- | --- | --- | --- |
+| `concise`, observations enabled (prior pending-response runs) | 49.9–54.8 s | Pending response, 46–53 ms; marker absent | 10.19–10.27 s | Not run |
+| `chunks`, observations enabled | 16.2–24.3 s | Pending response, 47–48 ms; marker absent | 9.90–10.32 s | Not run |
+| `chunks`, observations disabled | 2.06 s in both orders | Pending response, 56–80 ms; marker absent | 2.52–2.58 s | HADES found expected markers in 4/10 checks across five cases and both orders; PLAIN found 5/10 |
+
+The chunks-only run still made several Hindsight LLM calls with observations
+enabled, so chunks by itself did not remove model contention. Disabling
+observations cut the pending window and settled recall latency, but the broader
+synthetic memory checks were mixed: HADES missed both ordering repeats for
+dietary restriction, place preference, and conversation continuity, while it
+passed both corrected-response-preference checks. These markers are diagnostics,
+not semantic ratings; however, this is enough to reject disabling observation
+consolidation as a global replacement for the current memory profile. PLAIN's
+marker results also varied by case and were not uniformly correct.
+
+Keep the production retain/observation settings unchanged. The next candidate
+should preserve useful semantic observations while avoiding an LLM-sized
+background task on the interactive runtime, or define a more selective policy
+for turns whose durable facts need immediate retention. Any such policy must
+pass correction, stale-value, implicit recall, and fresh-session checks before
+changing the pending-response behavior. No owner preference was assigned, and
+neither candidate configuration is promoted.
