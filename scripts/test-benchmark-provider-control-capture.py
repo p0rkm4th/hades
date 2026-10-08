@@ -119,12 +119,18 @@ safe_keys = PAIR_MODULE.public_artifact_record({
     "model_resident_at_response_boundary": "resident",
     "assistant_response_storage": "not stored",
     "memory_supplement_summary": {},
+    "memory_supplement": [],
+    "memory_supplement_visibility_after_drain": {},
+    "core09_fact_visibility_after_drain": {},
     "nodes_by_fact_type": {},
 })
 assert safe_keys == {
     "resident_at_generation_boundary": "resident",
     "stored_text_policy": "not stored",
     "supplement_summary": {},
+    "synthetic_cases": [],
+    "supplement_visibility_after_drain": {},
+    "core09_bank_visibility_after_drain": {},
     "nodes_by_category": {},
 }
 assert PAIR_MODULE.summarize_calls([

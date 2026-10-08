@@ -57,6 +57,9 @@ PUBLIC_KEY_RENAMES = {
     "hades_memory_path": "hades_provider_path",
     "memory_score_diagnostics": "retrieval_score_diagnostics",
     "memory_supplement_summary": "supplement_summary",
+    "memory_supplement": "synthetic_cases",
+    "memory_supplement_visibility_after_drain": "supplement_visibility_after_drain",
+    "core09_fact_visibility_after_drain": "core09_bank_visibility_after_drain",
     "model_resident_at_response_boundary": "resident_at_generation_boundary",
     "nodes_by_fact_type": "nodes_by_category",
 }
