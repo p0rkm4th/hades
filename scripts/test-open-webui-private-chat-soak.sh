@@ -9,7 +9,7 @@ volume="hades-private-chat-soak-$$"
 webui_port=${HADES_PRIVATE_CHAT_WEBUI_PORT:-18795}
 model_port=${HADES_PRIVATE_CHAT_MODEL_PORT:-18796}
 image=${HADES_PRIVATE_CHAT_WEBUI_IMAGE:-hades-open-webui:0.11.1-hades-reconstructed}
-tmp=$(mktemp -d /tmp/hades-private-chat-soak.XXXXXX)
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/hades-private-chat-soak.XXXXXX")
 cleanup() {
   docker rm -f "$name" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true

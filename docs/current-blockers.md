@@ -5,6 +5,25 @@ private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records. These statements
 summarize engineering evidence; they are not a live infrastructure probe.
 
+## Open WebUI security priority — 2026-10-07 UTC
+
+A protected read-only check found that the active Open WebUI is within the
+official DOCX-preview advisory's affected version range. Its exact live
+version, source revision, host identity, and image identity are retained in the
+protected operator checkpoint and omitted from this public handoff. The
+tracked production pin is 0.11.1, within the affected range. The advisory
+describes same-origin script execution with possible administrator session
+token theft; its uploader and victim-preview preconditions do not prove that
+exploitation occurred. Treat this as an immediate security-priority issue and
+move to patched 0.11.4 promptly.
+
+The exact staged HADES 0.11.4 candidate passed the private-chat, Channels,
+streaming, upload-isolation, LDAP bootstrap, populated-database migration, and
+role-revocation checks on 2026-10-07. These synthetic regressions do not
+constitute direct owner dogfood or production deployment. No production change
+was made. The exact live image identity and operator target remain in the
+protected checkpoint.
+
 ## Current mission checkpoint — 2026-10-06 UTC
 
 Code-bearing `main` is `381543b0af21c1e1abcbf90642eb8b586f553d62`, fast-forwarded from reviewed base `0cba8008a5fd0ed1a6ea1b2633379490f6cec7d8`. NYX-007 accepted the scoped Proxmox archived-task reader extraction and candidate Public CI [37398017938](https://github.com/p0rkm4th/hades/actions/runs/37398017938) passed; post-promotion main CI [37398145659](https://github.com/p0rkm4th/hades/actions/runs/37398145659) passed. The reader is shared by backup status and recent activity while credentials, transport, and `VM.Audit` scope computation remain in the adapter. It does not fetch tasks for unknown/empty scope, filters by effective guest IDs, and projects only approved task fields. Exact clean 17-module package composition/import passes. No production deployment is claimed.

@@ -22,7 +22,7 @@ suffix=$$
 network="hades-owui-ldap-$suffix"
 lldap="hades-owui-ldap-directory-$suffix"
 webui="hades-owui-ldap-web-$suffix"
-work=$(mktemp -d /tmp/hades-owui-ldap.XXXXXX)
+work=$(mktemp -d "${TMPDIR:-/tmp}/hades-owui-ldap.XXXXXX")
 cleanup() {
   docker stop "$webui" "$lldap" >/dev/null 2>&1 || true
   for container in "$webui" "$lldap"; do
