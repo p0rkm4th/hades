@@ -19,14 +19,17 @@ The current stable synthetic control is Hermes 0.21.5, Ollama 0.40.1,
 Qwen3.6:35b Q4_K_M, and disposable Hindsight 0.10.2. The latest measured
 ordinary-chat subset showed comparable HADES and PLAIN latency with a thin
 HADES tool/context path; it did not measure answer quality or owner preference.
-The 55-case corpus has 32 cases without direct replay and no owner preference
-labels. A current-source two-turn small-edit replay found HADES faster in both
-order-balanced pairs (median 28.45 seconds versus PLAIN 32.19 seconds), with
-fewer model generations and tool results; the synthetic tests and file-scope
-checks passed in all four arms. This is a small task sample and does not
-establish owner preference. Broader coding escalation still shows a material
-latency and completion tradeoff. See the linked reports in
+The 55-case corpus has 31 cases without direct replay and no owner preference
+labels. The current-source two-turn small-edit replay favored HADES on a
+single edit. Extending that conversation through the focused-test request
+reversed the result: HADES median task time was 44.48 seconds versus PLAIN
+40.74 seconds, with more provider generations and test retries. Both stacks
+eventually produced passing focused-test results in both order-balanced pairs;
+all independent tests and file-scope checks passed. This is synthetic evidence,
+not owner preference. The composed-task latency exceeds the 30-second target.
+See the linked reports in
 [`hades-core-owner-corpus-v2.json`](../benchmarks/hades-core-owner-corpus-v2.json)
+the [edit-to-test replay report](hades-core-owner-edit-to-test-current-stable-2026-10-08.md),
 and the [small-edit replay report](hades-core-owner-small-edit-current-stable-2026-10-08.md),
 as well as the [workspace escalation report](hades-core-workspace-escalation-ollama0401-2026-10-08.md).
 
