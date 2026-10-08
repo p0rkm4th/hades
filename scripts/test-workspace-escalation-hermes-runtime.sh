@@ -273,8 +273,9 @@ def native_inspection(agent,user_message,*args,**kwargs):
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
  assert "search its contents directly once with search_files target='content'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
- assert 'inspect the workspace mounted at /workspace using read_file and search_files' in prompt,prompt
- assert 'do not run or claim commands or tests' in prompt,prompt
+ assert 'this turn is read-only. the only available tools are read_file and search_files' in prompt,prompt
+ assert 'do not call terminal, patch, write_file, or any other tool' in prompt,prompt
+ assert 'do not execute commands or tests, modify files, or claim that files were changed' in prompt,prompt
  assert 'do not pass a directory to read_file' in prompt,prompt
  assert get_terminal_scope() is not None
  response='The test uses addition where rectangle area requires multiplication.'
