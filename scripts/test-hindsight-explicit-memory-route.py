@@ -290,11 +290,14 @@ active_provider = FakeVisibilityProvider({
 })
 active_provider._bank_id = "hades-user-alpha"
 active_agent = FakeMemoryAgent(active_provider)
-active_text = "Where was I planning to move?"
+active_text = "What did I ask you to remember about moving?"
 assert pending_response(active_agent, active_text) == (
     "I'm still saving a recent detail, so I can't confirm it yet. "
     "I can check again shortly."
 )
+assert pending_response(
+    active_agent, "Where was I planning to move?"
+) is None, "natural-history recalls should reach the provider's bounded prefetch wait"
 assert pending_response(active_agent, "How do I fix this Python test?") is None
 wrong_bank_provider = FakeVisibilityProvider({
     "retain": [SimpleNamespace(status="processing")],
@@ -631,7 +634,7 @@ try:
 
     # A verified explicit-bank fact can answer while an unrelated canonical
     # retain is pending. The conversation handler checks this route first.
-    pending_fact_query = "What was the savings target I mentioned?"
+    pending_fact_query = "What did I ask you to remember about my savings target?"
     canonical_pending = FakeVisibilityProvider({
         "retain": [SimpleNamespace(status="processing")],
     })
@@ -642,6 +645,9 @@ try:
         "I'm still saving a recent detail, so I can't confirm it yet. "
         "I can check again shortly."
     )
+    assert pending_response(
+        FakeMemoryAgent(canonical_pending), "What was the savings target I mentioned?"
+    ) is None
     state["items"] = [{
         "tags": ["hades-explicit-memory"],
         "text": "User explicitly asked HADES to remember: My savings target is $3,000.",

@@ -8736,7 +8736,13 @@ try:
         return state, active_types
 
     def _hades_pending_memory_response(agent, user_text):
-        """Answer memory questions plainly while this subject's writes settle."""
+        """Fail closed for explicit memory commands while this subject's writes settle.
+
+        Natural personal-history questions use the provider's bounded prefetch
+        wait, which can return a newly retained fact as soon as it is ready.
+        This early route is only needed when explicit-memory wording disables
+        that automatic prefetch path.
+        """
         subject = str(getattr(agent, "_hades_subject", "") or "").strip()
         scope = str(getattr(agent, "_hades_session_scope", "") or "")
         if scope not in {"owner", "household"} or not subject:
@@ -8744,8 +8750,7 @@ try:
         text = str(user_text or "").strip()
         if not (
             _hades_explicit_memory_recall_requested(text)
-            or _hades_natural_personal_recall_requested(text)
-            or _hades_automatic_memory_recall_relevant(text)
+            or _HADES_EXPLICIT_MEMORY_INTENT.search(text)
         ):
             return None
         expected_bank = "hades-owner" if scope == "owner" else f"hades-user-{subject}"
