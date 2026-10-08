@@ -13,6 +13,8 @@ new_version=$(docker image inspect "$new_image" --format '{{index .Config.Labels
 suffix=$$
 name="hades-open-webui-migration-$suffix"
 volume="hades-open-webui-migration-$suffix"
+rollback_name="hades-open-webui-rollback-$suffix"
+rollback_volume="hades-open-webui-rollback-$suffix"
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
 backend_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/hades-open-webui-migration.XXXXXX")
@@ -20,6 +22,9 @@ cleanup() {
   docker stop "$name" >/dev/null 2>&1 || true
   docker rm "$name" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true
+  docker stop "$rollback_name" >/dev/null 2>&1 || true
+  docker rm "$rollback_name" >/dev/null 2>&1 || true
+  docker volume rm "$rollback_volume" >/dev/null 2>&1 || true
   kill "${backend_pid:-}" >/dev/null 2>&1 || true
   find "$tmp" -depth -mindepth 1 -delete 2>/dev/null || true
   rmdir "$tmp" 2>/dev/null || true
@@ -58,6 +63,7 @@ start_image() {
     --add-host host.docker.internal:host-gateway \
     -v "$volume:/app/backend/data" \
     -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
+    -e WEBUI_SECRET_KEY=synthetic-openwebui-backup-test-key \
     -e ENABLE_CHANNELS=true -e USER_PERMISSIONS_FEATURES_CHANNELS=true \
     "$1" >/dev/null
   for _ in $(seq 1 90); do
@@ -109,6 +115,16 @@ curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/channels/${channel_id}/messag
   --data '{"content":"Synthetic migration channel marker","data":{},"meta":{}}' >/dev/null
 printf 'PASS Open WebUI %s populated fixture accounts, chat, and shared channel persisted\n' "$old_version"
 
+# Take a consistent online SQLite backup while the old instance is serving the
+# synthetic fixture. This exercises the same database boundary used by recovery.
+docker exec "$name" python3 -c 'import sqlite3; src=sqlite3.connect("/app/backend/data/webui.db"); dst=sqlite3.connect("/tmp/hades-openwebui-pre-upgrade.db"); src.backup(dst); dst.close(); src.close()'
+docker cp "$name:/tmp/hades-openwebui-pre-upgrade.db" "$tmp/pre-upgrade-webui.db" >/dev/null
+docker exec "$name" rm -f /tmp/hades-openwebui-pre-upgrade.db
+chmod 600 "$tmp/pre-upgrade-webui.db"
+snapshot_integrity=$(python3 -c 'import sqlite3,sys; db=sqlite3.connect("file:"+sys.argv[1]+"?mode=ro",uri=True); print(db.execute("PRAGMA integrity_check").fetchone()[0])' "$tmp/pre-upgrade-webui.db")
+[[ "$snapshot_integrity" == ok ]] || { echo "FAIL SQLite snapshot integrity: $snapshot_integrity" >&2; exit 1; }
+printf 'PASS SQLite online backup captured synthetic pre-upgrade state; integrity=%s\n' "$snapshot_integrity"
+
 docker stop "$name" >/dev/null
 docker rm "$name" >/dev/null
 start_image "$new_image"
@@ -145,3 +161,51 @@ if rg -qi 'migration failed|alembic upgrade failed|no such column' <<<"$logs"; t
 fi
 printf 'PASS Open WebUI %s migrated populated %s state; both identities, private chat isolation, shared membership, and SQLite integrity survived\n' "$new_version" "$old_version"
 printf 'PASS SQLite integrity after migration: %s\n' "$integrity"
+
+# Restore the pre-upgrade snapshot into a fresh disposable volume and boot the
+# old image with the same synthetic signing key.
+docker stop "$name" >/dev/null
+docker rm "$name" >/dev/null
+docker volume create "$rollback_volume" >/dev/null
+docker create --name "$rollback_name" \
+  -p "127.0.0.1:${port}:8080" \
+  --add-host host.docker.internal:host-gateway \
+  -v "$rollback_volume:/app/backend/data" \
+  -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
+  -e WEBUI_SECRET_KEY=synthetic-openwebui-backup-test-key \
+  -e ENABLE_CHANNELS=true -e USER_PERMISSIONS_FEATURES_CHANNELS=true \
+  "$old_image" >/dev/null
+docker cp "$tmp/pre-upgrade-webui.db" "$rollback_name:/app/backend/data/webui.db" >/dev/null
+docker start "$rollback_name" >/dev/null
+for _ in $(seq 1 90); do
+  if curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then break; fi
+  sleep 1
+done
+curl -fsS "http://127.0.0.1:${port}/health" >/dev/null
+rollback_login=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/signin" \
+  -H 'Content-Type: application/json' \
+  --data '{"email":"migration-owner@example.invalid","password":"Synthetic-Only-123!"}')
+rollback_token=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])' <<<"$rollback_login")
+rollback_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$rollback_login")
+[[ "$rollback_id" == "$account_id" ]] || { echo 'FAIL owner identity changed after snapshot restore' >&2; exit 1; }
+curl -fsS "http://127.0.0.1:${port}/api/v1/chats/${chat_id}" \
+  -H "Authorization: Bearer $rollback_token" | rg -q Migration-state-marker-7f2a
+rollback_beta_login=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/signin" \
+  -H 'Content-Type: application/json' \
+  --data '{"email":"migration-beta@example.invalid","password":"Synthetic-Beta-123!"}')
+rollback_beta_token=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])' <<<"$rollback_beta_login")
+rollback_beta_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$rollback_beta_login")
+[[ "$rollback_beta_id" == "$beta_id" ]] || { echo 'FAIL Beta identity changed after snapshot restore' >&2; exit 1; }
+curl -fsS "http://127.0.0.1:${port}/api/v1/channels/${channel_id}/messages" \
+  -H "Authorization: Bearer $rollback_beta_token" | rg -q 'Synthetic migration channel marker'
+rollback_private_status=$(curl -sS -o "$tmp/rollback-private-chat.json" -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/chats/${chat_id}" \
+  -H "Authorization: Bearer $rollback_beta_token")
+[[ "$rollback_private_status" == 401 || "$rollback_private_status" == 403 ]] || {
+  echo "FAIL Beta accessed Alpha's private chat after snapshot restore (HTTP $rollback_private_status)" >&2
+  exit 1
+}
+rollback_integrity=$(docker exec "$rollback_name" python3 -c \
+  'import sqlite3; print(sqlite3.connect("/app/backend/data/webui.db").execute("PRAGMA integrity_check").fetchone()[0])')
+[[ "$rollback_integrity" == ok ]] || { echo "FAIL rollback SQLite integrity: $rollback_integrity" >&2; exit 1; }
+printf 'PASS rollback restored pre-upgrade snapshot on Open WebUI %s; owner/Beta identity, chat, channel access, private-chat isolation, and SQLite integrity survived\n' "$old_version"
