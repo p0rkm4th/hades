@@ -1,0 +1,1388 @@
+#!/usr/bin/env python3
+"""Compare synthetic workspace tasks through clean Hermes and HADES.
+
+Uses the same loopback Ollama model, Hermes source, immutable sandbox image and
+actual rootless Docker daemon for both profiles. The HADES arm enables the
+owner workspace adapter; the PLAIN arm exposes Hermes' native file toolset.
+Provider request bodies and tool result contents are never written to output.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import hashlib
+import http.client
+import json
+import os
+import pathlib
+import re
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import urllib.error
+import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any
+
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+DEFAULT_HERMES = os.environ.get("HADES_BENCHMARK_HERMES_ROOT")
+DEFAULT_PLUGIN = os.environ.get("HADES_BENCHMARK_HINDSIGHT_PLUGIN")
+MODEL = "qwen3.6:35b"
+MODEL_DIGEST = "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c"
+MODEL_PARAMETER_FIELDS = {
+    "frequency_penalty", "max_completion_tokens", "max_tokens", "min_p",
+    "n", "parallel_tool_calls", "presence_penalty", "reasoning",
+    "reasoning_effort", "repeat_last_n", "repeat_penalty", "seed",
+    "temperature", "think", "top_k", "top_p",
+}
+IMAGE = "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d"
+REQUIRED_TERMINAL_CHOICE = {"type": "function", "function": {"name": "terminal"}}
+TOKEN = "ORCHID-9472"
+PROMPT = "Read /workspace/answer.txt and tell me the exact token from the file. Reply with only the token."
+DIAGNOSE_PROMPT = "Why is this Python test failing?"
+FIX_PROMPT = "Fix it."
+API_KEY = "synthetic-workspace-pair-key"
+WORKSPACE_ENVIRONMENT_HINT = (
+    "The active project workspace for file and coding tasks is mounted at /workspace. "
+    "Use /workspace as the root for file tools; do not assume it is the Hermes host filesystem."
+)
+
+
+FIXTURE_CASES = {
+    "geometry": {
+        "source": "geometry.py",
+        "test": "test_geometry.py",
+        "source_content": "def rectangle_area(width, height):\n    return width + height\n",
+        "test_content": (
+            "import unittest\nfrom geometry import rectangle_area\n\n"
+            "class RectangleAreaTests(unittest.TestCase):\n"
+            "    def test_area(self):\n        self.assertEqual(rectangle_area(3, 4), 12)\n\n"
+            "if __name__ == '__main__':\n    unittest.main()\n"
+        ),
+        "support": {
+            "temperature.py": "def celsius_to_fahrenheit(value):\n    return value * 9 / 5 + 32\n",
+            "test_temperature.py": (
+                "import unittest\nfrom temperature import celsius_to_fahrenheit\n\n"
+                "class TemperatureTests(unittest.TestCase):\n"
+                "    def test_freezing_point(self):\n        self.assertEqual(celsius_to_fahrenheit(0), 32)\n\n"
+                "if __name__ == '__main__':\n    unittest.main()\n"
+            ),
+        },
+    },
+    "temperature": {
+        "source": "temperature.py",
+        "test": "test_temperature.py",
+        "source_content": "def celsius_to_fahrenheit(value):\n    return value * 5 / 9 + 32\n",
+        "test_content": (
+            "import unittest\nfrom temperature import celsius_to_fahrenheit\n\n"
+            "class TemperatureTests(unittest.TestCase):\n"
+            "    def test_freezing_point(self):\n        self.assertEqual(celsius_to_fahrenheit(0), 32)\n\n"
+            "    def test_boiling_point(self):\n        self.assertEqual(celsius_to_fahrenheit(100), 212)\n\n"
+            "if __name__ == '__main__':\n    unittest.main()\n"
+        ),
+        "support": {
+            "geometry.py": "def rectangle_area(width, height):\n    return width * height\n",
+            "test_geometry.py": (
+                "import unittest\nfrom geometry import rectangle_area\n\n"
+                "class RectangleAreaTests(unittest.TestCase):\n"
+                "    def test_area(self):\n        self.assertEqual(rectangle_area(3, 4), 12)\n\n"
+                "if __name__ == '__main__':\n    unittest.main()\n"
+            ),
+        },
+    },
+    "discount": {
+        "source": "discount.py",
+        "test": "test_discount.py",
+        "source_content": "def discounted_total(price, percent):\n    return price - percent\n",
+        "test_content": (
+            "import unittest\nfrom discount import discounted_total\n\n"
+            "class DiscountTests(unittest.TestCase):\n"
+            "    def test_ten_percent(self):\n        self.assertEqual(discounted_total(100, 10), 90)\n\n"
+            "    def test_quarter_off(self):\n        self.assertEqual(discounted_total(80, 25), 60)\n\n"
+            "if __name__ == '__main__':\n    unittest.main()\n"
+        ),
+        "support": {
+            "geometry.py": "def rectangle_area(width, height):\n    return width * height\n",
+            "test_geometry.py": (
+                "import unittest\nfrom geometry import rectangle_area\n\n"
+                "class RectangleAreaTests(unittest.TestCase):\n"
+                "    def test_area(self):\n        self.assertEqual(rectangle_area(3, 4), 12)\n\n"
+                "if __name__ == '__main__':\n    unittest.main()\n"
+            ),
+        },
+    },
+}
+
+
+def hermes_executable(root: pathlib.Path) -> pathlib.Path:
+    return next(
+        (candidate for candidate in (root / ".venv/bin/hermes", root / "venv/bin/hermes")
+         if candidate.is_file()),
+        root / ".venv/bin/hermes",
+    )
+
+
+def hermes_python(root: pathlib.Path) -> pathlib.Path:
+    return next(
+        (candidate for candidate in (root / ".venv/bin/python", root / "venv/bin/python")
+         if candidate.is_file()),
+        root / ".venv/bin/python",
+    )
+
+
+def hermes_source(root: pathlib.Path) -> pathlib.Path:
+    source = root / "source"
+    return source if source.is_dir() else root
+
+
+def unused_port() -> int:
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def local_json(
+    url: str,
+    payload: dict[str, Any] | None = None,
+    *,
+    timeout: float = 10,
+) -> dict[str, Any]:
+    raw = json.dumps(payload).encode() if payload is not None else None
+    request = urllib.request.Request(
+        url, data=raw,
+        headers={"Content-Type": "application/json"} if raw else {},
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read())
+
+
+class ProviderProxy(ThreadingHTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
+
+    def __init__(self, address: tuple[str, int], ollama_port: int,
+                 fixture_names: tuple[str, str]):
+        self.ollama_port = ollama_port
+        self.fixture_names = fixture_names
+        self.records: list[dict[str, Any]] = []
+        self.records_lock = threading.Lock()
+        self.seed_counts: dict[tuple[str, int, str], int] = {}
+        self.seed_lock = threading.Lock()
+        super().__init__(address, self.handler_type())
+
+    def sampling_seed(self, stack: str, repeat: int, phase: str) -> int:
+        phase_offsets = {"diagnose": 0, "fix": 1000, "read": 2000, "other": 3000}
+        key = (stack, repeat, phase)
+        with self.seed_lock:
+            ordinal = self.seed_counts.get(key, 0)
+            self.seed_counts[key] = ordinal + 1
+        # Matching stacks receive the same seed for each provider-call ordinal
+        # within a task phase, even when their tool loops use different counts.
+        return 41000 + repeat * 10000 + phase_offsets.get(phase, 3000) + ordinal
+
+    def handler_type(self):
+        parent = self
+
+        class Handler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"
+
+            def log_message(self, *_args):
+                return
+
+            def do_GET(self):
+                body = json.dumps({"data": [{"id": MODEL, "owned_by": "local"}]}).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_POST(self):
+                started = time.perf_counter()
+                raw = self.rfile.read(int(self.headers.get("Content-Length", "0")))
+                try:
+                    request = json.loads(raw)
+                except (ValueError, TypeError):
+                    request = {}
+                messages = request.get("messages") or []
+                schemas = request.get("tools") or []
+                latest_user = next(
+                    (str(m.get("content") or "") for m in reversed(messages)
+                     if isinstance(m, dict) and m.get("role") == "user"),
+                    "",
+                )
+                phase = (
+                    "diagnose" if latest_user.strip() == DIAGNOSE_PROMPT else
+                    "fix" if latest_user.strip() == FIX_PROMPT else
+                    "read" if latest_user.strip() == PROMPT else "other"
+                )
+                auth = self.headers.get("Authorization", "")
+                api_key = auth.removeprefix("Bearer ").strip()
+                benchmark_identity = re.fullmatch(
+                    re.escape(API_KEY) + r"-(plain|hades)-(\d+)", api_key
+                )
+                stack = benchmark_identity.group(1) if benchmark_identity else None
+                repeat = int(benchmark_identity.group(2)) if benchmark_identity else None
+                sampling_seed = (
+                    parent.sampling_seed(stack, repeat, phase)
+                    if stack is not None and repeat is not None else None
+                )
+                # Capture generation controls without retaining messages, tool
+                # arguments, credentials, or arbitrary provider metadata. These
+                # fields help distinguish middleware changes from model/runtime
+                # sampling differences in paired measurements.
+                requested_model_parameters = {
+                    key: request[key]
+                    for key in sorted(MODEL_PARAMETER_FIELDS)
+                    if key in request and isinstance(request[key], (str, int, float, bool, type(None)))
+                }
+                for container_key in ("options", "model_options"):
+                    nested = request.get(container_key)
+                    if isinstance(nested, dict):
+                        selected = {
+                            key: nested[key]
+                            for key in sorted(MODEL_PARAMETER_FIELDS)
+                            if key in nested and isinstance(
+                                nested[key], (str, int, float, bool, type(None))
+                            )
+                        }
+                        if selected:
+                            requested_model_parameters[container_key] = selected
+                requested_model = request.get("model")
+                request["model"] = MODEL
+                if sampling_seed is not None:
+                    request["seed"] = sampling_seed
+                model_parameters = dict(requested_model_parameters)
+                if sampling_seed is not None:
+                    model_parameters["seed"] = sampling_seed
+                row: dict[str, Any] = {
+                    "phase": phase,
+                    "model": requested_model,
+                    "effective_model": MODEL,
+                    "benchmark_stack": stack,
+                    "benchmark_repeat": repeat,
+                    "sampling_seed": sampling_seed,
+                    "requested_model_parameters": requested_model_parameters,
+                    "model_parameters": model_parameters,
+                    "stream": bool(request.get("stream")),
+                    "tool_choice": request.get("tool_choice"),
+                    "request_bytes": len(raw),
+                    "message_roles": [m.get("role") for m in messages if isinstance(m, dict)],
+                    "message_content_bytes_by_role": {
+                        role: sum(
+                            len(str(m.get("content") or "").encode("utf-8", errors="replace"))
+                            for m in messages if isinstance(m, dict) and m.get("role") == role
+                        )
+                        for role in sorted({
+                            m.get("role") for m in messages
+                            if isinstance(m, dict) and isinstance(m.get("role"), str)
+                        })
+                    },
+                    "message_content_markers": {
+                        "prior_user_has_diagnosis_prompt": any(
+                            isinstance(m, dict) and m.get("role") == "user"
+                            and str(m.get("content") or "").strip() == DIAGNOSE_PROMPT
+                            for m in messages[:-1]
+                        ),
+                        "prior_assistant_mentions_fixture": any(
+                            isinstance(m, dict) and m.get("role") == "assistant"
+                            and any(marker in str(m.get("content") or "")
+                                    for marker in (*parent.fixture_names, "rectangle_area", "celsius_to_fahrenheit", "discounted_total"))
+                            for m in messages[:-1]
+                        ),
+                    },
+                    "message_bytes": sum(
+                        len(json.dumps(m, ensure_ascii=False, separators=(",", ":")).encode())
+                        for m in messages if isinstance(m, dict)
+                    ),
+                    "tool_schema_count": len(schemas),
+                    "tool_schema_bytes": sum(
+                        len(json.dumps(s, ensure_ascii=False, separators=(",", ":")).encode())
+                        for s in schemas
+                    ),
+                    "tool_schema_sha256": hashlib.sha256(json.dumps(
+                        schemas, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                    ).encode("utf-8", errors="replace")).hexdigest(),
+                    "tool_schema_names": [
+                        s.get("function", {}).get("name") for s in schemas
+                        if isinstance(s, dict)
+                    ],
+                    "tool_calls": {},
+                    "finish_reasons": [],
+                    "first_content_ms": None,
+                    "usage": None,
+                    "status": None,
+                }
+                connection = http.client.HTTPConnection("127.0.0.1", parent.ollama_port, timeout=300)
+                try:
+                    connection.request(
+                        "POST", self.path, body=json.dumps(request).encode(),
+                        headers={"Content-Type": "application/json"},
+                    )
+                    response = connection.getresponse()
+                    row["status"] = response.status
+                    content_type = response.getheader("Content-Type", "application/json")
+                    self.send_response(response.status)
+                    self.send_header("Content-Type", content_type)
+                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Connection", "close")
+                    self.close_connection = True
+                    if request.get("stream") and "text/event-stream" in content_type:
+                        self.send_header("Transfer-Encoding", "chunked")
+                        self.end_headers()
+                        while line := response.readline():
+                            if line.startswith(b"data:"):
+                                data = line[5:].strip()
+                                if data and data != b"[DONE]":
+                                    try:
+                                        event = json.loads(data)
+                                        choices = event.get("choices") or []
+                                        choice = choices[0] if choices else {}
+                                        delta = choice.get("delta") or {}
+                                        if delta.get("content") and row["first_content_ms"] is None:
+                                            row["first_content_ms"] = round((time.perf_counter() - started) * 1000, 1)
+                                        for call in delta.get("tool_calls") or []:
+                                            index = call.get("index", 0)
+                                            target = row["tool_calls"].setdefault(index, "")
+                                            target += (call.get("function") or {}).get("name", "")
+                                            row["tool_calls"][index] = target
+                                        if choice.get("finish_reason"):
+                                            row["finish_reasons"].append(choice["finish_reason"])
+                                        if event.get("usage"):
+                                            row["usage"] = event["usage"]
+                                    except (ValueError, TypeError, IndexError):
+                                        pass
+                            self.wfile.write(f"{len(line):X}\r\n".encode() + line + b"\r\n")
+                            self.wfile.flush()
+                        self.wfile.write(b"0\r\n\r\n")
+                    else:
+                        body = response.read()
+                        self.send_header("Content-Length", str(len(body)))
+                        self.end_headers()
+                        self.wfile.write(body)
+                        try:
+                            data = json.loads(body)
+                            row["usage"] = data.get("usage")
+                        except (ValueError, TypeError):
+                            pass
+                except Exception as exc:
+                    row["error_type"] = type(exc).__name__
+                    try:
+                        self.send_error(502)
+                    except OSError:
+                        pass
+                finally:
+                    connection.close()
+                    row["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 1)
+                    try:
+                        loaded = local_json(
+                            f"http://127.0.0.1:{parent.ollama_port}/api/ps"
+                        ).get("models", [])
+                        loaded_model = next(
+                            (item for item in loaded if item.get("name") == MODEL), None
+                        )
+                        row["loaded_context_length_after_request"] = (
+                            loaded_model.get("context_length") if loaded_model else None
+                        )
+                    except (OSError, ValueError, urllib.error.URLError):
+                        row["loaded_context_length_after_request"] = None
+                    with parent.records_lock:
+                        parent.records.append(row)
+
+        return Handler
+
+    def snapshot(self) -> list[dict[str, Any]]:
+        with self.records_lock:
+            return [dict(row) for row in self.records]
+
+
+def wait_gateway(port: int, proc: subprocess.Popen, log: pathlib.Path) -> None:
+    for _ in range(90):
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as response:
+                if response.status == 200:
+                    return
+        except (OSError, urllib.error.URLError):
+            pass
+        if proc.poll() is not None:
+            break
+        time.sleep(0.5)
+    raise RuntimeError(f"gateway did not become healthy (exit={proc.poll()}): {log.read_text(errors='replace')[-3000:]}")
+
+
+def install_required_terminal_experiment(agent: Any) -> tuple[dict[str, Any], Any]:
+    """Prototype a named Hermes tool choice after a workspace code mutation.
+
+    This benchmark-only intervention observes successful code writes at Hermes'
+    existing tool executor boundary. The next action-turn generation must call
+    the native terminal tool once. It restores the prior request overrides after
+    that call so a failed test can be repaired and a passing test can be reported.
+    """
+    from types import SimpleNamespace
+    from hermes.workspace import has_successful_workspace_code_mutation, workspace_code_test_status
+
+    state: dict[str, Any] = {
+        "active": False,
+        "pending": False,
+        "forced_terminal_calls": 0,
+        "terminal_result_status": None,
+        "required_choice_installed": False,
+    }
+    original_execute = agent._execute_tool_calls
+
+    def restore_choice() -> None:
+        saved = state.pop("saved_request_overrides", None)
+        if isinstance(saved, dict):
+            agent.request_overrides = saved
+        state["pending"] = False
+
+    def experimental_execute(assistant_message: Any, messages: list, effective_task_id: str, api_call_count: int = 0) -> None:
+        if not state["active"]:
+            return original_execute(assistant_message, messages, effective_task_id, api_call_count)
+
+        calls = list(getattr(assistant_message, "tool_calls", None) or [])
+        terminal_calls = [
+            call for call in calls
+            if str(getattr(getattr(call, "function", None), "name", "")) == "terminal"
+        ]
+        was_pending = bool(state["pending"])
+        results_start = len(messages)
+        original_execute(assistant_message, messages, effective_task_id, api_call_count)
+
+        if was_pending and terminal_calls:
+            state["forced_terminal_calls"] += len(terminal_calls)
+            current_start = next(
+                (
+                    idx for idx in range(len(messages) - 1, -1, -1)
+                    if isinstance(messages[idx], dict)
+                    and messages[idx].get("role") == "user"
+                    and messages[idx].get("content") == state.get("current_user_message")
+                ),
+                None,
+            )
+            current_messages = messages[current_start:] if current_start is not None else []
+            state["terminal_result_status"] = workspace_code_test_status(current_messages)
+            restore_choice()
+
+        # Inspect only results appended by this tool batch. If patch and terminal
+        # appeared together, require a fresh follow-up after the mutation so a
+        # parallel/stale test result cannot stand in for post-patch verification.
+        if has_successful_workspace_code_mutation(messages[results_start:]):
+            state["saved_request_overrides"] = dict(getattr(agent, "request_overrides", {}) or {})
+            agent.request_overrides = {
+                **state["saved_request_overrides"],
+                "tool_choice": REQUIRED_TERMINAL_CHOICE,
+            }
+            state["pending"] = True
+            state["required_choice_installed"] = True
+
+    agent._execute_tool_calls = experimental_execute
+    return state, original_execute
+
+
+def install_host_workspace_verification_mapping(
+    agent: Any, workspace: pathlib.Path,
+) -> tuple[dict[str, Any], Any, Any]:
+    """Prototype mapping Hermes Docker paths to this isolated host project.
+
+    This is benchmark-only. Production support would need to obtain the current
+    task's validated mounted host root at the upstream finalizer boundary.
+    """
+    from tools import terminal_tool_result
+
+    root = workspace.resolve(strict=True)
+    state = {
+        "active": True,
+        "mapped_mutation_path_count": 0,
+        "mapped_terminal_evidence_cwd_count": 0,
+    }
+
+    def map_workspace_path(raw: Any) -> str | None:
+        if not isinstance(raw, (str, pathlib.Path)):
+            return None
+        try:
+            path = pathlib.PurePosixPath(str(raw))
+            prefix = ("/", "workspace")
+            if path.parts[:2] != prefix:
+                return None
+            relative = pathlib.Path(*path.parts[2:])
+            if ".." in relative.parts:
+                return None
+            candidate = (root / relative).resolve(strict=False)
+            if not candidate.is_relative_to(root):
+                return None
+            return str(candidate)
+        except (OSError, RuntimeError, ValueError):
+            return None
+
+    original_record_mutation = agent._record_file_mutation_result
+
+    def record_mutation_with_host_paths(
+        tool_name: str, args: dict[str, Any], result: Any, is_error: bool,
+        *, task_id: str | None = None,
+    ) -> None:
+        original_record_mutation(tool_name, args, result, is_error, task_id=task_id)
+        changed_paths = getattr(agent, "_turn_file_mutation_paths", None)
+        if not isinstance(changed_paths, set):
+            return
+        replacements = {
+            raw: mapped for raw in tuple(changed_paths)
+            if (mapped := map_workspace_path(raw)) is not None
+        }
+        if replacements:
+            changed_paths.difference_update(replacements)
+            changed_paths.update(replacements.values())
+            state["mapped_mutation_path_count"] += len(replacements)
+
+    original_verification_evidence = terminal_tool_result._verification_evidence
+
+    def record_evidence_with_host_cwd(
+        command: Any, cwd: Any, session_id: Any, returncode: Any, output: Any,
+    ) -> Any:
+        mapped = map_workspace_path(cwd)
+        if mapped is not None and pathlib.Path(mapped).is_relative_to(root):
+            state["mapped_terminal_evidence_cwd_count"] += 1
+            cwd = mapped
+        return original_verification_evidence(command, cwd, session_id, returncode, output)
+
+    agent._record_file_mutation_result = record_mutation_with_host_paths
+    terminal_tool_result._verification_evidence = record_evidence_with_host_cwd
+    return state, original_record_mutation, original_verification_evidence
+
+
+def child(args: argparse.Namespace) -> int:
+    fixture_case = FIXTURE_CASES[args.fixture_case]
+    fixture_names = (fixture_case["source"], fixture_case["test"])
+    fixture_name_pattern = "|".join(re.escape(name) for name in fixture_names)
+    hermes = str(hermes_source(args.hermes_root))
+    if args.overlay:
+        sys.path[:0] = [str(ROOT / "hermes"), str(ROOT), hermes]
+    else:
+        sys.path.insert(0, hermes)
+    from run_agent import AIAgent
+    from tools.terminal_scope import install_profile_terminal_scope, reset_terminal_scope
+    from tools.terminal_tool import (
+        _get_env_config, clear_task_env_overrides, register_task_env_overrides,
+    )
+    from tools.environments.docker import DockerEnvironment
+
+    # Capture only the effective Docker workspace mount decision and a small
+    # sanitized view of Hermes tool results. This diagnoses empty-workspace
+    # reports without persisting commands, file contents, prompts, or secrets.
+    mount_traces: list[dict[str, Any]] = []
+    original_mount_args = DockerEnvironment._mount_args
+
+    def traced_mount_args(self, volumes, host_cwd, auto_mount_cwd, task_id):
+        volume_args, writable_args = original_mount_args(
+            self, volumes, host_cwd, auto_mount_cwd, task_id
+        )
+        normalized_host = os.path.abspath(os.path.expanduser(host_cwd)) if host_cwd else ""
+        targets = [
+            volume_args[i + 1].split(":", 2)[1]
+            for i, arg in enumerate(volume_args[:-1])
+            if arg == "-v" and ":" in volume_args[i + 1]
+        ]
+        mount_traces.append({
+            "task_id_matches": str(task_id).endswith(str(args.repeat)),
+            "host_cwd_matches_fixture": normalized_host == os.path.abspath(str(args.workspace)),
+            "auto_mount_cwd": bool(auto_mount_cwd),
+            "workspace_volume_target_present": "/workspace" in targets,
+            "workspace_tmpfs_present": any(
+                arg == "--tmpfs" and i + 1 < len(writable_args)
+                and writable_args[i + 1].startswith("/workspace")
+                for i, arg in enumerate(writable_args)
+            ),
+            "workdir_is_workspace": getattr(self, "cwd", None) == "/workspace",
+        })
+        return volume_args, writable_args
+
+    DockerEnvironment._mount_args = traced_mount_args
+
+    token = install_profile_terminal_scope(pathlib.Path(os.environ["HERMES_HOME"]))
+    task_id = f"workspace-{args.stack}-{args.repeat}"
+    # Match the session-workdir registration performed by Hermes gateway/TUI
+    # surfaces. Docker session isolation deliberately refuses to mount the
+    # process-level cwd for an unregistered session.
+    register_task_env_overrides(task_id, {
+        "cwd": str(args.workspace), "cwd_source": "session", "env_type": "docker",
+    })
+    terminal_config = _get_env_config()
+    effective_terminal = {
+        "env_type": terminal_config.get("env_type"),
+        "cwd_is_fixture": terminal_config.get("cwd") == str(args.workspace),
+        "docker_mount_cwd_to_workspace": terminal_config.get("docker_mount_cwd_to_workspace"),
+        "docker_network": terminal_config.get("docker_network"),
+        "session_workspace_registered": True,
+        "configured_host_cwd_matches_fixture": os.path.abspath(str(terminal_config.get("host_cwd") or ""))
+        == os.path.abspath(str(args.workspace)),
+    }
+    if effective_terminal["env_type"] != "docker" or not effective_terminal["docker_mount_cwd_to_workspace"]:
+        raise RuntimeError(f"profile did not activate the intended Docker workspace: {effective_terminal}")
+    messages: list[dict[str, Any]] = []
+    stream_state = {"phase": "setup", "started": time.perf_counter()}
+    stream_metrics: dict[str, dict[str, Any]] = {}
+
+    def capture_stream_delta(text: Any) -> None:
+        """Record user-stream timing and size only; never persist generated text."""
+        if not isinstance(text, str) or not text:
+            return
+        phase_name = str(stream_state["phase"])
+        now = time.perf_counter()
+        row = stream_metrics.setdefault(phase_name, {
+            "delta_count": 0, "character_count": 0,
+            "first_delta_ms": None, "last_delta_ms": None,
+        })
+        delta_ms = round((now - float(stream_state["started"])) * 1000, 1)
+        row["delta_count"] += 1
+        row["character_count"] += len(text)
+        if row["first_delta_ms"] is None:
+            row["first_delta_ms"] = delta_ms
+        row["last_delta_ms"] = delta_ms
+
+    agent = AIAgent(
+        base_url=args.provider_url,
+        api_key=f"{API_KEY}-{args.stack}-{args.repeat}",
+        provider="custom",
+        api_mode="chat_completions",
+        model=MODEL,
+        max_tokens=512 if args.scenario == "escalation" else 192,
+        reasoning_config={"enabled": False},
+        enabled_toolsets=["file", "terminal"],
+        disabled_toolsets=[],
+        gateway_session_key="hades-user-synthetic-owner",
+        session_id=f"workspace-{args.stack}-{args.repeat}",
+        chat_id=f"workspace-{args.stack}-{args.repeat}",
+        stream_delta_callback=capture_stream_delta,
+        quiet_mode=True,
+        skip_context_files=True,
+        skip_memory=True,
+        skip_background_review=True,
+        load_soul_identity=False,
+    )
+    tool_choice_experiment = None
+    original_tool_executor = None
+    if args.prototype_force_terminal_after_mutation and args.stack == "hades":
+        tool_choice_experiment, original_tool_executor = install_required_terminal_experiment(agent)
+    workspace_mapping_experiment = None
+    original_mutation_recorder = None
+    original_verification_evidence = None
+    started = time.perf_counter()
+    try:
+        if args.prototype_host_workspace_verification_mapping:
+            from agent.verification_stop import verify_on_stop_enabled
+            if not verify_on_stop_enabled():
+                raise RuntimeError("host workspace mapping prototype requires native verify-on-stop")
+            (
+                workspace_mapping_experiment,
+                original_mutation_recorder,
+                original_verification_evidence,
+            ) = install_host_workspace_verification_mapping(agent, args.workspace)
+        prompts = [PROMPT] if args.scenario == "read" else [DIAGNOSE_PROMPT, FIX_PROMPT]
+        history: list[dict[str, Any]] = []
+        turns = []
+        for phase, prompt in enumerate(prompts):
+            phase_name = "read" if args.scenario == "read" else ("diagnose" if phase == 0 else "fix")
+            stream_state["phase"] = phase_name
+            stream_state["started"] = time.perf_counter()
+            if tool_choice_experiment is not None:
+                tool_choice_experiment["active"] = phase_name == "fix"
+                tool_choice_experiment["current_user_message"] = prompt
+            prior_history = history
+            result = agent.run_conversation(
+                user_message=prompt,
+                task_id=task_id,
+                conversation_history=prior_history,
+            )
+            messages = result.get("messages") if isinstance(result, dict) else []
+            messages = messages if isinstance(messages, list) else []
+            # Hermes may return the full transcript or just the latest turn. Keep
+            # same-chat continuity while counting only messages added this turn.
+            prefix_matches = bool(prior_history) and messages[:len(prior_history)] == prior_history
+            turn_messages = messages[len(prior_history):] if prefix_matches else messages
+            next_history = (
+                messages if prefix_matches else [*prior_history, *messages]
+            )
+            if not next_history:
+                next_history = list(prior_history)
+            final_text = str(result.get("final_response") or "") if isinstance(result, dict) else ""
+            last_assistant_text = next(
+                (str(message.get("content") or "") for message in reversed(next_history)
+                 if isinstance(message, dict) and message.get("role") == "assistant"),
+                "",
+            )
+            # AIAgent can return the displayed final answer separately from the
+            # replayable messages list. Keep the next “Fix it” turn grounded in
+            # what the user actually saw, even when Hermes omitted that row.
+            if final_text and last_assistant_text != final_text:
+                next_history.append({"role": "assistant", "content": final_text})
+            tool_messages = [
+                m for m in turn_messages if isinstance(m, dict) and m.get("role") == "tool"
+            ]
+            safe_tool_results = []
+            for message in tool_messages:
+                content = str(message.get("content") or "")
+                parsed = None
+                try:
+                    parsed = json.loads(content)
+                except (ValueError, TypeError):
+                    pass
+                safe_tool_results.append({
+                    "name": message.get("name"),
+                    "content_bytes": len(content.encode("utf-8", errors="replace")),
+                    "error_marker": bool(re.search(
+                        r"(?i)(no such file|does not exist|not found|permission denied|tool_error|exit_code\s*[=:]\s*[1-9])",
+                        content,
+                    )),
+                    "exit_code": parsed.get("exit_code") if isinstance(parsed, dict) else None,
+                    "structured_result_keys": sorted(parsed) if isinstance(parsed, dict) else None,
+                    "verification_evidence_status": (
+                        (parsed.get("verification_evidence") or {}).get("status")
+                        if isinstance(parsed, dict)
+                        and isinstance(parsed.get("verification_evidence"), dict)
+                        else None
+                    ),
+                    "structured_list_counts": {
+                        key: len(value) for key, value in parsed.items()
+                        if isinstance(parsed, dict) and isinstance(value, list)
+                        and key in {"matches", "files", "results"}
+                    } if isinstance(parsed, dict) else None,
+                    "error_class": (
+                        "not_found" if re.search(r"(?i)(not found|no such file|does not exist)", str(parsed.get("error") or "")) else
+                        "permission" if re.search(r"(?i)(permission denied|not permitted|access denied)", str(parsed.get("error") or "")) else
+                        "cwd" if re.search(r"(?i)(working directory|current directory|chdir|cd:)", str(parsed.get("error") or "")) else
+                        "other" if parsed.get("error") else None
+                    ) if isinstance(parsed, dict) else (
+                        "invalid_tool" if re.search(r"(?i)tool .{1,60} does not exist|unknown tool", content) else
+                        "not_found" if re.search(r"(?i)(not found|no such file|does not exist)", content) else
+                        "permission" if re.search(r"(?i)(permission denied|not permitted|access denied)", content) else
+                        "cwd" if re.search(r"(?i)(working directory|current directory|chdir|cd:)", content) else
+                        "other" if re.search(r"(?i)\berror\b|failed", content) else None
+                    ),
+                    "has_output": bool(parsed.get("output")) if isinstance(parsed, dict) else None,
+                    "test_output_markers": {
+                        "unittest_summary": bool(re.search(r"(?i)Ran \d+ tests?", content)),
+                        "pytest_summary": bool(re.search(r"(?i)(\d+ passed|\d+ failed|pytest)", content)),
+                        "success_marker": bool(re.search(r"(?i)(?:^|\n)OK(?:\n|$)|\bpassed\b", content)),
+                    } if message.get("name") == "terminal" else None,
+                    "known_fixture_name_present": any(
+                        name in content for name in fixture_names
+                    ),
+                })
+            safe_tool_calls = []
+            for message in turn_messages:
+                if not isinstance(message, dict) or message.get("role") != "assistant":
+                    continue
+                for call in message.get("tool_calls") or []:
+                    function = call.get("function") if isinstance(call, dict) else None
+                    if not isinstance(function, dict):
+                        continue
+                    raw_arguments = function.get("arguments") or {}
+                    if isinstance(raw_arguments, str):
+                        try:
+                            raw_arguments = json.loads(raw_arguments)
+                        except (ValueError, TypeError):
+                            raw_arguments = {}
+                    raw_arguments = raw_arguments if isinstance(raw_arguments, dict) else {}
+                    path_values = [
+                        value for key, value in raw_arguments.items()
+                        if key in {"path", "file_path", "cwd", "directory"}
+                        and isinstance(value, str)
+                    ]
+                    command_value = raw_arguments.get("command")
+                    safe_tool_calls.append({
+                        "name": function.get("name"),
+                        "argument_keys": sorted(str(key) for key in raw_arguments),
+                        "path_count": len(path_values),
+                        "all_paths_in_workspace": all(
+                            value == "/workspace" or value.startswith("/workspace/")
+                            for value in path_values
+                        ),
+                        "mentions_fixture_name": any(
+                            name in value for value in path_values
+                            for name in fixture_names
+                        ) or (
+                            isinstance(command_value, str) and any(
+                                name in command_value for name in fixture_names
+                            )
+                        ),
+                        "command_looks_read_only": isinstance(command_value, str) and bool(re.search(
+                            r"(?i)\b(cat|head|tail|sed|grep|rg|find|pwd|ls|python\s+-m\s+unittest)\b",
+                            command_value,
+                        )),
+                        "command_has_write_marker": isinstance(command_value, str) and bool(re.search(
+                            r"(?i)(?:\b(?:sed\s+-i|tee|cp|mv|rm|touch|chmod|chown|install|git\s+(?:apply|checkout|reset|restore))\b|"
+                            r"(?:^|\s)(?:>|>>|\|\s*tee\b)|\bpython\s+-c\b|\bperl\s+-pi\b)",
+                            command_value,
+                        )),
+                        "command_has_shell_redirect": isinstance(command_value, str) and bool(re.search(
+                            r"(?:^|\s)(?:>|>>|<|<<)(?:\s|$)", command_value,
+                        )),
+                        "command_mentions_fixture_mutation": isinstance(command_value, str) and bool(re.search(
+                            rf"(?i)(?:{fixture_name_pattern}).{{0,80}}(?:write|patch|replace|multiply|\*|sed\s+-i)|"
+                            rf"(?:write|patch|replace|multiply|\*|sed\s+-i).{{0,80}}(?:{fixture_name_pattern})",
+                            command_value,
+                        )),
+                        "runs_unittest": isinstance(command_value, str) and bool(re.search(
+                            r"(?i)(?:python\s+(?:-m\s+)?unittest|pytest)", command_value
+                        )),
+                        "uses_git_diff": isinstance(command_value, str) and bool(re.search(
+                            r"(?i)\bgit\s+diff\b", command_value
+                        )),
+                        "search_pattern_nonempty": (
+                            isinstance(raw_arguments.get("pattern"), str)
+                            and bool(raw_arguments["pattern"].strip())
+                        ) if function.get("name") == "search_files" else None,
+                        "search_target": raw_arguments.get("target")
+                        if function.get("name") == "search_files"
+                        and raw_arguments.get("target") in {"content", "files", "grep", "find"}
+                        else None,
+                    })
+            turns.append({
+                "phase": phase_name,
+                "prompt_id": phase_name,
+                "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
+                "stream_progress": stream_metrics.get(phase_name, {
+                    "delta_count": 0, "character_count": 0,
+                    "first_delta_ms": None, "last_delta_ms": None,
+                }),
+                "response_present": bool(final_text),
+                "response_characters": len(final_text),
+                "response_contains_expected_token": TOKEN in final_text,
+                "api_calls": result.get("api_calls") if isinstance(result, dict) else None,
+                "tool_result_count": len(tool_messages),
+                "tool_result_names": [m.get("name") for m in tool_messages],
+                "sanitized_tool_results": safe_tool_results,
+                "sanitized_tool_calls": safe_tool_calls,
+                "tool_result_contains_fixture": any(
+                    TOKEN in str(m.get("content") or "") for m in tool_messages
+                ),
+                "workspace_changed_after_turn": bool(subprocess.check_output(
+                    ["git", "diff", "--name-only"], cwd=args.workspace, text=True,
+                ).splitlines()) if args.scenario == "escalation" else False,
+                "messages_added": len(turn_messages),
+            })
+            history = next_history
+        summary = {
+            "scenario": args.scenario,
+            "stack": args.stack,
+            "repeat": args.repeat,
+            "effective_terminal": effective_terminal,
+            "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
+            "turns": turns,
+            "api_calls": sum(t["api_calls"] or 0 for t in turns),
+            "tool_result_count": sum(t["tool_result_count"] for t in turns),
+            "tool_result_names": [name for t in turns for name in t["tool_result_names"]],
+            "mount_traces": mount_traces,
+            "tool_result_contains_fixture": any(t["tool_result_contains_fixture"] for t in turns),
+            "assistant_response_count": sum(t["response_present"] for t in turns),
+            "tool_choice_experiment": ({
+                key: value for key, value in tool_choice_experiment.items()
+                if key not in {"saved_request_overrides", "current_user_message"}
+            } if tool_choice_experiment is not None else None),
+            "native_verification_stop_nudges": int(
+                getattr(agent, "_verification_stop_nudges", 0) or 0
+            ),
+            "final_response_contains_expected_token": any(
+                turn.get("response_contains_expected_token") is True for turn in turns
+            ),
+            "native_verification_terminal_evidence_statuses": [
+                result.get("verification_evidence_status")
+                for turn in turns
+                for result in turn.get("sanitized_tool_results", [])
+                if result.get("verification_evidence_status") is not None
+            ],
+            "host_workspace_mapping_experiment": workspace_mapping_experiment,
+            "native_verification_snapshot": None,
+        }
+        try:
+            from agent.coding_context import project_facts_for
+            from agent.verification_evidence import verification_status
+            from agent.verification_stop import verify_on_stop_enabled
+
+            mutation_paths = sorted(
+                str(path) for path in (getattr(agent, "_turn_file_mutation_paths", set()) or set())
+                if path
+            )
+            path_rows = []
+            for path in mutation_paths:
+                cwd = str(pathlib.Path(path).parent)
+                facts = project_facts_for(cwd)
+                status = verification_status(
+                    session_id=getattr(agent, "session_id", None), cwd=cwd
+                )
+                path_rows.append({
+                    "project_facts_recognized": bool(facts),
+                    "evidence_status": status.get("status"),
+                    "workspace_mount_path": pathlib.PurePosixPath(path).parts[:2] == ("/", "workspace"),
+                    "host_workspace_path": pathlib.Path(path).is_relative_to(args.workspace.resolve()),
+                })
+            runtime_cwd = None
+            try:
+                from agent.runtime_cwd import resolve_agent_cwd
+                runtime_cwd = resolve_agent_cwd()
+            except Exception:
+                pass
+            runtime_facts = project_facts_for(runtime_cwd) if runtime_cwd else None
+            host_workspace_facts = project_facts_for(args.workspace)
+            host_workspace_status = verification_status(
+                session_id=getattr(agent, "session_id", None), cwd=args.workspace
+            )
+            summary["native_verification_snapshot"] = {
+                "enabled": bool(verify_on_stop_enabled()),
+                "mutated_code_path_count": len(mutation_paths),
+                "project_facts_recognized_count": sum(
+                    row["project_facts_recognized"] for row in path_rows
+                ),
+                "evidence_statuses": [row["evidence_status"] for row in path_rows],
+                "container_workspace_path_count": sum(row["workspace_mount_path"] for row in path_rows),
+                "host_workspace_path_count": sum(row["host_workspace_path"] for row in path_rows),
+                "runtime_cwd_project_facts_recognized": bool(runtime_facts),
+                "host_workspace_project_facts_recognized": bool(host_workspace_facts),
+                "host_workspace_evidence_status": host_workspace_status.get("status"),
+                "mapping_experiment_active": bool(workspace_mapping_experiment),
+            }
+        except Exception as exc:
+            summary["native_verification_snapshot"] = {
+                "capture_error_type": type(exc).__name__,
+            }
+        print("RESULT:" + json.dumps(summary, ensure_ascii=False))
+        return 0
+    finally:
+        if original_tool_executor is not None:
+            agent._execute_tool_calls = original_tool_executor
+        if original_mutation_recorder is not None:
+            agent._record_file_mutation_result = original_mutation_recorder
+        if original_verification_evidence is not None:
+            from tools import terminal_tool_result
+            terminal_tool_result._verification_evidence = original_verification_evidence
+        if tool_choice_experiment is not None and tool_choice_experiment.get("pending"):
+            saved = tool_choice_experiment.get("saved_request_overrides")
+            if isinstance(saved, dict):
+                agent.request_overrides = saved
+        agent.close()
+        clear_task_env_overrides(task_id)
+        reset_terminal_scope(token)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--ollama-port", type=int, default=11445)
+    parser.add_argument("--hermes-root", type=pathlib.Path, default=DEFAULT_HERMES,
+                        help="Hermes source/install root (or HADES_BENCHMARK_HERMES_ROOT)")
+    parser.add_argument("--hindsight-plugin", type=pathlib.Path, default=DEFAULT_PLUGIN,
+                        help="Hindsight plugin root (or HADES_BENCHMARK_HINDSIGHT_PLUGIN)")
+    parser.add_argument("--docker-binary", type=pathlib.Path)
+    parser.add_argument("--sandbox-image", default=IMAGE)
+    parser.add_argument("--repeats", type=int, default=2)
+    parser.add_argument("--scenario", choices=("read", "escalation"), default="read")
+    parser.add_argument("--fixture-layout", choices=("compact", "multifile"), default="compact")
+    parser.add_argument("--fixture-case", choices=tuple(FIXTURE_CASES), default="geometry")
+    parser.add_argument(
+        "--workspace-context-hint", action="store_true",
+        help="give both stacks the same supported agent.environment_hint describing the /workspace mount",
+    )
+    parser.add_argument(
+        "--prototype-force-terminal-after-mutation", action="store_true",
+        help="benchmark-only HADES experiment: use Hermes tool_choice to require one terminal call after a successful workspace code mutation",
+    )
+    parser.add_argument(
+        "--prototype-host-workspace-verification-mapping", action="store_true",
+        help="benchmark-only prototype: map container /workspace edit/evidence paths to the current fixture root",
+    )
+    parser.add_argument("--child", action="store_true")
+    parser.add_argument("--stack", choices=("plain", "hades"))
+    parser.add_argument("--repeat", type=int, default=0)
+    parser.add_argument("--overlay", action="store_true")
+    parser.add_argument("--home", type=pathlib.Path)
+    parser.add_argument("--workspace", type=pathlib.Path)
+    parser.add_argument("--provider-url")
+    args = parser.parse_args()
+    fixture_case = FIXTURE_CASES[args.fixture_case]
+
+    if args.child:
+        return child(args)
+    os.umask(0o077)
+    if args.hermes_root is None:
+        parser.error("--hermes-root or HADES_BENCHMARK_HERMES_ROOT is required")
+    if args.hindsight_plugin is None:
+        parser.error("--hindsight-plugin or HADES_BENCHMARK_HINDSIGHT_PLUGIN is required")
+    if args.repeats < 1 or args.repeats > 5:
+        parser.error("--repeats must be between 1 and 5")
+    if not args.hermes_root.is_dir() or not hermes_executable(args.hermes_root).is_file():
+        parser.error("Hermes executable is unavailable in the configured staged root")
+    if not args.hindsight_plugin.is_dir():
+        parser.error("Hindsight plugin source is unavailable in the configured root")
+    if args.docker_binary is None:
+        parser.error("--docker-binary is required so the rootless daemon can be checked explicitly")
+    docker_bin = str(args.docker_binary.resolve())
+    if not os.access(docker_bin, os.X_OK):
+        parser.error("rootless Docker wrapper is not executable")
+
+    base_url = f"http://127.0.0.1:{args.ollama_port}"
+    try:
+        tags = local_json(f"{base_url}/api/tags").get("models", [])
+    except (OSError, ValueError) as exc:
+        parser.error(f"local Ollama is unavailable: {type(exc).__name__}")
+    model = next((row for row in tags if row.get("name") == MODEL), None)
+    if not model or model.get("digest") != MODEL_DIGEST:
+        parser.error("local model is missing or its digest differs from the pinned candidate")
+    # /api/ps can report a long context after an /api/generate warmup even when
+    # the OpenAI-compatible chat route still uses Ollama's smaller server default.
+    # Probe that exact route before creating fixtures so 4k-context runs cannot
+    # be mislabeled as 65k comparisons.
+    context_probe = local_json(f"{base_url}/v1/chat/completions", {
+        "model": MODEL,
+        "messages": [{"role": "user", "content": "context " * 7000}],
+        "stream": False,
+        "max_tokens": 1,
+    }, timeout=180)
+    context_probe_prompt_tokens = (context_probe.get("usage") or {}).get("prompt_tokens")
+    if not isinstance(context_probe_prompt_tokens, int) or context_probe_prompt_tokens < 5000:
+        parser.error(
+            "OpenAI-compatible Ollama chat path did not accept a >4k-context probe; "
+            f"observed prompt_tokens={context_probe_prompt_tokens!r}. Start Ollama with "
+            "OLLAMA_CONTEXT_LENGTH set for the comparison context."
+        )
+    secopts = subprocess.check_output([docker_bin, "info", "--format", "{{json .SecurityOptions}}"], text=True).strip()
+    if "rootless" not in secopts.lower():
+        parser.error("configured Docker daemon does not report rootless mode")
+    docker_version = subprocess.check_output(
+        [docker_bin, "version", "--format", "{{.Server.Version}}"], text=True,
+    ).strip()
+    docker_storage_driver = subprocess.check_output(
+        [docker_bin, "info", "--format", "{{.Driver}}"], text=True,
+    ).strip()
+    sandbox_image_id = subprocess.check_output(
+        [docker_bin, "image", "inspect", "--format", "{{.Id}}", args.sandbox_image],
+        text=True,
+    ).strip()
+
+    # Hermes treats /home/* as a host cwd that must be remapped to /workspace.
+    # Keep the synthetic host workspace under this Linux path so the probe
+    # exercises the same session-cwd classification as an installed profile.
+    temp = pathlib.Path(tempfile.mkdtemp(prefix=".hades-workspace-pair-", dir=ROOT))
+    os.chmod(temp, 0o700)
+    docker_trace_path = temp / "docker-cli-trace.jsonl"
+    proxy = ProviderProxy(("127.0.0.1", 0), args.ollama_port, tuple(
+        FIXTURE_CASES[args.fixture_case][key] for key in ("source", "test")
+    ))
+    threading.Thread(target=proxy.serve_forever, daemon=True).start()
+    proxy_port = proxy.server_address[1]
+    processes: list[subprocess.Popen] = []
+    logs: list[Any] = []
+    records: list[dict[str, Any]] = []
+    try:
+        # One local warmup is discarded, and both arms then use the same loaded runtime/model.
+        local_json(f"{base_url}/api/generate", {"model": MODEL, "prompt": "hi", "stream": False,
+                                                   "options": {"num_ctx": 65536, "num_predict": 4}})
+        loaded_model = next((row for row in local_json(f"{base_url}/api/ps").get("models", [])
+                             if row.get("name") == MODEL), None)
+        if not loaded_model:
+            raise RuntimeError("Ollama did not report the warmed model as loaded")
+        actual_context_length = loaded_model.get("context_length")
+        if not isinstance(actual_context_length, int) or actual_context_length < 1:
+            raise RuntimeError("Ollama did not report a valid loaded context length")
+        for repeat in range(args.repeats):
+            order = (args.stack,) if args.stack else (
+                ("plain", "hades") if repeat % 2 == 0 else ("hades", "plain")
+            )
+            for stack in order:
+                home = temp / f"{stack}-{repeat}"
+                home.mkdir(mode=0o700)
+                if stack == "plain":
+                    workspace = home / "workspace"
+                    workspace.mkdir(mode=0o700)
+                else:
+                    workspace = home / "workspaces" / "synthetic-owner"
+                    workspace.mkdir(parents=True, mode=0o700)
+                if args.scenario == "read":
+                    (workspace / "answer.txt").write_text(TOKEN + "\n")
+                else:
+                    (workspace / fixture_case["source"]).write_text(fixture_case["source_content"])
+                    (workspace / fixture_case["test"]).write_text(fixture_case["test_content"])
+                    (workspace / "Makefile").write_text(
+                        "test:\n\tpython -B -m unittest discover -v\n"
+                    )
+                    (workspace / "README.md").write_text(
+                        "# Sample project\n\nRun the project tests with `make test`.\n"
+                    )
+                    if args.fixture_layout == "multifile":
+                        for name, content in fixture_case["support"].items():
+                            (workspace / name).write_text(content)
+                    subprocess.run(["git", "init", "-q"], cwd=workspace, check=True)
+                    subprocess.run(["git", "config", "user.name", "Synthetic HADES Benchmark"], cwd=workspace, check=True)
+                    subprocess.run(["git", "config", "user.email", "hades-benchmark@example.invalid"], cwd=workspace, check=True)
+                    subprocess.run(["git", "add", "."], cwd=workspace, check=True)
+                    subprocess.run(["git", "commit", "-q", "-m", "Seed failing project tests"], cwd=workspace, check=True)
+                (temp / "sibling-secret.txt").write_text("HOST-SECRET-58\n")
+                if stack == "hades":
+                    plugins = home / "plugins"
+                    plugins.mkdir(mode=0o700)
+                    (plugins / "hindsight").symlink_to(args.hindsight_plugin.resolve(), target_is_directory=True)
+
+                config = {
+                    "gateway": {"standalone": True},
+                    **({"agent": {"environment_hint": WORKSPACE_ENVIRONMENT_HINT}}
+                       if args.workspace_context_hint else {}),
+                    "model": {"default": MODEL, "provider": "custom",
+                              "base_url": f"http://127.0.0.1:{proxy_port}/v1",
+                              "ollama_num_ctx": 65536,
+                              "max_tokens": 512 if args.scenario == "escalation" else 192},
+                    "providers": {"custom": {"request_timeout_seconds": 180}},
+                    "platform_toolsets": {"api_server": ["file", "terminal"]},
+                    "terminal": {
+                        "backend": "docker", "cwd": str(workspace),
+                        "docker_image": args.sandbox_image,
+                        "docker_mount_cwd_to_workspace": True,
+                        "docker_network": False,
+                        "docker_forward_env": [], "docker_env": {}, "docker_volumes": [],
+                        "container_persistent": False,
+                        "docker_persist_across_processes": False,
+                        "docker_orphan_reaper": False,
+                    },
+                    "auxiliary": {"title_generation": {"enabled": True, "model_upgrade_enabled": False}},
+                }
+                import yaml
+                config_path = home / "config.yaml"
+                config_path.write_text(yaml.safe_dump(config, sort_keys=False))
+                os.chmod(config_path, 0o600)
+                api_port = unused_port()
+                env = os.environ.copy()
+                env.update({"HOME": str(home), "HERMES_HOME": str(home),
+                            "HERMES_DOCKER_BINARY": docker_bin,
+                            "HADES_HERMES_SANDBOX_IMAGE": args.sandbox_image,
+                            "HADES_DOCKER_TRACE_FILE": str(docker_trace_path),
+                            "HADES_DOCKER_TRACE_ROOT": str(temp),
+                            "HADES_DOCKER_TRACE_WORKSPACE": str(workspace),
+                            "PYTHONUNBUFFERED": "1"})
+                if stack == "hades":
+                    env["PYTHONPATH"] = os.pathsep.join((str(ROOT / "hermes"), str(ROOT), str(hermes_source(args.hermes_root))))
+                    env.update({"HADES_OWNER_SUBJECT_IDS": "synthetic-owner",
+                                "HADES_WORKSPACE_ENABLED": "true",
+                                "HADES_HERMES_EXECUTABLE": str(hermes_executable(args.hermes_root)),
+                                "HADES_HERMES_WORKING_DIRECTORY": str(ROOT),
+                                "HADES_INTEGRATIONS_ROOT": str(ROOT)})
+                else:
+                    env["PYTHONPATH"] = str(hermes_source(args.hermes_root))
+                child_env = env.copy()
+                child_env["HERMES_HOME"] = str(home)
+                log_path = temp / f"{stack}-{repeat}.log"
+                log = log_path.open("w")
+                logs.append(log)
+                # Run direct AIAgent turns so no UI metadata or unrelated task pipeline is present.
+                # Use the staged install's managed environment so clean Hermes dependencies
+                # are identical in both arms and the host Python stays untouched.
+                command = [str(hermes_python(args.hermes_root)), __file__, "--child", "--stack", stack,
+                         "--repeat", str(repeat), "--hermes-root", str(args.hermes_root),
+                          "--scenario", args.scenario,
+                          "--fixture-case", args.fixture_case,
+                          "--docker-binary", docker_bin, "--sandbox-image", args.sandbox_image,
+                          "--hindsight-plugin", str(args.hindsight_plugin),
+                          "--home", str(home), "--workspace", str(workspace),
+                          "--provider-url", f"http://127.0.0.1:{proxy_port}/v1"]
+                if args.prototype_force_terminal_after_mutation:
+                    command.append("--prototype-force-terminal-after-mutation")
+                if args.prototype_host_workspace_verification_mapping:
+                    command.append("--prototype-host-workspace-verification-mapping")
+                if stack == "hades":
+                    command.append("--overlay")
+                started = time.perf_counter()
+                trace_start = (
+                    len(docker_trace_path.read_text().splitlines())
+                    if docker_trace_path.exists() else 0
+                )
+                proc = subprocess.Popen(command, env=child_env, stdout=log, stderr=subprocess.STDOUT,
+                                        cwd=ROOT, start_new_session=True)
+                processes.append(proc)
+                try:
+                    code = proc.wait(timeout=240)
+                except subprocess.TimeoutExpired:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                    raise TimeoutError(f"{stack} workspace model turn exceeded 240 seconds")
+                log.flush()
+                output = log_path.read_text(errors="replace")
+                result_line = next((line[len("RESULT:"):] for line in output.splitlines()
+                                    if line.startswith("RESULT:")), None)
+                if code or result_line is None:
+                    raise RuntimeError(
+                        f"{stack} workspace probe failed (exit={code}, "
+                        f"sanitized_result_present={result_line is not None})"
+                    )
+                turn = json.loads(result_line)
+                turn["outer_wall_ms"] = round((time.perf_counter() - started) * 1000, 1)
+                if docker_trace_path.exists():
+                    trace_rows = []
+                    for line in docker_trace_path.read_text().splitlines()[trace_start:]:
+                        try:
+                            trace_rows.append(json.loads(line))
+                        except ValueError:
+                            continue
+                else:
+                    trace_rows = []
+                turn["docker_cli_trace_count"] = len(trace_rows)
+                turn["tool_schema_requests"] = proxy.snapshot()
+                # Keep each turn's provider calls distinct; no content is stored in proxy records.
+                if args.scenario == "escalation":
+                    verification = subprocess.run(
+                        [docker_bin, "run", "--rm", "--network=none", "-v",
+                         f"{workspace}:/workspace", "-w", "/workspace",
+                         args.sandbox_image, "python", "-B", "-m", "unittest", "-v"],
+                        capture_output=True, text=True, timeout=90, check=False,
+                    )
+                    changed = subprocess.check_output(
+                        ["git", "diff", "--name-only"], cwd=workspace, text=True
+                    ).splitlines()
+                    turn["independent_verification"] = {
+                        "test_exit_code": verification.returncode,
+                        "diff_check_exit_code": subprocess.run(
+                            ["git", "diff", "--check"], cwd=workspace,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                        ).returncode,
+                        "only_expected_source_changed": changed == [FIXTURE_CASES[args.fixture_case]["source"]],
+                        "changed_path_count": len(changed),
+                        "working_tree_has_uncommitted_changes": bool(subprocess.check_output(
+                            ["git", "status", "--short"], cwd=workspace, text=True
+                        ).splitlines()),
+                    }
+                records.append(turn)
+                with proxy.records_lock:
+                    proxy.records.clear()
+
+        summary = {"repeats": args.repeats}
+        if args.scenario == "read":
+            summary.update({
+                "plain_fixture_tool_successes": sum(r["tool_result_contains_fixture"] for r in records if r["stack"] == "plain"),
+                "hades_fixture_tool_successes": sum(r["tool_result_contains_fixture"] for r in records if r["stack"] == "hades"),
+                "plain_correct_final_answers": sum(r["final_response_contains_expected_token"] for r in records if r["stack"] == "plain"),
+                "hades_correct_final_answers": sum(r["final_response_contains_expected_token"] for r in records if r["stack"] == "hades"),
+            })
+        else:
+            def median(values):
+                ordered = sorted(values)
+                middle = len(ordered) // 2
+                if len(ordered) % 2:
+                    return ordered[middle]
+                return (ordered[middle - 1] + ordered[middle]) / 2
+
+            for stack in ("plain", "hades"):
+                stack_records = [r for r in records if r["stack"] == stack]
+                if not stack_records:
+                    continue
+                summary[f"{stack}_median_task_elapsed_ms"] = median([r["elapsed_ms"] for r in stack_records])
+                summary[f"{stack}_median_model_api_calls_per_task"] = median([
+                    sum(phase["api_calls"] for phase in r["turns"]) for r in stack_records
+                ])
+                summary[f"{stack}_median_tool_results_per_task"] = median([
+                    sum(phase["tool_result_count"] for phase in r["turns"]) for r in stack_records
+                ])
+            summary.update({
+                "verified_tests_passed": sum(
+                    r.get("independent_verification", {}).get("test_exit_code") == 0 for r in records
+                ),
+                "expected_source_only_changes": sum(
+                    r.get("independent_verification", {}).get("only_expected_source_changed") is True for r in records
+                ),
+                "diagnosis_mutating_tool_attempts": sum(
+                    call.get("name") in {"write_file", "patch"}
+                    or bool(call.get("command_has_write_marker") or call.get("command_has_shell_redirect") or call.get("command_mentions_fixture_mutation"))
+                    for r in records for phase in r["turns"] if phase["phase"] == "diagnose"
+                    for call in phase["sanitized_tool_calls"]
+                ),
+                "diagnosis_mutating_tool_calls_rejected_by_validation": sum(
+                    result.get("name") in {"write_file", "patch"}
+                    and result.get("error_class") == "invalid_tool"
+                    for r in records for phase in r["turns"] if phase["phase"] == "diagnose"
+                    for result in phase["sanitized_tool_results"]
+                ),
+                "diagnosis_invalid_tool_results_by_stack": {
+                    stack: sum(
+                        result.get("error_class") == "invalid_tool"
+                        for r in records if r["stack"] == stack
+                        for phase in r["turns"] if phase["phase"] == "diagnose"
+                        for result in phase["sanitized_tool_results"]
+                    ) for stack in ("plain", "hades")
+                },
+                "diagnosis_changed_workspace_turns_by_stack": {
+                    stack: sum(
+                        bool(phase.get("workspace_changed_after_turn"))
+                        for r in records if r["stack"] == stack
+                        for phase in r["turns"] if phase["phase"] == "diagnose"
+                    ) for stack in ("plain", "hades")
+                },
+            })
+
+        output = {
+            "date": datetime.date.today().isoformat(),
+            "source_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+            "method": {
+                "hermes": subprocess.check_output(
+                    [str(hermes_executable(args.hermes_root)), "--version"], text=True,
+                ).strip() + " clean install for both arms; HADES arm loads current sitecustomize overlay",
+                "model": MODEL, "model_digest": model["digest"], "ollama": local_json(f"{base_url}/api/version").get("version"),
+                "openai_chat_context_probe_prompt_tokens": context_probe_prompt_tokens,
+                "openai_chat_context_probe_minimum_tokens": 5000,
+                "docker_engine": docker_version,
+                "docker_security_options": json.loads(secopts),
+                "docker_storage_driver": docker_storage_driver,
+                "sandbox_image": args.sandbox_image,
+                "sandbox_image_id": sandbox_image_id,
+                "context": actual_context_length,
+                "requested_context": 65536,
+                "actual_context_source": "Ollama GET /api/ps after warmup and after each provider request",
+                "reasoning": "disabled in both direct AIAgent instances",
+                "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+                "scenario": args.scenario,
+                "fixture_layout": args.fixture_layout if args.scenario == "escalation" else None,
+                "fixture_case": args.fixture_case if args.scenario == "escalation" else None,
+                "workspace_verification_experiment": (
+                    "after a successful workspace code mutation in an action turn, set Hermes request_overrides.tool_choice to the named native terminal tool for one follow-up tool round; restore prior overrides after that round"
+                    if args.prototype_force_terminal_after_mutation else None
+                ),
+                "host_workspace_verification_mapping_experiment": (
+                    "benchmark-only mapping of container /workspace mutation paths and terminal evidence cwd to the current fixture's canonical host project root"
+                    if args.prototype_host_workspace_verification_mapping else None
+                ),
+                "workspace_context_hint": WORKSPACE_ENVIRONMENT_HINT if args.workspace_context_hint else None,
+                "prompt_ids": ["read"] if args.scenario == "read" else ["diagnose", "fix"],
+                "subject": "synthetic owner identity; private fixture only",
+            },
+            "turns": records,
+            "summary": summary,
+            "limitations": [
+                (
+                    f"Synthetic {args.fixture_case} {'one-file' if args.fixture_layout == 'compact' else 'multi-file'} coding escalation; "
+                    "independent fixture tests and diff checks are recorded, but this does not qualify larger coding "
+                    "tasks, Git commit behavior, or owner preference."
+                    if args.scenario == "escalation" else
+                    "Synthetic one-file read only; no editing, tests, Git, follow-up, or direct owner preference."
+                ),
+                "Only two order-balanced samples by default; local-model generation variance remains.",
+                "AIAgent direct route excludes Open WebUI persistence/metadata and does not qualify deployed gateway authentication.",
+            ],
+        }
+        print(json.dumps(output, indent=2, ensure_ascii=False))
+        return 0
+    finally:
+        for process in processes:
+            if process.poll() is None:
+                os.killpg(process.pid, signal.SIGTERM)
+                try:
+                    process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    os.killpg(process.pid, signal.SIGKILL)
+        for log in logs:
+            log.close()
+        proxy.shutdown()
+        proxy.server_close()
+        shutil.rmtree(temp, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

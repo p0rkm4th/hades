@@ -6,6 +6,8 @@ model supplied path nor a browser supplied path may select a host mount.
 
 from __future__ import annotations
 
+import copy
+import json
 import os
 import re
 import shutil
@@ -67,9 +69,30 @@ _PRIOR_WORK = re.compile(
     r"\b[A-Za-z0-9_.-]+\.(?:py|js|ts|tsx|jsx|go|rs|java|c|cc|cpp|h|hpp|sh|toml|yaml|yml|json|md|sql)\b",
     re.IGNORECASE,
 )
+_READ_ONLY_WORKSPACE_ACTION = re.compile(
+    r"\b(?:read|open|show|inspect|review|search|find|explain|describe|summari[sz]e|why)\b",
+    re.IGNORECASE,
+)
+_WORKSPACE_OBJECT = re.compile(
+    r"\b(?:file|folder|directory|project|repo(?:sitory)?|code|script|test|bug|"
+    r"function|class|workspace|branch|diff|config(?:uration)?|settings?|manifest|"
+    r"traceback|exception)\b",
+    re.IGNORECASE,
+)
+_MUTATING_WORKSPACE_ACTION = re.compile(
+    r"\b(?:edit|modify|change|write|create|patch|delete|rename|move|format|lint|"
+    r"fix|repair|commit)\b",
+    re.IGNORECASE,
+)
 
 WORKSPACE_TOOL_NAMES = frozenset({
     "read_file", "search_files", "write_file", "patch", "terminal",
+})
+WORKSPACE_READ_ONLY_TOOL_NAMES = frozenset({"read_file", "search_files"})
+_WORKSPACE_CODE_SUFFIXES = frozenset({
+    ".py", ".pyi", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".go",
+    ".rs", ".java", ".c", ".cc", ".cpp", ".h", ".hpp", ".sh", ".bash",
+    ".sql", ".html", ".css", ".scss", ".vue", ".svelte",
 })
 
 
@@ -98,6 +121,25 @@ def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None
         and str(message.get("role", "")) in {"user", "assistant", "tool"}
         and _PRIOR_WORK.search(str(message.get("content", "")))
         for message in recent
+    )
+
+
+def is_workspace_read_only_request(user_message: str) -> bool:
+    """Recognize code/file questions that permit inspection but not execution or edits."""
+    text = str(user_message or "")
+    if _MUTATING_WORKSPACE_ACTION.search(text):
+        return False
+    if is_workspace_diagnosis_request(text):
+        return True
+    return bool(_READ_ONLY_WORKSPACE_ACTION.search(text) and _WORKSPACE_OBJECT.search(text))
+
+
+def is_workspace_diagnosis_request(user_message: str) -> bool:
+    """A diagnosis can fall back to ordinary model context if no workspace is available."""
+    text = str(user_message or "")
+    return bool(
+        not _MUTATING_WORKSPACE_ACTION.search(text)
+        and (_CODE_EXPLANATION.search(text) or _CODE_FAILURE_DIAGNOSIS.search(text))
     )
 
 
@@ -220,8 +262,8 @@ def sandbox_runtime_available() -> bool:
         return False
 
 
-def get_workspace_tools() -> list[dict[str, Any]]:
-    """Load Hermes' native file/shell tools, excluding deferred discovery bridges."""
+def get_workspace_tools(*, read_only: bool = False) -> list[dict[str, Any]]:
+    """Load native workspace tools; code questions get file inspection only."""
     from model_tools import get_tool_definitions
 
     definitions = get_tool_definitions(
@@ -229,11 +271,43 @@ def get_workspace_tools() -> list[dict[str, Any]]:
         quiet_mode=True,
     )
     selected = [
-        item for item in definitions
-        if item.get("function", {}).get("name") in WORKSPACE_TOOL_NAMES
+        copy.deepcopy(item) for item in definitions
+        if item.get("function", {}).get("name") in (
+            WORKSPACE_READ_ONLY_TOOL_NAMES if read_only else WORKSPACE_TOOL_NAMES
+        )
     ]
+    # Workspace discovery must be a filename-glob search. Hermes' shared
+    # search_files schema defaults to content search, which local models often
+    # select accidentally even when the workspace instructions request files.
+    # Require the target explicitly for this scoped catalog so an omitted
+    # optional field cannot turn file discovery into a silent zero-result grep.
+    for item in selected:
+        function = item.get("function", {})
+        if function.get("name") != "search_files":
+            continue
+        parameters = function.get("parameters")
+        if not isinstance(parameters, dict):
+            raise RuntimeError("Hermes search_files schema is incomplete")
+        properties = parameters.setdefault("properties", {})
+        target = properties.get("target")
+        if not isinstance(target, dict):
+            raise RuntimeError("Hermes search_files target schema is incomplete")
+        target["description"] = (
+            "Required. Use 'files' to discover workspace paths by filename glob; "
+            "use 'content' only when searching text inside known files."
+        )
+        function["description"] = (
+            str(function.get("description") or "").rstrip()
+            + " For initial project discovery, search once with target='files', "
+            "pattern='*', path='/workspace'. Do not guess test or configuration "
+            "filenames before reading that result."
+        )
+        required = parameters.setdefault("required", [])
+        if "target" not in required:
+            required.append("target")
     names = {item.get("function", {}).get("name") for item in selected}
-    if names != WORKSPACE_TOOL_NAMES:
+    expected = WORKSPACE_READ_ONLY_TOOL_NAMES if read_only else WORKSPACE_TOOL_NAMES
+    if names != expected:
         raise RuntimeError("Hermes native workspace tool catalog is incomplete")
     return selected
 
@@ -305,10 +379,8 @@ def has_workspace_tool_result(messages: Any) -> bool:
         if not body:
             continue
         try:
-            import json
-
             payload = json.loads(body)
-        except Exception:
+        except (TypeError, ValueError):
             payload = None
         if isinstance(payload, dict):
             status = str(payload.get("status") or "").lower()
@@ -322,3 +394,176 @@ def has_workspace_tool_result(messages: Any) -> bool:
             continue
         return True
     return False
+
+
+def current_workspace_turn_messages(
+    result: Any,
+    *,
+    expected_turn_id: Any = None,
+    expected_user_message: Any = None,
+) -> list[dict[str, Any]]:
+    """Return only a boundary bound to this request; fail closed on ambiguity."""
+    if not isinstance(result, dict):
+        return []
+    messages = result.get("messages")
+    start = result.get("current_turn_user_idx")
+    if (
+        not isinstance(messages, list)
+        or not isinstance(start, int)
+        or isinstance(start, bool)
+        or not 0 <= start < len(messages)
+    ):
+        return []
+    if not isinstance(messages[start], dict) or messages[start].get("role") != "user":
+        return []
+    if not isinstance(expected_turn_id, str) or not expected_turn_id:
+        return []
+    if result.get("turn_id") != expected_turn_id:
+        return []
+    if messages[start].get("content") != expected_user_message:
+        return []
+    return messages[start:]
+
+
+def _workspace_message_payload(message: dict[str, Any]) -> dict[str, Any] | None:
+    content = message.get("content")
+    if isinstance(content, list):
+        content = " ".join(
+            str(part.get("text", "")) if isinstance(part, dict) else str(part)
+            for part in content
+        )
+    try:
+        payload = json.loads(str(content or ""))
+    except (TypeError, ValueError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def has_successful_workspace_code_mutation(messages: Any) -> bool:
+    """Whether a native write/patch result confirms a code file was changed."""
+    if not isinstance(messages, list):
+        return False
+    for message in messages:
+        if not isinstance(message, dict) or message.get("role") != "tool":
+            continue
+        name = str(message.get("name") or message.get("tool_name") or "")
+        if name not in {"write_file", "patch"}:
+            continue
+        payload = _workspace_message_payload(message)
+        if not isinstance(payload, dict) or payload.get("error"):
+            continue
+        files = payload.get("files_modified")
+        if not isinstance(files, list):
+            files = [payload.get("resolved_path")] if payload.get("resolved_path") else []
+        if any(Path(str(path)).suffix.lower() in _WORKSPACE_CODE_SUFFIXES for path in files):
+            return True
+    return False
+
+
+def _workspace_test_command_kind(command: Any) -> str | None:
+    if not isinstance(command, str):
+        return None
+    patterns = (
+        ("unittest", r"\bpython(?:3(?:\.\d+)*)?(?:\s+-[A-Za-z][^\s]*)*\s+-m\s+unittest\b"),
+        ("pytest", r"(?:^|[\s;&|])(?:[\w./-]+/)?pytest(?:\s|$)"),
+        ("pytest", r"\bpython(?:3(?:\.\d+)*)?(?:\s+-[A-Za-z][^\s]*)*\s+-m\s+pytest\b"),
+        ("node", r"(?:^|[\s;&|])(?:npm|pnpm|yarn)\s+(?:run\s+)?test(?:\s|$)"),
+        ("node", r"(?:^|[\s;&|])npx\s+(?:jest|vitest|mocha)(?:\s|$)"),
+        ("cargo", r"(?:^|[\s;&|])cargo\s+test(?:\s|$)"),
+        ("go", r"(?:^|[\s;&|])go\s+test(?:\s|$)"),
+        ("dotnet", r"(?:^|[\s;&|])dotnet\s+test(?:\s|$)"),
+        ("maven", r"(?:^|[\s;&|])mvn\s+[^;&|]*\btest\b"),
+    )
+    for kind, pattern in patterns:
+        if re.search(pattern, command, re.IGNORECASE):
+            return kind
+    return None
+
+
+def workspace_code_test_status(messages: Any) -> str:
+    """Return passed/failed/unverified from a matched native test call and result."""
+    if not isinstance(messages, list):
+        return "unverified"
+    test_call_ids: list[str] = []
+    unkeyed_test_calls = 0
+    for message in messages:
+        if not isinstance(message, dict) or message.get("role") != "assistant":
+            continue
+        for call in message.get("tool_calls") or []:
+            if not isinstance(call, dict):
+                continue
+            function = call.get("function")
+            if not isinstance(function, dict) or function.get("name") != "terminal":
+                continue
+            arguments = function.get("arguments")
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except (TypeError, ValueError):
+                    continue
+            if not isinstance(arguments, dict) or not _workspace_test_command_kind(arguments.get("command")):
+                continue
+            call_id = str(call.get("id") or "").strip()
+            if call_id:
+                test_call_ids.append(call_id)
+            else:
+                unkeyed_test_calls += 1
+
+    terminal_results = [
+        message for message in messages
+        if isinstance(message, dict) and message.get("role") == "tool"
+        and str(message.get("name") or message.get("tool_name") or "") == "terminal"
+    ]
+    if test_call_ids:
+        # The newest relevant invocation is authoritative. A failed first run
+        # followed by a passing rerun must not be reported as still failing,
+        # and an older pass must not hide a later failed or missing result.
+        latest_call_id = test_call_ids[-1]
+        matched_results = [
+            message for message in terminal_results
+            if str(message.get("tool_call_id") or "").strip() == latest_call_id
+        ]
+        if not matched_results:
+            return "unverified"
+        message = matched_results[-1]
+    elif unkeyed_test_calls == 1 and len(terminal_results) == 1:
+        message = terminal_results[0]
+    else:
+        return "unverified"
+
+    payload = _workspace_message_payload(message)
+    if not isinstance(payload, dict):
+        return "unverified"
+    output = str(payload.get("output") or "")
+    exit_code = payload.get("exit_code")
+    if exit_code != 0:
+        return "failed"
+    if re.search(r"\bFAILED\b|\b(?:\d+\s+)?failed\b|\bFailures:\s*[1-9]\d*", output, re.IGNORECASE):
+        return "failed"
+    passed = (
+        bool(re.search(r"Ran\s+[1-9]\d*\s+tests?", output) and re.search(r"(?:^|\n)OK(?:\s|$)", output))
+        or bool(re.search(r"\b[1-9]\d*\s+passed\b", output, re.IGNORECASE))
+        or bool(re.search(r"test result: ok\.\s+[1-9]\d* passed", output, re.IGNORECASE))
+        or bool(re.search(r"\bTest Suites?:\s*[1-9]\d* passed\b", output, re.IGNORECASE))
+        or bool(re.search(r"^ok\s+[^\s]+(?:\s+[\d.]+s)?\s*$", output, re.MULTILINE))
+        or bool(re.search(r"Passed:\s*[1-9]\d*", output, re.IGNORECASE))
+    )
+    return "passed" if passed else "unverified"
+
+
+def workspace_code_verification_notice(messages: Any) -> str | None:
+    """Truthful completion text when code changed without successful test evidence."""
+    if not has_successful_workspace_code_mutation(messages):
+        return None
+    status = workspace_code_test_status(messages)
+    if status == "passed":
+        return None
+    if status == "failed":
+        return (
+            "The code change was made, but the test command did not pass. "
+            "The change is not verified."
+        )
+    return (
+        "The code change was made, but I didn't receive a successful test result in this turn. "
+        "The change is not verified."
+    )
