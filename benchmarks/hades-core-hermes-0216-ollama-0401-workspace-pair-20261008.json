@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-08",
+  "experiment": "two order-balanced synthetic multi-file coding escalation pairs",
+  "control": "clean Hermes Agent v0.21.6 without HADES sitecustomize overlay",
+  "hades_arm": "same Hermes v0.21.6 with current HADES sitecustomize overlay",
+  "runtime": {
+    "ollama": "0.40.1",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "context_tokens": 65536,
+    "reasoning": "disabled",
+    "cloud_features": "disabled"
+  },
+  "sandbox": {
+    "docker_engine": "29.8.2",
+    "storage_driver": "vfs",
+    "network": "none",
+    "image_digest": "sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d"
+  },
+  "results": {
+    "plain_median_task_elapsed_ms": 32195.65,
+    "hades_median_task_elapsed_ms": 56267.55,
+    "plain_median_model_api_calls": 8.5,
+    "hades_median_model_api_calls": 9.5,
+    "plain_median_tool_results": 11.0,
+    "hades_median_tool_results": 11.0,
+    "independent_tests_passed": 4,
+    "independent_expected_source_only_workspaces": 4,
+    "diagnosis_invalid_tool_results": {
+      "plain": 0,
+      "hades": 2
+    },
+    "diagnosis_changed_workspace_turns": {
+      "plain": 2,
+      "hades": 0
+    }
+  },
+  "repeats": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "task_elapsed_ms": 37880.0,
+      "outer_wall_ms": 41091.1,
+      "model_api_calls": 10,
+      "tool_results": 13,
+      "native_verification_status": "passed",
+      "native_verification_stop_nudges": 0,
+      "independent_tests_passed": true,
+      "independent_diff_check_passed": true,
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "task_elapsed_ms": 57768.9,
+      "outer_wall_ms": 61993.5,
+      "model_api_calls": 10,
+      "tool_results": 11,
+      "native_verification_status": "unverified",
+      "native_verification_stop_nudges": 2,
+      "independent_tests_passed": true,
+      "independent_diff_check_passed": true,
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "task_elapsed_ms": 54766.2,
+      "outer_wall_ms": 58835.4,
+      "model_api_calls": 9,
+      "tool_results": 11,
+      "native_verification_status": "passed",
+      "native_verification_stop_nudges": 0,
+      "independent_tests_passed": true,
+      "independent_diff_check_passed": true,
+      "only_expected_source_changed": true
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "task_elapsed_ms": 26511.3,
+      "outer_wall_ms": 29403.9,
+      "model_api_calls": 7,
+      "tool_results": 9,
+      "native_verification_status": "passed",
+      "native_verification_stop_nudges": 0,
+      "independent_tests_passed": true,
+      "independent_diff_check_passed": true,
+      "only_expected_source_changed": true
+    }
+  ],
+  "limitations": [
+    "Two samples per arm on one synthetic discount fixture; local generation variance is material.",
+    "This is not an owner-preference, broad coding, Git-commit, Open WebUI, or deployed-authentication qualification.",
+    "The experimental benchmark-only workspace mapping did not make HADES native verification reliable across both repeats: one run was unverified and one passed. Do not promote the mapping based on this result."
+  ]
+}

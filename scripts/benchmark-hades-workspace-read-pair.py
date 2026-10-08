@@ -1588,7 +1588,9 @@ def main() -> int:
                             trace_rows.append(json.loads(line))
                         except ValueError:
                             continue
-                    turn["docker_cli_trace_count"] = len(trace_rows)
+                else:
+                    trace_rows = []
+                turn["docker_cli_trace_count"] = len(trace_rows)
                 turn["tool_schema_requests"] = proxy.snapshot()
                 # Keep each turn's provider calls distinct; no content is stored in proxy records.
                 if args.scenario in {"escalation", "small-edit", "small-edit-verify", "workflow-to-commit"}:
