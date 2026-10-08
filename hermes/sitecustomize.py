@@ -10061,22 +10061,6 @@ try:
                     "api_calls": 0,
                     "completed": True,
                 }
-        _pending_memory_response = _hades_pending_memory_response(
-            self, user_message
-        )
-        if _pending_memory_response:
-            callback = getattr(self, "stream_delta_callback", None)
-            if callback:
-                callback(_pending_memory_response)
-            _hades_logger.info(
-                "Pending personal-memory question answered without model invocation"
-            )
-            return {
-                "final_response": _pending_memory_response,
-                "messages": [{"role": "assistant", "content": _pending_memory_response}],
-                "api_calls": 0,
-                "completed": True,
-            }
         original_model = getattr(self, "model", "")
         fast_lane_restore = None
         fast_prompt_restore = None
@@ -10169,6 +10153,27 @@ try:
             return {
                 "final_response": _early_memory_response,
                 "messages": [{"role": "assistant", "content": _early_memory_response}],
+                "api_calls": 0,
+                "completed": True,
+            }
+        # Explicitly retained facts live in a separate, synchronous Hindsight
+        # bank. Resolve those before the canonical-bank retain guard: unrelated
+        # automatic memory work must not hide a fact that is already visible.
+        # If no explicit match exists, preserve the guard before any model or
+        # semantic-memory fallback can answer from canonical memory.
+        _pending_memory_response = _hades_pending_memory_response(
+            self, user_message
+        )
+        if _pending_memory_response:
+            callback = getattr(self, "stream_delta_callback", None)
+            if callback:
+                callback(_pending_memory_response)
+            _hades_logger.info(
+                "Pending personal-memory question answered without model invocation"
+            )
+            return {
+                "final_response": _pending_memory_response,
+                "messages": [{"role": "assistant", "content": _pending_memory_response}],
                 "api_calls": 0,
                 "completed": True,
             }
