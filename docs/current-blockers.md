@@ -7,14 +7,13 @@ summarize engineering evidence; they are not a live infrastructure probe.
 
 ## HADES core usability campaign checkpoint — 2026-10-08 UTC
 
-The review branch is `codex/hades-core-usability-reset-review-20261007` at
-`0973acfa9bfeeed606e28595b4104253d33c703c`, pushed to its matching origin
-branch. It is 118 commits ahead of `main` (`627b7c5fc4fa875bdab78abc25133897b50a882d`)
-and zero commits behind. Hosted CI for this exact review-branch SHA passed in
-[run 37786716625](https://github.com/p0rkm4th/hades/actions/runs/37786716625).
-GitHub rejected draft PR creation with HTTP 403, so the branch is reviewable
-directly and no PR is open. This is a broad campaign checkpoint, not a
-usability release qualification.
+Engineering evidence is published on the
+[`codex/hades-core-usability-reset-review-20261007` review branch](https://github.com/p0rkm4th/hades/tree/codex/hades-core-usability-reset-review-20261007).
+GitHub rejected draft PR creation with HTTP 403, so reviewers can inspect the
+branch directly. This is a broad campaign checkpoint, not a usability release
+qualification. Keep changing commit IDs, branch distance, and hosted CI run
+status in the live operator/review update rather than this durable product
+checkpoint.
 
 The current stable synthetic control is Hermes 0.21.5, Ollama 0.40.1,
 Qwen3.6:35b Q4_K_M, and disposable Hindsight 0.10.2. The latest measured
