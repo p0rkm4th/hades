@@ -160,9 +160,28 @@ reported that the Qwen3:14b extraction model's training context is 40,960
 tokens while the runtime requested 65,536; the probe inputs were much smaller,
 so this result does not establish general 65,536-context behavior.
 
+I then compared corrections in fresh banks with observations disabled. Both
+cases first stored the same synthetic preference using `semantic`; the second
+item corrected it to a new preference using either `semantic` or `fast`.
+Semantic correction took 7.10 seconds to drain and used two total chat
+generations across both writes. Fast correction took 2.05 seconds and used one
+chat generation. On the same current-preference query, the new marker ranked
+first with semantic correction and third with fast correction; the old marker
+was still present at rank 1 in both result sets. So a fast chunk correction
+reduced work but produced worse ordering and did not invalidate stale content.
+This is upstream automatic-memory behavior, not an end-to-end HADES correction
+test. HADES's separate authenticated explicit-memory route reads tagged facts
+and resolves corrections using their update timestamps; the existing focused
+contract script passed its correction, typoed-query, paraphrase, and
+subject-isolation cases. Keep this fast strategy away from explicit writes and
+corrections. A candidate for ordinary automatic turns still needs to prove
+that HADES's own latest-fact reducer returns the corrected value from live
+Hindsight results before it is considered.
+
 Keep the production retain/observation settings unchanged. The next candidate
-should thread a narrow strategy choice through the actual HADES retain path
-and initialize bank strategy configuration, then replay correction ordering,
+should thread a narrow strategy choice through the automatic HADES retain path
+and initialize bank strategy configuration, while keeping explicit writes and
+corrections on their existing route. Then replay correction ordering,
 stale-value rejection, implicit recall, and fresh-session checks against a
 fresh Hindsight volume. It must preserve relevant observation behavior before
 changing production policy. No owner preference was assigned, and neither
