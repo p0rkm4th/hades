@@ -21,6 +21,13 @@ SPEC.loader.exec_module(MODULE)
 capture = MODULE.capture_request_controls
 public_metric_record = MODULE.public_metric_record
 require_loaded_context = MODULE.require_loaded_context
+assert MODULE.apply_request_overrides(
+    {"options": {"num_predict": 128, "top_p": 0.8}},
+    {"temperature": 0.1, "options": {"num_ctx": 65536}},
+) == {
+    "options": {"num_predict": 128, "top_p": 0.8, "num_ctx": 65536},
+    "temperature": 0.1,
+}
 request = {
     "temperature": 0.2,
     "top_p": 0.9,
@@ -101,6 +108,11 @@ assert PAIR_MODULE.OWNER_CORE_09_RECALL == "What was the savings target I mentio
 assert PAIR_MODULE.core09_answer_matches_target("$3,000.") is True
 assert PAIR_MODULE.core09_answer_matches_target("3000") is True
 assert PAIR_MODULE.core09_answer_matches_target("The target is $2,500.") is False
+assert PAIR_MODULE.CONTEXT_LENGTH == 65536
+assert PAIR_MODULE.summarize_calls([
+    {"requested_num_ctx": 65536, "usage": {"prompt_tokens": 3}},
+    {"requested_num_ctx": 65536, "usage": {"completion_tokens": 1}},
+])["context_tokens_per_generation"] == [65536, 65536]
 assert PAIR_MODULE.configure_hades_scope(
     {"HADES_OWNER_SUBJECT_IDS": "inherited-owner"}, "household"
 ) == {}
