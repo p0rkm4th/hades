@@ -1,5 +1,14 @@
 # HADES core-09 explicit-memory replay v10 — 2026-10-08
 
+> **Context qualification correction (2026-10-08):** The v10 pair artifacts
+> below requested a 65,536-token context, but Ollama `/api/ps` recorded 4,096
+> tokens for measured generations. Do not treat their latency figures as a
+> 65k-context comparison. The effective-context control is now implemented and
+> its separate automatic-memory replay is recorded in
+> [`hades-core-memory-context-correction-2026-10-08.md`](hades-core-memory-context-correction-2026-10-08.md).
+> Core-09 must be replayed again under that control before its timings are used
+> as a matched 65k result.
+
 ## Scope
 
 This is a focused synthetic comparison of explicit memory recall. It is not

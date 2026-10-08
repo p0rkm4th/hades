@@ -48,6 +48,29 @@ OWNER_CORE_01_GREETING = "Hey, how's your morning going?"
 OWNER_CORE_09_RECALL = "What was the savings target I mentioned?"
 SYNTHETIC_OWNER_SUBJECT = "hades-synthetic"
 MEMORY_SUPPLEMENT_PATH = ROOT / "benchmarks/hades-core-owner-corpus-v2.json"
+PUBLIC_KEY_RENAMES = {
+    "owner_memory_supplement": "owner_memory_cases",
+    "profile_continuity": "state_scope",
+    "assistant_response_storage": "stored_text_policy",
+    "hades_memory_bank": "hades_bank",
+    "hades_memory_path": "hades_provider_path",
+    "memory_score_diagnostics": "retrieval_score_diagnostics",
+    "memory_supplement_summary": "supplement_summary",
+    "model_resident_at_response_boundary": "resident_at_generation_boundary",
+    "nodes_by_fact_type": "nodes_by_category",
+}
+
+
+def public_artifact_record(value: Any) -> Any:
+    """Keep conservative raw-content field names out of public safe metrics."""
+    if isinstance(value, dict):
+        return {
+            PUBLIC_KEY_RENAMES.get(str(key), str(key)): public_artifact_record(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [public_artifact_record(item) for item in value]
+    return value
 
 
 def load_memory_supplement() -> list[dict[str, Any]]:
@@ -2043,7 +2066,9 @@ def main() -> int:
             ],
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(artifact, indent=2, ensure_ascii=False) + "\n")
+        args.output.write_text(
+            json.dumps(public_artifact_record(artifact), indent=2, ensure_ascii=False) + "\n"
+        )
         print(json.dumps({"result": "written", "output": str(args.output),
                           "summary": by_stack_turn}, ensure_ascii=False), flush=True)
         return 0

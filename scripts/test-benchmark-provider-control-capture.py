@@ -109,6 +109,18 @@ assert PAIR_MODULE.core09_answer_matches_target("$3,000.") is True
 assert PAIR_MODULE.core09_answer_matches_target("3000") is True
 assert PAIR_MODULE.core09_answer_matches_target("The target is $2,500.") is False
 assert PAIR_MODULE.CONTEXT_LENGTH == 65536
+safe_keys = PAIR_MODULE.public_artifact_record({
+    "model_resident_at_response_boundary": "resident",
+    "assistant_response_storage": "not stored",
+    "memory_supplement_summary": {},
+    "nodes_by_fact_type": {},
+})
+assert safe_keys == {
+    "resident_at_generation_boundary": "resident",
+    "stored_text_policy": "not stored",
+    "supplement_summary": {},
+    "nodes_by_category": {},
+}
 assert PAIR_MODULE.summarize_calls([
     {"requested_num_ctx": 65536, "usage": {"prompt_tokens": 3}},
     {"requested_num_ctx": 65536, "usage": {"completion_tokens": 1}},
