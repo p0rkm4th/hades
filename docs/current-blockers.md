@@ -24,6 +24,15 @@ constitute direct owner dogfood or production deployment. No production change
 was made. The exact live image identity and operator target remain in the
 protected checkpoint.
 
+On 2026-10-08, the populated-database rehearsal was extended to capture an
+online SQLite backup from the synthetic 0.11.1 fixture, migrate the original
+volume to 0.11.4, and restore that snapshot into a new 0.11.1 volume. Account
+identity, chat, shared-channel access, private-chat isolation, and database
+integrity passed after both migration and rollback. This is database-only
+synthetic evidence; it does not cover production files/assets, secret custody,
+the actual protected production backup, live cutover, or owner dogfood. The
+production backup, rollout, and rollback gates therefore remain open.
+
 ## Open WebUI DOCX preview regression — 2026-10-08 UTC
 
 Added `scripts/test-openwebui-docx-preview-security.sh`, which starts an
