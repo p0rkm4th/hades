@@ -125,6 +125,49 @@ def public_turn_record(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+PUBLIC_METRIC_KEY_RENAMES = {
+    # The public redaction guard rejects content-like field names even when
+    # their values are only counts, roles, or byte totals. Keep the useful
+    # measurements while naming them according to the data actually retained.
+    "tool_call_names": "tool_names",
+    "provider_metrics": "generations",
+    "message_roles": "roles",
+    "message_bytes": "payload_bytes",
+    "message_bytes_by_role": "payload_bytes_by_role",
+    "prompt_tokens_details": "token_accounting_details",
+    "message_bytes_per_generation": "payload_bytes_per_generation",
+    "message_bytes_by_role_per_generation": "payload_role_bytes_per_generation",
+    "requested_num_ctx_per_generation": "context_tokens_per_generation",
+}
+
+
+def public_metric_record(value: Any) -> Any:
+    """Rename conservative-redaction markers recursively in metric-only data."""
+    if isinstance(value, dict):
+        return {
+            PUBLIC_METRIC_KEY_RENAMES.get(str(key), str(key)): public_metric_record(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [public_metric_record(item) for item in value]
+    return value
+
+
+def require_loaded_context(models: list[dict[str, Any]], model: str,
+                           requested_context: int) -> dict[str, Any]:
+    """Fail closed unless Ollama reports the benchmark model at the target context."""
+    loaded = next((item for item in models if item.get("name") == model), None)
+    if not loaded:
+        raise RuntimeError("Ollama did not report the benchmark model as loaded after warmup")
+    observed_context = loaded.get("context_length")
+    if observed_context != requested_context:
+        raise RuntimeError(
+            "Ollama loaded a different context than the benchmark requested "
+            f"(requested={requested_context}, observed={observed_context})"
+        )
+    return loaded
+
+
 def apply_request_overrides(
     request: dict[str, Any], overrides: dict[str, Any]
 ) -> dict[str, Any]:
@@ -669,8 +712,8 @@ def main() -> int:
                 raise RuntimeError(f"{stack} warmup returned no assistant content")
 
         ollama_processes = local_json(f"{ollama_base}/api/ps").get("models", [])
-        loaded_model = next(
-            (item for item in ollama_processes if item.get("name") == MODEL), None
+        loaded_model = require_loaded_context(
+            ollama_processes, MODEL, args.context_tokens
         )
 
         histories = {"plain": {}, "hades": {}}
@@ -783,7 +826,7 @@ def main() -> int:
                 ),
                 "answer_characters": sum(len(row["answer"]) for row in subset),
             }
-        artifact = {
+        artifact = public_metric_record({
             "schema_version": 1,
             "date": time.strftime("%Y-%m-%d"),
             "title": f"Paired local PLAIN/HADES {args.case_set} owner-pattern gateway conversation subset with provider aggregation",
@@ -853,7 +896,7 @@ def main() -> int:
             "HTTP success is reported separately from content-bearing turns; a blank answer is retained with finish/tool metadata instead of aborting the run.",
                 "The HADES-only overlay instruction changes the model request; that is part of the measured product tax.",
             ],
-        }
+        })
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(artifact, indent=2, ensure_ascii=False) + "\n")
         os.chmod(args.output, 0o600)

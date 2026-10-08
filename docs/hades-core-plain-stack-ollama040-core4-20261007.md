@@ -40,3 +40,30 @@ The staged Ollama process was stopped after the run and loopback port 11445
 was verified closed. No production state changed. Memory, household/domain
 tools, coding, computer use, Open WebUI, and direct Scotty preference remain
 unmeasured by this comparison.
+
+## Counterbalanced reset replay
+
+A further three-repeat replay used the same release, model digest, GPU,
+65,536-token Ollama server context, 512-token output cap, and empty API toolsets.
+This runner now aborts unless Ollama's loaded context matches the requested
+context; the earlier startup-default behavior had silently loaded 4,096 tokens
+despite sending `num_ctx=65536` in the request. The corrected run captured
+18/18 content-bearing turns per stack, 18 provider generations per stack, and
+zero schemas/calls for both.
+
+| Measure | PLAIN STACK | HADES |
+|---|---:|---:|
+| Median TTFT | 1,177 ms | 1,196 ms |
+| Median total latency | 1,873 ms | 1,612 ms |
+| Median input tokens | 723.5 | 725.5 |
+| Mean serialized message bytes | 3,084 | 3,071 |
+
+The paired medians are close on this four-case ordinary-chat slice. HADES was
+19 ms slower to first content and 261 ms faster to completion; the difference
+is within observed generation variation and does not establish a product
+preference. No response text was retained for quality review. The artifact
+[`hades-core-owner-subset-pair-v3-20261007.json`](../benchmarks/hades-core-owner-subset-pair-v3-20261007.json)
+contains metric-only records and passed the public redaction check. The
+benchmark control now rejects a mismatched loaded context, and the public
+metric serializer renames count/role fields that the conservative scanner
+would otherwise mistake for raw content.

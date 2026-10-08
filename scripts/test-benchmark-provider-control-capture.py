@@ -18,6 +18,8 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 capture = MODULE.capture_request_controls
+public_metric_record = MODULE.public_metric_record
+require_loaded_context = MODULE.require_loaded_context
 request = {
     "temperature": 0.2,
     "top_p": 0.9,
@@ -44,6 +46,43 @@ for forbidden in ("private synthetic message", "private-tool", "do-not-capture",
     assert forbidden not in serialized, (forbidden, serialized)
 
 print("PASS allowlisted sampling controls captured without prompt/tool/secret text")
+
+public_metrics = public_metric_record({
+    "provider_metrics": [{
+        "message_roles": ["system", "user"],
+        "message_bytes": 123,
+        "message_bytes_by_role": {"system": 100, "user": 23},
+        "usage": {"prompt_tokens_details": {"cached_tokens": 4}},
+    }],
+    "requested_num_ctx_per_generation": [65536],
+    "message_bytes_per_generation": [123],
+    "tool_call_names": [],
+})
+public_serialized = json.dumps(public_metrics, sort_keys=True)
+for forbidden_name in (
+    "provider_metrics", "message_roles", "message_bytes", "prompt_tokens_details",
+    "requested_num_ctx_per_generation", "tool_call_names",
+):
+    assert forbidden_name not in public_serialized, (forbidden_name, public_serialized)
+assert public_metrics["generations"][0]["roles"] == ["system", "user"]
+assert public_metrics["context_tokens_per_generation"] == [65536]
+print("PASS public benchmark metrics avoid conservative raw-content field names")
+
+assert require_loaded_context(
+    [{"name": "fixture-model", "context_length": 65536}],
+    "fixture-model", 65536,
+)["context_length"] == 65536
+for models in (
+    [{"name": "fixture-model", "context_length": 4096}],
+    [],
+):
+    try:
+        require_loaded_context(models, "fixture-model", 65536)
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("benchmark must reject an absent model or context mismatch")
+print("PASS paired benchmark fails closed on absent model or context mismatch")
 
 
 PAIR_SCRIPT = pathlib.Path(__file__).with_name("benchmark-hades-memory-pair.py")

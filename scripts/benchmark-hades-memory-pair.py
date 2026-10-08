@@ -54,6 +54,12 @@ def load_memory_supplement() -> list[dict[str, Any]]:
     expected = {f"core-{index}" for index in range(51, 56)}
     if {row.get("id") for row in cases} != expected:
         raise RuntimeError("owner memory supplement corpus is incomplete")
+    for row in cases:
+        review = row.get("review_check")
+        if not isinstance(review, dict) or not review.get("visibility_bank") or not review.get("visibility_needle"):
+            raise RuntimeError(f"owner memory supplement case {row.get('id')} lacks visibility checks")
+        if row.get("id") != "core-55" and not review.get("probe_text"):
+            raise RuntimeError(f"owner memory supplement case {row.get('id')} lacks a fresh probe")
     return cases
 
 
@@ -612,7 +618,7 @@ def measure_memory_supplement_case(gateway: dict[str, Any], benchmark,
                                    sample_id: str) -> dict[str, Any]:
     """Replay a synthetic memory case and a fresh-session recall where defined."""
     case_id = str(case["id"])
-    review = case.get("memory_review", {})
+    review = case.get("review_check", {})
     turns = case.get("turns", [])
     rows: list[dict[str, Any]] = []
     if case_id == "core-55":
@@ -630,29 +636,42 @@ def measure_memory_supplement_case(gateway: dict[str, Any], benchmark,
             ])
         answer = rows[int(review.get("recall_turn_index", len(rows) - 1))]["answer"]
     else:
-        if len(turns) != 1 or not review.get("prompt"):
-            raise RuntimeError(f"memory supplement case {case_id} lacks a single seed and recall probe")
-        seed = measure_turn(
-            gateway, benchmark, f"supplement_{case_id}_seed",
-            f"memory-supplement-{stack}-{sample_id}-{case_id}-seed",
-            [{"role": "user", "content": turns[0]}],
-        )
-        rows.append(seed)
+        if not turns or not review.get("probe_text"):
+            raise RuntimeError(f"memory supplement case {case_id} lacks seed turns or a recall probe")
+        seed_session = f"memory-supplement-{stack}-{sample_id}-{case_id}-seed"
+        history: list[dict[str, str]] = []
+        for index, prompt in enumerate(turns):
+            seed = measure_turn(
+                gateway, benchmark, f"supplement_{case_id}_seed_{index + 1}",
+                seed_session, history + [{"role": "user", "content": prompt}],
+            )
+            rows.append(seed)
+            history.extend([
+                {"role": "user", "content": prompt},
+                {"role": "assistant", "content": seed["answer"]},
+            ])
         probe = measure_turn(
             gateway, benchmark, f"supplement_{case_id}_probe",
             f"memory-supplement-{stack}-{sample_id}-{case_id}-probe",
-            [{"role": "user", "content": review["prompt"]}],
+            [{"role": "user", "content": review["probe_text"]}],
         )
         rows.append(probe)
         answer = probe["answer"]
     folded = str(answer or "").casefold()
     required_markers = [str(marker).casefold() for marker in review.get("must_contain_any", [])]
-    marker_present = bool(required_markers) and any(marker in folded for marker in required_markers)
+    required_all = [str(marker).casefold() for marker in review.get("must_contain_all", [])]
+    forbidden_markers = [str(marker).casefold() for marker in review.get("must_not_contain_any", [])]
+    marker_present = (
+        (not required_markers or any(marker in folded for marker in required_markers))
+        and all(marker in folded for marker in required_all)
+        and not any(marker in folded for marker in forbidden_markers)
+    )
     return {
         "case_id": case_id,
         "turns": rows,
-        "probe_prompt": review.get("prompt"),
-        "expected_markers": required_markers,
+        "probe_text": review.get("probe_text"),
+        "expected_markers": required_markers or required_all,
+        "forbidden_markers": forbidden_markers,
         "answer_contains_expected_marker": marker_present,
         "continuity_only": bool(review.get("continuity_only", False)),
     }
@@ -1385,7 +1404,7 @@ def main() -> int:
                         )
                     visibility = {}
                     for memory_case in memory_supplement:
-                        review = memory_case["memory_review"]
+                        review = memory_case["review_check"]
                         visibility[memory_case["id"]] = retained_fact_visible(
                             hindsight_url,
                             review["visibility_bank"],
@@ -1556,7 +1575,7 @@ def main() -> int:
                 "owner_memory_supplement": {} if args.automatic_only else {
                     row["id"]: {
                         "turns": len(row["turns"]),
-                        "review": row["memory_review"],
+                        "review_check": row["review_check"],
                     }
                     for row in memory_supplement
                 },
