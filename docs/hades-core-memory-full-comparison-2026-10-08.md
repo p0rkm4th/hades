@@ -178,11 +178,22 @@ corrections. A candidate for ordinary automatic turns still needs to prove
 that HADES's own latest-fact reducer returns the corrected value from live
 Hindsight results before it is considered.
 
+I checked the v0.10.2 recall-result metadata on a fresh `fast` correction pair.
+The current query returned the old marker twice (ranks 1–2) and the new marker
+at rank 3. All three results had `mentioned_at`, but the old rows had one
+entity each and the corrected chunk had none; the old/new pair shared no
+entity value. Thus a timestamp can order candidates, but HADES has no reliable
+identity key to decide which older fact the chunk supersedes. Sorting the whole
+list by time could discard unrelated relevant facts, while retaining all
+results leaves stale content in the prompt. This rejects a broad automatic
+`fast` policy on current Hindsight metadata. Keep existing behavior until
+upstream exposes a trustworthy correction relation for chunk facts or HADES
+can retain an independently verified relation without a new classifier.
+
 Keep the production retain/observation settings unchanged. The next candidate
-should thread a narrow strategy choice through the automatic HADES retain path
-and initialize bank strategy configuration, while keeping explicit writes and
-corrections on their existing route. Then replay correction ordering,
-stale-value rejection, implicit recall, and fresh-session checks against a
-fresh Hindsight volume. It must preserve relevant observation behavior before
-changing production policy. No owner preference was assigned, and neither
+should return to the comparative owner corpus and non-memory hot path. The
+per-item strategy path remains unqualified for automatic HADES turns. Any
+future candidate must prove correction ordering, stale-value rejection,
+implicit recall, fresh-session behavior, and observation coverage before a
+production policy change. No owner preference was assigned, and neither
 candidate configuration is promoted.
