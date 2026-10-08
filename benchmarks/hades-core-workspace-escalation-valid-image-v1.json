@@ -1,0 +1,210 @@
+{
+  "date": "2026-10-07",
+  "source_revision": "7bb0817e0c45988335fffbcf9c44fd6567aaf11f",
+  "method": {
+    "repeats": 4,
+    "order": "PLAIN/HADES, HADES/PLAIN, PLAIN/HADES, HADES/PLAIN",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "runtime": "Ollama 0.40.0",
+    "hermes": "0.21.5",
+    "context_tokens": 65536,
+    "docker_engine": "29.8.2 rootless",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "container_network": "disabled",
+    "kind": "synthetic multi-file diagnosis followed by explicit fix",
+    "owner_preference": "not measured"
+  },
+  "summary": {
+    "plain": {
+      "task_elapsed_ms_median": 41080.4,
+      "task_elapsed_ms_min": 39040.2,
+      "task_elapsed_ms_max": 42965.8,
+      "model_generations_median": 8.0,
+      "tool_results_median": 11.0,
+      "diagnosis_schema_count": 8,
+      "diagnosis_schema_bytes": 12590,
+      "action_schema_count": 8,
+      "action_schema_bytes": 12590,
+      "diagnosis_system_bytes": 12502,
+      "diagnosis_ttft_ms_median": 13076.6,
+      "diagnosis_changed_project_count": 2,
+      "action_test_evidence_count": 2,
+      "independent_test_pass_count": 4,
+      "independent_diff_check_pass_count": 4
+    },
+    "hades": {
+      "task_elapsed_ms_median": 49224.350000000006,
+      "task_elapsed_ms_min": 46918.9,
+      "task_elapsed_ms_max": 55093.6,
+      "model_generations_median": 8.0,
+      "tool_results_median": 9.5,
+      "diagnosis_schema_count": 2,
+      "diagnosis_schema_bytes": 3662,
+      "action_schema_count": 5,
+      "action_schema_bytes": 9575,
+      "diagnosis_system_bytes": 13187,
+      "diagnosis_ttft_ms_median": 8660.15,
+      "diagnosis_changed_project_count": 0,
+      "action_test_evidence_count": 4,
+      "independent_test_pass_count": 4,
+      "independent_diff_check_pass_count": 4
+    },
+    "paired_elapsed_delta_ms": [
+      14933.3,
+      7878.7,
+      7753.0,
+      5729.4
+    ],
+    "final_independent_tasks_passed": 8,
+    "final_expected_only_change": 8
+  },
+  "tasks": [
+    {
+      "repeat": 0,
+      "plain": {
+        "elapsed_ms": 40160.3,
+        "model_generations": 8,
+        "tool_results": 11,
+        "diagnosis_changed_project": false,
+        "action_test_evidence": true,
+        "diagnosis_schema_count": 8,
+        "diagnosis_schema_bytes": 12590,
+        "diagnosis_system_bytes": 12502,
+        "diagnosis_ttft_ms": 13021.3,
+        "action_schema_count": 8,
+        "action_schema_bytes": 12590,
+        "independent_test_exit": 0,
+        "independent_diff_exit": 0,
+        "only_expected_change": true
+      },
+      "hades": {
+        "elapsed_ms": 55093.6,
+        "model_generations": 10,
+        "tool_results": 12,
+        "diagnosis_changed_project": false,
+        "action_test_evidence": true,
+        "diagnosis_schema_count": 2,
+        "diagnosis_schema_bytes": 3662,
+        "diagnosis_system_bytes": 13187,
+        "diagnosis_ttft_ms": 8633.9,
+        "action_schema_count": 5,
+        "action_schema_bytes": 9575,
+        "independent_test_exit": 0,
+        "independent_diff_exit": 0,
+        "only_expected_change": true
+      }
+    },
+    {
+      "repeat": 1,
+      "plain": {
+        "elapsed_ms": 39040.2,
+        "model_generations": 8,
+        "tool_results": 11,
+        "diagnosis_changed_project": true,
+        "action_test_evidence": false,
+        "diagnosis_schema_count": 8,
+        "diagnosis_schema_bytes": 12590,
+        "diagnosis_system_bytes": 12502,
+        "diagnosis_ttft_ms": 13179.2,
+        "action_schema_count": 8,
+        "action_schema_bytes": 12590,
+        "independent_test_exit": 0,
+        "independent_diff_exit": 0,
+        "only_expected_change": true
+      },
+      "hades": {
+        "elapsed_ms": 46918.9,
+        "model_generations": 8,
+        "tool_results": 9,
+        "diagnosis_changed_project": false,
+        "action_test_evidence": true,
+        "diagnosis_schema_count": 2,
+        "diagnosis_schema_bytes": 3662,
+        "diagnosis_system_bytes": 13187,
+        "diagnosis_ttft_ms": 8686.4,
+        "action_schema_count": 5,
+        "action_schema_bytes": 9575,
+        "independent_test_exit": 0,
+        "independent_diff_exit": 0,
+        "only_expected_change": true
+      }
+    },
+    {
+      "repeat": 2,
+      "plain": {
+        "elapsed_ms": 42965.8,
+        "model_generations": 8,
+        "tool_results": 11,
+        "diagnosis_changed_project": false,
+        "action_test_evidence": true,
+        "diagnosis_schema_count": 8,
+        "diagnosis_schema_bytes": 12590,
+        "diagnosis_system_bytes": 12502,
+        "diagnosis_ttft_ms": 13052.2,
+        "action_schema_count": 8,
+        "action_schema_bytes": 12590,
+        "independent_test_exit": 0,
+        "independent_diff_exit": 0,
+        "only_expected_change": true
+      },
+      "hades": {
+        "elapsed_ms": 50718.8,
+        "model_generations": 8,
+        "tool_results": 10,
+        "diagnosis_changed_project": false,
+        "action_test_evidence": true,
+        "diagnosis_schema_count": 2,
+        "diagnosis_schema_bytes": 3662,
+        "diagnosis_system_bytes": 13187,
+        "diagnosis_ttft_ms": 8490.7,
+        "action_schema_count": 5,
+        "action_schema_bytes": 9575,
+        "independent_test_exit": 0,
+        "independent_diff_exit": 0,
+        "only_expected_change": true
+      }
+    },
+    {
+      "repeat": 3,
+      "plain": {
+        "elapsed_ms": 42000.5,
+        "model_generations": 9,
+        "tool_results": 11,
+        "diagnosis_changed_project": true,
+        "action_test_evidence": false,
+        "diagnosis_schema_count": 8,
+        "diagnosis_schema_bytes": 12590,
+        "diagnosis_system_bytes": 12502,
+        "diagnosis_ttft_ms": 13101.0,
+        "action_schema_count": 8,
+        "action_schema_bytes": 12590,
+        "independent_test_exit": 0,
+        "independent_diff_exit": 0,
+        "only_expected_change": true
+      },
+      "hades": {
+        "elapsed_ms": 47729.9,
+        "model_generations": 6,
+        "tool_results": 8,
+        "diagnosis_changed_project": false,
+        "action_test_evidence": true,
+        "diagnosis_schema_count": 2,
+        "diagnosis_schema_bytes": 3662,
+        "diagnosis_system_bytes": 13187,
+        "diagnosis_ttft_ms": 8839.2,
+        "action_schema_count": 5,
+        "action_schema_bytes": 9575,
+        "independent_test_exit": 0,
+        "independent_diff_exit": 0,
+        "only_expected_change": true
+      }
+    }
+  ],
+  "limitations": [
+    "Four synthetic pairs are a diagnostic sample, not a realistic owner corpus or preference vote.",
+    "The direct Hermes AIAgent harness does not test Open WebUI persistence, deployed authentication, Git actions, or large coding work.",
+    "Model and tool behavior remains variable; the sample is too small to establish a general latency distribution.",
+    "Independent post-run checks validate final fixture state, not the assistant work sequence."
+  ]
+}
