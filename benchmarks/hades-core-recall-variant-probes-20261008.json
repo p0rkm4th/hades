@@ -28,9 +28,13 @@
       "plain_marker": true,
       "hades_immediate_recall_ms": 28872.4,
       "hades_immediate_marker": false,
+      "hades_bank_fact_visible_after_immediate_turn": false,
+      "hades_bank_fact_visible_after_idle": true,
+      "operations_before_recall": {"pending_batch_retain": 1, "processing_retain": 1},
       "hades_idle_drain_ms": 43554.2,
       "hades_settled_recall_ms": 10042.2,
       "hades_settled_marker": true,
+      "scores_scope": "settled recall after idle barrier",
       "ranked_scores": [
         {"rank": 1, "type": "observation", "semantic": 0.6286545617190276, "reranker": 0.019055480438932088, "final": 0.02096101965077012},
         {"rank": 2, "type": "observation", "semantic": 0.572145402431488, "reranker": 0.00003120298261154412, "final": 0.00003432150491228205},
@@ -45,9 +49,13 @@
       "plain_marker": true,
       "hades_immediate_recall_ms": 27445.5,
       "hades_immediate_marker": false,
+      "hades_bank_fact_visible_after_immediate_turn": false,
+      "hades_bank_fact_visible_after_idle": true,
+      "operations_before_recall": {"pending_batch_retain": 1, "processing_retain": 1},
       "hades_idle_drain_ms": 42499.1,
       "hades_settled_recall_ms": 10334.1,
       "hades_settled_marker": true,
+      "scores_scope": "settled recall after idle barrier",
       "ranked_scores": [
         {"rank": 1, "type": "observation", "semantic": 0.6286545617190276, "reranker": 0.0026455930559272814, "final": 0.0024339456114530985},
         {"rank": 2, "type": "observation", "semantic": 0.5143084389843162, "reranker": 0.000033903453805417984, "final": 0.00003729376675353228},
@@ -62,9 +70,13 @@
       "plain_marker": true,
       "hades_immediate_recall_ms": 28554.4,
       "hades_immediate_marker": false,
+      "hades_bank_fact_visible_after_immediate_turn": false,
+      "hades_bank_fact_visible_after_idle": true,
+      "operations_before_recall": {"pending_batch_retain": 1, "processing_retain": 1},
       "hades_idle_drain_ms": 43529.9,
       "hades_settled_recall_ms": 10250.5,
       "hades_settled_marker": true,
+      "scores_scope": "settled recall after idle barrier",
       "ranked_scores": [
         {"rank": 1, "type": "observation", "semantic": 0.6286545617190276, "reranker": 0.0026455930559272814, "final": 0.0024339456114530985},
         {"rank": 2, "type": "world", "semantic": 0.6900218540443107, "reranker": 0.00021810808874162885, "final": 0.00020065944164229853},
@@ -79,9 +91,10 @@
   ],
   "findings": [
     "All three one-sample HADES immediate-recall variants missed the marker at 27.4–28.9 seconds; matched PLAIN recalls found it in 1.8 seconds.",
+    "In every HADES arm, the bank showed one pending batch retain and one processing retain before recall; the expected fact was still absent after the immediate user turn and became visible after the idle barrier. This is evidence for a memory-readiness delay; score rows below describe settled lookups, not the immediate misses.",
     "All three settled HADES recalls found the marker in 10.0–10.3 seconds, after 42.5–43.6 seconds for background work to reach idle.",
     "The low budget and all-types profile did not materially change immediate recall latency or correctness in these samples. Do not promote either configuration from this evidence.",
-    "Semantic similarity remained high for a top result while its cross-encoder score was much lower. Without result text, this does not establish which candidate contained the expected fact or whether reranking caused the miss.",
+    "In settled lookups, semantic similarity remained high for a top result while its cross-encoder score was much lower. Without result text, candidate identity is unknown; these scores do not establish the cause of immediate misses.",
     "Different fresh volumes, one pass per profile, and no human review limit causal and quality claims."
   ],
   "limitations": [
