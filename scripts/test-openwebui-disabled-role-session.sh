@@ -8,6 +8,9 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 source "$repo_dir/config/versions.env"
 image=${HADES_DISABLED_ROLE_TEST_IMAGE:-hades-open-webui:0.11.1-hades-reconstructed}
 command -v docker >/dev/null 2>&1 || { echo 'FAIL Docker is required' >&2; exit 2; }
+if [[ "${HADES_VERIFY_OPEN_WEBUI_CANDIDATE:-0}" == 1 ]]; then
+  bash "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" "$image"
+fi
 image_id=$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null) || {
   echo 'FAIL the pinned local HADES Open WebUI image is unavailable; refusing an implicit pull' >&2
   exit 2

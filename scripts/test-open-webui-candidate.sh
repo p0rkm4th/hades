@@ -19,5 +19,8 @@ HADES_CHANNEL_MODEL_BACKEND_PORT="${HADES_CHANNEL_MODEL_BACKEND_PORT:-18893}" \
 bash scripts/test-open-webui-channel-model-fixture.sh
 HADES_OPEN_WEBUI_LDAP_TEST_IMAGE="$image" \
 bash scripts/test-openwebui-ldap-bootstrap.sh
+HADES_DISABLED_ROLE_TEST_IMAGE="$image" \
+HADES_VERIFY_OPEN_WEBUI_CANDIDATE=1 \
+bash scripts/test-openwebui-disabled-role-session.sh
 
 echo "PASS Open WebUI candidate acceptance: $image"

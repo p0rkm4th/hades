@@ -58,9 +58,11 @@ runtime configuration:
   household local signup accounts, private chats and uploaded DOCX bytes, shared-channel state, and
   SQLite integrity; the household account remained unable to read the private
   upload.
-- `scripts/test-openwebui-disabled-role-session.sh`, run with the candidate
-  image selected, confirmed that an already-issued session is denied after
-  role revocation.
+- The acceptance wrapper ran `scripts/test-openwebui-disabled-role-session.sh`
+  with candidate image ID
+  `sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469`;
+  the runner verified that manifest-bound identity, then confirmed an existing
+  session is denied after role revocation and the chat endpoint returns 401.
 - `scripts/test-openwebui-docx-preview-security.sh` rendered a synthetic DOCX
   in the actual chat Preview view, did not execute its harmless script marker,
   and exposed no `javascript:` link. The 0.11.1 positive control reproduced
