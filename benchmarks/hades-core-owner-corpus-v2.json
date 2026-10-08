@@ -980,6 +980,14 @@
         "benchmarks/hades-core-owner-conversation-ollama0401-seeded-20261008.json"
       ],
       "report": "docs/hades-core-plain-stack-ollama0401-conversation-20261008.md"
+    },
+    "latest_workspace_escalation_ollama0401": {
+      "source_revision": "17565eff9f983eb762e196740434e5e2e520d452",
+      "classification": "four order-balanced synthetic geometry multi-file diagnosis-to-fix pairs on Ollama 0.40.1; no owner-preference labels",
+      "result": "PLAIN median task time 39.1 s versus HADES 50.3 s; HADES slower in all four pairs. HADES used 2 diagnosis schemas / 3,662 bytes versus PLAIN 8 / 12,590, and did not change the workspace before the fix request in 4/4; PLAIN changed it in 2/4. Independent tests passed in PLAIN 4/4 and HADES 3/4; one HADES run made no expected source change. Median provider generations were 9 PLAIN and 7.5 HADES. This preserves a useful sequencing boundary but does not qualify a latency or owner-preference win.",
+      "limitations": "Single synthetic coding fixture; no owner preference, Git commit behavior, Open WebUI persistence, or deployed gateway parity. Local-model variance remains. Does not isolate an Ollama release effect.",
+      "metrics_record": "benchmarks/hades-core-workspace-escalation-ollama0401-v1.json",
+      "report": "docs/hades-core-workspace-escalation-ollama0401-2026-10-08.md"
     }
   }
 }
