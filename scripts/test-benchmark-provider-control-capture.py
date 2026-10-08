@@ -113,6 +113,49 @@ assert PAIR_MODULE.summarize_calls([
     {"requested_num_ctx": 65536, "usage": {"prompt_tokens": 3}},
     {"requested_num_ctx": 65536, "usage": {"completion_tokens": 1}},
 ])["context_tokens_per_generation"] == [65536, 65536]
+assert PAIR_MODULE.summarize_calls([{
+    "requested_num_ctx": 65536,
+    "loaded_model_resident": True,
+    "loaded_context_tokens": 65536,
+    "runtime_probe_status": "resident",
+}])["runtime_observation_per_generation"] == [{
+    "model_resident_at_response_boundary": "resident",
+    "loaded_context_tokens": 65536,
+}]
+PAIR_MODULE.require_measured_runtime_context([{
+    "requested_num_ctx": 65536,
+    "loaded_model_resident": True,
+    "loaded_context_tokens": 65536,
+    "runtime_probe_status": "resident",
+}], 65536)
+try:
+    PAIR_MODULE.require_measured_runtime_context([{
+        "requested_num_ctx": 65536,
+        "loaded_model_resident": True,
+        "loaded_context_tokens": 4096,
+        "runtime_probe_status": "resident",
+    }], 65536)
+except RuntimeError:
+    pass
+else:
+    raise AssertionError("memory benchmark must reject a request-only 65k context claim")
+PAIR_MODULE.require_measured_runtime_context([{
+    "requested_num_ctx": 65536,
+    "loaded_model_resident": False,
+    "loaded_context_tokens": None,
+    "runtime_probe_status": "not_resident",
+}], 65536, allow_evicted_after_generation=True)
+try:
+    PAIR_MODULE.require_measured_runtime_context([{
+        "requested_num_ctx": 65536,
+        "loaded_model_resident": False,
+        "loaded_context_tokens": None,
+        "runtime_probe_status": "not_resident",
+    }], 65536)
+except RuntimeError:
+    pass
+else:
+    raise AssertionError("plain benchmark must reject an unobserved runtime context")
 assert PAIR_MODULE.configure_hades_scope(
     {"HADES_OWNER_SUBJECT_IDS": "inherited-owner"}, "household"
 ) == {}
@@ -352,6 +395,50 @@ finally:
     upstream_thread.join(timeout=2)
 
 print("PASS Hindsight Ollama proxy records aggregate usage without request/response bodies")
+
+provider_upstream = ThreadingHTTPServer(("127.0.0.1", 0), FakeOllama)
+provider_upstream_thread = threading.Thread(target=provider_upstream.serve_forever, daemon=True)
+provider_upstream_thread.start()
+provider_proxy = MODULE.AggregateProxy(
+    ("127.0.0.1", 0), "plain", f"http://127.0.0.1:{provider_upstream.server_port}"
+)
+provider_thread = threading.Thread(target=provider_proxy.serve_forever, daemon=True)
+provider_thread.start()
+try:
+    client = http.client.HTTPConnection("127.0.0.1", provider_proxy.server_port, timeout=5)
+    client.request(
+        "POST", "/v1/chat/completions",
+        body=json.dumps({
+            "model": "fixture-model", "messages": [{"role": "user", "content": "synthetic"}],
+            "stream": False, "options": {"num_ctx": 65536},
+        }),
+        headers={"Content-Type": "application/json"},
+    )
+    response = client.getresponse()
+    response.read()
+    assert response.status == 200
+    client.close()
+    provider_proxy.wait_idle()
+    records = provider_proxy.snapshot()
+    assert len(records) == 1 and records[0]["requested_num_ctx"] == 65536
+    assert records[0]["loaded_context_tokens"] == 40960
+    assert records[0]["loaded_model_resident"] is True
+    assert records[0]["runtime_probe_status"] == "resident"
+    try:
+        PAIR_MODULE.require_measured_runtime_context(records, 65536)
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("runtime 40k context must fail a requested 65k comparison")
+finally:
+    provider_proxy.shutdown()
+    provider_proxy.server_close()
+    provider_thread.join(timeout=2)
+    provider_upstream.shutdown()
+    provider_upstream.server_close()
+    provider_upstream_thread.join(timeout=2)
+
+print("PASS provider trace records effective Ollama context and rejects requested-only context")
 
 
 states = iter([
