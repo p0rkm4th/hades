@@ -128,3 +128,12 @@ with synthetic identities and sources.
   claiming recovery readiness.
 - Keep infrastructure reads read-only; write authority is outside this
   campaign.
+
+
+### Integrated Hermes 0.21.6 / Hindsight 0.10.3 replay (2026-10-08)
+
+- From the published candidate workspace lock, ran the public route/migration harness against immutable Hindsight 0.10.2 and 0.10.3 image digests. The same synthetic tagged fact survived the volume migration and fresh recall. The harness then exercised the actual HADES explicit retain, fresh recall, newest correction after a two-word typo, semantic paraphrase fallback, and Alpha/Beta subject isolation in the Hermes 0.21.6 candidate Python environment with the v0.10.3 plugin in a disposable `HERMES_HOME`.
+- All migration, route, listing, extraction-mock, and recall checks passed. Fresh-process route times were 1,730 ms direct match, 1,805 ms correction, and 1,799 ms semantic fallback. This was a synthetic run on the rootful Docker engine; it does not qualify owner-visible chat latency or rootless backup/restore. The disposable profile, containers, network, and volume were removed. Candidate image cache retained for further staging.
+- Public decision note: `docs/hades-core-upstream-freshness-2026-10-08.md`. Production pins remain unchanged; Hermes 0.21.6 / Hindsight 0.10.3 remain **QUALIFY in staging; HOLD production** pending repeated matched comparison, graceful child shutdown, rootless backup/restore, and production provenance.
+- Checkpoint source before this update: `657fadaaa6691234caa14cf10f1610cfc109999f`, synchronized with review branch `codex/hermes-raw-schema-scope-followup-20261008`; exact-SHA Public CI run `37837252678` passed. `origin/main` remains `627b7c5fc4fa875bdab78abc25133897b50a882d`; no merge or deployment.
+- Next: commit and push this evidence to the same review branch, confirm exact-SHA CI and remote parity, then continue graceful shutdown and matched repeated `0.10.2`/`0.10.3` route comparison. Keep the owner usability corpus and Scotty dogfood gates open.
