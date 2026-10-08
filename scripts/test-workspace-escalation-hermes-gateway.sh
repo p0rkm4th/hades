@@ -64,6 +64,7 @@ repo, work, hermes_bin = map(Path, sys.argv[1:])
 api_key = "synthetic-workspace-gateway-key"
 session_id = "synthetic-workspace-escalation-session"
 workspace_tool_names = {"read_file", "search_files", "write_file", "patch", "terminal"}
+readonly_git_tool_names = {"read_file", "search_files", "terminal"}
 model_turns = []
 
 class FakeModel(BaseHTTPRequestHandler):
@@ -147,13 +148,13 @@ with log_path.open("w") as log:
                                stdout=log, stderr=subprocess.STDOUT)
 gateway_base = f"http://127.0.0.1:{gateway_port}"
 
-def chat(text):
+def chat(text, *, request_session_id=session_id):
     request = urllib.request.Request(
         gateway_base + "/v1/chat/completions",
         data=json.dumps({"model": "qwen3.6:35b", "messages": [{"role": "user", "content": text}]}).encode(),
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json",
                  "X-Hermes-Session-Key": "hades-user-synthetic-owner",
-                 "X-Hermes-Session-Id": session_id}, method="POST")
+                 "X-Hermes-Session-Id": request_session_id}, method="POST")
     with urllib.request.urlopen(request, timeout=60) as response:
         return json.load(response), response.headers.get("X-Hermes-Session-Id")
 
@@ -195,9 +196,20 @@ try:
     docker_calls = (work / "docker.calls").read_text().splitlines()
     assert not any("hermes-task-id=synthetic-workspace-escalation-session" in call
                    for call in docker_calls), docker_calls
+    review_question = "Show me exactly what changed and whether anything unrelated is in the diff."
+    # Keep this request isolated from the preceding action turn so the
+    # assertion measures Git intent routing, not an earlier tool transcript.
+    review_session_id = "synthetic-workspace-git-review-session"
+    review, echoed = chat(review_question, request_session_id=review_session_id)
+    assert echoed == review_session_id, echoed
+    review_turns = [turn for turn in model_turns if turn["user"].strip() == review_question]
+    assert any(set(turn["tools"]) == readonly_git_tool_names for turn in review_turns), [
+        turn.get("tools") for turn in review_turns
+    ]
     print("PASS live authenticated Hermes gateway carried the same explicit session across diagnosis and follow-up")
     assert any(set(turn["tools"]) == workspace_tool_names for turn in action_turns), action_turns
-    print("PASS diagnosis receives two read-only schemas; the action follow-up receives all five")
+    print("PASS diagnosis receives two read-only schemas; action follow-up receives all five")
+    print("PASS Git diff review receives file reads and the read-only terminal, without write/patch tools")
     print("PASS synthetic unauthorized diagnosis-time patch was rejected; fixture bytes stayed unchanged")
 finally:
     gateway.terminate()
