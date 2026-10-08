@@ -8566,22 +8566,52 @@ try:
         base = (base_url or _os.environ.get(
             "HADES_HINDSIGHT_URL", "http://127.0.0.1:8888"
         )).rstrip("/")
-        offset = 0
-        while True:
-            query = urlencode({"limit": 100, "offset": offset})
-            with urlopen(f"{base}/v1/default/banks?{query}", timeout=5) as response:
-                payload = _json.load(response)
-            rows = payload.get("items", []) if isinstance(payload, dict) else []
-            if any(isinstance(row, dict) and row.get("id") == bank for row in rows):
-                _hades_logger.info(
-                    "HADES timing stage=memory_bank_setup outcome=existing elapsed_ms=%.1f",
-                    (time.perf_counter() - started) * 1000,
-                )
-                return
-            total = payload.get("total", len(rows)) if isinstance(payload, dict) else len(rows)
-            offset += len(rows)
-            if not rows or offset >= total:
-                break
+        def bank_is_listed():
+            offset = 0
+            expected_total = None
+            while True:
+                query = urlencode({"limit": 100, "offset": offset})
+                with urlopen(f"{base}/v1/default/banks?{query}", timeout=5) as response:
+                    payload = _json.load(response)
+                if not isinstance(payload, dict):
+                    raise RuntimeError("Hindsight bank list response is malformed")
+                # Hindsight 0.10.x uses `banks`/`bank_id`; older supported
+                # releases used `items`/`id`. Accept both explicit schemas,
+                # but never interpret an unknown shape as an empty database.
+                if "banks" in payload:
+                    rows, id_key = payload.get("banks"), "bank_id"
+                elif "items" in payload:
+                    rows, id_key = payload.get("items"), "id"
+                else:
+                    raise RuntimeError("Hindsight bank list response has an unsupported schema")
+                if not isinstance(rows, list):
+                    raise RuntimeError("Hindsight bank list rows are malformed")
+                if any(
+                    not isinstance(row, dict) or not isinstance(row.get(id_key), str)
+                    for row in rows
+                ):
+                    raise RuntimeError("Hindsight bank list entries are malformed")
+                total = payload.get("total", offset + len(rows))
+                if not isinstance(total, int) or isinstance(total, bool) or total < 0:
+                    raise RuntimeError("Hindsight bank list total is malformed")
+                if expected_total is None:
+                    expected_total = total
+                elif total != expected_total:
+                    raise RuntimeError("Hindsight bank list changed during pagination")
+                if any(isinstance(row, dict) and row.get(id_key) == bank for row in rows):
+                    return True
+                offset += len(rows)
+                if offset >= expected_total:
+                    return False
+                if not rows:
+                    raise RuntimeError("Hindsight bank list pagination is incomplete")
+
+        if bank_is_listed():
+            _hades_logger.info(
+                "HADES timing stage=memory_bank_setup outcome=existing elapsed_ms=%.1f",
+                (time.perf_counter() - started) * 1000,
+            )
+            return
 
         url = f"{base}/v1/default/banks/{quote(bank, safe='-_')}"
         request = Request(
@@ -8602,10 +8632,7 @@ try:
             # only after a fresh canonical listing confirms the same bank.
             if error.code not in {409, 422}:
                 raise
-            with urlopen(f"{base}/v1/default/banks?limit=100&offset=0", timeout=5) as response:
-                payload = _json.load(response)
-            rows = payload.get("items", []) if isinstance(payload, dict) else []
-            if not any(isinstance(row, dict) and row.get("id") == bank for row in rows):
+            if not bank_is_listed():
                 raise
             _hades_logger.info(
                 "HADES timing stage=memory_bank_setup outcome=creation_race elapsed_ms=%.1f",

@@ -152,6 +152,7 @@ state = {"items": []}
 requests: list[tuple[str, int]] = []
 created_banks: set[str] = set()
 list_unavailable = False
+bank_list_schema = "banks"
 
 
 def fake_urlopen(url: str, *, timeout: int):
@@ -164,8 +165,13 @@ def fake_urlopen(url: str, *, timeout: int):
         created_banks.add(target.rsplit("/", 1)[-1])
         return FakeResponse({"id": target.rsplit("/", 1)[-1]})
     if "/banks?" in target:
-        rows = [{"id": bank} for bank in sorted(created_banks)]
-        return FakeResponse({"items": rows, "limit": 100, "offset": 0, "total": len(rows)})
+        if bank_list_schema == "banks":
+            rows = [{"bank_id": bank} for bank in sorted(created_banks)]
+            return FakeResponse({"banks": rows, "limit": 100, "offset": 0, "total": len(rows)})
+        if bank_list_schema == "items":
+            rows = [{"id": bank} for bank in sorted(created_banks)]
+            return FakeResponse({"items": rows, "limit": 100, "offset": 0, "total": len(rows)})
+        return FakeResponse({"unexpected": []})
     return FakeResponse({"items": state["items"], "limit": 100, "offset": 0, "total": len(state["items"])})
 
 
@@ -940,6 +946,21 @@ try:
     after_puts = sum(row[0].startswith("PUT ") for row in requests)
     assert before_puts == after_puts
     assert FakeClient.instances[-1].closed
+
+    # Keep the older supported response schema, but fail closed on unknown
+    # schemas instead of treating them as an empty bank collection.
+    bank_list_schema = "items"
+    namespace["_hades_ensure_memory_bank"]("hades-user-existing")
+    before_puts = sum(row[0].startswith("PUT ") for row in requests)
+    bank_list_schema = "unexpected"
+    try:
+        namespace["_hades_ensure_memory_bank"]("hades-user-never-create")
+    except RuntimeError as exc:
+        assert "unsupported schema" in str(exc)
+    else:
+        raise AssertionError("unknown Hindsight bank-list schema must fail closed")
+    after_puts = sum(row[0].startswith("PUT ") for row in requests)
+    assert before_puts == after_puts, "unknown listing must not create a duplicate bank"
 finally:
     urllib.request.urlopen = old_urlopen
     if old_endpoint is None:

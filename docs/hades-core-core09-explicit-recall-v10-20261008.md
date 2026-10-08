@@ -63,6 +63,14 @@ The change is in `hermes/sitecustomize.py`; the explicit-memory route contract
 now verifies the ordering and the tagged `$3,000` fact case. Commit
 `79473979` contains that behavior change.
 
+The same follow-up inspection found the bank setup helper still recognized
+only the older `items`/`id` bank-list response. Hindsight 0.10.2 returns
+`banks`/`bank_id`; treating that valid response as empty could issue a needless
+bank create/update on every direct memory turn. The helper now accepts both
+known schemas, paginates and validates totals, and fails closed on unknown or
+incomplete responses. The focused contract test covers current, legacy, and
+unknown schemas.
+
 ## Barrier correction
 
 The earlier HADES lifecycle reader expected `/v1/default/banks` to return
