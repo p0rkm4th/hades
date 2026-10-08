@@ -1181,7 +1181,47 @@ def summarize_calls(calls: list[dict[str, Any]]) -> dict[str, Any]:
         "context_tokens_per_generation": [
             call.get("requested_num_ctx") for call in calls
         ],
+        "runtime_observation_per_generation": [
+            {
+                "model_resident_at_response_boundary": (
+                    call.get("runtime_probe_status", "unavailable")
+                ),
+                "loaded_context_tokens": call.get("loaded_context_tokens"),
+            }
+            for call in calls
+        ],
     }
+
+
+def require_measured_runtime_context(calls: list[dict[str, Any]],
+                                    requested_context: int,
+                                    allow_evicted_after_generation: bool = False) -> None:
+    """Check requested context and any post-generation runtime observation."""
+    if not calls or any(
+        call.get("requested_num_ctx") != requested_context
+        or (
+            call.get("runtime_probe_status") == "resident"
+            and call.get("loaded_context_tokens") != requested_context
+        )
+        or (
+            call.get("runtime_probe_status") == "not_resident"
+            and not allow_evicted_after_generation
+        )
+        or call.get("runtime_probe_status") not in {"resident", "not_resident"}
+        for call in calls
+    ):
+        observed = [
+            {
+                "requested": call.get("requested_num_ctx"),
+                "runtime_status": call.get("runtime_probe_status"),
+                "loaded": call.get("loaded_context_tokens"),
+            }
+            for call in calls
+        ]
+        raise RuntimeError(
+            "measured provider generation did not match the configured Ollama context; "
+            f"observed={observed!r}"
+        )
 
 
 def measure_turn(gateway: dict[str, Any], proxy_module, turn: str, session: str,
@@ -1192,15 +1232,16 @@ def measure_turn(gateway: dict[str, Any], proxy_module, turn: str, session: str,
         row = proxy_module.chat(
             gateway["api_port"], gateway["stack"], session, messages, max_tokens
         )
+        proxy.wait_idle()
         error = None
     except Exception as exc:
         row = {"status": None, "ttft_ms": None, "total_ms": None, "answer": ""}
         error = type(exc).__name__
     calls = proxy.snapshot()[before:]
-    if not calls or any(
-        call.get("requested_num_ctx") != CONTEXT_LENGTH for call in calls
-    ):
-        raise RuntimeError("measured provider generation did not request the configured context")
+    require_measured_runtime_context(
+        calls, CONTEXT_LENGTH,
+        allow_evicted_after_generation=(gateway["stack"] == "hades"),
+    )
     answer = row.get("answer", "")
     if isinstance(answer, str) and answer.startswith("CSV finance read ("):
         answer = "[redacted: unrelated owner-finance response; routed from synthetic benchmark turn]"
@@ -1352,6 +1393,36 @@ def main() -> int:
     )
     if not hindsight_model_row:
         parser.error(f"{args.hindsight_model} is absent from local Ollama /api/tags")
+    try:
+        context_probe = benchmark.local_json(
+            f"{ollama}/v1/chat/completions",
+            {
+                "model": MODEL,
+                "messages": [{"role": "user", "content": "context " * 7000}],
+                "stream": False,
+                "max_tokens": 1,
+            },
+            timeout=360,
+        )
+        context_probe_prompt_tokens = (context_probe.get("usage") or {}).get("prompt_tokens")
+    except Exception as exc:
+        parser.error(f"OpenAI-compatible Ollama context probe failed: {type(exc).__name__}")
+    if not isinstance(context_probe_prompt_tokens, int) or context_probe_prompt_tokens < 5000:
+        parser.error(
+            "OpenAI-compatible Ollama chat path did not accept a >4k-context probe; "
+            f"observed prompt_tokens={context_probe_prompt_tokens!r}"
+        )
+    try:
+        context_probe_models = benchmark.local_json(f"{ollama}/api/ps").get("models", [])
+        context_probe_loaded_model = benchmark.require_loaded_context(
+            context_probe_models, MODEL, CONTEXT_LENGTH
+        )
+        context_probe_loaded_context = context_probe_loaded_model["context_length"]
+    except Exception as exc:
+        parser.error(
+            "Ollama did not retain the required loaded context after the exact chat-path probe: "
+            f"{type(exc).__name__}"
+        )
     subprocess.run(["docker", "image", "inspect", args.hindsight_image], check=True,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -1883,11 +1954,14 @@ def main() -> int:
                 ),
                 "model": MODEL,
                 "ollama_version": version,
+                "openai_chat_context_probe_prompt_tokens": context_probe_prompt_tokens,
+                "openai_chat_context_probe_minimum_tokens": 5000,
+                "openai_chat_context_probe_loaded_context": context_probe_loaded_context,
                 "model_digest": model_row.get("digest"),
                 "model_quantization": model_row.get("details", {}).get("quantization_level"),
-                "ollama_reported_loaded_context": loaded_model.get("context_length") if loaded_model else None,
+                "ollama_loaded_context_after_stack_warmups": loaded_model.get("context_length") if loaded_model else None,
                 "hermes_ollama_context_configured": CONTEXT_LENGTH,
-                "measured_context_verification": "Every provider generation is required to request the configured context; the exact value is retained per turn.",
+                "measured_context_verification": "The same Ollama OpenAI-compatible chat endpoint must accept a >5k-token probe without a per-request context override, and /api/ps must report the configured context immediately after that probe. Every Hermes provider generation must request the configured context. Runtime /api/ps is sampled at each provider response boundary and retained per generation; when HADES background inference has already evicted the interactive model, the boundary records non-residency. The measured HADES run is then interpreted with the exact-route startup probe and global OLLAMA_CONTEXT_LENGTH setting, while plain turns must remain resident at the target context.",
                 "hindsight_image": args.hindsight_image,
                 "hindsight_model": args.hindsight_model,
                 "hindsight_model_digest": hindsight_model_row.get("digest"),

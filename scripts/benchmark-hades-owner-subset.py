@@ -244,6 +244,8 @@ class AggregateProxy(ThreadingHTTPServer):
         self.generation_overrides: dict[str, Any] = {}
         self.records: list[dict[str, Any]] = []
         self.records_lock = threading.Lock()
+        self.in_flight = 0
+        self.in_flight_lock = threading.Lock()
         super().__init__(address, self.handler_type())
 
     def handler_type(self):
@@ -260,6 +262,8 @@ class AggregateProxy(ThreadingHTTPServer):
 
             def do_POST(self):
                 start = time.perf_counter()
+                with parent.in_flight_lock:
+                    parent.in_flight += 1
                 raw = self.rfile.read(int(self.headers.get("Content-Length", "0")))
                 try:
                     request = json.loads(raw)
@@ -342,12 +346,16 @@ class AggregateProxy(ThreadingHTTPServer):
                     if request.get("stream") and "text/event-stream" in content_type:
                         self.send_header("Transfer-Encoding", "chunked")
                         self.end_headers()
+                        terminal_line = None
                         while True:
                             line = response.readline()
                             if not line:
                                 break
                             if line.startswith(b"data:"):
                                 payload = line[5:].strip()
+                                if payload == b"[DONE]":
+                                    terminal_line = line
+                                    continue
                                 if payload and payload != b"[DONE]":
                                     if metric["first_event_ms"] is None:
                                         metric["first_event_ms"] = (time.perf_counter() - start) * 1000
@@ -369,12 +377,18 @@ class AggregateProxy(ThreadingHTTPServer):
                                         pass
                             self.wfile.write(f"{len(line):X}\r\n".encode() + line + b"\r\n")
                             self.wfile.flush()
+                        if terminal_line is not None:
+                            parent.capture_runtime_context(metric)
+                            self.wfile.write(
+                                f"{len(terminal_line):X}\r\n".encode()
+                                + terminal_line + b"\r\n"
+                            )
+                            self.wfile.flush()
                         self.wfile.write(b"0\r\n\r\n")
                     else:
                         body = response.read()
                         self.send_header("Content-Length", str(len(body)))
                         self.end_headers()
-                        self.wfile.write(body)
                         try:
                             result = json.loads(body)
                             metric["usage"] = result.get("usage")
@@ -390,6 +404,8 @@ class AggregateProxy(ThreadingHTTPServer):
                             ]
                         except (ValueError, TypeError):
                             pass
+                        parent.capture_runtime_context(metric)
+                        self.wfile.write(body)
                     metric["completed"] = True
                 except Exception as exc:  # only the exception class is retained
                     metric["error_type"] = type(exc).__name__
@@ -402,12 +418,48 @@ class AggregateProxy(ThreadingHTTPServer):
                     metric["elapsed_ms"] = (time.perf_counter() - start) * 1000
                     with parent.records_lock:
                         parent.records.append(metric)
+                    with parent.in_flight_lock:
+                        parent.in_flight -= 1
 
         return Handler
+
+    def capture_runtime_context(self, metric: dict[str, Any]) -> None:
+        """Sample Ollama after generation but before the completed response is released."""
+        started = time.perf_counter()
+        try:
+            models = local_json(
+                f"http://{self.upstream_host}:{self.upstream_port}/api/ps"
+            ).get("models", [])
+            loaded = next((
+                row for row in models
+                if isinstance(row, dict) and row.get("name") == metric.get("model")
+            ), None)
+            metric["loaded_context_tokens"] = (
+                loaded.get("context_length") if isinstance(loaded, dict)
+                and isinstance(loaded.get("context_length"), int) else None
+            )
+            metric["loaded_model_resident"] = isinstance(loaded, dict)
+            metric["runtime_probe_status"] = (
+                "resident" if isinstance(loaded, dict) else "not_resident"
+            )
+        except (OSError, ValueError, TypeError, KeyError):
+            metric["loaded_context_tokens"] = None
+            metric["loaded_model_resident"] = False
+            metric["runtime_probe_status"] = "unavailable"
+        metric["runtime_probe_ms"] = round((time.perf_counter() - started) * 1000, 2)
 
     def snapshot(self) -> list[dict[str, Any]]:
         with self.records_lock:
             return [dict(record) for record in self.records]
+
+    def wait_idle(self, timeout: float = 10.0) -> None:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            with self.in_flight_lock:
+                if self.in_flight == 0:
+                    return
+            time.sleep(0.01)
+        raise RuntimeError("provider proxy metrics did not settle after the completed turn")
 
 
 def wait_health(port: int, process: subprocess.Popen, log_path: pathlib.Path) -> None:
@@ -426,14 +478,15 @@ def wait_health(port: int, process: subprocess.Popen, log_path: pathlib.Path) ->
     raise RuntimeError(f"Hermes gateway health timeout (exit={process.poll()}):\n{tail}")
 
 
-def local_json(url: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def local_json(url: str, payload: dict[str, Any] | None = None,
+               timeout: float = 5) -> dict[str, Any]:
     raw = json.dumps(payload).encode() if payload is not None else None
     request = urllib.request.Request(
         url,
         data=raw,
         headers={"Content-Type": "application/json"} if raw else {},
     )
-    with urllib.request.urlopen(request, timeout=5) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.loads(response.read())
 
 
