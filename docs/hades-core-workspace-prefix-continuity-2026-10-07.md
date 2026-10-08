@@ -57,11 +57,11 @@ preserves the diagnosis/action authority split. Do not infer a cache fix from
 byte-prefix overlap alone.
 
 Follow-up direct-runtime testing later confirmed that, for the pinned Qwen3.6
-35B model on Ollama 0.40.0, appending a tool schema to an otherwise identical
-request dropped reported cache reuse from 17,768 tokens to zero, while changing
-only the user message retained 17,260 cached tokens. This strengthens the
-tool-catalog hypothesis for this configuration, but does not fully reproduce
-Hermes' diagnosis/action request construction. See the [Ollama tool-schema
-cache isolation report](hades-core-ollama-tool-schema-cache-isolation-2026-10-08.md).
+35B model on Ollama 0.40.0 and 0.40.1, appending a tool schema to an otherwise
+identical request dropped reported cache reuse from 17,768 tokens to zero, while
+changing only the user message retained 17,260 cached tokens. This strengthens
+the tool-catalog hypothesis for this configuration, but does not fully
+reproduce Hermes' diagnosis/action request construction. See the [Ollama
+tool-schema cache isolation report](hades-core-ollama-tool-schema-cache-isolation-2026-10-08.md).
 
 Artifact: [sanitized prefix-continuity measurements](../benchmarks/hades-core-workspace-prefix-continuity-v1.json).
