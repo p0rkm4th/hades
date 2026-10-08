@@ -109,6 +109,10 @@ assert PAIR_MODULE.core09_answer_matches_target("$3,000.") is True
 assert PAIR_MODULE.core09_answer_matches_target("3000") is True
 assert PAIR_MODULE.core09_answer_matches_target("The target is $2,500.") is False
 assert PAIR_MODULE.CONTEXT_LENGTH == 65536
+assert PAIR_MODULE.deterministic_hades_memory_turn("core09_save")
+assert PAIR_MODULE.deterministic_hades_memory_turn("core09_recall_after_idle")
+assert PAIR_MODULE.deterministic_hades_memory_turn("supplement_core-51_probe")
+assert not PAIR_MODULE.deterministic_hades_memory_turn("ordinary")
 safe_keys = PAIR_MODULE.public_artifact_record({
     "model_resident_at_response_boundary": "resident",
     "assistant_response_storage": "not stored",
