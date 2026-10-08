@@ -17,10 +17,14 @@ security fixes for dashboard authentication, untrusted repository Git
 filters, and email sender parsing. The immutable source archive SHA-256 is
 `1ba3500cdbe876bb9d347b3c12f41c591a421293eac58faba23571287dfe1cf8`.
 
-The separately staged Hindsight plugin source is pinned to repository commit
-`d56c4acdf59c41957613d399094cdf8c489b060c`; its lock files pin client/embed
-libraries to 0.10.1. Although Hindsight 0.10.2 is released, do not claim it is
-installed until that plugin lock is deliberately refreshed and tested.
+The separate Hindsight plugin at commit
+[`d56c4ac`](https://github.com/vectorize-io/hindsight/tree/d56c4acdf59c41957613d399094cdf8c489b060c/hindsight-integrations/hermes)
+is outside this package-install slice. Its [`pyproject.toml`](https://github.com/vectorize-io/hindsight/blob/d56c4acdf59c41957613d399094cdf8c489b060c/hindsight-integrations/hermes/pyproject.toml)
+reports version 1.2.1 while its [`uv.lock`](https://github.com/vectorize-io/hindsight/blob/d56c4acdf59c41957613d399094cdf8c489b060c/hindsight-integrations/hermes/uv.lock)
+virtual package reports 1.2.0; client/embed dependencies are locked at 0.10.1.
+Hindsight 0.10.2 is released, but this evidence does not qualify a refreshed
+plugin lock or plugin activation. Keep Hermes-plus-Hindsight qualification
+open until that lock is reconciled and tested.
 
 ## Qualification evidence
 
@@ -35,10 +39,14 @@ installed until that plugin lock is deliberately refreshed and tested.
 - Candidate installer contract verifies Python 3.14 is accepted for the
   candidate and Python 3.15 is rejected. A production-path regression check
   verifies Python 3.14 remains rejected for the current 0.21.2 pin.
+- Candidate URL and checksum overrides that would break source provenance are
+  rejected. Production artifact checks also require the manifest-pinned
+  checksum before recording the pinned source commit.
 - Version manifest and one-component upgrade-helper contracts pass with the
   candidate metadata.
 
-These checks qualify artifact installation and focused upstream behavior. They
-do not establish full HADES compatibility, production deployment safety, or
-owner preference. Keep the candidate in staging until broader gateway,
-Open WebUI, security, workspace, and owner-use gates pass.
+These checks qualify Hermes package artifact installation and focused upstream
+behavior. They do not establish Hindsight plugin installation/activation, full
+HADES compatibility, production deployment safety, or owner preference. Keep
+the candidate in staging until the plugin lock, broader gateway, Open WebUI,
+security, workspace, and owner-use gates pass.

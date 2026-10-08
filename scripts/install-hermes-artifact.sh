@@ -56,13 +56,27 @@ if (( candidate )); then
   HADES_HERMES_VERSION=${HADES_HERMES_CANDIDATE_VERSION:?missing Hermes candidate version}
   HADES_HERMES_SOURCE_VERSION=$HADES_HERMES_CANDIDATE_VERSION
   HADES_HERMES_SOURCE_COMMIT=${HADES_HERMES_CANDIDATE_SOURCE_COMMIT:?missing Hermes candidate source commit}
-  url=${url:-${HADES_HERMES_CANDIDATE_SOURCE_URL:?missing Hermes candidate source URL}}
-  expected_sha=${expected_sha:-${HADES_HERMES_CANDIDATE_SOURCE_SHA256:?missing Hermes candidate source checksum}}
+  candidate_url=${HADES_HERMES_CANDIDATE_SOURCE_URL:?missing Hermes candidate source URL}
+  candidate_sha=${HADES_HERMES_CANDIDATE_SOURCE_SHA256:?missing Hermes candidate source checksum}
+  [[ -z "$url" || "$url" == "$candidate_url" ]] || {
+    echo 'FAIL Hermes candidate URL must match the pinned candidate source URL' >&2; exit 1;
+  }
+  [[ -z "$expected_sha" || "$expected_sha" == "$candidate_sha" ]] || {
+    echo 'FAIL Hermes candidate checksum must match the pinned candidate source checksum' >&2; exit 1;
+  }
+  url=$candidate_url
+  expected_sha=$candidate_sha
   if [[ -z "$python_overridden" ]]; then
     python_bin=python3.14
   fi
   python_minors='11|12|13|14'
   python_upper='3.15'
+else
+  production_sha=${HADES_HERMES_SOURCE_SHA256:?missing pinned Hermes source checksum}
+  [[ -z "$expected_sha" || "$expected_sha" == "$production_sha" ]] || {
+    echo 'FAIL Hermes source checksum must match the pinned production source checksum' >&2; exit 1;
+  }
+  expected_sha=$production_sha
 fi
 [[ "$prefix" == /* ]] || { echo 'FAIL Hermes prefix must be absolute' >&2; exit 1; }
 validate_build_tools() {
