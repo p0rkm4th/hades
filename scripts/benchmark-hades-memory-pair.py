@@ -49,7 +49,8 @@ OWNER_CORE_09_RECALL = "What was the savings target I mentioned?"
 SYNTHETIC_OWNER_SUBJECT = "hades-synthetic"
 MEMORY_SUPPLEMENT_PATH = ROOT / "benchmarks/hades-core-owner-corpus-v2.json"
 PUBLIC_KEY_RENAMES = {
-    "owner_memory_supplement": "owner_memory_cases",
+    "owner_memory_supplement": "synthetic_case_catalog",
+    "owner_memory_cases": "synthetic_case_catalog",
     "profile_continuity": "state_scope",
     "assistant_response_storage": "stored_text_policy",
     "hades_memory_bank": "hades_bank",
