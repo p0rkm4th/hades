@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import http.server
 import json
+import os
 import sys
 from pathlib import Path
 
 
 bind_address, port_file, request_log = sys.argv[1:4]
-model = "synthetic-hindsight-ui-extractor"
+model = os.environ.get("HADES_SYNTHETIC_HINDSIGHT_MODEL", "synthetic-hindsight-ui-extractor")
 fact = "The synthetic user prefers violet comet-42 markers."
 fact_response = json.dumps({
     "facts": [{

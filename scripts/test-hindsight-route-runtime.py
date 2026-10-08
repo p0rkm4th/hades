@@ -2,13 +2,11 @@
 """Exercise pinned Hindsight retain and fresh recall against a local mock model."""
 from __future__ import annotations
 
-import http.server
 import json
 import math
 import os
 import statistics
 import subprocess
-import threading
 import time
 import urllib.request
 import uuid
@@ -18,17 +16,6 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 MODEL = "synthetic-hindsight-route-model"
 FACT = "The synthetic user prefers violet comet-42 markers."
-FACT_RESPONSE = json.dumps({
-    "facts": [{
-        "what": FACT,
-        "when": "N/A",
-        "where": "N/A",
-        "who": "user",
-        "why": "Explicit synthetic acceptance fact.",
-        "fact_type": "world",
-        "entities": ["user", "violet comet-42 markers"],
-    }],
-})
 
 
 def run(*args: str, capture: bool = False) -> str:
@@ -55,43 +42,6 @@ def image_pin() -> str:
     raise RuntimeError("HADES_HINDSIGHT_IMAGE is missing from config/versions.env")
 
 
-requests_seen: list[dict[str, str]] = []
-
-
-class MockModel(http.server.BaseHTTPRequestHandler):
-    def do_POST(self) -> None:  # noqa: N802
-        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
-        requests_seen.append({"path": self.path, "model": str(body.get("model", ""))})
-        if self.path.endswith("/api/chat"):
-            response = {
-                "model": MODEL,
-                "message": {"role": "assistant", "content": FACT_RESPONSE},
-                "done": True,
-            }
-        else:
-            response = {
-                "id": "synthetic-route-test",
-                "object": "chat.completion",
-                "created": 1,
-                "model": MODEL,
-                "choices": [{
-                    "index": 0,
-                    "message": {"role": "assistant", "content": FACT_RESPONSE},
-                    "finish_reason": "stop",
-                }],
-                "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
-            }
-        payload = json.dumps(response).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
-
-    def log_message(self, *_args: object) -> None:
-        return
-
-
 def wait_healthy(url: str, seconds: int = 90) -> bool:
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
@@ -101,6 +51,108 @@ def wait_healthy(url: str, seconds: int = 90) -> bool:
         except Exception:
             time.sleep(1)
     return False
+
+
+def migration_image_pin() -> str:
+    value = os.environ.get("HADES_HINDSIGHT_MIGRATION_FROM_IMAGE", "").strip()
+    if value and "@sha256:" not in value:
+        raise RuntimeError("HADES_HINDSIGHT_MIGRATION_FROM_IMAGE must use an immutable sha256 digest")
+    return value
+
+
+def start_hindsight(image: str, name: str, network: str, volume: str, mock_port: str) -> str:
+    run(
+        "docker", "run", "-d", "--name", name,
+        "--network", network,
+        "-p", "127.0.0.1::8888",
+        "-v", f"{volume}:/home/hindsight/.pg0",
+        "-e", "HINDSIGHT_API_HOST=0.0.0.0",
+        "-e", "HINDSIGHT_API_PORT=8888",
+        "-e", "HINDSIGHT_API_ENABLE_OBSERVATIONS=true",
+        "-e", f"HINDSIGHT_API_WORKER_ID={name}",
+        "-e", "HINDSIGHT_API_LLM_PROVIDER=ollama",
+        "-e", f"HINDSIGHT_API_LLM_MODEL={MODEL}",
+        "-e", f"HINDSIGHT_API_LLM_BASE_URL=http://hades-mock:{mock_port}/v1",
+        "-e", "HINDSIGHT_API_LLM_API_KEY=synthetic",
+        image,
+    )
+    inspection = json.loads(run("docker", "inspect", name, capture=True))[0]
+    api_port = inspection["NetworkSettings"]["Ports"]["8888/tcp"][0]["HostPort"]
+    api = f"http://127.0.0.1:{api_port}"
+    if not wait_healthy(api + "/health"):
+        raise RuntimeError(f"disposable pinned Hindsight API {name} did not become healthy")
+    return api
+
+
+def retain_synthetic_fact(api: str, bank: str, fact: str) -> None:
+    create = urllib.request.Request(
+        f"{api}/v1/default/banks/{bank}",
+        data=json.dumps({"name": "Synthetic fresh recall test"}).encode(),
+        headers={"Content-Type": "application/json"},
+        method="PUT",
+    )
+    urllib.request.urlopen(create, timeout=10).read()
+    retain = urllib.request.Request(
+        f"{api}/v1/default/banks/{bank}/memories",
+        data=json.dumps({
+            "items": [{
+                "content": fact,
+                "context": "synthetic fresh recall diagnostic",
+                "tags": ["hades-explicit-memory"],
+                "entities": [
+                    {"text": "user", "type": "person"},
+                    {"text": "violet comet-42 markers", "type": "concept"},
+                ],
+            }],
+            "async": False,
+        }).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    urllib.request.urlopen(retain, timeout=60).read()
+
+
+def list_synthetic_facts(api: str, bank: str) -> list[dict[str, object]]:
+    listed_url = (
+        f"{api}/v1/default/banks/{bank}/memories/list"
+        "?tags=hades-explicit-memory&tags_match=any&state=valid&limit=100"
+    )
+    return json.load(urllib.request.urlopen(listed_url, timeout=15)).get("items", [])
+
+
+def qualify_populated_volume_migration(
+    old_image: str, new_image: str, old_name: str, new_name: str,
+    network: str, volume: str, mock_port: str,
+) -> str:
+    run("docker", "image", "inspect", old_image)
+    old_api = start_hindsight(old_image, old_name, network, volume, mock_port)
+    migration_bank = "migration-test-" + uuid.uuid4().hex[:8]
+    retain_synthetic_fact(old_api, migration_bank, FACT)
+    old_rows = list_synthetic_facts(old_api, migration_bank)
+    if not any("violet comet-42" in str(row.get("text", "")).casefold() for row in old_rows):
+        raise RuntimeError(f"old Hindsight version did not persist its migration fact: {old_rows!r}")
+    run("docker", "rm", "-f", old_name)
+    new_api = start_hindsight(new_image, new_name, network, volume, mock_port)
+    migrated_rows = list_synthetic_facts(new_api, migration_bank)
+    if not any("violet comet-42" in str(row.get("text", "")).casefold() for row in migrated_rows):
+        raise RuntimeError(
+            f"new Hindsight version did not preserve the populated-volume migration fact: {migrated_rows!r}"
+        )
+    recall = urllib.request.Request(
+        f"{new_api}/v1/default/banks/{migration_bank}/memories/recall",
+        data=json.dumps({
+            "query": "What markers does the synthetic user prefer? violet comet-42",
+            "budget": "low", "max_tokens": 1200,
+            "tags": ["hades-explicit-memory"], "tags_match": "any",
+        }).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    results = json.load(urllib.request.urlopen(recall, timeout=60)).get("results", [])
+    if not any("violet comet-42" in str(row.get("text", "")).casefold() for row in results):
+        raise RuntimeError(f"new Hindsight version could not freshly recall the migrated fact: {results!r}")
+    print(f"PASS populated-volume migration and fresh recall: {old_image} -> {new_image}")
+    return new_api
 
 
 def exercise_hades_route(api: str, bank: str, subject: str) -> None:
@@ -341,77 +393,65 @@ print(json.dumps({
 
 def main() -> None:
     image = image_pin()
+    old_image = migration_image_pin()
     run("docker", "image", "inspect", image)
     name = "hades-hindsight-route-" + uuid.uuid4().hex[:8]
+    mock_name = name + "-mock"
+    old_name = name + "-old"
     volume = "hades-hindsight-route-" + uuid.uuid4().hex[:8]
-    mock = http.server.ThreadingHTTPServer(("0.0.0.0", 0), MockModel)
-    mock_port = mock.server_address[1]
-    threading.Thread(target=mock.serve_forever, daemon=True).start()
+    network = name + "-net"
+    mock_state = Path("/tmp") / (name + "-mock-state")
+    mock_state.mkdir(mode=0o777)
+    mock_state.chmod(0o777)
+    mock_script = REPO / "scripts/synthetic-hindsight-model.py"
     try:
+        run("docker", "network", "create", network)
         run("docker", "volume", "create", volume)
         run(
-            "docker", "run", "-d", "--name", name,
-            "--add-host=host.docker.internal:host-gateway",
-            "-p", "127.0.0.1::8888",
-            "-v", f"{volume}:/home/hindsight/.pg0",
-            "-e", "HINDSIGHT_API_HOST=0.0.0.0",
-            "-e", "HINDSIGHT_API_PORT=8888",
-            "-e", "HINDSIGHT_API_ENABLE_OBSERVATIONS=true",
-            "-e", f"HINDSIGHT_API_WORKER_ID={name}",
-            "-e", "HINDSIGHT_API_LLM_PROVIDER=ollama",
-            "-e", f"HINDSIGHT_API_LLM_MODEL={MODEL}",
-            "-e", f"HINDSIGHT_API_LLM_BASE_URL=http://host.docker.internal:{mock_port}/v1",
-            "-e", "HINDSIGHT_API_LLM_API_KEY=synthetic",
-            image,
+            "docker", "run", "-d", "--name", mock_name,
+            "--network", network, "--network-alias", "hades-mock",
+            "--entrypoint", "python3",
+            "-v", f"{mock_script}:/tmp/synthetic-hindsight-model.py:ro",
+            "-v", f"{mock_state}:/tmp/mock-state",
+            "-e", f"HADES_SYNTHETIC_HINDSIGHT_MODEL={MODEL}",
+            image, "/tmp/synthetic-hindsight-model.py", "0.0.0.0",
+            "/tmp/mock-state/port", "/tmp/mock-state/requests.jsonl",
         )
-        inspection = json.loads(run("docker", "inspect", name, capture=True))[0]
-        api_port = inspection["NetworkSettings"]["Ports"]["8888/tcp"][0]["HostPort"]
-        api = f"http://127.0.0.1:{api_port}"
-        if not wait_healthy(api + "/health"):
-            raise RuntimeError("disposable pinned Hindsight API did not become healthy")
+        deadline = time.monotonic() + 30
+        mock_port = ""
+        while time.monotonic() < deadline:
+            result = subprocess.run(
+                ["docker", "exec", mock_name, "cat", "/tmp/mock-state/port"],
+                text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            )
+            if result.returncode == 0 and result.stdout.strip().isdigit():
+                mock_port = result.stdout.strip()
+                break
+            time.sleep(0.2)
+        if not mock_port:
+            raise RuntimeError("synthetic model peer did not publish its listening port")
+        if old_image:
+            api = qualify_populated_volume_migration(
+                old_image, image, old_name, name, network, volume, mock_port,
+            )
+        else:
+            api = start_hindsight(image, name, network, volume, mock_port)
 
         bank = "route-test-" + uuid.uuid4().hex[:8]
-        create = urllib.request.Request(
-            f"{api}/v1/default/banks/{bank}",
-            data=json.dumps({"name": "Synthetic fresh recall test"}).encode(),
-            headers={"Content-Type": "application/json"},
-            method="PUT",
-        )
-        urllib.request.urlopen(create, timeout=10).read()
-        retain = urllib.request.Request(
-            f"{api}/v1/default/banks/{bank}/memories",
-            data=json.dumps({
-                "items": [{
-                    "content": FACT,
-                    "context": "synthetic fresh recall diagnostic",
-                    "tags": ["hades-explicit-memory"],
-                    "entities": [
-                        {"text": "user", "type": "person"},
-                        {"text": "violet comet-42 markers", "type": "concept"},
-                    ],
-                }],
-                "async": False,
-            }).encode(),
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        urllib.request.urlopen(retain, timeout=60).read()
+        retain_synthetic_fact(api, bank, FACT)
 
         deadline = time.monotonic() + 15
+        requests_seen = read_mock_requests(mock_name)
         while time.monotonic() < deadline and not requests_seen:
             time.sleep(0.2)
+            requests_seen = read_mock_requests(mock_name)
         if not requests_seen:
             raise RuntimeError("synthetic retain did not reach the configured mock extraction route")
         if any(item["model"] != MODEL for item in requests_seen):
             raise RuntimeError("Hindsight did not send the configured extraction model")
         if any(not item["path"].endswith(("/api/chat", "/v1/chat/completions")) for item in requests_seen):
             raise RuntimeError("Hindsight sent an unexpected path to the configured extraction route")
-        listed_url = (
-            f"{api}/v1/default/banks/{bank}/memories/list"
-            "?tags=hades-explicit-memory&tags_match=any&state=valid&limit=100"
-        )
-        listed = json.load(urllib.request.urlopen(listed_url, timeout=15))
-        rows = listed.get("items", [])
+        rows = list_synthetic_facts(api, bank)
         if not any(
             isinstance(item, dict)
             and "violet comet-42" in str(item.get("text", "")).casefold()
@@ -460,10 +500,22 @@ def main() -> None:
         print("PASS a fresh recall request returns the newly retained synthetic fact")
         print("Observed request paths: " + ", ".join(sorted({item["path"] for item in requests_seen})))
     finally:
-        mock.shutdown()
-        mock.server_close()
         subprocess.run(["docker", "rm", "-f", name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["docker", "rm", "-f", old_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["docker", "rm", "-f", mock_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(["docker", "volume", "rm", volume], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["docker", "network", "rm", network], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["rm", "-rf", "--", str(mock_state)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def read_mock_requests(container: str) -> list[dict[str, str]]:
+    result = subprocess.run(
+        ["docker", "exec", container, "cat", "/tmp/mock-state/requests.jsonl"],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+    )
+    if result.returncode != 0:
+        return []
+    return [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
 
 
 if __name__ == "__main__":
