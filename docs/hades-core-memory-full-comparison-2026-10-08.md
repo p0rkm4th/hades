@@ -120,6 +120,29 @@ with the expected marker absent. Artifacts:
 and
 [`PLAIN-first`](../benchmarks/hades-core-memory-chunks-no-observations-alltypes-plain-first-20261008.json).
 
+I also isolated semantic extraction from observation consolidation in a
+HADES-first full-slice probe: `retain_mode=concise`, observations disabled, and
+all recall types enabled. The HADES arm still took 42.1 seconds to drain, with
+seven Hindsight `/api/chat` generations across its measured memory work. Its
+automatic fresh-fact response was pending at 63 ms, and the supplement results
+again found only the two corrected-response-preference markers (2/5 categories);
+the other three categories missed. This indicates that turning off observation
+consolidation alone does not remove the expensive extraction path, and the
+candidate did not recover the memory coverage lost with chunks. See the
+[`HADES-first artifact`](../benchmarks/hades-core-memory-concise-no-observations-alltypes-hades-first-20261008.json).
+
+The pinned Hindsight v0.10.2 API does support named per-retain extraction
+strategies on individual memory items, configured through a bank's
+`retain_strategies`; its Python `MemoryItem` schema includes `strategy`.
+However, the installed Hermes Hindsight provider's retain-item builder does
+not currently emit that field. This is a possible upstream capability to test
+through a small adapter, not evidence that a selective policy is already
+available. Strategy changes also do not by themselves disable bank-level
+observation consolidation. See the [v0.10.2 strategy configuration]
+(https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-docs/docs/developer/configuration.mdx)
+and [item schema]
+(https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-clients/python/hindsight_client_api/models/memory_item.py).
+
 Keep the production retain/observation settings unchanged. The next candidate
 should preserve useful semantic observations while avoiding an LLM-sized
 background task on the interactive runtime, or define a more selective policy
