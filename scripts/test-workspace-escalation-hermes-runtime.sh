@@ -32,7 +32,7 @@ HADES_WORKSPACE_ROOT="$work/hermes/workspaces" \
 HERMES_DOCKER_BINARY="$(command -v docker)" \
 HADES_HERMES_SANDBOX_IMAGE=docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d \
 "$hermes_python" - "$repo_dir" "$work" <<'PY'
-import re,sys
+import os,re,sys
 from pathlib import Path
 import run_agent
 import sitecustomize as hades
@@ -58,6 +58,12 @@ assert not workspace_policy.is_workspace_request(workspace_cases[3])
 assert not workspace_policy.is_workspace_request(workspace_cases[4])
 assert not workspace_policy.is_workspace_request(workspace_cases[5])
 assert not workspace_policy.sandbox_runtime_available(), 'test host should not qualify as rootless'
+os.environ['HADES_WORKSPACE_ENABLED']='false'
+assert not workspace_policy.is_workspace_request('Explain this traceback first.')
+assert not workspace_policy.is_workspace_request('Why is this Python test failing?')
+assert workspace_policy.is_workspace_request('Fix it.', [{'role':'user','content':'Why is this Python test failing?'}])
+assert workspace_policy.is_workspace_request('Read README.md and explain how to run it.')
+os.environ['HADES_WORKSPACE_ENABLED']='true'
 # Exercise HADES/Hermes workspace wiring with the available rootful test engine;
 # the production runtime gate remains the unmocked rootless check above.
 home=Path(__import__('os').environ['HERMES_HOME'])
@@ -130,6 +136,25 @@ hades._hades_original_run_conversation=ordinary_chat
 ordinary=agent.run_conversation("Hey, how's it going?",task_id='synthetic-work-chat')
 assert 'good to hear' in ordinary.get('final_response',''),ordinary
 print('PASS a follow-on ordinary turn restores the empty tool catalog and no sandbox scope')
+
+os.environ['HADES_WORKSPACE_ENABLED']='false'
+def ask_for_traceback(agent,user_message,*args,**kwargs):
+ assert agent.tools == [],agent.tools
+ assert get_terminal_scope() is None,get_terminal_scope()
+ return {'final_response':'Paste the traceback and I can explain it.','messages':[{'role':'assistant','content':'Paste the traceback and I can explain it.'}], 'api_calls':1,'completed':True}
+hades._hades_original_run_conversation=ask_for_traceback
+natural=agent.run_conversation('Explain this traceback first.',task_id='synthetic-work-chat')
+assert 'paste the traceback' in natural.get('final_response','').lower(),natural
+hades._hades_original_run_conversation=lambda *args,**kwargs: (_ for _ in ()).throw(AssertionError('model invoked for a code-action continuation without a workspace'))
+action=agent.run_conversation(
+ 'Fix it.',
+ conversation_history=[{'role':'user','content':'Why is this Python test failing?'}],
+ task_id='synthetic-work-chat',
+)
+assert 'workspace actions aren\'t enabled' in action.get('final_response','').lower(),action
+assert action.get('api_calls') == 0,action
+os.environ['HADES_WORKSPACE_ENABLED']='true'
+print('PASS a traceback question stays model-first while a follow-on code action remains safely gated')
 
 hades._hades_original_run_conversation=lambda *args,**kwargs: (_ for _ in ()).throw(AssertionError('model invoked for unauthorized household workspace'))
 household=create_agent('synthetic-household','synthetic-house-chat')

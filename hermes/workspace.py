@@ -81,11 +81,13 @@ def workspace_enabled() -> bool:
 def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None = None) -> bool:
     """Recognize explicit file/code actions and terse continuations of them."""
     text = str(user_message or "")
-    if (
-        _DIRECT_ACTION.search(text)
-        or _CODE_EXPLANATION.search(text)
-        or _CODE_FAILURE_DIAGNOSIS.search(text)
-        or _PATH.search(text.strip())
+    if _DIRECT_ACTION.search(text) or _PATH.search(text.strip()):
+        return True
+    # Code questions often need the model to ask for a missing snippet or
+    # traceback. When workspace capability is disabled, keep those turns on
+    # the model path instead of returning a canned workspace refusal.
+    if workspace_enabled() and (
+        _CODE_EXPLANATION.search(text) or _CODE_FAILURE_DIAGNOSIS.search(text)
     ):
         return True
     if not _FOLLOW_UP.fullmatch(text):
