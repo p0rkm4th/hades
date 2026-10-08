@@ -1,0 +1,795 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "title": "Synthetic canonical Grocy expiry, recipe-use, and feasibility reads: HADES direct route vs Hermes MCP",
+  "classification": "synthetic local tool-path probe; no owner preference or release qualification",
+  "source_revision": "fe9341116c533bfa627e388fd53c14b659cef156",
+  "benchmark_script": "scripts/benchmark-hades-grocy-read-pair.py",
+  "benchmark_script_sha256": "4fe8cdebab5ba0018ebd9b2eb074f797fa2c6c1c343364f27e097278cca6b119",
+  "method": {
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "quantization": "Q4_K_M",
+    "runtime": "Ollama 0.40.1",
+    "effective_context_tokens": 65536,
+    "reasoning": "disabled by benchmark request",
+    "hermes": "0.21.5 staged candidate",
+    "synthetic_source": "authenticated loopback synthetic Grocy, same source and generated key",
+    "plain_path": "one allowlisted native Hermes MCP read tool with expiry, saved-recipe-use, or recipe-name feasibility parameters",
+    "hades_path": "direct canonical Grocy reads",
+    "repeats": 3,
+    "order": "All available-source repeats run before a separate repeated 503 block; PLAIN/HADES order alternates per pair; v5 records post-outage recovery behavior",
+    "writes": "fixture requests audited; expected GET only",
+    "scenario_ids": [
+      "expiry",
+      "expiry_and_use",
+      "recipe_feasibility"
+    ],
+    "review_method": "Manual comparison against the synthetic fixture source; no owner review. Per-turn answers and prompt strings are omitted from this public artifact."
+  },
+  "turns": [
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 18166.1,
+      "total_ms": 19369.6,
+      "elapsed_ms": 19369.8,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "model_tool_invocation_counts": 2,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 422.5,
+      "total_ms": 422.6,
+      "elapsed_ms": 422.7,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 37.7,
+      "total_ms": 37.8,
+      "elapsed_ms": 37.9,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4618.4,
+      "total_ms": 7057.1,
+      "elapsed_ms": 7057.2,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "model_tool_invocation_counts": 2,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6218.4,
+      "total_ms": 7676.2,
+      "elapsed_ms": 7676.4,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "model_tool_invocation_counts": 3,
+      "error_type": null,
+      "fixture_request_count": 4
+    },
+    {
+      "repeat": 1,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 71.5,
+      "total_ms": 71.9,
+      "elapsed_ms": 72.0,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 4
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 36.0,
+      "total_ms": 36.0,
+      "elapsed_ms": 36.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4440.8,
+      "total_ms": 5629.8,
+      "elapsed_ms": 5630.0,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "model_tool_invocation_counts": 2,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6038.7,
+      "total_ms": 7634.7,
+      "elapsed_ms": 7635.0,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "model_tool_invocation_counts": 3,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 40.2,
+      "total_ms": 40.4,
+      "elapsed_ms": 40.5,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 48.2,
+      "total_ms": 48.5,
+      "elapsed_ms": 48.7,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 4
+    },
+    {
+      "repeat": 2,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6134.2,
+      "total_ms": 7540.2,
+      "elapsed_ms": 7540.5,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "model_tool_invocation_counts": 3,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4458.4,
+      "total_ms": 5511.2,
+      "elapsed_ms": 5511.4,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "model_tool_invocation_counts": 2,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 39.4,
+      "total_ms": 39.5,
+      "elapsed_ms": 39.6,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 49.9,
+      "total_ms": 50.1,
+      "elapsed_ms": 50.3,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6057.1,
+      "total_ms": 7409.5,
+      "elapsed_ms": 7409.8,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "model_tool_invocation_counts": 3,
+      "error_type": null,
+      "fixture_request_count": 3
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6092.1,
+      "total_ms": 7029.8,
+      "elapsed_ms": 7030.0,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "model_tool_invocation_counts": 3,
+      "error_type": null,
+      "fixture_request_count": 4
+    },
+    {
+      "repeat": 3,
+      "state": "available",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 50.2,
+      "total_ms": 50.3,
+      "elapsed_ms": 50.5,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 4
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4304.8,
+      "total_ms": 4973.6,
+      "elapsed_ms": 4973.9,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "model_tool_invocation_counts": 2,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 35.7,
+      "total_ms": 35.8,
+      "elapsed_ms": 36.1,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 39.2,
+      "total_ms": 39.3,
+      "elapsed_ms": 39.5,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 5805.5,
+      "total_ms": 7020.3,
+      "elapsed_ms": 7020.7,
+      "provider_generations": 4,
+      "tool_schema_count": 12,
+      "model_tool_invocation_counts": 3,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4280.9,
+      "total_ms": 6608.0,
+      "elapsed_ms": 6608.3,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "model_tool_invocation_counts": 2,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 1,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 47.1,
+      "total_ms": 47.4,
+      "elapsed_ms": 47.6,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 40.8,
+      "total_ms": 40.9,
+      "elapsed_ms": 41.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4177.8,
+      "total_ms": 6254.0,
+      "elapsed_ms": 6254.3,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "model_tool_invocation_counts": 2,
+      "error_type": null,
+      "fixture_request_count": 0
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 6095.6,
+      "total_ms": 9635.7,
+      "elapsed_ms": 9636.1,
+      "provider_generations": 5,
+      "tool_schema_count": 15,
+      "model_tool_invocation_counts": 4,
+      "error_type": null,
+      "fixture_request_count": 0
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 47.1,
+      "total_ms": 47.2,
+      "elapsed_ms": 47.4,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 44.4,
+      "total_ms": 44.8,
+      "elapsed_ms": 45.1,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 2,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 4318.4,
+      "total_ms": 5682.9,
+      "elapsed_ms": 5683.3,
+      "provider_generations": 3,
+      "tool_schema_count": 9,
+      "model_tool_invocation_counts": 2,
+      "error_type": null,
+      "fixture_request_count": 0
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 11062.2,
+      "total_ms": 13882.9,
+      "elapsed_ms": 13883.3,
+      "provider_generations": 6,
+      "tool_schema_count": 18,
+      "model_tool_invocation_counts": 4,
+      "error_type": null,
+      "fixture_request_count": 0
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "expiry",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 37.0,
+      "total_ms": 37.1,
+      "elapsed_ms": 37.4,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 39.5,
+      "total_ms": 39.9,
+      "elapsed_ms": 40.2,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "expiry_and_use",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 10499.2,
+      "total_ms": 13029.0,
+      "elapsed_ms": 13029.3,
+      "provider_generations": 6,
+      "tool_schema_count": 18,
+      "model_tool_invocation_counts": 4,
+      "error_type": null,
+      "fixture_request_count": 0
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "plain",
+      "status": 200,
+      "ttft_ms": 5962.8,
+      "total_ms": 11259.2,
+      "elapsed_ms": 11259.6,
+      "provider_generations": 6,
+      "tool_schema_count": 18,
+      "model_tool_invocation_counts": 5,
+      "error_type": null,
+      "fixture_request_count": 1
+    },
+    {
+      "repeat": 3,
+      "state": "unavailable",
+      "scenario": "recipe_feasibility",
+      "stack": "hades",
+      "status": 200,
+      "ttft_ms": 54.9,
+      "total_ms": 55.0,
+      "elapsed_ms": 55.3,
+      "provider_generations": 0,
+      "tool_schema_count": 0,
+      "model_tool_invocation_counts": 0,
+      "error_type": null,
+      "fixture_request_count": 1
+    }
+  ],
+  "source_access_audit": {
+    "count": 66,
+    "methods": [
+      "GET"
+    ],
+    "all_authenticated": true
+  },
+  "summary": {
+    "available.expiry": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 5630.0,
+        "median_ttft_ms": 4458.4,
+        "provider_generations": [
+          3,
+          3,
+          3
+        ],
+        "model_tool_invocation_counts": [
+          2,
+          2,
+          2
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 39.6,
+        "median_ttft_ms": 39.4,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ],
+        "model_tool_invocation_counts": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "available.expiry_and_use": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 7409.8,
+        "median_ttft_ms": 6038.7,
+        "provider_generations": [
+          3,
+          4,
+          4
+        ],
+        "model_tool_invocation_counts": [
+          2,
+          3,
+          3
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 40.5,
+        "median_ttft_ms": 40.2,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ],
+        "model_tool_invocation_counts": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "available.recipe_feasibility": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 7540.5,
+        "median_ttft_ms": 6134.2,
+        "provider_generations": [
+          4,
+          4,
+          4
+        ],
+        "model_tool_invocation_counts": [
+          3,
+          3,
+          3
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 50.5,
+        "median_ttft_ms": 50.2,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ],
+        "model_tool_invocation_counts": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "unavailable.expiry": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 6254.3,
+        "median_ttft_ms": 4304.8,
+        "provider_generations": [
+          3,
+          3,
+          6
+        ],
+        "model_tool_invocation_counts": [
+          2,
+          2,
+          4
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 37.4,
+        "median_ttft_ms": 37.0,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ],
+        "model_tool_invocation_counts": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "unavailable.expiry_and_use": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 9636.1,
+        "median_ttft_ms": 6095.6,
+        "provider_generations": [
+          4,
+          5,
+          6
+        ],
+        "model_tool_invocation_counts": [
+          3,
+          4,
+          4
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 40.2,
+        "median_ttft_ms": 39.5,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ],
+        "model_tool_invocation_counts": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "unavailable.recipe_feasibility": {
+      "plain": {
+        "samples": 3,
+        "median_elapsed_ms": 6608.3,
+        "median_ttft_ms": 4318.4,
+        "provider_generations": [
+          3,
+          3,
+          6
+        ],
+        "model_tool_invocation_counts": [
+          2,
+          2,
+          5
+        ]
+      },
+      "hades": {
+        "samples": 3,
+        "median_elapsed_ms": 47.6,
+        "median_ttft_ms": 47.1,
+        "provider_generations": [
+          0,
+          0,
+          0
+        ],
+        "model_tool_invocation_counts": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "manual_source_review": {
+    "available.expiry": {
+      "hades_correct": 3,
+      "plain_expected_date_facts_present": 3,
+      "hades_includes_missing_metadata_and_saved_recipe_context": 3
+    },
+    "available.expiry_and_use": {
+      "hades_correct": 3,
+      "plain_saved_recipe_suggestions_present": 3
+    },
+    "available.recipe_feasibility": {
+      "hades_correct_missing_ingredient": 3,
+      "plain_correct": 1,
+      "plain_incorrect_or_contradictory": 2
+    },
+    "unavailable.all_scenarios": {
+      "hades_truthful_unavailable_no_change": 9,
+      "plain_eventually_reports_unavailable": 9,
+      "plain_unsafe_unverified_endpoint_or_key_advice": 1
+    },
+    "evaluation_scope": "Single local manual reviewer checked synthetic results against scripts/synthetic-grocy-api.py. This is not human owner preference, general answer-quality grading, or production evidence."
+  }
+}
