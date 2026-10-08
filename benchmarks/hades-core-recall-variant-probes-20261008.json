@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "title": "HADES automatic recall variant probes",
+  "classification": "synthetic local probes; not owner dogfood or release qualification",
+  "method": {
+    "samples_per_variant": 1,
+    "stack_order": "PLAIN first",
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight@sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70",
+    "hermes_version": "0.21.5",
+    "ollama_version": "0.40.1",
+    "model": "qwen3.6:35b Q4_K_M",
+    "hindsight_model": "qwen3:14b Q4_K_M",
+    "context_length": 65536,
+    "retain_mode": "concise",
+    "derived_observations": true,
+    "temperature": 0.1,
+    "top_p": 0.95,
+    "isolation": "Each invocation used a fresh disposable Hindsight volume and an idle barrier after the HADES arm.",
+    "privacy": "Only timings, marker booleans, ranks, canonical types, and numeric scores are persisted; no result text or identifiers."
+  },
+  "variants": [
+    {
+      "source_revision": "e8335b43a5fb28541c3ab450c98219b4b772265f",
+      "recall_budget": "mid",
+      "recall_types": "observation",
+      "plain_automatic_recall_ms": 1826.8,
+      "plain_marker": true,
+      "hades_immediate_recall_ms": 28872.4,
+      "hades_immediate_marker": false,
+      "hades_idle_drain_ms": 43554.2,
+      "hades_settled_recall_ms": 10042.2,
+      "hades_settled_marker": true,
+      "ranked_scores": [
+        {"rank": 1, "type": "observation", "semantic": 0.6286545617190276, "reranker": 0.019055480438932088, "final": 0.02096101965077012},
+        {"rank": 2, "type": "observation", "semantic": 0.572145402431488, "reranker": 0.00003120298261154412, "final": 0.00003432150491228205},
+        {"rank": 3, "type": "observation", "semantic": 0.5851021409034729, "reranker": 0.0000192116040413033, "final": 0.000021132747505548288}
+      ]
+    },
+    {
+      "source_revision": "f7f81085eefa7bea55c031a013375799215e5bed",
+      "recall_budget": "low",
+      "recall_types": "observation",
+      "plain_automatic_recall_ms": 1845.4,
+      "plain_marker": true,
+      "hades_immediate_recall_ms": 27445.5,
+      "hades_immediate_marker": false,
+      "hades_idle_drain_ms": 42499.1,
+      "hades_settled_recall_ms": 10334.1,
+      "hades_settled_marker": true,
+      "ranked_scores": [
+        {"rank": 1, "type": "observation", "semantic": 0.6286545617190276, "reranker": 0.0026455930559272814, "final": 0.0024339456114530985},
+        {"rank": 2, "type": "observation", "semantic": 0.5143084389843162, "reranker": 0.000033903453805417984, "final": 0.00003729376675353228},
+        {"rank": 3, "type": "observation", "semantic": 0.5336949984340371, "reranker": 0.00001731827716708875, "final": 0.00001905008831583944}
+      ]
+    },
+    {
+      "source_revision": "f7f81085eefa7bea55c031a013375799215e5bed",
+      "recall_budget": "mid",
+      "recall_types": "all",
+      "plain_automatic_recall_ms": 1835.5,
+      "plain_marker": true,
+      "hades_immediate_recall_ms": 28554.4,
+      "hades_immediate_marker": false,
+      "hades_idle_drain_ms": 43529.9,
+      "hades_settled_recall_ms": 10250.5,
+      "hades_settled_marker": true,
+      "ranked_scores": [
+        {"rank": 1, "type": "observation", "semantic": 0.6286545617190276, "reranker": 0.0026455930559272814, "final": 0.0024339456114530985},
+        {"rank": 2, "type": "world", "semantic": 0.6900218540443107, "reranker": 0.00021810808874162885, "final": 0.00020065944164229853},
+        {"rank": 3, "type": "observation", "semantic": 0.5143084389843162, "reranker": 0.000033903453805417984, "final": 0.000037293765445596044},
+        {"rank": 4, "type": "observation", "semantic": 0.5336949984340371, "reranker": 0.00001731827716708875, "final": 0.000019050087647730432},
+        {"rank": 5, "type": "observation", "semantic": 0.5205409085911785, "reranker": 0.00001550884904382523, "final": 0.000017059726677550345},
+        {"rank": 6, "type": "experience", "semantic": 0.5998647809028625, "reranker": 0.000014664323597884088, "final": 0.000016130741363890545},
+        {"rank": 7, "type": "observation", "semantic": 0.5316634457311971, "reranker": 0.000012885787514133026, "final": 0.000014174360223781385},
+        {"rank": 8, "type": "experience", "semantic": 0.5646611620384804, "reranker": 0.000012300379415675402, "final": 0.00001353041159073864}
+      ]
+    }
+  ],
+  "findings": [
+    "All three one-sample HADES immediate-recall variants missed the marker at 27.4–28.9 seconds; matched PLAIN recalls found it in 1.8 seconds.",
+    "All three settled HADES recalls found the marker in 10.0–10.3 seconds, after 42.5–43.6 seconds for background work to reach idle.",
+    "The low budget and all-types profile did not materially change immediate recall latency or correctness in these samples. Do not promote either configuration from this evidence.",
+    "Semantic similarity remained high for a top result while its cross-encoder score was much lower. Without result text, this does not establish which candidate contained the expected fact or whether reranking caused the miss.",
+    "Different fresh volumes, one pass per profile, and no human review limit causal and quality claims."
+  ],
+  "limitations": [
+    "Synthetic owner-memory controls only; no real owner data or preference labels.",
+    "One sample per variant; no counterbalanced repeated run for budget/type changes.",
+    "Staged model weights and runtime do not prove equality with production deployment.",
+    "The idle barrier and settled lookup are not immediate-turn behavior."
+  ]
+}
