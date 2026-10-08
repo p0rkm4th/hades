@@ -144,7 +144,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert PAIR_MODULE.safe_turn_record({
         "turn": "fixture", "recall_diagnostics": diagnostics,
         "answer": "PRIVATE_SYNTHETIC_FACT",
-    }) == {"turn": "fixture", "recall_diagnostics": diagnostics}
+    }) == {"turn": "fixture"}
 
     target = pathlib.Path(directory) / "run.json"
     partial_turn = {"sample": 2, "stacks": {"hades": {"turns": [
