@@ -83,6 +83,8 @@ SMALL_EDIT_CONTEXT_PROMPT = (
 )
 SMALL_EDIT_PROMPT = "Fix the typo in the error message in this file."
 FOCUSED_TEST_PROMPT = "Run the focused test for the change we just made."
+SMALL_DIFF_PROMPT = "Show me exactly what changed and whether anything unrelated is in the diff."
+COMMIT_PROMPT = "Commit the change we just verified with a clear message."
 API_KEY = "synthetic-workspace-pair-key"
 WORKSPACE_ENVIRONMENT_HINT = (
     "The active project workspace for file and coding tasks is mounted at /workspace. "
@@ -957,6 +959,9 @@ def child(args: argparse.Namespace) -> int:
                    if args.scenario == "small-edit" else
                    [SMALL_EDIT_CONTEXT_PROMPT, SMALL_EDIT_PROMPT, FOCUSED_TEST_PROMPT]
                    if args.scenario == "small-edit-verify" else
+                   [SMALL_EDIT_CONTEXT_PROMPT, SMALL_EDIT_PROMPT, FOCUSED_TEST_PROMPT,
+                    SMALL_DIFF_PROMPT, COMMIT_PROMPT]
+                   if args.scenario == "workflow-to-commit" else
                    [DIAGNOSE_PROMPT, FIX_PROMPT])
         history: list[dict[str, Any]] = []
         turns = []
@@ -970,6 +975,11 @@ def child(args: argparse.Namespace) -> int:
                           ("inspect" if phase == 0 else
                            "edit" if phase == 1 else "focused_test")
                           if args.scenario == "small-edit-verify" else
+                          ("inspect" if phase == 0 else
+                           "edit" if phase == 1 else
+                           "focused_test" if phase == 2 else
+                           "review_diff" if phase == 3 else "commit")
+                          if args.scenario == "workflow-to-commit" else
                           ("diagnose" if phase == 0 else "fix"))
             stream_state["phase"] = phase_name
             stream_state["started"] = time.perf_counter()
@@ -977,6 +987,9 @@ def child(args: argparse.Namespace) -> int:
                 tool_choice_experiment["active"] = phase_name == "fix"
                 tool_choice_experiment["current_user_message"] = prompt
             prior_history = history
+            workspace_head_before = subprocess.check_output(
+                ["git", "rev-parse", "HEAD"], cwd=args.workspace, text=True,
+            ).strip() if args.scenario == "workflow-to-commit" else None
             result = agent.run_conversation(
                 user_message=prompt,
                 task_id=task_id,
@@ -1046,6 +1059,15 @@ def child(args: argparse.Namespace) -> int:
                         "permission" if re.search(r"(?i)(permission denied|not permitted|access denied)", content) else
                         "cwd" if re.search(r"(?i)(working directory|current directory|chdir|cd:)", content) else
                         "other" if re.search(r"(?i)\berror\b|failed", content) else None
+                    ),
+                    "error_kind": (
+                        "unknown_tool" if re.search(r"(?i)unknown tool", content) else
+                        "tool_not_available" if re.search(r"(?i)tool .{1,60} not available", content) else
+                        "tool_not_found" if re.search(r"(?i)tool .{1,60} does not exist", content) else
+                        "invalid_arguments" if re.search(r"(?i)(invalid|missing|required) (?:tool )?(?:argument|parameter|field)", content) else
+                        "permission" if re.search(r"(?i)(permission denied|not permitted|access denied)", content) else
+                        "command_not_found" if re.search(r"(?i)command not found", content) else
+                        "other_error" if re.search(r"(?i)\berror\b|failed", content) else None
                     ),
                     "has_output": bool(parsed.get("output")) if isinstance(parsed, dict) else None,
                     "test_output_markers": {
@@ -1117,6 +1139,9 @@ def child(args: argparse.Namespace) -> int:
                         "uses_git_diff": isinstance(command_value, str) and bool(re.search(
                             r"(?i)\bgit\s+diff\b", command_value
                         )),
+                        "uses_git_commit": isinstance(command_value, str) and bool(re.search(
+                            r"(?i)\bgit\s+commit\b", command_value
+                        )),
                         "search_pattern_nonempty": (
                             isinstance(raw_arguments.get("pattern"), str)
                             and bool(raw_arguments["pattern"].strip())
@@ -1158,10 +1183,16 @@ def child(args: argparse.Namespace) -> int:
                     TOKEN in str(m.get("content") or "") for m in tool_messages
                 ),
                 "workspace_changed_after_turn": bool(subprocess.check_output(
-                    ["git", "diff", "--name-only"], cwd=args.workspace, text=True,
+                    ["git", "status", "--porcelain", "--untracked-files=all"],
+                    cwd=args.workspace, text=True,
                 ).splitlines()) if args.scenario in {
-                    "escalation", "small-edit", "small-edit-verify"
+                    "escalation", "small-edit", "small-edit-verify", "workflow-to-commit"
                 } else False,
+                "git_head_changed_after_turn": (
+                    subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                             cwd=args.workspace, text=True).strip()
+                    != workspace_head_before
+                ) if args.scenario == "workflow-to-commit" else False,
                 "messages_added": len(turn_messages),
             })
             history = next_history
@@ -1275,9 +1306,9 @@ def main() -> int:
     parser.add_argument("--docker-binary", type=pathlib.Path)
     parser.add_argument("--sandbox-image", default=IMAGE)
     parser.add_argument("--repeats", type=int, default=2)
-    parser.add_argument("--scenario", choices=("read", "readme", "explain", "search", "escalation", "small-edit", "small-edit-verify"), default="read")
+    parser.add_argument("--scenario", choices=("read", "readme", "explain", "search", "escalation", "small-edit", "small-edit-verify", "workflow-to-commit"), default="read")
     parser.add_argument("--fixture-layout", choices=("compact", "multifile"), default="compact")
-    parser.add_argument("--fixture-case", choices=tuple(FIXTURE_CASES), default="geometry")
+    parser.add_argument("--fixture-case", choices=tuple(FIXTURE_CASES))
     parser.add_argument(
         "--workspace-context-hint", action="store_true",
         help="give both stacks the same supported agent.environment_hint describing the /workspace mount",
@@ -1298,6 +1329,8 @@ def main() -> int:
     parser.add_argument("--workspace", type=pathlib.Path)
     parser.add_argument("--provider-url")
     args = parser.parse_args()
+    if args.fixture_case is None:
+        args.fixture_case = "error_message" if args.scenario == "workflow-to-commit" else "geometry"
     fixture_case = FIXTURE_CASES[args.fixture_case]
 
     if args.child:
@@ -1409,6 +1442,10 @@ def main() -> int:
                     (workspace / "README.md").write_text(
                         "# Sample project\n\nRun the project tests with `make test`.\n"
                     )
+                    if args.scenario == "workflow-to-commit":
+                        (workspace / ".gitignore").write_text(
+                            "__pycache__/\n*.py[cod]\n"
+                        )
                     if args.fixture_layout == "multifile":
                         for name, content in fixture_case["support"].items():
                             (workspace / name).write_text(content)
@@ -1417,6 +1454,9 @@ def main() -> int:
                     subprocess.run(["git", "config", "user.email", "hades-benchmark@example.invalid"], cwd=workspace, check=True)
                     subprocess.run(["git", "add", "."], cwd=workspace, check=True)
                     subprocess.run(["git", "commit", "-q", "-m", "Seed failing project tests"], cwd=workspace, check=True)
+                seed_commit = subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=workspace, text=True,
+                ).strip() if args.scenario == "workflow-to-commit" else None
                 (temp / "sibling-secret.txt").write_text("HOST-SECRET-58\n")
                 if stack == "hades":
                     plugins = home / "plugins"
@@ -1431,7 +1471,7 @@ def main() -> int:
                               "base_url": f"http://127.0.0.1:{proxy_port}/v1",
                               "ollama_num_ctx": 65536,
                 "max_tokens": 512 if args.scenario in {
-                    "escalation", "small-edit", "small-edit-verify"
+                    "escalation", "small-edit", "small-edit-verify", "workflow-to-commit"
                 } else 192},
                     "providers": {"custom": {"request_timeout_seconds": 180}},
                     "platform_toolsets": {"api_server": ["file", "terminal"]},
@@ -1530,27 +1570,55 @@ def main() -> int:
                     turn["docker_cli_trace_count"] = len(trace_rows)
                 turn["tool_schema_requests"] = proxy.snapshot()
                 # Keep each turn's provider calls distinct; no content is stored in proxy records.
-                if args.scenario in {"escalation", "small-edit", "small-edit-verify"}:
+                if args.scenario in {"escalation", "small-edit", "small-edit-verify", "workflow-to-commit"}:
                     verification = subprocess.run(
                         [docker_bin, "run", "--rm", "--network=none", "-v",
                          f"{workspace}:/workspace", "-w", "/workspace",
                          args.sandbox_image, "python", "-B", "-m", "unittest", "-v"],
                         capture_output=True, text=True, timeout=90, check=False,
                     )
-                    changed = subprocess.check_output(
-                        ["git", "diff", "--name-only"], cwd=workspace, text=True
-                    ).splitlines()
-                    turn["independent_verification"] = {
-                        "test_exit_code": verification.returncode,
-                        "diff_check_exit_code": subprocess.run(
+                    if args.scenario == "workflow-to-commit":
+                        changed = subprocess.check_output(
+                            ["git", "diff", "--name-only", seed_commit, "--"],
+                            cwd=workspace, text=True,
+                        ).splitlines()
+                        commit_count = int(subprocess.check_output(
+                            ["git", "rev-list", "--count", f"{seed_commit}..HEAD"],
+                            cwd=workspace, text=True,
+                        ).strip())
+                        commit_subject = subprocess.check_output(
+                            ["git", "log", "-1", "--format=%s"], cwd=workspace, text=True,
+                        ).strip() if commit_count else ""
+                        diff_check = subprocess.run(
+                            ["git", "diff", seed_commit, "--check"], cwd=workspace,
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                        ).returncode
+                        clean_after_commit = not subprocess.check_output(
+                            ["git", "status", "--porcelain", "--untracked-files=all"],
+                            cwd=workspace, text=True,
+                        ).splitlines()
+                    else:
+                        changed = subprocess.check_output(
+                            ["git", "diff", "--name-only"], cwd=workspace, text=True
+                        ).splitlines()
+                        commit_count = None
+                        commit_subject = None
+                        diff_check = subprocess.run(
                             ["git", "diff", "--check"], cwd=workspace,
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                        ).returncode,
+                        ).returncode
+                        clean_after_commit = None
+                    turn["independent_verification"] = {
+                        "test_exit_code": verification.returncode,
+                        "diff_check_exit_code": diff_check,
                         "only_expected_source_changed": changed == [FIXTURE_CASES[args.fixture_case]["source"]],
                         "changed_path_count": len(changed),
                         "working_tree_has_uncommitted_changes": bool(subprocess.check_output(
                             ["git", "status", "--short"], cwd=workspace, text=True
                         ).splitlines()),
+                        "commit_count_delta": commit_count,
+                        "commit_subject_nonempty": bool(commit_subject) if commit_subject is not None else None,
+                        "working_tree_clean_after_commit": clean_after_commit,
                     }
                 records.append(turn)
                 with proxy.records_lock:
@@ -1640,6 +1708,8 @@ def main() -> int:
             })
             for stack in ("plain", "hades"):
                 stack_records = [r for r in records if r["stack"] == stack]
+                if not stack_records:
+                    continue
                 summary[f"{stack}_median_task_elapsed_ms"] = median(
                     [r["elapsed_ms"] for r in stack_records]
                 )
@@ -1701,6 +1771,88 @@ def main() -> int:
             })
             for stack in ("plain", "hades"):
                 stack_records = [r for r in records if r["stack"] == stack]
+                if not stack_records:
+                    continue
+                summary[f"{stack}_median_task_elapsed_ms"] = median(
+                    [r["elapsed_ms"] for r in stack_records]
+                )
+                summary[f"{stack}_median_model_api_calls_per_task"] = median(
+                    [sum(phase["api_calls"] for phase in r["turns"])
+                     for r in stack_records]
+                )
+                summary[f"{stack}_median_tool_results_per_task"] = median(
+                    [sum(phase["tool_result_count"] for phase in r["turns"])
+                     for r in stack_records]
+                )
+        elif args.scenario == "workflow-to-commit":
+            def median(values):
+                ordered = sorted(values)
+                middle = len(ordered) // 2
+                if len(ordered) % 2:
+                    return ordered[middle]
+                return (ordered[middle - 1] + ordered[middle]) / 2
+
+            summary.update({
+                "plain_focused_test_terminal_calls": sum(
+                    call.get("name") == "terminal"
+                    for r in records if r["stack"] == "plain" for phase in r["turns"]
+                    if phase["phase"] == "focused_test" for call in phase["sanitized_tool_calls"]
+                ),
+                "hades_focused_test_terminal_calls": sum(
+                    call.get("name") == "terminal"
+                    for r in records if r["stack"] == "hades" for phase in r["turns"]
+                    if phase["phase"] == "focused_test" for call in phase["sanitized_tool_calls"]
+                ),
+                "plain_review_diff_calls": sum(
+                    call.get("uses_git_diff") is True
+                    for r in records if r["stack"] == "plain" for phase in r["turns"]
+                    if phase["phase"] == "review_diff" for call in phase["sanitized_tool_calls"]
+                ),
+                "hades_review_diff_calls": sum(
+                    call.get("uses_git_diff") is True
+                    for r in records if r["stack"] == "hades" for phase in r["turns"]
+                    if phase["phase"] == "review_diff" for call in phase["sanitized_tool_calls"]
+                ),
+                "plain_commit_tool_calls": sum(
+                    call.get("uses_git_commit") is True
+                    for r in records if r["stack"] == "plain" for phase in r["turns"]
+                    if phase["phase"] == "commit" for call in phase["sanitized_tool_calls"]
+                ),
+                "hades_commit_tool_calls": sum(
+                    call.get("uses_git_commit") is True
+                    for r in records if r["stack"] == "hades" for phase in r["turns"]
+                    if phase["phase"] == "commit" for call in phase["sanitized_tool_calls"]
+                ),
+                "plain_committed_tasks": sum(
+                    r.get("independent_verification", {}).get("commit_count_delta") == 1
+                    and r.get("independent_verification", {}).get("commit_subject_nonempty") is True
+                    and r.get("independent_verification", {}).get("working_tree_clean_after_commit") is True
+                    for r in records if r["stack"] == "plain"
+                ),
+                "hades_committed_tasks": sum(
+                    r.get("independent_verification", {}).get("commit_count_delta") == 1
+                    and r.get("independent_verification", {}).get("commit_subject_nonempty") is True
+                    and r.get("independent_verification", {}).get("working_tree_clean_after_commit") is True
+                    for r in records if r["stack"] == "hades"
+                ),
+                "hades_git_diff_calls_outside_review_phase": sum(
+                    call.get("uses_git_diff") is True
+                    for r in records if r["stack"] == "hades" for phase in r["turns"]
+                    if phase["phase"] != "review_diff" for call in phase["sanitized_tool_calls"]
+                ),
+                "independent_tests_passed": sum(
+                    r.get("independent_verification", {}).get("test_exit_code") == 0
+                    for r in records
+                ),
+                "expected_source_only_commits": sum(
+                    r.get("independent_verification", {}).get("only_expected_source_changed") is True
+                    for r in records
+                ),
+            })
+            for stack in ("plain", "hades"):
+                stack_records = [r for r in records if r["stack"] == stack]
+                if not stack_records:
+                    continue
                 summary[f"{stack}_median_task_elapsed_ms"] = median(
                     [r["elapsed_ms"] for r in stack_records]
                 )
@@ -1793,9 +1945,9 @@ def main() -> int:
                 "reasoning": "disabled in both direct AIAgent instances",
                 "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
                 "scenario": args.scenario,
-                "fixture_layout": args.fixture_layout if args.scenario == "escalation" else None,
+                "fixture_layout": args.fixture_layout if args.scenario in {"escalation", "workflow-to-commit"} else None,
                 "fixture_case": args.fixture_case if args.scenario in {
-                    "escalation", "explain", "small-edit", "small-edit-verify"
+                    "escalation", "explain", "small-edit", "small-edit-verify", "workflow-to-commit"
                 } else None,
                 "canonical_project_test_recipe": (
                     "make test (python -B -m unittest discover -v)"
@@ -1818,6 +1970,8 @@ def main() -> int:
                                ["inspect", "edit"] if args.scenario == "small-edit" else
                                ["inspect", "edit", "focused_test"]
                                if args.scenario == "small-edit-verify" else
+                               ["inspect", "edit", "focused_test", "review_diff", "commit"]
+                               if args.scenario == "workflow-to-commit" else
                                ["diagnose", "fix"]),
                 "subject": "synthetic owner identity; private fixture only",
             },
@@ -1829,6 +1983,7 @@ def main() -> int:
                     "independent fixture tests and diff checks are recorded, but this does not qualify larger coding "
                     "tasks, Git commit behavior, or owner preference."
                     if args.scenario == "escalation" else
+                    "Synthetic five-turn inspect/edit/test/diff-review/local-commit workflow. Independent verification records test, commit count, source scope, commit presence, and clean worktree without storing response or commit text; this does not measure owner preference or remote push behavior." if args.scenario == "workflow-to-commit" else
                     "Synthetic three-turn small edit followed by the core-26 focused-test request; tool invocation, exit status, and independent verification are recorded without response text." if args.scenario == "small-edit-verify" else
                     "Synthetic two-turn error-message edit using the owner corpus follow-up wording; no owner preference is collected." if args.scenario == "small-edit" else
                     "Synthetic README comprehension: run command and test runner markers are recorded without answer text." if args.scenario == "readme" else

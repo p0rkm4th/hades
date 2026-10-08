@@ -19,7 +19,7 @@ The current stable synthetic control is Hermes 0.21.5, Ollama 0.40.1,
 Qwen3.6:35b Q4_K_M, and disposable Hindsight 0.10.2. The latest measured
 ordinary-chat subset showed comparable HADES and PLAIN latency with a thin
 HADES tool/context path; it did not measure answer quality or owner preference.
-The 55-case corpus has 31 cases without direct replay and no owner preference
+The 55-case corpus has 29 cases without direct replay and no owner preference
 labels. The current-source two-turn small-edit replay favored HADES on a
 single edit. Extending that conversation through the focused-test request
 reversed the result: HADES median task time was 44.48 seconds versus PLAIN
@@ -27,17 +27,22 @@ reversed the result: HADES median task time was 44.48 seconds versus PLAIN
 eventually produced passing focused-test results in both order-balanced pairs;
 all independent tests and file-scope checks passed. This is synthetic evidence,
 not owner preference. The composed-task latency exceeds the 30-second target.
-See the linked reports in
-[`hades-core-owner-corpus-v2.json`](../benchmarks/hades-core-owner-corpus-v2.json)
-the [edit-to-test replay report](hades-core-owner-edit-to-test-current-stable-2026-10-08.md),
-and the [small-edit replay report](hades-core-owner-small-edit-current-stable-2026-10-08.md),
-as well as the [workspace escalation report](hades-core-workspace-escalation-ollama0401-2026-10-08.md).
+The five-turn edit/test/diff-review/commit replay then found HADES completed the
+focused test and changed only the intended source in both pairs, but skipped
+the requested Git diff review and committed in zero of two tasks. PLAIN reviewed
+and committed both tasks. HADES returned `tool_not_found` errors; the cause
+remains under investigation. See the
+[workflow-to-commit replay report](hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md),
+the [`hades-core-owner-corpus-v2.json`](../benchmarks/hades-core-owner-corpus-v2.json)
+coverage map, the [edit-to-test replay report](hades-core-owner-edit-to-test-current-stable-2026-10-08.md),
+the [small-edit replay report](hades-core-owner-small-edit-current-stable-2026-10-08.md),
+and the [workspace escalation report](hades-core-workspace-escalation-ollama0401-2026-10-08.md).
 
-Next engineering work: continue the unreplayed corpus with current-source
-workspace/action cases, record completion and verification behavior, and reduce
-avoidable HADES action-path latency without weakening the diagnosis and
-authorization boundary. Direct Scotty dogfood and preference labels remain a
-release gate; synthetic results must not stand in for them.
+Next engineering work: isolate the read-only workspace Git-review boundary and
+the HADES terminal dispatch errors, then repair and rerun the same action
+workflow without weakening workspace authority. Direct Scotty dogfood and
+preference labels remain a release gate; synthetic results must not stand in
+for them.
 
 ## Open WebUI security priority — 2026-10-07 UTC
 
