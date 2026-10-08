@@ -1,0 +1,2639 @@
+{
+  "date": "2026-10-08",
+  "source_revision": "c6c40a7670f5943c0ac934e92025a12e9c888215",
+  "method": {
+    "hermes": "Hermes Agent v0.21.5 (2026.9.24)\nInstall directory: [local path redacted]\nInstall method: git\nPython: 3.13.14\nOpenAI SDK: 2.24.0\nUpdate available: 9117 commits behind — run 'hermes update' clean install for both arms; HADES arm loads current sitecustomize overlay",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "ollama": "0.40.1",
+    "openai_chat_context_probe_prompt_tokens": 7010,
+    "openai_chat_context_probe_minimum_tokens": 5000,
+    "docker_engine": "29.8.2",
+    "docker_security_options": [
+      "name=seccomp,profile=builtin",
+      "name=rootless",
+      "name=cgroupns"
+    ],
+    "docker_storage_driver": "vfs",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "sandbox_image_id": "sha256:d14ae8d7fcee933e82c9f62eded621110f227bc96363ca5449d36897af7bea1c",
+    "context": 65536,
+    "requested_context": 65536,
+    "arm_context_lengths": [
+      {
+        "stack": "plain",
+        "repeat": 0,
+        "context": 65536
+      },
+      {
+        "stack": "hades",
+        "repeat": 0,
+        "context": 65536
+      },
+      {
+        "stack": "hades",
+        "repeat": 1,
+        "context": 65536
+      },
+      {
+        "stack": "plain",
+        "repeat": 1,
+        "context": 65536
+      }
+    ],
+    "actual_context_source": "Ollama GET /api/ps after warmup and after each provider request",
+    "per_arm_cache_reset": "POST /api/chat with empty messages and keep_alive=0; verify model unload; reload and issue identical /api/generate warmup before every PLAIN or HADES arm",
+    "reasoning": "disabled in both direct AIAgent instances",
+    "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+    "scenario": "small-edit",
+    "layout": null,
+    "case": "error_message",
+    "canonical_project_test_recipe": null,
+    "workspace_verification_experiment": null,
+    "host_workspace_verification_mapping_experiment": null,
+    "native_verify_on_stop": false,
+    "workspace_context_hint": "The active project workspace for file and coding tasks is mounted at /workspace. Use /workspace as the root for file tools; do not assume it is the Hermes host filesystem.",
+    "stage_ids": [
+      "inspect",
+      "edit"
+    ],
+    "subject": "synthetic owner identity; private fixture only"
+  },
+  "turns": [
+    {
+      "scenario": "small-edit",
+      "stack": "plain",
+      "repeat": 0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd_is_fixture": false,
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 35746.4,
+      "turns": [
+        {
+          "phase": "inspect",
+          "stage_id": "inspect",
+          "elapsed_ms": 30192.4,
+          "stream_progress": {
+            "delta_count": 43,
+            "character_count": 170,
+            "first_delta_ms": 29491.3,
+            "last_delta_ms": 30186.6
+          },
+          "response_present": true,
+          "response_characters": 168,
+          "response_contains_expected_token": false,
+          "response_contains_search_target": null,
+          "response_contains_readme_run_target": null,
+          "response_contains_original_error_marker": true,
+          "api_calls": 5,
+          "tool_result_count": 4,
+          "tool_names": [
+            "read_file",
+            "search_files",
+            "search_files",
+            "read_file"
+          ],
+          "result_metrics": [
+            {
+              "name": "read_file",
+              "content_bytes": 236,
+              "error_marker": true,
+              "exit_code": null,
+              "structured_result_keys": [
+                "content",
+                "error",
+                "file_size",
+                "is_binary",
+                "is_image",
+                "total_lines",
+                "truncated"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": "not_found",
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": true
+            },
+            {
+              "name": "search_files",
+              "content_bytes": 18,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "total_count"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": false
+            },
+            {
+              "name": "search_files",
+              "content_bytes": 90,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "files",
+                "total_count"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {
+                "files": 2
+              },
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": true
+            },
+            {
+              "name": "read_file",
+              "content_bytes": 231,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "content",
+                "file_size",
+                "is_binary",
+                "is_image",
+                "total_lines",
+                "truncated"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": false
+            }
+          ],
+          "invocation_stats": [
+            {
+              "name": "read_file",
+              "parameter_names": [
+                "path"
+              ],
+              "path_count": 1,
+              "all_paths_in_workspace": false,
+              "mentions_fixture_name": true,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": null,
+              "search_target": null
+            },
+            {
+              "name": "search_files",
+              "parameter_names": [
+                "output_mode",
+                "pattern"
+              ],
+              "path_count": 0,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": false,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": true,
+              "search_target": null
+            },
+            {
+              "name": "search_files",
+              "parameter_names": [
+                "output_mode",
+                "pattern"
+              ],
+              "path_count": 0,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": false,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": true,
+              "search_target": null
+            },
+            {
+              "name": "read_file",
+              "parameter_names": [
+                "path"
+              ],
+              "path_count": 1,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": true,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": null,
+              "search_target": null
+            }
+          ],
+          "tool_result_contains_fixture": false,
+          "workspace_changed_after_turn": false,
+          "messages_added": 10
+        },
+        {
+          "phase": "edit",
+          "stage_id": "edit",
+          "elapsed_ms": 35744.9,
+          "stream_progress": {
+            "delta_count": 26,
+            "character_count": 99,
+            "first_delta_ms": 4948.1,
+            "last_delta_ms": 5546.6
+          },
+          "response_present": true,
+          "response_characters": 97,
+          "response_contains_expected_token": false,
+          "response_contains_search_target": null,
+          "response_contains_readme_run_target": null,
+          "response_contains_original_error_marker": null,
+          "api_calls": 2,
+          "tool_result_count": 1,
+          "tool_names": [
+            "patch"
+          ],
+          "result_metrics": [
+            {
+              "name": "patch",
+              "content_bytes": 409,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "diff",
+                "files_modified",
+                "lint",
+                "resolved_path",
+                "success"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": true
+            }
+          ],
+          "invocation_stats": [
+            {
+              "name": "patch",
+              "parameter_names": [
+                "new_string",
+                "old_string",
+                "path"
+              ],
+              "path_count": 1,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": true,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": null,
+              "search_target": null
+            }
+          ],
+          "tool_result_contains_fixture": false,
+          "workspace_changed_after_turn": true,
+          "messages_added": 4
+        }
+      ],
+      "api_calls": 7,
+      "tool_result_count": 5,
+      "tool_names": [
+        "read_file",
+        "search_files",
+        "search_files",
+        "read_file",
+        "patch"
+      ],
+      "workspace_mount_metrics": [
+        {
+          "task_id_matches": false,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        }
+      ],
+      "tool_result_contains_fixture": false,
+      "assistant_response_count": 2,
+      "final_response_contains_expected_token": false,
+      "tool_choice_experiment": null,
+      "native_verification_stop_nudges": 0,
+      "native_verification_terminal_evidence_statuses": [],
+      "host_workspace_mapping_experiment": null,
+      "native_verification_snapshot": {
+        "enabled": false,
+        "mutated_code_path_count": 1,
+        "project_facts_recognized_count": 0,
+        "evidence_statuses": [
+          "disabled"
+        ],
+        "container_workspace_path_count": 1,
+        "host_workspace_path_count": 0,
+        "runtime_cwd_project_facts_recognized": true,
+        "host_workspace_project_facts_recognized": true,
+        "host_workspace_evidence_status": "disabled",
+        "mapping_experiment_active": false
+      },
+      "outer_wall_ms": 38844.6,
+      "arm_loaded_context_length": 65536,
+      "provider_metrics": [
+        {
+          "phase": "other",
+          "model": null,
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": null,
+          "benchmark_repeat": null,
+          "sampling_seed": null,
+          "sampling_call_ordinal": null,
+          "generation_controls": {},
+          "model_parameters": {},
+          "stream": false,
+          "tool_choice": null,
+          "request_bytes": 22,
+          "roles": [],
+          "payload_role_bytes": {},
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 0,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "tool_schema_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "tool_schema_names": [],
+          "invocation_metrics": {},
+          "finish_reasons": [],
+          "first_event_ms": null,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": null,
+          "status": 200,
+          "elapsed_ms": 4.6,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44000,
+          "sampling_call_ordinal": 0,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44000
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 25537,
+          "roles": [
+            "system",
+            "user"
+          ],
+          "payload_role_bytes": {
+            "system": 12501,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 12766,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {
+            "0": "read_file"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 14268.8,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 14268.9,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 5968,
+            "token_accounting_details": {
+              "cached_tokens": 0
+            },
+            "completion_tokens": 56,
+            "total_tokens": 6024
+          },
+          "status": 200,
+          "elapsed_ms": 14309.1,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44001,
+          "sampling_call_ordinal": 1,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44001
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 26102,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 0,
+            "system": 12501,
+            "tool": 236,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 13329,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {
+            "0": "search_files"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 1750.1,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 1750.1,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 6115,
+            "token_accounting_details": {
+              "cached_tokens": 5964
+            },
+            "completion_tokens": 41,
+            "total_tokens": 6156
+          },
+          "status": 200,
+          "elapsed_ms": 1791.3,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44002,
+          "sampling_call_ordinal": 2,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44002
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 26388,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 0,
+            "system": 12501,
+            "tool": 254,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 13613,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {
+            "0": "search_files"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 2312.6,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 2312.6,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 6176,
+            "token_accounting_details": {
+              "cached_tokens": 6111
+            },
+            "completion_tokens": 41,
+            "total_tokens": 6217
+          },
+          "status": 200,
+          "elapsed_ms": 2312.8,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44003,
+          "sampling_call_ordinal": 3,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44003
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 26742,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 0,
+            "system": 12501,
+            "tool": 344,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 13965,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {
+            "0": "read_file"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 1945.3,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 1945.3,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 6252,
+            "token_accounting_details": {
+              "cached_tokens": 6172
+            },
+            "completion_tokens": 27,
+            "total_tokens": 6279
+          },
+          "status": 200,
+          "elapsed_ms": 1945.6,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44004,
+          "sampling_call_ordinal": 4,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44004
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 27226,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 0,
+            "system": 12501,
+            "tool": 575,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 14447,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {},
+          "finish_reasons": [
+            "stop"
+          ],
+          "first_event_ms": 944.5,
+          "first_content_ms": 944.5,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 43,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": {
+            "prompt_tokens": 6367,
+            "token_accounting_details": {
+              "cached_tokens": 6248
+            },
+            "completion_tokens": 48,
+            "total_tokens": 6415
+          },
+          "status": 200,
+          "elapsed_ms": 1639.1,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44005,
+          "sampling_call_ordinal": 5,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44005
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 27516,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool",
+            "assistant",
+            "user"
+          ],
+          "payload_role_bytes": {
+            "assistant": 170,
+            "system": 12501,
+            "tool": 575,
+            "user": 121
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 14735,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {
+            "0": "patch"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 1597.4,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 1597.5,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 6435,
+            "token_accounting_details": {
+              "cached_tokens": 6363
+            },
+            "completion_tokens": 66,
+            "total_tokens": 6501
+          },
+          "status": 200,
+          "elapsed_ms": 1597.9,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44006,
+          "sampling_call_ordinal": 6,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44006
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 28317,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool",
+            "assistant",
+            "tool",
+            "assistant",
+            "user",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 170,
+            "system": 12501,
+            "tool": 984,
+            "user": 121
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 15534,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {},
+          "finish_reasons": [
+            "stop"
+          ],
+          "first_event_ms": 932.5,
+          "first_content_ms": 932.5,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 26,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": {
+            "prompt_tokens": 6622,
+            "token_accounting_details": {
+              "cached_tokens": 6431
+            },
+            "completion_tokens": 27,
+            "total_tokens": 6649
+          },
+          "status": 200,
+          "elapsed_ms": 1533.7,
+          "loaded_context_length_after_request": 65536
+        }
+      ],
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "scenario": "small-edit",
+      "stack": "hades",
+      "repeat": 0,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd_is_fixture": false,
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 29229.5,
+      "turns": [
+        {
+          "phase": "inspect",
+          "stage_id": "inspect",
+          "elapsed_ms": 23454.3,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 322,
+            "first_delta_ms": 299.6,
+            "last_delta_ms": 23453.7
+          },
+          "response_present": true,
+          "response_characters": 229,
+          "response_contains_expected_token": false,
+          "response_contains_search_target": null,
+          "response_contains_readme_run_target": null,
+          "response_contains_original_error_marker": true,
+          "api_calls": 2,
+          "tool_result_count": 1,
+          "tool_names": [
+            "read_file"
+          ],
+          "result_metrics": [
+            {
+              "name": "read_file",
+              "content_bytes": 231,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "content",
+                "file_size",
+                "is_binary",
+                "is_image",
+                "total_lines",
+                "truncated"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": false
+            }
+          ],
+          "invocation_stats": [
+            {
+              "name": "read_file",
+              "parameter_names": [
+                "path"
+              ],
+              "path_count": 1,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": true,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": null,
+              "search_target": null
+            }
+          ],
+          "tool_result_contains_fixture": false,
+          "workspace_changed_after_turn": false,
+          "messages_added": 4
+        },
+        {
+          "phase": "edit",
+          "stage_id": "edit",
+          "elapsed_ms": 29228.0,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 206,
+            "first_delta_ms": 84.0,
+            "last_delta_ms": 5772.0
+          },
+          "response_present": true,
+          "response_characters": 113,
+          "response_contains_expected_token": false,
+          "response_contains_search_target": null,
+          "response_contains_readme_run_target": null,
+          "response_contains_original_error_marker": null,
+          "api_calls": 2,
+          "tool_result_count": 1,
+          "tool_names": [
+            "patch"
+          ],
+          "result_metrics": [
+            {
+              "name": "patch",
+              "content_bytes": 409,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "diff",
+                "files_modified",
+                "lint",
+                "resolved_path",
+                "success"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": true
+            }
+          ],
+          "invocation_stats": [
+            {
+              "name": "patch",
+              "parameter_names": [
+                "new_string",
+                "old_string",
+                "path"
+              ],
+              "path_count": 1,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": true,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": null,
+              "search_target": null
+            }
+          ],
+          "tool_result_contains_fixture": false,
+          "workspace_changed_after_turn": true,
+          "messages_added": 4
+        }
+      ],
+      "api_calls": 4,
+      "tool_result_count": 2,
+      "tool_names": [
+        "read_file",
+        "patch"
+      ],
+      "workspace_mount_metrics": [
+        {
+          "task_id_matches": false,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        }
+      ],
+      "tool_result_contains_fixture": false,
+      "assistant_response_count": 2,
+      "final_response_contains_expected_token": false,
+      "tool_choice_experiment": null,
+      "native_verification_stop_nudges": 0,
+      "native_verification_terminal_evidence_statuses": [],
+      "host_workspace_mapping_experiment": null,
+      "native_verification_snapshot": {
+        "enabled": false,
+        "mutated_code_path_count": 1,
+        "project_facts_recognized_count": 0,
+        "evidence_statuses": [
+          "disabled"
+        ],
+        "container_workspace_path_count": 1,
+        "host_workspace_path_count": 0,
+        "runtime_cwd_project_facts_recognized": true,
+        "host_workspace_project_facts_recognized": true,
+        "host_workspace_evidence_status": "disabled",
+        "mapping_experiment_active": false
+      },
+      "outer_wall_ms": 32918.1,
+      "arm_loaded_context_length": 65536,
+      "provider_metrics": [
+        {
+          "phase": "other",
+          "model": null,
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": null,
+          "benchmark_repeat": null,
+          "sampling_seed": null,
+          "sampling_call_ordinal": null,
+          "generation_controls": {},
+          "model_parameters": {},
+          "stream": false,
+          "tool_choice": null,
+          "request_bytes": 22,
+          "roles": [],
+          "payload_role_bytes": {},
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 0,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "tool_schema_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "tool_schema_names": [],
+          "invocation_metrics": {},
+          "finish_reasons": [],
+          "first_event_ms": null,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": null,
+          "status": 200,
+          "elapsed_ms": 3.5,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "hades",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44000,
+          "sampling_call_ordinal": 0,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44000
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 24448,
+          "roles": [
+            "system",
+            "user"
+          ],
+          "payload_role_bytes": {
+            "system": 13915,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 14182,
+          "tool_schema_count": 5,
+          "tool_schema_bytes": 10088,
+          "tool_schema_sha256": "7ca0765c5dda709e6a6a2995c8667b6379c2436bcc92bcb971d1c655ea33e6a5",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file"
+          ],
+          "invocation_metrics": {
+            "0": "read_file"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 12943.5,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 12943.5,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 5654,
+            "token_accounting_details": {
+              "cached_tokens": 0
+            },
+            "completion_tokens": 27,
+            "total_tokens": 5681
+          },
+          "status": 200,
+          "elapsed_ms": 12943.7,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "hades",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44001,
+          "sampling_call_ordinal": 1,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44001
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 24932,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 0,
+            "system": 13915,
+            "tool": 231,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 14664,
+          "tool_schema_count": 5,
+          "tool_schema_bytes": 10088,
+          "tool_schema_sha256": "7ca0765c5dda709e6a6a2995c8667b6379c2436bcc92bcb971d1c655ea33e6a5",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file"
+          ],
+          "invocation_metrics": {},
+          "finish_reasons": [
+            "stop"
+          ],
+          "first_event_ms": 845.9,
+          "first_content_ms": 845.9,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 56,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": {
+            "prompt_tokens": 5769,
+            "token_accounting_details": {
+              "cached_tokens": 5650
+            },
+            "completion_tokens": 62,
+            "total_tokens": 5831
+          },
+          "status": 200,
+          "elapsed_ms": 2095.3,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "hades",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44002,
+          "sampling_call_ordinal": 2,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44002
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 25281,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "user"
+          ],
+          "payload_role_bytes": {
+            "assistant": 229,
+            "system": 13915,
+            "tool": 231,
+            "user": 121
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 15011,
+          "tool_schema_count": 5,
+          "tool_schema_bytes": 10088,
+          "tool_schema_sha256": "7ca0765c5dda709e6a6a2995c8667b6379c2436bcc92bcb971d1c655ea33e6a5",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file"
+          ],
+          "invocation_metrics": {
+            "0": "patch"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 1761.0,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 1761.1,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 5851,
+            "token_accounting_details": {
+              "cached_tokens": 5765
+            },
+            "completion_tokens": 64,
+            "total_tokens": 5915
+          },
+          "status": 200,
+          "elapsed_ms": 1761.2,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "hades",
+          "benchmark_repeat": 0,
+          "sampling_seed": 44003,
+          "sampling_call_ordinal": 3,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 44003
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 26066,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "user",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 229,
+            "system": 13915,
+            "tool": 640,
+            "user": 121
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 15794,
+          "tool_schema_count": 5,
+          "tool_schema_bytes": 10088,
+          "tool_schema_sha256": "7ca0765c5dda709e6a6a2995c8667b6379c2436bcc92bcb971d1c655ea33e6a5",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file"
+          ],
+          "invocation_metrics": {},
+          "finish_reasons": [
+            "stop"
+          ],
+          "first_event_ms": 949.7,
+          "first_content_ms": 949.7,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 29,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": {
+            "prompt_tokens": 6036,
+            "token_accounting_details": {
+              "cached_tokens": 5847
+            },
+            "completion_tokens": 31,
+            "total_tokens": 6067
+          },
+          "status": 200,
+          "elapsed_ms": 1520.5,
+          "loaded_context_length_after_request": 65536
+        }
+      ],
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "scenario": "small-edit",
+      "stack": "hades",
+      "repeat": 1,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd_is_fixture": false,
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 27672.3,
+      "turns": [
+        {
+          "phase": "inspect",
+          "stage_id": "inspect",
+          "elapsed_ms": 21955.2,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 189,
+            "first_delta_ms": 301.0,
+            "last_delta_ms": 21954.6
+          },
+          "response_present": true,
+          "response_characters": 96,
+          "response_contains_expected_token": false,
+          "response_contains_search_target": null,
+          "response_contains_readme_run_target": null,
+          "response_contains_original_error_marker": true,
+          "api_calls": 2,
+          "tool_result_count": 1,
+          "tool_names": [
+            "read_file"
+          ],
+          "result_metrics": [
+            {
+              "name": "read_file",
+              "content_bytes": 231,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "content",
+                "file_size",
+                "is_binary",
+                "is_image",
+                "total_lines",
+                "truncated"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": false
+            }
+          ],
+          "invocation_stats": [
+            {
+              "name": "read_file",
+              "parameter_names": [
+                "path"
+              ],
+              "path_count": 1,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": true,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": null,
+              "search_target": null
+            }
+          ],
+          "tool_result_contains_fixture": false,
+          "workspace_changed_after_turn": false,
+          "messages_added": 4
+        },
+        {
+          "phase": "edit",
+          "stage_id": "edit",
+          "elapsed_ms": 27670.7,
+          "stream_progress": {
+            "delta_count": 2,
+            "character_count": 206,
+            "first_delta_ms": 71.5,
+            "last_delta_ms": 5713.7
+          },
+          "response_present": true,
+          "response_characters": 113,
+          "response_contains_expected_token": false,
+          "response_contains_search_target": null,
+          "response_contains_readme_run_target": null,
+          "response_contains_original_error_marker": null,
+          "api_calls": 2,
+          "tool_result_count": 1,
+          "tool_names": [
+            "patch"
+          ],
+          "result_metrics": [
+            {
+              "name": "patch",
+              "content_bytes": 409,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "diff",
+                "files_modified",
+                "lint",
+                "resolved_path",
+                "success"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": true
+            }
+          ],
+          "invocation_stats": [
+            {
+              "name": "patch",
+              "parameter_names": [
+                "new_string",
+                "old_string",
+                "path"
+              ],
+              "path_count": 1,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": true,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": null,
+              "search_target": null
+            }
+          ],
+          "tool_result_contains_fixture": false,
+          "workspace_changed_after_turn": true,
+          "messages_added": 4
+        }
+      ],
+      "api_calls": 4,
+      "tool_result_count": 2,
+      "tool_names": [
+        "read_file",
+        "patch"
+      ],
+      "workspace_mount_metrics": [
+        {
+          "task_id_matches": false,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        }
+      ],
+      "tool_result_contains_fixture": false,
+      "assistant_response_count": 2,
+      "final_response_contains_expected_token": false,
+      "tool_choice_experiment": null,
+      "native_verification_stop_nudges": 0,
+      "native_verification_terminal_evidence_statuses": [],
+      "host_workspace_mapping_experiment": null,
+      "native_verification_snapshot": {
+        "enabled": false,
+        "mutated_code_path_count": 1,
+        "project_facts_recognized_count": 0,
+        "evidence_statuses": [
+          "disabled"
+        ],
+        "container_workspace_path_count": 1,
+        "host_workspace_path_count": 0,
+        "runtime_cwd_project_facts_recognized": true,
+        "host_workspace_project_facts_recognized": true,
+        "host_workspace_evidence_status": "disabled",
+        "mapping_experiment_active": false
+      },
+      "outer_wall_ms": 31267.5,
+      "arm_loaded_context_length": 65536,
+      "provider_metrics": [
+        {
+          "phase": "other",
+          "model": null,
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": null,
+          "benchmark_repeat": null,
+          "sampling_seed": null,
+          "sampling_call_ordinal": null,
+          "generation_controls": {},
+          "model_parameters": {},
+          "stream": false,
+          "tool_choice": null,
+          "request_bytes": 22,
+          "roles": [],
+          "payload_role_bytes": {},
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 0,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "tool_schema_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "tool_schema_names": [],
+          "invocation_metrics": {},
+          "finish_reasons": [],
+          "first_event_ms": null,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": null,
+          "status": 200,
+          "elapsed_ms": 4.3,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "hades",
+          "benchmark_repeat": 1,
+          "sampling_seed": 54000,
+          "sampling_call_ordinal": 0,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 54000
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 24448,
+          "roles": [
+            "system",
+            "user"
+          ],
+          "payload_role_bytes": {
+            "system": 13915,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 14182,
+          "tool_schema_count": 5,
+          "tool_schema_bytes": 10088,
+          "tool_schema_sha256": "7ca0765c5dda709e6a6a2995c8667b6379c2436bcc92bcb971d1c655ea33e6a5",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file"
+          ],
+          "invocation_metrics": {
+            "0": "read_file"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 12725.2,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 12725.2,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 5654,
+            "token_accounting_details": {
+              "cached_tokens": 0
+            },
+            "completion_tokens": 27,
+            "total_tokens": 5681
+          },
+          "status": 200,
+          "elapsed_ms": 12725.4,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "hades",
+          "benchmark_repeat": 1,
+          "sampling_seed": 54001,
+          "sampling_call_ordinal": 1,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 54001
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 24932,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 0,
+            "system": 13915,
+            "tool": 231,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 14664,
+          "tool_schema_count": 5,
+          "tool_schema_bytes": 10088,
+          "tool_schema_sha256": "7ca0765c5dda709e6a6a2995c8667b6379c2436bcc92bcb971d1c655ea33e6a5",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file"
+          ],
+          "invocation_metrics": {},
+          "finish_reasons": [
+            "stop"
+          ],
+          "first_event_ms": 846.7,
+          "first_content_ms": 846.7,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 26,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": {
+            "prompt_tokens": 5769,
+            "token_accounting_details": {
+              "cached_tokens": 5650
+            },
+            "completion_tokens": 28,
+            "total_tokens": 5797
+          },
+          "status": 200,
+          "elapsed_ms": 1411.7,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "hades",
+          "benchmark_repeat": 1,
+          "sampling_seed": 54002,
+          "sampling_call_ordinal": 2,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 54002
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 25144,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "user"
+          ],
+          "payload_role_bytes": {
+            "assistant": 98,
+            "system": 13915,
+            "tool": 231,
+            "user": 121
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 14874,
+          "tool_schema_count": 5,
+          "tool_schema_bytes": 10088,
+          "tool_schema_sha256": "7ca0765c5dda709e6a6a2995c8667b6379c2436bcc92bcb971d1c655ea33e6a5",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file"
+          ],
+          "invocation_metrics": {
+            "0": "patch"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 1673.1,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 1673.1,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 5817,
+            "token_accounting_details": {
+              "cached_tokens": 5765
+            },
+            "completion_tokens": 66,
+            "total_tokens": 5883
+          },
+          "status": 200,
+          "elapsed_ms": 1723.8,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "hades",
+          "benchmark_repeat": 1,
+          "sampling_seed": 54003,
+          "sampling_call_ordinal": 3,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 54003
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 25945,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "user",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 98,
+            "system": 13915,
+            "tool": 640,
+            "user": 121
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 15673,
+          "tool_schema_count": 5,
+          "tool_schema_bytes": 10088,
+          "tool_schema_sha256": "7ca0765c5dda709e6a6a2995c8667b6379c2436bcc92bcb971d1c655ea33e6a5",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file"
+          ],
+          "invocation_metrics": {},
+          "finish_reasons": [
+            "stop"
+          ],
+          "first_event_ms": 945.0,
+          "first_content_ms": 945.0,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 30,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": {
+            "prompt_tokens": 6004,
+            "token_accounting_details": {
+              "cached_tokens": 5813
+            },
+            "completion_tokens": 31,
+            "total_tokens": 6035
+          },
+          "status": 200,
+          "elapsed_ms": 1566.0,
+          "loaded_context_length_after_request": 65536
+        }
+      ],
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "scenario": "small-edit",
+      "stack": "plain",
+      "repeat": 1,
+      "effective_terminal": {
+        "env_type": "docker",
+        "cwd_is_fixture": false,
+        "docker_mount_cwd_to_workspace": true,
+        "docker_network": false,
+        "session_workspace_registered": true,
+        "configured_host_cwd_matches_fixture": true
+      },
+      "elapsed_ms": 28643.5,
+      "turns": [
+        {
+          "phase": "inspect",
+          "stage_id": "inspect",
+          "elapsed_ms": 22869.6,
+          "stream_progress": {
+            "delta_count": 40,
+            "character_count": 162,
+            "first_delta_ms": 22140.7,
+            "last_delta_ms": 22860.7
+          },
+          "response_present": true,
+          "response_characters": 160,
+          "response_contains_expected_token": false,
+          "response_contains_search_target": null,
+          "response_contains_readme_run_target": null,
+          "response_contains_original_error_marker": true,
+          "api_calls": 2,
+          "tool_result_count": 1,
+          "tool_names": [
+            "read_file"
+          ],
+          "result_metrics": [
+            {
+              "name": "read_file",
+              "content_bytes": 231,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "content",
+                "file_size",
+                "is_binary",
+                "is_image",
+                "total_lines",
+                "truncated"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": false
+            }
+          ],
+          "invocation_stats": [
+            {
+              "name": "read_file",
+              "parameter_names": [
+                "path"
+              ],
+              "path_count": 1,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": true,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": null,
+              "search_target": null
+            }
+          ],
+          "tool_result_contains_fixture": false,
+          "workspace_changed_after_turn": false,
+          "messages_added": 4
+        },
+        {
+          "phase": "edit",
+          "stage_id": "edit",
+          "elapsed_ms": 28640.8,
+          "stream_progress": {
+            "delta_count": 28,
+            "character_count": 103,
+            "first_delta_ms": 5222.3,
+            "last_delta_ms": 5762.4
+          },
+          "response_present": true,
+          "response_characters": 101,
+          "response_contains_expected_token": false,
+          "response_contains_search_target": null,
+          "response_contains_readme_run_target": null,
+          "response_contains_original_error_marker": null,
+          "api_calls": 2,
+          "tool_result_count": 1,
+          "tool_names": [
+            "patch"
+          ],
+          "result_metrics": [
+            {
+              "name": "patch",
+              "content_bytes": 409,
+              "error_marker": false,
+              "exit_code": null,
+              "structured_result_keys": [
+                "diff",
+                "files_modified",
+                "lint",
+                "resolved_path",
+                "success"
+              ],
+              "verification_evidence_status": null,
+              "structured_list_counts": {},
+              "error_class": null,
+              "has_output": false,
+              "verification_markers": null,
+              "known_fixture_name_present": true
+            }
+          ],
+          "invocation_stats": [
+            {
+              "name": "patch",
+              "parameter_names": [
+                "new_string",
+                "old_string",
+                "path"
+              ],
+              "path_count": 1,
+              "all_paths_in_workspace": true,
+              "mentions_fixture_name": true,
+              "command_looks_read_only": false,
+              "command_has_write_marker": false,
+              "command_has_shell_redirect": false,
+              "command_mentions_fixture_mutation": false,
+              "runs_unittest": false,
+              "uses_git_diff": false,
+              "search_pattern_nonempty": null,
+              "search_target": null
+            }
+          ],
+          "tool_result_contains_fixture": false,
+          "workspace_changed_after_turn": true,
+          "messages_added": 4
+        }
+      ],
+      "api_calls": 4,
+      "tool_result_count": 2,
+      "tool_names": [
+        "read_file",
+        "patch"
+      ],
+      "workspace_mount_metrics": [
+        {
+          "task_id_matches": false,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        }
+      ],
+      "tool_result_contains_fixture": false,
+      "assistant_response_count": 2,
+      "final_response_contains_expected_token": false,
+      "tool_choice_experiment": null,
+      "native_verification_stop_nudges": 0,
+      "native_verification_terminal_evidence_statuses": [],
+      "host_workspace_mapping_experiment": null,
+      "native_verification_snapshot": {
+        "enabled": false,
+        "mutated_code_path_count": 1,
+        "project_facts_recognized_count": 0,
+        "evidence_statuses": [
+          "disabled"
+        ],
+        "container_workspace_path_count": 1,
+        "host_workspace_path_count": 0,
+        "runtime_cwd_project_facts_recognized": true,
+        "host_workspace_project_facts_recognized": true,
+        "host_workspace_evidence_status": "disabled",
+        "mapping_experiment_active": false
+      },
+      "outer_wall_ms": 31465.2,
+      "arm_loaded_context_length": 65536,
+      "provider_metrics": [
+        {
+          "phase": "other",
+          "model": null,
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": null,
+          "benchmark_repeat": null,
+          "sampling_seed": null,
+          "sampling_call_ordinal": null,
+          "generation_controls": {},
+          "model_parameters": {},
+          "stream": false,
+          "tool_choice": null,
+          "request_bytes": 22,
+          "roles": [],
+          "payload_role_bytes": {},
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 0,
+          "tool_schema_count": 0,
+          "tool_schema_bytes": 0,
+          "tool_schema_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "tool_schema_names": [],
+          "invocation_metrics": {},
+          "finish_reasons": [],
+          "first_event_ms": null,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": null,
+          "status": 200,
+          "elapsed_ms": 4.4,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 1,
+          "sampling_seed": 54000,
+          "sampling_call_ordinal": 0,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 54000
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 25537,
+          "roles": [
+            "system",
+            "user"
+          ],
+          "payload_role_bytes": {
+            "system": 12501,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 12766,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {
+            "0": "read_file"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 13568.2,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 13568.3,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 5969,
+            "token_accounting_details": {
+              "cached_tokens": 0
+            },
+            "completion_tokens": 27,
+            "total_tokens": 5996
+          },
+          "status": 200,
+          "elapsed_ms": 13568.6,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 1,
+          "sampling_seed": 54001,
+          "sampling_call_ordinal": 1,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 54001
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 26021,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 0,
+            "system": 12501,
+            "tool": 231,
+            "user": 74
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 13248,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {},
+          "finish_reasons": [
+            "stop"
+          ],
+          "first_event_ms": 867.0,
+          "first_content_ms": 867.0,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 40,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": {
+            "prompt_tokens": 6084,
+            "token_accounting_details": {
+              "cached_tokens": 5965
+            },
+            "completion_tokens": 45,
+            "total_tokens": 6129
+          },
+          "status": 200,
+          "elapsed_ms": 1585.5,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 1,
+          "sampling_seed": 54002,
+          "sampling_call_ordinal": 2,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 54002
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 26303,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "user"
+          ],
+          "payload_role_bytes": {
+            "assistant": 162,
+            "system": 12501,
+            "tool": 231,
+            "user": 121
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 13528,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {
+            "0": "patch"
+          },
+          "finish_reasons": [
+            "tool_calls"
+          ],
+          "first_event_ms": 1628.0,
+          "first_content_ms": null,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": 1628.0,
+          "content_delta_count": 0,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 1,
+          "usage": {
+            "prompt_tokens": 6149,
+            "token_accounting_details": {
+              "cached_tokens": 6080
+            },
+            "completion_tokens": 66,
+            "total_tokens": 6215
+          },
+          "status": 200,
+          "elapsed_ms": 1628.7,
+          "loaded_context_length_after_request": 65536
+        },
+        {
+          "phase": "other",
+          "model": "qwen3.6:35b",
+          "effective_model": "qwen3.6:35b",
+          "benchmark_stack": "plain",
+          "benchmark_repeat": 1,
+          "sampling_seed": 54003,
+          "sampling_call_ordinal": 3,
+          "generation_controls": {
+            "max_tokens": 192,
+            "reasoning_effort": "none"
+          },
+          "model_parameters": {
+            "max_tokens": 192,
+            "reasoning_effort": "none",
+            "seed": 54003
+          },
+          "stream": true,
+          "tool_choice": null,
+          "request_bytes": 27104,
+          "roles": [
+            "system",
+            "user",
+            "assistant",
+            "tool",
+            "assistant",
+            "user",
+            "assistant",
+            "tool"
+          ],
+          "payload_role_bytes": {
+            "assistant": 162,
+            "system": 12501,
+            "tool": 640,
+            "user": 121
+          },
+          "payload_marker_counts": {
+            "prior_user_has_diagnosis_prompt": false,
+            "prior_assistant_mentions_fixture": false
+          },
+          "message_bytes": 14327,
+          "tool_schema_count": 8,
+          "tool_schema_bytes": 12590,
+          "tool_schema_sha256": "c12e11c60dcb1a36ba6c359d8b83f268bbb0dd665ade9e0fa905ee151d183904",
+          "tool_schema_names": [
+            "patch",
+            "read_file",
+            "search_files",
+            "terminal",
+            "write_file",
+            "tool_search",
+            "tool_describe",
+            "tool_call"
+          ],
+          "invocation_metrics": {},
+          "finish_reasons": [
+            "stop"
+          ],
+          "first_event_ms": 933.2,
+          "first_content_ms": 933.2,
+          "first_reasoning_ms": null,
+          "first_tool_call_delta_ms": null,
+          "content_delta_count": 28,
+          "reasoning_delta_count": 0,
+          "reasoning_content_bytes": 0,
+          "tool_call_delta_count": 0,
+          "usage": {
+            "prompt_tokens": 6336,
+            "token_accounting_details": {
+              "cached_tokens": 6145
+            },
+            "completion_tokens": 30,
+            "total_tokens": 6366
+          },
+          "status": 200,
+          "elapsed_ms": 1474.7,
+          "loaded_context_length_after_request": 65536
+        }
+      ],
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    }
+  ],
+  "summary": {
+    "repeats": 2,
+    "plain_inspection_marker": 2,
+    "hades_inspection_marker": 2,
+    "verified_tests_passed": 4,
+    "expected_source_only_changes": 4,
+    "plain_median_task_elapsed_ms": 32194.95,
+    "plain_median_model_api_calls_per_task": 5.5,
+    "plain_median_tool_results_per_task": 3.5,
+    "hades_median_task_elapsed_ms": 28450.9,
+    "hades_median_model_api_calls_per_task": 4.0,
+    "hades_median_tool_results_per_task": 2.0
+  },
+  "limitations": [
+    "Synthetic two-turn error-message edit using the owner corpus follow-up wording; no owner preference is collected.",
+    "Only two order-balanced samples by default; local-model generation variance remains.",
+    "AIAgent direct route excludes Open WebUI persistence/metadata and does not qualify deployed gateway authentication."
+  ]
+}
