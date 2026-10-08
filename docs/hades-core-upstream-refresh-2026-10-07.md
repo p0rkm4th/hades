@@ -254,6 +254,21 @@ qualification does not silently use the production 0.9.2 image pin. The test
 needs an isolated `HERMES_HOME` whose `plugins/hindsight` points at the pinned
 candidate plugin, and `HADES_HERMES_PYTHON` set to the Hermes 0.21.5 Python.
 
+A separate automatic-only PLAIN/HADES comparison then ran in both orders at
+source `bdcf3ac6`, with freshly initialized Hindsight state each time. PLAIN
+returned the synthetic just-saved fact in 1.91–2.02 seconds; HADES returned a
+truthful pending response in 45–49 ms without a model or tool call, but did not
+return the fact until 10.01–10.37 seconds after processing. Background Hindsight
+work drained in 38.54–53.73 seconds. The result confirms the fast response
+removes wait from the current turn, but PLAIN remains more useful on the
+immediate memory task. Full settings and limits are in
+[`hades-core-memory-full-comparison-2026-10-08.md`](hades-core-memory-full-comparison-2026-10-08.md)
+and sanitized pair artifacts
+([HADES-first](../benchmarks/hades-core-memory-readiness-current-stable-hades-first-20261008.json),
+[PLAIN-first](../benchmarks/hades-core-memory-readiness-current-stable-plain-first-20261008.json)).
+Do not weaken the freshness guard on this evidence. Test raw-fact recall during
+active consolidation with correction and subject-isolation assertions first.
+
 ### Hermes 0.21.5 named-function explanation comparison — 2026-10-08
 
 The core-23 seed originally asked “Explain what this function does” without
