@@ -60,6 +60,14 @@ names = [
 ]
 from tools.registry import registry as deferred_registry
 import model_tools
+deferred_registry.register(
+    name="synthetic_unrelated_finance_decoy",
+    toolset="mcp-finance-readonly",
+    schema={"description": "synthetic unrelated decoy", "parameters": {
+        "type": "object", "properties": {}, "required": [],
+    }},
+    handler=lambda **_kwargs: "synthetic decoy result",
+)
 for name in (
     "mcp__grocy__stock_overview_tool",
     "mcp__grocy__shopping_list_view_tool",
@@ -92,6 +100,7 @@ assert {
     "mcp__grocy__shopping_list_view_tool",
     "mcp__grocy__shopping_list_add_tool",
 }.issubset(native_raw_names), native_raw_names
+assert "synthetic_unrelated_finance_decoy" not in native_raw_names
 from tools import tool_search
 from unittest.mock import patch
 model_tools._clear_tool_defs_cache()
@@ -164,6 +173,7 @@ assert {"tool_search", "tool_describe", "tool_call"}.issubset({
     row["function"]["name"] for row in homelab_native_deferred
 })
 assert homelab_read_names.issubset(homelab_native_names), homelab_native_names
+assert "synthetic_unrelated_finance_decoy" not in homelab_native_names
 assert not ({"tool_search", "tool_describe", "tool_call"} & homelab_native_names)
 homelab_hades_catalog = hades._hades_homelab_tool_definitions(
     model_tools.get_tool_definitions
@@ -221,6 +231,7 @@ control_hades_catalog = hades._hades_homelab_control_tool_definitions(
 assert {
     row["function"]["name"] for row in control_hades_catalog
 } == control_native_names == control_names
+assert "synthetic_unrelated_finance_decoy" not in control_native_names
 assert hades._hades_filter_tools_for_scope(control_hades_catalog, "household") == []
 print("PASS owner homelab control catalog uses Hermes raw schemas with exact-name bounds")
 
@@ -298,7 +309,12 @@ kwargs = {
     "base_url": f"http://127.0.0.1:{server.server_port}/v1",
     "api_key": "synthetic-only", "provider": "custom",
     "api_mode": "chat_completions", "model": "synthetic-no-call",
-    "enabled_toolsets": [], "disabled_toolsets": [], "quiet_mode": True,
+    "enabled_toolsets": (
+        hades._HADES_GROCY_TOOLSETS
+        + hades._HADES_HOMELAB_TOOLSETS
+        + hades._HADES_HOMELAB_CONTROL_TOOLSETS
+    ),
+    "disabled_toolsets": [], "quiet_mode": True,
     "skip_context_files": True, "skip_memory": True,
     "skip_background_review": True, "load_soul_identity": False,
 }
@@ -350,6 +366,25 @@ assert "mcp_grocy_recipe_details_tool" in household_tools
 assert "mcp_grocy_recipe_add_to_shopping_tool" in household_tools
 assert "mcp_grocy_recipe_authoring_recipe_set_servings" not in owner_tools
 print("PASS authenticated Hermes owner retains recipe tools; household receives only recipe reads and shared-list actions")
+
+# Bypass only the earlier direct-read shortcut so this focused fixture can
+# observe the authenticated API route's model-visible tool schemas.
+original_direct_homelab_read = hades._hades_direct_homelab_read
+hades._hades_direct_homelab_read = lambda *_args, **_kwargs: ""
+homelab_status = chat_turn(
+    "synthetic-owner", "homelab-read-schema-chat", "Is the homelab online?",
+)
+assert homelab_status.get("completed") is True, homelab_status
+assert set(observed[-1]) == {"mcp_homelab_readonly_homelab_summary"}, observed[-1]
+homelab_control = chat_turn(
+    "synthetic-owner", "homelab-control-schema-chat",
+    "Create a VM on the Proxmox homelab.",
+)
+assert homelab_control.get("completed") is True, homelab_control
+assert set(observed[-1]) == control_names, observed[-1]
+assert "synthetic_unrelated_finance_decoy" not in observed[-1]
+hades._hades_direct_homelab_read = original_direct_homelab_read
+print("PASS API homelab read/control turns expose only their exact raw-schema catalogs")
 
 # Exercise the real deferred bridge catalog and raw tool_call boundary, which
 # must preserve the same owner/household scope as eager model schemas.
@@ -448,6 +483,7 @@ for agent, must_omit in (
         assert must_omit not in rendered, rendered
     else:
         assert "recipe_create_tool" in rendered, rendered
+    assert "synthetic_unrelated_finance_decoy" not in rendered, rendered
 household_result, household_reroute = model_tools._dispatch_bridge_tool(
     tool_search.TOOL_CALL_NAME,
     {"name": "mcp_grocy_recipe_create_tool", "arguments": {

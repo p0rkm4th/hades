@@ -67,7 +67,7 @@
   "limitations": [
     "Four model-backed action tasks are too few and too variable for causal latency or owner-preference claims.",
     "The compact synthetic project has no explicit canonical test recipe; model-selected tests were often not accepted as native ledger evidence.",
-    "One HADES action task did not modify code and the seeded failing test remained failing; that is an incomplete task, not verification success.",
+    "One action task did not pass the seeded test; anonymized aggregate data does not identify which stack. This is an incomplete task, not verification success.",
     "The benchmark-only path mapping is not wired into production HADES or upstream Hermes.",
     "The no-edit read control has one paired repeat and does not qualify all unaffected turn types."
   ]
