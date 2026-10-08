@@ -66,6 +66,30 @@ but did not recover the new automatic fact within the target latency. This
 reduces the early zero-generation dead end; it does not resolve the memory
 readiness or retrieval-quality problem.
 
+## Automatic recall variant probes
+
+Three additional fresh-volume, plain-first probes varied the HADES recall
+budget and type filter. The complete aggregate-only measurements and safe score
+diagnostics are in
+[`hades-core-recall-variant-probes-20261008.json`](../benchmarks/hades-core-recall-variant-probes-20261008.json).
+
+| HADES profile | Immediate HADES recall | Marker | Idle drain | Settled HADES recall | PLAIN marker |
+| --- | ---: | --- | ---: | ---: | --- |
+| `mid`, observations | 28.9 s | missed | 43.6 s | 10.0 s | found in 1.8 s |
+| `low`, observations | 27.4 s | missed | 42.5 s | 10.3 s | found in 1.8 s |
+| `mid`, all types | 28.6 s | missed | 43.5 s | 10.3 s | found in 1.8 s |
+
+These one-sample probes do not support promoting `low` or all recall types.
+Including raw types did not change the immediate outcome. The rank-one
+semantic score was around 0.629 in all three runs, while the reranker score
+varied substantially and remained low. The all-types run also had a world
+candidate with semantic score 0.690 and reranker score 0.000218. Since result
+text was not retained, this does not show whether either candidate was the
+expected fact. Hindsight v0.10.2 uses cross-encoder relevance as the primary
+score and multiplies it by recency, temporal, and proof-count boosts; see the
+pinned [score calculation](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L187-L205)
+and [combined-score assignment](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L288-L303).
+
 ## Next evidence needed
 
 - The one-pass safe score diagnostic is recorded in
@@ -83,11 +107,9 @@ readiness or retrieval-quality problem.
   and [combined-score assignment](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L288-L303).
   Ordinary-turn timings were also single samples and do not establish a
   latency win.
-- Repeat the safe diagnostic while varying the recall type and operation
-  state. Preserve only aggregate ranks, types, scores, and timings. The current
-  HADES profile uses `mid`; Hindsight's v0.10.2 API describes `low` as the
-  fast simple-lookup budget. The paired runner now exposes a `low` option so
-  its latency and marker behavior can be measured before changing HADES config.
+- Repeat the safe diagnostic with counterbalanced order and controlled
+  retain-operation state. Preserve only aggregate ranks, types, scores, and
+  timings. The one-pass `low` probe is too weak to change HADES config.
 - Compare concise extraction with observations disabled separately from raw
   `chunks`; do not infer that switching off observations is equivalent to
   disabling fact extraction.
