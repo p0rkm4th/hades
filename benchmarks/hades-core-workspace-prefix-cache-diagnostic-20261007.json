@@ -1,0 +1,569 @@
+{
+  "date": "2026-10-07",
+  "source_revision": "c30448ff88a2a5007428dd981a3f7979e4ea2eb8",
+  "benchmark_runner_sha256": "f8eda3fdfa13f75bc7daabe610b52fa1edfc4c686792e20a13f8579e152b88da",
+  "method": {
+    "hermes": "Hermes Agent v0.21.5 (2026.9.24)",
+    "ollama": "0.40.0",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "quantization": "Q4_K_M",
+    "context_tokens": 65536,
+    "docker_engine": "29.8.2",
+    "docker_storage_driver": "vfs",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "sandbox_image_id": "sha256:d14ae8d7fcee933e82c9f62eded621110f227bc96363ca5449d36897af7bea1c",
+    "task_container_network": "none",
+    "same_supported_workspace_hint": true,
+    "native_verify_on_stop": true,
+    "per_arm_cache_reset": "POST /api/chat with empty messages and keep_alive=0; verify model unload; reload and issue identical /api/generate warmup before every PLAIN or HADES arm",
+    "order": "counterbalanced: PLAIN→HADES on repeats 0 and 2; HADES→PLAIN on repeats 1 and 3",
+    "task": "Synthetic multi-file Python geometry diagnosis followed by “Fix it.”; same project test recipe in both stacks.",
+    "privacy": "No prompts, completions, file contents, tool arguments, secrets, or host paths are included; prefix measurements are byte counts only.",
+    "arm_context_lengths": [
+      {
+        "repeat": 0,
+        "stack": "plain",
+        "context_tokens": 65536
+      },
+      {
+        "repeat": 0,
+        "stack": "hades",
+        "context_tokens": 65536
+      },
+      {
+        "repeat": 1,
+        "stack": "hades",
+        "context_tokens": 65536
+      },
+      {
+        "repeat": 1,
+        "stack": "plain",
+        "context_tokens": 65536
+      },
+      {
+        "repeat": 2,
+        "stack": "plain",
+        "context_tokens": 65536
+      },
+      {
+        "repeat": 2,
+        "stack": "hades",
+        "context_tokens": 65536
+      },
+      {
+        "repeat": 3,
+        "stack": "hades",
+        "context_tokens": 65536
+      },
+      {
+        "repeat": 3,
+        "stack": "plain",
+        "context_tokens": 65536
+      }
+    ]
+  },
+  "summary": {
+    "plain": {
+      "median_task_elapsed_ms": 40882.15,
+      "median_model_generations": 8.0,
+      "median_tool_results": 11.0,
+      "independent_verification_passes": 4,
+      "diagnosis_workspace_mutations": 2,
+      "diagnosis_first_generation_cached_tokens": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "action_first_generation_cached_tokens": [
+        7414,
+        8376,
+        7418,
+        6944
+      ],
+      "first_user_visible_progress_ms": {
+        "diagnose": [
+          18157.7,
+          18502.1,
+          18627.8,
+          18407.8
+        ],
+        "fix": [
+          6600.3,
+          747.0,
+          723.4,
+          6869.9
+        ]
+      },
+      "schema_stable_between_phases": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    "hades": {
+      "median_task_elapsed_ms": 55285.05,
+      "median_model_generations": 9.5,
+      "median_tool_results": 10.0,
+      "independent_verification_passes": 4,
+      "diagnosis_workspace_mutations": 0,
+      "diagnosis_first_generation_cached_tokens": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "action_first_generation_cached_tokens": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "first_user_visible_progress_ms": {
+        "diagnose": [
+          296.8,
+          298.7,
+          343.9,
+          296.9
+        ],
+        "fix": [
+          69.5,
+          91.2,
+          91.2,
+          101.6
+        ]
+      },
+      "schema_stable_between_phases": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    "paired_hades_minus_plain_task_elapsed_ms": {
+      "values": [
+        14029.699999999997,
+        44041.100000000006,
+        16442.199999999997,
+        9696.199999999997
+      ],
+      "median": 15235.949999999997,
+      "hades_wins": 0,
+      "plain_wins": 4,
+      "ties": 0
+    },
+    "cache_reuse_comparison": {
+      "plain_action_cached_tokens_median": 7416.0,
+      "hades_action_cached_tokens_median": 0.0,
+      "plain_schema_static_across_phases_all_repeats": true,
+      "hades_schema_static_across_phases_any_repeats": false
+    }
+  },
+  "trials": [
+    {
+      "repeat": 0,
+      "order": [
+        "plain",
+        "hades"
+      ],
+      "stacks": {
+        "plain": {
+          "elapsed_ms": 43535.9,
+          "model_generations": 10,
+          "tool_results": 12,
+          "diagnosis_changed_workspace": false,
+          "independent_test_exit_code": 0,
+          "independent_diff_check_exit_code": 0,
+          "only_expected_source_changed": true,
+          "phases": {
+            "diagnose": {
+              "model_generations": 5,
+              "tool_results": 9,
+              "elapsed_ms": 33688.7,
+              "first_generation_prompt_tokens": 5961,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 15845.3,
+              "first_generation_first_content_ms": 13027.8,
+              "first_visible_progress_ms": 18157.7,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "system_bytes": 12639
+            },
+            "fix": {
+              "model_generations": 5,
+              "tool_results": 3,
+              "elapsed_ms": 43534.4,
+              "first_generation_prompt_tokens": 7543,
+              "first_generation_cached_tokens": 7414,
+              "first_generation_elapsed_ms": 1744.0,
+              "first_generation_first_content_ms": null,
+              "first_visible_progress_ms": 6600.3,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "system_bytes": 12639
+            }
+          },
+          "schemas_same_between_phases": true
+        },
+        "hades": {
+          "elapsed_ms": 57565.6,
+          "model_generations": 10,
+          "tool_results": 10,
+          "diagnosis_changed_workspace": false,
+          "independent_test_exit_code": 0,
+          "independent_diff_check_exit_code": 0,
+          "only_expected_source_changed": true,
+          "phases": {
+            "diagnose": {
+              "model_generations": 4,
+              "tool_results": 7,
+              "elapsed_ms": 25709.2,
+              "first_generation_prompt_tokens": 4036,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 9996.7,
+              "first_generation_first_content_ms": 8570.2,
+              "first_visible_progress_ms": 296.8,
+              "schema_count": 2,
+              "schema_bytes": 3662,
+              "system_bytes": 13326
+            },
+            "fix": {
+              "model_generations": 6,
+              "tool_results": 3,
+              "elapsed_ms": 57563.7,
+              "first_generation_prompt_tokens": 6388,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 15271.9,
+              "first_generation_first_content_ms": null,
+              "first_visible_progress_ms": 69.5,
+              "schema_count": 5,
+              "schema_bytes": 9575,
+              "system_bytes": 13685
+            }
+          },
+          "schemas_same_between_phases": false
+        }
+      },
+      "paired_prefix_overlap": {
+        "diagnose": {
+          "system_prefix_bytes": 11247,
+          "chat_payload_prefix_bytes": 11258,
+          "schema_prefix_bytes": 29,
+          "schemas_identical": false
+        },
+        "fix": {
+          "system_prefix_bytes": 11247,
+          "chat_payload_prefix_bytes": 11258,
+          "schema_prefix_bytes": 2923,
+          "schemas_identical": false
+        }
+      }
+    },
+    {
+      "repeat": 1,
+      "order": [
+        "hades",
+        "plain"
+      ],
+      "stacks": {
+        "hades": {
+          "elapsed_ms": 88315.6,
+          "model_generations": 25,
+          "tool_results": 29,
+          "diagnosis_changed_workspace": false,
+          "independent_test_exit_code": 0,
+          "independent_diff_check_exit_code": 0,
+          "only_expected_source_changed": true,
+          "phases": {
+            "diagnose": {
+              "model_generations": 13,
+              "tool_results": 18,
+              "elapsed_ms": 46226.3,
+              "first_generation_prompt_tokens": 4037,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 9911.3,
+              "first_generation_first_content_ms": 8629.4,
+              "first_visible_progress_ms": 298.7,
+              "schema_count": 2,
+              "schema_bytes": 3662,
+              "system_bytes": 13326
+            },
+            "fix": {
+              "model_generations": 12,
+              "tool_results": 11,
+              "elapsed_ms": 88311.8,
+              "first_generation_prompt_tokens": 8072,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 19107.6,
+              "first_generation_first_content_ms": null,
+              "first_visible_progress_ms": 91.2,
+              "schema_count": 5,
+              "schema_bytes": 9575,
+              "system_bytes": 13685
+            }
+          },
+          "schemas_same_between_phases": false
+        },
+        "plain": {
+          "elapsed_ms": 44274.5,
+          "model_generations": 10,
+          "tool_results": 15,
+          "diagnosis_changed_workspace": true,
+          "independent_test_exit_code": 0,
+          "independent_diff_check_exit_code": 0,
+          "only_expected_source_changed": true,
+          "phases": {
+            "diagnose": {
+              "model_generations": 9,
+              "tool_results": 15,
+              "elapsed_ms": 42816.7,
+              "first_generation_prompt_tokens": 5961,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 15115.4,
+              "first_generation_first_content_ms": 13107.0,
+              "first_visible_progress_ms": 18502.1,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "system_bytes": 12639
+            },
+            "fix": {
+              "model_generations": 1,
+              "tool_results": 0,
+              "elapsed_ms": 44272.3,
+              "first_generation_prompt_tokens": 8461,
+              "first_generation_cached_tokens": 8376,
+              "first_generation_elapsed_ms": 1431.6,
+              "first_generation_first_content_ms": 733.8,
+              "first_visible_progress_ms": 747.0,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "system_bytes": 12639
+            }
+          },
+          "schemas_same_between_phases": true
+        }
+      },
+      "paired_prefix_overlap": {
+        "diagnose": {
+          "system_prefix_bytes": 11247,
+          "chat_payload_prefix_bytes": 11258,
+          "schema_prefix_bytes": 29,
+          "schemas_identical": false
+        },
+        "fix": {
+          "system_prefix_bytes": 11247,
+          "chat_payload_prefix_bytes": 11258,
+          "schema_prefix_bytes": 2923,
+          "schemas_identical": false
+        }
+      }
+    },
+    {
+      "repeat": 2,
+      "order": [
+        "plain",
+        "hades"
+      ],
+      "stacks": {
+        "plain": {
+          "elapsed_ms": 36562.3,
+          "model_generations": 6,
+          "tool_results": 9,
+          "diagnosis_changed_workspace": true,
+          "independent_test_exit_code": 0,
+          "independent_diff_check_exit_code": 0,
+          "only_expected_source_changed": true,
+          "phases": {
+            "diagnose": {
+              "model_generations": 5,
+              "tool_results": 9,
+              "elapsed_ms": 35308.5,
+              "first_generation_prompt_tokens": 5959,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 14516.5,
+              "first_generation_first_content_ms": 13122.8,
+              "first_visible_progress_ms": 18627.8,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "system_bytes": 12639
+            },
+            "fix": {
+              "model_generations": 1,
+              "tool_results": 0,
+              "elapsed_ms": 36559.8,
+              "first_generation_prompt_tokens": 7489,
+              "first_generation_cached_tokens": 7418,
+              "first_generation_elapsed_ms": 1227.6,
+              "first_generation_first_content_ms": 710.5,
+              "first_visible_progress_ms": 723.4,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "system_bytes": 12639
+            }
+          },
+          "schemas_same_between_phases": true
+        },
+        "hades": {
+          "elapsed_ms": 53004.5,
+          "model_generations": 9,
+          "tool_results": 10,
+          "diagnosis_changed_workspace": false,
+          "independent_test_exit_code": 0,
+          "independent_diff_check_exit_code": 0,
+          "only_expected_source_changed": true,
+          "phases": {
+            "diagnose": {
+              "model_generations": 5,
+              "tool_results": 8,
+              "elapsed_ms": 29433.5,
+              "first_generation_prompt_tokens": 4035,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 9865.0,
+              "first_generation_first_content_ms": 8525.1,
+              "first_visible_progress_ms": 343.9,
+              "schema_count": 2,
+              "schema_bytes": 3662,
+              "system_bytes": 13326
+            },
+            "fix": {
+              "model_generations": 4,
+              "tool_results": 2,
+              "elapsed_ms": 53002.3,
+              "first_generation_prompt_tokens": 6581,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 15085.0,
+              "first_generation_first_content_ms": null,
+              "first_visible_progress_ms": 91.2,
+              "schema_count": 5,
+              "schema_bytes": 9575,
+              "system_bytes": 13685
+            }
+          },
+          "schemas_same_between_phases": false
+        }
+      },
+      "paired_prefix_overlap": {
+        "diagnose": {
+          "system_prefix_bytes": 11247,
+          "chat_payload_prefix_bytes": 11258,
+          "schema_prefix_bytes": 29,
+          "schemas_identical": false
+        },
+        "fix": {
+          "system_prefix_bytes": 11247,
+          "chat_payload_prefix_bytes": 11258,
+          "schema_prefix_bytes": 2923,
+          "schemas_identical": false
+        }
+      }
+    },
+    {
+      "repeat": 3,
+      "order": [
+        "hades",
+        "plain"
+      ],
+      "stacks": {
+        "hades": {
+          "elapsed_ms": 47924.6,
+          "model_generations": 6,
+          "tool_results": 8,
+          "diagnosis_changed_workspace": false,
+          "independent_test_exit_code": 0,
+          "independent_diff_check_exit_code": 0,
+          "only_expected_source_changed": true,
+          "phases": {
+            "diagnose": {
+              "model_generations": 3,
+              "tool_results": 6,
+              "elapsed_ms": 26558.7,
+              "first_generation_prompt_tokens": 4037,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 9815.7,
+              "first_generation_first_content_ms": 8488.0,
+              "first_visible_progress_ms": 296.9,
+              "schema_count": 2,
+              "schema_bytes": 3662,
+              "system_bytes": 13326
+            },
+            "fix": {
+              "model_generations": 3,
+              "tool_results": 2,
+              "elapsed_ms": 47922.5,
+              "first_generation_prompt_tokens": 6409,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 14982.6,
+              "first_generation_first_content_ms": null,
+              "first_visible_progress_ms": 101.6,
+              "schema_count": 5,
+              "schema_bytes": 9575,
+              "system_bytes": 13685
+            }
+          },
+          "schemas_same_between_phases": false
+        },
+        "plain": {
+          "elapsed_ms": 38228.4,
+          "model_generations": 6,
+          "tool_results": 10,
+          "diagnosis_changed_workspace": false,
+          "independent_test_exit_code": 0,
+          "independent_diff_check_exit_code": 0,
+          "only_expected_source_changed": true,
+          "phases": {
+            "diagnose": {
+              "model_generations": 3,
+              "tool_results": 8,
+              "elapsed_ms": 30977.5,
+              "first_generation_prompt_tokens": 5961,
+              "first_generation_cached_tokens": 0,
+              "first_generation_elapsed_ms": 15253.8,
+              "first_generation_first_content_ms": 13015.4,
+              "first_visible_progress_ms": 18407.8,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "system_bytes": 12639
+            },
+            "fix": {
+              "model_generations": 3,
+              "tool_results": 2,
+              "elapsed_ms": 38226.4,
+              "first_generation_prompt_tokens": 7069,
+              "first_generation_cached_tokens": 6944,
+              "first_generation_elapsed_ms": 1744.6,
+              "first_generation_first_content_ms": null,
+              "first_visible_progress_ms": 6869.9,
+              "schema_count": 8,
+              "schema_bytes": 12590,
+              "system_bytes": 12639
+            }
+          },
+          "schemas_same_between_phases": true
+        }
+      },
+      "paired_prefix_overlap": {
+        "diagnose": {
+          "system_prefix_bytes": 11247,
+          "chat_payload_prefix_bytes": 11258,
+          "schema_prefix_bytes": 29,
+          "schemas_identical": false
+        },
+        "fix": {
+          "system_prefix_bytes": 11247,
+          "chat_payload_prefix_bytes": 11258,
+          "schema_prefix_bytes": 2923,
+          "schemas_identical": false
+        }
+      }
+    }
+  ],
+  "owner_preference": "unassigned; synthetic diagnostic only",
+  "limitations": [
+    "Four repeats are diagnostic; the local model showed substantial per-task latency and call-count variance.",
+    "The comparison controls model-cache state per arm but does not isolate whether the action cache miss is caused by changing tool schemas, dynamic system instructions, or both.",
+    "Direct AIAgent execution does not qualify Open WebUI, deployed authentication, owner-data tools, realistic project breadth, Git commits, or Scotty preference.",
+    "Final fixture verification checks correctness and diff scope, not conversational naturalness or whether an owner would prefer the interaction."
+  ]
+}

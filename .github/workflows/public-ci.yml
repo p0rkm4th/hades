@@ -286,8 +286,9 @@ jobs:
 
       - name: Check isolated benchmark environments and redaction
         run: |
-          python3 -m py_compile scripts/benchmark_child_environment.py scripts/benchmark-hades-owner-subset.py scripts/benchmark-hades-workspace-read-pair.py
+          python3 -m py_compile scripts/benchmark_child_environment.py scripts/benchmark-hades-owner-subset.py scripts/benchmark-hades-workspace-read-pair.py scripts/test-workspace-benchmark-cache-controls.py
           python3 scripts/test-benchmark-hades-owner-subset-redaction.py
+          python3 scripts/test-workspace-benchmark-cache-controls.py
           python3 scripts/test-public-benchmark-redaction.py
 
       - name: Check current public tree safety

@@ -162,6 +162,15 @@ def unused_port() -> int:
         return int(sock.getsockname()[1])
 
 
+def common_prefix_byte_count(left: bytes, right: bytes) -> int:
+    """Return only the byte length of a shared prefix; never retain its content."""
+    limit = min(len(left), len(right))
+    index = 0
+    while index < limit and left[index] == right[index]:
+        index += 1
+    return index
+
+
 def local_json(
     url: str,
     payload: dict[str, Any] | None = None,
@@ -177,6 +186,47 @@ def local_json(
         return json.loads(response.read())
 
 
+def reset_and_warm_model(base_url: str) -> int:
+    """Give each comparison arm the same loaded model and prompt-cache seed."""
+    unloaded = local_json(
+        f"{base_url}/api/chat",
+        {"model": MODEL, "messages": [], "keep_alive": 0},
+        timeout=180,
+    )
+    if unloaded.get("done_reason") != "unload":
+        raise RuntimeError("Ollama did not confirm model unload before a comparison arm")
+    if any(
+        row.get("name") == MODEL
+        for row in local_json(f"{base_url}/api/ps").get("models", [])
+    ):
+        raise RuntimeError("Ollama still reports the model loaded after arm cache reset")
+    local_json(
+        f"{base_url}/api/generate",
+        {
+            "model": MODEL,
+            "prompt": "hi",
+            "stream": False,
+            "options": {"num_ctx": 65536, "num_predict": 4},
+        },
+        timeout=180,
+    )
+    loaded = next(
+        (
+            row for row in local_json(f"{base_url}/api/ps").get("models", [])
+            if row.get("name") == MODEL
+        ),
+        None,
+    )
+    if not loaded:
+        raise RuntimeError("Ollama did not report the warmed model before a comparison arm")
+    context_length = loaded.get("context_length")
+    if not isinstance(context_length, int) or context_length < 1:
+        raise RuntimeError("Ollama did not report a valid loaded context length")
+    if context_length < 65536:
+        raise RuntimeError(f"Ollama loaded context is too small for comparison: {context_length}")
+    return context_length
+
+
 class ProviderProxy(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
@@ -189,9 +239,13 @@ class ProviderProxy(ThreadingHTTPServer):
         self.records_lock = threading.Lock()
         self.seed_counts: dict[tuple[str, int, str], int] = {}
         self.seed_lock = threading.Lock()
+        self.first_phase_requests: dict[
+            tuple[int, str], tuple[str, bytes, bytes, bytes]
+        ] = {}
+        self.pair_lock = threading.Lock()
         super().__init__(address, self.handler_type())
 
-    def sampling_seed(self, stack: str, repeat: int, phase: str) -> int:
+    def sampling_seed(self, stack: str, repeat: int, phase: str) -> tuple[int, int]:
         phase_offsets = {"diagnose": 0, "fix": 1000, "read": 2000, "other": 3000}
         key = (stack, repeat, phase)
         with self.seed_lock:
@@ -199,7 +253,7 @@ class ProviderProxy(ThreadingHTTPServer):
             self.seed_counts[key] = ordinal + 1
         # Matching stacks receive the same seed for each provider-call ordinal
         # within a task phase, even when their tool loops use different counts.
-        return 41000 + repeat * 10000 + phase_offsets.get(phase, 3000) + ordinal
+        return 41000 + repeat * 10000 + phase_offsets.get(phase, 3000) + ordinal, ordinal
 
     def handler_type(self):
         parent = self
@@ -244,9 +298,9 @@ class ProviderProxy(ThreadingHTTPServer):
                 )
                 stack = benchmark_identity.group(1) if benchmark_identity else None
                 repeat = int(benchmark_identity.group(2)) if benchmark_identity else None
-                sampling_seed = (
+                sampling_seed, sampling_call_ordinal = (
                     parent.sampling_seed(stack, repeat, phase)
-                    if stack is not None and repeat is not None else None
+                    if stack is not None and repeat is not None else (None, None)
                 )
                 # Capture generation controls without retaining messages, tool
                 # arguments, credentials, or arbitrary provider metadata. These
@@ -283,6 +337,7 @@ class ProviderProxy(ThreadingHTTPServer):
                     "benchmark_stack": stack,
                     "benchmark_repeat": repeat,
                     "sampling_seed": sampling_seed,
+                    "sampling_call_ordinal": sampling_call_ordinal,
                     "requested_model_parameters": requested_model_parameters,
                     "model_parameters": model_parameters,
                     "stream": bool(request.get("stream")),
@@ -334,6 +389,44 @@ class ProviderProxy(ThreadingHTTPServer):
                     "usage": None,
                     "status": None,
                 }
+                if (
+                    stack is not None and repeat is not None
+                    and phase in {"diagnose", "fix"} and sampling_call_ordinal == 0
+                ):
+                    encode = lambda value: json.dumps(
+                        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                    ).encode("utf-8", errors="replace")
+                    system_bytes = encode([
+                        message.get("content") for message in messages
+                        if isinstance(message, dict) and message.get("role") == "system"
+                    ])
+                    message_bytes = encode(messages)
+                    schema_bytes = encode(schemas)
+                    row["first_request_system_bytes"] = len(system_bytes)
+                    row["first_request_messages_bytes"] = len(message_bytes)
+                    row["first_request_schemas_bytes"] = len(schema_bytes)
+                    pair_key = (repeat, phase)
+                    with parent.pair_lock:
+                        previous = parent.first_phase_requests.get(pair_key)
+                        if previous is None:
+                            parent.first_phase_requests[pair_key] = (
+                                stack, system_bytes, message_bytes, schema_bytes,
+                            )
+                        elif previous[0] != stack:
+                            metrics = {
+                                "paired_first_request_system_prefix_bytes": common_prefix_byte_count(
+                                    previous[1], system_bytes
+                                ),
+                                "paired_first_request_messages_prefix_bytes": common_prefix_byte_count(
+                                    previous[2], message_bytes
+                                ),
+                                "paired_first_request_schemas_prefix_bytes": common_prefix_byte_count(
+                                    previous[3], schema_bytes
+                                ),
+                                "paired_first_request_schemas_identical": previous[3] == schema_bytes,
+                            }
+                            row.update(metrics)
+                            del parent.first_phase_requests[pair_key]
                 connection = http.client.HTTPConnection("127.0.0.1", parent.ollama_port, timeout=300)
                 try:
                     connection.request(
@@ -1087,21 +1180,12 @@ def main() -> int:
     logs: list[Any] = []
     records: list[dict[str, Any]] = []
     try:
-        # One local warmup is discarded, and both arms then use the same loaded runtime/model.
-        local_json(f"{base_url}/api/generate", {"model": MODEL, "prompt": "hi", "stream": False,
-                                                   "options": {"num_ctx": 65536, "num_predict": 4}})
-        loaded_model = next((row for row in local_json(f"{base_url}/api/ps").get("models", [])
-                             if row.get("name") == MODEL), None)
-        if not loaded_model:
-            raise RuntimeError("Ollama did not report the warmed model as loaded")
-        actual_context_length = loaded_model.get("context_length")
-        if not isinstance(actual_context_length, int) or actual_context_length < 1:
-            raise RuntimeError("Ollama did not report a valid loaded context length")
         for repeat in range(args.repeats):
             order = (args.stack,) if args.stack else (
                 ("plain", "hades") if repeat % 2 == 0 else ("hades", "plain")
             )
             for stack in order:
+                actual_context_length = reset_and_warm_model(base_url)
                 home = temp / f"{stack}-{repeat}"
                 home.mkdir(mode=0o700)
                 if stack == "plain":
@@ -1229,6 +1313,7 @@ def main() -> int:
                     )
                 turn = json.loads(result_line)
                 turn["outer_wall_ms"] = round((time.perf_counter() - started) * 1000, 1)
+                turn["arm_loaded_context_length"] = actual_context_length
                 if docker_trace_path.exists():
                     trace_rows = []
                     for line in docker_trace_path.read_text().splitlines()[trace_start:]:
@@ -1345,7 +1430,12 @@ def main() -> int:
                 "sandbox_image_id": sandbox_image_id,
                 "context": actual_context_length,
                 "requested_context": 65536,
+                "arm_context_lengths": [
+                    {"stack": row["stack"], "repeat": row["repeat"], "context": row["arm_loaded_context_length"]}
+                    for row in records
+                ],
                 "actual_context_source": "Ollama GET /api/ps after warmup and after each provider request",
+                "per_arm_cache_reset": "POST /api/chat with empty messages and keep_alive=0; verify model unload; reload and issue identical /api/generate warmup before every PLAIN or HADES arm",
                 "reasoning": "disabled in both direct AIAgent instances",
                 "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
                 "scenario": args.scenario,
