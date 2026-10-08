@@ -154,6 +154,7 @@ with tempfile.TemporaryDirectory() as directory:
                 "answer_contains_expected_marker": True,
                 "expected_markers": ["private marker"],
             }],
+            "core09_recall_after_idle_expected_marker_present": True,
         }},
     }])
     safe_content = json.dumps(safe)
@@ -161,6 +162,7 @@ with tempfile.TemporaryDirectory() as directory:
         assert forbidden not in safe_content, (forbidden, safe_content)
     assert safe[0]["stacks"]["hades"]["turns"][0]["total_ms"] == 12.3
     assert safe[0]["stacks"]["hades"]["memory_supplement"][0]["answer_contains_expected_marker"] is True
+    assert safe[0]["stacks"]["hades"]["core09_recall_after_idle_expected_marker_present"] is True
     unsafe_path = PAIR_MODULE.write_incomplete_artifact(
         target, source_revision="abc123", failure_stage="barrier",
         error_type="RuntimeError", repetitions=[], hindsight_calls=[],
