@@ -745,7 +745,7 @@
       "core-23"
     ],
     "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; v6 has three clean available-source repeats followed by three 503 observations; v5 records persistent-gateway recovery after outage; no mutations. Added core-24 coding diagnosis→“Fix it” escalation with two counterbalanced repeats per stack at stable Hermes 0.21.3/Ollama 0.40.0 and 0.35.1, same model/context and isolated sandbox. All fixture tests passed; HADES preserved the action boundary but was slower, while PLAIN mutated during diagnosis in one repeat. Context-mismatched runs are diagnostic only. Owner preference unassigned. Added core-22 project request-timeout search on current Hermes 0.21.5/Ollama 0.40.1 using synthetic local fixtures; two order-balanced repeats per stack, both returned path/value; no owner preference. Added core-21 README run-instructions comprehension on current Hermes 0.21.5/Ollama 0.40.1 using a synthetic project README and Makefile; two order-balanced repeats per stack, both returned the documented command and test runner; no owner preference. Added core-23 synthetic explain-file task on current Hermes 0.21.5/Ollama 0.40.1 with two order-balanced reads of the named function; semantic quality and owner preference remain unreviewed.",
-    "unreplayed_case_count": 32,
+    "unreplayed_case_count": 31,
     "owner_preference_labels": 0,
     "owner_preference_status": "unassigned",
     "chat_only_case_replay_details": {
@@ -1043,6 +1043,12 @@
         "result": "HADES median 28.45s versus PLAIN 32.19s, 4 versus 5.5 provider generations, and 2 versus 3.5 tool results. Both stacks left the workspace unchanged during inspection; HADES read the named file directly in both repeats while PLAIN searched twice before reading once.",
         "metrics_record": "benchmarks/hades-core-owner-small-edit-current-stable-20261008.json",
         "report": "docs/hades-core-owner-small-edit-current-stable-2026-10-08.md"
+      },
+      "core-26": {
+        "status": "two synthetic order-balanced PLAIN/HADES pairs; both stacks eventually ran a passing focused test in both pairs; owner preference unassigned",
+        "result": "The continued three-turn core-25/core-26 task had median latency 40.74s PLAIN and 44.48s HADES. PLAIN used 3 focused-test terminal calls across two tasks; HADES used 5, with three failed attempts before exit-0 results versus one for PLAIN. Independent final tests and diff checks passed in all four arms, and only the expected source file changed.",
+        "metrics_record": "benchmarks/hades-core-owner-edit-to-test-current-stable-20261008.json",
+        "report": "docs/hades-core-owner-edit-to-test-current-stable-2026-10-08.md"
       }
     },
     "latest_workspace_escalation_ollama0401": {
@@ -1154,6 +1160,64 @@
         "plain": 3.5,
         "hades": 2
       }
+    },
+    "latest_edit_to_test_current_stable": {
+      "case_ids": [
+        "core-25",
+        "core-26"
+      ],
+      "source_revision": "cdeb884798e40f59e6d2b1a68d6bc6b60790d358",
+      "classification": "two order-balanced synthetic three-turn owner-pattern conversations; owner preference and human answer-quality review unassigned",
+      "runtime": "Hermes 0.21.5, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable sandbox image and same workspace hint",
+      "order": "PLAIN then HADES; HADES then PLAIN",
+      "task_seconds_by_stack": {
+        "plain": [
+          40.1252,
+          41.3637
+        ],
+        "hades": [
+          37.2419,
+          51.7134
+        ]
+      },
+      "median_task_seconds": {
+        "plain": 40.74445,
+        "hades": 44.47765
+      },
+      "median_provider_generations_per_task": {
+        "plain": 7.5,
+        "hades": 8.5
+      },
+      "median_tool_outputs_per_task": {
+        "plain": 5.5,
+        "hades": 5.5
+      },
+      "focused_test_terminal_calls": {
+        "plain": 3,
+        "hades": 5
+      },
+      "focused_test_exit_zero_tasks": {
+        "plain": 2,
+        "hades": 2
+      },
+      "focused_test_exit_one_attempts": {
+        "plain": 1,
+        "hades": 3
+      },
+      "inspection_marker_matches": {
+        "plain": 2,
+        "hades": 2
+      },
+      "inspection_turn_workspace_mutations": {
+        "plain": 0,
+        "hades": 0
+      },
+      "independent_tests_passed": 4,
+      "expected_source_only_changes": 4,
+      "owner_preference": "UNASSIGNED",
+      "limitations": "Two synthetic pairs on one small fixture, direct Hermes AIAgent path, no human answer-quality review, Open WebUI persistence, production gateway authentication, Git commit behavior, or direct Scotty preference. Tool retries and local-model variance make the latency result diagnostic only.",
+      "metrics_record": "benchmarks/hades-core-owner-edit-to-test-current-stable-20261008.json",
+      "report": "docs/hades-core-owner-edit-to-test-current-stable-2026-10-08.md"
     }
   },
   "latest_workspace_read_pair_comparison": {
@@ -1202,5 +1266,63 @@
     "limitations": "One small-edit task, two pairs, direct AIAgent path, no human answer-quality or owner-preference scoring, no Open WebUI or deployed gateway qualification.",
     "metrics_record": "benchmarks/hades-core-owner-small-edit-current-stable-20261008.json",
     "report": "docs/hades-core-owner-small-edit-current-stable-2026-10-08.md"
+  },
+  "latest_workspace_edit_to_test_comparison": {
+    "case_ids": [
+      "core-25",
+      "core-26"
+    ],
+    "source_revision": "cdeb884798e40f59e6d2b1a68d6bc6b60790d358",
+    "classification": "two order-balanced synthetic three-turn owner-pattern conversations; owner preference and human answer-quality review unassigned",
+    "runtime": "Hermes 0.21.5, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable sandbox image and same workspace hint",
+    "order": "PLAIN then HADES; HADES then PLAIN",
+    "task_seconds_by_stack": {
+      "plain": [
+        40.1252,
+        41.3637
+      ],
+      "hades": [
+        37.2419,
+        51.7134
+      ]
+    },
+    "median_task_seconds": {
+      "plain": 40.74445,
+      "hades": 44.47765
+    },
+    "median_provider_generations_per_task": {
+      "plain": 7.5,
+      "hades": 8.5
+    },
+    "median_tool_outputs_per_task": {
+      "plain": 5.5,
+      "hades": 5.5
+    },
+    "focused_test_terminal_calls": {
+      "plain": 3,
+      "hades": 5
+    },
+    "focused_test_exit_zero_tasks": {
+      "plain": 2,
+      "hades": 2
+    },
+    "focused_test_exit_one_attempts": {
+      "plain": 1,
+      "hades": 3
+    },
+    "inspection_marker_matches": {
+      "plain": 2,
+      "hades": 2
+    },
+    "inspection_turn_workspace_mutations": {
+      "plain": 0,
+      "hades": 0
+    },
+    "independent_tests_passed": 4,
+    "expected_source_only_changes": 4,
+    "owner_preference": "UNASSIGNED",
+    "limitations": "Two synthetic pairs on one small fixture, direct Hermes AIAgent path, no human answer-quality review, Open WebUI persistence, production gateway authentication, Git commit behavior, or direct Scotty preference. Tool retries and local-model variance make the latency result diagnostic only.",
+    "metrics_record": "benchmarks/hades-core-owner-edit-to-test-current-stable-20261008.json",
+    "report": "docs/hades-core-owner-edit-to-test-current-stable-2026-10-08.md"
   }
 }
