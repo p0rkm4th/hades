@@ -10912,7 +10912,7 @@ try:
                 elif not _workspace_denial:
                     try:
                         _workspace_tools = _hades_get_workspace_tools(
-                            read_only=_workspace_read_only
+                            read_only=False
                         )
                         from tools.terminal_scope import set_terminal_scope as _hades_set_terminal_scope
                         from tools.terminal_scope import reset_terminal_scope as _hades_reset_terminal_scope
@@ -12129,6 +12129,10 @@ try:
             _workspace_all_tool_names = {
                 tool.get("function", {}).get("name") for tool in _workspace_tools
             }
+            # Keep the workspace schema stable when a read-only diagnosis is
+            # followed by an explicit action. Ollama otherwise discards most of
+            # its prompt cache when these definitions change. Authorization
+            # remains turn-scoped below: diagnosis can call only read/search.
             self.valid_tool_names = (
                 _workspace_all_tool_names
                 & set(_hades_workspace_read_only_tool_names)

@@ -220,8 +220,8 @@ def native_inspection(agent,user_message,*args,**kwargs):
  assert inspection_deltas and inspection_deltas[0] == 'I’ll read the relevant files and explain what I find.\n\n',inspection_deltas
  names={t['function']['name'] for t in agent.tools}
  inspection_catalog.append((names,set(agent.valid_tool_names)))
- assert names == {'read_file','search_files'},names
- assert set(agent.valid_tool_names) == names,agent.valid_tool_names
+ assert names == {'read_file','search_files','write_file','patch','terminal'},names
+ assert set(agent.valid_tool_names) == {'read_file','search_files'},agent.valid_tool_names
  prompt=agent.ephemeral_system_prompt.lower()
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
@@ -229,6 +229,23 @@ def native_inspection(agent,user_message,*args,**kwargs):
  assert 'do not edit files, run commands or tests, or claim changes' in prompt,prompt
  assert 'do not pass a directory to read_file' in prompt,prompt
  assert get_terminal_scope() is not None
+ from types import SimpleNamespace
+ from agent.turn_tool_validation import validate_tool_calls
+ denied_patch=SimpleNamespace(
+  id='synthetic-read-only-patch',type='function',
+  function=SimpleNamespace(name='patch',arguments='{"path":"/workspace/geometry.py"}'),
+ )
+ denied_message=SimpleNamespace(content=None,tool_calls=[denied_patch])
+ validation_messages=[]
+ agent._invalid_tool_retries=0
+ validation=validate_tool_calls(
+  agent,denied_message,'tool_calls',messages=validation_messages,
+  conversation_history=[],api_call_count=1,
+  effective_task_id='synthetic-inspection-chat',
+ )
+ assert validation.action == 'continue',validation
+ assert [m.get('name') for m in validation_messages if m.get('role')=='tool'] == ['patch'],validation_messages
+ assert 'does not exist' in validation_messages[-1].get('content','').lower(),validation_messages
  response='The test uses addition where rectangle area requires multiplication.'
  return {'final_response':response,
   'messages':[{'role':'user','content':user_message},
@@ -241,9 +258,11 @@ inspection_agent=create_agent('synthetic-owner','synthetic-inspection-chat',insp
 inspection=inspection_agent.run_conversation('Why is this Python test failing?',task_id='synthetic-inspection-chat')
 assert 'addition' in inspection.get('final_response',''),inspection
 assert inspection_deltas[-1] == inspection.get('final_response'),inspection_deltas
-assert inspection_catalog == [({'read_file','search_files'},{'read_file','search_files'})],inspection_catalog
+assert inspection_catalog == [
+ ({'read_file','search_files','write_file','patch','terminal'},{'read_file','search_files'})
+],inspection_catalog
 assert get_terminal_scope() is None,get_terminal_scope()
-print('PASS diagnosis exposes only read/search schemas; action schemas appear after explicit action intent')
+print('PASS workspace schemas stay stable; diagnosis authorization remains read/search only')
 calls=[]
 terminal_results=[]
 action_deltas=[]

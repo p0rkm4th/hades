@@ -666,6 +666,18 @@ def child(args: argparse.Namespace) -> int:
         skip_background_review=True,
         load_soul_identity=False,
     )
+    if args.prototype_stable_workspace_schemas and args.stack == "hades":
+        import workspace as workspace_policy
+
+        original_workspace_tools = workspace_policy.get_workspace_tools
+
+        def stable_workspace_tools(*, read_only: bool = False):
+            # Keep the five workspace schemas identical between diagnosis and
+            # action. Hermes still enforces valid_tool_names for this turn, so
+            # diagnosis remains unable to execute edits.
+            return original_workspace_tools(read_only=False)
+
+        workspace_policy.get_workspace_tools = stable_workspace_tools
     tool_choice_experiment = None
     original_tool_executor = None
     if args.prototype_force_terminal_after_mutation and args.stack == "hades":
@@ -691,6 +703,7 @@ def child(args: argparse.Namespace) -> int:
             phase_name = "read" if args.scenario == "read" else ("diagnose" if phase == 0 else "fix")
             stream_state["phase"] = phase_name
             stream_state["started"] = time.perf_counter()
+            phase_started = stream_state["started"]
             if tool_choice_experiment is not None:
                 tool_choice_experiment["active"] = phase_name == "fix"
                 tool_choice_experiment["current_user_message"] = prompt
@@ -847,7 +860,7 @@ def child(args: argparse.Namespace) -> int:
             turns.append({
                 "phase": phase_name,
                 "prompt_id": phase_name,
-                "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
+                "elapsed_ms": round((time.perf_counter() - phase_started) * 1000, 1),
                 "stream_progress": stream_metrics.get(phase_name, {
                     "delta_count": 0, "character_count": 0,
                     "first_delta_ms": None, "last_delta_ms": None,
@@ -995,6 +1008,10 @@ def main() -> int:
     parser.add_argument(
         "--prototype-host-workspace-verification-mapping", action="store_true",
         help="benchmark-only prototype: map container /workspace edit/evidence paths to the current fixture root",
+    )
+    parser.add_argument(
+        "--prototype-stable-workspace-schemas", action="store_true",
+        help="benchmark-only prototype: keep all five HADES workspace schemas visible through diagnosis and action while Hermes enforces read-only valid_tool_names during diagnosis",
     )
     parser.add_argument("--child", action="store_true")
     parser.add_argument("--stack", choices=("plain", "hades"))
@@ -1191,6 +1208,8 @@ def main() -> int:
                     command.append("--prototype-force-terminal-after-mutation")
                 if args.prototype_host_workspace_verification_mapping:
                     command.append("--prototype-host-workspace-verification-mapping")
+                if args.prototype_stable_workspace_schemas:
+                    command.append("--prototype-stable-workspace-schemas")
                 if stack == "hades":
                     command.append("--overlay")
                 started = time.perf_counter()
@@ -1350,6 +1369,10 @@ def main() -> int:
                     if args.prototype_host_workspace_verification_mapping else None
                 ),
                 "workspace_context_hint": WORKSPACE_ENVIRONMENT_HINT if args.workspace_context_hint else None,
+                "stable_workspace_schemas_experiment": (
+                    "benchmark-only: expose five workspace schemas during diagnosis and action; Hermes enforces read-only valid_tool_names during diagnosis"
+                    if args.prototype_stable_workspace_schemas else None
+                ),
                 "prompt_ids": ["read"] if args.scenario == "read" else ["diagnose", "fix"],
                 "subject": "synthetic owner identity; private fixture only",
             },
