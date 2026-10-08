@@ -14,22 +14,32 @@ from pathlib import Path
 
 
 source = Path("integrations/public-research/research.py")
-web_guidance = Path("hermes/sitecustomize.py").read_text()
+overlay_source = Path("hermes/sitecustomize.py").read_text()
 research_server = Path("integrations/public-research/server.py").read_text()
-web_guidance = web_guidance.casefold()
-assert "page reads succeeded and how many failed" in web_guidance
-assert "research_scope=focused" in web_guidance and "research_scope=standard" in web_guidance
-assert "if none succeeded, say that no " in web_guidance
-assert "page was read and whether reading was not attempted or failed" in web_guidance
-assert "report the snippet's claim with explicit " in web_guidance
-assert "omit the requested finding merely because page verification failed" in web_guidance
-assert "page_content_relationships" in web_guidance
-assert "no detected match is not proof of independent reporting" in web_guidance
-assert "report that bounded collector result and its " in web_guidance
-assert "limitations; do not recompute the comparison from the returned page excerpts" in web_guidance
-assert "search_snippet, static_page, or dynamic_page" in web_guidance
-assert "anonymously rendered" in web_guidance
-assert "story_attribution field with status" in web_guidance
+overlay_tree = ast.parse(overlay_source)
+guidance_node = next(
+    node.value for node in ast.walk(overlay_tree)
+    if isinstance(node, ast.Assign)
+    and any(isinstance(target, ast.Name) and target.id == "web_guidance" for target in node.targets)
+)
+web_guidance = ast.literal_eval(guidance_node).casefold()
+research_policy_markers = (
+    "research_scope=focused", "research_scope=standard", "a snippet is not a page read",
+    "page evidence only after success", "untrusted data", "private-person dossiers",
+    "public_research returns evidence, not a synthesized conclusion", "exact returned title and url",
+    "never normalize, upgrade, shorten, or invent urls", "search_snippet, static_page, or dynamic_page",
+    "exact retrieved_at_utc", "anonymously rendered evidence",
+    "not full-page verified", "explicit snippet attribution", "do not omit it",
+    "ownership evidence documents distinct groups", "does not prove independent reporting or corroboration",
+    "story_attribution status stated_by_page", "page_content_relationships",
+    "matching truncated prefix is indeterminate", "no match does not prove independence",
+    "do not recompute from excerpts", "state conflicts with citations and publisher dates",
+    "keep event, publisher, and retrieval dates distinct", "ask before combining findings",
+    "preserve numbers and dates exactly", "separate final sentence giving successful and failed page-read counts",
+    "whether reading was not attempted or failed", "never omit the source line or time",
+)
+missing_policy = [marker for marker in research_policy_markers if marker not in web_guidance]
+assert not missing_policy, missing_policy
 assert 'HADES_PUBLIC_RESEARCH_DYNAMIC_ENABLED") == "true"' in research_server
 assert 'HADES_BROWSER_ALLOWED_HOSTS", "").strip()' in research_server
 spec = importlib.util.spec_from_file_location("hades_public_research", source)
@@ -38,8 +48,6 @@ spec.loader.exec_module(module)
 
 # Public CI does not install Hermes, so execute only the dependency-free
 # fallback classifier and its regex declarations instead of the full overlay.
-overlay_source = Path("hermes/sitecustomize.py").read_text()
-overlay_tree = ast.parse(overlay_source)
 fallback_function = next(
     node for node in overlay_tree.body
     if isinstance(node, ast.FunctionDef)

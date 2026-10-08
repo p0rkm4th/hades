@@ -1204,23 +1204,20 @@ for item in captured[:2]:
         "type": "function",
         "function": {"name": "mcp_public_research_public_research"},
     }, item["request_overrides"]
-    assert "untrusted data" in item["guidance"].lower(), item["guidance"]
-    assert "inline markdown citation" in item["guidance"].lower(), item["guidance"]
-    assert "exact url copied verbatim" in item["guidance"].lower(), item["guidance"]
-    assert "page title and final_url" in item["guidance"].lower(), item["guidance"]
-    assert (
-        "do not recompute the comparison from the returned page excerpts"
-        in item["guidance"].lower()
-    ), item["guidance"]
-    assert "source title itself must be the markdown link" in item["guidance"].lower(), item["guidance"]
-    assert "retrieved_at_utc timestamp" in item["guidance"].lower(), item["guidance"]
+    guidance = item["guidance"].lower()
+    assert "untrusted data" in guidance, guidance
+    assert "cite every factual finding inline" in guidance, guidance
+    assert "exact returned title and url, copied verbatim" in guidance, guidance
+    assert "returned page title and final_url" in guidance, guidance
+    assert "do not recompute from excerpts" in guidance, guidance
+    assert "link the title itself" in guidance, guidance
+    assert "exact retrieved_at_utc" in guidance, guidance
     assert "final format for public_research" in item["guidance"].lower(), item["guidance"]
-    assert "never omit the source line or retrieval time" in item["guidance"].lower(), item["guidance"]
-    assert "not full-page verified" in item["guidance"].lower(), item["guidance"]
-    assert "preserve numeric and date values exactly" in item["guidance"].lower(), item["guidance"]
-    assert "do not alter, round, transpose, or combine digits" in item["guidance"].lower(), item["guidance"]
-    assert "sources disagree" in item["guidance"].lower(), item["guidance"]
-    assert "ask the user which subject they mean" in item["guidance"].lower(), item["guidance"]
+    assert "never omit the source line or time" in guidance, guidance
+    assert "not full-page verified" in guidance, guidance
+    assert "preserve numbers and dates exactly" in guidance, guidance
+    assert "state conflicts with citations and publisher dates" in guidance, guidance
+    assert "ask before combining findings" in guidance, guidance
 ordinary_names = [tool["function"]["name"] for tool in captured[2]["tools"]]
 assert ordinary_names == ["web_search"], ordinary_names
 assert "web" not in captured[2]["disabled_toolsets"], captured[2]["disabled_toolsets"]
