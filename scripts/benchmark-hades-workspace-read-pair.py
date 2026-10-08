@@ -60,6 +60,12 @@ IMAGE = "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c50
 REQUIRED_TERMINAL_CHOICE = {"type": "function", "function": {"name": "terminal"}}
 TOKEN = "ORCHID-9472"
 PROMPT = "Read /workspace/answer.txt and tell me the exact token from the file. Reply with only the token."
+README_PROMPT = "Open the README in this project and tell me how to run it."
+README_CONTENT = (
+    "# Sample project\n\n"
+    "Run the test suite with `make test`. The target executes "
+    "`python -m unittest discover -v`.\n"
+)
 SEARCH_PROMPT = "Find where this project configures request timeouts. Tell me the file path and value."
 SEARCH_FILES = {
     "README.md": "# Sample project\n\nClient defaults live in the settings module.\n",
@@ -789,6 +795,7 @@ def install_host_workspace_verification_mapping(
 def child(args: argparse.Namespace) -> int:
     fixture_case = FIXTURE_CASES[args.fixture_case]
     fixture_names = (
+        ("README.md", "Makefile") if args.scenario == "readme" else
         tuple(SEARCH_FILES) if args.scenario == "search"
         else (fixture_case["source"], fixture_case["test"])
     )
@@ -917,12 +924,14 @@ def child(args: argparse.Namespace) -> int:
                 original_verification_evidence,
             ) = install_host_workspace_verification_mapping(agent, args.workspace)
         prompts = ([PROMPT] if args.scenario == "read" else
+                   [README_PROMPT] if args.scenario == "readme" else
                    [SEARCH_PROMPT] if args.scenario == "search" else
                    [DIAGNOSE_PROMPT, FIX_PROMPT])
         history: list[dict[str, Any]] = []
         turns = []
         for phase, prompt in enumerate(prompts):
             phase_name = ("read" if args.scenario == "read" else
+                          "readme" if args.scenario == "readme" else
                           "search" if args.scenario == "search" else
                           ("diagnose" if phase == 0 else "fix"))
             stream_state["phase"] = phase_name
@@ -1095,6 +1104,10 @@ def child(args: argparse.Namespace) -> int:
                     SEARCH_TARGET_PATH.casefold() in final_text.casefold()
                     and SEARCH_TARGET_VALUE in final_text
                 ) if args.scenario == "search" else None,
+                "response_contains_readme_run_target": (
+                    "make test" in final_text.casefold()
+                    and "unittest" in final_text.casefold()
+                ) if args.scenario == "readme" else None,
                 "api_calls": result.get("api_calls") if isinstance(result, dict) else None,
                 "tool_result_count": len(tool_messages),
                 "tool_result_names": [m.get("name") for m in tool_messages],
@@ -1219,7 +1232,7 @@ def main() -> int:
     parser.add_argument("--docker-binary", type=pathlib.Path)
     parser.add_argument("--sandbox-image", default=IMAGE)
     parser.add_argument("--repeats", type=int, default=2)
-    parser.add_argument("--scenario", choices=("read", "search", "escalation"), default="read")
+    parser.add_argument("--scenario", choices=("read", "readme", "search", "escalation"), default="read")
     parser.add_argument("--fixture-layout", choices=("compact", "multifile"), default="compact")
     parser.add_argument("--fixture-case", choices=tuple(FIXTURE_CASES), default="geometry")
     parser.add_argument(
@@ -1329,6 +1342,11 @@ def main() -> int:
                     workspace.mkdir(parents=True, mode=0o700)
                 if args.scenario == "read":
                     (workspace / "answer.txt").write_text(TOKEN + "\n")
+                elif args.scenario == "readme":
+                    (workspace / "README.md").write_text(README_CONTENT)
+                    (workspace / "Makefile").write_text(
+                        "test:\n\tpython -B -m unittest discover -v\n"
+                    )
                 elif args.scenario == "search":
                     for name, content in SEARCH_FILES.items():
                         path = workspace / name
@@ -1496,6 +1514,19 @@ def main() -> int:
                 "plain_correct_final_answers": sum(r["final_response_contains_expected_token"] for r in records if r["stack"] == "plain"),
                 "hades_correct_final_answers": sum(r["final_response_contains_expected_token"] for r in records if r["stack"] == "hades"),
             })
+        elif args.scenario == "readme":
+            summary.update({
+                "plain_correct_readme_answers": sum(
+                    bool(t["response_contains_readme_run_target"])
+                    for r in records if r["stack"] == "plain" for t in r["turns"]
+                ),
+                "hades_correct_readme_answers": sum(
+                    bool(t["response_contains_readme_run_target"])
+                    for r in records if r["stack"] == "hades" for t in r["turns"]
+                ),
+                "plain_tool_result_turns": sum(r["tool_result_count"] > 0 for r in records if r["stack"] == "plain"),
+                "hades_tool_result_turns": sum(r["tool_result_count"] > 0 for r in records if r["stack"] == "hades"),
+            })
         elif args.scenario == "search":
             summary.update({
                 "plain_correct_search_answers": sum(
@@ -1607,6 +1638,7 @@ def main() -> int:
                 "native_verify_on_stop": args.prototype_host_workspace_verification_mapping,
                 "workspace_context_hint": WORKSPACE_ENVIRONMENT_HINT if args.workspace_context_hint else None,
                 "prompt_ids": (["read"] if args.scenario == "read" else
+                               ["readme"] if args.scenario == "readme" else
                                ["search"] if args.scenario == "search" else
                                ["diagnose", "fix"]),
                 "subject": "synthetic owner identity; private fixture only",
@@ -1619,6 +1651,7 @@ def main() -> int:
                     "independent fixture tests and diff checks are recorded, but this does not qualify larger coding "
                     "tasks, Git commit behavior, or owner preference."
                     if args.scenario == "escalation" else
+                    "Synthetic README comprehension: run command and test runner markers are recorded without answer text." if args.scenario == "readme" else
                     "Synthetic multi-file request-timeout discovery; expected path/value markers are recorded without preserving the answer text."
                     if args.scenario == "search" else
                     "Synthetic one-file read only; no editing, tests, Git, follow-up, or direct owner preference."
