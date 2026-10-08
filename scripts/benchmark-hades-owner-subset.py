@@ -520,6 +520,8 @@ def main() -> int:
     parser.add_argument("--output", type=pathlib.Path, default=ROOT / "benchmarks/hades-core-owner-subset-pair-v2.json")
     parser.add_argument("--context-tokens", type=int, default=65536)
     parser.add_argument("--max-tokens", type=int, default=512)
+    parser.add_argument("--temperature", type=float, default=1.0)
+    parser.add_argument("--sampling-seed", type=int, default=23)
     parser.add_argument("--order-offset", type=int, default=0)
     parser.add_argument(
         "--keep-temp", action="store_true",
@@ -598,7 +600,11 @@ def main() -> int:
         for stack in ("plain", "hades"):
             provider_port = unused_port()
             proxy = AggregateProxy(("127.0.0.1", provider_port), stack, args.ollama_url)
-            proxy.generation_overrides = {"max_tokens": args.max_tokens}
+            proxy.generation_overrides = {
+                "max_tokens": args.max_tokens,
+                "temperature": args.temperature,
+                "seed": args.sampling_seed,
+            }
             thread = threading.Thread(target=proxy.serve_forever, daemon=True)
             thread.start()
             proxies[stack] = proxy
@@ -858,6 +864,11 @@ def main() -> int:
                     and loaded_model.get("context_length") == args.context_tokens
                 ),
                 "max_output_tokens": args.max_tokens,
+                "sampling": {
+                    "temperature": args.temperature,
+                    "seed": args.sampling_seed,
+                    "applied_at": "local provider proxy boundary",
+                },
                 "reasoning": "disabled",
                 "title_model_upgrade": "disabled in both temporary profiles",
             },
@@ -885,7 +896,7 @@ def main() -> int:
                 "title_generation_enabled": True,
                 "title_model_upgrade_enabled": False,
                 "provider_generation_count": "measured as provider proxy requests associated with each serialized user turn",
-                "max_output_tokens_enforcement": "same max_tokens override applied at the loopback provider boundary and verified on every captured request",
+                "generation_controls_enforcement": "same max_tokens, temperature, and seed applied at the loopback provider boundary and verified on every captured request",
                 "user_preference": "not collected",
             },
             "cases": [case for case, _ in selected_cases],

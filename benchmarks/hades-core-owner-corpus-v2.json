@@ -969,6 +969,17 @@
       "result": "All 96 turns returned content, with zero tool schemas and zero model tool calls. PLAIN made 48 provider generations; HADES made 45 because its three core-08 pantry-expiry requests returned through the explicit canonical-source-unavailable fast path. Excluding all of core-08 to avoid comparing different follow-up histories leaves 42 model turns per stack: median TTFT/total was 1.015/1.626s PLAIN and 1.082/1.568s HADES; paired median deltas were -37 ms TTFT and -13 ms total. The missing-source path returned content at a 40 ms median and its task-specific response is covered by the Grocy runtime contract test.",
       "limitations": "Synthetic conversation prompts; no quality or naturalness scoring. The fixture intentionally has no household source or domain tools. No owner preference or production/Open WebUI parity. The 55-case corpus still has 36 IDs without direct replay and zero preference labels.",
       "metrics_record": "benchmarks/hades-core-conversation-v1-three-repeat-20261007.json"
+    },
+    "latest_seeded_ollama_runtime_comparison": {
+      "source_revision": "8e94ca331c187f0b7375b3ff57ff7445a9ad6e76",
+      "classification": "same Hermes 0.21.5 / HADES code and model; three balanced repeats on Ollama 0.40.0 and 0.40.1; temperature 1.0 and seed 23 forced at local provider boundary; no owner-preference labels",
+      "result": "Each runtime produced 48/48 content-bearing turns for each stack with zero model tool calls or schemas. HADES made 45 provider generations because its three core-08 missing-source requests used the no-model path; PLAIN made 48. Excluding core-08 leaves 42 model turns per stack. Median TTFT/total was PLAIN 979/1730 ms and HADES 955/1421 ms on 0.40.0, then PLAIN 1053/1437 ms and HADES 1021/1453 ms on 0.40.1. Paired median HADES-minus-PLAIN deltas were -71/-86 ms on 0.40.0 and -15/-25 ms on 0.40.1. Completion-token totals differed between runtime versions despite the same explicit sampling controls, so total-latency changes are not treated as a clean version performance comparison.",
+      "limitations": "Synthetic conversation prompts only; no answer quality, naturalness, direct Open WebUI or production parity, or owner preference. No new corpus IDs are directly replayed by this runtime comparison. The 55-case corpus still has 36 IDs without direct replay and zero preference labels.",
+      "metrics_records": [
+        "benchmarks/hades-core-owner-conversation-ollama0400-seeded-20261008.json",
+        "benchmarks/hades-core-owner-conversation-ollama0401-seeded-20261008.json"
+      ],
+      "report": "docs/hades-core-plain-stack-ollama0401-conversation-20261008.md"
     }
   }
 }
