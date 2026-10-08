@@ -40,8 +40,10 @@ open until that lock is reconciled and tested.
   candidate and Python 3.15 is rejected. A production-path regression check
   verifies Python 3.14 remains rejected for the current 0.21.2 pin.
 - Candidate URL and checksum overrides that would break source provenance are
-  rejected. Production artifact checks also require the manifest-pinned
-  checksum before recording the pinned source commit.
+  rejected. Production artifact checks require the manifest-pinned checksum,
+  version, and source commit; a regression fixture supplies forged environment
+  values and verifies that both install-stamp arguments and provenance still
+  report the manifest values.
 - Version manifest and one-component upgrade-helper contracts pass with the
   candidate metadata.
 
