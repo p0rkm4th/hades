@@ -108,6 +108,15 @@ assert PAIR_MODULE.configure_hades_scope(
 ) == {"HADES_OWNER_SUBJECT_IDS": PAIR_MODULE.SYNTHETIC_OWNER_SUBJECT}
 assert PAIR_MODULE.synthetic_memory_bank("owner") == "hades-owner"
 assert PAIR_MODULE.synthetic_memory_bank("household") == "hades-user-hades-synthetic"
+child_env = PAIR_MODULE.benchmark_child_environment({
+    "PATH": "/usr/bin", "LANG": "C.UTF-8", "HOME": "/private/home",
+    "OPENAI_API_KEY": "must-not-inherit", "HADES_OWNER_SUBJECT_IDS": "real-owner",
+    "OLLAMA_HOST": "https://remote.invalid", "HTTP_PROXY": "http://proxy.invalid",
+})
+assert child_env["PATH"] == "/usr/bin"
+assert child_env["NO_PROXY"] == "127.0.0.1,localhost,::1"
+for forbidden in ("HOME", "OPENAI_API_KEY", "HADES_OWNER_SUBJECT_IDS", "OLLAMA_HOST", "HTTP_PROXY"):
+    assert forbidden not in child_env, (forbidden, child_env)
 
 import tempfile
 
@@ -131,6 +140,27 @@ with tempfile.TemporaryDirectory() as directory:
     assert "status=503" in content
     assert "secret" not in content and "private" not in content
     assert '"provider_generations": 1' in content
+    safe = PAIR_MODULE.safe_repetitions([{
+        "sample": 1,
+        "stacks": {"hades": {
+            "turns": [{
+                "turn": "recall", "total_ms": 12.3,
+                "answer": "synthetic answer secret",
+                "provider_calls": [{"messages": "synthetic prompt secret"}],
+                "metrics": {"provider_generations": 1},
+            }],
+            "memory_supplement": [{
+                "case_id": "core-51", "probe_text": "private prompt",
+                "answer_contains_expected_marker": True,
+                "expected_markers": ["private marker"],
+            }],
+        }},
+    }])
+    safe_content = json.dumps(safe)
+    for forbidden in ("synthetic answer secret", "synthetic prompt secret", "private prompt", "private marker", "provider_calls", "probe_text", "expected_markers"):
+        assert forbidden not in safe_content, (forbidden, safe_content)
+    assert safe[0]["stacks"]["hades"]["turns"][0]["total_ms"] == 12.3
+    assert safe[0]["stacks"]["hades"]["memory_supplement"][0]["answer_contains_expected_marker"] is True
     unsafe_path = PAIR_MODULE.write_incomplete_artifact(
         target, source_revision="abc123", failure_stage="barrier",
         error_type="RuntimeError", repetitions=[], hindsight_calls=[],
