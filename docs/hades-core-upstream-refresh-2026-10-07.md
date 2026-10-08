@@ -108,6 +108,19 @@ Nyx independently reviewed the four-repeat cache diagnostic, the stable-schema c
 
 The cache artifact associates dynamic HADES schema changes with a median 15.24-second task delay and zero cached action-prefix tokens in four repeats, while its read-only diagnosis boundary held 4/4. PLAIN reused a median 7,416 action-prefix tokens but changed the workspace during diagnosis in 2/4. The stable-schema HADES candidate restored cache reuse but remained slower overall and generated more invalid and blocked mutation attempts. The separate named-terminal prototype tested neither `tool_choice="none"` nor diagnosis gating and returned the requested tool only 1/2 times, equal to the observed baseline rate. Therefore keep HADES' dynamic phase-specific catalog and server-side dispatch authorization; do not weaken them to recover cache hits alone. A disposable exact-endpoint protocol probe may be reconsidered if Ollama adds documented and implemented tool-choice support. No fresh model run or owner preference claim is available because the local runtime is absent. [Cache diagnostic](../benchmarks/hades-core-workspace-prefix-cache-diagnostic-20261007.json), [stable-schema candidate](../benchmarks/hades-core-workspace-stable-schema-corrected-reset-20261007.json), [named-tool prototype](../benchmarks/hades-core-workspace-toolchoice-prototype-hermes0215-ollama040-v1.json).
 
+### Ollama 0.40.1 workspace-escalation comparison
+
+The four-pair synthetic replay found the same product tradeoff as the Ollama
+0.40.0 baseline: HADES held the read-only diagnosis boundary in all four trials
+and used a smaller diagnosis schema (2 / 3,662 bytes versus 8 / 12,590), but
+median diagnosis-to-fix time was 50.3 seconds versus 39.1 seconds for PLAIN.
+PLAIN changed the workspace before the explicit fix request in two trials; one
+HADES trial failed independent tests and made no expected source change. Keep
+the boundary and investigate the completion-time penalty. This does not
+establish an Ollama version effect or owner preference. See the
+[comparison report](hades-core-workspace-escalation-ollama0401-2026-10-08.md)
+and [sanitized artifact](../benchmarks/hades-core-workspace-escalation-ollama0401-v1.json).
+
 ## Authoritative sources
 
 - [Open WebUI releases](https://github.com/open-webui/open-webui/releases)
