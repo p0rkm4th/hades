@@ -17,7 +17,7 @@ records.
 
 **Next exact actions:** verify run 37862120331; publish focused workspace escalation evidence and investigate invalid diagnosis tool attempts/action-turn overhead; extend paired replay beyond ordinary chat and the single coding fixture; finish the dependency audit; then run authenticated owner dogfood. Do not qualify the usability baseline until preference and deployed-source parity gates are evidenced.
 
-## Current authoritative checkpoint — 2026-10-06 UTC
+## Prior homelab checkpoint — 2026-10-06 UTC
 
 **Repository:** code-bearing `main` is `381543b0af21c1e1abcbf90642eb8b586f553d62`, fast-forwarded from `0cba8008a5fd0ed1a6ea1b2633379490f6cec7d8` after NYX-007 review ACCEPT and candidate Public CI [37398017938](https://github.com/p0rkm4th/hades/actions/runs/37398017938) passed. Post-promotion main CI [37398145659](https://github.com/p0rkm4th/hades/actions/runs/37398145659) passed. The change extracts bounded Proxmox archived-task page reads shared by backup and recent-activity views; credentials, transport, source configuration, and effective `VM.Audit` scope calculation remain in the adapter. Unknown/empty scope performs no task reads; task rows are field-allowlisted. The exact clean 17-module package composed from the candidate includes/imports the provider.
 
