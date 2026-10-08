@@ -44,6 +44,11 @@ def run(*args: str, capture: bool = False) -> str:
 
 
 def image_pin() -> str:
+    override = os.environ.get("HADES_HINDSIGHT_IMAGE", "").strip()
+    if override:
+        if "@sha256:" not in override:
+            raise RuntimeError("HADES_HINDSIGHT_IMAGE override must use an immutable sha256 digest")
+        return override
     for line in (REPO / "config/versions.env").read_text().splitlines():
         if line.startswith("HADES_HINDSIGHT_IMAGE="):
             return line.partition("=")[2].strip().strip("\"'")
@@ -102,7 +107,7 @@ def exercise_hades_route(api: str, bank: str, subject: str) -> None:
     """Run the actual HADES route in an explicitly supplied Hermes runtime."""
     hermes_python = os.environ.get("HADES_HERMES_PYTHON", "").strip()
     if not hermes_python:
-        print("SKIP actual HADES route integration: set HADES_HERMES_PYTHON to Hermes 0.21.2 Python")
+        print("SKIP actual HADES route integration: set HADES_HERMES_PYTHON to the qualified Hermes Python")
         return
     if not Path(hermes_python).is_file():
         raise RuntimeError("HADES_HERMES_PYTHON does not name a file")
