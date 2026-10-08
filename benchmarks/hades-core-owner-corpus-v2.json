@@ -1072,6 +1072,18 @@
       "limitations": "Synthetic chat-only gateway replay with no API toolsets/source data, memory, coding actions, Open WebUI persistence, or production parity. Core-08 missing-source behavior is intentionally reported separately; no owner preference or human naturalness review.",
       "metrics_record": "benchmarks/hades-core-owner-conversation-current-fa608b4-ollama0401-20261008.json",
       "report": "docs/hades-core-owner-conversation-current-ollama0401-2026-10-08.md"
+    },
+    "latest_grocy_read_current_ollama0401": {
+      "source_revision": "fe9341116c533bfa627e388fd53c14b659cef156",
+      "classification": "three repeats per scenario and source-health condition against one authenticated synthetic Grocy fixture; manual fixture correctness review; no owner preference",
+      "case_ids": [
+        "core-12",
+        "core-13"
+      ],
+      "result": "Current Hermes 0.21.5 / Ollama 0.40.1 / Qwen3.6:35b Q4_K_M, verified 65,536 context. HADES direct read path made zero model generations and had 40/41/51ms median latency for available expiry, expiry/use, and recipe feasibility; on simulated HTTP 503, 37/40/48ms. PLAIN native Hermes MCP medians were 5.63/7.41/7.54s available and 6.25/9.64/6.61s unavailable, with 3–6 model generations. Fixture calls were authenticated GET only. HADES correctly reported the one missing recipe ingredient in 3/3 feasibility runs; PLAIN gave a correct feasibility answer in 1/3 and incorrect/contradictory answers in 2/3. HADES truthfully failed closed on all 9 outage turns; one PLAIN outage answer invented an endpoint and advised sending a key there. No request was made to that endpoint.",
+      "limitations": "One synthetic fixture and one manually reviewed task family; no owner preference, real household data, mutations, or production parity. Content-free public metrics; qualitative labels were checked against the synthetic fixture, not a general response-quality rubric.",
+      "metrics_record": "benchmarks/hades-core-grocy-read-current-ollama0401-20261008.json",
+      "report": "docs/hades-core-grocy-read-current-ollama0401-2026-10-08.md"
     }
   }
 }
