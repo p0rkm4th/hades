@@ -12,6 +12,7 @@ import http.client
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import importlib.util
 import json
+import math
 import os
 import pathlib
 import re
@@ -100,9 +101,66 @@ def safe_turn_record(turn: dict[str, Any]) -> dict[str, Any]:
     """Keep only aggregate turn metrics; never persist model or provider text."""
     return {
         key: turn[key]
-        for key in ("turn", "status", "ttft_ms", "total_ms", "metrics", "error_type")
+        for key in (
+            "turn", "status", "ttft_ms", "total_ms", "metrics", "error_type",
+            "recall_diagnostics",
+        )
         if key in turn
     }
+
+
+def read_safe_recall_diagnostics(log_path: pathlib.Path, offset: int = 0):
+    """Read only allowlisted rank/type/numeric scores from HADES debug logs."""
+    marker = "HADES memory recall score diagnostics stage="
+    allowed_stages = {"automatic", "automatic_raw_fallback", "direct:False", "direct:True"}
+    rows = []
+    try:
+        with log_path.open("rb") as stream:
+            stream.seek(max(0, offset))
+            while True:
+                raw_line = stream.readline()
+                if not raw_line:
+                    break
+                line = raw_line.decode("utf-8", errors="replace")
+                start = line.find(marker)
+                if start < 0:
+                    continue
+                record = line[start + len(marker):].strip()
+                stage, separator, payload = record.partition(" rows=")
+                if not separator or stage not in allowed_stages:
+                    continue
+                try:
+                    parsed = json.loads(payload)
+                except (TypeError, ValueError):
+                    continue
+                if not isinstance(parsed, list):
+                    continue
+                safe_items = []
+                for item in parsed[:8]:
+                    if not isinstance(item, dict):
+                        continue
+                    rank = item.get("rank")
+                    result_type = item.get("type")
+                    scores = item.get("scores")
+                    if not isinstance(rank, int) or isinstance(rank, bool) or rank < 1:
+                        continue
+                    if result_type not in {None, "world", "experience", "observation"}:
+                        result_type = None
+                    if not isinstance(scores, dict):
+                        scores = {}
+                    safe_scores = {
+                        key: value for key, value in scores.items()
+                        if key in {"final", "reranker", "semantic", "keyword"}
+                        and isinstance(value, (int, float))
+                        and not isinstance(value, bool)
+                        and math.isfinite(value)
+                    }
+                    safe_items.append({"rank": rank, "type": result_type, "scores": safe_scores})
+                rows.append({"stage": stage, "results": safe_items})
+            next_offset = stream.tell()
+    except OSError:
+        return [], offset
+    return rows, next_offset
 
 
 def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -977,6 +1035,7 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
         "process": process,
         "log": log,
         "log_path": log_path,
+        "score_log_offset": log_path.stat().st_size,
     }
 
 
@@ -1010,6 +1069,10 @@ def measure_turn(gateway: dict[str, Any], proxy_module, turn: str, session: str,
         row = {"status": None, "ttft_ms": None, "total_ms": None, "answer": ""}
         error = type(exc).__name__
     calls = proxy.snapshot()[before:]
+    recall_diagnostics, diagnostic_offset = read_safe_recall_diagnostics(
+        gateway["log_path"], gateway.get("score_log_offset", 0)
+    )
+    gateway["score_log_offset"] = diagnostic_offset
     answer = row.get("answer", "")
     if isinstance(answer, str) and answer.startswith("CSV finance read ("):
         answer = "[redacted: unrelated owner-finance response; routed from synthetic benchmark turn]"
@@ -1022,6 +1085,8 @@ def measure_turn(gateway: dict[str, Any], proxy_module, turn: str, session: str,
         "metrics": summarize_calls(calls),
         "provider_calls": calls,
     }
+    if recall_diagnostics:
+        result["recall_diagnostics"] = recall_diagnostics
     if error:
         result["error_type"] = error
     return result

@@ -122,6 +122,30 @@ for forbidden in ("HOME", "OPENAI_API_KEY", "HADES_OWNER_SUBJECT_IDS", "OLLAMA_H
 import tempfile
 
 with tempfile.TemporaryDirectory() as directory:
+    diagnostic_log = pathlib.Path(directory) / "gateway.log"
+    diagnostic_log.write_text(
+        'INFO HADES memory recall score diagnostics stage=automatic rows='
+        '[{"rank":1,"type":"observation","scores":{"final":0.82,"private":0.99},'
+        '"id":"PRIVATE_ID","text":"PRIVATE_SYNTHETIC_FACT"}]\n'
+        'INFO HADES memory recall score diagnostics stage=untrusted rows=[]\n',
+        encoding="utf-8",
+    )
+    diagnostics, diagnostic_offset = PAIR_MODULE.read_safe_recall_diagnostics(diagnostic_log)
+    assert diagnostics == [{
+        "stage": "automatic",
+        "results": [{"rank": 1, "type": "observation", "scores": {"final": 0.82}}],
+    }], diagnostics
+    diagnostic_json = json.dumps(diagnostics)
+    for private_value in ("PRIVATE_ID", "PRIVATE_SYNTHETIC_FACT", "private"):
+        assert private_value not in diagnostic_json, (private_value, diagnostic_json)
+    assert PAIR_MODULE.read_safe_recall_diagnostics(
+        diagnostic_log, diagnostic_offset
+    ) == ([], diagnostic_offset)
+    assert PAIR_MODULE.safe_turn_record({
+        "turn": "fixture", "recall_diagnostics": diagnostics,
+        "answer": "PRIVATE_SYNTHETIC_FACT",
+    }) == {"turn": "fixture", "recall_diagnostics": diagnostics}
+
     target = pathlib.Path(directory) / "run.json"
     partial_turn = {"sample": 2, "stacks": {"hades": {"turns": [
         {"total_ms": 12.3, "answer": "private conversation secret", "metrics": {"provider_generations": 1}},
