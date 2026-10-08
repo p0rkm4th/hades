@@ -933,6 +933,23 @@ def child(args: argparse.Namespace) -> int:
         skip_background_review=True,
         load_soul_identity=False,
     )
+    tool_validation_diagnostics: list[dict[str, Any]] = []
+    original_repair_tool_call = agent._repair_tool_call
+
+    def capture_tool_validation_catalog(name: str):
+        # Record only names from this benchmark's fixed workspace-tool allowlist.
+        # The model-emitted name may contain arbitrary text and is not retained.
+        workspace_names = {"read_file", "search_files", "write_file", "patch", "terminal"}
+        tool_validation_diagnostics.append({
+            "phase": str(stream_state["phase"]),
+            "attempted_workspace_tool": name if name in workspace_names else "other",
+            "valid_workspace_tools": sorted(
+                set(getattr(agent, "valid_tool_names", None) or ()) & workspace_names
+            ),
+        })
+        return original_repair_tool_call(name)
+
+    agent._repair_tool_call = capture_tool_validation_catalog
     tool_choice_experiment = None
     original_tool_executor = None
     if args.prototype_force_terminal_after_mutation and args.stack == "hades":
@@ -1194,6 +1211,10 @@ def child(args: argparse.Namespace) -> int:
                     != workspace_head_before
                 ) if args.scenario == "workflow-to-commit" else False,
                 "messages_added": len(turn_messages),
+                "tool_validation_diagnostics": [
+                    row for row in tool_validation_diagnostics
+                    if row["phase"] == phase_name
+                ],
             })
             history = next_history
         summary = {

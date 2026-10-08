@@ -206,10 +206,18 @@ try:
     assert any(set(turn["tools"]) == readonly_git_tool_names for turn in review_turns), [
         turn.get("tools") for turn in review_turns
     ]
+    commit_request = "Commit the verified change with a clear message."
+    commit, echoed = chat(commit_request, request_session_id=review_session_id)
+    assert echoed == review_session_id, echoed
+    commit_turns = [turn for turn in model_turns if turn["user"].strip() == commit_request]
+    assert any(set(turn["tools"]) == workspace_tool_names for turn in commit_turns), [
+        turn.get("tools") for turn in commit_turns
+    ]
     print("PASS live authenticated Hermes gateway carried the same explicit session across diagnosis and follow-up")
     assert any(set(turn["tools"]) == workspace_tool_names for turn in action_turns), action_turns
     print("PASS diagnosis receives two read-only schemas; action follow-up receives all five")
     print("PASS Git diff review receives file reads and the read-only terminal, without write/patch tools")
+    print("PASS explicit commit follow-up stays in the same workspace and receives all five action tools")
     print("PASS synthetic unauthorized diagnosis-time patch was rejected; fixture bytes stayed unchanged")
 finally:
     gateway.terminate()

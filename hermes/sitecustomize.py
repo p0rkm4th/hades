@@ -12236,16 +12236,16 @@ try:
             self._hades_session_scope == "owner"
             and _hades_is_homelab_intent(_hades_intent_text)
         )
-        if _workspace_git_inspection and not re.search(
+        if _workspace_intent and not re.search(
             r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|"
             r"gpus?|inference|ollama|network|nmap)\b",
             current_text,
             re.IGNORECASE,
         ):
-            # Generic "what changed" wording overlaps HADES' live homelab
-            # activity route. An explicit Git diff/branch/status question in an
-            # authenticated workspace must stay on that workspace path unless
-            # the current turn names an infrastructure source.
+            # User history can retain a previous "what changed" request. Once
+            # the current turn continues an authenticated workspace task, that
+            # historical phrase must not switch this turn to homelab activity.
+            # Let explicit infrastructure sources in the current request win.
             homelab_intent = False
         if (
             self._hades_session_scope == "owner"
