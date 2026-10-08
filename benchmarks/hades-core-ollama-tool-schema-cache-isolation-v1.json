@@ -1,0 +1,71 @@
+{
+  "date": "2026-10-08",
+  "source_revision": "dbdafea398b480a0e04e0864de11a67876765fd7",
+  "method": {
+    "kind": "direct OpenAI-compatible request cache isolation probe",
+    "runtime": "Ollama 0.40.0",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "quantization": "Q4_K_M",
+    "context_tokens": 65536,
+    "parallel_slots": 1,
+    "temperature": 0,
+    "seed": 23,
+    "output_limit": 4,
+    "system_prefix": "Same synthetic system string repeated 700 times; exact text not retained.",
+    "sequence": [
+      "A0: one read_file schema, user text A",
+      "A1: exact repeat of A0",
+      "TOOLS_CHANGED: same messages, add one edit_file schema",
+      "TOOLS_CHANGED_REPEAT: exact repeat of changed-tool request",
+      "MESSAGE_CHANGED: original read_file schema, change only user text",
+      "MESSAGE_CHANGED_REPEAT: exact repeat of changed-message request"
+    ],
+    "payload_retention": "No raw prompt, tool schema, or model response content retained."
+  },
+  "observations": [
+    {
+      "case": "A0",
+      "prompt_tokens": 17772,
+      "cached_tokens": 0
+    },
+    {
+      "case": "A1",
+      "prompt_tokens": 17772,
+      "cached_tokens": 17768
+    },
+    {
+      "case": "TOOLS_CHANGED",
+      "prompt_tokens": 17841,
+      "cached_tokens": 0
+    },
+    {
+      "case": "TOOLS_CHANGED_REPEAT",
+      "prompt_tokens": 17841,
+      "cached_tokens": 17837
+    },
+    {
+      "case": "MESSAGE_CHANGED",
+      "prompt_tokens": 17772,
+      "cached_tokens": 17260
+    },
+    {
+      "case": "MESSAGE_CHANGED_REPEAT",
+      "prompt_tokens": 17772,
+      "cached_tokens": 17768
+    }
+  ],
+  "findings": [
+    "An exact repeated request reused all but four prompt tokens.",
+    "Changing only the tool schema list after the long stable system and identical messages resulted in zero cached prompt tokens.",
+    "Changing only the user message while restoring the original tool list retained 17260 cached tokens, showing the long static prefix remained reusable across this message change.",
+    "The leading explanation for HADES' diagnosis-to-action cache miss is now the changed tool schema list being rendered before the reusable prompt prefix on this Ollama/model path."
+  ],
+  "limitations": [
+    "One controlled sequence, not a repeated statistical benchmark.",
+    "Direct Ollama API requests, not Hermes-generated multi-turn requests; this isolates schema behavior but does not fully reproduce HADES transcript serialization.",
+    "The tool-list change appended a second schema; it models a changed catalog but not every HADES schema layout.",
+    "This does not establish whether the effect is specific to Qwen's template, Ollama 0.40.0, or other models/runtimes.",
+    "No latency or owner-preference conclusion is drawn."
+  ]
+}
