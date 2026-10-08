@@ -316,6 +316,8 @@ def native_read(agent,user_message,*args,**kwargs):
  assert 'make one search_files call' in prompt,prompt
  assert 'do not guess test or configuration filenames' in prompt,prompt
  assert 'read the relevant source and test files once' in prompt,prompt
+ assert 'inspect the readme, makefile, or equivalent test configuration' in prompt,prompt
+ assert 'if the sandbox lacks a wrapper such as make' in prompt,prompt
  assert terminal_env('TERMINAL_ENV') == 'docker'
  assert terminal_env('TERMINAL_DOCKER_NETWORK') == 'false'
  assert terminal_env('TERMINAL_DOCKER_FORWARD_ENV') == '[]'

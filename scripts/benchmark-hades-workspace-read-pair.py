@@ -60,6 +60,26 @@ def validated_child_docker_host(value: str | None) -> str | None:
     if not host.startswith("unix:///"):
         raise ValueError("benchmark child DOCKER_HOST must be a local Unix socket")
     return host
+
+
+def terminal_task_category(value: Any) -> str:
+    """Classify a terminal invocation without retaining its command text."""
+    if not isinstance(value, str):
+        return "other"
+    command = value.casefold()
+    if re.search(r"\bmake\s+(?:-[^\s]+\s+)*(?:test|check|verify)\b", command):
+        return "make_test"
+    if re.search(r"\bpython(?:3(?:\.\d+)?)?(?:\s+-[^\s]+)*\s+-m\s+unittest\b", command):
+        return "python_unittest"
+    if re.search(r"\bpytest\b", command):
+        return "pytest"
+    if re.search(r"\b(?:npm|pnpm|yarn|bun)(?:\s+run)?\s+(?:test|check)\b", command):
+        return "javascript_test"
+    if re.search(r"\b(?:test|verify)\b", command):
+        return "other_test"
+    return "other"
+
+
 MODEL_PARAMETER_FIELDS = {
     "frequency_penalty", "max_completion_tokens", "max_tokens", "min_p",
     "n", "parallel_tool_calls", "presence_penalty", "reasoning",
@@ -1161,8 +1181,9 @@ def child(args: argparse.Namespace) -> int:
                             command_value,
                         )),
                         "runs_unittest": isinstance(command_value, str) and bool(re.search(
-                            r"(?i)(?:python\s+(?:-m\s+)?unittest|pytest)", command_value
+                            r"(?i)(?:python\s+(?:-[^\s]+\s+)*-m\s+unittest|pytest)", command_value
                         )),
+                        "terminal_task_category": terminal_task_category(command_value),
                         "uses_git_diff": isinstance(command_value, str) and bool(re.search(
                             r"(?i)\bgit\s+diff\b", command_value
                         )),

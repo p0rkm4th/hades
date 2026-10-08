@@ -24,6 +24,10 @@ assert MODULE.common_prefix_byte_count(b"", b"not empty") == 0
 assert MODULE.EXPLAIN_PROMPT == "In discount.py, explain what discounted_total does in plain English."
 assert MODULE.FIXTURE_CASES["discount"]["source"] == "discount.py"
 assert "return price - percent" in MODULE.FIXTURE_CASES["discount"]["source_content"]
+assert MODULE.terminal_task_category("cd /workspace && make test") == "make_test"
+assert MODULE.terminal_task_category("python -B -m unittest discover -v") == "python_unittest"
+assert MODULE.terminal_task_category("pytest -q") == "pytest"
+assert MODULE.terminal_task_category("git diff --check") == "other"
 assert MODULE.validated_child_docker_host("unix:///run/user/1000/docker.sock") == "unix:///run/user/1000/docker.sock"
 assert MODULE.validated_child_docker_host(None) is None
 try:
