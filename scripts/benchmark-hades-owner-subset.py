@@ -826,6 +826,14 @@ def main() -> int:
                 ),
                 "answer_characters": sum(len(row["answer"]) for row in subset),
             }
+        hermes_version_output = subprocess.run(
+            [str(executable), "--version"], capture_output=True, text=True, timeout=10
+        ).stdout.strip()
+        hermes_version = hermes_version_output.splitlines()[0] if hermes_version_output else "unknown"
+        hermes_source_commit = subprocess.run(
+            ["git", "-C", str(args.hermes_root), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        ).stdout.strip()
         artifact = public_metric_record({
             "schema_version": 1,
             "date": time.strftime("%Y-%m-%d"),
@@ -834,10 +842,8 @@ def main() -> int:
             "runtime": {
                 "ollama_url": args.ollama_url,
                 "ollama_version": ollama_version,
-                "hermes": str(args.hermes_root),
-                "hermes_version": subprocess.run(
-                    [str(executable), "--version"], capture_output=True, text=True, timeout=10
-                ).stdout.strip(),
+                "hermes_version": hermes_version,
+                "hermes_source_commit": hermes_source_commit,
                 "model": MODEL,
                 "model_digest": model_tag.get("digest"),
                 "model_size_bytes": model_tag.get("size"),
