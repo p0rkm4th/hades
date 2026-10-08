@@ -2,7 +2,8 @@
 set -euo pipefail
 command -v docker >/dev/null 2>&1 || { echo 'FAIL docker is required for Hindsight runtime test' >&2; exit 1; }
 source config/versions.env
-docker image inspect "$HADES_HINDSIGHT_IMAGE" >/dev/null 2>&1 || { echo "FAIL pinned Hindsight image is not available locally: $HADES_HINDSIGHT_IMAGE" >&2; exit 1; }
+HADES_HINDSIGHT_IMAGE="${HADES_HINDSIGHT_TEST_IMAGE:-$HADES_HINDSIGHT_IMAGE}"
+docker image inspect "$HADES_HINDSIGHT_IMAGE" >/dev/null 2>&1 || { echo "FAIL selected Hindsight image is not available locally: $HADES_HINDSIGHT_IMAGE" >&2; exit 1; }
 name="hades-hindsight-runtime-${$}"
 volume="hades-hindsight-runtime-data-${$}"
 cleanup() { docker rm -f "$name" >/dev/null 2>&1 || true; docker volume rm "$volume" >/dev/null 2>&1 || true; }
@@ -13,6 +14,7 @@ docker run -d --name "$name" -p '127.0.0.1::8888' -p '127.0.0.1::9999' -v "$volu
   -e HINDSIGHT_API_WORKER_ID="$name" \
   -e HINDSIGHT_API_LLM_BASE_URL=http://127.0.0.1:1 -e HINDSIGHT_API_LLM_API_KEY=synthetic "$HADES_HINDSIGHT_IMAGE" >/dev/null
 api_port=$(docker inspect "$name" --format '{{(index (index .NetworkSettings.Ports "8888/tcp") 0).HostPort}}')
+control_port=$(docker inspect "$name" --format '{{(index (index .NetworkSettings.Ports "9999/tcp") 0).HostPort}}')
 ready=0
 for attempt in $(seq 1 60); do
   if curl -fsS "http://127.0.0.1:${api_port}/health" >/dev/null 2>&1; then ready=1; break; fi
@@ -31,10 +33,17 @@ if docker logs "$name" 2>&1 | grep -Eq 'EADDRINUSE|Failed to start server'; then
   echo 'FAIL disposable Hindsight reported an internal listener collision' >&2
   exit 1
 fi
-docker logs "$name" 2>&1 | grep -Fq 'Starting Control Plane' || {
-  echo 'FAIL disposable Hindsight control plane did not initialize' >&2
+control_ready=0
+for attempt in $(seq 1 60); do
+  control_status=$(curl -sS --max-time 2 -o /dev/null -w '%{http_code}' "http://127.0.0.1:${control_port}/" 2>/dev/null || true)
+  if [[ "$control_status" =~ ^[23][0-9][0-9]$ ]]; then control_ready=1; break; fi
+  sleep 1
+done
+if [[ "$control_ready" != 1 ]]; then
+  echo 'FAIL disposable Hindsight control-plane HTTP route did not become ready' >&2
+  docker logs "$name" 2>&1 | grep -Ei 'control|error|failed|listening|next.js' | tail -20 >&2
   exit 1
-}
+fi
 docker logs "$name" 2>&1 | grep -Fq "Worker poller started (worker_id=$name)" || {
   echo 'FAIL disposable Hindsight worker did not start with its stable ID' >&2
   exit 1
@@ -82,7 +91,7 @@ printf '%s\n' "$recovered" | awk -v matched="$matched" -v foreign="$foreign" -v 
   exit 1
 }
 echo 'PASS disposable pinned Hindsight API starts on 8888'
-echo 'PASS disposable pinned Hindsight control plane initializes without collision'
+echo 'PASS disposable pinned Hindsight control-plane HTTP route responds on loopback'
 echo 'PASS disposable pinned Hindsight worker starts with explicit stable ID'
 echo 'PASS pinned Hindsight explicit-memory list endpoint and tagged response shape'
 echo 'PASS stable worker restart reclaims its own processing row and preserves foreign/stale-ID rows'

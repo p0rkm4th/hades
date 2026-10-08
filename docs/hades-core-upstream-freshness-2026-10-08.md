@@ -21,6 +21,14 @@ The stable-release values above were fetched on 2026-10-08 from the repositories
 - [Hindsight v0.10.3 release](https://github.com/vectorize-io/hindsight/releases/tag/v0.10.3)
 - [Hindsight GHCR package](https://github.com/orgs/vectorize-io/packages/container/package/hindsight)
 
+## Hindsight 0.10.3 staging result
+
+Pulled the official Hindsight `0.10.3` OCI index by digest and verified the amd64 image labels report version `0.10.3` and source revision `eb6df499d35300e5b2f3f029b2e6adda04ed90f8`. In the disposable rootless Docker 29.8.2/VFS staging engine, the focused runtime contract passed: API health, the control-plane HTTP route on loopback, worker startup with its explicit ID, tagged-memory listing, and restart recovery of only the current worker's synthetic operation while preserving foreign/stale rows. The test used synthetic data and a temporary volume; production images and pins were unchanged.
+
+The staging run exposed a brittle assertion in `scripts/test-hindsight-runtime.sh`: it depended on a particular startup log phrase. The test now accepts `HADES_HINDSIGHT_TEST_IMAGE` for candidate qualification and waits for an actual control-plane HTTP response. The updated test passed against the `0.10.3` candidate.
+
+The deeper retain/recall route test did not qualify: Hindsight returned HTTP 500 before the host-side mock model received any request (`mock_request_count=0`). That route test depends on a container reaching a host-gateway mock, while this rootless setup deliberately disables host-loopback access. Treat this as an isolated harness networking limitation, not evidence of a release regression. The candidate still needs an isolated sidecar mock, correction/freshness assertions, populated-volume migration from the prior candidate, and the Hermes embedded-provider/PYTHONPATH test before promotion. Production remains on its current immutable pin.
+
 ## Next action
 
-Stage Hindsight `0.10.3` using the immutable digest above and its corresponding Hermes integration/client dependency. Run the existing authenticated memory, correction/freshness, embedded startup/PYTHONPATH isolation, and backup/restore contracts in a disposable profile. Compare latency and recall behavior against the current `0.10.2` candidate with identical data and model settings. Accept only if memory isolation and correction freshness remain intact and the new process boundary removes measurable HADES startup or request-path work. Keep production pins unchanged until provenance and all relevant gates pass.
+Complete the outstanding Hindsight `0.10.3` acceptance using the immutable digest above and its corresponding Hermes integration/client dependency. Run authenticated memory, correction/freshness, embedded startup/PYTHONPATH isolation, and backup/restore contracts in a disposable profile. Compare latency and recall behavior against the current `0.10.2` candidate with identical data and model settings. Accept only if memory isolation and correction freshness remain intact and the new process boundary removes measurable HADES startup or request-path work. Keep production pins unchanged until provenance and all relevant gates pass.
