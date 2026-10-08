@@ -1185,6 +1185,10 @@ def main() -> int:
                         env["HADES_BENCHMARK_STABLE_WORKSPACE_SCHEMAS"] = "true"
                 else:
                     env["PYTHONPATH"] = str(hermes_source(args.hermes_root))
+                if args.prototype_host_workspace_verification_mapping:
+                    # The mapped host-path evidence adapter only qualifies when
+                    # Hermes' native verification ledger is enabled in both arms.
+                    env["HERMES_VERIFY_ON_STOP"] = "1"
                 child_env = env.copy()
                 child_env["HERMES_HOME"] = str(home)
                 log_path = temp / f"{stack}-{repeat}.log"
@@ -1367,6 +1371,7 @@ def main() -> int:
                     "benchmark-only mapping of container /workspace mutation paths and terminal evidence cwd to the current fixture's canonical host project root"
                     if args.prototype_host_workspace_verification_mapping else None
                 ),
+                "native_verify_on_stop": args.prototype_host_workspace_verification_mapping,
                 "workspace_context_hint": WORKSPACE_ENVIRONMENT_HINT if args.workspace_context_hint else None,
                 "prompt_ids": ["read"] if args.scenario == "read" else ["diagnose", "fix"],
                 "subject": "synthetic owner identity; private fixture only",
