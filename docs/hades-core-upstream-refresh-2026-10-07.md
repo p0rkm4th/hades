@@ -43,6 +43,12 @@ SDK sources are [Anthropic Python 1.12.0](https://pypi.org/project/anthropic/1.1
 [MCP Python 2.3.0](https://pypi.org/project/mcp/2.3.0/), and
 [FastMCP 4.0.11](https://pypi.org/project/fastmcp/4.0.11/).
 
+### Open WebUI security priority recheck (2026-10-07)
+
+The official v0.11.4 release is still the latest stable and its tag is signed. Two official advisories materially raise the priority of the staged candidate: the DOCX preview session-token theft advisory affects `>=0.11.1, <=0.11.3` and is fixed in 0.11.4; the terminal-proxy authorization advisory affects `>=0.8.6, <0.11.4` when its stated Terminals preconditions hold and is also fixed in 0.11.4. The first advisory describes same-origin script execution from a crafted DOCX preview and possible administrator-token theft. These are upstream-reported vulnerabilities, not evidence that the active deployment is exploitable: deployed image/source provenance remains unknown. The tracked production contract pin is 0.11.1, so verifying the running image and completing an expedited exact-digest staging/promotion review is now a security-priority gate. Do not leave 0.11.1 as the intentional long-term pin.
+
+The existing candidate migration and auth/isolation evidence remains relevant, but the final immutable 0.11.4 image still needs its provenance checked and the release acceptance gates completed. Sources: [official v0.11.4 release](https://github.com/open-webui/open-webui/releases/tag/v0.11.4), [DOCX preview advisory GHSA-f9xp-mfmq-x6cg](https://github.com/open-webui/open-webui/security/advisories/GHSA-f9xp-mfmq-x6cg), and [terminal-proxy advisory GHSA-q46m-r89w-j74p](https://github.com/open-webui/open-webui/security/advisories/GHSA-q46m-r89w-j74p).
+
 ## Open WebUI file boundary notes
 
 The official Open WebUI advisories for retrieval IDOR (GHSA-4g37-7p2c-38r9)
