@@ -46,8 +46,8 @@ close that exposure until production is safely upgraded.
 
 ## Staging evidence
 
-Staging checks run against the prior image ID with identical filesystem and
-runtime configuration:
+The candidate acceptance sequence passed against the exact manifest-bound
+image ID:
 
 - `scripts/test-open-webui-candidate.sh` passed private-chat isolation and
   persistence, Channels membership and authorization persistence, streamed
@@ -63,16 +63,26 @@ runtime configuration:
   `sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469`;
   the runner verified that manifest-bound identity, then confirmed an existing
   session is denied after role revocation and the chat endpoint returns 401.
-- `scripts/test-openwebui-docx-preview-security.sh` rendered a synthetic DOCX
-  in the actual chat Preview view, did not execute its harmless script marker,
-  and exposed no `javascript:` link. The 0.11.1 positive control reproduced
-  marker execution and the unsafe link.
+- `scripts/test-openwebui-docx-preview-security.sh` created separate owner and
+  household accounts, shared the malicious DOCX chat to the household user,
+  cloned that shared chat in the household workspace, and previewed the DOCX
+  there. On the vulnerable 0.11.1 control, same-origin script execution read
+  the household session token and fetched that user's separately owned private
+  canary file; an unsafe `javascript:` link also remained. The exact pinned
+  0.11.4 candidate rendered the preview without executing script, exposing the
+  link, stealing the token, or reading the canary.
 
 LDAP identities are not covered by the populated-database migration check;
 LDAP bootstrap behavior is covered separately by the synthetic LLDAP test.
 
-These are synthetic staging checks. They do not prove production backup
-integrity, external secret custody, live cutover/restore, or owner preference.
+These are synthetic staging checks. The cross-user replay directly exercises
+the documented session-token theft chain, but it does not prove production
+backup integrity, external secret custody, live cutover/restore, or owner
+preference.
+
+Run revisions, exact candidate and positive-control image IDs, cross-user
+results, and source-hash bindings are recorded in the
+[cross-user DOCX evidence record](evidence/openwebui-0.11.4-cross-user-docx-2026-10-08.json).
 Before production promotion, rehearse the exact pinned artifact with the
 production database, uploads, vector store, HADES assets, and signing secret
 covered by a verified backup and rollback plan, then complete direct owner
