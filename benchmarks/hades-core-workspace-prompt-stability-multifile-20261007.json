@@ -2,7 +2,6 @@
   "date": "2026-10-07",
   "source_revision": "f2a42d648f77e6e0a092300b867f5057534056cb",
   "prototype_state": "Temporary local benchmark-only prompt variant; not adopted. Patches were measured on top of the recorded source revision and are identified by digest.",
-  "temporary_hades_prompt_patch_sha256": "3883cfbb003c733e1ee8b3652542c1b4170690299a493337677f7659a5b460bc",
   "temporary_benchmark_runner_patch_sha256": "bdb9d259206f7a79fd27594ce1f2dd0a769eeb5d4fcf558cc9a8440d2645cf00",
   "method": {
     "hermes": "Hermes Agent 0.21.5, official release commit f97608f178d1ffeca59860195ab7da295f7c8e5f; same clean candidate for both profiles",
@@ -23,15 +22,23 @@
     "sandbox_image_id": "sha256:d14ae8d7fcee933e82c9f62eded621110f227bc96363ca5449d36897af7bea1c",
     "task_container_network": "none",
     "runtime": "rootless Docker; same loaded model/runtime for both arms",
-    "fixture": "Synthetic multi-file geometry diagnosis then explicit Fix it follow-up; unrelated passing files and canonical make test recipe present.",
-    "fixture_layout": "multifile",
     "workspace_context_hint": "The active project workspace for file and coding tasks is mounted at /workspace. Use /workspace as the root for file tools; do not assume it is the Hermes host filesystem.",
     "native_verify_on_stop": true,
     "sampling": "Two repeats per condition; stack order PLAIN→HADES then HADES→PLAIN; same per-phase/provider-call ordinal seeds. Candidate condition followed baseline in time, so condition-block cache/order remains a limitation.",
     "only_candidate_difference": "HADES workspace instruction changed from phase-specific strings (666-character diagnosis, 1,025-character action) to one shared 689-character instruction. Dynamic schema exposure and valid_tool_names remained unchanged.",
-    "raw_prompts_responses_arguments_and_local_paths_published": false
+    "raw_prompts_responses_arguments_and_local_paths_published": false,
+    "scenario": "Synthetic multi-file geometry diagnosis then explicit Fix it follow-up; unrelated passing files and canonical make test recipe present.",
+    "scenario_layout": "multifile"
   },
-  "baseline_dynamic_prompt": {
+  "owner_preference": "not collected",
+  "limitations": [
+    "Two repeats per condition are diagnostic and local-model behavior varied across runs.",
+    "The candidate block followed the baseline block; each block had the same warmup and internal order-balanced repeats, but cross-condition cache/order effects are not fully balanced.",
+    "Direct AIAgent route and synthetic fixture do not qualify Open WebUI persistence, deployed authentication, realistic project breadth, Git commits, or Scotty preference.",
+    "Independent tests and diff checks verify final fixture state, not the quality or conversational naturalness of the assistant response."
+  ],
+  "variant_patch_sha256": "3883cfbb003c733e1ee8b3652542c1b4170690299a493337677f7659a5b460bc",
+  "baseline": {
     "summary": {
       "repeats": 2,
       "plain_median_task_elapsed_ms": 27262.25,
@@ -44,12 +51,12 @@
       "expected_source_only_changes": 4,
       "diagnosis_mutating_tool_attempts": 2,
       "diagnosis_mutating_tool_calls_rejected_by_validation": 0,
-      "diagnosis_invalid_tool_results_by_stack": {
-        "plain": 0,
-        "hades": 0
-      },
       "diagnosis_changed_workspace_turns_by_stack": {
         "plain": 2,
+        "hades": 0
+      },
+      "invalid_diagnosis_attempts_by_stack": {
+        "plain": 0,
         "hades": 0
       }
     },
@@ -72,23 +79,6 @@
             "phase": "diagnose",
             "elapsed_ms": 28734.3,
             "model_generations": 8,
-            "tool_results": 9,
-            "tool_result_names": [
-              "terminal",
-              "read_file",
-              "terminal",
-              "terminal",
-              "terminal",
-              "read_file",
-              "read_file",
-              "patch",
-              "terminal"
-            ],
-            "tool_call_counts": {
-              "patch": 1,
-              "read_file": 3,
-              "terminal": 5
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 168,
@@ -103,15 +93,13 @@
             },
             "schema_counts_seen": [
               8
-            ]
+            ],
+            "returned_tool_count": 9
           },
           {
             "phase": "fix",
             "elapsed_ms": 29841.4,
             "model_generations": 1,
-            "tool_results": 0,
-            "tool_result_names": [],
-            "tool_call_counts": {},
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 83,
@@ -126,7 +114,8 @@
             },
             "schema_counts_seen": [
               8
-            ]
+            ],
+            "returned_tool_count": 0
           }
         ]
       },
@@ -148,19 +137,6 @@
             "phase": "diagnose",
             "elapsed_ms": 23957.6,
             "model_generations": 3,
-            "tool_results": 6,
-            "tool_result_names": [
-              "search_files",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file"
-            ],
-            "tool_call_counts": {
-              "read_file": 5,
-              "search_files": 1
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": false,
             "assistant_response_characters": 358,
@@ -175,21 +151,13 @@
             },
             "schema_counts_seen": [
               2
-            ]
+            ],
+            "returned_tool_count": 6
           },
           {
             "phase": "fix",
             "elapsed_ms": 44636.0,
             "model_generations": 3,
-            "tool_results": 2,
-            "tool_result_names": [
-              "patch",
-              "terminal"
-            ],
-            "tool_call_counts": {
-              "patch": 1,
-              "terminal": 1
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 113,
@@ -204,7 +172,8 @@
             },
             "schema_counts_seen": [
               5
-            ]
+            ],
+            "returned_tool_count": 2
           }
         ]
       },
@@ -226,19 +195,6 @@
             "phase": "diagnose",
             "elapsed_ms": 24855.0,
             "model_generations": 3,
-            "tool_results": 6,
-            "tool_result_names": [
-              "search_files",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file"
-            ],
-            "tool_call_counts": {
-              "read_file": 5,
-              "search_files": 1
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": false,
             "assistant_response_characters": 463,
@@ -253,21 +209,13 @@
             },
             "schema_counts_seen": [
               2
-            ]
+            ],
+            "returned_tool_count": 6
           },
           {
             "phase": "fix",
             "elapsed_ms": 45390.9,
             "model_generations": 3,
-            "tool_results": 2,
-            "tool_result_names": [
-              "patch",
-              "terminal"
-            ],
-            "tool_call_counts": {
-              "patch": 1,
-              "terminal": 1
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 113,
@@ -282,7 +230,8 @@
             },
             "schema_counts_seen": [
               5
-            ]
+            ],
+            "returned_tool_count": 2
           }
         ]
       },
@@ -304,23 +253,6 @@
             "phase": "diagnose",
             "elapsed_ms": 23030.7,
             "model_generations": 7,
-            "tool_results": 8,
-            "tool_result_names": [
-              "terminal",
-              "search_files",
-              "search_files",
-              "read_file",
-              "search_files",
-              "read_file",
-              "patch",
-              "terminal"
-            ],
-            "tool_call_counts": {
-              "patch": 1,
-              "read_file": 2,
-              "search_files": 3,
-              "terminal": 2
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 210,
@@ -335,15 +267,13 @@
             },
             "schema_counts_seen": [
               8
-            ]
+            ],
+            "returned_tool_count": 8
           },
           {
             "phase": "fix",
             "elapsed_ms": 24679.8,
             "model_generations": 1,
-            "tool_results": 0,
-            "tool_result_names": [],
-            "tool_call_counts": {},
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 169,
@@ -358,13 +288,14 @@
             },
             "schema_counts_seen": [
               8
-            ]
+            ],
+            "returned_tool_count": 0
           }
         ]
       }
     ]
   },
-  "candidate_shared_prompt": {
+  "candidate": {
     "summary": {
       "repeats": 2,
       "plain_median_task_elapsed_ms": 33604.75,
@@ -377,13 +308,13 @@
       "expected_source_only_changes": 3,
       "diagnosis_mutating_tool_attempts": 1,
       "diagnosis_mutating_tool_calls_rejected_by_validation": 0,
-      "diagnosis_invalid_tool_results_by_stack": {
-        "plain": 0,
-        "hades": 3
-      },
       "diagnosis_changed_workspace_turns_by_stack": {
         "plain": 1,
         "hades": 0
+      },
+      "invalid_diagnosis_attempts_by_stack": {
+        "plain": 0,
+        "hades": 3
       }
     },
     "tasks": [
@@ -405,28 +336,6 @@
             "phase": "diagnose",
             "elapsed_ms": 30451.7,
             "model_generations": 7,
-            "tool_results": 13,
-            "tool_result_names": [
-              "terminal",
-              "read_file",
-              "search_files",
-              "search_files",
-              "terminal",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "terminal",
-              "patch",
-              "terminal",
-              "terminal"
-            ],
-            "tool_call_counts": {
-              "patch": 1,
-              "read_file": 5,
-              "search_files": 2,
-              "terminal": 5
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 99,
@@ -441,36 +350,13 @@
             },
             "schema_counts_seen": [
               8
-            ]
+            ],
+            "returned_tool_count": 13
           },
           {
             "phase": "fix",
             "elapsed_ms": 38511.6,
             "model_generations": 3,
-            "tool_results": 15,
-            "tool_result_names": [
-              "terminal",
-              "read_file",
-              "search_files",
-              "search_files",
-              "terminal",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "terminal",
-              "patch",
-              "terminal",
-              "terminal",
-              "patch",
-              "terminal"
-            ],
-            "tool_call_counts": {
-              "patch": 2,
-              "read_file": 5,
-              "search_files": 2,
-              "terminal": 6
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 86,
@@ -485,7 +371,8 @@
             },
             "schema_counts_seen": [
               8
-            ]
+            ],
+            "returned_tool_count": 15
           }
         ]
       },
@@ -507,25 +394,6 @@
             "phase": "diagnose",
             "elapsed_ms": 30755.8,
             "model_generations": 5,
-            "tool_results": 11,
-            "tool_result_names": [
-              "search_files",
-              "search_files",
-              "read_file",
-              "search_files",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "terminal",
-              "search_files"
-            ],
-            "tool_call_counts": {
-              "read_file": 6,
-              "search_files": 4,
-              "terminal": 1
-            },
             "invalid_tool_results": 1,
             "workspace_changed_after_turn": false,
             "assistant_response_characters": 450,
@@ -540,19 +408,13 @@
             },
             "schema_counts_seen": [
               2
-            ]
+            ],
+            "returned_tool_count": 11
           },
           {
             "phase": "fix",
             "elapsed_ms": 58430.6,
             "model_generations": 2,
-            "tool_results": 1,
-            "tool_result_names": [
-              "patch"
-            ],
-            "tool_call_counts": {
-              "patch": 1
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 113,
@@ -567,7 +429,8 @@
             },
             "schema_counts_seen": [
               5
-            ]
+            ],
+            "returned_tool_count": 1
           }
         ]
       },
@@ -589,22 +452,6 @@
             "phase": "diagnose",
             "elapsed_ms": 25249.1,
             "model_generations": 5,
-            "tool_results": 8,
-            "tool_result_names": [
-              "search_files",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "terminal",
-              "terminal"
-            ],
-            "tool_call_counts": {
-              "read_file": 5,
-              "search_files": 1,
-              "terminal": 2
-            },
             "invalid_tool_results": 2,
             "workspace_changed_after_turn": false,
             "assistant_response_characters": 43,
@@ -619,21 +466,13 @@
             },
             "schema_counts_seen": [
               2
-            ]
+            ],
+            "returned_tool_count": 8
           },
           {
             "phase": "fix",
             "elapsed_ms": 38027.6,
             "model_generations": 3,
-            "tool_results": 2,
-            "tool_result_names": [
-              "patch",
-              "read_file"
-            ],
-            "tool_call_counts": {
-              "patch": 1,
-              "read_file": 1
-            },
             "invalid_tool_results": 2,
             "workspace_changed_after_turn": false,
             "assistant_response_characters": 47,
@@ -648,7 +487,8 @@
             },
             "schema_counts_seen": [
               0
-            ]
+            ],
+            "returned_tool_count": 2
           }
         ]
       },
@@ -670,21 +510,6 @@
             "phase": "diagnose",
             "elapsed_ms": 21329.4,
             "model_generations": 5,
-            "tool_results": 8,
-            "tool_result_names": [
-              "terminal",
-              "terminal",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "read_file",
-              "terminal"
-            ],
-            "tool_call_counts": {
-              "read_file": 5,
-              "terminal": 3
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": false,
             "assistant_response_characters": 472,
@@ -699,21 +524,13 @@
             },
             "schema_counts_seen": [
               8
-            ]
+            ],
+            "returned_tool_count": 8
           },
           {
             "phase": "fix",
             "elapsed_ms": 28693.5,
             "model_generations": 3,
-            "tool_results": 2,
-            "tool_result_names": [
-              "patch",
-              "terminal"
-            ],
-            "tool_call_counts": {
-              "patch": 1,
-              "terminal": 1
-            },
             "invalid_tool_results": 0,
             "workspace_changed_after_turn": true,
             "assistant_response_characters": 91,
@@ -728,17 +545,11 @@
             },
             "schema_counts_seen": [
               8
-            ]
+            ],
+            "returned_tool_count": 2
           }
         ]
       }
     ]
-  },
-  "owner_preference": "not collected",
-  "limitations": [
-    "Two repeats per condition are diagnostic and local-model behavior varied across runs.",
-    "The candidate block followed the baseline block; each block had the same warmup and internal order-balanced repeats, but cross-condition cache/order effects are not fully balanced.",
-    "Direct AIAgent route and synthetic fixture do not qualify Open WebUI persistence, deployed authentication, realistic project breadth, Git commits, or Scotty preference.",
-    "Independent tests and diff checks verify final fixture state, not the quality or conversational naturalness of the assistant response."
-  ]
+  }
 }
