@@ -899,6 +899,7 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
                    proxy_module, hindsight_url: str | None, temp: pathlib.Path,
                    ollama_url: str, hermes_root: pathlib.Path,
                    hades_scope: str, hades_recall_types: str,
+                   hades_recall_budget: str,
                    hades_prefer_observations: bool,
                    capture_recall_diagnostics: bool = False):
     executable = hermes_executable(hermes_root)
@@ -943,6 +944,7 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
             "api_url": hindsight_url or "",
             "api_key": "synthetic-local-benchmark",
             "bank_id": "hades-synthetic",
+            "recall_budget": hades_recall_budget,
         }
         if hades_recall_types == "all":
             hindsight_config["recall_types"] = ["observation", "world", "experience"]
@@ -1167,6 +1169,10 @@ def main() -> int:
         help="synthetic HADES recall-type setting; all enables observation, world and experience",
     )
     parser.add_argument(
+        "--hades-recall-budget", choices=("low", "mid"), default="mid",
+        help="synthetic HADES recall budget; low tests the upstream fast-lookup profile",
+    )
+    parser.add_argument(
         "--hades-prefer-observations", action="store_true",
         help="enable Hindsight's prefer_observations option in the isolated synthetic HADES profile",
     )
@@ -1255,6 +1261,7 @@ def main() -> int:
             gateways[stack] = create_gateway(
                 stack, ROOT, args.hindsight_plugin, benchmark, hindsight_url, temp,
                 ollama, hermes_root, args.hades_scope, args.hades_recall_types,
+                args.hades_recall_budget,
                 args.hades_prefer_observations, args.capture_recall_diagnostics,
             )
 
@@ -1770,6 +1777,7 @@ def main() -> int:
                 "hades_toolset": [],
                 "hades_scope": args.hades_scope,
                 "hades_recall_types": args.hades_recall_types,
+                "hades_recall_budget": args.hades_recall_budget,
                 "hades_prefer_observations": args.hades_prefer_observations,
                 "recall_diagnostics_captured": args.capture_recall_diagnostics,
                 "post_idle_recall_type_diagnostic": (
