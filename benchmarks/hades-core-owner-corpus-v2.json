@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "HADES Core Comparative Owner Corpus — Seed v2 with memory supplement",
-  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage, including current stable Hermes 0.21.5 four-repeat conversation replay; 3 additional household/coding case IDs have tool-backed fixture comparisons; 36 of 55 cases have no direct replay; owner preference qualification remains open. Added five explicitly synthetic memory cases (core-51–core-55) to review automatic retention positives, corrections, natural recall, and unrelated-turn suppression; no owner preference has been collected for them.",
+  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage, including stable Hermes 0.21.5 / Ollama 0.40.1 five-repeat conversation replay for eight cases; 3 additional household/coding case IDs have tool-backed fixture comparisons; 36 of 55 cases have no direct replay; owner preference qualification remains open. Added five explicitly synthetic memory cases (core-51–core-55) to review automatic retention positives, corrections, natural recall, and unrelated-turn suppression; no owner preference has been collected for them.",
   "source_note": "Cases are hand-authored sanitized paraphrases, not verbatim transcripts. The Sept. 24 owner dogfood report documents real prompt families including recipe availability, pantry expiry, spaghetti inventory/list, homelab/network/model/backup status, restaurants, subscriptions, weekend affordability, lease prepayment, restock, savings target, and morning briefing. Replace/add cases only from owner-approved evidence; never copy secrets, financial records, private memories, or household content into this file. The five v2 memory supplement cases are synthetic examples authored for policy coverage; they are not transcripts or claims about Scotty.",
   "comparison_contract": {
     "same_model_and_quantization": true,
@@ -589,7 +589,9 @@
       "evaluation": "Check whether the durable personal constraint is retained for future relevant recommendations, without inventing medical advice or exposing it across subjects.",
       "review_check": {
         "probe_text": "What dietary restriction did I mention?",
-        "must_contain_any": ["lactose"],
+        "must_contain_any": [
+          "lactose"
+        ],
         "visibility_bank": "hades-owner",
         "visibility_needle": "lactose",
         "continuity_only": false
@@ -607,7 +609,10 @@
       "evaluation": "Check whether the stable preference can help a later relevant recommendation; do not treat the location request as a durable fact.",
       "review_check": {
         "probe_text": "What kind of places do I usually prefer?",
-        "must_contain_any": ["quiet", "read"],
+        "must_contain_any": [
+          "quiet",
+          "read"
+        ],
         "visibility_bank": "hades-owner",
         "visibility_needle": "quiet",
         "continuity_only": false
@@ -625,7 +630,10 @@
       "evaluation": "The requested preference should be saved, scoped to the authenticated subject, and available immediately after the explicit save.",
       "review_check": {
         "probe_text": "What answer length do I prefer for quick questions versus research?",
-        "must_contain_any": ["short", "detail"],
+        "must_contain_any": [
+          "short",
+          "detail"
+        ],
         "visibility_bank": "hades-owner",
         "visibility_needle": "short",
         "continuity_only": false
@@ -644,8 +652,14 @@
       "evaluation": "The corrected preference must supersede the prior version; no stale answer-length preference should remain preferred.",
       "review_check": {
         "probe_text": "What is my corrected preference for simple questions and research?",
-        "must_contain_all": ["simple", "detail"],
-        "must_not_contain_any": ["always brief", "brief for research"],
+        "must_contain_all": [
+          "simple",
+          "detail"
+        ],
+        "must_not_contain_any": [
+          "always brief",
+          "brief for research"
+        ],
         "visibility_bank": "hades-owner",
         "visibility_needle": "simple",
         "continuity_only": false
@@ -665,7 +679,9 @@
       "evaluation": "Retain the spontaneous plan, avoid turning the unrelated arithmetic answer into personal memory, and answer the final natural recall from the same subject profile.",
       "review_check": {
         "recall_turn_index": 2,
-        "must_contain_any": ["Madison"],
+        "must_contain_any": [
+          "Madison"
+        ],
         "visibility_bank": "hades-owner",
         "visibility_needle": "Madison",
         "continuity_only": true
@@ -1000,6 +1016,14 @@
       "limitations": "Single synthetic coding fixture; no owner preference, Git commit behavior, Open WebUI persistence, or deployed gateway parity. Local-model variance remains. Does not isolate an Ollama release effect.",
       "metrics_record": "benchmarks/hades-core-workspace-escalation-ollama0401-v1.json",
       "report": "docs/hades-core-workspace-escalation-ollama0401-2026-10-08.md"
+    },
+    "latest_chat_subset_ollama0401_5_repeat": {
+      "source_revision": "ff9f0543b002a771fdb328072487d1475d780195",
+      "classification": "Five order-alternated synthetic conversation-v1 repeats on stable Hermes 0.21.5 and Ollama 0.40.1, same Qwen3.6:35b digest, 65,536 loaded context, temperature 1.0, seed 23, max 512 tokens; owner preference and answer-quality scoring absent.",
+      "result": "Eight case IDs, 80 turns per stack, content in 80/80 each, zero model tool calls. PLAIN used 80 provider generations; HADES 75 because its five core-08 missing-source pantry turns used the no-model path. Excluding core-08 leaves 70 paired model-mediated turns. Median TTFT 1,060.9ms PLAIN / 1,092.2ms HADES; paired median HADES-minus-PLAIN -58.2ms (HADES lower in 44/70). Median total 1,867.6ms PLAIN / 1,556.0ms HADES; paired median -162.2ms (HADES lower in 53/70). Median prompt tokens 739.5 / 742.5; tool schema count zero. Median completion tokens 41 / 34. All-turn answer-character totals 16,585 / 11,562; shorter output is not quality-scored.",
+      "limitations": "Warmed synthetic conversations only; answer quality, naturalness, direct Scotty preference, Open WebUI/frontend, cold start, production parity, and the other 47 corpus IDs are not qualified. Completion length differs, so total-latency advantage cannot be interpreted as quality.",
+      "metrics_record": "benchmarks/hades-core-owner-conversation-ollama0401-seeded-repeat05-20261008.json",
+      "report": "docs/hades-core-plain-stack-ollama0401-conversation-20261008.md"
     }
   }
 }

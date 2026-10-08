@@ -65,3 +65,36 @@ Artifacts:
 
 - [Ollama 0.40.0 seeded run](../benchmarks/hades-core-owner-conversation-ollama0400-seeded-20261008.json)
 - [Ollama 0.40.1 seeded run](../benchmarks/hades-core-owner-conversation-ollama0401-seeded-20261008.json)
+
+## Five-repeat HADES-versus-PLAIN replay
+
+A follow-up at HADES source `ff9f0543b002a771fdb328072487d1475d780195`
+repeated the same eight conversation cases five times on Ollama 0.40.1,
+alternating stack order. It used the same Hermes 0.21.5 source, Qwen3.6:35b
+digest, 65,536 loaded context, temperature 1.0, seed 23, and 512-token
+generation cap. The artifact records 80 turns per stack; both produced
+content on all turns and neither emitted model tool calls. PLAIN made 80
+provider generations and HADES made 75; HADES handled the five first turns of
+the missing-source pantry interruption without a model call. No domain tools
+or data were available in either profile.
+
+Excluding the ten `core-08` turns from each stack leaves 70 paired
+model-mediated turns. Median TTFT was 1,060.9 ms for PLAIN and 1,092.2 ms for
+HADES; the median paired HADES-minus-PLAIN delta was −58.2 ms (HADES lower in
+44/70 pairs). Median total time was 1,867.6 ms for PLAIN and 1,556.0 ms for
+HADES; the paired median delta was −162.2 ms (HADES lower in 53/70 pairs).
+The separate medians and median paired deltas differ because task and repeat
+latencies vary; both are retained. Tool schema count remained zero. Median
+prompt size was 739.5 tokens for PLAIN and 742.5 for HADES.
+
+HADES responses were shorter: median completion length was 34 tokens versus
+41 for PLAIN on model-mediated turns; over all 80 turns, answer-character
+totals were 11,562 for HADES and 16,585 for PLAIN. Shorter output may be a
+conciseness benefit or missing explanation; this benchmark does not score
+answer quality or naturalness. Thus the replay supports that current HADES
+middleware does not add a material ordinary-chat latency or tool-catalog tax
+in this warmed synthetic subset. It does not establish an owner preference,
+answer-quality advantage, cold-start performance, or Open WebUI/deployed
+parity.
+
+Artifact: [five-repeat Ollama 0.40.1 PLAIN/HADES run](../benchmarks/hades-core-owner-conversation-ollama0401-seeded-repeat05-20261008.json).
