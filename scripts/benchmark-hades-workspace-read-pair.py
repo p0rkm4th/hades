@@ -50,6 +50,16 @@ DEFAULT_PLUGIN = pathlib.Path(
 )
 MODEL = "qwen3.6:35b"
 MODEL_DIGEST = "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c"
+
+
+def validated_child_docker_host(value: str | None) -> str | None:
+    """Pass only the local Unix socket for the already-verified rootless daemon."""
+    host = str(value or "").strip()
+    if not host:
+        return None
+    if not host.startswith("unix:///"):
+        raise ValueError("benchmark child DOCKER_HOST must be a local Unix socket")
+    return host
 MODEL_PARAMETER_FIELDS = {
     "frequency_penalty", "max_completion_tokens", "max_tokens", "min_p",
     "n", "parallel_tool_calls", "presence_penalty", "reasoning",
@@ -1368,6 +1378,10 @@ def main() -> int:
     docker_bin = str(args.docker_binary.resolve())
     if not os.access(docker_bin, os.X_OK):
         parser.error("rootless Docker wrapper is not executable")
+    try:
+        child_docker_host = validated_child_docker_host(os.environ.get("DOCKER_HOST"))
+    except ValueError as exc:
+        parser.error(str(exc))
 
     base_url = f"http://127.0.0.1:{args.ollama_port}"
     try:
@@ -1521,6 +1535,11 @@ def main() -> int:
                             "HADES_DOCKER_TRACE_ROOT": str(temp),
                             "HADES_DOCKER_TRACE_WORKSPACE": str(workspace),
                             "PYTHONUNBUFFERED": "1"})
+                if child_docker_host:
+                    # The isolated child environment drops service endpoints by default.
+                    # Pass only the validated local Unix socket so both stacks use the
+                    # same rootless daemon that the parent just verified.
+                    env["DOCKER_HOST"] = child_docker_host
                 if stack == "hades":
                     env["PYTHONPATH"] = os.pathsep.join((str(ROOT / "hermes"), str(ROOT), str(hermes_source(args.hermes_root))))
                     env.update({"HADES_OWNER_SUBJECT_IDS": "synthetic-owner",

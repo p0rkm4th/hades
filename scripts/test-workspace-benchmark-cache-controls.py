@@ -24,6 +24,14 @@ assert MODULE.common_prefix_byte_count(b"", b"not empty") == 0
 assert MODULE.EXPLAIN_PROMPT == "In discount.py, explain what discounted_total does in plain English."
 assert MODULE.FIXTURE_CASES["discount"]["source"] == "discount.py"
 assert "return price - percent" in MODULE.FIXTURE_CASES["discount"]["source_content"]
+assert MODULE.validated_child_docker_host("unix:///run/user/1000/docker.sock") == "unix:///run/user/1000/docker.sock"
+assert MODULE.validated_child_docker_host(None) is None
+try:
+    MODULE.validated_child_docker_host("tcp://127.0.0.1:2375")
+except ValueError as exc:
+    assert "local Unix socket" in str(exc)
+else:
+    raise AssertionError("Benchmark accepted a non-local Docker endpoint")
 
 calls: list[tuple[str, dict | None]] = []
 warmed = False

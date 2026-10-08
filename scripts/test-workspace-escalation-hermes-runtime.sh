@@ -4,7 +4,7 @@ umask 077
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 stage_root=${HADES_STAGE_ROOT:-/opt/hades-stage}
 export HADES_STAGE_ROOT="$stage_root"
-hermes_source=$stage_root/Hermes-v0.21.5-hades-candidate
+hermes_source=${HADES_WORKSPACE_TEST_HERMES_SOURCE:-$stage_root/Hermes-v0.21.5-hades-candidate}
 hermes_python=${HADES_WORKSPACE_TEST_HERMES_PYTHON:-$hermes_source/.venv/bin/python}
 [[ -x "$hermes_python" ]] || { echo 'FAIL Hermes 0.21.5 candidate Python is unavailable' >&2; exit 2; }
 [[ -d "$hermes_source" ]] || { echo 'FAIL Hermes 0.21.5 candidate source is unavailable' >&2; exit 2; }
@@ -32,7 +32,7 @@ HADES_OWNER_SUBJECT_IDS=synthetic-owner,synthetic-owner-two \
 HADES_WORKSPACE_ENABLED=true \
 HADES_WORKSPACE_ROOT="$work/hermes/workspaces" \
 HERMES_DOCKER_BINARY="${HADES_WORKSPACE_DOCKER_BINARY:-$(command -v docker)}" \
-HADES_HERMES_SANDBOX_IMAGE=docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d \
+HADES_HERMES_SANDBOX_IMAGE="${HADES_WORKSPACE_TEST_SANDBOX_IMAGE:-docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d}" \
 "$hermes_python" - "$repo_dir" "$work" <<'PY'
 import os,re,sys
 from pathlib import Path
@@ -318,7 +318,7 @@ def native_read(agent,user_message,*args,**kwargs):
  assert terminal_env('TERMINAL_ENV') == 'docker'
  assert terminal_env('TERMINAL_DOCKER_NETWORK') == 'false'
  assert terminal_env('TERMINAL_DOCKER_FORWARD_ENV') == '[]'
- assert terminal_env('TERMINAL_DOCKER_IMAGE').endswith('sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d')
+ assert terminal_env('TERMINAL_DOCKER_IMAGE') == os.environ['HADES_HERMES_SANDBOX_IMAGE']
  assert get_terminal_scope() is not None
  raw=read_file_tool('/workspace/answer.txt',task_id=kwargs['task_id'])
  calls.append(raw)

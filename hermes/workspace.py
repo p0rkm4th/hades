@@ -327,6 +327,7 @@ def get_workspace_tools(
     definitions = get_tool_definitions(
         enabled_toolsets=["file", "terminal"],
         quiet_mode=True,
+        skip_tool_search_assembly=True,
     )
     selected = [
         copy.deepcopy(item) for item in definitions
