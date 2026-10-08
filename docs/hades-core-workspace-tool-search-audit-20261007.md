@@ -27,28 +27,38 @@ runtime benchmark can verify whether the proposed stable prefix actually
 improves reuse:
 [Ollama usage metrics](https://github.com/ollama/ollama/blob/main/docs/api/usage.mdx).
 
-## HADES compatibility finding
+## HADES compatibility finding: original gap closed; deferred target scope remains
 
-The current HADES workspace turn replaces `self.tools` with only the selected
-read-only or action definitions. Its Tool Search bridge dispatcher rebuilds
-the deferred catalog from enabled/disabled toolsets, and its scoped deferred
-name filter applies household and domain denials but does not intersect the
-current agent's `valid_tool_names`. The bridge dispatcher also receives
-toolset lists rather than the current turn's workspace permission set.
+At the time of the original audit, HADES workspace turns replaced `self.tools`
+with only the selected read-only or action definitions, while the Tool Search
+bridge dispatcher rebuilt the deferred catalog from enabled/disabled
+toolsets. Its deferred-name filter applied household and domain denials but
+did not intersect the current agent's `valid_tool_names`; the dispatcher also
+received toolset lists rather than the current turn's workspace permission
+set.
 
-Therefore, merely enabling native deferral for the three action tools would
-not preserve the existing diagnosis boundary: the bridge could rediscover or
-dispatch an action tool even when HADES intended the turn to allow only
-`read_file` and `search_files`. The direct-call check is not sufficient because
-bridge calls are authorized by the separate deferred-tool path.
+That made enabling native deferral unsafe for workspace tools: the bridge
+could rediscover or dispatch an action tool during diagnosis. The raw
+bridge-name gate added in commit `3e1663e` closes the current parser entry
+point by requiring the bridge schema name itself to appear in
+`agent.valid_tool_names`. Workspace turns omit all three bridge names, so they
+are rejected before deferred dispatch. If a future workspace configuration
+explicitly adds those bridge schemas, the downstream deferred target filter
+still needs to intersect the authenticated turn's exact allowed-name set.
 
 ## Decision
 
-**HOLD; do not enable native Tool Search for workspace tools in the current
-HADES integration.** The stable-schema opportunity is credible, but adopting it
-now would weaken per-turn tool scoping. The earlier constant-five-schema
-experiments also had diagnosis-time rejected action attempts and unreliable
-verification, so schema stability alone does not establish better usability.
+**HOLD native Tool Search for workspace tools in the current HADES
+integration.** The raw bridge-name authorization gap described below has been
+closed, and the runtime contract now verifies that bridge calls absent from
+the active turn catalog are rejected. Directly exposing five schemas with an
+exact read-only diagnosis allowlist is also safe in the focused contract, but
+the corrected-reset four-repeat comparison restored action cache reuse while
+increasing model/tool calls and failing to improve end-to-end latency. See the
+[controlled workspace cache report](hades-core-workspace-prefix-cache-diagnostic-2026-10-07.md).
+That stable-schema candidate is rejected as a product fix. Native deferral
+would additionally replace core schemas with bridges and add discovery steps;
+it has not demonstrated owner value.
 
 Revisit only after the deferred search, describe, and call path can receive and
 enforce the authenticated per-turn allowed-name set before exposing or
@@ -72,16 +82,22 @@ HADES now requires the raw bridge name itself to appear in the current agent's
 `valid_tool_names` before the parser permits that bridge call. Workspace
 diagnosis and action turns omit all bridge names, so all three are rejected
 there while direct read tools remain governed by the existing exact phase
-allowlist. The workspace runtime regression exercises all three bridge calls
-inside a diagnosis turn. A synthetic parser probe against the production-pinned
-Hermes 0.21.2 runtime passed for the three denials and the allowed `read_file`
-case. The full Hermes 0.21.5 workspace runtime harness still needs its staged
-Hindsight client/plugin dependencies to be made available before it can run
-locally; the public CI run verifies source composition and static contracts,
-not this runtime behavior.
+allowlist. The workspace runtime regression exercises `tool_search`,
+`tool_describe`, and `tool_call` inside a diagnosis turn. The full Hermes
+0.21.5 runtime harness was run with the staged Hindsight client/plugin and an
+actual isolated rootless Docker 29.8.2 daemon holding the pinned sandbox image.
+It passed the bridge denials, owner workspace mount, no-network check,
+diagnosis/action catalog boundaries, fabricated-result handling,
+verification-claim handling, ordinary follow-up reset, household denial, and
+per-owner workspace separation. A separate parser probe against production-
+pinned Hermes 0.21.2 also denied all three bridges while allowing
+`read_file`.
 
 Nyx also confirmed that deferring the five core workspace tools is not a
 promising latency fix: Hermes keeps core tools eager unless explicitly
 configured, and deferral replaces tools with three bridge schemas plus extra
-search/describe/call steps. Keep the native deferral experiment on hold; pursue
-the measured action-prefix/cache gap through a matched diagnostic instead.
+search/describe/call steps. Keep native deferral on hold. The direct
+stable-schema experiment established that action prefix caching can be
+restored, but it increased total calls/results and did not reduce the paired
+HADES latency gap; retain the dynamic catalog while reducing actual task
+calls and invalid tool attempts.

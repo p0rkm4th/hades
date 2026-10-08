@@ -34,3 +34,56 @@ HADES gave immediate, truthful progress and prevented diagnosis-time workspace e
 Keep the dynamic catalog and read-only diagnosis boundary. Do not switch to stable schemas: earlier matched probes gained some action cache reuse but did not improve task latency or call behavior and produced invalid diagnosis calls ([prior comparison](hades-core-native-verification-canonical-recipe-mapping-20261007.md)). Keep the short progress preface, which materially improved time to visible activity here.
 
 The next workspace optimization must reduce the first action generation's prefill cost without allowing diagnosis mutations or adding model/tool calls. Any candidate must use the per-arm cache reset, the same two-turn interaction, counterbalanced order, and independent final verification. Collect Scotty's preference separately; these synthetic timing results cannot substitute for it.
+
+## Corrected-reset stable-schema falsification — 2026-10-07
+
+A follow-up tested whether a stable direct workspace catalog restores action
+prefix-cache reuse. It compared the same compact geometry diagnosis → “Fix it”
+fixture with four counterbalanced repeats per configuration. Both used the
+same Hermes 0.21.5 install, Ollama 0.40.0, Qwen3.6 35B Q4_K_M digest,
+65,536-token context, per-arm unload/reload/warmup reset, supported workspace
+hint, host verification mapping, rootless Docker 29.8.2 VFS, and pinned
+network-disabled sandbox image. The stable candidate existed only as a
+temporary patch on base `3e1663eedc7e9000c901023ad23dc6385f21a7f9`; it exposed
+five schemas in both phases while `valid_tool_names` still allowed only
+`read_file` and `search_files` during diagnosis. The dynamic arm used the
+current two-schema diagnosis / five-schema action catalog. A pre-run attempt
+was excluded after its private rootless namespace could not create the
+containerd shim socket; the isolated `/run/containerd` namespace was corrected,
+the real-rootless runtime contract passed, and both reported runs used that
+corrected daemon.
+
+The privacy-reviewed metrics-only results are in the [stable candidate
+artifact](../benchmarks/hades-core-workspace-stable-schema-corrected-reset-20261007.json)
+and [dynamic baseline artifact](../benchmarks/hades-core-workspace-dynamic-schema-corrected-reset-20261007.json).
+
+| Measure | Stable-schema HADES | Dynamic-schema HADES |
+|---|---:|---:|
+| Median HADES task | 57.2 s | 45.4 s |
+| Median PLAIN task in same run | 46.2 s | 36.3 s |
+| Median paired HADES − PLAIN gap | 11.5 s | 9.8 s |
+| Median model generations per HADES task | 15.5 | 7.0 |
+| Median tool results per HADES task | 16.0 | 7.0 |
+| HADES diagnosis workspace changes | 0/4 | 0/4 |
+| HADES final test and diff checks | 4/4 | 4/4 |
+| PLAIN diagnosis workspace changes | 2/4 | 2/4 |
+| PLAIN final test and diff checks | 2/4 | 4/4 |
+| HADES first action generation cached input tokens | 5,984–7,838 | 0 in all four |
+| HADES invalid diagnosis tool results | 7 | 2 |
+
+The stable catalog restored cache reuse on the first action generation, but
+the HADES task took a median 11.8 seconds longer than the dynamic run and used
+more than twice as many model generations and tool results. The PLAIN medians
+also differed by about 9.9 seconds between runs, showing substantial local
+generation variance; the paired HADES-over-PLAIN gap was slightly larger with
+the stable candidate, not smaller. PLAIN also varied across the two runs:
+although it changed the workspace during diagnosis in two repeats in each run,
+it passed only two final checks in the stable run and all four in the dynamic
+run. This is a warning against reading the small sample as a quality ranking.
+HADES blocked every diagnosis-time workspace mutation in both configurations
+and passed all four HADES final checks. Stable-schema HADES nevertheless produced seven invalid diagnosis
+tool results, versus two in the dynamic run. The cache mechanism is now
+established for this fixture, but its end-to-end product value is negative in
+these samples. **Reject stable schemas as a product fix; retain the dynamic
+catalog and exact phase allowlist.** This is synthetic mechanism evidence,
+not an owner-preference result.
