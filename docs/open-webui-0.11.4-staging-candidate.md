@@ -16,9 +16,12 @@ GHCR `linux/amd64` image manifest digest is
 `sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f`;
 it was independently resolved from the official GHCR registry on 2026-10-08.
 
-The staged HADES image is `hades-open-webui:0.11.4-candidate`, image ID
-`sha256:606aee1147dd9e7814f34f6b09a3006767e875c7352e743a32933c676e4d1808`.
-Its OCI labels report version 0.11.4 and the same upstream source revision.
+The staged HADES image is being rebound to a clean HADES source commit using
+the candidate's immutable upstream image as its base. The build records both
+commits and the base digest in image labels; the candidate verifier binds the
+resulting local image ID to the manifest. Existing behavior results below came
+from image `sha256:606aee1147dd9e7814f34f6b09a3006767e875c7352e743a32933c676e4d1808`;
+they qualify the rebound artifact only if its filesystem layers match exactly.
 
 ## Security and product changes relevant to HADES
 
@@ -39,15 +42,15 @@ close that exposure until production is safely upgraded.
 
 ## Staging evidence
 
-Against the exact candidate image above:
+Previous staging checks against the exact image ID stated above:
 
 - `scripts/test-open-webui-candidate.sh` passed private-chat isolation and
   persistence, Channels membership and authorization persistence, streamed
   model responses, upload isolation, and LLDAP bootstrap in both account
   creation orders.
 - `scripts/test-open-webui-populated-migration.sh` passed upgrade and rollback
-  using a synthetic 0.11.1 database. It preserved owner and household
-  identities, private chats and uploaded DOCX bytes, shared-channel state, and
+  using a synthetic 0.11.1 database. It preserved synthetic owner and
+  household local signup accounts, private chats and uploaded DOCX bytes, shared-channel state, and
   SQLite integrity; the household account remained unable to read the private
   upload.
 - `scripts/test-openwebui-disabled-role-session.sh`, run with the candidate
@@ -57,6 +60,9 @@ Against the exact candidate image above:
   in the actual chat Preview view, did not execute its harmless script marker,
   and exposed no `javascript:` link. The 0.11.1 positive control reproduced
   marker execution and the unsafe link.
+
+LDAP identities are not covered by the populated-database migration check;
+LDAP bootstrap behavior is covered separately by the synthetic LLDAP test.
 
 These are synthetic staging checks. They do not prove production backup
 integrity, external secret custody, live cutover/restore, or owner preference.

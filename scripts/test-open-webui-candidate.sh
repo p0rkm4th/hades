@@ -4,7 +4,7 @@ set -Eeuo pipefail
 # Candidate-only acceptance. The caller supplies an already-built immutable
 # image; this script never changes the production version manifest.
 image=${1:?usage: test-open-webui-candidate.sh IMAGE}
-docker image inspect "$image" >/dev/null
+bash scripts/verify-open-web-ui-candidate-artifact.sh "$image"
 
 HADES_PRIVATE_CHAT_WEBUI_IMAGE="$image" \
 HADES_PRIVATE_CHAT_WEBUI_PORT="${HADES_PRIVATE_CHAT_WEBUI_PORT:-18895}" \

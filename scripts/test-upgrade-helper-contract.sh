@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 helper="$repo_dir/scripts/upgrade-hades.sh"
+source "$repo_dir/config/versions.env"
 [[ -x "$helper" ]] || { echo 'FAIL upgrade helper is not executable'; exit 1; }
 tmp=$(mktemp -d)
 trap 'rm -rf -- "$tmp"' EXIT
@@ -16,8 +17,8 @@ done
 hermes_plan=$(bash "$helper" --component hermes --inputs "$tmp/operator.env" --backup-dir "$tmp/backup")
 grep -q '^PLAN candidate version: 0.21.2$' <<<"$hermes_plan" || { echo 'FAIL Hermes candidate metadata missing'; exit 1; }
 open_webui_plan=$(bash "$helper" --component open-webui --inputs "$tmp/operator.env" --backup-dir "$tmp/backup")
-grep -q '^PLAN candidate version: 0.11.3$' <<<"$open_webui_plan" || { echo 'FAIL Open WebUI candidate version missing'; exit 1; }
-grep -q '^PLAN candidate image: ghcr.io/open-webui/open-webui@sha256:9cd136effce6bb12a6a1988a35ab3b82cb40c48a6768fceeb17c83baf7cfac9c$' <<<"$open_webui_plan" || { echo 'FAIL Open WebUI candidate image missing'; exit 1; }
+grep -Fqx "PLAN candidate version: $HADES_OPEN_WEBUI_CANDIDATE_VERSION" <<<"$open_webui_plan" || { echo 'FAIL Open WebUI candidate version missing'; exit 1; }
+grep -Fqx "PLAN candidate image: $HADES_OPEN_WEBUI_CANDIDATE_IMAGE" <<<"$open_webui_plan" || { echo 'FAIL Open WebUI candidate image missing'; exit 1; }
 for component in hermes open-webui hindsight searxng; do
   if HADES_UPGRADE_BACKUP_VERIFIED=1 bash "$helper" --component "$component" --inputs "$tmp/operator.env" --backup-dir "$tmp/backup" --apply >/dev/null 2>&1; then
     echo "FAIL $component private-record apply was accepted"; exit 1
