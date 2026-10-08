@@ -85,6 +85,10 @@ _MUTATING_WORKSPACE_ACTION = re.compile(
     r"fix|repair|commit)\b",
     re.IGNORECASE,
 )
+_WORKSPACE_EXECUTION_ACTION = re.compile(
+    r"\b(?:run|execute)\s+(?:a\s+)?(?:shell|terminal|command|script|test(?:s)?|code)\b",
+    re.IGNORECASE,
+)
 _GIT_INSPECTION_OBJECT = re.compile(
     r"\b(?:diff|branch|working\s+tree|local\s+changes|git\s+(?:status|diff|branch))\b",
     re.IGNORECASE,
@@ -177,7 +181,7 @@ def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None
 def is_workspace_read_only_request(user_message: str) -> bool:
     """Recognize code/file questions that permit inspection but not execution or edits."""
     text = str(user_message or "")
-    if _MUTATING_WORKSPACE_ACTION.search(text):
+    if _MUTATING_WORKSPACE_ACTION.search(text) or _WORKSPACE_EXECUTION_ACTION.search(text):
         return False
     if is_workspace_diagnosis_request(text):
         return True
