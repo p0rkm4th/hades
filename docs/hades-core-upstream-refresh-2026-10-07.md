@@ -202,3 +202,39 @@ respectively. HADES exposed two schemas (3,913 bytes) compared with PLAIN's
 eight (12,590 bytes). This is a two-repeat marker-graded synthetic result, not
 human naturalness, semantic-quality, production UI, or owner-preference
 qualification. See the [sanitized artifact](../benchmarks/hades-workspace-readme-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json).
+
+## NYX-UX-013: Hindsight freshness guard review — 2026-10-08
+
+Nyx reviewed the explicit save/correction, pending-operation visibility, and
+automatic-recall paths at review base `2959a56d`. Keep trusted subject-to-bank
+binding, synchronous explicit writes, tagged same-subject correction
+validation, newest-correction selection, private-content redaction, and
+fail-closed handling of unknown operation status. Hindsight v0.10.2 does not
+supply a reliable correction relation that replaces the local ordering guard.
+The focused route tests cover these contracts in
+[`test-hindsight-explicit-memory-route.py`](../scripts/test-hindsight-explicit-memory-route.py)
+and [`test-hindsight-route-runtime.py`](../scripts/test-hindsight-route-runtime.py).
+
+Current synthetic evidence separates write readiness from settled retrieval:
+explicit save/correction and settled explicit recall can complete without a
+model generation, while automatic recall during pending memory work returns a
+short truthful response instead of risking stale context. In one matched
+core-09 pair, this pending response took 47–52 ms; after background processing,
+settled recall took about 10 seconds, and the full sequence's background work
+took 80–95 seconds. These results are synthetic and do not establish owner
+preference. See the [core-09 paired measurements](../benchmarks/hades-core-memory-effective-context-full-hades-first-20261008.json)
+and [retain-mode analysis](hades-core-memory-retain-modes-2026-10-08.md).
+
+Operation-status checks remain useful for freshness, though the explicit guard
+and automatic prefetch can check the same queue twice on a natural memory turn.
+That possible request-local overhead is not yet measured. A bounded isolated
+Hindsight 0.10.2 experiment may test combined raw-fact and observation recall
+while consolidation remains active, using the upstream `prefer_observations`
+option. Keep returning the current pending response while retain is processing,
+status is unknown, the page is truncated, or a corrected value cannot be
+resolved. Any faster candidate must pass correction A→B→immediate recall,
+conflicting same-subject facts, unrelated relevant facts, paraphrase and fresh
+session probes, concurrent-subject isolation, and unknown/failed operation
+checks. Do not weaken the current guard on API support alone. Upstream semantics:
+[operations API](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-docs/docs/developer/api/operations.mdx)
+and [recall API](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-docs/docs/developer/api/recall.mdx).
