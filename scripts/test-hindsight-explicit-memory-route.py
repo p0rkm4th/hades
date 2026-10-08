@@ -295,9 +295,23 @@ assert pending_response(active_agent, active_text) == (
     "I'm still saving a recent detail, so I can't confirm it yet. "
     "I can check again shortly."
 )
-assert pending_response(
-    active_agent, "Where was I planning to move?"
-) is None, "natural-history recalls should reach the provider's bounded prefetch wait"
+natural_memory_question = "Where did I say I moved?"
+planning_memory_question = "Where was I planning to move?"
+natural_memory_response = (
+    "I'm still saving a recent detail, so I can't confirm it yet. "
+    "I can check again shortly."
+)
+assert namespace["_hades_natural_personal_recall_requested"](
+    natural_memory_question
+)
+assert namespace["_hades_natural_personal_recall_requested"](
+    planning_memory_question
+)
+assert pending_response(active_agent, natural_memory_question) == natural_memory_response
+assert pending_response(active_agent, planning_memory_question) == natural_memory_response
+clear_agent = FakeMemoryAgent(FakeVisibilityProvider())
+clear_agent._memory_manager.providers[0]._bank_id = "hades-user-alpha"
+assert pending_response(clear_agent, natural_memory_question) is None
 assert pending_response(active_agent, "How do I fix this Python test?") is None
 wrong_bank_provider = FakeVisibilityProvider({
     "retain": [SimpleNamespace(status="processing")],
@@ -647,7 +661,10 @@ try:
     )
     assert pending_response(
         FakeMemoryAgent(canonical_pending), "What was the savings target I mentioned?"
-    ) is None
+    ) == (
+        "I'm still saving a recent detail, so I can't confirm it yet. "
+        "I can check again shortly."
+    )
     state["items"] = [{
         "tags": ["hades-explicit-memory"],
         "text": "User explicitly asked HADES to remember: My savings target is $3,000.",

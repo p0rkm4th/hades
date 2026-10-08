@@ -55,9 +55,31 @@ post-idle PLAIN core-09 recall also varied sharply by order (1.36 s versus
 15.33 s), another reason to treat these cells as diagnostic rather than stable
 latency estimates.
 
-The next repair targets natural personal-history recall while Hindsight writes
-are active. Return a fast, truthful “still processing” response from the
-existing authenticated subject-scoped readiness check instead of waiting up to
-10 seconds and then queueing another model generation behind Hindsight. Keep
-the safe memory boundary: never guess or imply that a missing fact was never
-mentioned. Re-run both orders and the broader corpus after that change.
+## Pending-memory readiness follow-up
+
+After the full comparison, natural personal-history questions during an active
+subject-scoped retain were changed to return the existing truthful pending
+response immediately. Two reverse-order, one-sample checks are in
+[`HADES-first`](../benchmarks/hades-core-memory-readiness-fast-hades-first-20261008.json)
+and [`PLAIN-first`](../benchmarks/hades-core-memory-readiness-fast-plain-first-20261008.json).
+They used the same staged Hermes 0.21.5, Ollama 0.40.1, Qwen3.6:35b Q4_K_M,
+65,536-context verification, and disposable Hindsight setup described above.
+
+| Task | PLAIN | HADES |
+| --- | --- | --- |
+| Ordinary chat, total | 7.92–7.98 s; about 3,430 prompt tokens; one memory schema | 2.38–2.52 s; about 720 prompt tokens; no tool schema |
+| Automatic recall while retain is pending | Marker found in 1.98–2.00 s, one model generation | Truthful pending response in 46–53 ms, zero model/tool calls; fact not yet returned |
+| Recall after Hindsight became idle | — | Marker found in 10.19–10.27 s |
+
+Hindsight drained after 49.9–54.8 seconds in these focused runs, compared with
+86.4–87.5 seconds in the earlier full runs. The drain duration varied, so this
+does not establish a stable improvement in Hindsight itself. It does establish
+that HADES no longer waits through the pending window or queues a chat
+generation behind it: the response is fast and honest, but PLAIN still provides
+the requested fact sooner. This remains a synthetic, one-sample-per-order
+diagnostic, not owner preference or a general latency claim.
+
+The remaining product issue is timely natural recall during and after
+background retention. Never guess or imply that a missing fact was never
+mentioned. Improve readiness/recall without weakening the authenticated,
+subject-scoped memory boundary, then repeat this slice and the broader corpus.
