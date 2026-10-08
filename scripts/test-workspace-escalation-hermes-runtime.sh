@@ -52,7 +52,6 @@ workspace_cases=(
 )
 
 repo,work=Path(sys.argv[1]),Path(sys.argv[2])
-stable_schema_probe=os.environ.get('HADES_BENCHMARK_STABLE_WORKSPACE_SCHEMAS','').strip().lower() == 'true'
 patch_result={'role':'tool','name':'patch','content':'{"files_modified":["/workspace/geometry.py"]}'}
 test_call={'role':'assistant','tool_calls':[{'id':'test-1','type':'function','function':{'name':'terminal','arguments':'{"command":"python -m unittest"}'}}]}
 passing_test={'role':'tool','name':'terminal','tool_call_id':'test-1','content':'{"exit_code":0,"output":"Ran 2 tests in 0.01s\\n\\nOK"}'}
@@ -221,23 +220,14 @@ def native_inspection(agent,user_message,*args,**kwargs):
  assert inspection_deltas and inspection_deltas[0] == 'I’ll read the relevant files and explain what I find.\n\n',inspection_deltas
  names={t['function']['name'] for t in agent.tools}
  inspection_catalog.append((names,set(agent.valid_tool_names)))
- assert names == ({'read_file','search_files','write_file','patch','terminal'} if stable_schema_probe else {'read_file','search_files'}),names
+ assert names == {'read_file','search_files'},names
  assert set(agent.valid_tool_names) == {'read_file','search_files'},agent.valid_tool_names
  prompt=agent.ephemeral_system_prompt.lower()
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
- if stable_schema_probe:
-  assert 'the active project workspace is mounted at /workspace' in prompt,prompt
-  assert 'during explanation or diagnosis, use only read_file and search_files' in prompt,prompt
-  assert 'wait for an explicit user request before acting' in prompt,prompt
-  from types import SimpleNamespace
-  from agent.tool_executor import _parse_tool_call
-  denied=_parse_tool_call(agent,SimpleNamespace(function=SimpleNamespace(name='patch',arguments='{}')))
-  assert denied.scope_block and 'not available in this hades session' in denied.scope_block.lower(),denied
- else:
-  assert 'inspect the workspace mounted at /workspace using read_file and search_files' in prompt,prompt
-  assert 'do not run or claim commands or tests' in prompt,prompt
-  assert 'do not pass a directory to read_file' in prompt,prompt
+ assert 'inspect the workspace mounted at /workspace using read_file and search_files' in prompt,prompt
+ assert 'do not run or claim commands or tests' in prompt,prompt
+ assert 'do not pass a directory to read_file' in prompt,prompt
  assert get_terminal_scope() is not None
  response='The test uses addition where rectangle area requires multiplication.'
  return {'final_response':response,
@@ -252,7 +242,7 @@ inspection=inspection_agent.run_conversation('Why is this Python test failing?',
 assert 'addition' in inspection.get('final_response',''),inspection
 assert inspection_deltas[-1] == inspection.get('final_response'),inspection_deltas
 assert inspection_catalog == [(
- {'read_file','search_files','write_file','patch','terminal'} if stable_schema_probe else {'read_file','search_files'},
+ {'read_file','search_files'},
  {'read_file','search_files'},
 )],inspection_catalog
 assert get_terminal_scope() is None,get_terminal_scope()
@@ -267,20 +257,14 @@ def native_read(agent,user_message,*args,**kwargs):
  assert names == {'read_file','search_files','write_file','patch','terminal'}, names
  assert set(agent.valid_tool_names) == names,agent.valid_tool_names
  prompt=agent.ephemeral_system_prompt.lower()
- if stable_schema_probe:
-  assert 'during explanation or diagnosis, use only read_file and search_files' in prompt,prompt
-  assert 'wait for an explicit user request before acting' in prompt,prompt
-  assert 'after code edits, run the relevant test and inspect the resulting diff' in prompt,prompt
- else:
-  assert 'after a successful code patch or write, do not end the turn until a terminal call runs' in prompt,prompt
-  assert 'a patch or write result is not test evidence' in prompt,prompt
-  assert 'terminal result shows that test completed with exit code 0' in prompt,prompt
+ assert 'after a successful code patch or write, do not end the turn until a terminal call runs' in prompt,prompt
+ assert 'a patch or write result is not test evidence' in prompt,prompt
+ assert 'terminal result shows that test completed with exit code 0' in prompt,prompt
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
  assert 'make one search_files call' in prompt,prompt
  assert 'do not guess test or configuration filenames' in prompt,prompt
- if not stable_schema_probe:
-  assert 'read the relevant source and test files once' in prompt,prompt
+ assert 'read the relevant source and test files once' in prompt,prompt
  assert terminal_env('TERMINAL_ENV') == 'docker'
  assert terminal_env('TERMINAL_DOCKER_NETWORK') == 'false'
  assert terminal_env('TERMINAL_DOCKER_FORWARD_ENV') == '[]'

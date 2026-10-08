@@ -84,6 +84,14 @@ roughly 13.5-second gap points to other HADES workspace-path costs; these small
 samples do not isolate their causes or qualify owner preference. Details are
 in [`hades-core-workspace-stable-schema-probe-20261007.json`](../benchmarks/hades-core-workspace-stable-schema-probe-20261007.json).
 
+Following that rejection, the benchmark-only
+`HADES_BENCHMARK_STABLE_WORKSPACE_SCHEMAS` switch and its alternate
+prompt/catalog branch were removed from `hermes/sitecustomize.py`, the
+workspace benchmark runner, and its runtime contract. The default dynamic
+catalog and exact per-turn `valid_tool_names` boundary remain. Historical
+measurements stay available in the artifacts; rerunning the rejected prototype
+no longer requires shipping an experiment hook in the active overlay.
+
 The earlier canonical-recipe dynamic-schema pair measured HADES about 22.5
 seconds slower overall than PLAIN and exceeded the 30-second composed-task
 target, despite correct final tests and authority boundaries. Both benchmark
