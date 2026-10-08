@@ -185,6 +185,7 @@ assert {t['function']['name'] for t in workspace_policy.get_workspace_tools(read
 workspace_full_tools={t['function']['name']:t['function'] for t in workspace_policy.get_workspace_tools()}
 assert set(workspace_full_tools)=={'read_file','search_files','write_file','patch','terminal'}
 search_description=workspace_full_tools['search_files']['description'].lower()
+assert 'if the user names a file or standard path such as readme.md, read that file directly with read_file' in search_description,search_description
 assert 'search its content once with target=\'content\'' in search_description,search_description
 assert 'do not guess test or configuration filenames' in search_description,search_description
 for action_tool in ('write_file','patch','terminal'):
@@ -265,6 +266,7 @@ def native_inspection(agent,user_message,*args,**kwargs):
   assert blocked.scope_block and 'not available in this HADES session' in blocked.scope_block,(
    bridge_name,blocked)
  prompt=agent.ephemeral_system_prompt.lower()
+ assert 'if the user names a file or standard path such as readme.md, read it directly' in prompt,prompt
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
  assert "search its contents directly once with search_files target='content'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
@@ -300,6 +302,7 @@ def native_read(agent,user_message,*args,**kwargs):
  assert names == {'read_file','search_files','write_file','patch','terminal'}, names
  assert set(agent.valid_tool_names) == names,agent.valid_tool_names
  prompt=agent.ephemeral_system_prompt.lower()
+ assert 'if the user names a file or standard path such as readme.md, read it directly' in prompt,prompt
  assert 'after a successful code patch or write, do not end the turn until a terminal call runs' in prompt,prompt
  assert 'a patch or write result is not test evidence' in prompt,prompt
  assert 'terminal result shows that test completed with exit code 0' in prompt,prompt

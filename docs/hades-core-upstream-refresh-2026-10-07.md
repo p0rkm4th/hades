@@ -189,3 +189,16 @@ and the [content-first candidate](../benchmarks/hades-workspace-search-pair-herm
 - [OpenAI Python SDK v3.26.0 source release](https://github.com/openai/openai-python/releases/tag/v3.26.0)
 - [OpenAI JavaScript SDK 7.30.0 on npm](https://www.npmjs.com/package/openai/v/7.30.0)
 - [OpenAI JavaScript SDK v7.30.0 source release](https://github.com/openai/openai-node/releases/tag/v7.30.0)
+
+### Hermes 0.21.5 README-comprehension comparison — 2026-10-08
+
+In two order-balanced synthetic README tasks, both stacks returned the documented
+`make test` command and `unittest` runner marker in both runs. HADES read
+`README.md` directly with one `read_file` result in each run; PLAIN used a
+median 2.5 tool results and 3.5 provider calls, compared with one tool result
+and two provider calls for HADES. Median task time was 19.23 s for HADES and
+24.77 s for PLAIN, with median prompt usage of 8,597 and 21,540 tokens,
+respectively. HADES exposed two schemas (3,913 bytes) compared with PLAIN's
+eight (12,590 bytes). This is a two-repeat marker-graded synthetic result, not
+human naturalness, semantic-quality, production UI, or owner-preference
+qualification. See the [sanitized artifact](../benchmarks/hades-workspace-readme-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json).
