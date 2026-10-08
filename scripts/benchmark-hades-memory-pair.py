@@ -899,7 +899,8 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
                    proxy_module, hindsight_url: str | None, temp: pathlib.Path,
                    ollama_url: str, hermes_root: pathlib.Path,
                    hades_scope: str, hades_recall_types: str,
-                   hades_prefer_observations: bool):
+                   hades_prefer_observations: bool,
+                   capture_recall_diagnostics: bool = False):
     executable = hermes_executable(hermes_root)
     provider_port = proxy_module.unused_port()
     proxy = proxy_module.AggregateProxy(
@@ -1000,8 +1001,12 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
 
     log_path = temp / f"{stack}.log"
     log = log_path.open("w", encoding="utf-8")
+    gateway_command = [str(executable), "gateway", "run"]
+    if capture_recall_diagnostics and stack == "hades":
+        gateway_command.append("-v")
+    gateway_command.append("--accept-hooks")
     process = subprocess.Popen(
-        [str(executable), "gateway", "run", "--accept-hooks"],
+        gateway_command,
         cwd=root,
         env=env,
         stdout=log,
@@ -1146,6 +1151,10 @@ def main() -> int:
         help="disable derived observation consolidation for the disposable Hindsight service",
     )
     parser.add_argument(
+        "--capture-recall-diagnostics", action="store_true",
+        help="enable HADES INFO logs temporarily and retain only allowlisted recall ranks, types and scores",
+    )
+    parser.add_argument(
         "--hindsight-network", choices=("bridge", "host"), default="bridge",
         help="use loopback-only host networking only when rootless bridge cannot reach host services",
     )
@@ -1246,7 +1255,7 @@ def main() -> int:
             gateways[stack] = create_gateway(
                 stack, ROOT, args.hindsight_plugin, benchmark, hindsight_url, temp,
                 ollama, hermes_root, args.hades_scope, args.hades_recall_types,
-                args.hades_prefer_observations,
+                args.hades_prefer_observations, args.capture_recall_diagnostics,
             )
 
         for stack in ("plain", "hades"):
@@ -1762,6 +1771,7 @@ def main() -> int:
                 "hades_scope": args.hades_scope,
                 "hades_recall_types": args.hades_recall_types,
                 "hades_prefer_observations": args.hades_prefer_observations,
+                "recall_diagnostics_captured": args.capture_recall_diagnostics,
                 "post_idle_recall_type_diagnostic": (
                     "Not run in automatic-only mode."
                     if args.automatic_only else
@@ -1793,9 +1803,10 @@ def main() -> int:
             },
             "summary_by_stack_and_turn": by_stack_turn,
             "memory_supplement_summary": supplement_summary,
-            "hades_recall_diagnostics": read_safe_recall_diagnostics(
-                gateways["hades"]["log_path"]
-            )[0],
+            "hades_recall_diagnostics": (
+                read_safe_recall_diagnostics(gateways["hades"]["log_path"])[0]
+                if args.capture_recall_diagnostics else []
+            ),
             "hindsight_ollama_calls": bridge.snapshot() if bridge is not None else [],
             "repetitions": safe_repetitions(repetitions),
             "preference_bucket": "UNASSIGNED; no owner dogfood",
