@@ -21,6 +21,9 @@ SPEC.loader.exec_module(MODULE)
 assert MODULE.common_prefix_byte_count(b"shared-a", b"shared-b") == len(b"shared-")
 assert MODULE.common_prefix_byte_count(b"same", b"same") == 4
 assert MODULE.common_prefix_byte_count(b"", b"not empty") == 0
+assert MODULE.EXPLAIN_PROMPT == "In discount.py, explain what discounted_total does in plain English."
+assert MODULE.FIXTURE_CASES["discount"]["source"] == "discount.py"
+assert "return price - percent" in MODULE.FIXTURE_CASES["discount"]["source_content"]
 
 calls: list[tuple[str, dict | None]] = []
 warmed = False

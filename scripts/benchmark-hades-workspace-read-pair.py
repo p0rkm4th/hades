@@ -66,6 +66,7 @@ README_CONTENT = (
     "Run the test suite with `make test`. The target executes "
     "`python -m unittest discover -v`.\n"
 )
+EXPLAIN_PROMPT = "In discount.py, explain what discounted_total does in plain English."
 SEARCH_PROMPT = "Find where this project configures request timeouts. Tell me the file path and value."
 SEARCH_FILES = {
     "README.md": "# Sample project\n\nClient defaults live in the settings module.\n",
@@ -796,6 +797,7 @@ def child(args: argparse.Namespace) -> int:
     fixture_case = FIXTURE_CASES[args.fixture_case]
     fixture_names = (
         ("README.md", "Makefile") if args.scenario == "readme" else
+        (fixture_case["source"],) if args.scenario == "explain" else
         tuple(SEARCH_FILES) if args.scenario == "search"
         else (fixture_case["source"], fixture_case["test"])
     )
@@ -925,6 +927,7 @@ def child(args: argparse.Namespace) -> int:
             ) = install_host_workspace_verification_mapping(agent, args.workspace)
         prompts = ([PROMPT] if args.scenario == "read" else
                    [README_PROMPT] if args.scenario == "readme" else
+                   [EXPLAIN_PROMPT] if args.scenario == "explain" else
                    [SEARCH_PROMPT] if args.scenario == "search" else
                    [DIAGNOSE_PROMPT, FIX_PROMPT])
         history: list[dict[str, Any]] = []
@@ -932,6 +935,7 @@ def child(args: argparse.Namespace) -> int:
         for phase, prompt in enumerate(prompts):
             phase_name = ("read" if args.scenario == "read" else
                           "readme" if args.scenario == "readme" else
+                          "explain" if args.scenario == "explain" else
                           "search" if args.scenario == "search" else
                           ("diagnose" if phase == 0 else "fix"))
             stream_state["phase"] = phase_name
@@ -1232,7 +1236,7 @@ def main() -> int:
     parser.add_argument("--docker-binary", type=pathlib.Path)
     parser.add_argument("--sandbox-image", default=IMAGE)
     parser.add_argument("--repeats", type=int, default=2)
-    parser.add_argument("--scenario", choices=("read", "readme", "search", "escalation"), default="read")
+    parser.add_argument("--scenario", choices=("read", "readme", "explain", "search", "escalation"), default="read")
     parser.add_argument("--fixture-layout", choices=("compact", "multifile"), default="compact")
     parser.add_argument("--fixture-case", choices=tuple(FIXTURE_CASES), default="geometry")
     parser.add_argument(
@@ -1317,8 +1321,9 @@ def main() -> int:
     temp = pathlib.Path(tempfile.mkdtemp(prefix=".hades-workspace-pair-", dir=ROOT))
     os.chmod(temp, 0o700)
     docker_trace_path = temp / "docker-cli-trace.jsonl"
+    proxy_fixture_keys = ("source",) if args.scenario == "explain" else ("source", "test")
     proxy = ProviderProxy(("127.0.0.1", 0), args.ollama_port, tuple(
-        FIXTURE_CASES[args.fixture_case][key] for key in ("source", "test")
+        FIXTURE_CASES[args.fixture_case][key] for key in proxy_fixture_keys
     ))
     threading.Thread(target=proxy.serve_forever, daemon=True).start()
     proxy_port = proxy.server_address[1]
@@ -1346,6 +1351,10 @@ def main() -> int:
                     (workspace / "README.md").write_text(README_CONTENT)
                     (workspace / "Makefile").write_text(
                         "test:\n\tpython -B -m unittest discover -v\n"
+                    )
+                elif args.scenario == "explain":
+                    (workspace / fixture_case["source"]).write_text(
+                        fixture_case["source_content"]
                     )
                 elif args.scenario == "search":
                     for name, content in SEARCH_FILES.items():
@@ -1540,6 +1549,28 @@ def main() -> int:
                 "plain_tool_result_turns": sum(r["tool_result_count"] > 0 for r in records if r["stack"] == "plain"),
                 "hades_tool_result_turns": sum(r["tool_result_count"] > 0 for r in records if r["stack"] == "hades"),
             })
+        elif args.scenario == "explain":
+            def median(values):
+                ordered = sorted(values)
+                middle = len(ordered) // 2
+                if len(ordered) % 2:
+                    return ordered[middle]
+                return (ordered[middle - 1] + ordered[middle]) / 2
+
+            for stack in ("plain", "hades"):
+                stack_records = [r for r in records if r["stack"] == stack]
+                summary[f"{stack}_median_task_elapsed_ms"] = median([
+                    r["elapsed_ms"] for r in stack_records
+                ])
+                summary[f"{stack}_median_model_api_calls_per_task"] = median([
+                    r["api_calls"] for r in stack_records
+                ])
+                summary[f"{stack}_median_tool_results_per_task"] = median([
+                    r["tool_result_count"] for r in stack_records
+                ])
+                summary[f"{stack}_direct_source_read_turns"] = sum(
+                    "read_file" in r["tool_result_names"] for r in stack_records
+                )
         else:
             def median(values):
                 ordered = sorted(values)
@@ -1622,7 +1653,7 @@ def main() -> int:
                 "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
                 "scenario": args.scenario,
                 "fixture_layout": args.fixture_layout if args.scenario == "escalation" else None,
-                "fixture_case": args.fixture_case if args.scenario == "escalation" else None,
+                "fixture_case": args.fixture_case if args.scenario in {"escalation", "explain"} else None,
                 "canonical_project_test_recipe": (
                     "make test (python -B -m unittest discover -v)"
                     if args.scenario == "escalation" else None
@@ -1639,6 +1670,7 @@ def main() -> int:
                 "workspace_context_hint": WORKSPACE_ENVIRONMENT_HINT if args.workspace_context_hint else None,
                 "prompt_ids": (["read"] if args.scenario == "read" else
                                ["readme"] if args.scenario == "readme" else
+                               ["explain"] if args.scenario == "explain" else
                                ["search"] if args.scenario == "search" else
                                ["diagnose", "fix"]),
                 "subject": "synthetic owner identity; private fixture only",
@@ -1652,6 +1684,7 @@ def main() -> int:
                     "tasks, Git commit behavior, or owner preference."
                     if args.scenario == "escalation" else
                     "Synthetic README comprehension: run command and test runner markers are recorded without answer text." if args.scenario == "readme" else
+                    "Synthetic one-file function explanation: timing, tool use, and response length are recorded; semantic quality is not automated or owner-reviewed." if args.scenario == "explain" else
                     "Synthetic multi-file request-timeout discovery; expected path/value markers are recorded without preserving the answer text."
                     if args.scenario == "search" else
                     "Synthetic one-file read only; no editing, tests, Git, follow-up, or direct owner preference."

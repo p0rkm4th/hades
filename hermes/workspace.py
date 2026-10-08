@@ -305,8 +305,10 @@ def get_workspace_tools(*, read_only: bool = False) -> list[dict[str, Any]]:
         )
         function["description"] = (
             str(function.get("description") or "").rstrip()
-            + " If the user names a file or standard path such as README.md, read that "
-            "file directly with read_file. For a concrete setting, error, symbol, or phrase, search its content "
+            + " If the user names a file path, including a source module such as discount.py, "
+            "call read_file with that exact path under /workspace before any search_files call; "
+            "do not search for it first. A standard path such as README.md follows the same rule. "
+            "For a concrete setting, error, symbol, or phrase, search its content "
             "once with target='content', a concise pattern, and path='/workspace'; "
             "do not list every filename first. If neither a file nor content target is known, discover "
             "filenames once with target='files', pattern='*', path='/workspace'. "

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "HADES Core Comparative Owner Corpus — Seed v2 with memory supplement",
-  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage, including stable Hermes 0.21.5 / Ollama 0.40.1 five-repeat conversation replay for eight cases; 5 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 34 of 55 cases have no direct replay; owner preference qualification remains open. Added five explicitly synthetic memory cases (core-51–core-55) to review automatic retention positives, corrections, natural recall, and unrelated-turn suppression; no owner preference has been collected for them.",
+  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage, including stable Hermes 0.21.5 / Ollama 0.40.1 five-repeat conversation replay for eight cases; 6 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 33 of 55 cases have no direct replay; owner preference qualification remains open. Added five explicitly synthetic memory cases (core-51–core-55) to review automatic retention positives, corrections, natural recall, and unrelated-turn suppression; no owner preference has been collected for them.",
   "source_note": "Cases are hand-authored sanitized paraphrases, not verbatim transcripts. The Sept. 24 owner dogfood report documents real prompt families including recipe availability, pantry expiry, spaghetti inventory/list, homelab/network/model/backup status, restaurants, subscriptions, weekend affordability, lease prepayment, restock, savings target, and morning briefing. Replace/add cases only from owner-approved evidence; never copy secrets, financial records, private memories, or household content into this file. The five v2 memory supplement cases are synthetic examples authored for policy coverage; they are not transcripts or claims about Scotty.",
   "comparison_contract": {
     "same_model_and_quantization": true,
@@ -270,7 +270,7 @@
       "category": "coding",
       "scenario": "explain file",
       "turns": [
-        "Explain what this function does in plain English."
+        "In discount.py, explain what discounted_total does in plain English."
       ],
       "origin": "sanitized paraphrase seeded from the mission corpus and/or documented owner dogfood prompt families",
       "evaluation": "human comparative review; do not score by phrase matching",
@@ -741,10 +741,11 @@
       "core-13",
       "core-24",
       "core-22",
-      "core-21"
+      "core-21",
+      "core-23"
     ],
-    "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; v6 has three clean available-source repeats followed by three 503 observations; v5 records persistent-gateway recovery after outage; no mutations. Added core-24 coding diagnosis→“Fix it” escalation with two counterbalanced repeats per stack at stable Hermes 0.21.3/Ollama 0.40.0 and 0.35.1, same model/context and isolated sandbox. All fixture tests passed; HADES preserved the action boundary but was slower, while PLAIN mutated during diagnosis in one repeat. Context-mismatched runs are diagnostic only. Owner preference unassigned. Added core-22 project request-timeout search on current Hermes 0.21.5/Ollama 0.40.1 using synthetic local fixtures; two order-balanced repeats per stack, both returned path/value; no owner preference. Added core-21 README run-instructions comprehension on current Hermes 0.21.5/Ollama 0.40.1 using a synthetic project README and Makefile; two order-balanced repeats per stack, both returned the documented command and test runner; no owner preference.",
-    "unreplayed_case_count": 34,
+    "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; v6 has three clean available-source repeats followed by three 503 observations; v5 records persistent-gateway recovery after outage; no mutations. Added core-24 coding diagnosis→“Fix it” escalation with two counterbalanced repeats per stack at stable Hermes 0.21.3/Ollama 0.40.0 and 0.35.1, same model/context and isolated sandbox. All fixture tests passed; HADES preserved the action boundary but was slower, while PLAIN mutated during diagnosis in one repeat. Context-mismatched runs are diagnostic only. Owner preference unassigned. Added core-22 project request-timeout search on current Hermes 0.21.5/Ollama 0.40.1 using synthetic local fixtures; two order-balanced repeats per stack, both returned path/value; no owner preference. Added core-21 README run-instructions comprehension on current Hermes 0.21.5/Ollama 0.40.1 using a synthetic project README and Makefile; two order-balanced repeats per stack, both returned the documented command and test runner; no owner preference. Added core-23 synthetic explain-file task on current Hermes 0.21.5/Ollama 0.40.1 with two order-balanced reads of the named function; semantic quality and owner preference remain unreviewed.",
+    "unreplayed_case_count": 33,
     "owner_preference_labels": 0,
     "owner_preference_status": "unassigned",
     "chat_only_case_replay_details": {
@@ -1028,6 +1029,14 @@
         ],
         "reason": "The owner-pattern request to open the project README and explain how to run it was answered with both required documented markers on each stack in both order-balanced repeats. HADES read README.md directly through one read_file result and used two model generations; PLAIN used two or three tool results and three or four model generations. This demonstrates a narrow synthetic task only; marker grading does not establish naturalness.",
         "next_replay": "Directly dogfood README comprehension and the follow-up into a code task with Scotty; no more single-file synthetic repeats absent a concrete regression."
+      },
+      "core-23": {
+        "status": "matched synthetic explain-file replay; named source read occurred 2/2 per stack; semantic quality and owner preference unqualified",
+        "refs": [
+          "benchmarks/hades-workspace-explain-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json"
+        ],
+        "reason": "The original pronoun-only task lacked prior code context, so it was revised to name discount.py and discounted_total before replay. Both stacks read the named source in both order-balanced repeats. Current HADES named-path guidance reduced median tool results from 3 to 2.5 versus the preceding two-repeat candidate, while median model calls became equal to PLAIN at 3.5; HADES still searched before reading in each repeat. Median times were 28.04s HADES and 28.45s PLAIN, but the sample is too small and variable for a latency claim. No answer text or semantic-quality score is retained.",
+        "next_replay": "Review a natural file-explanation task with Scotty, including whether the selected file is implicit in the conversation or must be named; collect human correctness, clarity, and preference rather than adding phrase-match grading."
       }
     },
     "latest_workspace_escalation_ollama0401": {
@@ -1132,5 +1141,15 @@
     "result": "Both stacks returned the documented run command and unittest mechanism in 2/2 repeats. HADES median task time was 19.23s versus PLAIN 24.77s; median prompt tokens 8,597 versus 21,540; provider calls 2 vs 3.5; tool results 1 vs 2.5. HADES exposed 2 schemas / 3,913 bytes vs PLAIN 8 / 12,590. HADES read README.md directly in both runs; PLAIN performed extra search/terminal work in one run. The named-file direct-read guidance brought HADES below the 20s single-tool target in these two samples.",
     "limitations": "One synthetic README task family with two repeats; automated command/test-runner markers only, not human naturalness or semantic-quality scoring. No production Open WebUI, memory, Git, longer follow-up, or owner preference.",
     "metrics_record": "benchmarks/hades-workspace-readme-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json"
+  },
+  "latest_workspace_explain_comparison": {
+    "source_revision": "b7ec9d3a0ee2e1e4245a00884d4a4d0eb36b2d1a",
+    "case_ids": [
+      "core-23"
+    ],
+    "classification": "two order-balanced synthetic explain-file repeats on Hermes 0.21.5 / Ollama 0.40.1 / Qwen3.6:35b with identical context, /workspace hint, and immutable rootless sandbox; no owner-preference labels",
+    "result": "Both stacks read the named discount.py source in 2/2 repeats. HADES median task time was 28.04s versus PLAIN 28.45s; median model calls 3.5 each and tool results 2.5 each. HADES exposed five schemas / 10,088 bytes versus PLAIN eight / 12,590. In the previous two-repeat candidate, HADES performed two search_files calls before reading in 2/2 runs; the stronger named-path instruction reduced this to one search before read in one run and two searches in the other. This is a directional tool-overhead result, not a stable latency improvement.",
+    "limitations": "Two repeats of one synthetic source/function; semantic quality, naturalness and owner preference were not reviewed. The original pronoun-only seed lacked conversation context and was made explicit for the workspace replay. No Open WebUI, deployed gateway, edits, tests, Git, memory or domain integrations.",
+    "metrics_record": "benchmarks/hades-workspace-explain-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json"
   }
 }
