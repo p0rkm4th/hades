@@ -1085,5 +1085,12 @@
       "metrics_record": "benchmarks/hades-core-grocy-read-current-ollama0401-20261008.json",
       "report": "docs/hades-core-grocy-read-current-ollama0401-2026-10-08.md"
     }
+  },
+  "latest_workspace_read_pair_comparison": {
+    "source_revision": "c69c56d3c5dd462ffbdd4591d40da2f37105d169",
+    "classification": "three order-balanced repeats of one synthetic workspace file-read fixture; same Hermes 0.21.5, Ollama 0.40.1, Qwen3.6:35b digest and rootless sandbox image; no owner-preference labels",
+    "result": "Both stacks read the fixture using one read_file tool call and two model generations in all 3/3 runs. HADES exposed two read-only schemas / 3,662 bytes versus PLAIN eight coding schemas / 12,590 bytes. Median prompt tokens across the two provider requests were 8,245 HADES and 12,105 PLAIN. Median task time was 17.44s HADES and 21.73s PLAIN. This is a narrow single-fixture result and does not qualify owner preference or broad workspace latency.",
+    "limitations": "Synthetic exact-token read, not a replay of core-21 README comprehension or core-22 project search; no edits, tests, Git, Open WebUI, memory, direct owner preference, or deployment parity. The first HADES setup attempt used a mutable image tag and was denied by the immutable image gate; it was excluded.",
+    "metrics_record": "benchmarks/hades-workspace-read-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json"
   }
 }

@@ -127,6 +127,21 @@ establish an Ollama version effect or owner preference. See the
 [comparison report](hades-core-workspace-escalation-ollama0401-2026-10-08.md)
 and [sanitized artifact](../benchmarks/hades-core-workspace-escalation-ollama0401-v1.json).
 
+### Hermes 0.21.5 workspace read-schema comparison — 2026-10-08
+
+The three order-balanced synthetic file-read pairs passed on both stacks: each
+read the fixture through one `read_file` call, returned the correct value, and
+used two model generations. HADES exposed two read-only schemas (3,662 bytes)
+instead of PLAIN's eight general coding schemas (12,590 bytes). Across the two
+model requests, median prompt usage was 8,245 tokens for HADES and 12,105 for
+PLAIN. Median task time was 17.44 s and 21.73 s, respectively. This is a narrow
+synthetic result on one local model and one exact Hermes/runtime pair; it does
+not establish owner preference or broad latency improvement. An initial HADES
+attempt using a mutable local image tag was correctly denied by its immutable
+image policy and is excluded. The measured rerun used the same rootless image
+content through its original registry digest in both arms. See the
+[three-repeat sanitized artifact](../benchmarks/hades-workspace-read-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json).
+
 ## Authoritative sources
 
 - [Open WebUI releases](https://github.com/open-webui/open-webui/releases)
