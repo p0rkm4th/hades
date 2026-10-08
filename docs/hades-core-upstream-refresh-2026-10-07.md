@@ -239,6 +239,21 @@ checks. Do not weaken the current guard on API support alone. Upstream semantics
 [operations API](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-docs/docs/developer/api/operations.mdx)
 and [recall API](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-docs/docs/developer/api/recall.mdx).
 
+The focused current-stable runtime check was rerun on 2026-10-08 with Hermes
+0.21.5's isolated Python environment, its pinned Hindsight 1.2.1 plugin, and
+Hindsight server 0.10.2 at immutable image digest
+`sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70`.
+The route passed synthetic explicit save, newest correction after a two-word
+typo, semantic paraphrase fallback, and Alpha/Beta isolation. Each measured
+call started a fresh Python subprocess; the observed 1.58–1.64 seconds includes
+interpreter startup and is not an in-request latency claim. The same run
+confirmed the deterministic Hindsight retain/list/fresh-recall path against a
+mock model. No production state changed. `scripts/test-hindsight-route-runtime.py`
+now accepts `HADES_HINDSIGHT_IMAGE` only with an immutable digest, so candidate
+qualification does not silently use the production 0.9.2 image pin. The test
+needs an isolated `HERMES_HOME` whose `plugins/hindsight` points at the pinned
+candidate plugin, and `HADES_HERMES_PYTHON` set to the Hermes 0.21.5 Python.
+
 ### Hermes 0.21.5 named-function explanation comparison — 2026-10-08
 
 The core-23 seed originally asked “Explain what this function does” without
