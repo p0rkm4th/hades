@@ -8155,22 +8155,9 @@ try:
             quiet_mode=True,
             skip_tool_search_assembly=True,
         )
-        companion_names = {"mcp_grocy_recipe_authoring_recipe_set_servings"}
-        missing = {
-            name for name in companion_names
-            if not any(tool.get("function", {}).get("name") == name for tool in definitions)
-        }
-        if missing:
-            try:
-                from tools.registry import registry as _hades_registry
-                definitions.extend(_hades_registry.get_definitions(missing, quiet=True))
-            except Exception as exc:
-                _hades_logger.warning("Grocy/recipe tool reconciliation failed: %s", exc)
         _hades_logger.warning(
-            "Grocy tool catalog loaded: total=%d serving_tool=%s",
-            len(definitions), "mcp_grocy_recipe_authoring_recipe_set_servings" in {
-                tool.get("function", {}).get("name") for tool in definitions
-            },
+            "Grocy tool catalog loaded: total=%d",
+            len(definitions),
         )
         return definitions
 
