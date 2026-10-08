@@ -524,6 +524,14 @@ for user in Beta Gamma; do low=$(tr '[:upper:]' '[:lower:]' <<<"$user"); idvar=$
 step='configuring isolated Hermes gateway and MCP'
 export HERMES_HOME="$work/hermes"; hermes profile create hades --no-alias --no-skills >/dev/null; chmod 700 "$HERMES_HOME/profiles" "$HERMES_HOME/profiles/hades"
 hermes_bin=$(readlink -f "$(command -v hermes)"); hermes_python=${HADES_HERMES_PYTHON:-"$(dirname "$hermes_bin")/python3.11"}; [[ -x "$hermes_python" ]] || { echo 'FAIL Hermes Python 3.11 unavailable' >&2; exit 2; }
+if [[ -n "${HADES_HINDSIGHT_PLUGIN:-}" ]]; then
+  [[ -d "$HADES_HINDSIGHT_PLUGIN" ]] || { echo 'FAIL configured Hindsight plugin directory is unavailable' >&2; exit 2; }
+  # Stable Hermes moved Hindsight to an installed catalog plugin. The HADES
+  # overlay imports the provider during interpreter startup, before profile
+  # configuration is applied, so stage the pinned plugin at process-home scope.
+  mkdir -m 700 -p "$HERMES_HOME/plugins"
+  ln -s "$(realpath "$HADES_HINDSIGHT_PLUGIN")" "$HERMES_HOME/plugins/hindsight"
+fi
 if [[ "$scenario" == page_injection || "$scenario" == page_title_injection || "$scenario" == attribution_injection || "$scenario" == publisher_ownership || "$scenario" == article_lineage ]]; then
   mcp_server_script="$work/page-injection-mcp-server.py"
   cat >"$mcp_server_script" <<PY
@@ -664,6 +672,8 @@ agent:
 YAML
 fi
 cat >>"$HERMES_HOME/profiles/hades/config.yaml" <<YAML
+gateway:
+  standalone: true
 providers:
   custom:
     request_timeout_seconds: $provider_timeout
