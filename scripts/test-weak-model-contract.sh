@@ -11,7 +11,7 @@ agent = Path('integrations/agent-zero-mcp/server.py').read_text().lower()
 recipe = Path('integrations/grocy-recipe-authoring/server.py').read_text().lower()
 
 for fragment in (
-    'call web_search before answering',
+    'use web_search for discovery when needed',
     'allowed_memory = {"hindsight_recall", "hindsight_retain"}',
     'if completion_only_model:',
     'self.tools = []',
