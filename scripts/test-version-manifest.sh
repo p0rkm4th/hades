@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 manifest=config/versions.env
 [[ -f "$manifest" ]] || { echo 'FAIL version manifest missing'; exit 1; }
-required=(HADES_MANIFEST_VERSION HADES_HERMES_VERSION HADES_OPEN_WEBUI_VERSION HADES_OPEN_WEBUI_BASE_IMAGE HADES_OPEN_WEBUI_BUILD_SOURCE HADES_HERMES_SOURCE_URL HADES_HERMES_SOURCE_VERSION HADES_HERMES_SOURCE_SHA256 HADES_HERMES_UV_VERSION HADES_HERMES_CANDIDATE_VERSION HADES_OPEN_WEBUI_CANDIDATE_VERSION HADES_OPEN_WEBUI_CANDIDATE_IMAGE HADES_OPEN_WEBUI_CANDIDATE_SOURCE_COMMIT HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE_DIGEST HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_GROCY_MCP_VERSION HADES_RECEIPT_OCR_BASE_IMAGE HADES_AGENT_ZERO_IMAGE HADES_NGINX_IMAGE HADES_SEARXNG_IMAGE_RECORD HADES_ACTUAL_VERSION HADES_ACTUAL_ADAPTER_REVISION HADES_GROCY_ADAPTER_REVISION HADES_AGENT_ZERO_ADAPTER_REVISION)
+required=(HADES_MANIFEST_VERSION HADES_HERMES_VERSION HADES_OPEN_WEBUI_VERSION HADES_OPEN_WEBUI_BASE_IMAGE HADES_OPEN_WEBUI_BUILD_SOURCE HADES_HERMES_SOURCE_URL HADES_HERMES_SOURCE_VERSION HADES_HERMES_SOURCE_SHA256 HADES_HERMES_UV_VERSION HADES_HERMES_CANDIDATE_VERSION HADES_OPEN_WEBUI_CANDIDATE_VERSION HADES_OPEN_WEBUI_CANDIDATE_IMAGE HADES_OPEN_WEBUI_CANDIDATE_SOURCE_COMMIT HADES_OPEN_WEBUI_CANDIDATE_HADES_COMMIT HADES_OPEN_WEBUI_CANDIDATE_HADES_IMAGE_ID HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE_DIGEST HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_GROCY_MCP_VERSION HADES_RECEIPT_OCR_BASE_IMAGE HADES_AGENT_ZERO_IMAGE HADES_NGINX_IMAGE HADES_SEARXNG_IMAGE_RECORD HADES_ACTUAL_VERSION HADES_ACTUAL_ADAPTER_REVISION HADES_GROCY_ADAPTER_REVISION HADES_AGENT_ZERO_ADAPTER_REVISION)
 for name in "${required[@]}"; do
   value=$(awk -F= -v key="$name" '$1 == key {print substr($0, index($0,"=")+1)}' "$manifest")
   [[ -n "$value" ]] || { echo "FAIL missing version pin: $name"; exit 1; }
@@ -11,6 +11,10 @@ done
 [[ "$(awk -F= '$1 == "HADES_OPEN_WEBUI_CANDIDATE_IMAGE" {print $2}' "$manifest")" =~ ^ghcr.io/open-webui/open-webui@sha256:[0-9a-f]{64}$ ]] || { echo 'FAIL Open WebUI candidate artifact is not immutable'; exit 1; }
 [[ "$(awk -F= '$1 == "HADES_RECEIPT_OCR_BASE_IMAGE" {print $2}' "$manifest")" =~ ^python:3\.11-slim-bookworm@sha256:[0-9a-f]{64}$ ]] || { echo 'FAIL receipt OCR base image is not immutably pinned'; exit 1; }
 [[ "$(awk -F= '$1 == "HADES_HERMES_SOURCE_SHA256" {print $2}' "$manifest")" =~ ^[0-9a-f]{64}$ ]] || { echo 'FAIL Hermes source checksum is invalid'; exit 1; }
+candidate_source=$(awk -F= '$1 == "HADES_OPEN_WEBUI_CANDIDATE_SOURCE_COMMIT" {print $2}' "$manifest")
+candidate_hades=$(awk -F= '$1 == "HADES_OPEN_WEBUI_CANDIDATE_HADES_COMMIT" {print $2}' "$manifest")
+candidate_image_id=$(awk -F= '$1 == "HADES_OPEN_WEBUI_CANDIDATE_HADES_IMAGE_ID" {print $2}' "$manifest")
+[[ "$candidate_source" =~ ^[0-9a-f]{40}$ && "$candidate_hades" =~ ^[0-9a-f]{40}$ && "$candidate_image_id" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo 'FAIL Open WebUI candidate build provenance is invalid'; exit 1; }
 hermes_version=$(awk -F= '$1 == "HADES_HERMES_VERSION" {print $2}' "$manifest")
 hermes_source_version=$(awk -F= '$1 == "HADES_HERMES_SOURCE_VERSION" {print $2}' "$manifest")
 [[ "$hermes_version" == "$hermes_source_version" ]] || { echo 'FAIL Hermes runtime version differs from the pinned source artifact'; exit 1; }

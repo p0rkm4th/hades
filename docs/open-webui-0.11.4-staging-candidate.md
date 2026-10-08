@@ -16,12 +16,16 @@ GHCR `linux/amd64` image manifest digest is
 `sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f`;
 it was independently resolved from the official GHCR registry on 2026-10-08.
 
-The staged HADES image is being rebound to a clean HADES source commit using
-the candidate's immutable upstream image as its base. The build records both
-commits and the base digest in image labels; the candidate verifier binds the
-resulting local image ID to the manifest. Existing behavior results below came
-from image `sha256:606aee1147dd9e7814f34f6b09a3006767e875c7352e743a32933c676e4d1808`;
-they qualify the rebound artifact only if its filesystem layers match exactly.
+The manifest-bound HADES image is `hades-open-webui:0.11.4-candidate-bound`,
+image ID `sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469`.
+It was built from HADES commit `e33b7d18c889775260e5ace804aac0ebf598d8d8`,
+using the candidate upstream digest above. The image labels record both values.
+Compared with the previously exercised image ID
+`sha256:606aee1147dd9e7814f34f6b09a3006767e875c7352e743a32933c676e4d1808`,
+all 38 filesystem layers and all non-label image configuration fields are
+identical; only the two HADES provenance labels were added. The acceptance
+results below apply to the manifest-bound artifact's identical filesystem and
+runtime configuration.
 
 ## Security and product changes relevant to HADES
 
@@ -42,7 +46,8 @@ close that exposure until production is safely upgraded.
 
 ## Staging evidence
 
-Previous staging checks against the exact image ID stated above:
+Staging checks run against the prior image ID with identical filesystem and
+runtime configuration:
 
 - `scripts/test-open-webui-candidate.sh` passed private-chat isolation and
   persistence, Channels membership and authorization persistence, streamed

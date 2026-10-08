@@ -4,7 +4,7 @@ umask 077
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 image=${1:?usage: test-openwebui-docx-preview-security.sh IMAGE}
-bash "$repo_dir/scripts/verify-open-web-ui-candidate-artifact.sh" "$image"
+bash "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" "$image"
 image_id=$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null) || {
   echo 'FAIL candidate image must already exist locally; refusing an implicit pull' >&2
   exit 2
