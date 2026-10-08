@@ -88,6 +88,12 @@ start_hindsight() {
     -e "HINDSIGHT_API_LLM_MODEL=$extractor_model" \
     -e "HINDSIGHT_API_LLM_BASE_URL=http://hades-mock:${model_port}/v1" \
     -e HINDSIGHT_API_LLM_API_KEY=synthetic-only \
+    -e HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai \
+    -e "HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL=$extractor_model" \
+    -e "HINDSIGHT_API_EMBEDDINGS_OPENAI_BASE_URL=http://hades-mock:${model_port}/v1" \
+    -e HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY=synthetic-only \
+    -e HINDSIGHT_API_EMBEDDINGS_OPENAI_DIMENSIONS=384 \
+    -e HINDSIGHT_API_RERANKER_PROVIDER=rrf \
     "$test_image" >/dev/null
   port=$(docker inspect "$name" --format '{{(index (index .NetworkSettings.Ports "8888/tcp") 0).HostPort}}')
   for _ in $(seq 1 90); do
@@ -185,7 +191,8 @@ if docker exec "$model_name" test -s /tmp/mock-state/requests.jsonl; then
 import json, sys
 rows=[json.loads(line) for line in open(sys.argv[1], encoding="utf-8") if line.strip()]
 assert rows and all(row.get("model") == sys.argv[2] for row in rows), rows
-assert all(row.get("path", "").endswith(("/api/chat", "/v1/chat/completions")) for row in rows), rows
+assert all(row.get("path", "").endswith(("/api/chat", "/v1/chat/completions", "/v1/embeddings")) for row in rows), rows
+assert any(row.get("path", "").endswith("/v1/embeddings") for row in rows), rows
 PY
 else
   fail 'Hindsight never called the synthetic extraction model'

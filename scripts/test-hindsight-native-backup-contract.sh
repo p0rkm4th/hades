@@ -4,6 +4,7 @@ set -euo pipefail
 repo_dir=$(cd "$(dirname "$0")/.." && pwd)
 script="$repo_dir/scripts/backup-hindsight-native.sh"
 runtime_test="$repo_dir/scripts/test-hindsight-native-backup-restore.sh"
+synthetic_model="$repo_dir/scripts/synthetic-hindsight-model.py"
 [[ -x "$script" ]] || { echo 'FAIL Hindsight backup helper is not executable'; exit 1; }
 [[ -x "$runtime_test" ]] || { echo 'FAIL Hindsight backup/restore rehearsal is not executable'; exit 1; }
 bash -n "$script"
@@ -31,6 +32,21 @@ grep -Fq -- '--network "$network"' "$runtime_test" || {
 }
 grep -Fq -- '--network-alias hades-mock' "$runtime_test" || {
   echo 'FAIL backup/restore rehearsal has no synthetic model network peer'; exit 1;
+}
+grep -Fq -- 'HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai' "$runtime_test" || {
+  echo 'FAIL backup/restore rehearsal relies on downloading local embedding models'; exit 1;
+}
+grep -Fq -- 'HINDSIGHT_API_EMBEDDINGS_OPENAI_BASE_URL=http://hades-mock:' "$runtime_test" || {
+  echo 'FAIL backup/restore rehearsal has no local synthetic embedding endpoint'; exit 1;
+}
+grep -Fq -- 'HINDSIGHT_API_RERANKER_PROVIDER=rrf' "$runtime_test" || {
+  echo 'FAIL backup/restore rehearsal initializes an unnecessary model reranker'; exit 1;
+}
+grep -Fq 'self.path.endswith("/v1/embeddings")' "$synthetic_model" || {
+  echo 'FAIL synthetic Hindsight model does not serve embeddings'; exit 1;
+}
+grep -Fq '"/v1/embeddings"' "$runtime_test" || {
+  echo 'FAIL backup/restore rehearsal does not assert synthetic embedding use'; exit 1;
 }
 if grep -Eq 'host\.docker\.internal|host-gateway' "$runtime_test"; then
   echo 'FAIL backup/restore rehearsal relies on host-gateway access'; exit 1

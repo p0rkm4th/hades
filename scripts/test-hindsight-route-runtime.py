@@ -74,6 +74,12 @@ def start_hindsight(image: str, name: str, network: str, volume: str, mock_port:
         "-e", f"HINDSIGHT_API_LLM_MODEL={MODEL}",
         "-e", f"HINDSIGHT_API_LLM_BASE_URL=http://hades-mock:{mock_port}/v1",
         "-e", "HINDSIGHT_API_LLM_API_KEY=synthetic",
+        "-e", "HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai",
+        "-e", f"HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL={MODEL}",
+        "-e", f"HINDSIGHT_API_EMBEDDINGS_OPENAI_BASE_URL=http://hades-mock:{mock_port}/v1",
+        "-e", "HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY=synthetic",
+        "-e", "HINDSIGHT_API_EMBEDDINGS_OPENAI_DIMENSIONS=384",
+        "-e", "HINDSIGHT_API_RERANKER_PROVIDER=rrf",
         image,
     )
     inspection = json.loads(run("docker", "inspect", name, capture=True))[0]
@@ -449,7 +455,7 @@ def main() -> None:
             raise RuntimeError("synthetic retain did not reach the configured mock extraction route")
         if any(item["model"] != MODEL for item in requests_seen):
             raise RuntimeError("Hindsight did not send the configured extraction model")
-        if any(not item["path"].endswith(("/api/chat", "/v1/chat/completions")) for item in requests_seen):
+        if any(not item["path"].endswith(("/api/chat", "/v1/chat/completions", "/v1/embeddings")) for item in requests_seen):
             raise RuntimeError("Hindsight sent an unexpected path to the configured extraction route")
         rows = list_synthetic_facts(api, bank)
         if not any(
