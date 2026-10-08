@@ -75,7 +75,7 @@ check_history() {
 # Docker bridge addresses used by disposable synthetic fixtures are not owner
 # network addresses. Keep these exceptions narrow and explicit; all other
 # private addresses remain findings.
-check_history '/home/[[:alnum:]_.-]+/|/Users/[[:alnum:]_.-]+/|/mnt/shared/[[:alnum:]_.-]+|/var/tmp/hades-[[:alnum:]_.-]+|(^|[^0-9])(192\.168|10|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}\.[0-9]{1,3}([^0-9]|$)' \
+check_history '/home/[[:alnum:]_.-]+/|/Users/[[:alnum:]_.-]+/|/mnt/shared/[[:alnum:]_.-]+|/var/tmp/hades-[[:alnum:]_.-]+|(^|[^0-9])(192\.168\.[0-9]{1,3}\.[0-9]{1,3}|10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}|172\.(1[6-9]|2[0-9]|3[01])\.[0-9]{1,3}\.[0-9]{1,3})([^0-9]|$)' \
   'local paths and private-network addresses absent' '172.17.0.1' '172.18.0.1'
 check_history 'tail[a-z0-9-]+\.ts\.net' 'tailnet hostnames absent'
 check_history '(^|[^[:alnum:]_.-])([[:alnum:]-]+\.)+local([^[:alnum:]_.-]|$)|(^|[^[:alnum:]])([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}([^[:alnum:]]|$)' \
