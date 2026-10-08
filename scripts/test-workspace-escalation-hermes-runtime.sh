@@ -131,6 +131,25 @@ assert workspace_policy.is_workspace_request(workspace_cases[1])
 assert workspace_policy.is_workspace_follow_up_text('continue')
 assert workspace_policy.is_workspace_follow_up_text('do that instead')
 assert not workspace_policy.is_workspace_follow_up_text('Explain generators')
+from types import SimpleNamespace
+from gateway.run_turn import GatewayTurnMixin
+assert hades._hades_install_gateway_route_patch()
+gateway_fast_url=os.environ.get('HADES_FAST_COMPLETION_BASE_URL')
+os.environ['HADES_FAST_COMPLETION_BASE_URL']='http://127.0.0.1:11437/v1'
+gateway_route=GatewayTurnMixin._resolve_turn_agent_config(
+ SimpleNamespace(_service_tier=None),'continue','qwen3.6:35b',{
+  'provider':'custom','requested_provider':'custom',
+  'base_url':'http://127.0.0.1:11434/v1','api_mode':'chat_completions',
+  'command':None,'args':[],'capabilities':{},
+ },
+)
+if gateway_fast_url is None:
+ os.environ.pop('HADES_FAST_COMPLETION_BASE_URL',None)
+else:
+ os.environ['HADES_FAST_COMPLETION_BASE_URL']=gateway_fast_url
+assert gateway_route['model']=='qwen3.6:35b',gateway_route
+assert gateway_route['runtime']['base_url']=='http://127.0.0.1:11434/v1',gateway_route
+print('PASS gateway keeps a context-dependent continuation on the action-capable model')
 assert workspace_policy.is_workspace_request(workspace_cases[2])
 assert not workspace_policy.is_workspace_request(workspace_cases[3])
 assert not workspace_policy.is_workspace_request(workspace_cases[4])
