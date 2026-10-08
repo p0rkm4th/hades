@@ -1144,16 +1144,16 @@
         "plain": 5.5,
         "hades": 4
       },
-      "median_tool_results_per_task": {
-        "plain": 3.5,
-        "hades": 2
-      },
       "independent_test_passes": 4,
       "expected_source_only_changes": 4,
       "owner_preference": "UNASSIGNED",
       "limitations": "Two synthetic pairs for one small edit; no human quality review, Open WebUI persistence, production gateway authentication, Git commit behavior, or direct Scotty preference. Independent tests ran after the interaction rather than as part of the requested edit.",
       "metrics_record": "benchmarks/hades-core-owner-small-edit-current-stable-20261008.json",
-      "report": "docs/hades-core-owner-small-edit-current-stable-2026-10-08.md"
+      "report": "docs/hades-core-owner-small-edit-current-stable-2026-10-08.md",
+      "median_tool_output_counts_per_task": {
+        "plain": 3.5,
+        "hades": 2
+      }
     }
   },
   "latest_workspace_read_pair_comparison": {
