@@ -112,6 +112,8 @@ assert PAIR_MODULE.CONTEXT_LENGTH == 65536
 assert PAIR_MODULE.deterministic_hades_memory_turn("core09_save")
 assert PAIR_MODULE.deterministic_hades_memory_turn("core09_recall_after_idle")
 assert PAIR_MODULE.deterministic_hades_memory_turn("supplement_core-51_probe")
+assert PAIR_MODULE.deterministic_hades_memory_turn("implicit_recall")
+assert PAIR_MODULE.deterministic_hades_memory_turn("fresh_recall")
 assert not PAIR_MODULE.deterministic_hades_memory_turn("ordinary")
 safe_keys = PAIR_MODULE.public_artifact_record({
     "model_resident_at_response_boundary": "resident",
