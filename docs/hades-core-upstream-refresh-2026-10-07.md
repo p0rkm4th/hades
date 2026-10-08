@@ -238,3 +238,21 @@ session probes, concurrent-subject isolation, and unknown/failed operation
 checks. Do not weaken the current guard on API support alone. Upstream semantics:
 [operations API](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-docs/docs/developer/api/operations.mdx)
 and [recall API](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-docs/docs/developer/api/recall.mdx).
+
+### Hermes 0.21.5 named-function explanation comparison — 2026-10-08
+
+The core-23 seed originally asked “Explain what this function does” without
+providing code or a prior reference. Both stacks answered without reading a
+file, so that wording could not qualify file comprehension. The workspace
+replay now names `discount.py` and `discounted_total`. Across two
+order-balanced repeats, both stacks read the source in both runs. Median task
+time was 28.04 s for HADES and 28.45 s for PLAIN; both used a median 3.5 model
+calls and 2.5 tool results. HADES exposed five schemas (10,088 bytes) versus
+PLAIN's eight (12,590).
+
+The earlier HADES prompt searched twice before reading in both repeats. The
+current instruction explicitly requires reading a named module before any
+filename search; the rerun used one search before reading in one repeat and two
+in the other. This is a directional reduction in HADES tool overhead, not a
+stable latency or correctness result. No semantic or naturalness review and no
+owner preference were collected. See the [sanitized artifact](../benchmarks/hades-workspace-explain-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json).
