@@ -2,8 +2,10 @@
 """Contract for metrics-only owner-subset benchmark artifacts."""
 
 import importlib.util
+import json
 import pathlib
 import sys
+import tempfile
 
 
 SCRIPT = pathlib.Path(__file__).with_name("benchmark-hades-owner-subset.py")
@@ -60,5 +62,15 @@ assert child_env == {
     "NO_PROXY": "127.0.0.1,localhost,::1",
     "no_proxy": "127.0.0.1,localhost,::1",
 }
+with tempfile.TemporaryDirectory() as directory:
+    root = pathlib.Path(directory) / "install"
+    source = root / "source"
+    source.mkdir(parents=True)
+    commit = "818c13be1dc4fd28987e1e881a9408224afd4535"
+    (source / "install-stamp.json").write_text(json.dumps({"commit": commit}))
+    assert MODULE.hermes_source_commit(root, source) == commit
+    (source / "install-stamp.json").write_text(json.dumps({"commit": "not-a-commit"}))
+    assert MODULE.hermes_source_commit(root, source) == ""
 print("PASS owner-subset artifacts redact turns and enforce captured generation controls")
 print("PASS benchmark child environments exclude credentials, service config, proxies, and injection paths")
+print("PASS Hermes benchmark provenance reads and validates installed release stamps")

@@ -168,6 +168,29 @@ def require_loaded_context(models: list[dict[str, Any]], model: str,
     return loaded
 
 
+def hermes_source_commit(hermes_root: pathlib.Path, source_root: pathlib.Path) -> str:
+    """Read immutable release provenance when the staged source has no Git metadata."""
+    for stamp in (source_root / "install-stamp.json", hermes_root / "install-stamp.json"):
+        try:
+            value = json.loads(stamp.read_text()).get("commit", "")
+        except (OSError, json.JSONDecodeError, AttributeError):
+            continue
+        if (isinstance(value, str) and len(value) == 40
+                and all(char in "0123456789abcdef" for char in value)):
+            return value
+    for checkout in (source_root, hermes_root):
+        result = subprocess.run(
+            ["git", "-C", str(checkout), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        )
+        value = result.stdout.strip()
+        if result.returncode == 0 and len(value) == 40 and all(
+            char in "0123456789abcdef" for char in value
+        ):
+            return value
+    return ""
+
+
 def apply_request_overrides(
     request: dict[str, Any], overrides: dict[str, Any]
 ) -> dict[str, Any]:
@@ -894,10 +917,7 @@ def main() -> int:
             [str(executable), "--version"], capture_output=True, text=True, timeout=10
         ).stdout.strip()
         hermes_version = hermes_version_output.splitlines()[0] if hermes_version_output else "unknown"
-        hermes_source_commit = subprocess.run(
-            ["git", "-C", str(args.hermes_root), "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=10,
-        ).stdout.strip()
+        hermes_source_commit_value = hermes_source_commit(args.hermes_root, hermes_python_path)
         artifact = public_metric_record({
             "schema_version": 1,
             "date": time.strftime("%Y-%m-%d"),
@@ -907,7 +927,7 @@ def main() -> int:
                 "ollama_url": args.ollama_url,
                 "ollama_version": ollama_version,
                 "hermes_version": hermes_version,
-                "hermes_source_commit": hermes_source_commit,
+                "hermes_source_commit": hermes_source_commit_value,
                 "model": MODEL,
                 "model_digest": model_tag.get("digest"),
                 "model_size_bytes": model_tag.get("size"),
