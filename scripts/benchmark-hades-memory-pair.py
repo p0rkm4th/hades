@@ -160,6 +160,79 @@ def read_safe_recall_diagnostics(log_path: pathlib.Path, offset: int = 0):
     return rows, next_offset
 
 
+def read_safe_recall_timings(log_path: pathlib.Path, offset: int = 0):
+    """Read allowlisted automatic-recall timing fields, never log text fields."""
+    marker = "HADES timing stage=automatic_recall "
+    allowed_phases = {"operation_visibility", "semantic_lookup", "raw_fact_fallback"}
+    allowed_states = {"active", "clear", "unknown"}
+    rows = []
+    try:
+        with log_path.open("rb") as stream:
+            stream.seek(max(0, offset))
+            while True:
+                raw_line = stream.readline()
+                if not raw_line:
+                    break
+                line = raw_line.decode("utf-8", errors="replace")
+                start = line.find(marker)
+                if start < 0:
+                    continue
+                fields = dict(re.findall(
+                    r"([a-z_]+)=([A-Za-z0-9_.,:-]+)",
+                    line[start + len(marker):],
+                ))
+                phase = fields.get("phase") or fields.get("operation_visibility")
+                # Operation-visibility lines encode the phase as the first
+                # bare token, followed by key/value fields.
+                if phase is None:
+                    phase_match = re.match(
+                        r"([a-z_]+)\s+", line[start + len(marker):]
+                    )
+                    phase = phase_match.group(1) if phase_match else None
+                if phase not in allowed_phases:
+                    continue
+                row: dict[str, Any] = {
+                    "stage": "automatic_recall",
+                    "phase": phase,
+                }
+                state = fields.get("state")
+                if state in allowed_states:
+                    row["state"] = state
+                operation_types = fields.get("operation_types", "").split(",")
+                safe_types = sorted({
+                    value for value in operation_types
+                    if value in {"retain", "consolidation"}
+                })
+                if safe_types:
+                    row["operation_types"] = safe_types
+                result_count = fields.get("results")
+                if result_count and result_count.isdecimal():
+                    row["results"] = int(result_count)
+                elapsed = fields.get("elapsed_ms")
+                if elapsed:
+                    try:
+                        value = float(elapsed)
+                    except ValueError:
+                        value = math.nan
+                    if math.isfinite(value) and value >= 0:
+                        row["elapsed_ms"] = round(value, 1)
+                outcome = fields.get("outcome")
+                if outcome == "error" or (
+                    phase == "operation_visibility"
+                    and state == "unknown"
+                    and fields.get("error")
+                ):
+                    row["outcome"] = "error"
+                    error_type = fields.get("error")
+                    if error_type and error_type.isidentifier():
+                        row["error_type"] = error_type
+                rows.append(row)
+            next_offset = stream.tell()
+    except OSError:
+        return [], offset
+    return rows, next_offset
+
+
 def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Serialize outcomes without answers, prompts, schemas, or raw provider calls."""
     sample_keys = (
@@ -1780,6 +1853,7 @@ def main() -> int:
                 "hades_recall_budget": args.hades_recall_budget,
                 "hades_prefer_observations": args.hades_prefer_observations,
                 "recall_diagnostics_captured": args.capture_recall_diagnostics,
+                "recall_timing_diagnostics_captured": args.capture_recall_diagnostics,
                 "post_idle_recall_type_diagnostic": (
                     "Not run in automatic-only mode."
                     if args.automatic_only else
@@ -1813,6 +1887,10 @@ def main() -> int:
             "memory_supplement_summary": supplement_summary,
             "hades_recall_diagnostics": (
                 read_safe_recall_diagnostics(gateways["hades"]["log_path"])[0]
+                if args.capture_recall_diagnostics else []
+            ),
+            "hades_recall_timing_diagnostics": (
+                read_safe_recall_timings(gateways["hades"]["log_path"])[0]
                 if args.capture_recall_diagnostics else []
             ),
             "hindsight_ollama_calls": bridge.snapshot() if bridge is not None else [],

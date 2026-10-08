@@ -141,6 +141,41 @@ with tempfile.TemporaryDirectory() as directory:
     assert PAIR_MODULE.read_safe_recall_diagnostics(
         diagnostic_log, diagnostic_offset
     ) == ([], diagnostic_offset)
+    diagnostic_log.write_text(
+        'INFO HADES timing stage=automatic_recall operation_visibility '
+        'state=active operation_types=retain,private elapsed_ms=120.4 '
+        'private_query=PRIVATE_SYNTHETIC_FACT\n'
+        'INFO HADES timing stage=automatic_recall phase=semantic_lookup '
+        'results=4 elapsed_ms=1500.2 private_query=PRIVATE_SYNTHETIC_FACT\n'
+        'INFO HADES timing stage=automatic_recall operation_visibility '
+        'state=unknown error=PrivateError elapsed_ms=8.1\n'
+        'INFO HADES timing stage=untrusted phase=secret elapsed_ms=9.9\n',
+        encoding="utf-8",
+    )
+    timing_diagnostics, timing_offset = PAIR_MODULE.read_safe_recall_timings(
+        diagnostic_log
+    )
+    assert timing_diagnostics == [
+        {
+            "stage": "automatic_recall", "phase": "operation_visibility",
+            "state": "active", "operation_types": ["retain"], "elapsed_ms": 120.4,
+        },
+        {
+            "stage": "automatic_recall", "phase": "semantic_lookup",
+            "results": 4, "elapsed_ms": 1500.2,
+        },
+        {
+            "stage": "automatic_recall", "phase": "operation_visibility",
+            "state": "unknown", "elapsed_ms": 8.1,
+            "outcome": "error", "error_type": "PrivateError",
+        },
+    ], timing_diagnostics
+    timing_json = json.dumps(timing_diagnostics)
+    for private_value in ("PRIVATE_SYNTHETIC_FACT", "private_query", "private"):
+        assert private_value not in timing_json, (private_value, timing_json)
+    assert PAIR_MODULE.read_safe_recall_timings(
+        diagnostic_log, timing_offset
+    ) == ([], timing_offset)
     assert PAIR_MODULE.safe_turn_record({
         "turn": "fixture", "recall_diagnostics": diagnostics,
         "answer": "PRIVATE_SYNTHETIC_FACT",
