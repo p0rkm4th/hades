@@ -1,12 +1,37 @@
 {
   "schema_version": 1,
   "recorded_at": "2026-10-08T21:13:02Z",
+  "provenance_rechecked_at": "2026-10-08T21:26:12Z",
   "purpose": "Recheck the staged Open WebUI security fix and upgrade/rollback behavior without touching production.",
   "candidate": {
     "image": "hades-open-webui:0.11.4-candidate-bound",
     "image_id": "sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469",
     "upstream_version": "0.11.4",
-    "upstream_revision": "8bd8b4fac5e059578ac0c74b3c18d11139f88b7d"
+    "upstream_revision": "8bd8b4fac5e059578ac0c74b3c18d11139f88b7d",
+    "hades_source_commit": "e33b7d18c889775260e5ace804aac0ebf598d8d8",
+    "upstream_base_image": "ghcr.io/open-webui/open-webui@sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f"
+  },
+  "test_source": {
+    "commit": "fd8a83bb8bd2d7fd86a28a48b02dd7c5f853b809",
+    "sha256": {
+      "scripts/test-openwebui-docx-preview-security.sh": "dede4732f51ee1299d3e693665a7a61e420756bb991d6012210738d341ed1d8a",
+      "scripts/test-open-webui-candidate.sh": "70739e27da8c399a06faaad2f889b9948298c6cbbfd670a977f7a6eee4522938",
+      "scripts/test-open-webui-populated-migration.sh": "08707fa9d852da83a22eb273327dd419981ecbea12cea08cbcc09108fca852f2",
+      "scripts/verify-open-webui-candidate-artifact.sh": "973a1a04f956b5e2fbebfc006e7388daaa11dfaf600676bf60ccfb9220f90be1",
+      "scripts/test-open-webui-candidate-artifact-contract.sh": "c5c8e9052d7165b9122b9c2e767381c71956663c1f651dc29304d65f31e79e28",
+      "scripts/test-openwebui-disabled-role-session.sh": "6eb81187b70ca5b9b5f77d0132544beb8349f3efac093c067261e601b18e6a4b"
+    }
+  },
+  "artifact_binding": {
+    "manifest_bound_candidate_verifier": "pass",
+    "checked": [
+      "exact local image ID",
+      "upstream version and source revision labels",
+      "HADES source commit label",
+      "immutable upstream base digest label",
+      "the DOCX and disabled-role checks each use the exact candidate image identity"
+    ],
+    "candidate_and_migration_wrappers_enforce_binding": true
   },
   "positive_control": {
     "image": "hades-open-webui:0.11.1-hades-failure-honest-3",
@@ -30,7 +55,8 @@
         "candidate HADES theme and upload assets match their source",
         "authenticated file upload and owner read-back with household isolation",
         "LDAP first-login role behavior in both owner-first and household-first orders",
-        "subject separation and role persistence after restart and fresh login"
+        "subject separation and role persistence after restart and fresh login",
+        "existing token denied and chat endpoint returns 401 after role revocation"
       ]
     },
     "populated_upgrade_and_rollback": {
@@ -38,7 +64,7 @@
       "source_version": "0.11.1",
       "target_version": "0.11.4",
       "upgrade_checks": [
-        "owner and household identities",
+        "synthetic local-signup owner and household accounts (LDAP identity migration is not covered)",
         "private chat and file isolation",
         "shared-channel membership and access",
         "uploaded DOCX byte preservation",
@@ -48,10 +74,12 @@
     }
   },
   "scope": {
+    "docx_preview_actor_scope": "one synthetic uploader previewed their own document; shared-file cross-user session-token theft path is not directly exercised",
     "synthetic_data_only": true,
     "production_changed": false,
     "production_backup_or_cutover_proven": false,
     "owner_dogfood_completed": false,
+    "nyx_review": "Accepted the synthetic staging result; production hold retained. Cross-user shared-file exploit flow and exact production backup/cutover are still unproven.",
     "temporary_test_containers_volumes_and_networks_removed": true
   }
 }
