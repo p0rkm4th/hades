@@ -22,5 +22,7 @@ bash scripts/test-openwebui-ldap-bootstrap.sh
 HADES_DISABLED_ROLE_TEST_IMAGE="$image" \
 HADES_VERIFY_OPEN_WEBUI_CANDIDATE=1 \
 bash scripts/test-openwebui-disabled-role-session.sh
+EXPECT_VULNERABLE=0 HADES_PLAYWRIGHT_MODULE="${HADES_PLAYWRIGHT_MODULE:-${HOME}/.local/share/hades-playwright/node_modules/playwright}" \
+bash scripts/test-openwebui-docx-preview-security.sh "$image"
 
 echo "PASS Open WebUI candidate acceptance: $image"

