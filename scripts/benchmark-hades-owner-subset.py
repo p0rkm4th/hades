@@ -172,7 +172,12 @@ def apply_request_overrides(
     request: dict[str, Any], overrides: dict[str, Any]
 ) -> dict[str, Any]:
     """Apply benchmark controls at the provider boundary, where they take effect."""
-    return request | overrides
+    result = request | overrides
+    request_options = request.get("options")
+    override_options = overrides.get("options")
+    if isinstance(request_options, dict) and isinstance(override_options, dict):
+        result["options"] = request_options | override_options
+    return result
 
 
 def unused_port() -> int:

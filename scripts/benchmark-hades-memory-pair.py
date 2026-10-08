@@ -42,6 +42,7 @@ DEFAULT_IMAGE = (
     "@sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70"
 )
 MODEL = "qwen3.6:35b"
+CONTEXT_LENGTH = 65536
 DEFAULT_HINDSIGHT_MODEL = "qwen3:14b"
 OWNER_CORE_01_GREETING = "Hey, how's your morning going?"
 OWNER_CORE_09_RECALL = "What was the savings target I mentioned?"
@@ -766,7 +767,7 @@ def wait_hindsight_idle(url: str, bank_id: str, timeout: int = 180,
 
 
 def normalize_ollama_for_arm(ollama_url: str, benchmark, interactive_model: str,
-                             extractor_model: str, context: int = 65536) -> dict[str, Any]:
+                             extractor_model: str, context: int = CONTEXT_LENGTH) -> dict[str, Any]:
     """Start each comparison arm with only the interactive model resident."""
     base = ollama_url.rstrip("/")
     unload = None
@@ -1025,7 +1026,11 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
     )
     # Pin identical user-facing sampler values through the common proxy. The
     # isolated benchmark should not inherit different Hermes defaults.
-    proxy.generation_overrides = {"temperature": 0.1, "top_p": 0.95}
+    proxy.generation_overrides = {
+        "temperature": 0.1,
+        "top_p": 0.95,
+        "options": {"num_ctx": CONTEXT_LENGTH},
+    }
     proxy_thread = threading.Thread(target=proxy.serve_forever, daemon=True)
     proxy_thread.start()
 
@@ -1038,7 +1043,8 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
             "default": MODEL,
             "provider": "custom",
             "base_url": f"http://127.0.0.1:{provider_port}/v1",
-            "ollama_num_ctx": 65536,
+            "context_length": CONTEXT_LENGTH,
+            "ollama_num_ctx": CONTEXT_LENGTH,
             "max_tokens": 512,
         },
         "providers": {"custom": {"request_timeout_seconds": 360}},
@@ -1172,6 +1178,9 @@ def summarize_calls(calls: list[dict[str, Any]]) -> dict[str, Any]:
         "system_message_bytes": sum(
             call.get("message_bytes_by_role", {}).get("system", 0) for call in calls
         ),
+        "context_tokens_per_generation": [
+            call.get("requested_num_ctx") for call in calls
+        ],
     }
 
 
@@ -1188,6 +1197,10 @@ def measure_turn(gateway: dict[str, Any], proxy_module, turn: str, session: str,
         row = {"status": None, "ttft_ms": None, "total_ms": None, "answer": ""}
         error = type(exc).__name__
     calls = proxy.snapshot()[before:]
+    if not calls or any(
+        call.get("requested_num_ctx") != CONTEXT_LENGTH for call in calls
+    ):
+        raise RuntimeError("measured provider generation did not request the configured context")
     answer = row.get("answer", "")
     if isinstance(answer, str) and answer.startswith("CSV finance read ("):
         answer = "[redacted: unrelated owner-finance response; routed from synthetic benchmark turn]"
@@ -1414,7 +1427,7 @@ def main() -> int:
                 failure_stage = f"sample_{sample + 1}_{stack}"
                 sample_result.setdefault("runtime_normalization", {})[stack] = (
                     normalize_ollama_for_arm(
-                        ollama, benchmark, MODEL, args.hindsight_model, 65536
+                        ollama, benchmark, MODEL, args.hindsight_model, CONTEXT_LENGTH
                     )
                 )
                 gateway = gateways[stack]
@@ -1873,7 +1886,8 @@ def main() -> int:
                 "model_digest": model_row.get("digest"),
                 "model_quantization": model_row.get("details", {}).get("quantization_level"),
                 "ollama_reported_loaded_context": loaded_model.get("context_length") if loaded_model else None,
-                "hermes_ollama_context_configured": 65536,
+                "hermes_ollama_context_configured": CONTEXT_LENGTH,
+                "measured_context_verification": "Every provider generation is required to request the configured context; the exact value is retained per turn.",
                 "hindsight_image": args.hindsight_image,
                 "hindsight_model": args.hindsight_model,
                 "hindsight_model_digest": hindsight_model_row.get("digest"),
