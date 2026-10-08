@@ -1024,6 +1024,14 @@
       "limitations": "Warmed synthetic conversations only; answer quality, naturalness, direct Scotty preference, Open WebUI/frontend, cold start, production parity, and the other 47 corpus IDs are not qualified. Completion length differs, so total-latency advantage cannot be interpreted as quality.",
       "metrics_record": "benchmarks/hades-core-owner-conversation-ollama0401-seeded-repeat05-20261008.json",
       "report": "docs/hades-core-plain-stack-ollama0401-conversation-20261008.md"
+    },
+    "latest_workspace_escalation_current_source_ollama0401": {
+      "source_revision": "1c265d03a8b18c74545b20ae7aeb7c4e0bd1a00e",
+      "classification": "two-repeat current-source synthetic geometry multi-file diagnosis-to-fix replay; no owner-preference labels",
+      "result": "PLAIN median task time 40.05 s versus HADES 49.99 s; all four task runs passed independent tests and changed only the intended source. PLAIN changed the workspace before the explicit fix request once in two runs; HADES did not. Median model API calls were 9 PLAIN and 7 HADES; median tool results were 10.5 and 9.5. HADES first diagnosis delta was about 0.3 s versus about 17.7–18.0 s for PLAIN, but HADES fix-phase tool-call generations took about 15 s each. The cause of delayed HADES tool calls is not established.",
+      "limitations": "Two pairs on one synthetic coding fixture. No owner preference, broad coding quality, Git commit behavior, Open WebUI persistence, or deployed gateway parity. Does not establish general latency preference.",
+      "metrics_record": "benchmarks/hades-core-workspace-escalation-current-ollama0401-20261008.json",
+      "report": "docs/hades-core-workspace-escalation-ollama0401-2026-10-08.md"
     }
   }
 }

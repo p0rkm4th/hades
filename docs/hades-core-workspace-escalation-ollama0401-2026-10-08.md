@@ -49,3 +49,22 @@ This synthetic result is not a Scotty preference vote or a broad coding
 qualification. No owner preference labels were collected.
 
 Artifact: [sanitized four-pair measurements](../benchmarks/hades-core-workspace-escalation-ollama0401-v1.json).
+
+
+## Current-source replay (2026-10-08)
+
+A two-repeat replay used the same Hermes 0.21.5 source, Ollama 0.40.1, Qwen3.6 35B digest, loaded 65,536-token context, sandbox image, and counterbalanced sampling controls. The HADES source revision was `1c265d03a8b18c74545b20ae7aeb7c4e0bd1a00e`. Both stacks received the same workspace context hint. All four task runs changed only the intended source and passed independent tests.
+
+| Measure | PLAIN | HADES |
+|---|---:|---:|
+| Median diagnosis → fix time | 40.05 s | 49.99 s |
+| Median model API calls per task | 9 | 7 |
+| Median tool results per task | 10.5 | 9.5 |
+| Diagnosis changed workspace before “Fix it.” | 1/2 | 0/2 |
+| Independent fixture tests passed | 2/2 | 2/2 |
+
+HADES remained about 9.94 seconds slower despite fewer median model calls and tool results. It returned its first diagnosis stream delta in about 0.3 seconds, while PLAIN took about 17.7–18.0 seconds; the overall action phase erased that progress. In HADES, the first fix-phase tool-call generations took about 15.75 and 15.09 seconds before producing tool-only calls. The available metrics do not establish why the model delayed those calls. The reduced HADES tool catalog and prompt size do not explain that action delay directly.
+
+This replay strengthens the evidence that HADES preserves the diagnosis/action boundary on this fixture, while PLAIN violated it once. It does not establish owner preference, broad coding quality, Open WebUI persistence, Git commit behavior, or deployed gateway parity. It is a two-pair synthetic replay; do not infer a general latency or product-preference result from it.
+
+Artifact: [sanitized current-source replay](../benchmarks/hades-core-workspace-escalation-current-ollama0401-20261008.json).
