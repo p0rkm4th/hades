@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "HADES Core Comparative Owner Corpus — Seed v2 with memory supplement",
-  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The current five-turn coding workflow found HADES diff-review and commit failures despite passing independent tests; see the workflow-to-commit replay.",
+  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The current five-turn coding workflow passes independent tests and clean commits on both stacks after repairing workspace follow-up routing. HADES still misses the explicit diff-review turn in one of two runs, although it inspects the diff before both commits; see the current workflow replay.",
   "source_note": "Cases are hand-authored sanitized paraphrases, not verbatim transcripts. The Sept. 24 owner dogfood report documents real prompt families including recipe availability, pantry expiry, spaghetti inventory/list, homelab/network/model/backup status, restaurants, subscriptions, weekend affordability, lease prepayment, restock, savings target, and morning briefing. Replace/add cases only from owner-approved evidence; never copy secrets, financial records, private memories, or household content into this file. The five v2 memory supplement cases are synthetic examples authored for policy coverage; they are not transcripts or claims about Scotty.",
   "comparison_contract": {
     "same_model_and_quantization": true,
@@ -748,7 +748,7 @@
       "core-28",
       "core-31"
     ],
-    "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; current-source coding diagnosis/fix, README comprehension, named-file explanation and search; small edit with focused test; and a five-turn inspect/edit/test/diff-review/commit workflow. All workflow arms used the same Hermes 0.21.5 / Ollama 0.40.1 / Qwen3.6:35b setup and isolated rootless sandbox. The workflow case passed independent tests and source-scope checks in all four arms; PLAIN reviewed and committed in both repeats while HADES committed in neither and did not run the requested diff review. No owner preference has been collected.",
+    "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; current-source coding diagnosis/fix, README comprehension, named-file explanation and search; small edit with focused test; and a five-turn inspect/edit/test/diff-review/commit workflow. All workflow arms used the same Hermes 0.21.5 / Ollama 0.40.1 / Qwen3.6:35b setup and isolated rootless sandbox. The current workflow run passed independent tests, source-scope checks, and clean commits in all four arms. PLAIN made the explicit diff review in both runs; HADES made it in one run and made the diff inspection during the commit turn in the other. No owner preference has been collected.",
     "unreplayed_case_count": 29,
     "owner_preference_labels": 0,
     "owner_preference_status": "unassigned",
@@ -1348,73 +1348,73 @@
       "core-28",
       "core-31"
     ],
-    "source_revision": "4fb02f2f7a1bc5d96dd246374bd0656fb3fe2150",
+    "source_revision": "75241cfa96602142ef3776b4b2f9c28efec5586c",
     "classification": "two order-balanced synthetic five-turn workspace workflows; no owner preference or human answer-quality review",
     "runtime": "Hermes 0.21.5, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable sandbox image",
     "order": "PLAIN then HADES; HADES then PLAIN",
     "task_seconds_by_stack": {
       "plain": [
-        57.5315,
-        60.7141
+        58.6012,
+        66.9997
       ],
       "hades": [
-        47.9302,
-        51.753
+        62.7327,
+        61.8625
       ]
     },
     "median_task_seconds": {
-      "plain": 59.1228,
-      "hades": 49.8416
+      "plain": 62.80045,
+      "hades": 62.297599999999996
     },
     "provider_generations_by_task": {
       "plain": [
-        17,
+        18,
         18
       ],
       "hades": [
-        10,
-        12
+        13,
+        13
       ]
     },
     "median_provider_generations_per_task": {
-      "plain": 17.5,
-      "hades": 11.0
+      "plain": 18.0,
+      "hades": 13.0
+    },
+    "tool_outputs_by_task": {
+      "plain": [
+        14,
+        13
+      ],
+      "hades": [
+        8,
+        9
+      ]
+    },
+    "median_tool_outputs_per_task": {
+      "plain": 13.5,
+      "hades": 8.5
     },
     "focused_test_terminal_calls": {
-      "plain": 4,
-      "hades": 4
+      "plain": 6,
+      "hades": 3
     },
     "explicit_diff_review_calls": {
       "plain": 2,
-      "hades": 0
+      "hades": 1
     },
-    "commit_terminal_calls": {
-      "plain": 2,
+    "git_diff_calls_outside_explicit_review_turn": {
+      "plain": 0,
       "hades": 1
     },
     "verified_clean_commits": {
       "plain": 2,
-      "hades": 0
+      "hades": 2
     },
     "independent_tests_passed": 4,
     "expected_source_only_changes": 4,
     "owner_preference": "UNASSIGNED",
-    "limitations": "Two synthetic pairs on one one-file typo fixture; direct Hermes AIAgent route, no human answer-quality review, Open WebUI persistence, production gateway authentication, deployed parity, or Scotty preference. HADES did not complete diff review or commit; the tool-not-found dispatch cause is not yet isolated.",
+    "limitations": "Two synthetic pairs on one small typo fixture; direct Hermes AIAgent route, no human answer-quality review, Open WebUI persistence, deployed parity, or Scotty preference. HADES skipped the explicit diff-review turn in one repeat but inspected the diff before committing in both.",
     "metrics_record": "benchmarks/hades-core-owner-workflow-to-commit-current-stable-20261008.json",
-    "report": "docs/hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md",
-    "tool_output_counts_by_task": {
-      "plain": [
-        12,
-        14
-      ],
-      "hades": [
-        11,
-        16
-      ]
-    },
-    "median_tool_outputs_per_task": {
-      "plain": 13.0,
-      "hades": 13.5
-    }
+    "report": "docs/hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md"
   }
 }
