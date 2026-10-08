@@ -34,8 +34,11 @@ is absent. It passes on the exact staged 0.11.4 candidate. As a positive
 control, the same harness fails against the locally available 0.11.1 HADES
 build: the marker ran in an `about:srcdoc` frame and the unsafe link remained.
 That old image is a local test control, not evidence of production state.
-Direct owner dogfood, production backup/restore rehearsal, Terminals-precondition
-inspection, and production rollout remain open.
+The protected 2026-10-08 runtime check found the active Open WebUI's
+`terminal_server.connections` list empty, so the Terminal-proxy advisory's
+configured-connection precondition is absent for the observed deployment.
+Direct owner dogfood, production backup/restore rehearsal, and production
+rollout remain open.
 
 ## Current mission checkpoint — 2026-10-06 UTC
 
