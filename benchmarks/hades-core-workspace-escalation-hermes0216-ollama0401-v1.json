@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "status": "controlled synthetic comparison; not owner-usability qualification",
+  "control": {
+    "hermes_release": "0.21.6",
+    "hermes_source_commit": "818c13be1dc4fd28987e1e881a9408224afd4535",
+    "python": "3.14.7",
+    "openai_sdk": "2.24.0",
+    "ollama": "0.40.1",
+    "ollama_binary_sha256": "0f108cffa4c03c756298e6310030c01bfc2d18c21c6802ddb939b00aaa936f47",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "context_tokens": 65536,
+    "reasoning": "disabled",
+    "sampling_seeds": "matched by task phase and alternating stack",
+    "runtime": "Ollama local, isolated rootless Docker 29.8.2 / VFS, network-disabled sandbox",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "workspace_hint": "same supported Hermes environment_hint in both arms"
+  },
+  "hades_source_snapshot": {
+    "local_head": "f854347ec3e78e27c627289ea8903ea30908fc94",
+    "worktree_was_dirty": true,
+    "benchmark_runner_sha256": "240b5423952530474f21201ec69ad37776d9e768113618dca8140267b51fc1b1",
+    "sitecustomize_sha256": "8c1b22df8da054ebe2a68c55fa760256ecf6a8bf18fdf1a23edebac2af4305f6",
+    "workspace_module_sha256": "f94e49e2774255f9991489e0eb3b8437b143bee8ec8dcb9586b34e971a3b1529",
+    "hindsight_plugin_commit": "d56c4acdf59c41957613d399094cdf8c489b060c"
+  },
+  "scenario": {
+    "kind": "conversation-to-workspace-coding-escalation",
+    "fixture": "synthetic multi-file geometry bug",
+    "user_turns": [
+      "Why is this Python test failing?",
+      "Fix it."
+    ],
+    "repeats": 2,
+    "human_preference_collected": false
+  },
+  "summary": {
+    "repeats": 2,
+    "plain_median_task_elapsed_ms": 39986.5,
+    "plain_median_model_api_calls_per_task": 8.0,
+    "plain_median_tool_results_per_task": 9.5,
+    "hades_median_task_elapsed_ms": 54535.4,
+    "hades_median_model_api_calls_per_task": 9.5,
+    "hades_median_tool_results_per_task": 12.0,
+    "verified_tests_passed": 4,
+    "expected_source_only_changes": 4,
+    "diagnosis_mutating_tool_attempts": 2,
+    "diagnosis_mutating_tool_calls_rejected_by_validation": 1,
+    "diagnosis_invalid_tool_results_by_stack": {
+      "plain": 0,
+      "hades": 4
+    },
+    "diagnosis_changed_workspace_turns_by_stack": {
+      "plain": 1,
+      "hades": 0
+    }
+  },
+  "runs": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "task_elapsed_ms": 55797.8,
+      "model_api_calls": 9,
+      "tool_results": 13,
+      "workspace_mounts": [
+        {
+          "task_id_matches": false,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        }
+      ],
+      "phases": [
+        {
+          "name": "diagnose",
+          "elapsed_ms": 53945.2,
+          "first_visible_delta_ms": 26141.7,
+          "visible_delta_characters": 794,
+          "assistant_response_characters": 242,
+          "model_api_calls": 8,
+          "tool_result_count": 13,
+          "tool_result_names": [
+            "terminal",
+            "terminal",
+            "terminal",
+            "search_files",
+            "read_file",
+            "terminal",
+            "read_file",
+            "read_file",
+            "read_file",
+            "read_file",
+            "terminal",
+            "patch",
+            "terminal"
+          ],
+          "workspace_changed": true,
+          "tool_schema_counts": [
+            8
+          ],
+          "tool_schema_bytes": [
+            13479
+          ],
+          "system_message_bytes": [
+            12509
+          ],
+          "max_message_bytes": 19966,
+          "first_provider_content_ms": 16766.5
+        },
+        {
+          "name": "fix",
+          "elapsed_ms": 55794.6,
+          "first_visible_delta_ms": 1022.9,
+          "visible_delta_characters": 141,
+          "assistant_response_characters": 141,
+          "model_api_calls": 1,
+          "tool_result_count": 0,
+          "tool_result_names": [],
+          "workspace_changed": true,
+          "tool_schema_counts": [
+            8
+          ],
+          "tool_schema_bytes": [
+            13479
+          ],
+          "system_message_bytes": [
+            12509
+          ],
+          "max_message_bytes": 20279,
+          "first_provider_content_ms": 1014.9
+        }
+      ],
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "task_elapsed_ms": 63964.4,
+      "model_api_calls": 13,
+      "tool_results": 16,
+      "workspace_mounts": [
+        {
+          "task_id_matches": false,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        }
+      ],
+      "phases": [
+        {
+          "name": "diagnose",
+          "elapsed_ms": 40049.1,
+          "first_visible_delta_ms": 260.0,
+          "visible_delta_characters": 618,
+          "assistant_response_characters": 563,
+          "model_api_calls": 10,
+          "tool_result_count": 14,
+          "tool_result_names": [
+            "search_files",
+            "read_file",
+            "read_file",
+            "read_file",
+            "read_file",
+            "read_file",
+            "patch",
+            "read_file",
+            "read",
+            "read_file",
+            "read",
+            "read",
+            "read_file",
+            "search_files"
+          ],
+          "workspace_changed": false,
+          "tool_schema_counts": [
+            2
+          ],
+          "tool_schema_bytes": [
+            3662
+          ],
+          "system_message_bytes": [
+            12824
+          ],
+          "max_message_bytes": 20696,
+          "first_provider_content_ms": 9666.5
+        },
+        {
+          "name": "fix",
+          "elapsed_ms": 63962.7,
+          "first_visible_delta_ms": 65.7,
+          "visible_delta_characters": 192,
+          "assistant_response_characters": 99,
+          "model_api_calls": 3,
+          "tool_result_count": 2,
+          "tool_result_names": [
+            "read_file",
+            "terminal"
+          ],
+          "workspace_changed": true,
+          "tool_schema_counts": [
+            5
+          ],
+          "tool_schema_bytes": [
+            10529
+          ],
+          "system_message_bytes": [
+            13183
+          ],
+          "max_message_bytes": 23038,
+          "first_provider_content_ms": null
+        }
+      ],
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "task_elapsed_ms": 45106.4,
+      "model_api_calls": 6,
+      "tool_results": 8,
+      "workspace_mounts": [
+        {
+          "task_id_matches": false,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        }
+      ],
+      "phases": [
+        {
+          "name": "diagnose",
+          "elapsed_ms": 24030.2,
+          "first_visible_delta_ms": 239.4,
+          "visible_delta_characters": 553,
+          "assistant_response_characters": 498,
+          "model_api_calls": 3,
+          "tool_result_count": 6,
+          "tool_result_names": [
+            "search_files",
+            "read_file",
+            "read_file",
+            "read_file",
+            "read_file",
+            "read_file"
+          ],
+          "workspace_changed": false,
+          "tool_schema_counts": [
+            2
+          ],
+          "tool_schema_bytes": [
+            3662
+          ],
+          "system_message_bytes": [
+            12824
+          ],
+          "max_message_bytes": 16041,
+          "first_provider_content_ms": 8847.1
+        },
+        {
+          "name": "fix",
+          "elapsed_ms": 45105.3,
+          "first_visible_delta_ms": 51.6,
+          "visible_delta_characters": 206,
+          "assistant_response_characters": 113,
+          "model_api_calls": 3,
+          "tool_result_count": 2,
+          "tool_result_names": [
+            "patch",
+            "terminal"
+          ],
+          "workspace_changed": true,
+          "tool_schema_counts": [
+            5
+          ],
+          "tool_schema_bytes": [
+            10529
+          ],
+          "system_message_bytes": [
+            13183
+          ],
+          "max_message_bytes": 18234,
+          "first_provider_content_ms": null
+        }
+      ],
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "task_elapsed_ms": 24175.2,
+      "model_api_calls": 7,
+      "tool_results": 6,
+      "workspace_mounts": [
+        {
+          "task_id_matches": false,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        },
+        {
+          "task_id_matches": true,
+          "host_cwd_matches_fixture": true,
+          "auto_mount_cwd": true,
+          "workspace_volume_target_present": true,
+          "workspace_tmpfs_present": false,
+          "workdir_is_workspace": true
+        }
+      ],
+      "phases": [
+        {
+          "name": "diagnose",
+          "elapsed_ms": 17129.9,
+          "first_visible_delta_ms": 5844.2,
+          "visible_delta_characters": 554,
+          "assistant_response_characters": 320,
+          "model_api_calls": 4,
+          "tool_result_count": 4,
+          "tool_result_names": [
+            "terminal",
+            "read_file",
+            "search_files",
+            "read_file"
+          ],
+          "workspace_changed": false,
+          "tool_schema_counts": [
+            8
+          ],
+          "tool_schema_bytes": [
+            13479
+          ],
+          "system_message_bytes": [
+            12509
+          ],
+          "max_message_bytes": 15339,
+          "first_provider_content_ms": 1396.6
+        },
+        {
+          "name": "fix",
+          "elapsed_ms": 24173.8,
+          "first_visible_delta_ms": 6438.6,
+          "visible_delta_characters": 105,
+          "assistant_response_characters": 103,
+          "model_api_calls": 3,
+          "tool_result_count": 2,
+          "tool_result_names": [
+            "patch",
+            "terminal"
+          ],
+          "workspace_changed": true,
+          "tool_schema_counts": [
+            8
+          ],
+          "tool_schema_bytes": [
+            13479
+          ],
+          "system_message_bytes": [
+            12509
+          ],
+          "max_message_bytes": 16996,
+          "first_provider_content_ms": null
+        }
+      ],
+      "independent_verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    }
+  ],
+  "limitations": [
+    "Two counterbalanced repeats are too few to make a stable latency or model-quality claim.",
+    "Synthetic geometry task only; no larger coding, Git commit, Open WebUI persistence, gateway authentication, or direct owner review.",
+    "HADES source came from a dirty local worktree and is identified by file hashes; these results are not yet reproducible from a clean review commit.",
+    "The first visible HADES delta is a short progress preface, not first model-generated content.",
+    "No assistant response text or private file content is retained in this artifact."
+  ]
+}
