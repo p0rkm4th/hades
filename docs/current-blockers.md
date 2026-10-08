@@ -54,6 +54,27 @@ configured-connection precondition is absent for the observed deployment.
 Direct owner dogfood, production backup/restore rehearsal, and production
 rollout remain open.
 
+## Core memory readiness and latency — 2026-10-08
+
+Two fresh-volume, reverse-order PLAIN/HADES replays on current source
+`bdcf3ac6`, Hermes 0.21.5, Ollama 0.40.1, and Hindsight 0.10.2 confirmed a
+remaining memory usability defect. PLAIN returned the synthetic newly saved
+fact in 1.91–2.02 seconds. HADES returned a truthful no-generation pending
+response in 45–49 ms, then returned the fact after processing in 10.01–10.37
+seconds; Hindsight drained after 38.54–53.73 seconds. The immediate HADES reply
+is safer than guessing but does not complete the owner’s recall task. HADES
+ordinary chat used no tool schema and 738 prompt tokens versus PLAIN’s one
+memory schema and 3,457 tokens, but this small synthetic sample has no response
+quality or owner preference rating. Treat ordinary-chat timing as descriptive.
+
+The exact control settings, loaded context, results, and sanitized aggregate
+artifacts are in
+[`hades-core-memory-full-comparison-2026-10-08.md`](hades-core-memory-full-comparison-2026-10-08.md).
+Next experiment: test raw-fact recall during active consolidation against
+corrected facts and unrelated same-subject facts. Keep the current subject
+binding and fail-closed behavior until stale-value rejection, paraphrase, and
+concurrent-subject isolation pass. No production settings changed.
+
 ## Current mission checkpoint — 2026-10-06 UTC
 
 Code-bearing `main` is `381543b0af21c1e1abcbf90642eb8b586f553d62`, fast-forwarded from reviewed base `0cba8008a5fd0ed1a6ea1b2633379490f6cec7d8`. NYX-007 accepted the scoped Proxmox archived-task reader extraction and candidate Public CI [37398017938](https://github.com/p0rkm4th/hades/actions/runs/37398017938) passed; post-promotion main CI [37398145659](https://github.com/p0rkm4th/hades/actions/runs/37398145659) passed. The reader is shared by backup status and recent activity while credentials, transport, and `VM.Audit` scope computation remain in the adapter. It does not fetch tasks for unknown/empty scope, filters by effective guest IDs, and projects only approved task fields. Exact clean 17-module package composition/import passes. No production deployment is claimed.

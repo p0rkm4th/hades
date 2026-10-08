@@ -84,6 +84,42 @@ background retention. Never guess or imply that a missing fact was never
 mentioned. Improve readiness/recall without weakening the authenticated,
 subject-scoped memory boundary, then repeat this slice and the broader corpus.
 
+### Current-source two-order readiness replay — 2026-10-08
+
+After the pending-memory fast response was integrated, I reran the focused
+automatic-only sequence against HADES source `bdcf3ac6`, Hermes 0.21.5, Ollama
+0.40.1, Qwen3.6 35B Q4_K_M, and Hindsight 0.10.2. Both arms processed an
+un-overridden 7,010-token context probe and reported 65,536 loaded context.
+Temperature, top-p, seed, output cap, model digest, hardware, and synthetic
+memory fact were matched. Each order used a fresh Hindsight database; the
+second invocation reversed the stack order. The rootless Hindsight container
+used host-network mode only after the bridge test proved its host-gateway
+mapping could not reach the loopback accounting proxy; all API and proxy
+listeners were bound to loopback ephemeral ports.
+
+| Measure | PLAIN | HADES |
+|---|---:|---:|
+| Ordinary chat TTFT / total | 7.61–7.63 / 8.10–8.18 s; 3,457 prompt tokens; one 3,449-byte schema | 2.00–2.10 / 2.20–2.34 s; 738 prompt tokens; no schemas |
+| Automatic retain total | 3.25–3.35 s; two model calls and one memory tool call | 1.88–27.62 s; one model call and no tool calls |
+| Immediate automatic recall | 1.91–2.02 s; expected fact present in both orders | 45–49 ms; no model/tool call; expected fact absent in both orders |
+| HADES recall after Hindsight becomes idle | — | 10.01–10.37 s; expected fact present in both orders |
+| Hindsight drain after HADES | — | 38.54–53.73 s |
+
+The automatic-recall result repeats the usability tradeoff: the HADES response
+is prompt and avoids guessing, while PLAIN answers the synthetic memory
+question about two seconds sooner. HADES recovered the fact after background
+processing, but the delay remained above the 15-second simple-memory target.
+The large order spread for HADES automatic retain and the drain range make
+these two samples descriptive, not stable latency estimates. No response
+quality rating or owner preference was collected. These measurements do not
+qualify HADES as preferred overall.
+
+Artifacts: [HADES-first](../benchmarks/hades-core-memory-readiness-current-stable-hades-first-20261008.json),
+[PLAIN-first](../benchmarks/hades-core-memory-readiness-current-stable-plain-first-20261008.json).
+Next, test whether subject-scoped raw-fact recall can safely answer during
+consolidation; keep the existing fail-closed response for active retain,
+uncertain status, and corrections until stale-fact and isolation checks pass.
+
 ## Hindsight retention-mode probe
 
 To test whether extraction work caused the long pending window, the same
