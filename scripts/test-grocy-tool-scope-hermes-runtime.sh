@@ -176,6 +176,24 @@ assert hades._hades_filter_tools_for_scope(
 ) == []
 print("PASS HADES read-only homelab catalog uses Hermes raw schemas without redundant search bridge")
 
+# A cold/failed homelab lookup may retry discovery, but must only start the
+# server whose catalog is being requested. Hermes' unfiltered discovery starts
+# every configured MCP server and can add unrelated cold-start latency.
+from tools import mcp_tool_discovery
+read_discovery_calls = []
+read_results = iter(([], homelab_native_raw))
+hades._HADES_HOMELAB_DISCOVERY_ATTEMPTED = False
+with patch.object(
+    mcp_tool_discovery, "discover_mcp_tools",
+    side_effect=lambda allowed=None: read_discovery_calls.append(allowed),
+):
+    read_retry_catalog = hades._hades_homelab_tool_definitions(
+        lambda **_kwargs: next(read_results)
+    )
+assert read_discovery_calls == [["homelab-readonly"]], read_discovery_calls
+assert {row["function"]["name"] for row in read_retry_catalog} == homelab_native_names
+print("PASS read-only homelab retry scopes Hermes MCP discovery to its server")
+
 control_names = {
     "mcp__homelab_control__homelab_control_templates",
     "mcp__homelab_control__homelab_provision_guest",
@@ -205,6 +223,19 @@ assert {
 } == control_native_names == control_names
 assert hades._hades_filter_tools_for_scope(control_hades_catalog, "household") == []
 print("PASS owner homelab control catalog uses Hermes raw schemas with exact-name bounds")
+
+control_discovery_calls = []
+control_results = iter(([], control_native_raw))
+with patch.object(
+    mcp_tool_discovery, "discover_mcp_tools",
+    side_effect=lambda allowed=None: control_discovery_calls.append(allowed),
+):
+    control_retry_catalog = hades._hades_homelab_control_tool_definitions(
+        lambda **_kwargs: next(control_results)
+    )
+assert control_discovery_calls == [["homelab-control"]], control_discovery_calls
+assert {row["function"]["name"] for row in control_retry_catalog} == control_native_names
+print("PASS homelab control retry scopes Hermes MCP discovery to its server")
 
 catalog = [
     {"type": "function", "function": {

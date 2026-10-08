@@ -96,6 +96,10 @@ In a fresh isolated 0.21.5 profile with six synthetic Grocy registry schemas and
 
 This is a synthetic registry comparison, not a live Grocy/homelab MCP deployment benchmark. It establishes a three-schema reduction for that Grocy fixture and verifies exact set equality; it does not establish token, latency, or owner-preference gains. Keep the change as a staged usability candidate pending live profile qualification and broader owner dogfood. If Hermes changes the raw-schema API semantics, the exact catalog tests should fail before promotion.
 
+## Scoped homelab MCP retry
+
+The HADES homelab read and control catalog helpers used Hermes' unfiltered `discover_mcp_tools()` retry when their requested schemas were initially absent. Hermes discovery accepts `allowed_mcp_names`; its current stable implementation documents that `None` starts every configured server, while a name list limits startup to those servers. The retries now request only `homelab-readonly` or `homelab-control`, respectively. This preserves the retry and existing fallback behavior while preventing an owner homelab catalog lookup from starting unrelated configured MCP services. The production-pinned 0.21.2 and staged 0.21.5 implementations both expose this API. Focused runtime assertions verify each exact allowlist against the installed production Hermes; this is a reduction in unnecessary discovery scope, not a measured latency claim. Sources: [Hermes 0.21.5 discovery implementation](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/tools/mcp_tool_discovery.py#L552-L574), [Hermes native MCP guide](https://github.com/NousResearch/hermes-agent/blob/v2026.9.24/skills/autonomous-ai-agents/hermes-agent/references/native-mcp.md#L131).
+
 ## Authoritative sources
 
 - [Open WebUI releases](https://github.com/open-webui/open-webui/releases)
