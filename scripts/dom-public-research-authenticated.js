@@ -328,7 +328,7 @@ async function main() {
           }
           if (!citationLinks.includes('http://127.0.0.1:9/public-report')) throw new Error(`${account.name} response did not render the actual source URL: ${answer}`);
         } else if (scenario === 'conflict') {
-          for (const expected of ['1933', '1937', '2025-02-10', '2026-03-01', 'Synthetic early report', 'Synthetic later report', 'conflict', 'synthetic test', 'unverified', 'search snippet', 'retrieved', 'full-page']) {
+          for (const expected of ['1933', '1937', '2025-02-10', '2026-03-01', 'Synthetic early report', 'Synthetic later report', 'conflict', 'synthetic fixture', 'unverified', 'search snippet', 'retrieved', 'full-page']) {
             if (!answer.toLowerCase().includes(expected.toLowerCase())) {
               throw new Error(`${account.name} response omitted ${expected}: ${answer}`);
             }

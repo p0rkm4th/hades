@@ -6,6 +6,7 @@ umask 077
 # The optional real-model mode uses synthetic evidence by default. The explicit
 # live_smoke mode may connect to a disposable local SearXNG that searches public sources.
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+hermes_overlay_dir=${HADES_HERMES_OVERLAY_DIR:-"$repo_dir/hermes"}
 image=${HADES_PUBLIC_RESEARCH_UI_IMAGE:-hades-open-webui:0.11.1-hades-reconstructed}
 suffix="$$"; name="hades-public-research-ui-$suffix"; volume="hades-public-research-ui-data-$suffix"
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-public-research-ui.XXXXXX")
@@ -702,7 +703,7 @@ YAML
 fi
 chmod 600 "$HERMES_HOME/profiles/hades/config.yaml"
 hermes_source=$(env -u PYTHONPATH "$hermes_python" -c 'import pathlib, run_agent; print(pathlib.Path(run_agent.__file__).resolve().parent)')
-export HADES_HERMES_EXECUTABLE="$hermes_bin" PYTHONPATH="$repo_dir/hermes:$repo_dir:$hermes_source" HADES_HERMES_WORKING_DIRECTORY="$repo_dir" HADES_OWNER_SUBJECT_IDS="$alpha_id"
+export HADES_HERMES_EXECUTABLE="$hermes_bin" PYTHONPATH="$hermes_overlay_dir:$repo_dir:$hermes_source" HADES_HERMES_WORKING_DIRECTORY="$repo_dir" HADES_OWNER_SUBJECT_IDS="$alpha_id"
 export API_SERVER_ENABLED=true API_SERVER_KEY="$api_key" API_SERVER_HOST="$docker_gateway" API_SERVER_PORT="$gateway_port" OPENAI_API_KEY=synthetic-unused OPENAI_BASE_URL=http://127.0.0.1:9/v1 MODEL="$model_name" HERMES_ACCEPT_HOOKS=1
 gateway_url="http://${docker_gateway}:${gateway_port}"; hermes -p hades gateway run -v >"$work/hermes.log" 2>&1 & gateway_pid=$!
 for _ in $(seq 1 90); do curl -fsS "$gateway_url/health" >/dev/null 2>&1 && break; kill -0 "$gateway_pid" 2>/dev/null || { cat "$work/hermes.log" >&2; exit 1; }; sleep 1; done

@@ -6755,6 +6755,49 @@ def _hades_public_research_citation_completion(messages, answer):
         else:
             request_text = str(content or "")
         break
+    if re.search(r"\b(?:conflict(?:s|ing)?|disagree(?:s|ment)?)\b", request_text, re.IGNORECASE):
+        publisher_date_records = []
+        seen_publisher_dates = set()
+        for payload in research_payloads:
+            if payload.get("status") in {"REFUSED", "FAILED"}:
+                continue
+            for row in payload.get("sources", []):
+                if not isinstance(row, dict):
+                    continue
+                publisher_date = str(row.get("publisher_date") or "").strip()
+                if not publisher_date or len(publisher_date) > 40:
+                    continue
+                try:
+                    from datetime import datetime
+
+                    if re.fullmatch(r"\d{4}", publisher_date):
+                        datetime.strptime(publisher_date, "%Y")
+                    elif re.fullmatch(r"\d{4}-\d{2}", publisher_date):
+                        datetime.strptime(publisher_date, "%Y-%m")
+                    else:
+                        datetime.fromisoformat(publisher_date.replace("Z", "+00:00"))
+                except ValueError:
+                    continue
+                title = str(row.get("title") or "").strip()
+                url = str(row.get("url") or "").strip()
+                if not title or not re.fullmatch(r"https?://[^\s<>]+", url):
+                    continue
+                record = (title, url, publisher_date)
+                if record not in seen_publisher_dates:
+                    seen_publisher_dates.add(record)
+                    publisher_date_records.append(record)
+        missing_date_records = [
+            record for record in publisher_date_records
+            if not all(value in answer for value in record)
+        ]
+        if missing_date_records:
+            date_links = []
+            for title, url, publisher_date in missing_date_records:
+                escaped_title = title.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
+                date_links.append(f"[{escaped_title}](<{url}>) — {publisher_date}")
+            completion_lines.append(
+                "Publisher dates (from returned source metadata): " + "; ".join(date_links) + "."
+            )
     if re.search(r"\b(?:ownership|owner|owned|publisher|parent company|business unit)\b", request_text, re.IGNORECASE):
         documented_groups = {}
         for row in ownership_sources:
