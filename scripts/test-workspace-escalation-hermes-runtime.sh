@@ -128,6 +128,9 @@ real_rootless=os.environ.get('HADES_WORKSPACE_TEST_REAL_ROOTLESS','false').strip
 assert run_agent.AIAgent.run_conversation.__name__ == '_hades_run_conversation'
 assert workspace_policy.is_workspace_request(workspace_cases[0])
 assert workspace_policy.is_workspace_request(workspace_cases[1])
+assert workspace_policy.is_workspace_follow_up_text('continue')
+assert workspace_policy.is_workspace_follow_up_text('do that instead')
+assert not workspace_policy.is_workspace_follow_up_text('Explain generators')
 assert workspace_policy.is_workspace_request(workspace_cases[2])
 assert not workspace_policy.is_workspace_request(workspace_cases[3])
 assert not workspace_policy.is_workspace_request(workspace_cases[4])
@@ -390,6 +393,46 @@ hades._hades_original_run_conversation=ordinary_chat
 ordinary=agent.run_conversation("Hey, how's it going?",task_id='synthetic-work-chat')
 assert 'good to hear' in ordinary.get('final_response',''),ordinary
 print('PASS a follow-on ordinary turn restores the empty tool catalog and no sandbox scope')
+
+# Contextual workspace continuations must stay on the tool-capable model even
+# though the latest words alone do not match the model-routing phrase list.
+continuation_agent=create_agent('synthetic-owner','synthetic-fast-lane-continuation')
+continuation_agent.model='qwen3.6:35b'
+continuation_agent.base_url='http://127.0.0.1:11434/v1'
+fast_route_switches=[]
+def record_switch(model,provider,*,api_key,base_url):
+ fast_route_switches.append((model,provider,base_url))
+ continuation_agent.model=model
+ continuation_agent.provider=provider
+ continuation_agent.api_key=api_key
+ continuation_agent.base_url=base_url
+continuation_agent.switch_model=record_switch
+previous_fast_url=os.environ.get('HADES_FAST_COMPLETION_BASE_URL')
+os.environ['HADES_FAST_COMPLETION_BASE_URL']='http://127.0.0.1:11437/v1'
+def contextual_workspace_continue(agent,user_message,*args,**kwargs):
+ agent._current_turn_id='synthetic-contextual-workspace-turn'
+ assert agent.model=='qwen3.6:35b',agent.model
+ assert agent.base_url=='http://127.0.0.1:11434/v1',agent.base_url
+ assert set(agent.valid_tool_names)=={'read_file','search_files','write_file','patch','terminal'},agent.valid_tool_names
+ return {'final_response':'I can continue the workspace task.','messages':[
+  {'role':'user','content':user_message},
+  {'role':'tool','name':'read_file','content':'The relevant workspace file was read.'},
+  {'role':'assistant','content':'I can continue the workspace task.'}],
+  'current_turn_user_idx':0,'turn_id':agent._current_turn_id,
+  'api_calls':1,'completed':True}
+hades._hades_original_run_conversation=contextual_workspace_continue
+contextual=continuation_agent.run_conversation(
+ 'continue',
+ conversation_history=[{'role':'user','content':'Why is this Python test failing?'}],
+ task_id='synthetic-fast-lane-continuation',
+)
+if previous_fast_url is None:
+ os.environ.pop('HADES_FAST_COMPLETION_BASE_URL',None)
+else:
+ os.environ['HADES_FAST_COMPLETION_BASE_URL']=previous_fast_url
+assert not fast_route_switches,fast_route_switches
+assert 'continue the workspace task' in contextual.get('final_response','').lower(),contextual
+print('PASS contextual workspace continuation bypasses the completion-only fast route')
 
 os.environ['HADES_WORKSPACE_ENABLED']='false'
 def ask_for_traceback(agent,user_message,*args,**kwargs):

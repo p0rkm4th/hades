@@ -10098,12 +10098,37 @@ try:
         fast_base_url = os.environ.get("HADES_FAST_COMPLETION_BASE_URL", "").strip()
         fast_model = os.environ.get("HADES_FAST_COMPLETION_MODEL", "qwen3:8b").strip()
         current_base_url = str(getattr(self, "base_url", "") or "").lower()
+        # The current-turn phrase classifier cannot see that a terse
+        # continuation (for example, "continue") belongs to a workspace task.
+        # Do not move such a turn to the completion-only lane before the
+        # workspace router has applied its history-aware request check below.
+        workspace_followup = False
+        try:
+            from workspace import (
+                is_workspace_request as _hades_is_workspace_request_for_route,
+                workspace_enabled as _hades_workspace_enabled_for_route,
+            )
+            _route_history = kwargs.get("conversation_history")
+            workspace_followup = bool(
+                _hades_workspace_enabled_for_route()
+                and _hades_is_workspace_request_for_route(
+                    str(user_message or ""),
+                    _route_history if isinstance(_route_history, list) else [],
+                )
+            )
+        except Exception as _workspace_route_error:
+            _hades_logger.warning(
+                "Workspace continuation route check unavailable: %s",
+                type(_workspace_route_error).__name__,
+            )
+            workspace_followup = True
         if (
             str(getattr(self, "provider", "") or "").lower() == "custom"
             and ("11437" in current_base_url or "qwen3.6:35b" in str(original_model).lower())
             and fast_base_url
             and fast_model
             and not _HADES_TOOL_INTENT.search(str(user_message or ""))
+            and not workspace_followup
         ):
             fast_lane_restore = (
                 original_model,
@@ -13290,12 +13315,22 @@ try:
         fast_base_url = os.environ.get("HADES_FAST_COMPLETION_BASE_URL", "").strip()
         fast_model = os.environ.get("HADES_FAST_COMPLETION_MODEL", "qwen3:8b").strip()
         deep_model = str(route.get("model") or "").lower()
+        try:
+            from workspace import is_workspace_follow_up_text as _hades_is_workspace_follow_up
+            workspace_followup = _hades_is_workspace_follow_up(user_message)
+        except Exception as _workspace_route_error:
+            _hades_logger.warning(
+                "Workspace continuation route check unavailable: %s",
+                type(_workspace_route_error).__name__,
+            )
+            workspace_followup = True
         if (
             provider == "custom"
             and ("11437" in base_url or "qwen3.6:35b" in deep_model)
             and fast_base_url
             and fast_model
             and not _HADES_TOOL_INTENT.search(str(user_message or ""))
+            and not workspace_followup
         ):
             runtime["base_url"] = fast_base_url.rstrip("/")
             runtime["api_key"] = os.environ.get("HADES_FAST_COMPLETION_API_KEY", "local")

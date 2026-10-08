@@ -101,6 +101,11 @@ def workspace_enabled() -> bool:
     return os.environ.get("HADES_WORKSPACE_ENABLED", "false").strip().lower() == "true"
 
 
+def is_workspace_follow_up_text(user_message: str) -> bool:
+    """True for terse continuations that need conversation history to route safely."""
+    return bool(_FOLLOW_UP.fullmatch(str(user_message or "")))
+
+
 def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None = None) -> bool:
     """Recognize explicit file/code actions and terse continuations of them."""
     text = str(user_message or "")
@@ -113,7 +118,7 @@ def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None
         _CODE_EXPLANATION.search(text) or _CODE_FAILURE_DIAGNOSIS.search(text)
     ):
         return True
-    if not _FOLLOW_UP.fullmatch(text):
+    if not is_workspace_follow_up_text(text):
         return False
     recent = history[-6:] if isinstance(history, list) else []
     return any(
