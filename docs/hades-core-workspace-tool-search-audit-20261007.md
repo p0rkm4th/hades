@@ -57,3 +57,31 @@ current two-to-five-schema transition using repeated, order-balanced workspace
 tasks, with diagnosis mutation attempts, tool exposure, cache tokens, task
 completion, fresh test evidence, and latency reported separately. Keep
 production settings and `main` unchanged pending that qualification.
+
+## Follow-up authorization review
+
+An independent review found that Hermes' parser unwrapped `tool_call` and
+HADES' direct-call guard then returned early for all raw bridge calls. The
+bridge's separate profile-toolset scope could therefore accept a forged or
+unexpected `tool_search`, `tool_describe`, or `tool_call` during a workspace
+turn, even though those bridge schemas were absent from that turn's selected
+tool catalog. This was a parser-boundary gap; no evidence showed the model had
+used it in owner traffic.
+
+HADES now requires the raw bridge name itself to appear in the current agent's
+`valid_tool_names` before the parser permits that bridge call. Workspace
+diagnosis and action turns omit all bridge names, so all three are rejected
+there while direct read tools remain governed by the existing exact phase
+allowlist. The workspace runtime regression exercises all three bridge calls
+inside a diagnosis turn. A synthetic parser probe against the production-pinned
+Hermes 0.21.2 runtime passed for the three denials and the allowed `read_file`
+case. The full Hermes 0.21.5 workspace runtime harness still needs its staged
+Hindsight client/plugin dependencies to be made available before it can run
+locally; the public CI run verifies source composition and static contracts,
+not this runtime behavior.
+
+Nyx also confirmed that deferring the five core workspace tools is not a
+promising latency fix: Hermes keeps core tools eager unless explicitly
+configured, and deferral replaces tools with three bridge schemas plus extra
+search/describe/call steps. Keep the native deferral experiment on hold; pursue
+the measured action-prefix/cache gap through a matched diagnostic instead.

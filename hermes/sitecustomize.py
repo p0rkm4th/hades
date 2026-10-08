@@ -9708,9 +9708,19 @@ try:
                             or ""
                         )
                         if is_bridge_tool(raw_name):
-                            # tool_search/tool_describe are scoped by the bridge
-                            # dispatcher; tool_call is scoped by the wrapped
-                            # deferred-name allowlist above.
+                            # Bridge dispatch is a separate path from the
+                            # direct-tool allowlist. Require the bridge schema
+                            # itself to be present in this turn's executable
+                            # catalog before allowing search/describe/call.
+                            # In particular, workspace turns intentionally
+                            # expose only the selected direct workspace tools;
+                            # profile-wide deferred toolsets must not bypass
+                            # the diagnosis read-only boundary.
+                            allowed = set(getattr(agent, "valid_tool_names", None) or ())
+                            if raw_name not in allowed:
+                                parsed.scope_block = (
+                                    f"'{raw_name}' is not available in this HADES session."
+                                )
                             return parsed
                     except Exception:
                         pass

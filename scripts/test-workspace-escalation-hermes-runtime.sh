@@ -222,6 +222,20 @@ def native_inspection(agent,user_message,*args,**kwargs):
  inspection_catalog.append((names,set(agent.valid_tool_names)))
  assert names == {'read_file','search_files'},names
  assert set(agent.valid_tool_names) == {'read_file','search_files'},agent.valid_tool_names
+ from types import SimpleNamespace
+ import json
+ from agent.tool_executor import _parse_tool_call
+ from tools import tool_search
+ bridge_payloads={
+  tool_search.TOOL_SEARCH_NAME:{'queries':['terminal']},
+  tool_search.TOOL_DESCRIBE_NAME:{'names':['terminal']},
+  tool_search.TOOL_CALL_NAME:{'calls':[{'name':'terminal','arguments':{'command':'pwd'}}]},
+ }
+ for bridge_name,bridge_args in bridge_payloads.items():
+  blocked=_parse_tool_call(agent,SimpleNamespace(function=SimpleNamespace(
+   name=bridge_name,arguments=json.dumps(bridge_args))))
+  assert blocked.scope_block and 'not available in this HADES session' in blocked.scope_block,(
+   bridge_name,blocked)
  prompt=agent.ephemeral_system_prompt.lower()
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
