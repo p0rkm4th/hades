@@ -12,6 +12,11 @@ hermes_source=$(env -u PYTHONPATH "$hermes_python" -c 'import pathlib, run_agent
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-grocy-tool-scope.XXXXXX")
 chmod 700 "$work"
 mkdir -m 700 "$work/home" "$work/hermes"
+if [[ -n "${HADES_HINDSIGHT_PLUGIN:-}" ]]; then
+  [[ -d "$HADES_HINDSIGHT_PLUGIN" ]] || { echo 'FAIL configured Hindsight plugin directory is unavailable' >&2; exit 2; }
+  mkdir -m 700 "$work/hermes/plugins"
+  ln -s "$(realpath "$HADES_HINDSIGHT_PLUGIN")" "$work/hermes/plugins/hindsight"
+fi
 trap 'find "$work" -depth -mindepth 1 -delete 2>/dev/null || true; rmdir "$work" 2>/dev/null || true' EXIT
 hermes_overlay_dir=${HADES_HERMES_OVERLAY_DIR:-$repo_dir/hermes}
 [[ -f "$hermes_overlay_dir/sitecustomize.py" ]] || {

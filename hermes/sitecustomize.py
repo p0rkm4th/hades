@@ -8021,7 +8021,15 @@ try:
     import json
     import logging
     import threading
-    from plugins.memory import hindsight as _hindsight
+    try:
+        # Hermes 0.21.2 bundles Hindsight in core; newer releases load the
+        # provider from the installed memory-plugin catalog.
+        from plugins.memory import hindsight as _hindsight
+    except ImportError:
+        from plugins.memory import import_provider_module as _import_memory_provider_module
+        _hindsight = _import_memory_provider_module("hindsight")
+        if _hindsight is None:
+            raise ImportError("HADES requires the installed Hermes Hindsight memory provider")
     from hindsight_client.hindsight_client import Hindsight as _HindsightClient
     import cli as _hermes_cli
     from agent.web_search_registry import register_provider as _register_web_provider
