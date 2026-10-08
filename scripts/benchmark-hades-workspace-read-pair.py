@@ -98,7 +98,17 @@ PUBLIC_METRIC_KEY_RENAMES = {
 
 
 def public_metric_record(value: Any) -> Any:
-    """Rename ambiguous metric keys recursively without changing their values."""
+    """Remove local paths and ambiguous keys from public aggregate metrics."""
+    if isinstance(value, str):
+        path_patterns = (
+            r"/mnt[/]shared[/][^\s\"']+",
+            r"/home[/][A-Za-z0-9_.-]+[/][^\s\"']+",
+            r"/Users[/][A-Za-z0-9_.-]+[/][^\s\"']+",
+            r"/var[/]tmp[/]hades-[A-Za-z0-9_.-]+(?:[/][^\s\"']*)?",
+        )
+        for pattern in path_patterns:
+            value = re.sub(pattern, "[local path redacted]", value)
+        return value
     if isinstance(value, dict):
         return {
             PUBLIC_METRIC_KEY_RENAMES.get(str(key), str(key)): public_metric_record(item)
