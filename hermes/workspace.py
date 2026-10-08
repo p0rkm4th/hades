@@ -34,6 +34,7 @@ _DIRECT_ACTION = re.compile(
 )
 _CODE_EXPLANATION = re.compile(
     r"\b(?:explain|describe|summari[sz]e|what\s+does|what\s+is|how\s+does|"
+    r"find\s+where|"
     r"how\s+is|why\s+does|why\s+is|where\s+is)\b[^.!?\n]{0,80}\b"
     r"(?:file|code|function|class|script|test|bug|error|traceback|exception|"
     r"project|repo(?:sitory)?|config(?:uration)?|settings?|manifest)\b|"
@@ -298,14 +299,17 @@ def get_workspace_tools(*, read_only: bool = False) -> list[dict[str, Any]]:
         if not isinstance(target, dict):
             raise RuntimeError("Hermes search_files target schema is incomplete")
         target["description"] = (
-            "Required. Use 'files' to discover workspace paths by filename glob; "
-            "use 'content' only when searching text inside known files."
+            "Required. Use 'content' to locate a setting, error, symbol, or phrase "
+            "when the filename is unknown; search a concise term under /workspace. "
+            "Use 'files' to discover filenames when the task has no specific content target."
         )
         function["description"] = (
             str(function.get("description") or "").rstrip()
-            + " For initial project discovery, search once with target='files', "
-            "pattern='*', path='/workspace'. Do not guess test or configuration "
-            "filenames before reading that result."
+            + " For a concrete setting, error, symbol, or phrase, search its content "
+            "once with target='content', a concise pattern, and path='/workspace'; "
+            "do not list every filename first. If no content target is known, discover "
+            "filenames once with target='files', pattern='*', path='/workspace'. "
+            "Do not guess test or configuration filenames."
         )
         required = parameters.setdefault("required", [])
         if "target" not in required:

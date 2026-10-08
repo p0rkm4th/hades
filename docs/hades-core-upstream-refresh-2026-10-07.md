@@ -142,6 +142,31 @@ image policy and is excluded. The measured rerun used the same rootless image
 content through its original registry digest in both arms. See the
 [three-repeat sanitized artifact](../benchmarks/hades-workspace-read-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json).
 
+### Hermes 0.21.5 workspace project-search comparison — 2026-10-08
+
+The corpus' request-timeout search question returned the correct configuration
+path and value in both stacks in both order-balanced repeats. HADES exposed two
+read-only schemas (3,662 bytes), compared with PLAIN's eight general coding
+schemas (12,590 bytes). In the current content-first guidance candidate, median
+prompt usage across provider calls was 15,486 tokens HADES and 28,970 PLAIN;
+median provider calls were 3.5 and 4.5; tool results were four/five HADES and
+seven/seven PLAIN. Median task time was 23.66 s HADES and 32.67 s PLAIN. The
+two-repeat timing is exploratory and does not establish owner preference. PLAIN
+time varied between the prior and current runs, so the v1/v2 timing difference
+does not isolate the prompt change.
+
+This task exposed two HADES usability defects. First, the direct public-web
+fallback captured “find where this project configures request timeouts” and
+answered that web search was unavailable. The fix recognizes the wording as a
+local read-only workspace request and gives that route precedence unless the
+user explicitly names a live source. Then the HADES prompt enumerated filenames
+before searching the contents, even though “timeouts” is a concrete search
+target. The current candidate directs setting/error/symbol queries to content
+search first and reserves full filename discovery for tasks without a content
+target. The workspace runtime regression passes. See the
+[initial corrected comparison](../benchmarks/hades-workspace-search-pair-hermes-0215-ollama-0401-qwen36-35b-20261008.json)
+and the [content-first candidate](../benchmarks/hades-workspace-search-pair-hermes-0215-ollama-0401-qwen36-35b-v2-20261008.json).
+
 ## Authoritative sources
 
 - [Open WebUI releases](https://github.com/open-webui/open-webui/releases)

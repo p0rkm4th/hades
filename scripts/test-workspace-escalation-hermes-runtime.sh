@@ -165,9 +165,15 @@ assert not workspace_policy.is_workspace_request('Explain this traceback first.'
 assert not workspace_policy.is_workspace_request('Why is this Python test failing?')
 assert workspace_policy.is_workspace_request('Fix it.', [{'role':'user','content':'Why is this Python test failing?'}])
 assert workspace_policy.is_workspace_request('Read README.md and explain how to run it.')
+assert not workspace_policy.is_workspace_request('Find where this project configures request timeouts.')
 os.environ['HADES_WORKSPACE_ENABLED']='true'
 assert workspace_policy.is_workspace_read_only_request('Why is this Python test failing?')
 assert workspace_policy.is_workspace_read_only_request('Explain this function.')
+assert workspace_policy.is_workspace_read_only_request('Find where this project configures request timeouts.')
+assert not hades._hades_should_use_direct_web_search(
+ 'Find where this project configures request timeouts.', True)
+assert hades._hades_should_use_direct_web_search(
+ 'Search the web for current request-timeout guidance.', True)
 assert workspace_policy.is_workspace_diagnosis_request('Why is this Python test failing?')
 assert not workspace_policy.is_workspace_diagnosis_request('Read answer.txt and tell me the exact token.')
 assert not workspace_policy.is_workspace_read_only_request('Fix it.')
@@ -179,7 +185,7 @@ assert {t['function']['name'] for t in workspace_policy.get_workspace_tools(read
 workspace_full_tools={t['function']['name']:t['function'] for t in workspace_policy.get_workspace_tools()}
 assert set(workspace_full_tools)=={'read_file','search_files','write_file','patch','terminal'}
 search_description=workspace_full_tools['search_files']['description'].lower()
-assert 'for initial project discovery, search once' in search_description,search_description
+assert 'search its content once with target=\'content\'' in search_description,search_description
 assert 'do not guess test or configuration filenames' in search_description,search_description
 for action_tool in ('write_file','patch','terminal'):
  description=workspace_full_tools[action_tool]['description']
@@ -260,6 +266,7 @@ def native_inspection(agent,user_message,*args,**kwargs):
    bridge_name,blocked)
  prompt=agent.ephemeral_system_prompt.lower()
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
+ assert "search its contents directly once with search_files target='content'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
  assert 'inspect the workspace mounted at /workspace using read_file and search_files' in prompt,prompt
  assert 'do not run or claim commands or tests' in prompt,prompt
@@ -296,6 +303,7 @@ def native_read(agent,user_message,*args,**kwargs):
  assert 'after a successful code patch or write, do not end the turn until a terminal call runs' in prompt,prompt
  assert 'a patch or write result is not test evidence' in prompt,prompt
  assert 'terminal result shows that test completed with exit code 0' in prompt,prompt
+ assert "search content once with target='content'" in prompt,prompt
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
  assert 'make one search_files call' in prompt,prompt

@@ -60,6 +60,15 @@ IMAGE = "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c50
 REQUIRED_TERMINAL_CHOICE = {"type": "function", "function": {"name": "terminal"}}
 TOKEN = "ORCHID-9472"
 PROMPT = "Read /workspace/answer.txt and tell me the exact token from the file. Reply with only the token."
+SEARCH_PROMPT = "Find where this project configures request timeouts. Tell me the file path and value."
+SEARCH_FILES = {
+    "README.md": "# Sample project\n\nClient defaults live in the settings module.\n",
+    "client.py": "from settings import REQUEST_TIMEOUT_SECONDS\n\ndef request_options():\n    return {\"timeout\": REQUEST_TIMEOUT_SECONDS}\n",
+    "settings.py": "CONNECT_TIMEOUT_SECONDS = 5\nREQUEST_TIMEOUT_SECONDS = 37\n",
+    "worker.py": "def run_job():\n    return \"ready\"\n",
+}
+SEARCH_TARGET_PATH = "settings.py"
+SEARCH_TARGET_VALUE = "37"
 DIAGNOSE_PROMPT = "Why is this Python test failing?"
 FIX_PROMPT = "Fix it."
 API_KEY = "synthetic-workspace-pair-key"
@@ -779,7 +788,10 @@ def install_host_workspace_verification_mapping(
 
 def child(args: argparse.Namespace) -> int:
     fixture_case = FIXTURE_CASES[args.fixture_case]
-    fixture_names = (fixture_case["source"], fixture_case["test"])
+    fixture_names = (
+        tuple(SEARCH_FILES) if args.scenario == "search"
+        else (fixture_case["source"], fixture_case["test"])
+    )
     fixture_name_pattern = "|".join(re.escape(name) for name in fixture_names)
     hermes = str(hermes_source(args.hermes_root))
     if args.overlay:
@@ -904,11 +916,15 @@ def child(args: argparse.Namespace) -> int:
                 original_mutation_recorder,
                 original_verification_evidence,
             ) = install_host_workspace_verification_mapping(agent, args.workspace)
-        prompts = [PROMPT] if args.scenario == "read" else [DIAGNOSE_PROMPT, FIX_PROMPT]
+        prompts = ([PROMPT] if args.scenario == "read" else
+                   [SEARCH_PROMPT] if args.scenario == "search" else
+                   [DIAGNOSE_PROMPT, FIX_PROMPT])
         history: list[dict[str, Any]] = []
         turns = []
         for phase, prompt in enumerate(prompts):
-            phase_name = "read" if args.scenario == "read" else ("diagnose" if phase == 0 else "fix")
+            phase_name = ("read" if args.scenario == "read" else
+                          "search" if args.scenario == "search" else
+                          ("diagnose" if phase == 0 else "fix"))
             stream_state["phase"] = phase_name
             stream_state["started"] = time.perf_counter()
             if tool_choice_experiment is not None:
@@ -1075,6 +1091,10 @@ def child(args: argparse.Namespace) -> int:
                 "response_present": bool(final_text),
                 "response_characters": len(final_text),
                 "response_contains_expected_token": TOKEN in final_text,
+                "response_contains_search_target": (
+                    SEARCH_TARGET_PATH.casefold() in final_text.casefold()
+                    and SEARCH_TARGET_VALUE in final_text
+                ) if args.scenario == "search" else None,
                 "api_calls": result.get("api_calls") if isinstance(result, dict) else None,
                 "tool_result_count": len(tool_messages),
                 "tool_result_names": [m.get("name") for m in tool_messages],
@@ -1199,7 +1219,7 @@ def main() -> int:
     parser.add_argument("--docker-binary", type=pathlib.Path)
     parser.add_argument("--sandbox-image", default=IMAGE)
     parser.add_argument("--repeats", type=int, default=2)
-    parser.add_argument("--scenario", choices=("read", "escalation"), default="read")
+    parser.add_argument("--scenario", choices=("read", "search", "escalation"), default="read")
     parser.add_argument("--fixture-layout", choices=("compact", "multifile"), default="compact")
     parser.add_argument("--fixture-case", choices=tuple(FIXTURE_CASES), default="geometry")
     parser.add_argument(
@@ -1309,6 +1329,11 @@ def main() -> int:
                     workspace.mkdir(parents=True, mode=0o700)
                 if args.scenario == "read":
                     (workspace / "answer.txt").write_text(TOKEN + "\n")
+                elif args.scenario == "search":
+                    for name, content in SEARCH_FILES.items():
+                        path = workspace / name
+                        path.parent.mkdir(parents=True, exist_ok=True)
+                        path.write_text(content)
                 else:
                     (workspace / fixture_case["source"]).write_text(fixture_case["source_content"])
                     (workspace / fixture_case["test"]).write_text(fixture_case["test_content"])
@@ -1471,6 +1496,19 @@ def main() -> int:
                 "plain_correct_final_answers": sum(r["final_response_contains_expected_token"] for r in records if r["stack"] == "plain"),
                 "hades_correct_final_answers": sum(r["final_response_contains_expected_token"] for r in records if r["stack"] == "hades"),
             })
+        elif args.scenario == "search":
+            summary.update({
+                "plain_correct_search_answers": sum(
+                    bool(t["response_contains_search_target"])
+                    for r in records if r["stack"] == "plain" for t in r["turns"]
+                ),
+                "hades_correct_search_answers": sum(
+                    bool(t["response_contains_search_target"])
+                    for r in records if r["stack"] == "hades" for t in r["turns"]
+                ),
+                "plain_tool_result_turns": sum(r["tool_result_count"] > 0 for r in records if r["stack"] == "plain"),
+                "hades_tool_result_turns": sum(r["tool_result_count"] > 0 for r in records if r["stack"] == "hades"),
+            })
         else:
             def median(values):
                 ordered = sorted(values)
@@ -1568,7 +1606,9 @@ def main() -> int:
                 ),
                 "native_verify_on_stop": args.prototype_host_workspace_verification_mapping,
                 "workspace_context_hint": WORKSPACE_ENVIRONMENT_HINT if args.workspace_context_hint else None,
-                "prompt_ids": ["read"] if args.scenario == "read" else ["diagnose", "fix"],
+                "prompt_ids": (["read"] if args.scenario == "read" else
+                               ["search"] if args.scenario == "search" else
+                               ["diagnose", "fix"]),
                 "subject": "synthetic owner identity; private fixture only",
             },
             "turns": records,
@@ -1579,6 +1619,8 @@ def main() -> int:
                     "independent fixture tests and diff checks are recorded, but this does not qualify larger coding "
                     "tasks, Git commit behavior, or owner preference."
                     if args.scenario == "escalation" else
+                    "Synthetic multi-file request-timeout discovery; expected path/value markers are recorded without preserving the answer text."
+                    if args.scenario == "search" else
                     "Synthetic one-file read only; no editing, tests, Git, follow-up, or direct owner preference."
                 ),
                 "Only two order-balanced samples by default; local-model generation variance remains.",
