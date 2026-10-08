@@ -18,6 +18,25 @@ SOURCE_PATH = Path(os.environ.get(
 ))
 SOURCE = SOURCE_PATH.read_text(encoding="utf-8")
 TREE = ast.parse(SOURCE)
+RUN_CONVERSATION = next(
+    node for node in ast.walk(TREE)
+    if isinstance(node, ast.FunctionDef) and node.name == "_hades_run_conversation"
+)
+EARLY_MEMORY_LINE = next(
+    node.lineno for node in ast.walk(RUN_CONVERSATION)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == "_hades_direct_memory_response"
+)
+PENDING_MEMORY_LINE = next(
+    node.lineno for node in ast.walk(RUN_CONVERSATION)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == "_hades_pending_memory_response"
+)
+assert EARLY_MEMORY_LINE < PENDING_MEMORY_LINE, (
+    "verified explicit memories must be checked before a pending canonical retain blocks recall"
+)
 FUNCTIONS = {
     node.name: node for node in ast.walk(TREE)
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
@@ -602,6 +621,18 @@ try:
     assert FakeClient.instances[-1].closed
     assert route("What was the savings target I mentioned?", "alpha", "household") is None
     assert FakeClient.instances[-1].calls == []
+    assert FakeClient.instances[-1].closed
+
+    # A verified explicit-bank fact can answer while an unrelated canonical
+    # retain is pending. The conversation handler checks this route first.
+    state["items"] = [{
+        "tags": ["hades-explicit-memory"],
+        "text": "User explicitly asked HADES to remember: My savings target is $3,000.",
+        "entities": [{"text": "My savings target is $3,000", "type": "explicit_fact"}],
+        "updated_at": "2026-10-07T12:00:00Z",
+    }]
+    answer = route("What was the savings target I mentioned?", "alpha", "household")
+    assert "$3,000" in answer, answer
     assert FakeClient.instances[-1].closed
 
     # Entity arrays are normalized to their text, not Python's repr of dicts.
