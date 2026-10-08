@@ -170,6 +170,9 @@ os.environ['HADES_WORKSPACE_ENABLED']='true'
 assert workspace_policy.is_workspace_read_only_request('Why is this Python test failing?')
 assert workspace_policy.is_workspace_read_only_request('Explain this function.')
 assert workspace_policy.is_workspace_read_only_request('Find where this project configures request timeouts.')
+assert not workspace_policy.is_workspace_read_only_request(
+ 'Run a shell command in the workspace and tell me the exact token from answer.txt.'
+)
 assert not hades._hades_should_use_direct_web_search(
  'Find where this project configures request timeouts.', True)
 assert hades._hades_should_use_direct_web_search(

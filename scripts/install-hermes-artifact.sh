@@ -5,7 +5,9 @@ prefix=/opt/hades-hermes
 artifact=''
 url=''
 expected_sha=''
+candidate=0
 staging=''
+python_overridden=${HADES_HERMES_PYTHON+x}
 python_bin=${HADES_HERMES_PYTHON:-python3.13}
 uv_bin=${HADES_UV_EXECUTABLE:-}
 tmp=''
@@ -22,10 +24,12 @@ trap cleanup EXIT
 if [[ -f "$repo_dir/config/versions.env" ]]; then
   requested_hermes_version=${HADES_HERMES_VERSION:-}
   requested_source_version=${HADES_HERMES_SOURCE_VERSION:-}
+  requested_source_commit=${HADES_HERMES_SOURCE_COMMIT:-}
   # shellcheck disable=SC1091
   source "$repo_dir/config/versions.env"
   [[ -z "$requested_hermes_version" ]] || HADES_HERMES_VERSION=$requested_hermes_version
   [[ -z "$requested_source_version" ]] || HADES_HERMES_SOURCE_VERSION=$requested_source_version
+  [[ -z "$requested_source_commit" ]] || HADES_HERMES_SOURCE_COMMIT=$requested_source_commit
 fi
 uv_version=${HADES_HERMES_UV_VERSION:-}
 if [[ -z "$uv_bin" ]]; then
@@ -41,18 +45,29 @@ while (($#)); do
     --artifact) artifact=${2:?--artifact needs a file}; shift 2 ;;
     --url) url=${2:?--url needs a URL}; shift 2 ;;
     --sha256) expected_sha=${2:?--sha256 needs a checksum}; shift 2 ;;
-    -h|--help) echo 'usage: install-hermes-artifact.sh --prefix ABS_DIR [--artifact ABS_FILE | --url URL --sha256 SHA256]'; exit 0 ;;
+    --candidate) candidate=1; shift ;;
+    -h|--help) echo 'usage: install-hermes-artifact.sh --prefix ABS_DIR [--candidate] [--artifact ABS_FILE | --url URL --sha256 SHA256]'; exit 0 ;;
     *) echo "FAIL unknown option: $1" >&2; exit 2 ;;
   esac
 done
+if (( candidate )); then
+  HADES_HERMES_VERSION=${HADES_HERMES_CANDIDATE_VERSION:?missing Hermes candidate version}
+  HADES_HERMES_SOURCE_VERSION=$HADES_HERMES_CANDIDATE_VERSION
+  HADES_HERMES_SOURCE_COMMIT=${HADES_HERMES_CANDIDATE_SOURCE_COMMIT:?missing Hermes candidate source commit}
+  url=${url:-${HADES_HERMES_CANDIDATE_SOURCE_URL:?missing Hermes candidate source URL}}
+  expected_sha=${expected_sha:-${HADES_HERMES_CANDIDATE_SOURCE_SHA256:?missing Hermes candidate source checksum}}
+  if [[ -z "$python_overridden" ]]; then
+    python_bin=python3.14
+  fi
+fi
 [[ "$prefix" == /* ]] || { echo 'FAIL Hermes prefix must be absolute' >&2; exit 1; }
 validate_build_tools() {
-  command -v "$python_bin" >/dev/null 2>&1 || { echo "FAIL Hermes requires Python 3.11 through 3.13; interpreter not found: $python_bin" >&2; exit 1; }
+  command -v "$python_bin" >/dev/null 2>&1 || { echo "FAIL Hermes requires Python 3.11 through 3.14; interpreter not found: $python_bin" >&2; exit 1; }
   python_version=$("$python_bin" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null) || {
     echo 'FAIL could not read the Hermes Python interpreter version' >&2; exit 1;
   }
-  [[ "$python_version" =~ ^3\.(11|12|13)$ ]] || {
-    echo "FAIL Hermes ${HADES_HERMES_VERSION:-0.21.2} requires Python >=3.11,<3.14 (found ${python_version:-unknown})" >&2; exit 1;
+  [[ "$python_version" =~ ^3\.(11|12|13|14)$ ]] || {
+    echo "FAIL Hermes ${HADES_HERMES_VERSION:-0.21.2} requires Python >=3.11,<3.15 (found ${python_version:-unknown})" >&2; exit 1;
   }
   [[ -n "$uv_bin" && -x "$uv_bin" ]] || { echo 'FAIL pinned uv is unavailable; run scripts/prepare-hades-host.sh --apply' >&2; exit 1; }
   uv_reported=$("$uv_bin" --version 2>/dev/null | awk '{print $1 " " $2}' || true)
@@ -105,10 +120,23 @@ PY
     UV_PYTHON="$prefix/venv/bin/python" \
     "$uv_bin" sync "${extras[@]}"
 )
+if [[ -f "$prefix/source/scripts/write_install_stamp.py" ]]; then
+  source_commit=${HADES_HERMES_SOURCE_COMMIT:-}
+  [[ "$source_commit" =~ ^[0-9a-f]{40}$ ]] || {
+    echo 'FAIL Hermes release source commit must be pinned before writing install-stamp.json' >&2
+    exit 1
+  }
+  "$prefix/venv/bin/python" "$prefix/source/scripts/write_install_stamp.py" \
+    --output "$prefix/source/install-stamp.json" \
+    --commit "$source_commit" \
+    --base-version "${HADES_HERMES_SOURCE_VERSION:-${HADES_HERMES_VERSION:-unknown}}" \
+    --distance 0 --source local --update-mechanism external
+fi
 install -d -m 0755 "$prefix/bin"
 printf '%s\n' '#!/usr/bin/env bash' "exec $prefix/venv/bin/python -m hermes_cli.main \"\$@\"" > "$prefix/bin/hermes"
 chmod 0755 "$prefix/bin/hermes"
-printf 'artifact_url=%s\nartifact_version=%s\nartifact_sha256=%s\ninstallation=python-venv-uv-locked-editable\nsource=%s\n' \
-  "${url:-local-file}" "${HADES_HERMES_SOURCE_VERSION:-unknown}" "$actual_sha" "$prefix/source" > "$prefix/provenance"
+printf 'artifact_url=%s\nartifact_version=%s\nartifact_sha256=%s\nsource_commit=%s\ninstallation=python-venv-uv-locked-editable\nsource=%s\n' \
+  "${url:-local-file}" "${HADES_HERMES_SOURCE_VERSION:-unknown}" "$actual_sha" \
+  "${HADES_HERMES_SOURCE_COMMIT:-unknown}" "$prefix/source" > "$prefix/provenance"
 chmod 0644 "$prefix/provenance"
 printf 'PASS Hermes %s installed from verified artifact %s\n' "${HADES_HERMES_VERSION:-unknown}" "$actual_sha"
