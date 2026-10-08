@@ -4,11 +4,18 @@ umask 077
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 image=${1:?usage: test-openwebui-docx-preview-security.sh IMAGE}
-bash "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" "$image"
+source "$repo_dir/config/versions.env"
 image_id=$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null) || {
   echo 'FAIL candidate image must already exist locally; refusing an implicit pull' >&2
   exit 2
 }
+image_version=$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')
+if [[ "$image_version" == "$HADES_OPEN_WEBUI_CANDIDATE_VERSION" ]]; then
+  bash "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" "$image"
+elif [[ "$image_version" != "$HADES_OPEN_WEBUI_VERSION" ]]; then
+  echo "FAIL DOCX Preview test image has an unsupported version label: $image_version" >&2
+  exit 2
+fi
 playwright_module=${HADES_PLAYWRIGHT_MODULE:-${HOME}/.local/share/hades-playwright/node_modules/playwright}
 [[ -d "$playwright_module" ]] || { echo 'FAIL Playwright module is unavailable' >&2; exit 2; }
 node -e 'require(process.argv[1])' "$playwright_module" >/dev/null 2>&1 || {
