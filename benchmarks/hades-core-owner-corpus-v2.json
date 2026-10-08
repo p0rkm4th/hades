@@ -1045,6 +1045,14 @@
         "benchmarks/hades-core-memory-current-core09-hades-first-20261008.json"
       ],
       "report": "docs/hades-core-memory-current-core09-comparison-2026-10-08.md"
+    },
+    "latest_workspace_cache_stream_diagnosis_ollama0401": {
+      "source_revision": "2498f7a0a5a97402a3c957f3ca4c476e3b0b2364",
+      "classification": "two-repeat synthetic geometry multi-file escalation replay with per-delta timings and Ollama prompt-cache counters; no owner preference labels",
+      "result": "PLAIN median task time 36.49 s, HADES 45.85 s. All four runs passed independent tests and changed only the intended source; neither stack changed the workspace during diagnosis in this pair. The first PLAIN action tool-call deltas arrived in 1.66–1.78 s with 6,590/6,655 and 6,860/6,958 cached prompt tokens. HADES tool-call deltas arrived in 15.21–15.50 s with zero cached tokens out of 6,269/6,406; both emitted 61 completion tokens under paired seeds and reasoning_effort=none. HADES changed system text and nearly all schema bytes across the diagnosis/action boundary; PLAIN kept both stable. This strongly associates HADES prefix-cache loss with action latency, but does not isolate cache cost from hidden model prefill/scheduling.",
+      "limitations": "Two pairs on one synthetic coding fixture; no owner preference, human quality rating, Git commit behavior, Open WebUI persistence, or deployment parity. Ollama does not expose reasoning internals on this endpoint. Prior stable-schema candidate restored cache but worsened end-to-end behavior and increased invalid diagnosis calls.",
+      "metrics_record": "benchmarks/hades-core-workspace-escalation-tool-delta-ollama0401-20261008.json",
+      "report": "docs/hades-core-workspace-escalation-ollama0401-2026-10-08.md"
     }
   }
 }
