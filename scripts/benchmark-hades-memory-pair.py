@@ -118,6 +118,7 @@ def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "automatic_recall_after_idle_expected_marker_present",
         "core09_recall_expected_marker_present",
         "core09_recall_after_idle_expected_marker_present",
+        "core09_fact_visibility_after_drain",
     )
     safe_samples = []
     for sample in repetitions:
@@ -1424,6 +1425,16 @@ def main() -> int:
                     sample_result["stacks"]["hades"][
                         "memory_supplement_visibility_after_drain"
                     ] = visibility
+                    sample_result["stacks"]["hades"][
+                        "core09_fact_visibility_after_drain"
+                    ] = {
+                        "canonical_bank": retained_fact_visible(
+                            hindsight_url, memory_bank, "$3,000"
+                        ),
+                        "explicit_bank": retained_fact_visible(
+                            hindsight_url, memory_bank + "-explicit", "$3,000"
+                        ),
+                    }
                     sample_result["stacks"]["hades"][
                         "synthetic_recall_candidate_diagnostic"
                     ] = hindsight_recall_candidate_diagnostic(
