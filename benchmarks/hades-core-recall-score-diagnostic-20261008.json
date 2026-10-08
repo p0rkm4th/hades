@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "title": "HADES automatic recall score diagnostic",
+  "classification": "synthetic local diagnostic; not owner dogfood or release qualification",
+  "source_revision": "e8335b43a5fb28541c3ab450c98219b4b772265f",
+  "method": {
+    "samples": 1,
+    "plain_first": true,
+    "hermes_version": "0.21.5",
+    "ollama_version": "0.40.1",
+    "model": "qwen3.6:35b Q4_K_M",
+    "hindsight_model": "qwen3:14b Q4_K_M",
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight@sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70",
+    "context_length": 65536,
+    "retain_mode": "concise",
+    "derived_observations": true,
+    "hades_recall_types": "observation",
+    "diagnostic_fields": "Ranks, canonical types, and numeric retrieval scores only; no text, facts, or identifiers."
+  },
+  "measurements": {
+    "plain_ordinary_total_ms": 15685.6,
+    "hades_ordinary_total_ms": 10417.9,
+    "plain_automatic_recall_total_ms": 1826.8,
+    "plain_automatic_recall_expected_marker": true,
+    "hades_automatic_recall_total_ms": 28872.4,
+    "hades_automatic_recall_expected_marker": false,
+    "hades_automatic_recall_provider_generations": 1,
+    "hades_background_idle_drain_ms": 43554.2,
+    "hades_settled_recall_total_ms": 10042.2,
+    "hades_settled_recall_expected_marker": true
+  },
+  "hades_ranked_scores": [
+    {
+      "rank": 1,
+      "type": "observation",
+      "scores": {
+        "final": 0.02096101965077012,
+        "keyword": 0.10000000149011612,
+        "reranker": 0.019055480438932088,
+        "semantic": 0.6286545617190276
+      }
+    },
+    {
+      "rank": 2,
+      "type": "observation",
+      "scores": {
+        "final": 0.00003432150491228205,
+        "reranker": 0.00003120298261154412,
+        "semantic": 0.572145402431488
+      }
+    },
+    {
+      "rank": 3,
+      "type": "observation",
+      "scores": {
+        "final": 0.000021132747505548288,
+        "reranker": 0.0000192116040413033,
+        "semantic": 0.5851021409034729
+      }
+    },
+    {
+      "rank": 4,
+      "type": "observation",
+      "scores": {
+        "final": 0.0000155393905105282,
+        "reranker": 0.0000141267252967533,
+        "semantic": 0.42782142758369446
+      }
+    },
+    {
+      "rank": 5,
+      "type": "observation",
+      "scores": {
+        "final": 0.00001502182464068273,
+        "reranker": 0.000013656210137240154,
+        "semantic": 0.49882078170776367
+      }
+    }
+  ],
+  "interpretation": [
+    "The immediate HADES automatic recall missed the marker and took 28.9 seconds; the paired PLAIN recall found it in 1.8 seconds.",
+    "After 43.6 seconds for background work to become idle, HADES found the marker in 10.0 seconds.",
+    "The rank-one observation had semantic score 0.629 and final score 0.021. This suggests score fusion or timing/state needs investigation; one sample cannot identify a cause.",
+    "Ordinary-turn timings are single samples and should not be used to claim a comparative latency win."
+  ],
+  "limitations": [
+    "One synthetic paired pass only; no human quality or naturalness ratings.",
+    "Staged model weights and runtime do not prove equality with production deployment.",
+    "The settled recall followed the HADES idle barrier and is not immediate-turn behavior.",
+    "This does not qualify production memory contents, UI authentication, household isolation, or owner preference."
+  ]
+}
