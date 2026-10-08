@@ -1,39 +1,17 @@
-# HADES Core owner usability corpus v1
+# HADES Core comparative owner corpus
 
-Status: candidate for owner review; no owner preference labels are assigned.
+The campaign corpus is [`hades-core-owner-corpus-v2.json`](../benchmarks/hades-core-owner-corpus-v2.json): 55 sanitized, multi-turn owner-pattern cases across ordinary conversation, follow-ups, memory, Grocy, homelab, research, workspace/coding, agentic use, authority, and failures. Cases are paraphrases seeded from documented dogfood prompt families, not raw transcripts. Preference labels remain unassigned until direct owner review.
 
-This is a 54-case synthetic conversation corpus for comparing HADES with a
-minimal supported Hermes/runtime control. It covers ordinary chat, follow-up
-context, memory, household/Grocy, homelab reads, research, coding/workspace
-escalation, bounded computer use, multi-user isolation, and tool failure or
-recovery. Cases include terse turns, corrections, interruptions, topic
-switches, cancellation, and continuation.
+The corpus records 26 cases with direct synthetic replay evidence and 29 without a direct replay. This is partial coverage, not a pass rate. The current ordinary-chat comparison is the five-repeat core-4 pair in [`hades-core-plain-stack-hermes0216-core4-2026-10-08.md`](hades-core-plain-stack-hermes0216-core4-2026-10-08.md). That comparison uses Hermes 0.21.6 and Ollama 0.40.1 in both arms, 30 turns per arm, no tools, and no response-text retention. It found no material latency difference; it does not establish answer quality or owner preference.
 
-The cases were authored from themes in the sanitized
-[`daily-driver-failures.md`](daily-driver-failures.md), existing domain and
-authority contracts, and the recent synthetic workspace-escalation experiment.
-They are not raw owner transcripts and do not constitute owner-approved task
-wording. The `owner_preference` field intentionally remains `unrated` until
-direct dogfood records preference and observed friction.
+The replay script is [`benchmark-hades-owner-subset.py`](../scripts/benchmark-hades-owner-subset.py). It captures timing, token and tool metadata while excluding prompts and answers from output records. `test-benchmark-hades-owner-subset-redaction.py` checks output redaction and child-process environment filtering. Use the full seeded corpus for follow-up comparisons; preserve unsuccessful runs and report sample counts.
 
-Each case names the capability surface expected, behavior that should occur,
-and behavior that must not occur. This is a task specification, not yet a
-replay runner or a quality score. The companion
-[`test-hades-core-usability-corpus-contract.sh`](../scripts/test-hades-core-usability-corpus-contract.sh)
-checks corpus shape, category coverage, uniqueness, and basic secret hygiene.
+## Current gaps
 
-## Comparison protocol to apply
+- 29 of 55 cases still lack a direct replay.
+- No owner preference labels have been collected.
+- Existing chat-only comparisons do not assess naturalness or factual quality.
+- Tool-backed synthetic comparisons do not establish deployed Open WebUI behavior or owner-visible performance.
+- HADES and PLAIN STACK must be rechecked against the same staged upstream/runtime when candidates change.
 
-For HADES and PLAIN STACK, hold the model, quantization, context length,
-sampling, runtime, hardware, prompt, network conditions, and warm/cold state
-constant where practical. Record deviations. Capture latency, generations,
-tools exposed and called, avoidable calls, context size, task completion,
-verification, clarification/confirmation, failure behavior, response length,
-agentic ceremony, and direct owner preference. Keep unsuccessful runs in the
-results and report sample counts. Do not grade naturalness with keyword-only
-rules. A case without an applicable capability should test that no unrelated
-tool or domain system is activated.
-
-The corpus is not evidence that HADES currently passes these tasks. A full
-comparative run and direct Scotty dogfood remain required before drawing a
-product-preference conclusion.
+The corpus remains a testing instrument. It does not establish that HADES is preferred, and direct Scotty dogfood remains a release gate.
