@@ -7,6 +7,7 @@ import json
 import pathlib
 import threading
 import time
+import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -433,7 +434,14 @@ class AllBankStatus(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.startswith("/v1/default/banks?"):
-            payload = {"items": [{"id": "hades-owner"}, {"id": "hermes"}], "total": 2}
+            offset = int(urllib.parse.parse_qs(
+                urllib.parse.urlsplit(self.path).query
+            ).get("offset", ["0"])[0])
+            page = (
+                [{"bank_id": "hades-owner"}]
+                if offset == 0 else [{"bank_id": "hermes"}]
+            )
+            payload = {"banks": page, "total": 2}
         elif "/operations?" in self.path:
             bank = self.path.split("/banks/", 1)[1].split("/", 1)[0]
             status = self.path.rsplit("status=", 1)[1].split("&", 1)[0]
