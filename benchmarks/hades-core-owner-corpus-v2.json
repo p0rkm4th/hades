@@ -999,14 +999,16 @@
     },
     "case_qualification_audits": {
       "core-09": {
-        "status": "not counted as direct comparative replay",
+        "status": "matched effective-context synthetic comparative replay recorded; owner preference and semantic quality remain unqualified",
         "refs": [
           "benchmarks/hades-core-memory-owner-core09-paired-hermes0215-v1.json",
           "benchmarks/hades-core-memory-owner-core09-paired-hermes0215-owner-rerun-v5.json",
-          "benchmarks/hades-core-memory-paired-controls-hermes0215-v6.json"
+          "benchmarks/hades-core-memory-paired-controls-hermes0215-v6.json",
+          "benchmarks/hades-core-memory-current-core09-plain-first-20261008.json",
+          "benchmarks/hades-core-memory-current-core09-hades-first-20261008.json"
         ],
-        "reason": "The v1 replay used household scope and denied the owner-only savings recall. The v5 owner-scoped replay reused Hindsight state across samples, allowed background work to cross between stacks, and did not normalize Ollama model residency; its own classification invalidates comparative timing/preference. The v6 controls did not include the savings target.",
-        "next_replay": "Seed the same synthetic $3,000 target in isolated fresh Hindsight state for each arm and each repeat; use current Hermes 0.21.5, matched Ollama/model/context/sampling, drain memory work before stack changes, record residency, and counterbalance at least two paired passes. This is functional comparison only; owner preference still requires direct review."
+        "reason": "The earlier v1/v5/v6 and v10 comparisons do not qualify because of scope, state-contamination, missing-target, or runtime-context defects. The current two-order v0.21.5/Ollama 0.40.1 replay verifies effective 65,536 context, fresh Hindsight state per order, and generation-boundary context for PLAIN. HADES returned the explicit synthetic core-09 target in both orders in 36–37 ms, but automatic fresh-fact recall was pending in both orders and Hindsight drain took 80–95 s. This is synthetic functional/latency evidence only; no owner preference or human semantic-quality review.",
+        "next_replay": "Directly dogfood explicit and automatic memory with Scotty; collect additional counterbalanced synthetic samples only if investigating stable latency. Any automatic-retention policy change still requires correction ordering, stale-value rejection, useful implicit/fresh-session recall, and active-retain behavior checks."
       }
     },
     "latest_workspace_escalation_ollama0401": {
@@ -1032,6 +1034,17 @@
       "limitations": "Two pairs on one synthetic coding fixture. No owner preference, broad coding quality, Git commit behavior, Open WebUI persistence, or deployed gateway parity. Does not establish general latency preference.",
       "metrics_record": "benchmarks/hades-core-workspace-escalation-current-ollama0401-20261008.json",
       "report": "docs/hades-core-workspace-escalation-ollama0401-2026-10-08.md"
+    },
+    "latest_core09_effective_context_ollama0401": {
+      "source_revision": "8a5923f764ccebdbf283f49a54147eb078b02418",
+      "classification": "two counterbalanced synthetic core-09 memory pairs, fresh disposable Hindsight state per order, effective-context verified; no owner preference labels",
+      "result": "Each run processed a 7,010-token un-overridden context probe with Ollama /api/ps reporting 65,536; PLAIN provider generations requested and reported resident 65,536 context. Explicit core-09 recall marker was present in both stacks in both orders: HADES 36–37 ms with zero provider generations; PLAIN 1.48–1.57 s immediately. HADES automatic fresh-fact recall returned a truthful pending response in 47–52 ms with no provider/tool calls, marker absent in 2/2; PLAIN found it in 1.93–2.00 s in 2/2. HADES background memory work took 80.2–94.7 s to drain across this full synthetic sequence. Five supplement markers varied; no semantic quality or owner preference inference.",
+      "limitations": "Two synthetic pairs only; stack order materially affected one PLAIN post-drain recall sample. The drain covers the full synthetic memory sequence, not core-09 alone. Hindsight 14B model used a distinct 40,960 context; HADES background calls are part of the added HADES runtime cost. No direct Scotty dogfood or production parity.",
+      "metrics_records": [
+        "benchmarks/hades-core-memory-current-core09-plain-first-20261008.json",
+        "benchmarks/hades-core-memory-current-core09-hades-first-20261008.json"
+      ],
+      "report": "docs/hades-core-memory-current-core09-comparison-2026-10-08.md"
     }
   }
 }
