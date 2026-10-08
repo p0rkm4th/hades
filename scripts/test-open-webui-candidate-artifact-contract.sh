@@ -59,4 +59,14 @@ grep -q 'HADES_DISABLED_ROLE_EXPECTED_IMAGE_ID="\$HADES_OPEN_WEBUI_CANDIDATE_HAD
   echo 'FAIL candidate acceptance does not bind role revocation to the exact image ID' >&2
   exit 1
 }
+grep -q 'test-openwebui-docx-preview-security.sh' "$repo_dir/scripts/test-open-webui-candidate.sh" || {
+  echo 'FAIL candidate acceptance omits the shared DOCX preview security regression' >&2
+  exit 1
+}
+for marker in 'beta-private-canary.txt' 'cross_user_token_theft' 'EXPECT_VULNERABLE'; do
+  grep -q "$marker" "$repo_dir/scripts/test-openwebui-docx-preview-security.sh" || {
+    echo "FAIL DOCX preview security regression omits the cross-user proof marker: $marker" >&2
+    exit 1
+  }
+done
 echo 'PASS Open WebUI candidate version, source, base, and image identity are bound to the manifest'
