@@ -242,6 +242,9 @@ class ProviderProxy(ThreadingHTTPServer):
         self.first_phase_requests: dict[
             tuple[int, str], tuple[str, bytes, bytes, bytes]
         ] = {}
+        self.last_diagnosis_contexts: dict[
+            tuple[str, int], tuple[bytes, bytes, bytes]
+        ] = {}
         self.pair_lock = threading.Lock()
         super().__init__(address, self.handler_type())
 
@@ -330,6 +333,23 @@ class ProviderProxy(ThreadingHTTPServer):
                 model_parameters = dict(requested_model_parameters)
                 if sampling_seed is not None:
                     model_parameters["seed"] = sampling_seed
+                profile_context = bool(
+                    stack is not None and repeat is not None
+                    and (phase == "diagnose" or (
+                        phase == "fix" and sampling_call_ordinal == 0
+                    ))
+                )
+                system_bytes = history_bytes = schema_bytes = b""
+                if profile_context:
+                    encode = lambda value: json.dumps(
+                        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                    ).encode("utf-8", errors="replace")
+                    system_bytes = encode([
+                        message.get("content") for message in messages
+                        if isinstance(message, dict) and message.get("role") == "system"
+                    ])
+                    history_bytes = encode(messages)
+                    schema_bytes = encode(schemas)
                 row: dict[str, Any] = {
                     "phase": phase,
                     "model": requested_model,
@@ -389,28 +409,44 @@ class ProviderProxy(ThreadingHTTPServer):
                     "usage": None,
                     "status": None,
                 }
+                if stack is not None and repeat is not None:
+                    context_key = (stack, repeat)
+                    if phase == "diagnose":
+                        with parent.pair_lock:
+                            parent.last_diagnosis_contexts[context_key] = (
+                                system_bytes, history_bytes, schema_bytes,
+                            )
+                    elif phase == "fix" and sampling_call_ordinal == 0:
+                        with parent.pair_lock:
+                            previous_context = parent.last_diagnosis_contexts.get(context_key)
+                        if previous_context is not None:
+                            row.update({
+                                "diagnosis_to_action_system_lcp_bytes": common_prefix_byte_count(
+                                    previous_context[0], system_bytes
+                                ),
+                                "diagnosis_to_action_history_lcp_bytes": common_prefix_byte_count(
+                                    previous_context[1], history_bytes
+                                ),
+                                "diagnosis_to_action_schema_lcp_bytes": common_prefix_byte_count(
+                                    previous_context[2], schema_bytes
+                                ),
+                                "diagnosis_to_action_system_same": previous_context[0] == system_bytes,
+                                "diagnosis_to_action_history_same": previous_context[1] == history_bytes,
+                                "diagnosis_to_action_schema_same": previous_context[2] == schema_bytes,
+                            })
                 if (
                     stack is not None and repeat is not None
                     and phase in {"diagnose", "fix"} and sampling_call_ordinal == 0
                 ):
-                    encode = lambda value: json.dumps(
-                        value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-                    ).encode("utf-8", errors="replace")
-                    system_bytes = encode([
-                        message.get("content") for message in messages
-                        if isinstance(message, dict) and message.get("role") == "system"
-                    ])
-                    message_bytes = encode(messages)
-                    schema_bytes = encode(schemas)
                     row["first_request_system_bytes"] = len(system_bytes)
-                    row["first_request_messages_bytes"] = len(message_bytes)
+                    row["first_request_messages_bytes"] = len(history_bytes)
                     row["first_request_schemas_bytes"] = len(schema_bytes)
                     pair_key = (repeat, phase)
                     with parent.pair_lock:
                         previous = parent.first_phase_requests.get(pair_key)
                         if previous is None:
                             parent.first_phase_requests[pair_key] = (
-                                stack, system_bytes, message_bytes, schema_bytes,
+                                stack, system_bytes, history_bytes, schema_bytes,
                             )
                         elif previous[0] != stack:
                             metrics = {
@@ -418,7 +454,7 @@ class ProviderProxy(ThreadingHTTPServer):
                                     previous[1], system_bytes
                                 ),
                                 "paired_first_request_messages_prefix_bytes": common_prefix_byte_count(
-                                    previous[2], message_bytes
+                                    previous[2], history_bytes
                                 ),
                                 "paired_first_request_schemas_prefix_bytes": common_prefix_byte_count(
                                     previous[3], schema_bytes
