@@ -115,6 +115,26 @@ assert native_hades_names == native_raw_names, (native_hades_names, native_raw_n
 assert len(native_hades_catalog) == len(native_hades_names), native_hades_catalog
 print("PASS HADES Grocy catalog uses Hermes raw schemas without redundant search bridge")
 
+# The raw serving-count operation is not a HADES model tool. A historical
+# exact-name registry fallback could re-add it even when the current Hermes
+# toolset snapshot did not contain it; keep the schema hidden and route changes
+# through the HADES preview/confirmation adapter instead.
+serving_name = "mcp_grocy_recipe_authoring_recipe_set_servings"
+deferred_registry.register(
+    name=serving_name,
+    toolset="synthetic-serving-companion-only",
+    schema={"description": "synthetic raw serving writer", "parameters": {
+        "type": "object", "properties": {}, "required": [],
+    }},
+    handler=lambda **_kwargs: "must never be invoked",
+)
+without_serving_companion = hades._hades_grocy_tool_definitions(
+    lambda **_kwargs: native_raw
+)
+assert {row["function"]["name"] for row in without_serving_companion} == native_raw_names
+assert serving_name not in {row["function"]["name"] for row in without_serving_companion}
+print("PASS Grocy schema lookup does not re-add the unsupported raw serving writer")
+
 homelab_read_names = {
     "mcp_homelab_readonly_homelab_summary",
     "mcp_homelab_readonly_homelab_recent_activity",
