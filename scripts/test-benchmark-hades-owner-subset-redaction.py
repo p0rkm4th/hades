@@ -24,7 +24,8 @@ source = {
 }
 public = MODULE.public_turn_record(source)
 controlled = MODULE.apply_request_overrides(
-    {"model": "same-model", "temperature": 0}, {"max_tokens": 512}
+    {"model": "same-model"},
+    {"max_tokens": 512, "temperature": 1.0, "seed": 23},
 )
 controls = MODULE.capture_request_controls(controlled)
 from benchmark_child_environment import benchmark_child_environment
@@ -50,7 +51,8 @@ assert public["case"] == "core-08"
 assert public["status"] == 200
 assert public["provider_metrics"] == [{"message_bytes": 123}]
 assert controls["max_tokens"] == 512
-assert controls["temperature"] == 0
+assert controls["temperature"] == 1.0
+assert controls["seed"] == 23
 assert child_env == {
     "PATH": "/usr/bin:/bin",
     "LANG": "C.UTF-8",
