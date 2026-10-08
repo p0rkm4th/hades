@@ -8504,7 +8504,7 @@ try:
     _HADES_NATURAL_PERSONAL_RECALL = re.compile(
         r"\b(?:"
         r"(?:what|where|when|which|who|how)\b.{0,100}\b(?:did\s+i|"
-        r"have\s+i|i\s+(?:mentioned|said|told\s+you)|"
+        r"have\s+i|was\s+i|i\s+(?:mentioned|said|told\s+you)|"
         r"do\s+i\s+(?:like|love|prefer|usually|typically))|"
         r"(?:tell|remind|show|find)\s+me\b.{0,100}\bi\s+(?:liked|"
         r"loved|preferred|chose|picked|visited|went\s+to|tried|bought|ordered))\b",
@@ -8736,12 +8736,10 @@ try:
         return state, active_types
 
     def _hades_pending_memory_response(agent, user_text):
-        """Fail closed for explicit memory commands while this subject's writes settle.
+        """Respond promptly to personal-memory requests while this subject's writes settle.
 
-        Natural personal-history questions use the provider's bounded prefetch
-        wait, which can return a newly retained fact as soon as it is ready.
-        This early route is only needed when explicit-memory wording disables
-        that automatic prefetch path.
+        Explicit and natural personal-history questions must not wait behind
+        Hindsight inference or guess while a recent retain is pending.
         """
         subject = str(getattr(agent, "_hades_subject", "") or "").strip()
         scope = str(getattr(agent, "_hades_session_scope", "") or "")
@@ -8751,6 +8749,7 @@ try:
         if not (
             _hades_explicit_memory_recall_requested(text)
             or _HADES_EXPLICIT_MEMORY_INTENT.search(text)
+            or _hades_natural_personal_recall_requested(text)
         ):
             return None
         expected_bank = "hades-owner" if scope == "owner" else f"hades-user-{subject}"

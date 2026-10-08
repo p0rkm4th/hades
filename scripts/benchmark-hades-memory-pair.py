@@ -1255,7 +1255,7 @@ def deterministic_hades_memory_turn(turn: str) -> bool:
     """Turn names whose HADES path is intentionally deterministic and model-free."""
     return turn in {
         "core09_save", "core09_recall", "core09_recall_after_idle",
-        "save", "correction", "implicit_recall", "fresh_recall",
+        "save", "correction", "automatic_recall", "implicit_recall", "fresh_recall",
     } or turn.startswith("supplement_")
 
 
