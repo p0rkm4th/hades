@@ -24,6 +24,19 @@ constitute direct owner dogfood or production deployment. No production change
 was made. The exact live image identity and operator target remain in the
 protected checkpoint.
 
+## Open WebUI DOCX preview regression — 2026-10-08 UTC
+
+Added `scripts/test-openwebui-docx-preview-security.sh`, which starts an
+isolated candidate instance and mock local model, uploads a synthetic DOCX
+with an OOXML HTML part and a `javascript:` link, opens the real chat Preview
+tab, and asserts the harmless script marker does not run and the unsafe link
+is absent. It passes on the exact staged 0.11.4 candidate. As a positive
+control, the same harness fails against the locally available 0.11.1 HADES
+build: the marker ran in an `about:srcdoc` frame and the unsafe link remained.
+That old image is a local test control, not evidence of production state.
+Direct owner dogfood, production backup/restore rehearsal, Terminals-precondition
+inspection, and production rollout remain open.
+
 ## Current mission checkpoint — 2026-10-06 UTC
 
 Code-bearing `main` is `381543b0af21c1e1abcbf90642eb8b586f553d62`, fast-forwarded from reviewed base `0cba8008a5fd0ed1a6ea1b2633379490f6cec7d8`. NYX-007 accepted the scoped Proxmox archived-task reader extraction and candidate Public CI [37398017938](https://github.com/p0rkm4th/hades/actions/runs/37398017938) passed; post-promotion main CI [37398145659](https://github.com/p0rkm4th/hades/actions/runs/37398145659) passed. The reader is shared by backup status and recent activity while credentials, transport, and `VM.Audit` scope computation remain in the adapter. It does not fetch tasks for unknown/empty scope, filters by effective guest IDs, and projects only approved task fields. Exact clean 17-module package composition/import passes. No production deployment is claimed.
