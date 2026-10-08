@@ -237,6 +237,7 @@ def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Serialize outcomes without answers, prompts, schemas, or raw provider calls."""
     sample_keys = (
         "sample", "first_stack", "hindsight_idle_after_hades", "runtime_normalization",
+        "runtime_after_automatic_retain",
     )
     outcome_keys = (
         "fresh_recall_expected_marker_present", "fresh_recall_stale_mango_present",
@@ -828,6 +829,48 @@ def normalize_ollama_for_arm(ollama_url: str, benchmark, interactive_model: str,
     }
 
 
+def summarize_runtime_residency(rows: list[dict[str, Any]],
+                                interactive_model: str,
+                                extractor_model: str) -> dict[str, Any]:
+    """Keep only role-based runtime residency needed for latency diagnosis."""
+    def matching(name: str):
+        return next((row for row in rows if isinstance(row, dict) and row.get("name") == name), None)
+
+    interactive = matching(interactive_model)
+    extractor = matching(extractor_model)
+    return {
+        "interactive_model_loaded": isinstance(interactive, dict),
+        "interactive_context_length": (
+            interactive.get("context_length") if isinstance(interactive, dict)
+            and isinstance(interactive.get("context_length"), int) else None
+        ),
+        "interactive_vram_bytes": (
+            interactive.get("size_vram") if isinstance(interactive, dict)
+            and isinstance(interactive.get("size_vram"), int) else None
+        ),
+        "memory_model_loaded": isinstance(extractor, dict),
+        "memory_model_context_length": (
+            extractor.get("context_length") if isinstance(extractor, dict)
+            and isinstance(extractor.get("context_length"), int) else None
+        ),
+        "memory_model_vram_bytes": (
+            extractor.get("size_vram") if isinstance(extractor, dict)
+            and isinstance(extractor.get("size_vram"), int) else None
+        ),
+    }
+
+
+def runtime_residency_snapshot(ollama_url: str, benchmark,
+                               interactive_model: str,
+                               extractor_model: str) -> dict[str, Any]:
+    rows = benchmark.local_json(
+        f"{ollama_url.rstrip('/')}/api/ps"
+    ).get("models", [])
+    if not isinstance(rows, list):
+        rows = []
+    return summarize_runtime_residency(rows, interactive_model, extractor_model)
+
+
 def measure_memory_supplement_case(gateway: dict[str, Any], benchmark,
                                    case: dict[str, Any], stack: str,
                                    sample_id: str) -> dict[str, Any]:
@@ -1400,6 +1443,11 @@ def main() -> int:
                     )
                     if stack == "hades" else None
                 )
+                sample_result.setdefault(
+                    "runtime_after_automatic_retain", {}
+                )[stack] = runtime_residency_snapshot(
+                    ollama, benchmark, MODEL, args.hindsight_model
+                )
                 automatic_recall = measure_turn(
                     gateway, benchmark, "automatic_recall",
                     f"memory-pair-{stack}-{round_id}-automatic-recall",
@@ -1865,6 +1913,7 @@ def main() -> int:
                 "hindsight_inference_accounting": "The local proxy records Hindsight-to-Ollama API route, safe scalar controls, byte counts, response timing, and Ollama usage counters; request/response bodies, prompts, facts, and credentials are never persisted. These background calls are additional HADES inference and are reported separately from user-facing Hermes provider generations.",
             "memory_score_diagnostics": "For HADES only, opt-in diagnostic logs retain up to eight result ranks, canonical memory types, and numeric retrieval scores; query text, facts, IDs, tags, entities, and subjects are excluded.",
                 "hindsight_residency_capture": "After forwarding each Hindsight request response, the proxy samples local Ollama /api/ps and records only the matching model's residency status, context length, total size, and VRAM size. A not_resident or unavailable observation is retained explicitly; the probe occurs after the measured response and is excluded from its elapsed time.",
+                "interactive_residency_capture": "The runner samples /api/ps after each automatic retain and immediately before the next read, storing only role-based residency, context length, and VRAM bytes for the interactive and Hindsight models; no model names or response data are retained in this probe.",
                 "arm_isolation": "Before measured arms, the runner drains Hindsight warmup work. Before each stack arm, it unloads the extractor, warms and verifies the interactive model at the configured context, and records normalization timings outside measured turns. After every HADES arm, it polls pending/processing operations across every bank in the disposable Hindsight database until two consecutive idle observations; unavailable status or timeout aborts the run. This prevents background work from carrying across counterbalanced arms.",
                 "warmups": {
                     key: (
