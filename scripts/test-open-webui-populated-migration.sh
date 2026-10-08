@@ -84,6 +84,26 @@ beta=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/add" \
   --data '{"name":"Migration Beta","email":"migration-beta@example.invalid","password":"Synthetic-Beta-123!","role":"user"}')
 beta_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$beta")
 beta_token=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])' <<<"$beta")
+python3 - "$tmp/migration-fixture.docx" <<'PY'
+import sys, zipfile
+with zipfile.ZipFile(sys.argv[1], 'w', zipfile.ZIP_DEFLATED) as docx:
+    docx.writestr('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+    docx.writestr('_rels/.rels', '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')
+    docx.writestr('word/document.xml', '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Synthetic migration upload marker 4c91</w:t></w:r></w:p><w:sectPr/></w:body></w:document>')
+PY
+upload=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/files/?process=false" \
+  -H "Authorization: Bearer $token" -F "file=@$tmp/migration-fixture.docx;type=application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+file_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$upload")
+curl -fsS "http://127.0.0.1:${port}/api/v1/files/${file_id}/content" \
+  -H "Authorization: Bearer $token" -o "$tmp/upload-before.docx"
+cmp "$tmp/migration-fixture.docx" "$tmp/upload-before.docx"
+private_file_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/files/${file_id}/content" \
+  -H "Authorization: Bearer $beta_token")
+[[ "$private_file_status" == 401 || "$private_file_status" == 403 || "$private_file_status" == 404 ]] || {
+  echo "FAIL Beta accessed owner's private uploaded file (HTTP $private_file_status)" >&2
+  exit 1
+}
 curl -fsS -X POST "http://127.0.0.1:${port}/openai/config/update" \
   -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
   --data "{\"ENABLE_OPENAI_API\":true,\"OPENAI_API_BASE_URLS\":[\"http://host.docker.internal:${backend_port}/v1\"],\"OPENAI_API_KEYS\":[\"synthetic\"],\"OPENAI_API_CONFIGS\":{}}" >/dev/null
@@ -113,7 +133,7 @@ channel_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<
 curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/channels/${channel_id}/messages/post" \
   -H "Authorization: Bearer $beta_token" -H 'Content-Type: application/json' \
   --data '{"content":"Synthetic migration channel marker","data":{},"meta":{}}' >/dev/null
-printf 'PASS Open WebUI %s populated fixture accounts, chat, and shared channel persisted\n' "$old_version"
+printf 'PASS Open WebUI %s populated fixture accounts, chat, shared channel, and private DOCX upload persisted\n' "$old_version"
 
 # Take a consistent online SQLite backup while the old instance is serving the
 # synthetic fixture. This exercises the same database boundary used by recovery.
@@ -125,8 +145,17 @@ snapshot_integrity=$(python3 -c 'import sqlite3,sys; db=sqlite3.connect("file:"+
 [[ "$snapshot_integrity" == ok ]] || { echo "FAIL SQLite snapshot integrity: $snapshot_integrity" >&2; exit 1; }
 printf 'PASS SQLite online backup captured synthetic pre-upgrade state; integrity=%s\n' "$snapshot_integrity"
 
+volume_mounts=$(docker inspect "$name" --format '{{json .Mounts}}')
+python3 -c 'import json,sys; mounts=json.loads(sys.argv[1]); assert len(mounts)==1 and mounts[0]["Destination"]=="/app/backend/data" and mounts[0]["Name"].startswith("hades-open-webui-migration-"), mounts' "$volume_mounts"
 docker stop "$name" >/dev/null
 docker rm "$name" >/dev/null
+# Capture the complete synthetic application-data volume while the service is
+# stopped. This includes SQLite, uploaded file bytes, and any vector state kept
+# under /app/backend/data. The signing key remains the explicit synthetic key
+# above; production secrets are never read or copied by this harness.
+docker run --rm -v "$volume:/data:ro" -v "$tmp:/backup" --entrypoint tar "$old_image" \
+  -C /data -czf /backup/pre-upgrade-data.tar.gz .
+printf 'PASS full stopped application-data volume snapshot captured (SQLite, uploads, and colocated state)\n'
 start_image "$new_image"
 login=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/signin" \
   -H 'Content-Type: application/json' \
@@ -136,6 +165,9 @@ new_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$lo
 [[ "$new_id" == "$account_id" ]] || { echo 'FAIL account identity changed across upgrade' >&2; exit 1; }
 curl -fsS "http://127.0.0.1:${port}/api/v1/chats/${chat_id}" \
   -H "Authorization: Bearer $new_token" | rg -q Migration-state-marker-7f2a
+curl -fsS "http://127.0.0.1:${port}/api/v1/files/${file_id}/content" \
+  -H "Authorization: Bearer $new_token" -o "$tmp/upload-after-upgrade.docx"
+cmp "$tmp/migration-fixture.docx" "$tmp/upload-after-upgrade.docx"
 beta_login=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/signin" \
   -H 'Content-Type: application/json' \
   --data '{"email":"migration-beta@example.invalid","password":"Synthetic-Beta-123!"}')
@@ -151,6 +183,13 @@ private_status=$(curl -sS -o "$tmp/private-chat.json" -w '%{http_code}' \
   echo "FAIL Beta accessed Alpha's private chat after migration (HTTP $private_status)" >&2
   exit 1
 }
+new_private_file_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/files/${file_id}/content" \
+  -H "Authorization: Bearer $new_beta_token")
+[[ "$new_private_file_status" == 401 || "$new_private_file_status" == 403 || "$new_private_file_status" == 404 ]] || {
+  echo "FAIL Beta accessed owner's private uploaded file after migration (HTTP $new_private_file_status)" >&2
+  exit 1
+}
 integrity=$(docker exec "$name" python3 -c \
   "import glob,sqlite3; paths=glob.glob('/app/backend/data/*.db'); assert paths; print([(p,sqlite3.connect(p).execute('PRAGMA integrity_check').fetchone()[0]) for p in paths])")
 rg -q "'ok'" <<<"$integrity" || { echo "FAIL SQLite integrity check: $integrity" >&2; exit 1; }
@@ -159,7 +198,7 @@ if rg -qi 'migration failed|alembic upgrade failed|no such column' <<<"$logs"; t
   echo 'FAIL migration error marker found in candidate logs' >&2
   exit 1
 fi
-printf 'PASS Open WebUI %s migrated populated %s state; both identities, private chat isolation, shared membership, and SQLite integrity survived\n' "$new_version" "$old_version"
+printf 'PASS Open WebUI %s migrated populated %s state; both identities, private chat/file isolation, shared membership, uploaded DOCX bytes, and SQLite integrity survived\n' "$new_version" "$old_version"
 printf 'PASS SQLite integrity after migration: %s\n' "$integrity"
 
 # Restore the pre-upgrade snapshot into a fresh disposable volume and boot the
@@ -175,7 +214,8 @@ docker create --name "$rollback_name" \
   -e WEBUI_SECRET_KEY=synthetic-openwebui-backup-test-key \
   -e ENABLE_CHANNELS=true -e USER_PERMISSIONS_FEATURES_CHANNELS=true \
   "$old_image" >/dev/null
-docker cp "$tmp/pre-upgrade-webui.db" "$rollback_name:/app/backend/data/webui.db" >/dev/null
+docker run --rm -v "$rollback_volume:/data" -v "$tmp:/backup:ro" --entrypoint tar "$old_image" \
+  -C /data -xzf /backup/pre-upgrade-data.tar.gz
 docker start "$rollback_name" >/dev/null
 for _ in $(seq 1 90); do
   if curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then break; fi
@@ -190,6 +230,9 @@ rollback_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<
 [[ "$rollback_id" == "$account_id" ]] || { echo 'FAIL owner identity changed after snapshot restore' >&2; exit 1; }
 curl -fsS "http://127.0.0.1:${port}/api/v1/chats/${chat_id}" \
   -H "Authorization: Bearer $rollback_token" | rg -q Migration-state-marker-7f2a
+curl -fsS "http://127.0.0.1:${port}/api/v1/files/${file_id}/content" \
+  -H "Authorization: Bearer $rollback_token" -o "$tmp/upload-after-rollback.docx"
+cmp "$tmp/migration-fixture.docx" "$tmp/upload-after-rollback.docx"
 rollback_beta_login=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/signin" \
   -H 'Content-Type: application/json' \
   --data '{"email":"migration-beta@example.invalid","password":"Synthetic-Beta-123!"}')
@@ -205,7 +248,14 @@ rollback_private_status=$(curl -sS -o "$tmp/rollback-private-chat.json" -w '%{ht
   echo "FAIL Beta accessed Alpha's private chat after snapshot restore (HTTP $rollback_private_status)" >&2
   exit 1
 }
+rollback_private_file_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/files/${file_id}/content" \
+  -H "Authorization: Bearer $rollback_beta_token")
+[[ "$rollback_private_file_status" == 401 || "$rollback_private_file_status" == 403 || "$rollback_private_file_status" == 404 ]] || {
+  echo "FAIL Beta accessed owner's private uploaded file after snapshot restore (HTTP $rollback_private_file_status)" >&2
+  exit 1
+}
 rollback_integrity=$(docker exec "$rollback_name" python3 -c \
   'import sqlite3; print(sqlite3.connect("/app/backend/data/webui.db").execute("PRAGMA integrity_check").fetchone()[0])')
 [[ "$rollback_integrity" == ok ]] || { echo "FAIL rollback SQLite integrity: $rollback_integrity" >&2; exit 1; }
-printf 'PASS rollback restored pre-upgrade snapshot on Open WebUI %s; owner/Beta identity, chat, channel access, private-chat isolation, and SQLite integrity survived\n' "$old_version"
+printf 'PASS rollback restored full synthetic app-data snapshot on Open WebUI %s; owner/Beta identity, chat, channel access, private-chat/file isolation, DOCX bytes, and SQLite integrity survived\n' "$old_version"
