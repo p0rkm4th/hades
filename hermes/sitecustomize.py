@@ -8172,8 +8172,8 @@ try:
         if not definitions and not _HADES_HOMELAB_DISCOVERY_ATTEMPTED:
             _HADES_HOMELAB_DISCOVERY_ATTEMPTED = True
             try:
-                from tools.mcp_tool import discover_mcp_tools
-                discover_mcp_tools()
+                from tools.mcp_tool_discovery import discover_mcp_tools
+                discover_mcp_tools(["homelab-readonly"])
                 definitions = _get_tool_definitions(
                     enabled_toolsets=_HADES_HOMELAB_TOOLSETS,
                     quiet_mode=True,
@@ -8223,8 +8223,8 @@ try:
         )
         if not definitions:
             try:
-                from tools.mcp_tool import discover_mcp_tools
-                discover_mcp_tools()
+                from tools.mcp_tool_discovery import discover_mcp_tools
+                discover_mcp_tools(["homelab-control"])
                 definitions = _get_tool_definitions(
                     enabled_toolsets=_HADES_HOMELAB_CONTROL_TOOLSETS,
                     quiet_mode=True,
