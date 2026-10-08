@@ -109,6 +109,17 @@ not semantic ratings; however, this is enough to reject disabling observation
 consolidation as a global replacement for the current memory profile. PLAIN's
 marker results also varied by case and were not uniformly correct.
 
+The same full slice was repeated with HADES recall expanded from observations
+to all Hindsight result types (`observation`, `world`, and `experience`), in
+both stack orders. The additional raw-memory types did not improve HADES's
+synthetic supplement results: it again found the corrected response preference
+in both runs and missed dietary restriction, place preference, and conversation
+continuity in both. Automatic recall remained pending at the immediate turn,
+with the expected marker absent. Artifacts:
+[`HADES-first`](../benchmarks/hades-core-memory-chunks-no-observations-alltypes-hades-first-20261008.json)
+and
+[`PLAIN-first`](../benchmarks/hades-core-memory-chunks-no-observations-alltypes-plain-first-20261008.json).
+
 Keep the production retain/observation settings unchanged. The next candidate
 should preserve useful semantic observations while avoiding an LLM-sized
 background task on the interactive runtime, or define a more selective policy

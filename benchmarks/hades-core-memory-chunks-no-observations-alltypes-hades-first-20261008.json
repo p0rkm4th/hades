@@ -1,0 +1,2249 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "title": "Counterbalanced owner-core-09 savings recall and synthetic memory correction comparison",
+  "classification": "synthetic local comparative benchmark; no owner preference or release qualification",
+  "source_revision": "a5f80f16ad1e2e110d6b1ed736e0266508de0f08",
+  "method": {
+    "samples": 1,
+    "hermes_version": "Hermes Agent v0.21.5 (2026.9.24)",
+    "counterbalance": "One paired pass; hades runs first. Repeated comparisons require separate invocations so each gets an empty disposable Hindsight volume.",
+    "sequence": [
+      "owner core-01 greeting",
+      "synthetic automatic personal-fact retain/recall",
+      "owner core-09 explicit synthetic save and natural recall wording",
+      "core-09 immediate and post-drain recall",
+      "synthetic favorite-fruit save/correction",
+      "fresh-session implicit recall",
+      "fresh-session explicit recall"
+    ],
+    "owner_corpus_case_map": {
+      "core-01": "Hey, how's your morning going?",
+      "core-09": {
+        "save": "Remember that my savings target is $3,000.",
+        "recall": "What was the savings target I mentioned?"
+      }
+    },
+    "synthetic_case_catalog": {
+      "core-51": {
+        "turns": 1,
+        "review_check": {
+          "probe_text": "What dietary restriction did I mention?",
+          "must_contain_any": [
+            "lactose"
+          ],
+          "visibility_bank": "hades-owner",
+          "visibility_needle": "lactose",
+          "continuity_only": false
+        }
+      },
+      "core-52": {
+        "turns": 1,
+        "review_check": {
+          "probe_text": "What kind of places do I usually prefer?",
+          "must_contain_any": [
+            "quiet",
+            "read"
+          ],
+          "visibility_bank": "hades-owner",
+          "visibility_needle": "quiet",
+          "continuity_only": false
+        }
+      },
+      "core-53": {
+        "turns": 1,
+        "review_check": {
+          "probe_text": "What answer length do I prefer for quick questions versus research?",
+          "must_contain_any": [
+            "short",
+            "detail"
+          ],
+          "visibility_bank": "hades-owner",
+          "visibility_needle": "short",
+          "continuity_only": false
+        }
+      },
+      "core-54": {
+        "turns": 2,
+        "review_check": {
+          "probe_text": "What is my corrected preference for simple questions and research?",
+          "must_contain_all": [
+            "simple",
+            "detail"
+          ],
+          "must_not_contain_any": [
+            "always brief",
+            "brief for research"
+          ],
+          "visibility_bank": "hades-owner",
+          "visibility_needle": "simple",
+          "continuity_only": false
+        }
+      },
+      "core-55": {
+        "turns": 3,
+        "review_check": {
+          "recall_turn_index": 2,
+          "must_contain_any": [
+            "Madison"
+          ],
+          "visibility_bank": "hades-owner",
+          "visibility_needle": "Madison",
+          "continuity_only": true
+        }
+      }
+    },
+    "state_scope": "Persistent gateway/home and memory bank within each stack; the same synthetic preference is re-saved and corrected every sample; recall uses a new Hermes session ID.",
+    "model": "qwen3.6:35b",
+    "ollama_version": "0.40.1",
+    "openai_chat_context_probe_prompt_tokens": 7010,
+    "openai_chat_context_probe_minimum_tokens": 5000,
+    "openai_chat_context_probe_loaded_context": 65536,
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "model_quantization": "Q4_K_M",
+    "ollama_loaded_context_after_stack_warmups": 65536,
+    "hermes_ollama_context_configured": 65536,
+    "measured_context_verification": "The same Ollama OpenAI-compatible chat endpoint must accept a >5k-token probe without a per-request context override, and /api/ps must report the configured context immediately after that probe. Every Hermes provider generation must request the configured context. Runtime /api/ps is sampled at each provider response boundary and retained per generation; when HADES background inference has already evicted the interactive model, the boundary records non-residency. The measured HADES run is then interpreted with the exact-route startup probe and global OLLAMA_CONTEXT_LENGTH setting, while plain turns must remain resident at the target context.",
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight@sha256:d1840062a5b79940ab7a9f4809ceb90fc776d4ad737cd9329e9b5836cc64ab70",
+    "hindsight_model": "qwen3:14b",
+    "hindsight_model_digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+    "hindsight_model_quantization": "Q4_K_M",
+    "hindsight_llm_max_concurrent": 1,
+    "retain_mode": "chunks",
+    "observations_enabled": false,
+    "stored_text_policy": "Assistant response text is evaluated only in memory and is never printed or persisted; aggregate marker metrics are retained.",
+    "reasoning": "disabled per request",
+    "max_output_tokens": 512,
+    "user_generation_overrides": {
+      "temperature": 0.1,
+      "top_p": 0.95,
+      "scope": "all Hermes provider generations in both benchmark arms"
+    },
+    "effective_sampler_capture": "Provider traces persist the actual temperature/top_p fields sent to the common local Ollama runtime; the artifact can be checked for equality.",
+    "plain_toolset": [
+      "memory"
+    ],
+    "hades_toolset": [],
+    "hades_scope": "owner",
+    "hades_recall_types": "all",
+    "hades_recall_budget": "mid",
+    "hades_prefer_observations": false,
+    "recall_diagnostics_captured": false,
+    "recall_timing_diagnostics_captured": false,
+    "post_idle_recall_type_diagnostic": "After HADES background work drains, make eight direct synthetic Hindsight recalls across observation-only, raw-only, all-types, and all-types with prefer_observations for Denver and place-preference queries. Store only result counts, type counts, expected-marker first rank, and elapsed time; never result text or IDs.",
+    "hades_bank": "hades-owner",
+    "hades_provider_path": "separately installed upstream Hindsight provider; local_external mode; loopback disposable service; authenticated subject bank selected by HADES; explicit facts use a chunks bank with local embeddings",
+    "hindsight_network_mode": "bridge",
+    "hindsight_inference_accounting": "The local proxy records Hindsight-to-Ollama API route, safe scalar controls, byte counts, response timing, and Ollama usage counters; request/response bodies, prompts, facts, and credentials are never persisted. These background calls are additional HADES inference and are reported separately from user-facing Hermes provider generations.",
+    "retrieval_score_diagnostics": "For HADES only, opt-in diagnostic logs retain up to eight result ranks, canonical memory types, and numeric retrieval scores; query text, facts, IDs, tags, entities, and subjects are excluded.",
+    "hindsight_residency_capture": "After forwarding each Hindsight request response, the proxy samples local Ollama /api/ps and records only the matching model's residency status, context length, total size, and VRAM size. A not_resident or unavailable observation is retained explicitly; the probe occurs after the measured response and is excluded from its elapsed time.",
+    "interactive_residency_capture": "The runner samples /api/ps after each automatic retain and immediately before the next read, storing only role-based residency, context length, and VRAM bytes for the interactive and Hindsight models; no model names or response data are retained in this probe.",
+    "arm_isolation": "Before measured arms, the runner drains Hindsight warmup work. Before each stack arm, it unloads the extractor, warms and verifies the interactive model at the configured context, and records normalization timings outside measured turns. After every HADES arm, it polls pending/processing operations across every bank in the disposable Hindsight database until two consecutive idle observations; unavailable status or timeout aborts the run. This prevents background work from carrying across counterbalanced arms.",
+    "warmups": {
+      "plain": {
+        "status": 200,
+        "provider_generations": 1
+      },
+      "hades": {
+        "status": 200,
+        "provider_generations": 1
+      },
+      "hindsight_idle": {
+        "idle": true,
+        "polls": 2,
+        "proxy_active_requests": 0,
+        "elapsed_ms": 1025.4,
+        "last_state": {
+          "banks": {
+            "hades-owner": {
+              "pending": {},
+              "processing": {}
+            }
+          },
+          "operations": {
+            "pending": {},
+            "processing": {}
+          },
+          "stats": {
+            "pending_operations": 0,
+            "operations_by_status": {
+              "completed": 2
+            }
+          },
+          "bank_count": 1
+        }
+      }
+    },
+    "data": "The owner core-09 recall wording uses only a synthetic savings target ($3,000). Automatic cross-session Denver fact and favorite-fruit save/correction remain synthetic controls. Temporary homes, container and database volume.",
+    "privacy": "Ollama endpoint restricted to loopback; Ollama server launched with OLLAMA_NO_CLOUD=1. Hindsight used rootless Docker bridge networking; accounting proxy bound only to the bridge gateway."
+  },
+  "summary_by_stack_and_turn": {
+    "plain.ordinary": {
+      "samples": 1,
+      "median_ttft_ms": 1330.7,
+      "median_total_ms": 1644.1,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3445,
+      "median_request_bytes": 14635,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.automatic_retain": {
+      "samples": 1,
+      "median_ttft_ms": 2963.3,
+      "median_total_ms": 3253.3,
+      "median_provider_generations": 2,
+      "median_tool_schema_exposures": 2,
+      "median_tool_schema_bytes_exposed": 6898,
+      "median_tool_calls": 1,
+      "median_prompt_tokens": 7034,
+      "median_request_bytes": 29762,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.automatic_recall": {
+      "samples": 1,
+      "median_ttft_ms": 1720.5,
+      "median_total_ms": 2028.4,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3506,
+      "median_request_bytes": 14998,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": 1,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.core09_save": {
+      "samples": 1,
+      "median_ttft_ms": 2998.0,
+      "median_total_ms": 3251.6,
+      "median_provider_generations": 2,
+      "median_tool_schema_exposures": 2,
+      "median_tool_schema_bytes_exposed": 6898,
+      "median_tool_calls": 1,
+      "median_prompt_tokens": 7163,
+      "median_request_bytes": 30535,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.core09_recall": {
+      "samples": 1,
+      "median_ttft_ms": 1298.5,
+      "median_total_ms": 1476.5,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3522,
+      "median_request_bytes": 15052,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": 1
+    },
+    "plain.core09_recall_after_idle": {
+      "samples": 1,
+      "median_ttft_ms": 1289.6,
+      "median_total_ms": 1410.7,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3550,
+      "median_request_bytes": 15168,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": 1
+    },
+    "plain.save": {
+      "samples": 1,
+      "median_ttft_ms": 2914.3,
+      "median_total_ms": 3058.3,
+      "median_provider_generations": 2,
+      "median_tool_schema_exposures": 2,
+      "median_tool_schema_bytes_exposed": 6898,
+      "median_tool_calls": 1,
+      "median_prompt_tokens": 7178,
+      "median_request_bytes": 30608,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.correction": {
+      "samples": 1,
+      "median_ttft_ms": 2304.9,
+      "median_total_ms": 2470.0,
+      "median_provider_generations": 2,
+      "median_tool_schema_exposures": 2,
+      "median_tool_schema_bytes_exposed": 6898,
+      "median_tool_calls": 1,
+      "median_prompt_tokens": 7264,
+      "median_request_bytes": 30994,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.implicit_recall": {
+      "samples": 1,
+      "median_ttft_ms": 1308.7,
+      "median_total_ms": 1406.0,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3532,
+      "median_request_bytes": 15077,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": 1,
+      "implicit_recalls_with_stale_mango": 0,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.fresh_recall": {
+      "samples": 1,
+      "median_ttft_ms": 1221.2,
+      "median_total_ms": 1331.0,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3530,
+      "median_request_bytes": 15074,
+      "fresh_recalls_with_expected_marker": 1,
+      "fresh_recalls_with_stale_mango": 0,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-51_seed": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-51_probe": {
+      "samples": 1,
+      "median_ttft_ms": 1248.5,
+      "median_total_ms": 1880.0,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3531,
+      "median_request_bytes": 15087,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-52_seed": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-52_probe": {
+      "samples": 1,
+      "median_ttft_ms": 1326.3,
+      "median_total_ms": 2838.1,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3533,
+      "median_request_bytes": 15088,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-53_seed": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-53_probe": {
+      "samples": 1,
+      "median_ttft_ms": 1368.2,
+      "median_total_ms": 1571.9,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3554,
+      "median_request_bytes": 15203,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-54_seed": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-54_probe": {
+      "samples": 1,
+      "median_ttft_ms": 1282.2,
+      "median_total_ms": 1439.5,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3553,
+      "median_request_bytes": 15194,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-55_turn_1": {
+      "samples": 1,
+      "median_ttft_ms": 1281.5,
+      "median_total_ms": 1968.3,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3552,
+      "median_request_bytes": 15175,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-55_turn_2": {
+      "samples": 1,
+      "median_ttft_ms": 577.2,
+      "median_total_ms": 641.7,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3605,
+      "median_request_bytes": 15391,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.supplement_core-55_turn_3": {
+      "samples": 1,
+      "median_ttft_ms": 273.6,
+      "median_total_ms": 321.9,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3626,
+      "median_request_bytes": 15495,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.ordinary": {
+      "samples": 1,
+      "median_ttft_ms": 1247.1,
+      "median_total_ms": 1495.8,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 729,
+      "median_request_bytes": 3130,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.automatic_retain": {
+      "samples": 1,
+      "median_ttft_ms": 1266.6,
+      "median_total_ms": 1497.7,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 732,
+      "median_request_bytes": 3126,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.automatic_recall": {
+      "samples": 1,
+      "median_ttft_ms": 57.6,
+      "median_total_ms": 57.8,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": 0,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.core09_save": {
+      "samples": 1,
+      "median_ttft_ms": 115.2,
+      "median_total_ms": 115.4,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.core09_recall": {
+      "samples": 1,
+      "median_ttft_ms": 40.3,
+      "median_total_ms": 40.8,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": 1
+    },
+    "hades.core09_recall_after_idle": {
+      "samples": 1,
+      "median_ttft_ms": 46.2,
+      "median_total_ms": 46.6,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": 1
+    },
+    "hades.save": {
+      "samples": 1,
+      "median_ttft_ms": 64.5,
+      "median_total_ms": 64.9,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.correction": {
+      "samples": 1,
+      "median_ttft_ms": 59.2,
+      "median_total_ms": 59.3,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.implicit_recall": {
+      "samples": 1,
+      "median_ttft_ms": 32.4,
+      "median_total_ms": 32.5,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": 1,
+      "implicit_recalls_with_stale_mango": 0,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.fresh_recall": {
+      "samples": 1,
+      "median_ttft_ms": 32.0,
+      "median_total_ms": 32.2,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": 1,
+      "fresh_recalls_with_stale_mango": 0,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-51_seed": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-51_probe": {
+      "samples": 1,
+      "median_ttft_ms": 59.1,
+      "median_total_ms": 59.8,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-52_seed": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-52_probe": {
+      "samples": 1,
+      "median_ttft_ms": 66.3,
+      "median_total_ms": 66.4,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-53_seed": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-53_probe": {
+      "samples": 1,
+      "median_ttft_ms": 44.5,
+      "median_total_ms": 44.6,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-54_seed": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-54_probe": {
+      "samples": 1,
+      "median_ttft_ms": 38.3,
+      "median_total_ms": 38.4,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-55_turn_1": {
+      "samples": 1,
+      "median_ttft_ms": 1193.4,
+      "median_total_ms": 1657.6,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 731,
+      "median_request_bytes": 3147,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-55_turn_2": {
+      "samples": 1,
+      "median_ttft_ms": 566.5,
+      "median_total_ms": 631.8,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 774,
+      "median_request_bytes": 3317,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.supplement_core-55_turn_3": {
+      "samples": 1,
+      "median_ttft_ms": 66.0,
+      "median_total_ms": 66.5,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    }
+  },
+  "supplement_summary": {
+    "core-51": {
+      "plain": {
+        "samples": 1,
+        "answers_with_expected_marker": 0,
+        "median_final_turn_ms": 1880.0
+      },
+      "hades": {
+        "samples": 1,
+        "answers_with_expected_marker": 0,
+        "median_final_turn_ms": 59.8,
+        "fact_visible_after_drain": 1
+      }
+    },
+    "core-52": {
+      "plain": {
+        "samples": 1,
+        "answers_with_expected_marker": 1,
+        "median_final_turn_ms": 2838.1
+      },
+      "hades": {
+        "samples": 1,
+        "answers_with_expected_marker": 0,
+        "median_final_turn_ms": 66.4,
+        "fact_visible_after_drain": 1
+      }
+    },
+    "core-53": {
+      "plain": {
+        "samples": 1,
+        "answers_with_expected_marker": 1,
+        "median_final_turn_ms": 1571.9
+      },
+      "hades": {
+        "samples": 1,
+        "answers_with_expected_marker": 1,
+        "median_final_turn_ms": 44.6,
+        "fact_visible_after_drain": 0
+      }
+    },
+    "core-54": {
+      "plain": {
+        "samples": 1,
+        "answers_with_expected_marker": 1,
+        "median_final_turn_ms": 1439.5
+      },
+      "hades": {
+        "samples": 1,
+        "answers_with_expected_marker": 1,
+        "median_final_turn_ms": 38.4,
+        "fact_visible_after_drain": 0
+      }
+    },
+    "core-55": {
+      "plain": {
+        "samples": 1,
+        "answers_with_expected_marker": 1,
+        "median_final_turn_ms": 321.9
+      },
+      "hades": {
+        "samples": 1,
+        "answers_with_expected_marker": 0,
+        "median_final_turn_ms": 66.5,
+        "fact_visible_after_drain": 1
+      }
+    }
+  },
+  "hades_recall_diagnostics": [],
+  "hades_recall_timing_diagnostics": [],
+  "hindsight_ollama_calls": [
+    {
+      "route": "other",
+      "model": "qwen3:14b",
+      "stream": false,
+      "request_bytes": 88,
+      "status": 200,
+      "elapsed_ms": 8847.0,
+      "response_bytes": 642,
+      "prompt_eval_count": null,
+      "eval_count": null,
+      "total_duration_ns": null,
+      "load_duration_ns": null,
+      "generation_controls": {},
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 40960,
+      "loaded_model_size_bytes": 16285811341,
+      "loaded_model_size_vram_bytes": 15400582512
+    }
+  ],
+  "repetitions": [
+    {
+      "sample": 1,
+      "first_stack": "hades",
+      "hindsight_idle_after_hades": {
+        "idle": true,
+        "polls": 3,
+        "proxy_active_requests": 0,
+        "elapsed_ms": 2061.7,
+        "last_state": {
+          "banks": {
+            "hades-owner": {
+              "pending": {},
+              "processing": {}
+            },
+            "hades-owner-explicit": {
+              "pending": {},
+              "processing": {}
+            }
+          },
+          "operations": {
+            "pending": {},
+            "processing": {}
+          },
+          "stats": {
+            "pending_operations": 0,
+            "operations_by_status": {
+              "completed": 14
+            }
+          },
+          "bank_count": 2
+        }
+      },
+      "runtime_normalization": {
+        "hades": {
+          "interactive_model_resident": true,
+          "interactive_context_length": 65536,
+          "interactive_size_vram_bytes": 12912427006,
+          "extractor_shares_interactive_model": false,
+          "extractor_resident": false,
+          "extractor_was_resident_before_reset": false,
+          "extractor_unload_ms": null,
+          "interactive_warmup_ms": 140.5,
+          "normalization_calls_excluded_from_turn_timing": true
+        },
+        "plain": {
+          "interactive_model_resident": true,
+          "interactive_context_length": 65536,
+          "interactive_size_vram_bytes": 12912427006,
+          "extractor_shares_interactive_model": false,
+          "extractor_resident": false,
+          "extractor_was_resident_before_reset": false,
+          "extractor_unload_ms": null,
+          "interactive_warmup_ms": 231.2,
+          "normalization_calls_excluded_from_turn_timing": true
+        }
+      },
+      "runtime_after_automatic_retain": {
+        "hades": {
+          "interactive_model_loaded": true,
+          "interactive_context_length": 65536,
+          "interactive_vram_bytes": 12912427006,
+          "memory_model_loaded": false,
+          "memory_model_context_length": null,
+          "memory_model_vram_bytes": null
+        },
+        "plain": {
+          "interactive_model_loaded": true,
+          "interactive_context_length": 65536,
+          "interactive_vram_bytes": 12912427006,
+          "memory_model_loaded": false,
+          "memory_model_context_length": null,
+          "memory_model_vram_bytes": null
+        }
+      },
+      "stacks": {
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1247.1,
+              "total_ms": 1495.8,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 729,
+                "completion_tokens": 13,
+                "request_bytes": 3130,
+                "message_bytes": 2953,
+                "system_message_bytes": 2895,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 1266.6,
+              "total_ms": 1497.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 732,
+                "completion_tokens": 12,
+                "request_bytes": 3126,
+                "message_bytes": 2949,
+                "system_message_bytes": 2895,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 57.6,
+              "total_ms": 57.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 115.2,
+              "total_ms": 115.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 40.3,
+              "total_ms": 40.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 64.5,
+              "total_ms": 64.9,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 59.2,
+              "total_ms": 59.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 32.4,
+              "total_ms": 32.5,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 32.0,
+              "total_ms": 32.2,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "supplement_core-51_seed_1",
+              "status": 200,
+              "ttft_ms": 1238.6,
+              "total_ms": 1856.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 738,
+                "completion_tokens": 27,
+                "request_bytes": 3165,
+                "message_bytes": 2988,
+                "system_message_bytes": 2895,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-51_probe",
+              "status": 200,
+              "ttft_ms": 59.1,
+              "total_ms": 59.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "supplement_core-52_seed_1",
+              "status": 200,
+              "ttft_ms": 1255.2,
+              "total_ms": 3378.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 739,
+                "completion_tokens": 114,
+                "request_bytes": 3193,
+                "message_bytes": 3016,
+                "system_message_bytes": 2895,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-52_probe",
+              "status": 200,
+              "ttft_ms": 66.3,
+              "total_ms": 66.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "supplement_core-53_seed_1",
+              "status": 200,
+              "ttft_ms": 99.1,
+              "total_ms": 99.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "supplement_core-53_probe",
+              "status": 200,
+              "ttft_ms": 44.5,
+              "total_ms": 44.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "supplement_core-54_seed_1",
+              "status": 200,
+              "ttft_ms": 77.7,
+              "total_ms": 77.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "supplement_core-54_seed_2",
+              "status": 200,
+              "ttft_ms": 67.2,
+              "total_ms": 67.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "supplement_core-54_probe",
+              "status": 200,
+              "ttft_ms": 38.3,
+              "total_ms": 38.4,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "supplement_core-55_turn_1",
+              "status": 200,
+              "ttft_ms": 1193.4,
+              "total_ms": 1657.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 731,
+                "completion_tokens": 22,
+                "request_bytes": 3147,
+                "message_bytes": 2970,
+                "system_message_bytes": 2895,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-55_turn_2",
+              "status": 200,
+              "ttft_ms": 566.5,
+              "total_ms": 631.8,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 774,
+                "completion_tokens": 3,
+                "request_bytes": 3317,
+                "message_bytes": 3138,
+                "system_message_bytes": 2895,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-55_turn_3",
+              "status": 200,
+              "ttft_ms": 66.0,
+              "total_ms": 66.5,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "core09_recall_after_idle",
+              "status": 200,
+              "ttft_ms": 46.2,
+              "total_ms": 46.6,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            }
+          ],
+          "fresh_recall_expected_marker_present": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_expected_marker_present": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_expected_marker_present": false,
+          "automatic_retained_fact_visible": false,
+          "core09_recall_expected_marker_present": true,
+          "core09_recall_after_idle_expected_marker_present": true,
+          "core09_bank_visibility_after_drain": {
+            "canonical_bank": false,
+            "explicit_bank": true,
+            "explicit_bank_tagged": true
+          },
+          "automatic_retention_state_before_recall": {
+            "operations": {
+              "pending": {},
+              "processing": {}
+            },
+            "stats": {
+              "nodes_by_category": {
+                "world": 2
+              },
+              "pending_operations": 2,
+              "operations_by_status": {
+                "completed": 4,
+                "pending": 2
+              },
+              "pending_consolidation": 2,
+              "total_observations": 0
+            }
+          },
+          "supplement_visibility_after_drain": {
+            "core-51": true,
+            "core-52": true,
+            "core-53": false,
+            "core-54": false,
+            "core-55": true
+          },
+          "synthetic_cases": [
+            {
+              "case_id": "core-51",
+              "answer_contains_expected_marker": false,
+              "continuity_only": false
+            },
+            {
+              "case_id": "core-52",
+              "answer_contains_expected_marker": false,
+              "continuity_only": false
+            },
+            {
+              "case_id": "core-53",
+              "answer_contains_expected_marker": true,
+              "continuity_only": false
+            },
+            {
+              "case_id": "core-54",
+              "answer_contains_expected_marker": true,
+              "continuity_only": false
+            },
+            {
+              "case_id": "core-55",
+              "answer_contains_expected_marker": false,
+              "continuity_only": true
+            }
+          ]
+        },
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1330.7,
+              "total_ms": 1644.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3445,
+                "completion_tokens": 17,
+                "request_bytes": 14635,
+                "message_bytes": 10998,
+                "system_message_bytes": 10940,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 2963.3,
+              "total_ms": 3253.3,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7034,
+                "completion_tokens": 75,
+                "request_bytes": 29762,
+                "message_bytes": 22486,
+                "system_message_bytes": 21880,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 1720.5,
+              "total_ms": 2028.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3506,
+                "completion_tokens": 16,
+                "request_bytes": 14998,
+                "message_bytes": 11361,
+                "system_message_bytes": 11309,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 2998.0,
+              "total_ms": 3251.6,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7163,
+                "completion_tokens": 74,
+                "request_bytes": 30535,
+                "message_bytes": 23259,
+                "system_message_bytes": 22618,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 1298.5,
+              "total_ms": 1476.5,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3522,
+                "completion_tokens": 8,
+                "request_bytes": 15052,
+                "message_bytes": 11415,
+                "system_message_bytes": 11347,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "save",
+              "status": 200,
+              "ttft_ms": 2914.3,
+              "total_ms": 3058.3,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7178,
+                "completion_tokens": 65,
+                "request_bytes": 30608,
+                "message_bytes": 23332,
+                "system_message_bytes": 22694,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "correction",
+              "status": 200,
+              "ttft_ms": 2304.9,
+              "total_ms": 2470.0,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7264,
+                "completion_tokens": 84,
+                "request_bytes": 30994,
+                "message_bytes": 23714,
+                "system_message_bytes": 22694,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "implicit_recall",
+              "status": 200,
+              "ttft_ms": 1308.7,
+              "total_ms": 1406.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3532,
+                "completion_tokens": 3,
+                "request_bytes": 15077,
+                "message_bytes": 11440,
+                "system_message_bytes": 11383,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "fresh_recall",
+              "status": 200,
+              "ttft_ms": 1221.2,
+              "total_ms": 1331.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3530,
+                "completion_tokens": 3,
+                "request_bytes": 15074,
+                "message_bytes": 11437,
+                "system_message_bytes": 11383,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-51_seed_1",
+              "status": 200,
+              "ttft_ms": 1325.4,
+              "total_ms": 3515.5,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3541,
+                "completion_tokens": 101,
+                "request_bytes": 15113,
+                "message_bytes": 11476,
+                "system_message_bytes": 11383,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-51_probe",
+              "status": 200,
+              "ttft_ms": 1248.5,
+              "total_ms": 1880.0,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3531,
+                "completion_tokens": 31,
+                "request_bytes": 15087,
+                "message_bytes": 11450,
+                "system_message_bytes": 11383,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-52_seed_1",
+              "status": 200,
+              "ttft_ms": 1284.6,
+              "total_ms": 7098.8,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3542,
+                "completion_tokens": 274,
+                "request_bytes": 15141,
+                "message_bytes": 11504,
+                "system_message_bytes": 11383,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-52_probe",
+              "status": 200,
+              "ttft_ms": 1326.3,
+              "total_ms": 2838.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3533,
+                "completion_tokens": 90,
+                "request_bytes": 15088,
+                "message_bytes": 11451,
+                "system_message_bytes": 11383,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-53_seed_1",
+              "status": 200,
+              "ttft_ms": 3018.7,
+              "total_ms": 3332.3,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7220,
+                "completion_tokens": 74,
+                "request_bytes": 30821,
+                "message_bytes": 23545,
+                "system_message_bytes": 22766,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-53_probe",
+              "status": 200,
+              "ttft_ms": 1368.2,
+              "total_ms": 1571.9,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3554,
+                "completion_tokens": 12,
+                "request_bytes": 15203,
+                "message_bytes": 11566,
+                "system_message_bytes": 11471,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-54_seed_1",
+              "status": 200,
+              "ttft_ms": 3152.0,
+              "total_ms": 3524.5,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7262,
+                "completion_tokens": 83,
+                "request_bytes": 31027,
+                "message_bytes": 23751,
+                "system_message_bytes": 22942,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-54_seed_2",
+              "status": 200,
+              "ttft_ms": 2691.2,
+              "total_ms": 2953.8,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 7396,
+                "completion_tokens": 100,
+                "request_bytes": 31715,
+                "message_bytes": 24435,
+                "system_message_bytes": 22942,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-54_probe",
+              "status": 200,
+              "ttft_ms": 1282.2,
+              "total_ms": 1439.5,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3553,
+                "completion_tokens": 11,
+                "request_bytes": 15194,
+                "message_bytes": 11557,
+                "system_message_bytes": 11463,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-55_turn_1",
+              "status": 200,
+              "ttft_ms": 1281.5,
+              "total_ms": 1968.3,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3552,
+                "completion_tokens": 32,
+                "request_bytes": 15175,
+                "message_bytes": 11538,
+                "system_message_bytes": 11463,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-55_turn_2",
+              "status": 200,
+              "ttft_ms": 577.2,
+              "total_ms": 641.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3605,
+                "completion_tokens": 3,
+                "request_bytes": 15391,
+                "message_bytes": 11752,
+                "system_message_bytes": 11463,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "supplement_core-55_turn_3",
+              "status": 200,
+              "ttft_ms": 273.6,
+              "total_ms": 321.9,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3626,
+                "completion_tokens": 3,
+                "request_bytes": 15495,
+                "message_bytes": 11854,
+                "system_message_bytes": 11463,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_recall_after_idle",
+              "status": 200,
+              "ttft_ms": 1289.6,
+              "total_ms": 1410.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3550,
+                "completion_tokens": 8,
+                "request_bytes": 15168,
+                "message_bytes": 11531,
+                "system_message_bytes": 11463,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            }
+          ],
+          "fresh_recall_expected_marker_present": true,
+          "fresh_recall_stale_mango_present": false,
+          "implicit_recall_expected_marker_present": true,
+          "implicit_recall_stale_mango_present": false,
+          "automatic_recall_expected_marker_present": true,
+          "automatic_retained_fact_visible": null,
+          "core09_recall_expected_marker_present": true,
+          "core09_recall_after_idle_expected_marker_present": true,
+          "automatic_retention_state_before_recall": null,
+          "synthetic_cases": [
+            {
+              "case_id": "core-51",
+              "answer_contains_expected_marker": false,
+              "continuity_only": false
+            },
+            {
+              "case_id": "core-52",
+              "answer_contains_expected_marker": true,
+              "continuity_only": false
+            },
+            {
+              "case_id": "core-53",
+              "answer_contains_expected_marker": true,
+              "continuity_only": false
+            },
+            {
+              "case_id": "core-54",
+              "answer_contains_expected_marker": true,
+              "continuity_only": false
+            },
+            {
+              "case_id": "core-55",
+              "answer_contains_expected_marker": true,
+              "continuity_only": true
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "preference_bucket": "UNASSIGNED; no owner dogfood",
+  "semantic_correctness_review": "UNSCORED: expected-marker presence is descriptive only and is not semantic correctness; human review is required.",
+  "limitations": [
+    "The model digest is staged local Qwen; this does not prove equality with production model weights.",
+    "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
+    "The owner core-09 recall is measured once immediately after save and again for both stacks after HADES background memory work drains; readiness delay and settled recall are separate outcomes.",
+    "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
+    "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review."
+  ]
+}
