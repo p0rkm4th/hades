@@ -141,6 +141,28 @@ def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None
         _CODE_EXPLANATION.search(text) or _CODE_FAILURE_DIAGNOSIS.search(text)
     ):
         return True
+    if _MUTATING_WORKSPACE_ACTION.search(text) and isinstance(history, list):
+        # Natural action follow-ups often name the action but omit the object:
+        # after a diff review, "commit the verified change" still refers to
+        # that workspace. Carry the route only from the most recent prior user
+        # request when that request was itself an explicit workspace task.
+        previous_user_text = next((
+            str(message.get("content", ""))
+            for message in reversed(history)
+            if isinstance(message, dict)
+            and str(message.get("role", "")) == "user"
+            and str(message.get("content", "")).strip() != text.strip()
+        ), "")
+        if previous_user_text and (
+            _DIRECT_ACTION.search(previous_user_text)
+            or _PATH.search(previous_user_text.strip())
+            or is_workspace_git_inspection_request(previous_user_text)
+            or (workspace_enabled() and (
+                _CODE_EXPLANATION.search(previous_user_text)
+                or _CODE_FAILURE_DIAGNOSIS.search(previous_user_text)
+            ))
+        ):
+            return True
     if not is_workspace_follow_up_text(text):
         return False
     recent = history[-6:] if isinstance(history, list) else []

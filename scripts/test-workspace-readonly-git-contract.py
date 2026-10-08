@@ -70,6 +70,12 @@ def main() -> int:
     assert is_workspace_read_only_request(diff_question)
     assert is_workspace_read_only_request(branch_question)
     assert not is_workspace_git_inspection_request(commit_request)
+    assert is_workspace_request(commit_request, [{
+        "role": "user", "content": diff_question,
+    }]), "workspace mutation follow-up lost its reviewed workspace context"
+    assert not is_workspace_request(commit_request, [{
+        "role": "user", "content": "What changed in the homelab this week?",
+    }]), "homelab history incorrectly activated workspace tools"
 
     read_only_names = {
         row["function"]["name"] for row in get_workspace_tools(read_only=True)
