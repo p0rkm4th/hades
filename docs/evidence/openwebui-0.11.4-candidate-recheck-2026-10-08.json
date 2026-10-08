@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-08T21:13:02Z",
+  "purpose": "Recheck the staged Open WebUI security fix and upgrade/rollback behavior without touching production.",
+  "candidate": {
+    "image": "hades-open-webui:0.11.4-candidate-bound",
+    "image_id": "sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469",
+    "upstream_version": "0.11.4",
+    "upstream_revision": "8bd8b4fac5e059578ac0c74b3c18d11139f88b7d"
+  },
+  "positive_control": {
+    "image": "hades-open-webui:0.11.1-hades-failure-honest-3",
+    "image_id": "sha256:75df14805e0e95157166b9672678e2285ce2ae58126c71232d68d6a95a30b629",
+    "result": "expected_failure",
+    "finding": "DOCX embedded script executed in about:srcdoc and one unsafe javascript link remained"
+  },
+  "results": {
+    "docx_preview_security": {
+      "result": "pass",
+      "preview_rendered": true,
+      "active_content_executed": false,
+      "unsafe_javascript_links": 0
+    },
+    "candidate_acceptance": {
+      "result": "pass",
+      "coverage": [
+        "private chat completion, persistence, restart persistence, and cross-user denial",
+        "Channels creation, membership, shared post, persistence, and role boundaries",
+        "streamed model response persisted in the channel timeline",
+        "candidate HADES theme and upload assets match their source",
+        "authenticated file upload and owner read-back with household isolation",
+        "LDAP first-login role behavior in both owner-first and household-first orders",
+        "subject separation and role persistence after restart and fresh login"
+      ]
+    },
+    "populated_upgrade_and_rollback": {
+      "result": "pass",
+      "source_version": "0.11.1",
+      "target_version": "0.11.4",
+      "upgrade_checks": [
+        "owner and household identities",
+        "private chat and file isolation",
+        "shared-channel membership and access",
+        "uploaded DOCX byte preservation",
+        "SQLite integrity"
+      ],
+      "rollback_result": "full synthetic application-data archive restored to 0.11.1 with identities, chat, channel access, private-chat/file isolation, DOCX bytes, and SQLite integrity preserved"
+    }
+  },
+  "scope": {
+    "synthetic_data_only": true,
+    "production_changed": false,
+    "production_backup_or_cutover_proven": false,
+    "owner_dogfood_completed": false,
+    "temporary_test_containers_volumes_and_networks_removed": true
+  }
+}
