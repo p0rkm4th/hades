@@ -32,6 +32,16 @@ The official release page still marks Hindsight `v0.10.2` (tag commit `5fc4ce2`,
 | Playwright MCP | HADES proxy and package pin require exactly `@playwright/mcp@0.0.81`. | 0.0.83, Sep. 28, tag commit `f183dad`. | **UPDATE in staging.** Release fixes stale WebMCP tab/frame binding, browser-close download crashes, capped wait reporting, and Chromium 155+ WebMCP calls. Update the HADES exact-version gate with the pin; test auth/session isolation, network boundary, downloads, and browser lifecycle before promotion. |
 | OpenAI Python SDK | No HADES direct override; staged Hermes 0.21.5 resolves/pins 2.24.0. | PyPI 3.26.0, uploaded Oct. 6; official `openai-python` tag `v3.26.0` resolves to source commit `4e152cdefe1844c2d5d78653310e9b9c0195c44e`. Release notes add standalone Decisions support. | **HOLD direct override.** This is a major SDK jump owned by Hermes' dependency lock. Do not override the agent's SDK without a deliberate Hermes-compatible refresh and gateway/tool-stream qualification. |
 | OpenAI JavaScript SDK | No active direct dependency or HADES pin found in tracked package manifests. Open WebUI owns its bundled frontend dependency graph. | npm `latest` is 7.30.0, published Oct. 6; registry `gitHead` `a4942ba48e999f9f637f81c5c925ed91b326343f` exactly matches official `openai-node` tag `v7.30.0`. | **NOT ACTIVE / HOLD.** No HADES version pin or upgrade is justified; record the package’s official source tag as provenance if it becomes a direct dependency. |
+| Anthropic Python SDK | No HADES override; Hermes 0.21.5 `uv.lock` pins optional `anthropic==0.87.0`. | PyPI 1.12.0, uploaded Oct. 7; official source release [`v1.12.0`](https://github.com/anthropics/anthropic-sdk-python/releases/tag/v1.12.0). | **HOLD direct override; investigate in Hermes lock refresh.** This major version-line change belongs to Hermes' dependency lock and needs provider-stream and tool-call qualification. |
+| MCP Python SDK / FastMCP | Grocy MCP lock pins `mcp==2.2.0` and `fastmcp==4.0.3`; Hermes 0.21.5 `uv.lock` pins `mcp==2.0.0`. | PyPI `mcp==2.3.0` and `fastmcp==4.0.11` at the independent registry recheck. | **INVESTIGATE in isolated lock refresh.** Keep the separately managed environments; wire/runtime changes can affect HADES MCP discovery and tool calls. Do not unify or update production pins without the relevant integration checks. |
+
+An independent Nyx recheck of official GitHub releases, PyPI JSON, npm metadata,
+and Docker Hub registry tags completed at 2026-10-08 01:10 UTC. It confirmed
+the release states above and the HOLD/INVESTIGATE recommendations. This is
+upstream release evidence, not proof of deployed versions. The newly recorded
+SDK sources are [Anthropic Python 1.12.0](https://pypi.org/project/anthropic/1.12.0/),
+[MCP Python 2.3.0](https://pypi.org/project/mcp/2.3.0/), and
+[FastMCP 4.0.11](https://pypi.org/project/fastmcp/4.0.11/).
 
 ## Open WebUI file boundary notes
 
