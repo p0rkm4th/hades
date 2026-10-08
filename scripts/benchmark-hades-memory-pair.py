@@ -766,7 +766,8 @@ def measure_memory_supplement_case(gateway: dict[str, Any], benchmark,
 
 def start_hindsight(image: str, ollama_bridge_url: str, run_id: str, volume: str,
     hindsight_model: str, network_mode: str = "bridge",
-    llm_max_concurrent: int = 1, retain_mode: str = "concise"):
+    llm_max_concurrent: int = 1, retain_mode: str = "concise",
+    enable_observations: bool = True):
     subprocess.run(["docker", "volume", "create", volume], check=True, capture_output=True)
     api_port = 8888
     control_port = 9999
@@ -795,7 +796,7 @@ def start_hindsight(image: str, ollama_bridge_url: str, run_id: str, volume: str
             "-e", f"HINDSIGHT_API_PORT={api_port}",
             "-e", f"HINDSIGHT_CP_HOSTNAME={host}",
             "-e", f"HINDSIGHT_CP_PORT={control_port}",
-            "-e", "HINDSIGHT_API_ENABLE_OBSERVATIONS=true",
+            "-e", f"HINDSIGHT_API_ENABLE_OBSERVATIONS={'true' if enable_observations else 'false'}",
             "-e", "HINDSIGHT_API_ENABLE_BANK_CONFIG_API=true",
             "-e", f"HINDSIGHT_API_WORKER_ID={run_id}",
             "-e", "HINDSIGHT_API_LLM_PROVIDER=ollama",
@@ -1086,6 +1087,10 @@ def main() -> int:
         help="disposable Hindsight retain mode; chunks stores source chunks without LLM fact extraction",
     )
     parser.add_argument(
+        "--hindsight-disable-observations", action="store_true",
+        help="disable derived observation consolidation for the disposable Hindsight service",
+    )
+    parser.add_argument(
         "--hindsight-network", choices=("bridge", "host"), default="bridge",
         help="use loopback-only host networking only when rootless bridge cannot reach host services",
     )
@@ -1179,6 +1184,7 @@ def main() -> int:
             args.hindsight_network,
             args.hindsight_llm_max_concurrent,
             args.hindsight_retain_mode,
+            not args.hindsight_disable_observations,
         )
         container_started = True
         for stack in ("plain", "hades"):
@@ -1682,6 +1688,7 @@ def main() -> int:
                 "hindsight_model_quantization": hindsight_model_row.get("details", {}).get("quantization_level"),
                 "hindsight_llm_max_concurrent": args.hindsight_llm_max_concurrent,
                 "retain_mode": args.hindsight_retain_mode,
+                "observations_enabled": not args.hindsight_disable_observations,
                 "assistant_response_storage": (
                     "Assistant response text is evaluated only in memory and is never printed or persisted; aggregate marker metrics are retained."
                     if args.automatic_only else
