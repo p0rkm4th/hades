@@ -981,6 +981,18 @@
       ],
       "report": "docs/hades-core-plain-stack-ollama0401-conversation-20261008.md"
     },
+    "case_qualification_audits": {
+      "core-09": {
+        "status": "not counted as direct comparative replay",
+        "refs": [
+          "benchmarks/hades-core-memory-owner-core09-paired-hermes0215-v1.json",
+          "benchmarks/hades-core-memory-owner-core09-paired-hermes0215-owner-rerun-v5.json",
+          "benchmarks/hades-core-memory-paired-controls-hermes0215-v6.json"
+        ],
+        "reason": "The v1 replay used household scope and denied the owner-only savings recall. The v5 owner-scoped replay reused Hindsight state across samples, allowed background work to cross between stacks, and did not normalize Ollama model residency; its own classification invalidates comparative timing/preference. The v6 controls did not include the savings target.",
+        "next_replay": "Seed the same synthetic $3,000 target in isolated fresh Hindsight state for each arm and each repeat; use current Hermes 0.21.5, matched Ollama/model/context/sampling, drain memory work before stack changes, record residency, and counterbalance at least two paired passes. This is functional comparison only; owner preference still requires direct review."
+      }
+    },
     "latest_workspace_escalation_ollama0401": {
       "source_revision": "17565eff9f983eb762e196740434e5e2e520d452",
       "classification": "four order-balanced synthetic geometry multi-file diagnosis-to-fix pairs on Ollama 0.40.1; no owner-preference labels",
