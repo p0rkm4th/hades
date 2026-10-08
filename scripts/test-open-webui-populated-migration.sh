@@ -3,8 +3,10 @@ set -Eeuo pipefail
 
 # Disposable populated-database upgrade check. No production data or service is
 # mounted; one synthetic 0.11.1 user/chat volume is handed to the candidate.
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 old_image=${1:?usage: test-open-webui-populated-migration.sh OLD_IMAGE CANDIDATE_IMAGE}
 new_image=${2:?usage: test-open-webui-populated-migration.sh OLD_IMAGE CANDIDATE_IMAGE}
+bash "$repo_dir/scripts/verify-open-webui-candidate-artifact.sh" "$new_image"
 old_version=$(docker image inspect "$old_image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')
 new_version=$(docker image inspect "$new_image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')
 [[ "$old_version" == 0.11.1 ]] || { echo "FAIL expected old Open WebUI 0.11.1 image, got $old_version" >&2; exit 2; }

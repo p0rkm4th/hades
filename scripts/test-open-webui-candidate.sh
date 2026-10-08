@@ -3,8 +3,9 @@ set -Eeuo pipefail
 
 # Candidate-only acceptance. The caller supplies an already-built immutable
 # image; this script never changes the production version manifest.
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 image=${1:?usage: test-open-webui-candidate.sh IMAGE}
-docker image inspect "$image" >/dev/null
+bash "$repo_dir/scripts/verify-open-webui-candidate-artifact.sh" "$image"
 
 HADES_PRIVATE_CHAT_WEBUI_IMAGE="$image" \
 HADES_PRIVATE_CHAT_WEBUI_PORT="${HADES_PRIVATE_CHAT_WEBUI_PORT:-18895}" \

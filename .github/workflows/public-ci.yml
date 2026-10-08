@@ -261,6 +261,8 @@ jobs:
         run: bash scripts/test-doctor-exit-contract.sh
       - name: Check authoritative version manifest
         run: bash scripts/test-version-manifest.sh
+      - name: Check manifest-bound Open WebUI candidate provenance
+        run: bash scripts/test-open-webui-candidate-artifact-contract.sh
       - name: Check private input contract
         run: bash scripts/test-private-input-contract.sh
       - name: Check generated deployment records
