@@ -138,12 +138,12 @@ async function verifyChatHistory(baseUrl, token, expected, forbidden) {
     const alpha = await login(browser, 'alpha');
     try {
       const retainedMango = await send(alpha.page, 'Remember that my favorite fruit is mango.');
-      if (!/stored that as private memory/i.test(retainedMango.response) || !/mango/i.test(retainedMango.response)) {
+      if (!/(?:stored that as private memory|remember that privately)/i.test(retainedMango.response) || !/mango/i.test(retainedMango.response)) {
         throw new Error(`Alpha retain did not confirm the synthetic fact: ${retainedMango.response}`);
       }
       await newChat(alpha.page);
       const correctedPear = await send(alpha.page, 'Remember that my favorite fruit is pear.');
-      if (!/stored that as private memory/i.test(correctedPear.response) || !/pear/i.test(correctedPear.response)) {
+      if (!/(?:stored that as private memory|remember that privately)/i.test(correctedPear.response) || !/pear/i.test(correctedPear.response)) {
         throw new Error(`Alpha correction retain did not confirm the synthetic fact: ${correctedPear.response}`);
       }
       await newChat(alpha.page);

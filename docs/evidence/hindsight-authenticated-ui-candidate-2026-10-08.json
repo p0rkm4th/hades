@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "accounts": {
+    "alpha": {
+      "retain": "PASS",
+      "correction": "PASS",
+      "freshConversationTypoRecall": "PASS",
+      "recallMs": 3389
+    },
+    "beta": {
+      "crossUserIsolation": "PASS",
+      "response": "I couldn't find a saved detail that matches. I didn't check anyone else's memory.",
+      "elapsedMs": 3413
+    },
+    "gamma": {
+      "crossUserIsolation": "PASS",
+      "response": "I couldn't find a saved detail that matches. I didn't check anyone else's memory.",
+      "elapsedMs": 3414
+    }
+  }
+}

@@ -7,6 +7,9 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # shellcheck disable=SC1091
 source "$repo_dir/config/versions.env"
 webui_image=${HADES_HINDSIGHT_UI_WEBUI_IMAGE:-hades-open-webui:0.11.1-hades-reconstructed}
+hindsight_image=${HADES_HINDSIGHT_TEST_IMAGE:-$HADES_HINDSIGHT_IMAGE}
+hermes_bin=${HADES_HERMES_EXECUTABLE:-$(readlink -f "$(command -v hermes)")}
+hermes_python=${HADES_HERMES_PYTHON:-$(dirname "$hermes_bin")/python3.11}
 suffix="$$"
 hindsight_name="hades-hindsight-ui-$suffix"
 webui_name="hades-hindsight-webui-$suffix"
@@ -40,7 +43,17 @@ cleanup() {
     docker logs --tail 40 "$hindsight_name" >&2 2>/dev/null || true
     docker logs --tail 40 "$webui_name" >&2 2>/dev/null || true
   fi
-  if [[ -n "$gateway_pid" ]]; then kill "$gateway_pid" >/dev/null 2>&1 || true; wait "$gateway_pid" >/dev/null 2>&1 || true; fi
+  if [[ -n "$gateway_pid" ]]; then
+    # Hermes may leave worker children behind if only its launcher receives
+    # TERM. The gateway has a dedicated session/process group for this test.
+    kill -TERM -- "-$gateway_pid" >/dev/null 2>&1 || kill -TERM "$gateway_pid" >/dev/null 2>&1 || true
+    for _ in $(seq 1 50); do
+      kill -0 -- "-$gateway_pid" >/dev/null 2>&1 || break
+      sleep 0.1
+    done
+    kill -KILL -- "-$gateway_pid" >/dev/null 2>&1 || true
+    wait "$gateway_pid" >/dev/null 2>&1 || true
+  fi
   if [[ -n "$mock_pid" ]]; then kill "$mock_pid" >/dev/null 2>&1 || true; wait "$mock_pid" >/dev/null 2>&1 || true; fi
   docker rm -f "$hindsight_name" "$webui_name" >/dev/null 2>&1 || true
   docker volume rm "$hindsight_volume" "$webui_volume" >/dev/null 2>&1 || true
@@ -51,13 +64,16 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 command -v docker >/dev/null
-command -v hermes >/dev/null
+command -v setsid >/dev/null
+[[ -x "$hermes_bin" ]] || { echo "FAIL Hermes executable is unavailable: $hermes_bin" >&2; exit 2; }
+[[ -x "$hermes_python" ]] || { echo "FAIL Hermes Python is unavailable: $hermes_python" >&2; exit 2; }
 command -v node >/dev/null
 command -v curl >/dev/null
 export HADES_PLAYWRIGHT_MODULE=${HADES_PLAYWRIGHT_MODULE:-playwright}; node -e 'require(process.env.HADES_PLAYWRIGHT_MODULE)' >/dev/null 2>&1 || {
   echo 'FAIL local Playwright dependency is unavailable' >&2; exit 2;
 }
-docker image inspect "$HADES_HINDSIGHT_IMAGE" >/dev/null
+[[ "$hindsight_image" == *@sha256:* ]] || { echo 'FAIL Hindsight test image must use an immutable digest' >&2; exit 2; }
+docker image inspect "$hindsight_image" >/dev/null
 docker image inspect "$webui_image" >/dev/null
 for port in "$webui_port" "$gateway_port"; do
   if (echo >/dev/tcp/127.0.0.1/"$port") >/dev/null 2>&1; then
@@ -95,7 +111,13 @@ docker run -d --name "$hindsight_name" --add-host host.docker.internal:host-gate
   -e HINDSIGHT_API_ENABLE_OBSERVATIONS=true -e "HINDSIGHT_API_WORKER_ID=$hindsight_name" \
   -e HINDSIGHT_API_LLM_PROVIDER=ollama -e "HINDSIGHT_API_LLM_MODEL=$model" \
   -e "HINDSIGHT_API_LLM_BASE_URL=http://host.docker.internal:$model_port/v1" \
-  -e HINDSIGHT_API_LLM_API_KEY=synthetic-only "$HADES_HINDSIGHT_IMAGE" >/dev/null
+  -e HINDSIGHT_API_LLM_API_KEY=synthetic-only \
+  -e HINDSIGHT_API_EMBEDDINGS_PROVIDER=openai \
+  -e "HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL=$model" \
+  -e "HINDSIGHT_API_EMBEDDINGS_OPENAI_BASE_URL=http://host.docker.internal:$model_port/v1" \
+  -e HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY=synthetic-only \
+  -e HINDSIGHT_API_EMBEDDINGS_OPENAI_DIMENSIONS=384 \
+  -e HINDSIGHT_API_RERANKER_PROVIDER=rrf "$hindsight_image" >/dev/null
 hindsight_port=$(docker inspect -f '{{(index (index .NetworkSettings.Ports "8888/tcp") 0).HostPort}}' "$hindsight_name")
 hindsight_url="http://127.0.0.1:$hindsight_port"
 step='waiting for Hindsight health'
@@ -163,6 +185,13 @@ step='configuring ephemeral Hermes profile'
 export HERMES_HOME="$work/hermes"
 mkdir -p "$HERMES_HOME"
 chmod 700 "$HERMES_HOME"
+if [[ -n "${HADES_HINDSIGHT_UI_PLUGIN_SOURCE:-}" ]]; then
+  [[ -f "$HADES_HINDSIGHT_UI_PLUGIN_SOURCE/__init__.py" ]] || {
+    echo 'FAIL configured candidate Hindsight plugin source has no __init__.py' >&2; exit 2;
+  }
+  mkdir -p "$HERMES_HOME/plugins/hindsight"
+  cp -a "$HADES_HINDSIGHT_UI_PLUGIN_SOURCE/." "$HERMES_HOME/plugins/hindsight/"
+fi
 hermes profile create hades --no-alias --no-skills >/dev/null
 chmod 700 "$HERMES_HOME/profiles" "$HERMES_HOME/profiles/hades"
 cat >"$HERMES_HOME/profiles/hades/config.yaml" <<'YAML'
@@ -175,11 +204,10 @@ memory:
   bank_id: hades-owner
   bank_id_template: hades-user-{user}
   recall_budget: low
+gateway:
+  standalone: true
 YAML
 chmod 600 "$HERMES_HOME/profiles/hades/config.yaml"
-hermes_bin=$(readlink -f "$(command -v hermes)")
-hermes_python="$(dirname "$hermes_bin")/python3.11"
-[[ -x "$hermes_python" ]] || { echo 'FAIL installed Hermes Python 3.11 is unavailable' >&2; exit 2; }
 export HADES_HERMES_EXECUTABLE="$hermes_bin"
 hermes_source=$(env -u PYTHONPATH "$hermes_python" -c 'import pathlib, run_agent; print(pathlib.Path(run_agent.__file__).resolve().parent)')
 export PYTHONPATH="$repo_dir/hermes:$repo_dir:$hermes_source"
@@ -193,7 +221,7 @@ export OPENAI_API_KEY=synthetic-unused OPENAI_BASE_URL=http://127.0.0.1:9/v1
 export MODEL=synthetic-no-call HERMES_ACCEPT_HOOKS=1
 
 step='starting Hermes gateway'
-hermes -p hades gateway run -v >"$work/hermes.log" 2>&1 &
+setsid "$hermes_bin" -p hades gateway run -v >"$work/hermes.log" 2>&1 &
 gateway_pid=$!
 for _ in $(seq 1 90); do
   curl -fsS "$gateway_url/health" >/dev/null 2>&1 && break
@@ -244,7 +272,7 @@ from pathlib import Path
 rows=[json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines() if line.strip()]
 assert rows, 'Hindsight retain did not call the synthetic extraction endpoint'
 assert all(row['model']==sys.argv[2] for row in rows), rows
-assert {row['path'] for row in rows} <= {'/api/chat','/v1/chat/completions'}, rows
+assert {row['path'] for row in rows} <= {'/api/chat','/v1/chat/completions','/v1/embeddings'}, rows
 PY
 install -m 600 "$report" "${HADES_HINDSIGHT_UI_REPORT:-/tmp/hades-hindsight-explicit-ui-$$.json}"
 echo 'PASS disposable authenticated Hindsight retain, correction, fresh recall, isolation, and chat persistence'
