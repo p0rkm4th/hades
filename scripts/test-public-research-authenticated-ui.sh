@@ -806,6 +806,36 @@ elif [[ -n "$real_model_url" ]]; then
 else
   echo "PASS authenticated synthetic ${ui_users} Open WebUI session(s) invoke the actual public_research MCP and display timestamped source citations"
 fi
+if [[ "$phase_diagnostics" == 1 ]]; then
+  python3 - "$work/hermes.log" <<'PY'
+import re,sys
+patterns = (
+    re.compile(r"public research phase (?:api_loop_(?:start|end)|tool_round_(?:start|end)|post_tool_compression_(?:start|end)).*"),
+    re.compile(r"agent\.conversation_loop: API call #(\d+): model=([^ ]+) provider=([^ ]+) in=(\d+) out=(\d+) total=(\d+) latency=([0-9.]+s)(?: cache=([^ ]+))?"),
+    re.compile(r"agent\.tool_executor: tool (mcp__public_research__public_research) completed \(([0-9.]+s), (\d+) chars\)"),
+    re.compile(r"hades\.overlay: HADES timing stage=turn model=([^ ]+) elapsed_ms=([0-9.]+)"),
+)
+for line in open(sys.argv[1], encoding="utf-8", errors="replace"):
+    for pattern in patterns:
+        match = pattern.search(line)
+        if not match:
+            continue
+        if "public research phase" in line:
+            allowed = re.search(
+                r"public research phase (api_loop_start call_count=[^ ]+ retry_count=[^ ]+|"
+                r"api_loop_end elapsed_ms=[0-9.]+ result=(?:returned|continue)|"
+                r"api_loop_exception elapsed_ms=[0-9.]+ exception=[A-Za-z0-9_]+|"
+                r"tool_round_start|tool_round_end action=[A-Za-z0-9_]+|"
+                r"post_tool_compression_start|post_tool_compression_end elapsed_ms=[0-9.]+ end_turn=(?:True|False))",
+                line,
+            )
+            if allowed:
+                print("PHASE", allowed.group(1))
+        else:
+            print("PHASE", " ".join(str(value) for value in match.groups() if value is not None))
+        break
+PY
+fi
 if [[ "$research_diagnostics" == 1 ]]; then
   [[ -s "$research_diagnostics_file" ]] || { echo 'FAIL opted-in public-research structural diagnostic was not emitted' >&2; exit 1; }
   [[ "$(stat -c '%a' "$research_diagnostics_file")" == 600 ]] || { echo 'FAIL public-research diagnostic file permissions are not 0600' >&2; exit 1; }
