@@ -4,6 +4,7 @@ set -Eeuo pipefail
 # Candidate-only acceptance. The caller supplies an already-built immutable
 # image; this script never changes the production version manifest.
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "$repo_dir/config/versions.env"
 image=${1:?usage: test-open-webui-candidate.sh IMAGE}
 bash "$repo_dir/scripts/verify-open-webui-candidate-artifact.sh" "$image"
 
@@ -20,5 +21,8 @@ HADES_CHANNEL_MODEL_BACKEND_PORT="${HADES_CHANNEL_MODEL_BACKEND_PORT:-18893}" \
 bash scripts/test-open-webui-channel-model-fixture.sh
 HADES_OPEN_WEBUI_LDAP_TEST_IMAGE="$image" \
 bash scripts/test-openwebui-ldap-bootstrap.sh
+HADES_DISABLED_ROLE_TEST_IMAGE="$image" \
+HADES_DISABLED_ROLE_EXPECTED_IMAGE_ID="$HADES_OPEN_WEBUI_CANDIDATE_HADES_IMAGE_ID" \
+bash scripts/test-openwebui-disabled-role-session.sh
 
 echo "PASS Open WebUI candidate acceptance: $image"

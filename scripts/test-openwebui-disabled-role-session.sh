@@ -12,6 +12,10 @@ image_id=$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null) || {
   echo 'FAIL the pinned local HADES Open WebUI image is unavailable; refusing an implicit pull' >&2
   exit 2
 }
+if [[ -n "${HADES_DISABLED_ROLE_EXPECTED_IMAGE_ID:-}" && "$image_id" != "$HADES_DISABLED_ROLE_EXPECTED_IMAGE_ID" ]]; then
+  echo "FAIL disabled-role test image ID differs from the expected artifact: $image_id" >&2
+  exit 2
+fi
 container="hades-disabled-role-session-$$"
 docker run --rm -d --name "$container" -p 127.0.0.1::8080 \
   -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true \

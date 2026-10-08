@@ -55,4 +55,8 @@ for script in test-open-webui-candidate.sh test-open-webui-populated-migration.s
     exit 1
   }
 done
+grep -q 'HADES_DISABLED_ROLE_EXPECTED_IMAGE_ID="\$HADES_OPEN_WEBUI_CANDIDATE_HADES_IMAGE_ID"' "$repo_dir/scripts/test-open-webui-candidate.sh" || {
+  echo 'FAIL candidate acceptance does not bind role revocation to the exact image ID' >&2
+  exit 1
+}
 echo 'PASS Open WebUI candidate version, source, base, and image identity are bound to the manifest'
