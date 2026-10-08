@@ -13,33 +13,34 @@ pg_restore_path=${HADES_HINDSIGHT_PG_RESTORE_PATH:-/home/hindsight/.pg0/installa
 suffix="$$-$RANDOM"
 source_name="hades-hindsight-restore-source-$suffix"
 restore_name="hades-hindsight-restore-target-$suffix"
+model_name="hades-hindsight-restore-model-$suffix"
+network="hades-hindsight-restore-net-$suffix"
 source_volume="hades-hindsight-restore-source-data-$suffix"
 restore_volume="hades-hindsight-restore-target-data-$suffix"
 bank="synthetic-restore-$suffix"
 marker="synthetic-hindsight-restore-$suffix"
 fact='The synthetic user prefers violet comet-42 markers.'
-model_name=synthetic-hindsight-ui-extractor
+extractor_model=synthetic-hindsight-ui-extractor
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-hindsight-restore.XXXXXX")
 destination="$work/backup"
 mkdir -m 700 "$destination"
 credential_file="$work/db.env"
 printf '%s\n' 'PGPASSWORD=hindsight' > "$credential_file"
 chmod 600 "$credential_file"
-model_port_file="$work/model.port"
-model_log="$work/model.log"
+model_state="$work/model-state"
 model_requests="$work/model-requests.jsonl"
-model_pid=''
+mkdir -m 700 "$model_state"
+chmod 777 "$model_state"
+
+test_image=${HADES_HINDSIGHT_TEST_IMAGE:-$HADES_HINDSIGHT_IMAGE}
 
 fail() { printf 'FAIL %s\n' "$*" >&2; exit 1; }
 cleanup() {
   local status=$?
   trap - EXIT
-  if [[ -n "$model_pid" ]]; then
-    kill "$model_pid" >/dev/null 2>&1 || true
-    wait "$model_pid" >/dev/null 2>&1 || true
-  fi
-  docker rm -f "$source_name" "$restore_name" >/dev/null 2>&1 || true
+  docker rm -f "$source_name" "$restore_name" "$model_name" >/dev/null 2>&1 || true
   docker volume rm "$source_volume" "$restore_volume" >/dev/null 2>&1 || true
+  docker network rm "$network" >/dev/null 2>&1 || true
   rm -rf -- "$work"
   exit "$status"
 }
@@ -49,25 +50,34 @@ command -v docker >/dev/null 2>&1 || fail 'docker is required'
 command -v curl >/dev/null 2>&1 || fail 'curl is required'
 command -v python3 >/dev/null 2>&1 || fail 'python3 is required'
 [[ -x "$backup_script" ]] || fail 'native Hindsight backup helper is unavailable'
-docker image inspect "$HADES_HINDSIGHT_IMAGE" >/dev/null 2>&1 ||
-  fail 'manifest-pinned Hindsight image is not available locally'
+[[ "$test_image" =~ ^[^[:space:]@]+@sha256:[0-9a-f]{64}$ ]] ||
+  fail 'HADES_HINDSIGHT_TEST_IMAGE must be an immutable repository-plus-sha256 reference'
+docker image inspect "$test_image" >/dev/null 2>&1 ||
+  fail 'selected immutable Hindsight test image is not available locally'
 
-python3 "$repo_dir/scripts/synthetic-hindsight-model.py" \
-  0.0.0.0 "$model_port_file" "$model_requests" >"$model_log" 2>&1 &
-model_pid=$!
-for _ in $(seq 1 50); do
-  [[ -s "$model_port_file" ]] && break
-  kill -0 "$model_pid" 2>/dev/null || fail 'synthetic Hindsight model stub exited early'
-  sleep 0.1
+docker network create "$network" >/dev/null
+docker run -d --name "$model_name" \
+  --network "$network" --network-alias hades-mock \
+  --entrypoint python3 \
+  -v "$repo_dir/scripts/synthetic-hindsight-model.py:/tmp/synthetic-hindsight-model.py:ro" \
+  -v "$model_state:/tmp/mock-state" \
+  -e "HADES_SYNTHETIC_HINDSIGHT_MODEL=$extractor_model" \
+  "$test_image" /tmp/synthetic-hindsight-model.py 0.0.0.0 \
+  /tmp/mock-state/port /tmp/mock-state/requests.jsonl >/dev/null
+model_port=''
+for _ in $(seq 1 100); do
+  candidate_port=$(docker exec "$model_name" cat /tmp/mock-state/port 2>/dev/null || true)
+  if [[ "$candidate_port" =~ ^[0-9]+$ ]]; then
+    model_port=$candidate_port
+    break
+  fi
+  sleep 0.2
 done
-[[ -s "$model_port_file" ]] || fail 'synthetic Hindsight model stub did not publish its port'
-model_port=$(cat "$model_port_file")
 [[ "$model_port" =~ ^[0-9]+$ ]] || fail 'synthetic Hindsight model stub returned an invalid port'
 
 start_hindsight() {
   local name=$1 volume=$2 port
-  docker run -d --name "$name" \
-    --add-host=host.docker.internal:host-gateway \
+  docker run -d --name "$name" --network "$network" \
     -p '127.0.0.1::8888' -p '127.0.0.1::9999' \
     -v "$volume:/home/hindsight/.pg0" \
     -e HINDSIGHT_API_HOST=0.0.0.0 \
@@ -75,10 +85,10 @@ start_hindsight() {
     -e HINDSIGHT_API_ENABLE_OBSERVATIONS=true \
     -e HINDSIGHT_API_WORKER_ID=hades-hindsight-restore-test \
     -e HINDSIGHT_API_LLM_PROVIDER=ollama \
-    -e "HINDSIGHT_API_LLM_MODEL=$model_name" \
-    -e "HINDSIGHT_API_LLM_BASE_URL=http://host.docker.internal:${model_port}/v1" \
+    -e "HINDSIGHT_API_LLM_MODEL=$extractor_model" \
+    -e "HINDSIGHT_API_LLM_BASE_URL=http://hades-mock:${model_port}/v1" \
     -e HINDSIGHT_API_LLM_API_KEY=synthetic-only \
-    "$HADES_HINDSIGHT_IMAGE" >/dev/null
+    "$test_image" >/dev/null
   port=$(docker inspect "$name" --format '{{(index (index .NetworkSettings.Ports "8888/tcp") 0).HostPort}}')
   for _ in $(seq 1 90); do
     if curl -fsS --max-time 2 "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then
@@ -169,8 +179,9 @@ restored_marker=$(docker exec --env-file "$credential_file" "$restore_name" "$re
 curl -fsS --max-time 5 "http://127.0.0.1:${restore_port}/health" >/dev/null ||
   fail 'restored Hindsight service did not remain healthy'
 verify_memory "$restore_port" restored
-if [[ -s "$model_requests" ]]; then
-  python3 - "$model_requests" "$model_name" <<'PY'
+if docker exec "$model_name" test -s /tmp/mock-state/requests.jsonl; then
+  docker exec "$model_name" cat /tmp/mock-state/requests.jsonl > "$model_requests"
+  python3 - "$model_requests" "$extractor_model" <<'PY'
 import json, sys
 rows=[json.loads(line) for line in open(sys.argv[1], encoding="utf-8") if line.strip()]
 assert rows and all(row.get("model") == sys.argv[2] for row in rows), rows

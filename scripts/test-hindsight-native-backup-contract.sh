@@ -3,8 +3,11 @@ set -euo pipefail
 
 repo_dir=$(cd "$(dirname "$0")/.." && pwd)
 script="$repo_dir/scripts/backup-hindsight-native.sh"
+runtime_test="$repo_dir/scripts/test-hindsight-native-backup-restore.sh"
 [[ -x "$script" ]] || { echo 'FAIL Hindsight backup helper is not executable'; exit 1; }
+[[ -x "$runtime_test" ]] || { echo 'FAIL Hindsight backup/restore rehearsal is not executable'; exit 1; }
 bash -n "$script"
+bash -n "$runtime_test"
 grep -Fq -- '--env-file "$credential_file"' "$script" || {
   echo 'FAIL helper does not pass the protected env file through Docker'; exit 1;
 }
@@ -19,6 +22,18 @@ if grep -Eq '^[[:space:]]*echo[[:space:]].*(PGPASSWORD|credential_file)' "$scrip
 fi
 if grep -Eq '^[[:space:]]*docker exec.*PGPASSWORD=' "$script"; then
   echo 'FAIL helper places the password in a docker command argument'; exit 1
+fi
+grep -Fq 'HADES_HINDSIGHT_TEST_IMAGE' "$runtime_test" || {
+  echo 'FAIL backup/restore rehearsal has no candidate image input'; exit 1;
+}
+grep -Fq -- '--network "$network"' "$runtime_test" || {
+  echo 'FAIL backup/restore rehearsal does not use its isolated peer network'; exit 1;
+}
+grep -Fq -- '--network-alias hades-mock' "$runtime_test" || {
+  echo 'FAIL backup/restore rehearsal has no synthetic model network peer'; exit 1;
+}
+if grep -Eq 'host\.docker\.internal|host-gateway' "$runtime_test"; then
+  echo 'FAIL backup/restore rehearsal relies on host-gateway access'; exit 1
 fi
 fixture=$(mktemp -d)
 trap 'rm -rf "$fixture"' EXIT

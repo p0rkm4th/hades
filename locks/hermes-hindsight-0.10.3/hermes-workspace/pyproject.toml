@@ -1,0 +1,583 @@
+[project]
+name = "hermes-agent"
+version = "0.0.0"
+description = "The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+authors = [
+    { name = "Nous Research" },
+]
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+dependencies = [
+    "openai==2.24.0; python_version >= '3.14'",
+    "certifi==2026.5.20; python_version >= '3.14'",
+    "truststore==0.10.4; python_version >= '3.14'",
+    "python-dotenv==1.2.2; python_version >= '3.14'",
+    "fire==0.7.1; python_version >= '3.14'",
+    "httpx[socks]==0.28.1; python_version >= '3.14'",
+    "rich==14.3.3; python_version >= '3.14'",
+    "tenacity==9.1.4; python_version >= '3.14'",
+    "tomli-w==1.2.0; python_version >= '3.14'",
+    "ruamel.yaml==0.18.16; python_version >= '3.14'",
+    "requests==2.33.0; python_version >= '3.14'",
+    "jinja2==3.1.6; python_version >= '3.14'",
+    "firecrawl-anydoc==0.2.4; python_version >= '3.14'",
+    "pydantic==2.13.4; python_version >= '3.14'",
+    "prompt_toolkit==3.0.52; python_version >= '3.14'",
+    "croniter==6.0.0; python_version >= '3.14'",
+    "snowballstemmer==3.1.1; python_version >= '3.14'",
+    "packaging==26.0; python_version >= '3.14'",
+    "Markdown==3.10.2; python_version >= '3.14'",
+    "PyJWT[crypto]==2.13.0; python_version >= '3.14'",
+    "urllib3>=2.7.0,<3; python_version >= '3.14'",
+    "cryptography==50.0.1; python_version >= '3.14'",
+    "tzdata==2025.3; sys_platform == 'win32' and python_version >= '3.14'",
+    "psutil==7.2.2; sys_platform != 'android' and python_version >= '3.14'",
+    "psutil @ git+https://github.com/giampaolo/psutil.git@380bd2b59c67b0e1b04bbf3a90b11744f4f96644 ; sys_platform == 'android' and python_version >= '3.14'",
+    "websockets==15.0.1; python_version >= '3.14'",
+    "browser-harness==0.1.13; python_version >= '3.14'",
+    "pathspec==1.1.1; python_version >= '3.14'",
+    "fastapi>=0.104.0,<1; python_version >= '3.14'",
+    "uvicorn>=0.31.0,<1; python_version >= '3.14'",
+    "httptools>=0.6.3,<0.9; python_version >= '3.14'",
+    "watchfiles>=0.20,<2; python_version >= '3.14'",
+    "python-multipart>=0.0.9,<1; python_version >= '3.14'",
+    "ptyprocess>=0.7.0,<1; sys_platform != 'win32' and python_version >= '3.14'",
+    "pywinpty>=3.0.5,<4; sys_platform == 'win32' and python_version >= '3.14'",
+    "pywin32>=306,<312; sys_platform == 'win32' and python_version >= '3.14'",
+    "winrt-windows-applicationmodel>=3.2.1,<4; sys_platform == 'win32' and python_version >= '3.14'",
+    "winrt-windows-foundation>=3.2.1,<4; sys_platform == 'win32' and python_version >= '3.14'",
+    "winrt-windows-foundation-collections>=3.2.1,<4; sys_platform == 'win32' and python_version >= '3.14'",
+    "winrt-windows-services-store>=3.2.1,<4; sys_platform == 'win32' and python_version >= '3.14'",
+    "Pillow==12.3.0; python_version >= '3.14'",
+    "pillow-heif>=1.4.0,<2; python_version >= '3.14'",
+    "resvg-py==0.4.0; python_version >= '3.14'",
+    "concurrent-log-handler==0.9.29; sys_platform == 'win32' and python_version >= '3.14'",
+    "nemo-relay>=0.9,<0.10; ((sys_platform == 'darwin' and platform_machine == 'arm64') or (sys_platform == 'linux' and platform_machine == 'x86_64' and 'android' not in platform_release) or (sys_platform == 'linux' and platform_machine == 'aarch64' and 'android' not in platform_release) or (sys_platform == 'win32' and platform_machine == 'AMD64') or (sys_platform == 'win32' and platform_machine == 'ARM64')) and python_version >= '3.14'",
+]
+
+[project.scripts]
+hermes = "hermes_cli.main:main"
+hermes-agent = "agent.legacy_cli:main"
+hermes-acp = "acp_adapter.entry:main"
+
+[build-system]
+requires = [
+    "setuptools==83.0.0",
+    "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.hermes]
+opt-in-extras = [
+    "kittentts",
+]
+
+[tool.hermes.extras-platforms]
+matrix = "sys_platform == 'linux'"
+google-chat = "platform_machine != 'ARM64' or sys_platform != 'win32'"
+wake-openwakeword = "(platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')"
+stt-whisper = "(platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or platform_system != 'Darwin')"
+neutts = "python_version < '3.14'"
+kittentts = "(platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')"
+piper = "(platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')"
+
+[tool.uv]
+default-groups = []
+environments = [
+    "python_version >= '3.14' and sys_platform == 'linux'",
+]
+override-dependencies = [
+    "pynacl>=1.6,<1.7",
+    "cryptography==50.0.1",
+    "spacy-curated-transformers; sys_platform == 'never'",
+]
+
+[tool.uv.exclude-newer-package]
+agent-client-protocol = false
+aiohttp = false
+aiohttp-socks = false
+aiosqlite = false
+alibabacloud-dingtalk = false
+anthropic = false
+asyncpg = false
+azure-identity = false
+boto3 = false
+brotlicffi = false
+browser-harness = false
+certifi = false
+concurrent-log-handler = false
+croniter = false
+cryptography = false
+daytona = false
+ddgs = "2026-08-26T21:52:34Z"
+debugpy = false
+defusedxml = false
+dingtalk-stream = false
+discord-py = false
+edge-tts = false
+elevenlabs = false
+exa-py = false
+fal-client = false
+fastapi = false
+faster-whisper = false
+fire = false
+firecrawl-anydoc = false
+firecrawl-py = false
+google-api-python-client = false
+google-auth = false
+google-auth-httplib2 = false
+google-auth-oauthlib = false
+google-cloud-pubsub = false
+h2 = false
+httplib2 = false
+httpx = false
+httpx2 = false
+huggingface-hub = false
+jinja2 = false
+langfuse = "2026-09-09T16:01:26Z"
+lark-oapi = false
+markdown = false
+maturin = false
+mautrix = false
+mcp = false
+microsoft-teams-apps = false
+mistralai = false
+modal = false
+nemo-relay = false
+neutts = "2026-07-22T14:54:23Z"
+numpy = false
+openai = false
+opentelemetry-exporter-otlp-proto-http = false
+opentelemetry-sdk = false
+packaging = false
+parallel-web = false
+pathspec = false
+pillow = false
+piper-tts = "2026-09-04T16:47:32Z"
+prompt-toolkit = false
+psutil = false
+pvporcupine = false
+pyasn1 = false
+pydantic = false
+pyjwt = false
+pytest = false
+pytest-asyncio = false
+python-dotenv = false
+python-multipart = false
+python-olm = false
+python-telegram-bot = false
+pyyaml = false
+qrcode = false
+requests = false
+rich = false
+ruamel-yaml = false
+ruff = false
+sentencepiece = false
+setuptools = false
+setuptools-rust = false
+wheel = false
+sherpa-onnx = "2026-09-10T17:00:04Z"
+sherpa-onnx-core = "2026-09-10T15:58:47Z"
+slack-bolt = false
+slack-sdk = false
+snowballstemmer = false
+sounddevice = false
+soundfile = "2026-06-06T08:58:48Z"
+starlette = false
+tenacity = false
+ty = false
+tzdata = false
+unpaddedbase64 = false
+uvicorn = false
+vercel = false
+websockets = false
+youtube-transcript-api = false
+addict = "14 days"
+aiofiles = "14 days"
+aiohappyeyeballs = "14 days"
+aiohttp-retry = "14 days"
+aiosignal = "14 days"
+alibabacloud-credentials = "14 days"
+alibabacloud-credentials-api = "14 days"
+alibabacloud-endpoint-util = "14 days"
+alibabacloud-gateway-dingtalk = "14 days"
+alibabacloud-gateway-spi = "14 days"
+alibabacloud-openapi-util = "14 days"
+alibabacloud-tea = "14 days"
+alibabacloud-tea-openapi = "14 days"
+alibabacloud-tea-util = "14 days"
+annotated-doc = "14 days"
+annotated-types = "14 days"
+anyio = "14 days"
+apscheduler = "14 days"
+attrs = "14 days"
+audioop-lts = "14 days"
+av = "14 days"
+azure-core = "14 days"
+babel = "14 days"
+backoff = "14 days"
+base58 = "14 days"
+blis = "14 days"
+botocore = "14 days"
+catalogue = "14 days"
+cbor2 = "14 days"
+cdp-use = "14 days"
+cffi = "14 days"
+charset-normalizer = "14 days"
+click = "14 days"
+cloudpathlib = "14 days"
+cloudpickle = "14 days"
+colorama = "14 days"
+confection = "14 days"
+csvw = "14 days"
+ctranslate2 = "14 days"
+cuda-bindings = "14 days"
+cuda-pathfinder = "14 days"
+cuda-toolkit = "14 days"
+curated-tokenizers = "14 days"
+curated-transformers = "14 days"
+cymem = "14 days"
+darabonba-core = "14 days"
+davey = "14 days"
+daytona-api-client = "14 days"
+daytona-api-client-async = "14 days"
+daytona-toolbox-api-client = "14 days"
+daytona-toolbox-api-client-async = "14 days"
+dependency-injector = "14 days"
+deprecated = "14 days"
+distlib = "14 days"
+distro = "14 days"
+dlinfo = "14 days"
+docopt = "14 days"
+docstring-parser = "14 days"
+environs = "14 days"
+espeakng-loader = "14 days"
+eval-type-backport = "14 days"
+fetch-use = "14 days"
+filelock = "14 days"
+flatbuffers = "14 days"
+frozenlist = "14 days"
+fsspec = "14 days"
+google-api-core = "14 days"
+googleapis-common-protos = "14 days"
+greenlet = "14 days"
+grpc-google-iam-v1 = "14 days"
+grpcio = "14 days"
+grpcio-status = "14 days"
+grpclib = "14 days"
+h11 = "14 days"
+hf-xet = "14 days"
+hpack = "14 days"
+httpcore = "14 days"
+httpcore2 = "14 days"
+httptools = "14 days"
+httpx-sse = "14 days"
+hyperframe = "14 days"
+idna = "14 days"
+importlib-metadata = "14 days"
+iniconfig = "14 days"
+isodate = "14 days"
+jiter = "14 days"
+jmespath = "14 days"
+joblib = "14 days"
+jsonpath-python = "14 days"
+jsonschema = "14 days"
+jsonschema-specifications = "14 days"
+language-tags = "14 days"
+lxml = "14 days"
+markdown-it-py = "14 days"
+markupsafe = "14 days"
+marshmallow = "14 days"
+mcp-types = "14 days"
+mdurl = "14 days"
+microsoft-teams-api = "14 days"
+microsoft-teams-cards = "14 days"
+microsoft-teams-common = "14 days"
+mpmath = "14 days"
+msal = "14 days"
+msal-extensions = "14 days"
+msgpack = "14 days"
+multidict = "14 days"
+murmurhash = "14 days"
+nest-asyncio = "14 days"
+networkx = "14 days"
+num2words = "14 days"
+nvidia-cublas = "14 days"
+nvidia-cuda-cupti = "14 days"
+nvidia-cuda-nvrtc = "14 days"
+nvidia-cuda-runtime = "14 days"
+nvidia-cudnn-cu13 = "14 days"
+nvidia-cufft = "14 days"
+nvidia-cufile = "14 days"
+nvidia-curand = "14 days"
+nvidia-cusolver = "14 days"
+nvidia-cusparse = "14 days"
+nvidia-cusparselt-cu13 = "14 days"
+nvidia-nccl-cu13 = "14 days"
+nvidia-nvjitlink = "14 days"
+nvidia-nvshmem-cu13 = "14 days"
+nvidia-nvtx = "14 days"
+oauthlib = "14 days"
+obstore = "14 days"
+onnxruntime = "14 days"
+opentelemetry-api = "14 days"
+opentelemetry-exporter-otlp-proto-common = "14 days"
+opentelemetry-instrumentation = "14 days"
+opentelemetry-instrumentation-aiohttp-client = "14 days"
+opentelemetry-proto = "14 days"
+opentelemetry-semantic-conventions = "14 days"
+opentelemetry-util-http = "14 days"
+pathvalidate = "14 days"
+phonemizer-fork = "14 days"
+pilk = "14 days"
+pillow-heif = "14 days"
+pip = "14 days"
+playwright = "14 days"
+pluggy = "14 days"
+portalocker = "14 days"
+preshed = "14 days"
+primp = "14 days"
+propcache = "14 days"
+proto-plus = "14 days"
+protobuf = "14 days"
+ptyprocess = "14 days"
+pyasn1-modules = "14 days"
+pycparser = "14 days"
+pycryptodome = "14 days"
+pydantic-core = "14 days"
+pydantic-settings = "14 days"
+pyee = "14 days"
+pygments = "14 days"
+pynacl = "14 days"
+pyopen-wakeword = "14 days"
+pyparsing = "14 days"
+pypinyin = "14 days"
+pypng = "14 days"
+python-dateutil = "14 days"
+python-socks = "14 days"
+pytz = "14 days"
+pywin32 = "14 days"
+pywinpty = "14 days"
+rdflib = "14 days"
+referencing = "14 days"
+regex = "14 days"
+requests-oauthlib = "14 days"
+requests-toolbelt = "14 days"
+resvg-py = "14 days"
+rfc3986 = "14 days"
+rpds-py = "14 days"
+s3transfer = "14 days"
+safetensors = "14 days"
+segments = "14 days"
+shellingham = "14 days"
+six = "14 days"
+smart-open = "14 days"
+sniffio = "14 days"
+socksio = "14 days"
+spacy = "14 days"
+spacy-curated-transformers = "14 days"
+spacy-legacy = "14 days"
+spacy-loggers = "14 days"
+srsly = "14 days"
+sse-starlette = "14 days"
+sympy = "14 days"
+synchronicity = "14 days"
+tabulate = "14 days"
+termcolor = "14 days"
+thinc = "14 days"
+tokenizers = "14 days"
+toml = "14 days"
+tomli-w = "14 days"
+torch = "14 days"
+tornado = "14 days"
+tqdm = "14 days"
+transformers = "14 days"
+triton = "14 days"
+truststore = "14 days"
+typer = "14 days"
+types-certifi = "14 days"
+types-toml = "14 days"
+typing-extensions = "14 days"
+typing-inspection = "14 days"
+tzlocal = "14 days"
+uritemplate = "14 days"
+urllib3 = "14 days"
+uvloop = "14 days"
+vercel-cache = "14 days"
+vercel-headers = "14 days"
+vercel-internal-telemetry = "14 days"
+vercel-oidc = "14 days"
+vercel-workers = "14 days"
+wasabi = "14 days"
+watchfiles = "14 days"
+wcwidth = "14 days"
+weasel = "14 days"
+websocket-client = "14 days"
+winrt-runtime = "14 days"
+winrt-windows-applicationmodel = "14 days"
+winrt-windows-foundation = "14 days"
+winrt-windows-foundation-collections = "14 days"
+winrt-windows-services-store = "14 days"
+wrapt = "14 days"
+yarl = "14 days"
+zipp = "14 days"
+
+[tool.uv.workspace]
+members = [
+    "plugin",
+]
+
+[tool.setuptools.packages.find]
+include = [
+    "agent",
+    "agent.*",
+    "tools",
+    "tools.*",
+    "hermes_cli",
+    "hermes_cli.*",
+    "gateway",
+    "gateway.*",
+    "tui_gateway",
+    "tui_gateway.*",
+    "cron",
+    "cron.*",
+    "acp_adapter",
+    "plugins",
+    "plugins.*",
+    "providers",
+    "providers.*",
+    "hermes_platform",
+    "hermes_platform.*",
+    "pm",
+    "pm.*",
+    "tools",
+    "tools.*",
+]
+
+[tool.setuptools.package-data]
+hermes_cli = [
+    "observability/schemas/*.json",
+    "data/*.json",
+    "local_runtime/*.json",
+]
+gateway = [
+    "assets/**/*",
+]
+plugins = [
+    "**/plugin.yaml",
+    "**/plugin.yml",
+]
+pm = [
+    "lock.json",
+    "artifact-mirror.json",
+    "pyproject.toml",
+    "uv.lock",
+]
+tools = [
+    "bot_desktop/launcher.sh",
+    "bot_desktop/wallpaper.png",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+markers = [
+    "integration: marks tests requiring external services (API keys, Modal, etc.)",
+    "live: secrets-gated canaries against REAL LLM provider APIs (spends money; select with -m live)",
+    "real_concurrent_gate: opt out of the autouse stub that disables _detect_concurrent_hermes_instances",
+    "real_agent_prewarm: opt out of the autouse stub that disables the tui_gateway deferred agent pre-warm timer",
+    "real_retry_backoff: opt out of the tests/agent autouse stub that zeroes jittered_backoff",
+    "requires_wal: needs the runtime to actually enable SQLite WAL mode (skipped where Hermes falls back to journal_mode=DELETE)",
+    "no_isolate: opt out of per-file subprocess isolation (tests share mutable module-level state)",
+    "ssh: marks tests requiring a reachable SSH server (skipped in normal CI)",
+    "platforms(*specs, arch=None, arch_negate=False): run only on hosts matching at least one spec — linux/macos/windows/posix/any, 'not X' negation, optional arch filter",
+]
+addopts = "-m 'not integration and not live'"
+
+[tool.ty.environment]
+python-version = "3.13"
+
+[tool.ty.rules]
+unknown-argument = "warn"
+redundant-cast = "ignore"
+
+[tool.ruff]
+preview = true
+
+[tool.ruff.lint]
+select = [
+    "PLW1514",
+    "ASYNC210",
+    "ASYNC220",
+    "ASYNC221",
+    "ASYNC251",
+    "TID251",
+]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api."pm.uv"]
+msg = "Use PM's semantic Python operations, not an installer executable."
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api."pm.client.uv"]
+msg = "Use PM's semantic Python operations."
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api."pm.install.uv"]
+msg = "The raw uv bridge was removed; use PM operations."
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api."pm._uv"]
+msg = "Tool acquisition is private to PM."
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api."pm.environment"]
+msg = "The environment engine is private; use PM operations."
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api."pm.runtime_stage"]
+msg = "PM stages its own worker runtime; consumers call pm operations."
+
+[tool.ruff.lint.per-file-ignores]
+"pm/**" = [
+    "TID251",
+]
+"apps/desktop/electron/fixtures/**" = [
+    "TID251",
+]
+"tests/**" = [
+    "PLW1514",
+    "ASYNC210",
+    "ASYNC220",
+    "ASYNC221",
+    "ASYNC251",
+    "TID251",
+]
+"skills/**" = [
+    "PLW1514",
+]
+"optional-skills/**" = [
+    "PLW1514",
+]
+"plugins/**" = [
+    "PLW1514",
+]
+"gateway/run.py" = [
+    "ASYNC220",
+]
+"gateway/run_shutdown.py" = [
+    "ASYNC220",
+]
+"gateway/slash_commands.py" = [
+    "ASYNC220",
+]
+"hermes_cli/web_routers/profiles.py" = [
+    "ASYNC220",
+    "ASYNC221",
+]
+"plugins/platforms/whatsapp/adapter.py" = [
+    "ASYNC220",
+    "ASYNC221",
+]
+"plugins/platforms/photon/adapter.py" = [
+    "ASYNC220",
+]
