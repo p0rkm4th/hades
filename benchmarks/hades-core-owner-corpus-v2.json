@@ -587,6 +587,13 @@
       ],
       "origin": "synthetic memory-policy supplement; not owner transcript",
       "evaluation": "Check whether the durable personal constraint is retained for future relevant recommendations, without inventing medical advice or exposing it across subjects.",
+      "review_check": {
+        "probe_text": "What dietary restriction did I mention?",
+        "must_contain_any": ["lactose"],
+        "visibility_bank": "hades-owner",
+        "visibility_needle": "lactose",
+        "continuity_only": false
+      },
       "owner_preference": null
     },
     {
@@ -598,6 +605,13 @@
       ],
       "origin": "synthetic memory-policy supplement; not owner transcript",
       "evaluation": "Check whether the stable preference can help a later relevant recommendation; do not treat the location request as a durable fact.",
+      "review_check": {
+        "probe_text": "What kind of places do I usually prefer?",
+        "must_contain_any": ["quiet", "read"],
+        "visibility_bank": "hades-owner",
+        "visibility_needle": "quiet",
+        "continuity_only": false
+      },
       "owner_preference": null
     },
     {
@@ -609,6 +623,13 @@
       ],
       "origin": "synthetic memory-policy supplement; not owner transcript",
       "evaluation": "The requested preference should be saved, scoped to the authenticated subject, and available immediately after the explicit save.",
+      "review_check": {
+        "probe_text": "What answer length do I prefer for quick questions versus research?",
+        "must_contain_any": ["short", "detail"],
+        "visibility_bank": "hades-owner",
+        "visibility_needle": "short",
+        "continuity_only": false
+      },
       "owner_preference": null
     },
     {
@@ -616,10 +637,19 @@
       "category": "memory",
       "scenario": "correction of a personal preference",
       "turns": [
+        "Remember that I prefer brief answers for quick questions and more detail for research.",
         "Correction: I only want short answers for simple questions; I want detail for research."
       ],
       "origin": "synthetic memory-policy supplement; not owner transcript",
       "evaluation": "The corrected preference must supersede the prior version; no stale answer-length preference should remain preferred.",
+      "review_check": {
+        "probe_text": "What is my corrected preference for simple questions and research?",
+        "must_contain_all": ["simple", "detail"],
+        "must_not_contain_any": ["always brief", "brief for research"],
+        "visibility_bank": "hades-owner",
+        "visibility_needle": "simple",
+        "continuity_only": false
+      },
       "owner_preference": null
     },
     {
@@ -633,6 +663,13 @@
       ],
       "origin": "synthetic memory-policy supplement; not owner transcript",
       "evaluation": "Retain the spontaneous plan, avoid turning the unrelated arithmetic answer into personal memory, and answer the final natural recall from the same subject profile.",
+      "review_check": {
+        "recall_turn_index": 2,
+        "must_contain_any": ["Madison"],
+        "visibility_bank": "hades-owner",
+        "visibility_needle": "Madison",
+        "continuity_only": true
+      },
       "owner_preference": null
     }
   ],
