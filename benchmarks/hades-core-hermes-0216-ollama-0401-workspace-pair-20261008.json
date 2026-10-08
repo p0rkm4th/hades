@@ -26,13 +26,13 @@
     "hades_median_tool_results": 11.0,
     "independent_tests_passed": 4,
     "independent_expected_source_only_workspaces": 4,
-    "diagnosis_invalid_tool_results": {
-      "plain": 0,
-      "hades": 2
-    },
     "diagnosis_changed_workspace_turns": {
       "plain": 2,
       "hades": 0
+    },
+    "invalid_diagnostic_count_by_stack": {
+      "plain": 0,
+      "hades": 2
     }
   },
   "repeats": [
