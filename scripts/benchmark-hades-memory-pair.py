@@ -117,6 +117,7 @@ def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "automatic_retained_fact_visible_after_drain",
         "automatic_recall_after_idle_expected_marker_present",
         "core09_recall_expected_marker_present",
+        "core09_recall_after_idle_expected_marker_present",
     )
     safe_samples = []
     for sample in repetitions:
@@ -1432,6 +1433,34 @@ def main() -> int:
                                       "hindsight_idle_after_hades": idle["elapsed_ms"],
                                       "barrier": barrier_label,
                                       "polls": idle["polls"]}), flush=True)
+            if not args.automatic_only:
+                # Keep the immediate recall above as owner-visible readiness
+                # evidence, then test the same exact fact after HADES reports
+                # all memory work idle. Run both stacks after that barrier so
+                # order and elapsed memory-settle work are visible in context.
+                for stack in order:
+                    failure_stage = (
+                        f"sample_{sample + 1}_{stack}_core09_recall_after_idle"
+                    )
+                    settled_recall = measure_turn(
+                        gateways[stack], benchmark, "core09_recall_after_idle",
+                        f"memory-pair-{stack}-{sample + 1:02d}-core09-recall-after-idle",
+                        [{"role": "user", "content": OWNER_CORE_09_RECALL}],
+                    )
+                    sample_result["stacks"][stack]["turns"].append(settled_recall)
+                    settled_marker = core09_answer_matches_target(
+                        settled_recall.get("answer", "")
+                    )
+                    sample_result["stacks"][stack][
+                        "core09_recall_after_idle_expected_marker_present"
+                    ] = settled_marker
+                    print(json.dumps({
+                        "sample": sample + 1, "stack": stack,
+                        "turn": "core09_recall_after_idle",
+                        "total_ms": settled_recall["total_ms"],
+                        "provider_calls": settled_recall["metrics"]["provider_generations"],
+                        "expected_marker_present": settled_marker,
+                    }), flush=True)
         by_stack_turn: dict[str, Any] = {}
         supplement_turn_names = []
         for memory_case in (() if args.automatic_only else memory_supplement):
@@ -1448,7 +1477,8 @@ def main() -> int:
         for stack in ("plain", "hades"):
             for turn in (
                 "ordinary", "automatic_retain", "automatic_recall", "core09_save",
-                "core09_recall", "save", "correction", "implicit_recall", "fresh_recall",
+                "core09_recall", "core09_recall_after_idle", "save", "correction",
+                "implicit_recall", "fresh_recall",
                 *supplement_turn_names,
             ):
                 rows = [
@@ -1502,8 +1532,13 @@ def main() -> int:
                         if turn == "automatic_recall" else None
                     ),
                     "owner_corpus_recalls_with_expected_marker": (
-                        sum(s["stacks"][stack]["core09_recall_expected_marker_present"] for s in repetitions)
-                        if turn == "core09_recall" and not args.automatic_only else None
+                        sum(s["stacks"][stack][
+                            "core09_recall_after_idle_expected_marker_present"
+                            if turn == "core09_recall_after_idle"
+                            else "core09_recall_expected_marker_present"
+                        ] for s in repetitions)
+                        if turn in {"core09_recall", "core09_recall_after_idle"}
+                        and not args.automatic_only else None
                     ),
                 }
 
@@ -1565,7 +1600,7 @@ def main() -> int:
                 "sequence": (
                     ["owner core-01 greeting", "synthetic automatic personal-fact retain/recall"]
                     if args.automatic_only else
-                    ["owner core-01 greeting", "synthetic automatic personal-fact retain/recall", "owner core-09 explicit synthetic save and natural recall wording", "synthetic favorite-fruit save/correction", "fresh-session implicit recall", "fresh-session explicit recall"]
+                    ["owner core-01 greeting", "synthetic automatic personal-fact retain/recall", "owner core-09 explicit synthetic save and natural recall wording", "core-09 immediate and post-drain recall", "synthetic favorite-fruit save/correction", "fresh-session implicit recall", "fresh-session explicit recall"]
                 ),
                 "owner_corpus_case_map": {
                     "core-01": OWNER_CORE_01_GREETING,
@@ -1652,6 +1687,7 @@ def main() -> int:
             "limitations": [
                 "The model digest is staged local Qwen; this does not prove equality with production model weights.",
                 "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
+                "The owner core-09 recall is measured once immediately after save and again for both stacks after HADES background memory work drains; readiness delay and settled recall are separate outcomes.",
                 "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
                 "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review.",
             ],
