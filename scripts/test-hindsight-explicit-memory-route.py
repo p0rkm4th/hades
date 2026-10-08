@@ -625,13 +625,24 @@ try:
 
     # A verified explicit-bank fact can answer while an unrelated canonical
     # retain is pending. The conversation handler checks this route first.
+    pending_fact_query = "What was the savings target I mentioned?"
+    canonical_pending = FakeVisibilityProvider({
+        "retain": [SimpleNamespace(status="processing")],
+    })
+    canonical_pending._bank_id = "hades-user-alpha"
+    assert pending_response(
+        FakeMemoryAgent(canonical_pending), pending_fact_query
+    ) == (
+        "I'm still saving a recent detail, so I can't confirm it yet. "
+        "I can check again shortly."
+    )
     state["items"] = [{
         "tags": ["hades-explicit-memory"],
         "text": "User explicitly asked HADES to remember: My savings target is $3,000.",
         "entities": [{"text": "My savings target is $3,000", "type": "explicit_fact"}],
         "updated_at": "2026-10-07T12:00:00Z",
     }]
-    answer = route("What was the savings target I mentioned?", "alpha", "household")
+    answer = route(pending_fact_query, "alpha", "household")
     assert "$3,000" in answer, answer
     assert FakeClient.instances[-1].closed
 
