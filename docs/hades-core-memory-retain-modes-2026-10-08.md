@@ -72,12 +72,22 @@ readiness or retrieval-quality problem.
   [`hades-core-recall-score-diagnostic-20261008.json`](../benchmarks/hades-core-recall-score-diagnostic-20261008.json).
   It reproduced a 28.9-second immediate HADES miss versus a 1.8-second PLAIN
   hit; after a 43.6-second idle drain, HADES found the marker in 10.0 seconds.
-  The top observation's semantic score was 0.629 while its final score was
-  0.021. This points to score fusion or operation timing/state for further
-  investigation, but one sample does not identify the cause. Ordinary-turn
-  timings were also single samples and do not establish a latency win.
+  The top observation's semantic score was 0.629, its reranker score was
+  0.019, and its final score was 0.021. Hindsight v0.10.2 uses the
+  cross-encoder score as its primary relevance signal, then applies
+  multiplicative recency, temporal, and proof-count boosts. Here the final
+  score is about 1.1 times the reranker score; the large score change occurs
+  between semantic retrieval and reranking. The captured artifact excludes
+  result text, so it cannot prove whether reranking dropped the expected fact.
+  See the pinned [Hindsight v0.10.2 score calculation](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L187-L205)
+  and [combined-score assignment](https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L288-L303).
+  Ordinary-turn timings were also single samples and do not establish a
+  latency win.
 - Repeat the safe diagnostic while varying the recall type and operation
-  state. Preserve only aggregate ranks, types, scores, and timings.
+  state. Preserve only aggregate ranks, types, scores, and timings. The current
+  HADES profile uses `mid`; Hindsight's v0.10.2 API describes `low` as the
+  fast simple-lookup budget. The paired runner now exposes a `low` option so
+  its latency and marker behavior can be measured before changing HADES config.
 - Compare concise extraction with observations disabled separately from raw
   `chunks`; do not infer that switching off observations is equivalent to
   disabling fact extraction.

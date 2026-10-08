@@ -81,7 +81,8 @@
   "interpretation": [
     "The immediate HADES automatic recall missed the marker and took 28.9 seconds; the paired PLAIN recall found it in 1.8 seconds.",
     "After 43.6 seconds for background work to become idle, HADES found the marker in 10.0 seconds.",
-    "The rank-one observation had semantic score 0.629 and final score 0.021. This suggests score fusion or timing/state needs investigation; one sample cannot identify a cause.",
+    "The rank-one observation had semantic score 0.629, reranker score 0.019, and final score 0.021. Hindsight v0.10.2 uses the cross-encoder score as its primary relevance signal, then applies multiplicative recency, temporal, and proof-count boosts. The final/reranker ratio here is about 1.1; the large change is between semantic and reranker scores. Because result text was deliberately not retained, this does not prove whether the reranker down-ranked the expected fact.",
+    "Hindsight v0.10.2 score calculation: https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L187-L205 and https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-api-slim/hindsight_api/engine/search/reranking.py#L288-L303.",
     "Ordinary-turn timings are single samples and should not be used to claim a comparative latency win."
   ],
   "limitations": [
