@@ -78,6 +78,10 @@ SEARCH_TARGET_PATH = "settings.py"
 SEARCH_TARGET_VALUE = "37"
 DIAGNOSE_PROMPT = "Why is this Python test failing?"
 FIX_PROMPT = "Fix it."
+SMALL_EDIT_CONTEXT_PROMPT = (
+    "Read validation.py and tell me the exact error message it raises for zero."
+)
+SMALL_EDIT_PROMPT = "Fix the typo in the error message in this file."
 API_KEY = "synthetic-workspace-pair-key"
 WORKSPACE_ENVIRONMENT_HINT = (
     "The active project workspace for file and coding tasks is mounted at /workspace. "
@@ -197,6 +201,25 @@ FIXTURE_CASES = {
                 "if __name__ == '__main__':\n    unittest.main()\n"
             ),
         },
+    },
+    "error_message": {
+        "source": "validation.py",
+        "test": "test_validation.py",
+        "source_content": (
+            "def validate_quantity(value):\n"
+            "    if value <= 0:\n"
+            "        raise ValueError('Invlaid quantity')\n"
+            "    return value\n"
+        ),
+        "test_content": (
+            "import unittest\nfrom validation import validate_quantity\n\n"
+            "class ValidationTests(unittest.TestCase):\n"
+            "    def test_nonpositive_value_has_correct_message(self):\n"
+            "        with self.assertRaisesRegex(ValueError, '^Invalid quantity$'):\n"
+            "            validate_quantity(0)\n\n"
+            "if __name__ == '__main__':\n    unittest.main()\n"
+        ),
+        "support": {},
     },
 }
 
@@ -929,6 +952,8 @@ def child(args: argparse.Namespace) -> int:
                    [README_PROMPT] if args.scenario == "readme" else
                    [EXPLAIN_PROMPT] if args.scenario == "explain" else
                    [SEARCH_PROMPT] if args.scenario == "search" else
+                   [SMALL_EDIT_CONTEXT_PROMPT, SMALL_EDIT_PROMPT]
+                   if args.scenario == "small-edit" else
                    [DIAGNOSE_PROMPT, FIX_PROMPT])
         history: list[dict[str, Any]] = []
         turns = []
@@ -937,6 +962,8 @@ def child(args: argparse.Namespace) -> int:
                           "readme" if args.scenario == "readme" else
                           "explain" if args.scenario == "explain" else
                           "search" if args.scenario == "search" else
+                          ("inspect" if phase == 0 else "edit")
+                          if args.scenario == "small-edit" else
                           ("diagnose" if phase == 0 else "fix"))
             stream_state["phase"] = phase_name
             stream_state["started"] = time.perf_counter()
@@ -1112,6 +1139,9 @@ def child(args: argparse.Namespace) -> int:
                     "make test" in final_text.casefold()
                     and "unittest" in final_text.casefold()
                 ) if args.scenario == "readme" else None,
+                "response_contains_original_error_marker": (
+                    "invlaid quantity" in final_text.casefold()
+                ) if args.scenario == "small-edit" and phase_name == "inspect" else None,
                 "api_calls": result.get("api_calls") if isinstance(result, dict) else None,
                 "tool_result_count": len(tool_messages),
                 "tool_result_names": [m.get("name") for m in tool_messages],
@@ -1122,7 +1152,7 @@ def child(args: argparse.Namespace) -> int:
                 ),
                 "workspace_changed_after_turn": bool(subprocess.check_output(
                     ["git", "diff", "--name-only"], cwd=args.workspace, text=True,
-                ).splitlines()) if args.scenario == "escalation" else False,
+                ).splitlines()) if args.scenario in {"escalation", "small-edit"} else False,
                 "messages_added": len(turn_messages),
             })
             history = next_history
@@ -1236,7 +1266,7 @@ def main() -> int:
     parser.add_argument("--docker-binary", type=pathlib.Path)
     parser.add_argument("--sandbox-image", default=IMAGE)
     parser.add_argument("--repeats", type=int, default=2)
-    parser.add_argument("--scenario", choices=("read", "readme", "explain", "search", "escalation"), default="read")
+    parser.add_argument("--scenario", choices=("read", "readme", "explain", "search", "escalation", "small-edit"), default="read")
     parser.add_argument("--fixture-layout", choices=("compact", "multifile"), default="compact")
     parser.add_argument("--fixture-case", choices=tuple(FIXTURE_CASES), default="geometry")
     parser.add_argument(
@@ -1391,7 +1421,7 @@ def main() -> int:
                     "model": {"default": MODEL, "provider": "custom",
                               "base_url": f"http://127.0.0.1:{proxy_port}/v1",
                               "ollama_num_ctx": 65536,
-                              "max_tokens": 512 if args.scenario == "escalation" else 192},
+                "max_tokens": 512 if args.scenario in {"escalation", "small-edit"} else 192},
                     "providers": {"custom": {"request_timeout_seconds": 180}},
                     "platform_toolsets": {"api_server": ["file", "terminal"]},
                     "terminal": {
@@ -1489,7 +1519,7 @@ def main() -> int:
                     turn["docker_cli_trace_count"] = len(trace_rows)
                 turn["tool_schema_requests"] = proxy.snapshot()
                 # Keep each turn's provider calls distinct; no content is stored in proxy records.
-                if args.scenario == "escalation":
+                if args.scenario in {"escalation", "small-edit"}:
                     verification = subprocess.run(
                         [docker_bin, "run", "--rm", "--network=none", "-v",
                          f"{workspace}:/workspace", "-w", "/workspace",
@@ -1570,6 +1600,45 @@ def main() -> int:
                 ])
                 summary[f"{stack}_direct_source_read_turns"] = sum(
                     "read_file" in r["tool_result_names"] for r in stack_records
+                )
+        elif args.scenario == "small-edit":
+            def median(values):
+                ordered = sorted(values)
+                middle = len(ordered) // 2
+                if len(ordered) % 2:
+                    return ordered[middle]
+                return (ordered[middle - 1] + ordered[middle]) / 2
+
+            summary.update({
+                "plain_inspection_marker": sum(
+                    bool(t.get("response_contains_original_error_marker"))
+                    for r in records if r["stack"] == "plain" for t in r["turns"]
+                ),
+                "hades_inspection_marker": sum(
+                    bool(t.get("response_contains_original_error_marker"))
+                    for r in records if r["stack"] == "hades" for t in r["turns"]
+                ),
+                "verified_tests_passed": sum(
+                    r.get("independent_verification", {}).get("test_exit_code") == 0
+                    for r in records
+                ),
+                "expected_source_only_changes": sum(
+                    r.get("independent_verification", {}).get("only_expected_source_changed") is True
+                    for r in records
+                ),
+            })
+            for stack in ("plain", "hades"):
+                stack_records = [r for r in records if r["stack"] == stack]
+                summary[f"{stack}_median_task_elapsed_ms"] = median(
+                    [r["elapsed_ms"] for r in stack_records]
+                )
+                summary[f"{stack}_median_model_api_calls_per_task"] = median(
+                    [sum(phase["api_calls"] for phase in r["turns"])
+                     for r in stack_records]
+                )
+                summary[f"{stack}_median_tool_results_per_task"] = median(
+                    [sum(phase["tool_result_count"] for phase in r["turns"])
+                     for r in stack_records]
                 )
         else:
             def median(values):
@@ -1653,7 +1722,7 @@ def main() -> int:
                 "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
                 "scenario": args.scenario,
                 "fixture_layout": args.fixture_layout if args.scenario == "escalation" else None,
-                "fixture_case": args.fixture_case if args.scenario in {"escalation", "explain"} else None,
+                "fixture_case": args.fixture_case if args.scenario in {"escalation", "explain", "small-edit"} else None,
                 "canonical_project_test_recipe": (
                     "make test (python -B -m unittest discover -v)"
                     if args.scenario == "escalation" else None
@@ -1672,6 +1741,7 @@ def main() -> int:
                                ["readme"] if args.scenario == "readme" else
                                ["explain"] if args.scenario == "explain" else
                                ["search"] if args.scenario == "search" else
+                               ["inspect", "edit"] if args.scenario == "small-edit" else
                                ["diagnose", "fix"]),
                 "subject": "synthetic owner identity; private fixture only",
             },
@@ -1683,6 +1753,7 @@ def main() -> int:
                     "independent fixture tests and diff checks are recorded, but this does not qualify larger coding "
                     "tasks, Git commit behavior, or owner preference."
                     if args.scenario == "escalation" else
+                    "Synthetic two-turn error-message edit using the owner corpus follow-up wording; no owner preference is collected." if args.scenario == "small-edit" else
                     "Synthetic README comprehension: run command and test runner markers are recorded without answer text." if args.scenario == "readme" else
                     "Synthetic one-file function explanation: timing, tool use, and response length are recorded; semantic quality is not automated or owner-reviewed." if args.scenario == "explain" else
                     "Synthetic multi-file request-timeout discovery; expected path/value markers are recorded without preserving the answer text."
