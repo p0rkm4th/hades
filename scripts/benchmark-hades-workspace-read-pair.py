@@ -455,7 +455,14 @@ class ProviderProxy(ThreadingHTTPServer):
                     ],
                     "tool_calls": {},
                     "finish_reasons": [],
+                    "first_event_ms": None,
                     "first_content_ms": None,
+                    "first_reasoning_ms": None,
+                    "first_tool_call_delta_ms": None,
+                    "content_delta_count": 0,
+                    "reasoning_delta_count": 0,
+                    "reasoning_content_bytes": 0,
+                    "tool_call_delta_count": 0,
                     "usage": None,
                     "status": None,
                 }
@@ -536,12 +543,32 @@ class ProviderProxy(ThreadingHTTPServer):
                                 if data and data != b"[DONE]":
                                     try:
                                         event = json.loads(data)
+                                        if row["first_event_ms"] is None:
+                                            row["first_event_ms"] = round((time.perf_counter() - started) * 1000, 1)
                                         choices = event.get("choices") or []
                                         choice = choices[0] if choices else {}
                                         delta = choice.get("delta") or {}
-                                        if delta.get("content") and row["first_content_ms"] is None:
-                                            row["first_content_ms"] = round((time.perf_counter() - started) * 1000, 1)
-                                        for call in delta.get("tool_calls") or []:
+                                        content = delta.get("content")
+                                        if isinstance(content, str) and content:
+                                            row["content_delta_count"] += 1
+                                            if row["first_content_ms"] is None:
+                                                row["first_content_ms"] = round((time.perf_counter() - started) * 1000, 1)
+                                        # Count private reasoning payloads without retaining them.
+                                        reasoning = next((
+                                            delta.get(key) for key in ("reasoning", "reasoning_content", "analysis")
+                                            if isinstance(delta.get(key), str) and delta.get(key)
+                                        ), None)
+                                        if reasoning is not None:
+                                            row["reasoning_delta_count"] += 1
+                                            row["reasoning_content_bytes"] += len(reasoning.encode("utf-8", errors="replace"))
+                                            if row["first_reasoning_ms"] is None:
+                                                row["first_reasoning_ms"] = round((time.perf_counter() - started) * 1000, 1)
+                                        calls = delta.get("tool_calls") or []
+                                        if calls:
+                                            row["tool_call_delta_count"] += len(calls)
+                                            if row["first_tool_call_delta_ms"] is None:
+                                                row["first_tool_call_delta_ms"] = round((time.perf_counter() - started) * 1000, 1)
+                                        for call in calls:
                                             index = call.get("index", 0)
                                             target = row["tool_calls"].setdefault(index, "")
                                             target += (call.get("function") or {}).get("name", "")
