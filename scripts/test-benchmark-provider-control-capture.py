@@ -176,6 +176,29 @@ with tempfile.TemporaryDirectory() as directory:
     assert PAIR_MODULE.read_safe_recall_timings(
         diagnostic_log, timing_offset
     ) == ([], timing_offset)
+    residency = PAIR_MODULE.summarize_runtime_residency(
+        [
+            {
+                "name": "interactive-private-model", "context_length": 65536,
+                "size_vram": 12_000_000_000, "secret": "PRIVATE_SYNTHETIC_FACT",
+            },
+            {
+                "name": "memory-private-model", "context_length": 4096,
+                "size_vram": 9_000_000_000,
+            },
+        ],
+        "interactive-private-model", "memory-private-model",
+    )
+    assert residency == {
+        "interactive_model_loaded": True,
+        "interactive_context_length": 65536,
+        "interactive_vram_bytes": 12_000_000_000,
+        "memory_model_loaded": True,
+        "memory_model_context_length": 4096,
+        "memory_model_vram_bytes": 9_000_000_000,
+    }, residency
+    assert "private-model" not in json.dumps(residency)
+    assert "PRIVATE_SYNTHETIC_FACT" not in json.dumps(residency)
     assert PAIR_MODULE.safe_turn_record({
         "turn": "fixture", "recall_diagnostics": diagnostics,
         "answer": "PRIVATE_SYNTHETIC_FACT",
