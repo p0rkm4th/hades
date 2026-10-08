@@ -143,10 +143,27 @@ observation consolidation. See the [v0.10.2 strategy configuration]
 and [item schema]
 (https://github.com/vectorize-io/hindsight/blob/v0.10.2/hindsight-clients/python/hindsight_client_api/models/memory_item.py).
 
+I exercised the API on a fresh disposable v0.10.2 bank using its pinned Python
+client. The bank accepted two named strategies (`fast` → `chunks`, `semantic`
+→ `concise`) and one asynchronous item under each strategy. Both writes
+completed; Hindsight became idle after 9.14 seconds and made one `/api/chat`
+generation for the pair. Both synthetic facts appeared at rank 1 in `world`
+recall; observation-only recall returned no items, as expected with
+observations disabled. Eight bounded recall probes took 15.9–32.8 ms each.
+This confirms upstream per-item strategy selection and shows that the chunk
+item needed no chat generation while the semantic item retained extraction.
+It does not establish correction ordering, durable-memory coverage, or an
+owner-facing latency win. The current Hermes plugin still omits the item
+`strategy`, and HADES has not selected or configured these named bank
+strategies. No HADES code or production setting changed. The staging log also
+reported that the Qwen3:14b extraction model's training context is 40,960
+tokens while the runtime requested 65,536; the probe inputs were much smaller,
+so this result does not establish general 65,536-context behavior.
+
 Keep the production retain/observation settings unchanged. The next candidate
-should preserve useful semantic observations while avoiding an LLM-sized
-background task on the interactive runtime, or define a more selective policy
-for turns whose durable facts need immediate retention. Any such policy must
-pass correction, stale-value, implicit recall, and fresh-session checks before
-changing the pending-response behavior. No owner preference was assigned, and
-neither candidate configuration is promoted.
+should thread a narrow strategy choice through the actual HADES retain path
+and initialize bank strategy configuration, then replay correction ordering,
+stale-value rejection, implicit recall, and fresh-session checks against a
+fresh Hindsight volume. It must preserve relevant observation behavior before
+changing production policy. No owner preference was assigned, and neither
+candidate configuration is promoted.
