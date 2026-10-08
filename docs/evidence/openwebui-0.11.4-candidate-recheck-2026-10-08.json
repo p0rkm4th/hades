@@ -12,13 +12,13 @@
     "upstream_base_image": "ghcr.io/open-webui/open-webui@sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f"
   },
   "test_source": {
-    "commit": "fd8a83bb8bd2d7fd86a28a48b02dd7c5f853b809",
+    "commit": "c572fabf1eb6fee67674d81db1cadbfd01e44201",
     "sha256": {
-      "scripts/test-openwebui-docx-preview-security.sh": "dede4732f51ee1299d3e693665a7a61e420756bb991d6012210738d341ed1d8a",
-      "scripts/test-open-webui-candidate.sh": "70739e27da8c399a06faaad2f889b9948298c6cbbfd670a977f7a6eee4522938",
+      "scripts/test-openwebui-docx-preview-security.sh": "6589233f75cebf71fb5dacb3dbb9c4daf02c9a413805b05fe5908be27ad05847",
+      "scripts/test-open-webui-candidate.sh": "9a75b9463e7bf1dc4612149b998a4a4f31391680cbd422ed520165acafd615c9",
       "scripts/test-open-webui-populated-migration.sh": "08707fa9d852da83a22eb273327dd419981ecbea12cea08cbcc09108fca852f2",
       "scripts/verify-open-webui-candidate-artifact.sh": "973a1a04f956b5e2fbebfc006e7388daaa11dfaf600676bf60ccfb9220f90be1",
-      "scripts/test-open-webui-candidate-artifact-contract.sh": "c5c8e9052d7165b9122b9c2e767381c71956663c1f651dc29304d65f31e79e28",
+      "scripts/test-open-webui-candidate-artifact-contract.sh": "8a59eb7f1f2c0d4fa3e6004e5aaa5365162734d2a557bbc1d6082e932ced42e8",
       "scripts/test-openwebui-disabled-role-session.sh": "6eb81187b70ca5b9b5f77d0132544beb8349f3efac093c067261e601b18e6a4b"
     }
   },
@@ -37,14 +37,32 @@
     "image": "hades-open-webui:0.11.1-hades-failure-honest-3",
     "image_id": "sha256:75df14805e0e95157166b9672678e2285ce2ae58126c71232d68d6a95a30b629",
     "result": "expected_failure",
-    "finding": "DOCX embedded script executed in about:srcdoc and one unsafe javascript link remained"
+    "finding": "DOCX embedded script executed in about:srcdoc, stole the separately signed-in household user token, read that user\u2019s private canary file, and left one unsafe javascript link"
   },
   "results": {
     "docx_preview_security": {
       "result": "pass",
       "preview_rendered": true,
       "active_content_executed": false,
-      "unsafe_javascript_links": 0
+      "unsafe_javascript_links": 0,
+      "cross_user_token_theft": "blocked",
+      "household_private_file_read": false,
+      "positive_control": {
+        "image_id": "sha256:75df14805e0e95157166b9672678e2285ce2ae58126c71232d68d6a95a30b629",
+        "result": "pass",
+        "active_content_executed": true,
+        "household_token_stolen": true,
+        "separately_owned_private_canary_read": true,
+        "unsafe_javascript_links": 1
+      },
+      "candidate_result": {
+        "image_id": "sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469",
+        "result": "pass",
+        "active_content_executed": false,
+        "household_token_stolen": false,
+        "separately_owned_private_canary_read": false,
+        "unsafe_javascript_links": 0
+      }
     },
     "candidate_acceptance": {
       "result": "pass",
@@ -74,12 +92,12 @@
     }
   },
   "scope": {
-    "docx_preview_actor_scope": "one synthetic uploader previewed their own document; shared-file cross-user session-token theft path is not directly exercised",
+    "docx_preview_actor_scope": "Synthetic owner shared a malicious DOCX chat with a separate household account through an explicit read grant; the household account cloned the shared chat and previewed the attachment. On the 0.11.1 positive control, same-origin script read the household session token and used it to retrieve a separately owned private text canary. The exact pinned 0.11.4 candidate blocked execution and retrieval.",
     "synthetic_data_only": true,
     "production_changed": false,
     "production_backup_or_cutover_proven": false,
     "owner_dogfood_completed": false,
-    "nyx_review": "Accepted the synthetic staging result; production hold retained. Cross-user shared-file exploit flow and exact production backup/cutover are still unproven.",
+    "nyx_review": "Earlier review accepted the staging result but flagged the missing full cross-user exploit flow; this follow-up closes that staging proof gap. Production hold remains: exact production backup/cutover and direct owner acceptance are still unproven.",
     "temporary_test_containers_volumes_and_networks_removed": true
   }
 }
