@@ -1248,6 +1248,14 @@ def require_measured_runtime_context(calls: list[dict[str, Any]],
         )
 
 
+def deterministic_hades_memory_turn(turn: str) -> bool:
+    """Turn names whose HADES path is intentionally deterministic and model-free."""
+    return turn in {
+        "core09_save", "core09_recall", "core09_recall_after_idle",
+        "save", "correction",
+    } or turn.startswith("supplement_")
+
+
 def measure_turn(gateway: dict[str, Any], proxy_module, turn: str, session: str,
                  messages: list[dict[str, str]], max_tokens: int = 512):
     proxy = gateway["proxy"]
@@ -1262,10 +1270,18 @@ def measure_turn(gateway: dict[str, Any], proxy_module, turn: str, session: str,
         row = {"status": None, "ttft_ms": None, "total_ms": None, "answer": ""}
         error = type(exc).__name__
     calls = proxy.snapshot()[before:]
-    require_measured_runtime_context(
-        calls, CONTEXT_LENGTH,
-        allow_evicted_after_generation=(gateway["stack"] == "hades"),
-    )
+    if calls:
+        require_measured_runtime_context(
+            calls, CONTEXT_LENGTH,
+            allow_evicted_after_generation=(gateway["stack"] == "hades"),
+        )
+    elif (
+        gateway["stack"] != "hades"
+        or not deterministic_hades_memory_turn(turn)
+        or row.get("status") != 200
+        or not row.get("answer")
+    ):
+        raise RuntimeError("turn completed without a provider generation outside a deterministic HADES memory route")
     answer = row.get("answer", "")
     if isinstance(answer, str) and answer.startswith("CSV finance read ("):
         answer = "[redacted: unrelated owner-finance response; routed from synthetic benchmark turn]"
