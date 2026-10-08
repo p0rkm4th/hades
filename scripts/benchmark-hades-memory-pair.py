@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Run a counterbalanced local PLAIN/HADES ordinary-chat and memory comparison.
 
-The runner reuses the owner-subset aggregate provider proxy. It records request
-shape, timings, model generations, tool schemas/calls, token use, and synthetic
-answers; it never stores credentials or non-synthetic conversation data.
+The runner reuses the owner-subset aggregate provider proxy. It records aggregate
+request shape, timings, model generations, tool schemas/calls, and token use;
+assistant response text stays in memory and is never printed or persisted.
 """
 from __future__ import annotations
 
@@ -25,6 +25,8 @@ import time
 import urllib.parse
 import urllib.request
 from typing import Any
+
+from benchmark_child_environment import benchmark_child_environment
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -92,6 +94,60 @@ def configure_hades_scope(env: dict[str, str], scope: str) -> dict[str, str]:
     elif scope != "household":
         raise ValueError("unsupported synthetic HADES scope")
     return env
+
+
+def safe_turn_record(turn: dict[str, Any]) -> dict[str, Any]:
+    """Keep only aggregate turn metrics; never persist model or provider text."""
+    return {
+        key: turn[key]
+        for key in ("turn", "status", "ttft_ms", "total_ms", "metrics", "error_type")
+        if key in turn
+    }
+
+
+def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Serialize outcomes without answers, prompts, schemas, or raw provider calls."""
+    sample_keys = (
+        "sample", "first_stack", "hindsight_idle_after_hades", "runtime_normalization",
+    )
+    outcome_keys = (
+        "fresh_recall_expected_marker_present", "fresh_recall_stale_mango_present",
+        "implicit_recall_expected_marker_present", "implicit_recall_stale_mango_present",
+        "automatic_recall_expected_marker_present", "automatic_retained_fact_visible",
+        "automatic_retained_fact_visible_after_drain",
+        "automatic_recall_after_idle_expected_marker_present",
+        "core09_recall_expected_marker_present",
+    )
+    safe_samples = []
+    for sample in repetitions:
+        safe_sample = {key: sample[key] for key in sample_keys if key in sample}
+        safe_stacks: dict[str, Any] = {}
+        for stack, stack_data in sample.get("stacks", {}).items():
+            safe_stack = {
+                "turns": [safe_turn_record(row) for row in stack_data.get("turns", [])]
+            }
+            for key in outcome_keys:
+                if key in stack_data:
+                    safe_stack[key] = stack_data[key]
+            for key in (
+                "automatic_retention_state_before_recall",
+                "memory_supplement_visibility_after_drain",
+            ):
+                if key in stack_data:
+                    safe_stack[key] = stack_data[key]
+            if "memory_supplement" in stack_data:
+                safe_stack["memory_supplement"] = [
+                    {
+                        key: row[key]
+                        for key in ("case_id", "answer_contains_expected_marker", "continuity_only")
+                        if key in row
+                    }
+                    for row in stack_data["memory_supplement"]
+                ]
+            safe_stacks[stack] = safe_stack
+        safe_sample["stacks"] = safe_stacks
+        safe_samples.append(safe_sample)
+    return safe_samples
 
 
 def synthetic_memory_bank(scope: str) -> str:
@@ -820,7 +876,7 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
 
     (home / "config.yaml").write_text(yaml.safe_dump(config, sort_keys=False))
     os.chmod(home / "config.yaml", 0o600)
-    env = os.environ.copy()
+    env = benchmark_child_environment()
     env.update(
         {
             "HOME": str(home),
@@ -950,32 +1006,6 @@ def write_incomplete_artifact(output: pathlib.Path, *, source_revision: str,
                               safe_failure_detail: str | None = None) -> pathlib.Path:
     """Persist partial safe metrics without arbitrary exception or conversation text."""
     partial_path = output.with_name(f"{output.stem}-incomplete{output.suffix}")
-    safe_repetitions = []
-    for sample in repetitions:
-        safe_sample = {
-            key: sample.get(key)
-            for key in (
-                "sample", "first_stack", "hindsight_idle_after_hades",
-                "runtime_normalization",
-            )
-            if key in sample
-        }
-        safe_sample["stacks"] = {}
-        for stack, stack_result in sample.get("stacks", {}).items():
-            safe_stack = {
-                key: value for key, value in stack_result.items()
-                if key != "turns"
-            }
-            safe_stack["turns"] = [
-                {
-                    key: turn.get(key)
-                    for key in ("turn", "status", "ttft_ms", "total_ms", "metrics", "error_type")
-                    if key in turn
-                }
-                for turn in stack_result.get("turns", [])
-            ]
-            safe_sample["stacks"][stack] = safe_stack
-        safe_repetitions.append(safe_sample)
     artifact = {
         "schema_version": 1,
         "classification": "incomplete; no preference or stack comparison",
@@ -984,7 +1014,7 @@ def write_incomplete_artifact(output: pathlib.Path, *, source_revision: str,
             "stage": failure_stage,
             "error_type": error_type if error_type.isidentifier() else "UnknownError",
         },
-        "repetitions": safe_repetitions,
+        "repetitions": safe_repetitions(repetitions),
         "hindsight_ollama_calls": hindsight_calls,
         "preference_bucket": "UNASSIGNED; no owner dogfood",
     }
@@ -1189,17 +1219,6 @@ def main() -> int:
                     [{"role": "user", "content": "Where did I say I moved?"}],
                 )
                 rows.append(automatic_recall)
-                if stack == "hades":
-                    # Synthetic-only human review aid: emit the answer to the
-                    # runner's live console, but never persist it in the
-                    # benchmark artifact. Marker counts alone cannot show
-                    # whether the retain-visibility caution was followed.
-                    print(json.dumps({
-                        "sample": sample + 1,
-                        "stack": stack,
-                        "turn": "automatic_recall_review",
-                        "answer": automatic_recall["answer"],
-                    }, ensure_ascii=False), flush=True)
                 automatic_marker_present = (
                     "denver" in automatic_recall["answer"].casefold()
                 )
@@ -1221,14 +1240,7 @@ def main() -> int:
 
                 if args.automatic_only:
                     sample_result["stacks"][stack] = {
-                        "turns": [
-                            {
-                                **row,
-                                **({"answer": "[omitted from focused artifact]"}
-                                   if "answer" in row else {}),
-                            }
-                            for row in rows
-                        ],
+                        "turns": [safe_turn_record(row) for row in rows],
                         "automatic_recall_expected_fact": "Denver",
                         "automatic_recall_expected_marker_present": automatic_marker_present,
                         "automatic_retained_fact_visible": automatic_fact_visible,
@@ -1262,14 +1274,12 @@ def main() -> int:
                             "sample": sample + 1,
                             "stack": stack,
                             "turn": "automatic_recall_after_idle_review",
-                            "answer": after_idle_recall["answer"],
                             "expected_marker_present": after_idle_marker,
                             "total_ms": after_idle_recall["total_ms"],
                         }, ensure_ascii=False), flush=True)
-                        sample_result["stacks"][stack]["turns"].append({
-                            **after_idle_recall,
-                            "answer": "[omitted from focused artifact]",
-                        })
+                        sample_result["stacks"][stack]["turns"].append(
+                            safe_turn_record(after_idle_recall)
+                        )
                         sample_result["stacks"][stack][
                             "automatic_recall_after_idle_expected_marker_present"
                         ] = after_idle_marker
@@ -1535,15 +1545,6 @@ def main() -> int:
                         if "memory_supplement_visibility_after_drain" in sample["stacks"][stack]
                     )
 
-        hades_log_paths = [
-            gateways["hades"]["log_path"],
-            gateways["hades"]["home"] / "logs" / "agent.log",
-        ]
-        hades_gateway_log = "\n".join(
-            path.read_text(encoding="utf-8", errors="replace")
-            for path in hades_log_paths
-            if path.is_file()
-        )
         artifact = {
             "schema_version": 1,
             "date": time.strftime("%Y-%m-%d"),
@@ -1596,9 +1597,9 @@ def main() -> int:
                 "hindsight_model_quantization": hindsight_model_row.get("details", {}).get("quantization_level"),
                 "hindsight_llm_max_concurrent": args.hindsight_llm_max_concurrent,
                 "assistant_response_storage": (
-                    "Automatic-only mode prints the HADES automatic-recall answer for live review, then redacts every turn answer before artifact persistence."
+                    "Assistant response text is evaluated only in memory and is never printed or persisted; aggregate marker metrics are retained."
                     if args.automatic_only else
-                    "Full-sequence mode retains synthetic assistant answers in repetition rows; it is only suitable for synthetic benchmark content."
+                    "Assistant response text is evaluated only in memory and is never printed or persisted; aggregate marker metrics are retained."
                 ),
                 "reasoning": "disabled per request",
                 "max_output_tokens": 512,
@@ -1645,13 +1646,7 @@ def main() -> int:
             "summary_by_stack_and_turn": by_stack_turn,
             "memory_supplement_summary": supplement_summary,
             "hindsight_ollama_calls": bridge.snapshot() if bridge is not None else [],
-            "hades_timing_trace": [
-                line.strip()
-                for line in hades_gateway_log.splitlines()
-                if "HADES timing stage=" in line
-                or "HADES memory recall score diagnostics" in line
-            ],
-            "repetitions": repetitions,
+            "repetitions": safe_repetitions(repetitions),
             "preference_bucket": "UNASSIGNED; no owner dogfood",
             "semantic_correctness_review": "UNSCORED: expected-marker presence is descriptive only and is not semantic correctness; human review is required.",
             "limitations": [
