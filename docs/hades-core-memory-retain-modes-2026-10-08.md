@@ -68,9 +68,16 @@ readiness or retrieval-quality problem.
 
 ## Next evidence needed
 
-- Inspect why a fact visible in the Hindsight bank is not reliably returned by
-  semantic prefetch, including the selected result types and the active retain
-  operation state. Capture only aggregate ranks, types, scores, and timings.
+- The one-pass safe score diagnostic is recorded in
+  [`hades-core-recall-score-diagnostic-20261008.json`](../benchmarks/hades-core-recall-score-diagnostic-20261008.json).
+  It reproduced a 28.9-second immediate HADES miss versus a 1.8-second PLAIN
+  hit; after a 43.6-second idle drain, HADES found the marker in 10.0 seconds.
+  The top observation's semantic score was 0.629 while its final score was
+  0.021. This points to score fusion or operation timing/state for further
+  investigation, but one sample does not identify the cause. Ordinary-turn
+  timings were also single samples and do not establish a latency win.
+- Repeat the safe diagnostic while varying the recall type and operation
+  state. Preserve only aggregate ranks, types, scores, and timings.
 - Compare concise extraction with observations disabled separately from raw
   `chunks`; do not infer that switching off observations is equivalent to
   disabling fact extraction.
