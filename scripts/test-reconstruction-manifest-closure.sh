@@ -24,7 +24,7 @@ sources = {
     'Hermes': ['deploy/templates/hermes.service.in', 'hermes/config.yaml.example', 'scripts/install-hermes-artifact.sh'],
     'Agent Zero': ['deploy/agent-zero.compose.yaml', 'integrations/agent-zero-mcp'],
     'SearXNG': ['deploy/templates/searxng.compose.yaml', 'searxng/settings.yml'],
-    'HADES policy/assets/adapters': ['hermes/sitecustomize.py', 'hermes/workspace.py', 'integrations/homelab_views.py', 'integrations/grocy-mcp/launch.py', 'integrations/grocy-mcp/requirements.lock', 'integrations/grocy-recipe-authoring/server.py', 'integrations/agent-zero-mcp/server.py', 'webui/hades-theme.css', 'webui/hades-theme.js', 'webui/finance-upload.js', 'webui/receipt-upload.js', 'integrations/homelab-readonly', 'integrations/public-research/server.py', 'integrations/public-research/research.py', 'integrations/browser-access/proxy.py', 'integrations/browser-access/research_reader.py', 'integrations/browser-access/read-only-network.js'],
+    'HADES policy/assets/adapters': ['hermes/sitecustomize.py', 'hermes/session_disconnect_compat.py', 'hermes/workspace.py', 'integrations/homelab_views.py', 'integrations/grocy-mcp/launch.py', 'integrations/grocy-mcp/requirements.lock', 'integrations/grocy-recipe-authoring/server.py', 'integrations/agent-zero-mcp/server.py', 'webui/hades-theme.css', 'webui/hades-theme.js', 'webui/finance-upload.js', 'webui/receipt-upload.js', 'integrations/homelab-readonly', 'integrations/public-research/server.py', 'integrations/public-research/research.py', 'integrations/browser-access/proxy.py', 'integrations/browser-access/research_reader.py', 'integrations/browser-access/read-only-network.js'],
 }
 components = {item['component']: item for item in manifest['components']}
 if set(components) != set(sources):
@@ -39,6 +39,7 @@ if open_webui.get('required_assets') != [
 layer = components['HADES policy/assets/adapters']
 expected_layer_files = [
     'overlay/sitecustomize.py',
+    'overlay/session_disconnect_compat.py',
     'overlay/workspace.py',
     'overlay/homelab_views.py',
     'adapters/grocy-mcp-launch.py',
@@ -53,6 +54,7 @@ if layer.get('installed_layer_files') != expected_layer_files:
     raise SystemExit('FAIL installed HADES layer file list is incomplete or out of order')
 expected_digest_sources = [
     'hermes/sitecustomize.py',
+    'hermes/session_disconnect_compat.py',
     'hermes/workspace.py',
     'integrations/homelab_views.py',
     'integrations/grocy-mcp/launch.py',
@@ -71,6 +73,7 @@ doctor = Path('scripts/hades-doctor.sh').read_text(encoding='utf-8')
 validator = Path('scripts/validate-install.sh').read_text(encoding='utf-8')
 expected_source_digest_call = (
     'hades_layer_digest "$repo_dir/hermes/sitecustomize.py" '
+    '"$repo_dir/hermes/session_disconnect_compat.py" '
     '"$repo_dir/hermes/workspace.py" '
     '"$repo_dir/integrations/homelab_views.py" '
     '"$repo_dir/integrations/grocy-mcp/launch.py" '

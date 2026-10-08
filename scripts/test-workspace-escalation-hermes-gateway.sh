@@ -27,6 +27,7 @@ mkdir -m 700 "$work/home" "$work/hermes" "$work/overlay" "$work/bin"
 mkdir -m 700 "$work/hermes/plugins"
 cp -a "$stage_root/HADES_HOME/plugins/hindsight" "$work/hermes/plugins/hindsight"
 cp "$repo_dir/hermes/sitecustomize.py" "$work/overlay/sitecustomize.py"
+cp "$repo_dir/hermes/session_disconnect_compat.py" "$work/overlay/session_disconnect_compat.py"
 cp "$repo_dir/hermes/workspace.py" "$work/overlay/workspace.py"
 # This stub qualifies the workspace path and services only Hermes' runtime preflight. It creates
 # no containers and executes no workspace command; the test qualifies gateway/session tool

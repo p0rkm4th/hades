@@ -13442,6 +13442,23 @@ try:
     # Open WebUI production requests use Hermes' gateway runner rather than
     # HermesCLI. Patch the gateway mixin too; otherwise the UI silently keeps
     # constructing the deep-provider agent even though the CLI resolver is routed.
+    def _hades_install_gateway_disconnect_compat():
+        """Patch the loaded API server without importing it during startup."""
+        import sys
+        api_server = sys.modules.get("gateway.platforms.api_server")
+        if api_server is None:
+            return False
+        try:
+            from session_disconnect_compat import install as _hades_install_disconnect_compat
+            status = _hades_install_disconnect_compat(api_server, _hades_logger)
+        except Exception:
+            _hades_logger.exception("HADES Hermes disconnect compatibility hook failed")
+            return False
+        if status in {"native", "installed"}:
+            _hades_logger.debug("Hermes gateway disconnect handling status=%s", status)
+            return True
+        return False
+
     def _hades_install_gateway_route_patch():
         """Patch the gateway after Hermes finishes its circular imports."""
         import sys
@@ -13457,9 +13474,8 @@ try:
             except Exception:
                 turn_module = None
         turn_runner = getattr(turn_module, "TurnRunner", None) if turn_module else None
+        _hades_install_gateway_disconnect_compat()
         targets = [target for target in (gateway_mixin, gateway_runner) if target is not None]
-        if not targets and turn_runner is None:
-            return False
         installed = False
         for target in targets:
             if getattr(target, "_hades_fast_route", False):
@@ -13524,7 +13540,9 @@ try:
     def _hades_gateway_patch_watcher():
         import time
         for _ in range(60):
-            if _hades_install_gateway_route_patch():
+            route_ready = _hades_install_gateway_route_patch()
+            disconnect_ready = _hades_install_gateway_disconnect_compat()
+            if route_ready and disconnect_ready:
                 return
             time.sleep(0.25)
     _hades_threading.Thread(target=_hades_gateway_patch_watcher, daemon=True).start()

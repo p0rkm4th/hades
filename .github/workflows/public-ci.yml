@@ -211,6 +211,8 @@ jobs:
         run: bash scripts/test-reconstruction-manifest.sh
       - name: Check reconstruction manifest source closure
         run: bash scripts/test-reconstruction-manifest-closure.sh
+      - name: Check Hermes disconnect hard-cancel compatibility
+        run: python3 scripts/test-hermes-disconnect-compat.py
       - name: Check reconstructed Grocy MCP registration and secret boundary
         run: bash scripts/test-grocy-mcp-reconstruction-contract.sh
       - name: Check clean reconstruction contract
