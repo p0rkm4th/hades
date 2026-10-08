@@ -67,3 +67,37 @@ contains metric-only records and passed the public redaction check. The
 benchmark control now rejects a mismatched loaded context, and the public
 metric serializer renames count/role fields that the conservative scanner
 would otherwise mistake for raw content.
+
+## Expanded conversation replay
+
+On 2026-10-07, the seeded `conversation-v1` subset ran for three repeats
+through the isolated Ollama 0.40.0 endpoint on `127.0.0.1:11435`. Both arms
+used Hermes 0.21.5 source `f97608f178d1ffeca59860195ab7da295f7c8e5f`, the same
+Qwen3.6 35B Q4_K_M digest above, verified 65,536-token loaded context,
+disabled reasoning, and a provider-enforced 512-token output cap. The request
+order alternated by case and repeat. API toolsets were empty in both profiles.
+
+| Measure | PLAIN STACK | HADES |
+|---|---:|---:|
+| Content-bearing turns | 48/48 | 48/48 |
+| Median TTFT | 1,025 ms | 1,054 ms |
+| Median total latency | 1,792 ms | 1,545 ms |
+| Provider generations | 48 | 46 |
+| Tool schemas exposed / calls emitted | 0 / 0 | 0 / 0 |
+| Median input tokens | 743.5 | 754 |
+
+On all three repeats of `core-08`, HADES returned content on the pantry to
+traceback topic-switch turn without a provider request; PLAIN used one. The
+artifact retains that count but no response text, so it does not establish
+whether either response was more useful or natural. Across this small synthetic
+subset HADES had 29 ms higher median TTFT and 247 ms lower median total time.
+That aggregate is sensitive to output length and the direct HADES responses;
+it is not a general latency win or an owner-preference result. No owner review
+or task-quality grading was collected.
+
+The metrics-only artifact
+[`hades-core-owner-conversation-v1-paired-20261007.json`](../benchmarks/hades-core-owner-conversation-v1-paired-20261007.json)
+records the exact Hermes/model/runtime versions and confirms the loaded
+context. It passed the public benchmark-redaction and owner-subset artifact
+checks. This remains synthetic chat-only evidence; memory, tools, coding,
+Open WebUI, production parity, and direct Scotty dogfood are still unqualified.
