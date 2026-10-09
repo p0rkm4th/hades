@@ -59,6 +59,14 @@ def sample_route(value):
 value, return_line = MODULE.call_with_return_line(sample_route, "ok")
 assert value == "ok"
 assert return_line == sample_route.__code__.co_firstlineno + 1
+MODULE.require_provider_capture(0, [])
+MODULE.require_provider_capture(2, [{"elapsed_ms": 100}])
+try:
+    MODULE.require_provider_capture(1, [])
+except RuntimeError as exc:
+    assert "refusing to publish an unprofiled workspace comparison" in str(exc)
+else:
+    raise AssertionError("missing provider telemetry must fail closed")
 agent.tools = None
 assert MODULE.workspace_catalog_snapshot(agent) == {
     "valid_workspace_tools": ["read_file", "terminal"],

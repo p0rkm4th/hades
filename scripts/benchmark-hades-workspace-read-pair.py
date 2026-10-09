@@ -307,6 +307,19 @@ def common_prefix_byte_count(left: bytes, right: bytes) -> int:
     return index
 
 
+def require_provider_capture(api_calls: Any, provider_metrics: list[dict[str, Any]]) -> None:
+    """Reject a model-backed replay when its provider proxy captured no requests."""
+    try:
+        call_count = int(api_calls or 0)
+    except (TypeError, ValueError):
+        call_count = 0
+    if call_count > 0 and not provider_metrics:
+        raise RuntimeError(
+            f"provider telemetry missing for {call_count} reported model API calls; "
+            "refusing to publish an unprofiled workspace comparison"
+        )
+
+
 def local_json(
     url: str,
     payload: dict[str, Any] | None = None,
@@ -1697,6 +1710,9 @@ def main() -> int:
                             continue
                     turn["docker_cli_trace_count"] = len(trace_rows)
                 turn["tool_schema_requests"] = proxy.snapshot()
+                require_provider_capture(
+                    turn.get("api_calls"), turn["tool_schema_requests"]
+                )
                 # Keep each turn's provider calls distinct; no content is stored in proxy records.
                 if args.scenario in {"escalation", "small-edit", "small-edit-verify", "workflow-to-commit"}:
                     verification = subprocess.run(
