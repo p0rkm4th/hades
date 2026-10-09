@@ -11,8 +11,11 @@ extraction remain preferred for ordinary research and recipe pages.
 | Field | Value |
 |---|---|
 | Package | @playwright/mcp |
-| Version | 0.0.81 |
-| npm integrity | sha512-c4eVex1nS53IzLHlwAm0J9ZISDTvA7RndFX8oVcQOrmvIrKSkByazpq79lZHWJuWTB7Gpk0sLBQoRepyIgmneA== |
+| Version | 0.0.83 |
+| npm integrity | sha512-oNcl+Ae2/IAjhfPeP46BfIkSakfmprY+aOtkv5MjrQ4lPav4/yNtPhL0iq8SlIM90oApWgBDUxaNKvktazUKOg== |
+| Release source | [Microsoft Playwright MCP v0.0.83](https://github.com/microsoft/playwright-mcp/releases/tag/v0.0.83) |
+| Browser build | Chrome for Testing 155.0.8059.12, Playwright Chromium revision 1247 |
+| Staging browser setup | `npx --yes @playwright/mcp@0.0.83 install-browser chrome-for-testing` |
 | Authority | anonymous browser profile by default |
 | Privileged profile | separate, explicit owner-only staging input |
 
@@ -49,7 +52,30 @@ No credential, privileged profile, or external side-effecting workflow was
 changed by this evaluation. The bounded anonymous actor path is accepted;
 privileged browsing remains deferred.
 
-## Current upstream decision — 2026-09-15
+## Current upstream decision — 2026-10-08
+
+The HADES candidate now pins Microsoft Playwright MCP 0.0.83. The npm registry
+SHA-512 integrity was independently checked against the published tarball and
+matches the staged artifact row above. The official v0.0.83 release fixes stale
+WebMCP tab/frame binding, browser-close download crashes, and page-load dialog
+timeouts; it also supports WebMCP tools with Chromium 155+.
+
+The anonymous proxy policy adapter and DNS pinning/HTTP-write rejection checks
+passed. The direct disposable Playwright fixture also passed with the Chromium
+155 build required by 0.0.83; it verified dynamic page reading, no submission
+before an explicit action, and exactly one submission after that action. A
+separate real MCP round trip through the HADES proxy passed the upstream tool
+filter, blocked page-script POST, denied an unapproved redirect, and confirmed
+the private-target override was fixture-only. The candidate changes no
+privileged profile or production service; deployment artifact parity and
+owner-visible browser acceptance remain open.
+
+The package launch does not install its browser build. Any deployment candidate
+must provision the matching Chromium 155 / revision 1247 artifact once and
+verify its source/checksum before enabling the proxy; installing it on every
+browser request would add avoidable latency.
+
+## Decision rationale — 2026-09-15
 
 The current Playwright MCP core surface includes navigation, clicks, form
 filling, typing, JavaScript evaluation, file upload, and tab operations in
