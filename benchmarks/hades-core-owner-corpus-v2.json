@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "HADES Core Comparative Owner Corpus — Seed v2 with memory supplement",
-  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The latest five-turn coding workflow replay on Hermes 0.21.5 (not requalified on the 0.21.6 candidate) passes independent tests and clean commits on both stacks after repairing workspace follow-up routing. HADES still misses the explicit diff-review turn in one of two runs. Stable five-schema workspace exposure is the current Hermes 0.21.6 coding-escalation candidate after a focused cache-reuse replay; broad task and owner-preference qualification remain open.",
+  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The latest Hermes 0.21.6 five-turn coding workflow replay passed tests and clean commits on both stacks in 2/2 runs after context-aware commit routing and schema/authorization alignment. HADES still did not use a tool in either explicit diff-review turn; the diff was inspected during commit in both runs. HADES median task time was 66.67s vs PLAIN 55.35s. This is synthetic partial evidence; no owner preference or broad coding qualification.",
   "source_note": "Cases are hand-authored sanitized paraphrases, not verbatim transcripts. The Sept. 24 owner dogfood report documents real prompt families including recipe availability, pantry expiry, spaghetti inventory/list, homelab/network/model/backup status, restaurants, subscriptions, weekend affordability, lease prepayment, restock, savings target, and morning briefing. Replace/add cases only from owner-approved evidence; never copy secrets, financial records, private memories, or household content into this file. The five v2 memory supplement cases are synthetic examples authored for policy coverage; they are not transcripts or claims about Scotty.",
   "comparison_contract": {
     "same_model_and_quantization": true,
@@ -1573,5 +1573,51 @@
     "metrics_record": "benchmarks/hades-core-owner-workflow-hermes0216-empty-catalog-20261008.json",
     "report": "docs/hades-core-owner-workflow-hermes0216-followup-fix-2026-10-08.md",
     "status": "root cause reproduced; fixed in 04c05fdb and passed a matched post-fix replay; explicit diff-review turn remains an open friction item"
+  },
+  "latest_workspace_workflow_to_commit_hermes0216_current_source": {
+    "case_ids": [
+      "core-25",
+      "core-26",
+      "core-28",
+      "core-31"
+    ],
+    "source_revision": "99e58598ce620458a0551de5787de8e7b9f92ef0",
+    "classification": "two order-balanced synthetic five-turn Hermes 0.21.6 workspace workflows after contextual commit routing and matching read-only schemas to authorization; both stacks passed tests and made clean source-only commits in 2/2; HADES made no tool call in either explicit diff-review turn and inspected diff during commit in 2/2; no owner preference or human answer-quality review",
+    "runtime": "Hermes 0.21.6, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable sandbox image",
+    "order": "PLAIN then HADES; HADES then PLAIN",
+    "median_task_seconds": {
+      "plain": 55.3477,
+      "hades": 66.67225
+    },
+    "median_model_api_calls_per_task": {
+      "plain": 15.5,
+      "hades": 15.0
+    },
+    "median_tool_results_per_task": {
+      "plain": 13.0,
+      "hades": 10.5
+    },
+    "focused_tests_passed": {
+      "plain": 2,
+      "hades": 2
+    },
+    "verified_clean_commits": {
+      "plain": 2,
+      "hades": 2
+    },
+    "explicit_diff_review_tool_calls": {
+      "plain": 2,
+      "hades": 0
+    },
+    "diff_inspected_during_commit_turn": {
+      "plain": 0,
+      "hades": 2
+    },
+    "owner_preference": "UNASSIGNED",
+    "limitations": "Two synthetic pairs on one small typo fixture; direct Hermes AIAgent route, not Open WebUI/deployed parity, human answer quality, or Scotty preference. HADES was slower at the median by 11.32s; model generation variance remains.",
+    "metrics_record": "benchmarks/hades-core-owner-workflow-hermes0216-99e58598.json",
+    "report": "docs/hades-core-owner-workflow-hermes0216-diff-review-schema-replay-2026-10-08.md",
+    "current_candidate_qualification": "PARTIAL: contextual commits and clean tests pass 2/2; schema mismatch/invalid tool attempt eliminated by exposing only authorized read/search tools on read-only turns; dedicated diff-review behavior still fails 2/2.",
+    "next_action": "Investigate the smallest safe, supported way to provide read-only Git diff evidence to the review turn; keep shell mutation unavailable; then repeat the matched workflow."
   }
 }
