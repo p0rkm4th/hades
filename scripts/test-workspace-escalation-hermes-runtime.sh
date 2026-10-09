@@ -155,6 +155,19 @@ os.environ['HADES_WORKSPACE_ENABLED']='false'
 assert not workspace_policy.is_workspace_request('Explain this traceback first.')
 assert not workspace_policy.is_workspace_request('Why is this Python test failing?')
 assert workspace_policy.is_workspace_request('Fix it.', [{'role':'user','content':'Why is this Python test failing?'}])
+coding_history=[
+ {'role':'user','content':'Fix the typo in validation.py.'},
+ {'role':'assistant','content':'I fixed and tested the file.'},
+]
+assert workspace_policy.is_workspace_request(
+ 'Commit the change we just verified with a clear message.', coding_history
+)
+assert not workspace_policy.is_workspace_request(
+ 'Commit the change we just verified with a clear message.'
+)
+assert not workspace_policy.is_workspace_request(
+ 'Commit this color choice to memory.', coding_history
+)
 assert workspace_policy.is_workspace_request('Read README.md and explain how to run it.')
 os.environ['HADES_WORKSPACE_ENABLED']='true'
 assert workspace_policy.is_workspace_read_only_request('Why is this Python test failing?')
@@ -162,6 +175,9 @@ assert workspace_policy.is_workspace_read_only_request('Explain this function.')
 assert workspace_policy.is_workspace_diagnosis_request('Why is this Python test failing?')
 assert not workspace_policy.is_workspace_diagnosis_request('Read answer.txt and tell me the exact token.')
 assert not workspace_policy.is_workspace_read_only_request('Fix it.')
+assert not workspace_policy.is_workspace_read_only_request(
+ 'Commit the change we just verified with a clear message.'
+)
 workspace_search_schema=next(t['function']['parameters'] for t in workspace_policy.get_workspace_tools(read_only=True)
  if t['function']['name']=='search_files')
 assert 'target' in workspace_search_schema['required'],workspace_search_schema

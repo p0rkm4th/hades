@@ -62,6 +62,11 @@ _FOLLOW_UP = re.compile(
     r"edit it|run it|test it|commit it|continue|keep going|do that instead)\s*[.!?]*\s*$",
     re.IGNORECASE,
 )
+_CONTEXTUAL_WORKSPACE_ACTION = re.compile(
+    r"\b(?:fix|repair|edit|modify|change|write|patch|run|test|commit)\b"
+    r"[^.!?\n]{0,80}\b(?:this|that|the)\s+(?:change|fix|work|result)\b",
+    re.IGNORECASE,
+)
 _PRIOR_WORK = re.compile(
     r"\b(?:file|repo(?:sitory)?|workspace|code|python|javascript|typescript|"
     r"traceback|stack trace|test(?:s)?|failing|failure|bug|error|exception|"
@@ -102,7 +107,7 @@ def workspace_enabled() -> bool:
 
 
 def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None = None) -> bool:
-    """Recognize explicit file/code actions and terse continuations of them."""
+    """Recognize explicit file/code actions and contextual action continuations."""
     text = str(user_message or "")
     if _DIRECT_ACTION.search(text) or _PATH.search(text.strip()):
         return True
@@ -113,7 +118,10 @@ def is_workspace_request(user_message: str, history: list[dict[str, Any]] | None
         _CODE_EXPLANATION.search(text) or _CODE_FAILURE_DIAGNOSIS.search(text)
     ):
         return True
-    if not _FOLLOW_UP.fullmatch(text):
+    if not (
+        _FOLLOW_UP.fullmatch(text)
+        or _CONTEXTUAL_WORKSPACE_ACTION.search(text)
+    ):
         return False
     recent = history[-6:] if isinstance(history, list) else []
     return any(
