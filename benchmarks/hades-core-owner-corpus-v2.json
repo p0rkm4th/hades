@@ -1518,29 +1518,33 @@
       "core-28",
       "core-31"
     ],
-    "source_revision": "5c87f371ebc6ce0a57e8b69ff318e04b8cb88890",
-    "classification": "two order-balanced synthetic five-turn workspace workflows on Hermes 0.21.6; both HADES runs passed independent focused tests and source-scope checks but failed to make a clean commit; no owner preference or human answer-quality review",
+    "source_revision": "04c05fdb1d2a3aebd63b757ac6302cf12d858048",
+    "classification": "two order-balanced synthetic five-turn workspace workflows after context-aware action follow-up fix; HADES and PLAIN passed independent tests, changed only intended source, and made clean commits in both runs; HADES did not call a diff tool in the dedicated review turn and inspected diff during the commit turn in both runs; no owner preference or human answer-quality review",
     "runtime": "Hermes 0.21.6, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable sandbox image",
     "order": "PLAIN then HADES; HADES then PLAIN",
     "median_task_seconds": {
-      "plain": 46.36525,
-      "hades": 51.93655
+      "plain": 42.21705,
+      "hades": 45.6807
     },
     "median_provider_generations_per_task": {
-      "plain": 12,
-      "hades": 12
+      "plain": 11,
+      "hades": 12.5
     },
     "median_tool_outputs_per_task": {
-      "plain": 7.5,
-      "hades": 16
+      "plain": 6,
+      "hades": 15.5
     },
     "explicit_diff_review_calls": {
       "plain": 1,
       "hades": 0
     },
+    "diff_inspections_during_commit_turn": {
+      "plain": 0,
+      "hades": 2
+    },
     "verified_clean_commits": {
       "plain": 2,
-      "hades": 0
+      "hades": 2
     },
     "independent_tests_passed": {
       "plain": 2,
@@ -1551,10 +1555,23 @@
       "hades": 2
     },
     "owner_preference": "UNASSIGNED",
-    "limitations": "Two synthetic pairs on one small typo fixture; direct Hermes AIAgent route, no human answer-quality review, Open WebUI persistence, deployed parity, or Scotty preference. HADES skipped explicit diff review and failed to commit in both runs; PLAIN committed both.",
-    "metrics_record": "benchmarks/hades-core-owner-workflow-to-commit-hermes0216-20261008.json",
-    "report": "docs/hades-core-owner-workflow-hermes0216-2026-10-08.md",
-    "current_candidate_qualification": "NOT QUALIFIED: current Hermes 0.21.6 replay reproduced HADES review/commit failure in 2/2 runs; historical Hermes 0.21.5 success does not qualify this candidate.",
-    "next_action": "Diagnose the repeated HADES commit-turn tool loop from sanitized phase metrics, then repeat on a committed fix."
+    "limitations": "Two synthetic pairs on one small typo fixture; direct Hermes AIAgent route, no human answer-quality review, Open WebUI persistence, deployed parity, or Scotty preference.",
+    "metrics_record": "benchmarks/hades-core-owner-workflow-hermes0216-followup-fix-20261008.json",
+    "report": "docs/hades-core-owner-workflow-hermes0216-followup-fix-2026-10-08.md",
+    "current_candidate_qualification": "PARTIAL: contextual commit follow-up and clean commits passed in 2/2; dedicated diff-review sequencing, broader tasks, and owner preference remain unqualified.",
+    "next_action": "Investigate safe native read-only Git diff capability and replay the focused review turn; retain ordinary shell denial on read-only turns."
+  },
+  "workspace_followup_empty_catalog_reproduction_hermes0216": {
+    "source_revision": "16d340775f55e9fc56fc809fadea46d18c817a1d",
+    "classification": "two matched Hermes 0.21.6 HADES workflows failed to commit; at rejected follow-up calls both executable workspace names and workspace schemas were empty",
+    "verified_clean_commits": {
+      "plain": 2,
+      "hades": 0
+    },
+    "catalog_diagnostics": "At every captured HADES rejected workspace call in the commit phase, present workspace schemas and valid workspace names were both empty. The workspace classifier separately returned false for the natural commit follow-up despite recent coding history.",
+    "owner_preference": "UNASSIGNED",
+    "metrics_record": "benchmarks/hades-core-owner-workflow-hermes0216-empty-catalog-20261008.json",
+    "report": "docs/hades-core-owner-workflow-hermes0216-followup-fix-2026-10-08.md",
+    "status": "root cause reproduced; fixed in 04c05fdb and passed a matched post-fix replay; explicit diff-review turn remains an open friction item"
   }
 }
