@@ -12201,6 +12201,13 @@ try:
                 self.ephemeral_system_prompt += "\n\n" + _hades_native_workspace_diff_context(
                     _workspace_path
                 )
+                # The authenticated native diff is already present as bounded
+                # evidence. Force a model answer without tools so stale tool
+                # calls in the conversation cannot escape the read-only lane.
+                self.request_overrides = {
+                    **original_request_overrides,
+                    "tool_choice": "none",
+                }
             try:
                 _workspace_scope_token = _hades_set_terminal_scope(
                     _hades_workspace_terminal_policy(_workspace_path, _workspace_image)
@@ -12347,7 +12354,10 @@ try:
                     expected_turn_id=getattr(self, "_current_turn_id", None),
                     expected_user_message=user_message,
                 )
-                if not _hades_has_workspace_tool_result(_workspace_turn_messages):
+                if (
+                    not _hades_has_workspace_tool_result(_workspace_turn_messages)
+                    and not _workspace_diff_review
+                ):
                     workspace_result = (
                         "I couldn't verify a workspace tool result for that request. "
                         "I have not confirmed that any file was read or changed."

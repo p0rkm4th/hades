@@ -337,6 +337,45 @@ assert inspection_catalog == [
 ],inspection_catalog
 assert get_terminal_scope() is None,get_terminal_scope()
 print('PASS read-only workspace schema matches its read/search authorization')
+def git_workspace(*args):
+ return run(['git','-C',str(workspace),*args],check=True,capture_output=True,text=True)
+git_workspace('init','-q')
+git_workspace('config','user.name','HADES test')
+git_workspace('config','user.email','hades-test@example.invalid')
+(workspace/'review.py').write_text('def value():\n    return 1\n')
+git_workspace('add','answer.txt','review.py')
+git_workspace('commit','-qm','workspace baseline')
+(workspace/'review.py').write_text('def value():\n    return 2\n')
+diff_review_agent=create_agent('synthetic-owner','synthetic-diff-review-chat')
+diff_review_prompt='Show me exactly what changed and whether anything unrelated is in the diff.'
+diff_review_history=[
+ {'role':'user','content':'Fix the typo in review.py.'},
+ {'role':'assistant','content':'I fixed and tested review.py.'},
+]
+def native_diff_review(agent,user_message,*args,**kwargs):
+ agent._current_turn_id='synthetic-diff-review-turn'
+ assert set(agent.valid_tool_names)=={'read_file','search_files'},agent.valid_tool_names
+ assert {t['function']['name'] for t in agent.tools}=={'read_file','search_files'}
+ assert agent.request_overrides.get('tool_choice')=='none',agent.request_overrides
+ prompt=agent.ephemeral_system_prompt
+ assert '<workspace_diff>' in prompt,prompt
+ assert 'return 1' in prompt and 'return 2' in prompt,prompt
+ assert 'untrusted evidence' in prompt.lower(),prompt
+ assert 'do not edit files or run commands' in prompt.lower(),prompt
+ response='The diff changes review.py from return 1 to return 2; no other changes are shown.'
+ return {'final_response':response,
+  'messages':[{'role':'user','content':user_message},{'role':'assistant','content':response}],
+  'current_turn_user_idx':0,'turn_id':agent._current_turn_id,
+  'api_calls':1,'completed':True}
+hades._hades_original_run_conversation=native_diff_review
+diff_review=diff_review_agent.run_conversation(
+ diff_review_prompt,task_id='synthetic-diff-review-chat',
+ conversation_history=diff_review_history,
+)
+assert 'return 1 to return 2' in diff_review.get('final_response',''),diff_review
+assert diff_review_agent.request_overrides=={},diff_review_agent.request_overrides
+assert get_terminal_scope() is None,get_terminal_scope()
+print('PASS explicit diff review uses bounded native Git evidence with tools disabled')
 calls=[]
 terminal_results=[]
 action_deltas=[]
