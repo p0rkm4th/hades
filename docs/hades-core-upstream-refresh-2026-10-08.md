@@ -35,6 +35,38 @@ Sources rechecked: [Open WebUI releases](https://github.com/open-webui/open-webu
 [Ollama releases](https://github.com/ollama/ollama/releases), and
 [Hindsight releases](https://github.com/vectorize-io/hindsight/releases).
 
+## Open WebUI 0.11.4 release-specific review — 2026-10-09
+
+The official [0.11.4 release](https://github.com/open-webui/open-webui/releases/tag/v0.11.4)
+is still the newest stable version. Its release notes identify behavior that
+matters to HADES's multi-user and workspace gates:
+
+- Sign-out and token revocation now close existing live connections. The
+  disposable HADES candidate check currently proves that a disabled account's
+  existing token is rejected on a later HTTP request; it does not exercise a
+  live browser/WebSocket session during sign-out or revocation.
+- Role mapping from an identity provider is now applied at sign-in, and
+  unreadable role claims fail closed. Candidate acceptance should verify the
+  actual HADES/LLDAP mapping instead of inferring it from group membership.
+- Terminal connections recheck access periodically and disconnect after
+  access is removed or the account is deactivated. No HADES candidate test yet
+  proves this behavior for an already-open terminal session.
+- Terminal-provided skills are automatically discoverable, and the terminal's
+  `AGENTS.md` reaches the model. This may reduce HADES-owned workspace
+  instruction and discovery behavior, but only after checking filesystem
+  scope, subject isolation, tool permissions, and whether the HADES workspace
+  contract still holds. Do not enable the terminal path just to claim native
+  capability.
+- The release notes include security fixes for knowledge attachment access,
+  cross-base directory access, connection model listings, and sign-in role
+  mapping. Preserve these in the candidate regression set.
+
+The candidate remains **HOLD for production**. Existing synthetic acceptance
+covers private chat isolation/persistence, LDAP group synchronization on a new
+login, account removal, and database restore rollback. The new live-session,
+role-claim, and open-terminal revocation checks are explicit remaining gates;
+owner-visible acceptance and external build provenance also remain open.
+
 ## Owner-facing and core runtime components
 
 | Component | HADES production / candidate record | Latest stable checked 2026-10-08 | Decision |
