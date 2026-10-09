@@ -31,6 +31,13 @@ assert MODULE.workspace_catalog_snapshot(agent) == {
     "valid_workspace_tools": ["read_file", "terminal"],
     "present_workspace_tool_schemas": ["read_file", "search_files"],
 }
+def sample_route(value):
+    return value
+
+
+value, return_line = MODULE.call_with_return_line(sample_route, "ok")
+assert value == "ok"
+assert return_line == sample_route.__code__.co_firstlineno + 1
 agent.tools = None
 assert MODULE.workspace_catalog_snapshot(agent) == {
     "valid_workspace_tools": ["read_file", "terminal"],

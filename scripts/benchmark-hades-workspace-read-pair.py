@@ -158,6 +158,34 @@ def workspace_catalog_snapshot(agent: Any) -> dict[str, Any]:
     }
 
 
+def call_with_return_line(function: Any, *args: Any, **kwargs: Any) -> tuple[Any, int | None]:
+    """Return the final source line for one target function without tracing its callers."""
+    target = getattr(getattr(function, "__func__", function), "__code__", None)
+    if target is None:
+        return function(*args, **kwargs), None
+    returned_at: list[int] = []
+    previous_trace = sys.gettrace()
+
+    def local_trace(frame: Any, event: str, _arg: Any):
+        if event == "return":
+            returned_at.append(frame.f_lineno)
+        return local_trace
+
+    def global_trace(frame: Any, event: str, _arg: Any):
+        if event == "call" and frame.f_code is target:
+            frame.f_trace_lines = False
+            frame.f_trace_opcodes = False
+            return local_trace
+        return None
+
+    sys.settrace(global_trace)
+    try:
+        result = function(*args, **kwargs)
+    finally:
+        sys.settrace(previous_trace)
+    return result, (returned_at[-1] if returned_at else None)
+
+
 FIXTURE_CASES = {
     "geometry": {
         "source": "geometry.py",
@@ -1022,11 +1050,18 @@ def child(args: argparse.Namespace) -> int:
             workspace_head_before = subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=args.workspace, text=True,
             ).strip() if args.scenario == "workflow-to-commit" else None
-            result = agent.run_conversation(
-                user_message=prompt,
-                task_id=task_id,
-                conversation_history=prior_history,
-            )
+            run_arguments = {
+                "user_message": prompt,
+                "task_id": task_id,
+                "conversation_history": prior_history,
+            }
+            if args.stack == "hades":
+                result, route_return_line = call_with_return_line(
+                    agent.run_conversation, **run_arguments
+                )
+            else:
+                result = agent.run_conversation(**run_arguments)
+                route_return_line = None
             messages = result.get("messages") if isinstance(result, dict) else []
             messages = messages if isinstance(messages, list) else []
             # Hermes may return the full transcript or just the latest turn. Keep
@@ -1207,6 +1242,7 @@ def child(args: argparse.Namespace) -> int:
                 ) if args.scenario in {"small-edit", "small-edit-verify"}
                 and phase_name == "inspect" else None,
                 "api_calls": result.get("api_calls") if isinstance(result, dict) else None,
+                "hades_route_return_line": route_return_line,
                 "tool_result_count": len(tool_messages),
                 "tool_result_names": [m.get("name") for m in tool_messages],
                 "sanitized_tool_results": safe_tool_results,
