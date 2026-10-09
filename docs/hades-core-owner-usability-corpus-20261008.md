@@ -20,13 +20,13 @@ The earlier stable-catalog candidate removed an invalid schema mismatch but had 
 
 A five-repeat prompt-guidance candidate then instructed HADES to read `README.md` or `Makefile` directly when the test command was unknown. This reduced median HADES model calls to 11 versus 14 for PLAIN and focused-test terminal calls to 6 versus 9, but HADES remained slower (61.35s versus 52.11s) and committed only 4/5 tasks versus PLAIN's 5/5. The model still searched or reread during three of five HADES focused-test turns. It also attempted a terminal call during one read-only diff-review turn; Hermes rejected the attempt with the executable allowlist empty. The prompt candidate is rejected. See the [five-repeat experiment report](hades-core-owner-workspace-guidance-five-repeats-20261009.md).
 
-The [environment-cache paired rerun](hades-core-owner-workspace-env-cache-rerun-20261009.md)
-passes both synthetic workflows in each stack and shows HADES with fewer model
-calls and tool results, but HADES remains 8.61 seconds slower by median. The
-per-call environment reuse reduces the persistent-profile collector to about
-0.49 seconds; the full runner's fresh PM home still adds a cold initialization
-before diff review. A shared prewarmed PM-state comparison is the next latency
-measurement. The current result is not owner preference evidence.
+The first [environment-cache paired rerun](hades-core-owner-workspace-env-cache-rerun-20261009.md)
+used a fresh package-manager home in each arm and is useful as a cold-start
+profile. The follow-up [persistent-PM rerun](hades-core-owner-workspace-persistent-pm-rerun-20261009.md)
+kept an isolated prewarmed package store across arms: both stacks passed both
+commits, while HADES remained 7.17 seconds slower by median. HADES used more
+tool results, with repeated discovery during focused tests and extra terminal
+work around one commit. Neither run provides owner preference evidence.
 
 The corpus remains a testing instrument. It does not establish that HADES is preferred, and direct Scotty dogfood remains a release gate.
 

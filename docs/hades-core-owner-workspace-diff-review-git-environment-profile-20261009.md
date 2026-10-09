@@ -92,6 +92,11 @@ remained slower by median. That runner still initializes a fresh PM home per
 arm. This profile does not establish Scotty's preference,
 and no deployed service was changed.
 
+The [persistent-PM rerun](hades-core-owner-workspace-persistent-pm-rerun-20261009.md)
+separates that cold initialization from task timing. It confirms the collector
+adapter is no longer the dominant cost; remaining HADES taxes are in the
+focused-test and commit turns.
+
 The benchmark runner records only static helper/command names, counts, and
 elapsed milliseconds for this instrumentation; it does not record helper
 arguments, paths, prompts, or returned diff content.
