@@ -8834,12 +8834,6 @@ try:
             recall_kwargs["tags_match"] = self._recall_tags_match
         if self._recall_types:
             recall_kwargs["types"] = self._recall_types
-        # The upstream Hindsight API can include source chunks in recall
-        # results. Its Hermes provider does not expose this option; keep the
-        # adapter opt-in because chunks mode is a plain-retrieval profile,
-        # not a general memory-quality setting.
-        if bool(getattr(self, "_config", {}).get("include_chunks", False)):
-            recall_kwargs["include_chunks"] = True
         try:
             response = self._run_hindsight_operation(
                 lambda client: client.arecall(**recall_kwargs)
@@ -8872,6 +8866,19 @@ try:
         except Exception as exc:
             record_prefetch_diagnostic("error", error=exc)
             return ""
+
+    def _hades_disable_unused_prefetch_queue(memory_provider):
+        """Disable Hermes' queued recall when HADES replaces its consumer.
+
+        HADES performs a synchronous current-query recall in ``prefetch``.
+        Hermes' retained-result queue is only consumed by the upstream
+        ``prefetch`` implementation, so leaving ``queue_prefetch`` enabled
+        duplicates work and its result is discarded.
+        """
+        def _unused_prefetch_result(query, *, session_id=""):
+            return None
+
+        memory_provider.queue_prefetch = _unused_prefetch_result
 
     def _hades_memory_tools(self):
         if self._memory_mode == "context":
@@ -9181,6 +9188,42 @@ try:
                         "owner", "household"
                     }
                 if memory_scope in {"owner", "household"}:
+                    if os.environ.get("HADES_MEMORY_SCORE_DIAGNOSTICS") == "1":
+                        original_do_recall = memory_provider._do_recall
+
+                        def _hades_diagnostic_queued_recall(
+                            query, _original=original_do_recall
+                        ):
+                            started = time.perf_counter()
+                            try:
+                                result = _original(query)
+                            except Exception as exc:
+                                _hades_logger.info(
+                                    "HADES queued prefetch diagnostics status=error "
+                                    "results=0 elapsed_ms=%.1f error=%s",
+                                    (time.perf_counter() - started) * 1000,
+                                    type(exc).__name__,
+                                )
+                                raise
+                            count = (
+                                result[1]
+                                if isinstance(result, tuple)
+                                and len(result) > 1
+                                and isinstance(result[1], int)
+                                else 0
+                            )
+                            _hades_logger.info(
+                                "HADES queued prefetch diagnostics status=completed "
+                                "results=%d elapsed_ms=%.1f error=none",
+                                count,
+                                (time.perf_counter() - started) * 1000,
+                            )
+                            return result
+
+                        # _hades_prefetch performs its own current-query recall;
+                        # this wrapper measures only Hermes' inherited background
+                        # queue_prefetch work, without logging the query or result.
+                        memory_provider._do_recall = _hades_diagnostic_queued_recall
                     # Bind HADES' synchronous current-query prefetch helper;
                     # the upstream tools-only mode otherwise suppresses
                     # prefetch and makes recall depend on model tool choice.
@@ -9188,6 +9231,10 @@ try:
                     memory_provider.prefetch = _hades_prefetch.__get__(
                         memory_provider, type(memory_provider)
                     )
+                    if isinstance(
+                        memory_provider, _hindsight.HindsightMemoryProvider
+                    ):
+                        _hades_disable_unused_prefetch_queue(memory_provider)
             _hades_logger.info(
                 "Hindsight bank selected from trusted scope: scope=%s subject_present=%s",
                 memory_scope or "denied", bool(subject),

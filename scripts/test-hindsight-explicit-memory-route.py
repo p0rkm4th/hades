@@ -28,6 +28,7 @@ FUNCTIONS = {
         "_hades_ensure_memory_bank",
         "_hades_direct_memory_response",
         "_hades_prefetch",
+        "_hades_disable_unused_prefetch_queue",
     }
 }
 REQUIRED_FUNCTIONS = {
@@ -37,6 +38,7 @@ REQUIRED_FUNCTIONS = {
     "_hades_ensure_memory_bank",
     "_hades_direct_memory_response",
     "_hades_prefetch",
+    "_hades_disable_unused_prefetch_queue",
 }
 if FUNCTIONS.keys() != REQUIRED_FUNCTIONS:
     raise SystemExit(f"missing Hindsight functions: {REQUIRED_FUNCTIONS - FUNCTIONS.keys()}")
@@ -143,6 +145,7 @@ exec(compile(ast.Module(
         FUNCTIONS["_hades_ensure_memory_bank"],
         FUNCTIONS["_hades_direct_memory_response"],
         FUNCTIONS["_hades_prefetch"],
+        FUNCTIONS["_hades_disable_unused_prefetch_queue"],
     ],
     type_ignores=[],
 ), "sitecustomize.py", "exec"), namespace)
@@ -176,10 +179,13 @@ class FakePrefetchProvider:
 
     def __init__(self):
         self.semantic_calls = []
-        self._config = {}
+        self.queued_prefetch_calls = []
 
     def _run_hindsight_operation(self, operation):
         return operation(FakeSemanticClient(self.semantic_calls))
+
+    def queue_prefetch(self, query, *, session_id=""):
+        self.queued_prefetch_calls.append((query, session_id))
 
 
 prefetch = namespace["_hades_prefetch"].__get__(
@@ -198,13 +204,9 @@ assert prefetch("### Task:\nGenerate a concise title summarizing the chat histor
 assert prefetch_provider.semantic_calls == [], prefetch_provider.semantic_calls
 assert prefetch("Tell me about the restaurant I liked") == ""
 assert len(prefetch_provider.semantic_calls) == 1, prefetch_provider.semantic_calls
-assert "include_chunks" not in prefetch_provider.semantic_calls[-1]
-prefetch_provider._config["include_chunks"] = True
-assert prefetch("Tell me what I said about that trip") == ""
-assert prefetch_provider.semantic_calls[-1]["include_chunks"] is True
-prefetch_provider._config["include_chunks"] = False
-assert prefetch("Tell me about that trip again") == ""
-assert "include_chunks" not in prefetch_provider.semantic_calls[-1]
+namespace["_hades_disable_unused_prefetch_queue"](prefetch_provider)
+prefetch_provider.queue_prefetch("private query", session_id="private session")
+assert prefetch_provider.queued_prefetch_calls == []
 old_urlopen = urllib.request.urlopen
 old_endpoint = os.environ.get("HADES_HINDSIGHT_URL")
 urllib.request.urlopen = fake_urlopen

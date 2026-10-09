@@ -36,7 +36,11 @@ with tempfile.TemporaryDirectory(prefix="hades-memory-log-contract-") as directo
         "2026-10-09 INFO HADES prefetch diagnostics "
         "status=skipped results=0 types=none reason=explicit_memory_route error=none\n"
         "2026-10-09 INFO HADES prefetch diagnostics "
-        "status=error results=0 types=none reason=none error=TimeoutError\n",
+        "status=error results=0 types=none reason=none error=TimeoutError\n"
+        "2026-10-09 INFO HADES queued prefetch diagnostics "
+        "status=completed results=2 elapsed_ms=18.5 error=none query=private-fact\n"
+        "2026-10-09 INFO HADES queued prefetch diagnostics "
+        "status=error results=0 elapsed_ms=oops error=/private/path\n",
         encoding="utf-8",
     )
     rows, offset = MODULE.read_safe_explicit_list_diagnostics(log_path)
@@ -55,6 +59,11 @@ with tempfile.TemporaryDirectory(prefix="hades-memory-log-contract-") as directo
          "result_types": [], "error_type": "TimeoutError"},
     ], prefetch_rows
     assert prefetch_offset == log_path.stat().st_size
+    queued_rows, queued_offset = MODULE.read_safe_hades_queued_prefetch_diagnostics(log_path)
+    assert queued_rows == [
+        {"status": "completed", "result_count": 2, "elapsed_ms": 18.5},
+    ], queued_rows
+    assert queued_offset == log_path.stat().st_size
 
 class FakeResponse(io.BytesIO):
     def __enter__(self):

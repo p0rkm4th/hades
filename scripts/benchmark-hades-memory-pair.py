@@ -282,6 +282,53 @@ def read_safe_hades_prefetch_diagnostics(log_path: pathlib.Path, offset: int = 0
     return rows, next_offset
 
 
+def read_safe_hades_queued_prefetch_diagnostics(log_path: pathlib.Path, offset: int = 0):
+    """Read aggregate outcomes from Hermes' inherited background prefetch."""
+    marker = "HADES queued prefetch diagnostics "
+    rows = []
+    try:
+        with log_path.open("rb") as stream:
+            stream.seek(max(0, offset))
+            while True:
+                raw_line = stream.readline()
+                if not raw_line:
+                    break
+                line = raw_line.decode("utf-8", errors="replace")
+                start = line.find(marker)
+                if start < 0:
+                    continue
+                fields = dict(re.findall(
+                    r"([a-z_]+)=([A-Za-z0-9_.,:-]+)",
+                    line[start + len(marker):],
+                ))
+                status = fields.get("status")
+                count = fields.get("results")
+                elapsed = fields.get("elapsed_ms")
+                if status not in {"completed", "error"} or not count or not count.isdecimal():
+                    continue
+                if elapsed is None:
+                    continue
+                try:
+                    elapsed_ms = float(elapsed)
+                except ValueError:
+                    continue
+                if not math.isfinite(elapsed_ms) or elapsed_ms < 0:
+                    continue
+                row: dict[str, Any] = {
+                    "status": status,
+                    "result_count": int(count),
+                    "elapsed_ms": round(elapsed_ms, 1),
+                }
+                error = fields.get("error")
+                if status == "error" and error and error.isidentifier():
+                    row["error_type"] = error
+                rows.append(row)
+            next_offset = stream.tell()
+    except OSError:
+        return [], offset
+    return rows, next_offset
+
+
 def read_safe_recall_timings(log_path: pathlib.Path, offset: int = 0):
     """Read allowlisted automatic-recall timing fields, never log text fields."""
     marker = "HADES timing stage=automatic_recall "
@@ -1217,7 +1264,6 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
                    hades_recall_budget: str,
                    hades_prefer_observations: bool,
                    hades_retain_sync: bool,
-                   hades_include_chunks: bool,
                    capture_recall_diagnostics: bool = False):
     executable = hermes_executable(hermes_root)
     provider_port = proxy_module.unused_port()
@@ -1268,7 +1314,6 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
             "bank_id": "hades-synthetic",
             "recall_budget": hades_recall_budget,
             "retain_async": not hades_retain_sync,
-            "include_chunks": hades_include_chunks,
         }
         if hades_recall_types == "all":
             hindsight_config["recall_types"] = ["observation", "world", "experience"]
@@ -1551,10 +1596,6 @@ def main() -> int:
         help="test the upstream provider's retain_async=false setting for eligible automatic-memory turns",
     )
     parser.add_argument(
-        "--hades-include-chunks", action="store_true",
-        help="test HADES prefetch with Hindsight's supported include_chunks=true recall option",
-    )
-    parser.add_argument(
         "--hindsight-plain-retrieval", action="store_true",
         help="apply Hindsight's documented single-bank RAG profile (chunks, no observations, vector-only recall stages)",
     )
@@ -1708,7 +1749,6 @@ def main() -> int:
                 ollama, hermes_root, args.hades_scope, args.hades_recall_types,
                 args.hades_recall_budget,
                 args.hades_prefer_observations, args.hades_retain_sync,
-                args.hades_include_chunks,
                 args.capture_recall_diagnostics,
             )
 
@@ -2293,7 +2333,6 @@ def main() -> int:
                 "hades_recall_budget": args.hades_recall_budget,
                 "hades_prefer_observations": args.hades_prefer_observations,
                 "hades_retain_async": not args.hades_retain_sync,
-                "hades_include_chunks": args.hades_include_chunks,
                 "recall_diagnostics_captured": args.capture_recall_diagnostics,
                 "recall_timing_diagnostics_captured": args.capture_recall_diagnostics,
                 "post_idle_recall_type_diagnostic": (
@@ -2344,6 +2383,12 @@ def main() -> int:
             ),
             "hades_prefetch_diagnostics": (
                 read_safe_hades_prefetch_diagnostics(
+                    gateways["hades"]["log_path"]
+                )[0]
+                if args.capture_recall_diagnostics else []
+            ),
+            "hades_queued_prefetch_diagnostics": (
+                read_safe_hades_queued_prefetch_diagnostics(
                     gateways["hades"]["log_path"]
                 )[0]
                 if args.capture_recall_diagnostics else []
