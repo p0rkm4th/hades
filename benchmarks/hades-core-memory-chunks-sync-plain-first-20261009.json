@@ -1,0 +1,917 @@
+{
+  "candidate_provenance": {
+    "disposition": "rejected; temporary overlay was not committed or promoted",
+    "temporary_overlay_sha256": "692692478c64a55338670f7f9f2965ab34ae5ff9766a57484dbda471ccb5e88c",
+    "worktree_base": "f1aaaefed3758f94d4374669efa15f4f39d0e1e4"
+  },
+  "classification": "synthetic local comparative benchmark; no owner preference or release qualification",
+  "date": "2026-10-09",
+  "explicit_memory_list_diagnostics": [],
+  "hades_prefetch_diagnostics": [],
+  "hades_queued_prefetch_diagnostics": [],
+  "hades_recall_diagnostics": [],
+  "hades_recall_timing_diagnostics": [],
+  "hindsight_ollama_calls": [
+    {
+      "elapsed_ms": 4173.8,
+      "eval_count": 3,
+      "generation_controls": {
+        "num_ctx": 8192,
+        "num_predict": 512
+      },
+      "load_duration_ns": 4009778185,
+      "loaded_model_context_length": 8192,
+      "loaded_model_residency": "resident",
+      "loaded_model_size_bytes": 11663814163,
+      "loaded_model_size_vram_bytes": 11663814163,
+      "model": "qwen3:14b",
+      "prompt_eval_count": 20,
+      "request_bytes": 178,
+      "response_bytes": 326,
+      "route": "/api/chat",
+      "status": 200,
+      "stream": false,
+      "total_duration_ns": 4173017408
+    }
+  ],
+  "limitations": [
+    "The model digest is staged local Qwen; this does not prove equality with production model weights.",
+    "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
+    "The owner core-09 recall is measured once immediately after save and again for both stacks after HADES background memory work drains; readiness delay and settled recall are separate outcomes.",
+    "When enabled, the bounded readiness experiment waits only for pending/processing retain operations in the HADES synthetic subject bank; it is not part of the production overlay and its wait is reported separately from response timing.",
+    "Same-session continuity sends a synthetic fact and its follow-up in separate API calls under the same authenticated X-Hermes-Session-Id; cross-session memory and Open WebUI household acceptance are separate gates.",
+    "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
+    "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review."
+  ],
+  "method": {
+    "arm_isolation": "Before measured arms, the runner drains Hindsight warmup work. Before each stack arm, it unloads the extractor, warms and verifies the interactive model at the configured context, and records normalization timings outside measured turns. After every HADES arm, it polls pending/processing operations across every bank in the disposable Hindsight database until two consecutive idle observations; unavailable status or timeout aborts the run. This prevents background work from carrying across counterbalanced arms.",
+    "automatic_retain_readiness_probe": "disabled",
+    "counterbalance": "One paired pass; plain runs first. Repeated comparisons require separate invocations so each gets an empty disposable Hindsight volume.",
+    "data": "The owner core-09 recall wording uses only a synthetic savings target ($3,000). Automatic cross-session Denver fact and favorite-fruit save/correction remain synthetic controls. Temporary homes, container and database volume.",
+    "effective_sampler_capture": "Provider traces persist the actual temperature/top_p fields sent to the common local Ollama runtime; the artifact can be checked for equality.",
+    "hades_bank": "hades-owner",
+    "hades_prefer_observations": false,
+    "hades_provider_path": "separately installed upstream Hindsight provider; local_external mode; loopback disposable service; authenticated subject bank selected by HADES; explicit facts use a chunks bank with local embeddings",
+    "hades_recall_budget": "mid",
+    "hades_recall_types": "all",
+    "hades_retain_async": false,
+    "hades_scope": "owner",
+    "hades_toolset": [],
+    "hermes_ollama_context_configured": 65536,
+    "hermes_version": "Hermes Agent v0.21.6 (2026.9.24) \u00b7 upstream 818c13be",
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight:0.10.3@sha256:b5da1a9aece1f53a15f12821fb1470f358ed6c74dfaa0c4b1a39c3f3ae93e002",
+    "hindsight_inference_accounting": "The local proxy records Hindsight-to-Ollama API route, safe scalar controls, byte counts, response timing, and Ollama usage counters; request/response bodies, prompts, facts, and credentials are never persisted. These background calls are additional HADES inference and are reported separately from user-facing Hermes provider generations.",
+    "hindsight_llm_max_concurrent": 1,
+    "hindsight_model": "qwen3:14b",
+    "hindsight_model_digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+    "hindsight_model_quantization": "Q4_K_M",
+    "hindsight_network_mode": "bridge",
+    "hindsight_ollama_num_ctx": 8192,
+    "hindsight_residency_capture": "After forwarding each Hindsight request response, the proxy samples local Ollama /api/ps and records only the matching model's residency status, context length, total size, and VRAM size. A not_resident or unavailable observation is retained explicitly; the probe occurs after the measured response and is excluded from its elapsed time.",
+    "hindsight_retain_model": "qwen3:14b",
+    "hindsight_retain_model_digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+    "hindsight_retain_model_quantization": "Q4_K_M",
+    "interactive_residency_capture": "The runner samples /api/ps after each automatic retain and immediately before the next read, storing only role-based residency, context length, and VRAM bytes for the interactive and Hindsight models; no model names or response data are retained in this probe.",
+    "max_output_tokens": 512,
+    "measured_context_verification": "The same Ollama OpenAI-compatible chat endpoint must accept a >5k-token probe without a per-request context override, and /api/ps must report the configured context immediately after that probe. Every Hermes provider generation must request the configured context. Runtime /api/ps is sampled at each provider response boundary and retained per generation; when HADES background inference has already evicted the interactive model, the boundary records non-residency. The measured HADES run is then interpreted with the exact-route startup probe and global OLLAMA_CONTEXT_LENGTH setting, while plain turns must remain resident at the target context.",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "model_quantization": "Q4_K_M",
+    "observations_enabled": false,
+    "ollama_loaded_context_after_stack_warmups": 65536,
+    "ollama_version": "0.40.2",
+    "openai_chat_context_probe_loaded_context": 65536,
+    "openai_chat_context_probe_minimum_tokens": 5000,
+    "openai_chat_context_probe_prompt_tokens": 7010,
+    "owner_corpus_case_map": {
+      "core-01": "Hey, how's your morning going?"
+    },
+    "plain_retrieval_profile": true,
+    "plain_toolset": [
+      "memory"
+    ],
+    "post_idle_recall_type_diagnostic": "Not run in focused mode.",
+    "privacy": "Ollama endpoint restricted to loopback; Ollama server launched with OLLAMA_NO_CLOUD=1. Hindsight used Docker bridge networking with its host API published only on loopback and the accounting proxy bound only to the bridge gateway; synthetic benchmark data only.",
+    "reasoning": "disabled per request",
+    "recall_diagnostics_captured": false,
+    "recall_timing_diagnostics_captured": false,
+    "retain_mode": "chunks",
+    "retrieval_score_diagnostics": "For HADES only, opt-in diagnostic logs retain up to eight result ranks, canonical memory types, and numeric retrieval scores; query text, facts, IDs, tags, entities, and subjects are excluded.",
+    "samples": 1,
+    "sequence": [
+      "owner core-01 greeting",
+      "synthetic automatic personal-fact retain/recall"
+    ],
+    "state_scope": "Persistent gateway/home and memory bank within each stack; recall uses a new Hermes session ID.",
+    "stored_text_policy": "Assistant response text is evaluated only in memory and is never printed or persisted; aggregate marker metrics are retained.",
+    "synthetic_case_catalog": {},
+    "user_generation_overrides": {
+      "scope": "all Hermes provider generations in both benchmark arms",
+      "temperature": 0.1,
+      "top_p": 0.95
+    },
+    "warmups": {
+      "hades": {
+        "provider_generations": 1,
+        "status": 200
+      },
+      "hindsight_idle": {
+        "elapsed_ms": 1010.3,
+        "idle": true,
+        "last_state": {
+          "bank_count": 0,
+          "banks": {},
+          "operations": {
+            "pending": {},
+            "processing": {}
+          },
+          "stats": {
+            "operations_by_status": {},
+            "pending_operations": 0
+          }
+        },
+        "polls": 2,
+        "proxy_active_requests": 0
+      },
+      "plain": {
+        "provider_generations": 1,
+        "status": 200
+      },
+      "runtime_normalization": {
+        "hades": {
+          "additional_extractor_models_were_resident_before_reset": 0,
+          "extractor_resident": false,
+          "extractor_shares_interactive_model": false,
+          "extractor_was_resident_before_reset": false,
+          "interactive_context_length": 65536,
+          "interactive_model_resident": true,
+          "interactive_size_vram_bytes": 12912427006,
+          "interactive_warmup_ms": 194.5,
+          "memory_model_unload_calls": 0,
+          "memory_model_unload_total_ms": 0,
+          "normalization_calls_excluded_from_turn_timing": true
+        },
+        "plain": {
+          "additional_extractor_models_were_resident_before_reset": 0,
+          "extractor_resident": false,
+          "extractor_shares_interactive_model": false,
+          "extractor_was_resident_before_reset": true,
+          "interactive_context_length": 65536,
+          "interactive_model_resident": true,
+          "interactive_size_vram_bytes": 12912427006,
+          "interactive_warmup_ms": 7795.5,
+          "memory_model_unload_calls": 1,
+          "memory_model_unload_total_ms": 1.0,
+          "normalization_calls_excluded_from_turn_timing": true
+        }
+      }
+    }
+  },
+  "preference_bucket": "UNASSIGNED; no owner dogfood",
+  "repetitions": [
+    {
+      "first_stack": "plain",
+      "hindsight_idle_after_hades": {
+        "elapsed_ms": 1028.5,
+        "idle": true,
+        "last_state": {
+          "bank_count": 1,
+          "banks": {
+            "hades-owner": {
+              "pending": {},
+              "processing": {}
+            }
+          },
+          "operations": {
+            "pending": {},
+            "processing": {}
+          },
+          "stats": {
+            "operations_by_status": {},
+            "pending_operations": 0
+          }
+        },
+        "polls": 2,
+        "proxy_active_requests": 0
+      },
+      "runtime_after_automatic_retain": {
+        "hades": {
+          "additional_memory_models_loaded": 0,
+          "interactive_context_length": 65536,
+          "interactive_model_loaded": true,
+          "interactive_vram_bytes": 12912427006,
+          "memory_model_context_length": null,
+          "memory_model_loaded": false,
+          "memory_model_vram_bytes": null
+        },
+        "plain": {
+          "additional_memory_models_loaded": 0,
+          "interactive_context_length": 65536,
+          "interactive_model_loaded": true,
+          "interactive_vram_bytes": 12912427006,
+          "memory_model_context_length": null,
+          "memory_model_loaded": false,
+          "memory_model_vram_bytes": null
+        }
+      },
+      "runtime_normalization": {
+        "hades": {
+          "additional_extractor_models_were_resident_before_reset": 0,
+          "extractor_resident": false,
+          "extractor_shares_interactive_model": false,
+          "extractor_was_resident_before_reset": false,
+          "interactive_context_length": 65536,
+          "interactive_model_resident": true,
+          "interactive_size_vram_bytes": 12912427006,
+          "interactive_warmup_ms": 254.4,
+          "memory_model_unload_calls": 0,
+          "memory_model_unload_total_ms": 0,
+          "normalization_calls_excluded_from_turn_timing": true
+        },
+        "plain": {
+          "additional_extractor_models_were_resident_before_reset": 0,
+          "extractor_resident": false,
+          "extractor_shares_interactive_model": false,
+          "extractor_was_resident_before_reset": false,
+          "interactive_context_length": 65536,
+          "interactive_model_resident": true,
+          "interactive_size_vram_bytes": 12912427006,
+          "interactive_warmup_ms": 164.0,
+          "memory_model_unload_calls": 0,
+          "memory_model_unload_total_ms": 0,
+          "normalization_calls_excluded_from_turn_timing": true
+        }
+      },
+      "sample": 1,
+      "stacks": {
+        "hades": {
+          "automatic_recall_after_idle_expected_marker_present": true,
+          "automatic_recall_expected_marker_present": false,
+          "automatic_retained_fact_visible": true,
+          "automatic_retained_fact_visible_after_drain": true,
+          "automatic_retention_state_before_recall": {
+            "operations": {
+              "pending": {
+                "error": "HTTPError",
+                "status_code": 404
+              },
+              "processing": {
+                "error": "HTTPError",
+                "status_code": 404
+              }
+            },
+            "stats": {
+              "error": "HTTPError"
+            }
+          },
+          "hindsight_chunk_recall_after_turn": {
+            "chunk_count": 0,
+            "elapsed_ms": 19.9,
+            "marker_in_chunk": false,
+            "marker_in_result": true,
+            "result_count": 1,
+            "result_type_counts": {
+              "world": 1
+            }
+          },
+          "turns": [
+            {
+              "metrics": {
+                "completion_tokens": 13,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "message_bytes": 2951,
+                "prompt_tokens": 719,
+                "provider_generations": 1,
+                "request_bytes": 3128,
+                "runtime_observation_per_generation": [
+                  {
+                    "loaded_context_tokens": 65536,
+                    "resident_at_generation_boundary": "resident"
+                  }
+                ],
+                "system_message_bytes": 2893,
+                "tool_calls_emitted": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_schema_exposures": 0
+              },
+              "status": 200,
+              "total_ms": 1634.5,
+              "ttft_ms": 1338.6,
+              "turn": "ordinary"
+            },
+            {
+              "metrics": {
+                "completion_tokens": 13,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "message_bytes": 2947,
+                "prompt_tokens": 722,
+                "provider_generations": 1,
+                "request_bytes": 3124,
+                "runtime_observation_per_generation": [
+                  {
+                    "loaded_context_tokens": 65536,
+                    "resident_at_generation_boundary": "resident"
+                  }
+                ],
+                "system_message_bytes": 2893,
+                "tool_calls_emitted": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_schema_exposures": 0
+              },
+              "status": 200,
+              "total_ms": 1722.4,
+              "ttft_ms": 1352.3,
+              "turn": "automatic_retain"
+            },
+            {
+              "metrics": {
+                "completion_tokens": 5,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "message_bytes": 2945,
+                "prompt_tokens": 718,
+                "provider_generations": 1,
+                "request_bytes": 3122,
+                "runtime_observation_per_generation": [
+                  {
+                    "loaded_context_tokens": 65536,
+                    "resident_at_generation_boundary": "resident"
+                  }
+                ],
+                "system_message_bytes": 2893,
+                "tool_calls_emitted": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_schema_exposures": 0
+              },
+              "status": 200,
+              "total_ms": 1503.3,
+              "ttft_ms": 1326.3,
+              "turn": "automatic_recall"
+            },
+            {
+              "metrics": {
+                "completion_tokens": 2,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "message_bytes": 3749,
+                "prompt_tokens": 932,
+                "provider_generations": 1,
+                "request_bytes": 3926,
+                "runtime_observation_per_generation": [
+                  {
+                    "loaded_context_tokens": 65536,
+                    "resident_at_generation_boundary": "resident"
+                  }
+                ],
+                "system_message_bytes": 2893,
+                "tool_calls_emitted": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_schema_exposures": 0
+              },
+              "status": 200,
+              "total_ms": 2239.2,
+              "ttft_ms": 2153.7,
+              "turn": "automatic_recall_after_idle"
+            }
+          ]
+        },
+        "plain": {
+          "automatic_recall_expected_marker_present": true,
+          "automatic_retained_fact_visible": null,
+          "automatic_retention_state_before_recall": null,
+          "hindsight_chunk_recall_after_turn": null,
+          "turns": [
+            {
+              "metrics": {
+                "completion_tokens": 28,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "message_bytes": 10538,
+                "prompt_tokens": 3305,
+                "provider_generations": 1,
+                "request_bytes": 14175,
+                "runtime_observation_per_generation": [
+                  {
+                    "loaded_context_tokens": 65536,
+                    "resident_at_generation_boundary": "resident"
+                  }
+                ],
+                "system_message_bytes": 10480,
+                "tool_calls_emitted": 0,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_schema_exposures": 1
+              },
+              "status": 200,
+              "total_ms": 2192.7,
+              "ttft_ms": 1371.1,
+              "turn": "ordinary"
+            },
+            {
+              "metrics": {
+                "completion_tokens": 74,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "message_bytes": 21566,
+                "prompt_tokens": 6754,
+                "provider_generations": 2,
+                "request_bytes": 28842,
+                "runtime_observation_per_generation": [
+                  {
+                    "loaded_context_tokens": 65536,
+                    "resident_at_generation_boundary": "resident"
+                  },
+                  {
+                    "loaded_context_tokens": 65536,
+                    "resident_at_generation_boundary": "resident"
+                  }
+                ],
+                "system_message_bytes": 20960,
+                "tool_calls_emitted": 1,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_schema_exposures": 2
+              },
+              "status": 200,
+              "total_ms": 3919.5,
+              "ttft_ms": 3546.9,
+              "turn": "automatic_retain"
+            },
+            {
+              "metrics": {
+                "completion_tokens": 14,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "message_bytes": 10901,
+                "prompt_tokens": 3366,
+                "provider_generations": 1,
+                "request_bytes": 14538,
+                "runtime_observation_per_generation": [
+                  {
+                    "loaded_context_tokens": 65536,
+                    "resident_at_generation_boundary": "resident"
+                  }
+                ],
+                "system_message_bytes": 10849,
+                "tool_calls_emitted": 0,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_schema_exposures": 1
+              },
+              "status": 200,
+              "total_ms": 2338.0,
+              "ttft_ms": 2002.5,
+              "turn": "automatic_recall"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "schema_version": 1,
+  "semantic_correctness_review": "UNSCORED: expected-marker presence is descriptive only and is not semantic correctness; human review is required.",
+  "source_revision": "f1aaaefed3758f94d4374669efa15f4f39d0e1e4",
+  "summary_by_stack_and_turn": {
+    "hades.automatic_recall": {
+      "automatic_recalls_with_expected_marker": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": 718,
+      "median_provider_generations": 1,
+      "median_request_bytes": 3122,
+      "median_tool_calls": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_schema_exposures": 0,
+      "median_total_ms": 1503.3,
+      "median_ttft_ms": 1326.3,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 1
+    },
+    "hades.automatic_retain": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": 722,
+      "median_provider_generations": 1,
+      "median_request_bytes": 3124,
+      "median_tool_calls": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_schema_exposures": 0,
+      "median_total_ms": 1722.4,
+      "median_ttft_ms": 1352.3,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 1
+    },
+    "hades.core09_recall": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "hades.core09_recall_after_idle": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "hades.core09_save": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "hades.correction": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "hades.fresh_recall": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "hades.implicit_recall": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "hades.ordinary": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": 719,
+      "median_provider_generations": 1,
+      "median_request_bytes": 3128,
+      "median_tool_calls": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_schema_exposures": 0,
+      "median_total_ms": 1634.5,
+      "median_ttft_ms": 1338.6,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 1
+    },
+    "hades.same_session_fact": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "hades.same_session_recall": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "hades.save": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "plain.automatic_recall": {
+      "automatic_recalls_with_expected_marker": 1,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": 3366,
+      "median_provider_generations": 1,
+      "median_request_bytes": 14538,
+      "median_tool_calls": 0,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_schema_exposures": 1,
+      "median_total_ms": 2338.0,
+      "median_ttft_ms": 2002.5,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 1
+    },
+    "plain.automatic_retain": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": 6754,
+      "median_provider_generations": 2,
+      "median_request_bytes": 28842,
+      "median_tool_calls": 1,
+      "median_tool_schema_bytes_exposed": 6898,
+      "median_tool_schema_exposures": 2,
+      "median_total_ms": 3919.5,
+      "median_ttft_ms": 3546.9,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 1
+    },
+    "plain.core09_recall": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "plain.core09_recall_after_idle": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "plain.core09_save": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "plain.correction": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "plain.fresh_recall": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "plain.implicit_recall": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "plain.ordinary": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": 3305,
+      "median_provider_generations": 1,
+      "median_request_bytes": 14175,
+      "median_tool_calls": 0,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_schema_exposures": 1,
+      "median_total_ms": 2192.7,
+      "median_ttft_ms": 1371.1,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 1
+    },
+    "plain.same_session_fact": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "plain.same_session_recall": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    },
+    "plain.save": {
+      "automatic_recalls_with_expected_marker": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "median_prompt_tokens": null,
+      "median_provider_generations": null,
+      "median_request_bytes": null,
+      "median_tool_calls": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_schema_exposures": null,
+      "median_total_ms": null,
+      "median_ttft_ms": null,
+      "owner_corpus_recalls_with_expected_marker": null,
+      "same_session_recalls_with_expected_marker": null,
+      "samples": 0
+    }
+  },
+  "supplement_summary": {},
+  "title": "Focused ordinary chat and synthetic automatic-memory recall comparison"
+}

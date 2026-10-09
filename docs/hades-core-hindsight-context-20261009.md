@@ -52,6 +52,36 @@ recall turn observed the interactive model as not resident. This profile
 therefore did not eliminate model contention. It also does not establish that
 8K is a better Hindsight quality setting; owner-quality review remains open.
 
+## User-authored-only retain candidate
+
+A disposable overlay candidate passed the existing memory-intent and
+live-state suppression contracts, then changed automatic retention to send
+only user text to Hindsight. The [paired artifact](../benchmarks/hades-core-memory-user-only-retain-plain-first.json)
+records the exact temporary overlay hash. In its single sample, HADES still
+missed immediate cross-session recall, took 28.41 seconds to drain, and needed
+10.70 seconds for settled recall. Hindsight still issued three local model
+calls. This did not materially improve readiness over the baseline, so the
+candidate was discarded. The sample does not measure broader memory quality;
+no change was promoted.
+
+## Chunks-mode and synchronous-retain candidate
+
+A second disposable candidate combined Hindsight 0.10.3's documented chunks /
+plain-retrieval profile, `retain_async=false`, `include_chunks=true`, and a
+two-second wait on the provider instance's local retain queue when that queue
+reported unfinished work. The [single-sample artifact](../benchmarks/hades-core-memory-chunks-sync-plain-first-20261009.json)
+records the temporary overlay hash and configuration. PLAIN recalled the
+synthetic fact immediately (2.34 s). HADES missed immediately (1.50 s), then
+recalled after the Hindsight queue drained in 1.03 s (2.24 s). The fact was
+available through a direct Hindsight query 20 ms after the HADES turn, so the
+remaining miss is in the provider-turn readiness path, not simply an omitted
+chunks flag. The candidate's local-queue wait did not bridge the asynchronous
+automatic writer to the fresh-session provider. This profile also changes
+memory semantics and has no quality qualification. Reject it; no product code
+was promoted. The result narrows the next experiment to whether server-side
+retain operation IDs can be observed and joined across provider instances
+without waiting on the user-facing reply path.
+
 ## Native Hermes prefetch check
 
 Two earlier opposite-order probes temporarily disabled HADES' direct
