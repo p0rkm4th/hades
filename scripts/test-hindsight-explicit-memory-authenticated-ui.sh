@@ -7,6 +7,9 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # shellcheck disable=SC1091
 source "$repo_dir/config/versions.env"
 webui_image=${HADES_HINDSIGHT_UI_WEBUI_IMAGE:-hades-open-webui:0.11.1-hades-reconstructed}
+hindsight_image=${HADES_HINDSIGHT_UI_HINDSIGHT_IMAGE:-$HADES_HINDSIGHT_IMAGE}
+hermes_command=${HADES_HERMES_BIN:-$(command -v hermes || true)}
+hermes_plugin_source=${HADES_HINDSIGHT_UI_PLUGIN_SOURCE:-}
 suffix="$$"
 hindsight_name="hades-hindsight-ui-$suffix"
 webui_name="hades-hindsight-webui-$suffix"
@@ -24,9 +27,10 @@ step='preflight'
 cleanup() {
   local exit_status=$?
   trap - EXIT
+  local debug_dir="${HADES_HINDSIGHT_UI_DEBUG_DIR:-}"
   if ((exit_status != 0)); then
     echo "FAIL synthetic Hindsight UI harness at step '$step' (exit $exit_status)" >&2
-    local debug_dir="${HADES_HINDSIGHT_UI_DEBUG_DIR:-/tmp/hades-hindsight-ui-debug-$$}"
+    debug_dir=${debug_dir:-/tmp/hades-hindsight-ui-debug-$$}
     mkdir -m 700 -p "$debug_dir"
     for artifact in hermes.log model.log model-requests.jsonl; do
       [[ -f "$work/$artifact" ]] && install -m 600 "$work/$artifact" "$debug_dir/$artifact"
@@ -39,6 +43,14 @@ cleanup() {
     [[ -f "$work/model.log" ]] && tail -n 20 "$work/model.log" >&2 || true
     docker logs --tail 40 "$hindsight_name" >&2 2>/dev/null || true
     docker logs --tail 40 "$webui_name" >&2 2>/dev/null || true
+  elif [[ -n "$debug_dir" ]]; then
+    # Opt-in successful-run diagnostics help explain hidden auxiliary traffic
+    # without retaining synthetic prompts, responses, or logs by default.
+    mkdir -m 700 -p "$debug_dir"
+    for artifact in hermes.log model.log model-requests.jsonl; do
+      [[ -f "$work/$artifact" ]] && install -m 600 "$work/$artifact" "$debug_dir/$artifact"
+    done
+    echo "Successful disposable diagnostics saved to $debug_dir" >&2
   fi
   if [[ -n "$gateway_pid" ]]; then kill "$gateway_pid" >/dev/null 2>&1 || true; wait "$gateway_pid" >/dev/null 2>&1 || true; fi
   if [[ -n "$mock_pid" ]]; then kill "$mock_pid" >/dev/null 2>&1 || true; wait "$mock_pid" >/dev/null 2>&1 || true; fi
@@ -51,14 +63,20 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 command -v docker >/dev/null
-command -v hermes >/dev/null
+[[ -n "$hermes_command" && -x "$hermes_command" ]] || { echo 'FAIL Hermes executable is unavailable' >&2; exit 2; }
 command -v node >/dev/null
 command -v curl >/dev/null
 export HADES_PLAYWRIGHT_MODULE=${HADES_PLAYWRIGHT_MODULE:-playwright}; node -e 'require(process.env.HADES_PLAYWRIGHT_MODULE)' >/dev/null 2>&1 || {
   echo 'FAIL local Playwright dependency is unavailable' >&2; exit 2;
 }
-docker image inspect "$HADES_HINDSIGHT_IMAGE" >/dev/null
+docker image inspect "$hindsight_image" >/dev/null
 docker image inspect "$webui_image" >/dev/null
+if [[ -n "$hermes_plugin_source" ]]; then
+  [[ -f "$hermes_plugin_source/__init__.py" && -f "$hermes_plugin_source/plugin.yaml" ]] || {
+    echo "FAIL Hindsight plugin source directory is incomplete: $hermes_plugin_source" >&2
+    exit 2
+  }
+fi
 for port in "$webui_port" "$gateway_port"; do
   if (echo >/dev/tcp/127.0.0.1/"$port") >/dev/null 2>&1; then
     echo "FAIL disposable test port is already occupied: $port" >&2
@@ -95,7 +113,7 @@ docker run -d --name "$hindsight_name" --add-host host.docker.internal:host-gate
   -e HINDSIGHT_API_ENABLE_OBSERVATIONS=true -e "HINDSIGHT_API_WORKER_ID=$hindsight_name" \
   -e HINDSIGHT_API_LLM_PROVIDER=ollama -e "HINDSIGHT_API_LLM_MODEL=$model" \
   -e "HINDSIGHT_API_LLM_BASE_URL=http://host.docker.internal:$model_port/v1" \
-  -e HINDSIGHT_API_LLM_API_KEY=synthetic-only "$HADES_HINDSIGHT_IMAGE" >/dev/null
+  -e HINDSIGHT_API_LLM_API_KEY=synthetic-only "$hindsight_image" >/dev/null
 hindsight_port=$(docker inspect -f '{{(index (index .NetworkSettings.Ports "8888/tcp") 0).HostPort}}' "$hindsight_name")
 hindsight_url="http://127.0.0.1:$hindsight_port"
 step='waiting for Hindsight health'
@@ -163,7 +181,11 @@ step='configuring ephemeral Hermes profile'
 export HERMES_HOME="$work/hermes"
 mkdir -p "$HERMES_HOME"
 chmod 700 "$HERMES_HOME"
-hermes profile create hades --no-alias --no-skills >/dev/null
+if [[ -n "$hermes_plugin_source" ]]; then
+  mkdir -m 700 "$HERMES_HOME/plugins"
+  ln -s "$hermes_plugin_source" "$HERMES_HOME/plugins/hindsight"
+fi
+"$hermes_command" profile create hades --no-alias --no-skills >/dev/null
 chmod 700 "$HERMES_HOME/profiles" "$HERMES_HOME/profiles/hades"
 cat >"$HERMES_HOME/profiles/hades/config.yaml" <<'YAML'
 model:
@@ -175,11 +197,14 @@ memory:
   bank_id: hades-owner
   bank_id_template: hades-user-{user}
   recall_budget: low
+gateway:
+  # This is an isolated test profile with no host gateway to multiplex.
+  standalone: true
 YAML
 chmod 600 "$HERMES_HOME/profiles/hades/config.yaml"
-hermes_bin=$(readlink -f "$(command -v hermes)")
-hermes_python="$(dirname "$hermes_bin")/python3.11"
-[[ -x "$hermes_python" ]] || { echo 'FAIL installed Hermes Python 3.11 is unavailable' >&2; exit 2; }
+hermes_bin=$(readlink -f "$hermes_command")
+hermes_python=${HADES_HERMES_PYTHON:-$(dirname "$hermes_bin")/python3.11}
+[[ -x "$hermes_python" ]] || { echo 'FAIL Hermes Python runtime is unavailable' >&2; exit 2; }
 export HADES_HERMES_EXECUTABLE="$hermes_bin"
 hermes_source=$(env -u PYTHONPATH "$hermes_python" -c 'import pathlib, run_agent; print(pathlib.Path(run_agent.__file__).resolve().parent)')
 export PYTHONPATH="$repo_dir/hermes:$repo_dir:$hermes_source"
@@ -193,7 +218,7 @@ export OPENAI_API_KEY=synthetic-unused OPENAI_BASE_URL=http://127.0.0.1:9/v1
 export MODEL=synthetic-no-call HERMES_ACCEPT_HOOKS=1
 
 step='starting Hermes gateway'
-hermes -p hades gateway run -v >"$work/hermes.log" 2>&1 &
+"$hermes_command" -p hades gateway run -v >"$work/hermes.log" 2>&1 &
 gateway_pid=$!
 for _ in $(seq 1 90); do
   curl -fsS "$gateway_url/health" >/dev/null 2>&1 && break

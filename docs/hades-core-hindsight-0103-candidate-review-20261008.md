@@ -10,10 +10,13 @@ Date: 2026-10-08
   `ebad478240d3171bb88201ececda5e8d9883d22d`. No Hindsight service was
   running in this environment, so this confirms the configured artifact, not
   deployed runtime parity.
-- The separately staged HADES Hermes plugin checkout is integration tag 1.2.1,
-  commit `d56c4acdf59c41957613d399094cdf8c489b060c`; its Hermes environment
-  currently has `hindsight-client`/`hindsight-embed` 0.10.2. It is not the
-  Hindsight 0.10.3 release source.
+- The previously staged plugin checkout was integration tag 1.2.1, commit
+  `d56c4acdf59c41957613d399094cdf8c489b060c`, with client/embed 0.10.2. For
+  the end-to-end check below, I mounted the Hermes integration plugin directly
+  from the exact v0.10.3 release source. Hermes 0.21.6's candidate environment
+  supplied `hindsight-client` 0.10.1, which satisfies that plugin's declared
+  `>=0.10.1,<1` range. The plugin's `local_external`/embedded-daemon mode was
+  not used by this external-server test.
 - Official Hindsight v0.10.3 release source is commit
   `eb6df499d35300e5b2f3f029b2e6adda04ed90f8`, published 2026-10-08. The
   official GHCR tag resolved to immutable image digest
@@ -36,12 +39,30 @@ Date: 2026-10-08
   `PYTHONPATH` for helper imports while removing it before daemon launch.
 - The exact v0.10.3 `hindsight-embed` implementation test for
   `_strip_parent_interpreter_env` passed.
+- The authenticated UI flow then passed using Hermes Agent 0.21.6 source commit
+  `818c13be1dc4fd28987e1e881a9408224afd4535`, the v0.10.3 plugin source, the
+  v0.10.3 server image digest above, and the previously qualified Open WebUI
+  0.11.4 candidate image. Bank precreation was disabled, so HADES created the
+  authenticated subject banks on demand. Alpha retain, correction, and fresh
+  typo recall passed; Beta and Gamma could not recall Alpha's facts. Fresh
+  recall took 3.38 seconds. The test harness removed its containers and
+  volumes. The run report is synthetic-only and records those outcomes.
+- An opt-in successful-run log capture reproduced the result and exposed
+  Hermes' separate automatic title-generation tasks using the deliberately
+  unreachable `synthetic-no-call` provider. They produced 33 connection retry
+  errors during the run; the five deterministic memory turns still completed
+  and Alpha recall remained about 3.38 seconds. The title prompts and failures
+  are separate from the explicit-memory path. This does not prove ordinary
+  owner turns avoid auxiliary generations. Production title-generation
+  behavior and its latency impact remain unqualified.
 
 ## Overlay disposition
 
 Hermes/Hindsight's 0.10.3 plugin starts its embedded server out of process; the
-new `hindsight-embed` strips interpreter-selection variables from the daemon
-child. Its test suite proves the scrubber. This is not enough to remove
+new `hindsight-embed` strips interpreter-selection variables from that daemon
+child. Its exact implementation test proves the scrubber, while the UI test
+used Hindsight as an external server and therefore did not exercise embedded
+daemon startup. This does not justify removing
 `_hades_overlay_non_hermes_interpreter`: that HADES startup guard also covers
 unrelated MCP/helper Python processes that inherit Hermes `PYTHONPATH` and lack
 Hermes-only packages.
@@ -57,10 +78,14 @@ write latency, read-after-write behavior, and error reporting.
 ## Decision
 
 **Qualify 0.10.3 as a candidate; hold the configured production pin.** The
-server runtime/recovery and focused upstream source checks pass, but full
-Hermes-plus-HADES retain, correction freshness, semantic recall, provider
-isolation, and restart acceptance have not been run against the exact 0.10.3
-plugin and server together. Do not change production based on the isolated
-checks alone.
+server API/recovery and authenticated HADES explicit-memory path now pass
+against the exact v0.10.3 server and plugin source, including bank creation,
+correction freshness, typo recall, and Alpha/Beta/Gamma isolation. Still open
+are Hindsight provider automatic retain/prefetch behavior, semantic paraphrase
+recall, the plugin's embedded-daemon mode, and a full restart/recovery replay
+through Hermes and HADES together. The synthetic UI test also surfaces
+unqualified Hermes automatic title-generation traffic, which must be accounted
+for in owner-visible latency and ordinary-chat measurements. Do not change
+production based on this partial acceptance.
 
 Authoritative release: [Hindsight v0.10.3](https://github.com/vectorize-io/hindsight/releases/tag/v0.10.3).
