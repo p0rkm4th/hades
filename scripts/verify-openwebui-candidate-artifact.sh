@@ -6,7 +6,7 @@ source "$repo_dir/config/versions.env"
 image=${1:?usage: verify-openwebui-candidate-artifact.sh IMAGE}
 [[ "$HADES_OPEN_WEBUI_CANDIDATE_HADES_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo 'FAIL candidate HADES build commit is not qualified' >&2; exit 2; }
 [[ "$HADES_OPEN_WEBUI_CANDIDATE_HADES_IMAGE_ID" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo 'FAIL candidate HADES image ID is not qualified' >&2; exit 2; }
-[[ "$HADES_OPEN_WEBUI_CANDIDATE_SECURITY_ADAPTERS" == 'fail-closed-jwt,authority-revocation,ldap-empty-group' ]] || { echo 'FAIL required security adapter manifest is incomplete' >&2; exit 2; }
+[[ "$HADES_OPEN_WEBUI_CANDIDATE_SECURITY_ADAPTERS" == 'fail-closed-jwt,authority-revocation,ldap-empty-group,socket-disconnect-fail-closed' ]] || { echo 'FAIL required security adapter manifest is incomplete' >&2; exit 2; }
 image_id=$(docker image inspect "$image" --format '{{.Id}}')
 [[ "$image_id" == "$HADES_OPEN_WEBUI_CANDIDATE_HADES_IMAGE_ID" ]] || { echo "FAIL candidate image ID differs from manifest: $image_id" >&2; exit 2; }
 version=$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')

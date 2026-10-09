@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-required_security_adapters='fail-closed-jwt,authority-revocation,ldap-empty-group'
+required_security_adapters='fail-closed-jwt,authority-revocation,ldap-empty-group,socket-disconnect-fail-closed'
 if [[ "${HADES_OPEN_WEBUI_SECURITY_ADAPTERS:-}" == "$required_security_adapters" && -z "${REDIS_URL:-}" ]]; then
   echo 'FATAL HADES security candidate requires a configured persistent revocation store' >&2
   exit 78

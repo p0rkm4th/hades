@@ -1,6 +1,6 @@
 ARG OPEN_WEBUI_BASE_IMAGE=ghcr.io/open-webui/open-webui@sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f
 FROM ${OPEN_WEBUI_BASE_IMAGE}
-ENV HADES_OPEN_WEBUI_SECURITY_ADAPTERS=fail-closed-jwt,authority-revocation,ldap-empty-group
+ENV HADES_OPEN_WEBUI_SECURITY_ADAPTERS=fail-closed-jwt,authority-revocation,ldap-empty-group,socket-disconnect-fail-closed
 
 COPY webui/hades-theme.css /app/backend/open_webui/static/hades-theme.css
 COPY webui/hades-theme.js /app/backend/open_webui/static/hades-theme.js
@@ -22,11 +22,13 @@ COPY webui/channel_response_compat.py /opt/hades/channel_response_compat.py
 COPY webui/auth_revocation_fail_closed_compat.py /opt/hades/auth_revocation_fail_closed_compat.py
 COPY webui/ldap_group_sync_compat.py /opt/hades/ldap_group_sync_compat.py
 COPY webui/authority_revocation_routes_compat.py /opt/hades/authority_revocation_routes_compat.py
+COPY webui/socket_disconnect_fail_closed_compat.py /opt/hades/socket_disconnect_fail_closed_compat.py
 COPY webui/entrypoint.sh /opt/hades/entrypoint.sh
 RUN python3 /opt/hades/channel_response_compat.py \
     && python3 /opt/hades/auth_revocation_fail_closed_compat.py \
     && python3 /opt/hades/ldap_group_sync_compat.py \
     && python3 /opt/hades/authority_revocation_routes_compat.py \
+    && python3 /opt/hades/socket_disconnect_fail_closed_compat.py \
     && python3 /opt/hades/finance_upload_compat.py \
     && python3 /opt/hades/receipt_upload_compat.py \
     && python3 /opt/hades/task_notification_compat.py \

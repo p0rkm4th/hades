@@ -4,6 +4,7 @@ repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 compose="$repo_dir/deploy/templates/open-webui.compose.yaml"
 dockerfile="$repo_dir/webui/Dockerfile"
 auth="$repo_dir/webui/auth_revocation_fail_closed_compat.py"
+socket_adapter="$repo_dir/webui/socket_disconnect_fail_closed_compat.py"
 routes="$repo_dir/webui/authority_revocation_routes_compat.py"
 
 grep -Fq 'HADES_OPEN_WEBUI_VALKEY_IMAGE:?set a pinned HADES_OPEN_WEBUI_VALKEY_IMAGE' "$compose" || { echo 'FAIL auth-state image is not required'; exit 1; }
@@ -16,13 +17,14 @@ grep -Fq 'open-webui-auth-state:/data' "$compose" || { echo 'FAIL Valkey persist
 grep -Fq 'auth-state:' "$compose" || { echo 'FAIL private auth-state service is absent'; exit 1; }
 grep -Fq 'depends_on:' "$compose" && grep -Fq 'condition: service_healthy' "$compose" || { echo 'FAIL Open WebUI does not wait for auth-state health'; exit 1; }
 
-for marker in 'def is_valid_token' 'def invalidate_token' 'def revoke_user_tokens' 'HTTPException(503' 'await redis.set'; do
+for marker in 'def is_valid_token' 'def invalidate_token' 'def revoke_user_tokens' 'disconnect_user_sessions' 'HTTPException(503' 'await redis.set'; do
   grep -Fq "$marker" "$auth" || { echo "FAIL auth adapter omits $marker"; exit 1; }
 done
 for marker in 'update_password' 'create_session_response' 'int(time.time()) <= revoked_at_ts' 'update_user_by_id' 'delete_user_by_id' 'update_group_by_id' 'add_user_to_group' 'remove_users_from_group' 'delete_group_by_id' 'membership_changed' 'LDAP group membership could not be verified'; do
   grep -Fq "$marker" "$routes" || { echo "FAIL authority adapter omits $marker"; exit 1; }
 done
-for adapter in auth_revocation_fail_closed_compat.py ldap_group_sync_compat.py authority_revocation_routes_compat.py; do
+grep -Fq 'Session revocation incomplete' "$socket_adapter" && grep -Fq 'HTTPException(503' "$socket_adapter" || { echo 'FAIL socket revocation failures are not visible'; exit 1; }
+for adapter in auth_revocation_fail_closed_compat.py ldap_group_sync_compat.py authority_revocation_routes_compat.py socket_disconnect_fail_closed_compat.py; do
   grep -Fq "$adapter" "$dockerfile" || { echo "FAIL candidate image omits $adapter"; exit 1; }
 done
 grep -Fq 'org.hades.open-webui.security-adapters' "$repo_dir/scripts/build-open-webui-artifact.sh" || { echo 'FAIL candidate image omits security adapter provenance'; exit 1; }

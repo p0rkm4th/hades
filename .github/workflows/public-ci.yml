@@ -229,6 +229,8 @@ jobs:
         run: bash scripts/test-backup-metadata-contract.sh
       - name: Check Open WebUI P0 security contract
         run: bash scripts/test-openwebui-p0-security-contract.sh
+      - name: Open WebUI Socket.IO revocation contract
+        run: python3 scripts/test-open-webui-socket-disconnect-compat.py
       - name: Check backup coverage documentation
         run: bash scripts/test-backup-coverage-doc.sh
       - name: Check install failure contract

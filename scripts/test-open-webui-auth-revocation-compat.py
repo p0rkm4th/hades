@@ -64,6 +64,8 @@ def main() -> None:
         assert "Fail open" not in valid and "accepting token" not in valid
         assert "Session revocation unavailable" in signout
         assert "await redis.set" in signout
+        assert "disconnect_user_sessions" in signout
+        assert signout.index("await redis.set") < signout.index("disconnect_user_sessions")
         assert "Session revocation unavailable" in revoke
         assert "await redis.set" in revoke
         assert "repr(revoked_at)" in revoke

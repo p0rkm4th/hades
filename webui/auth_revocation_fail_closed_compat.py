@@ -66,10 +66,10 @@ REPLACEMENTS = {
         return
 
     try:
-        # A repeated sign-out of a revoked token must not disconnect newer sessions.
-        if not await is_valid_token(decoded, redis):
-            return
-        await redis.set(f'{REDIS_KEY_PREFIX}:auth:token:{jti}:revoked', '1', ex=ttl)
+        # A repeated sign-out still retries socket disconnect after a prior
+        # partial failure, but never rewrites a valid newer token's marker.
+        if await is_valid_token(decoded, redis):
+            await redis.set(f'{REDIS_KEY_PREFIX}:auth:token:{jti}:revoked', '1', ex=ttl)
     except RedisError as error:
         raise HTTPException(503, detail='Session revocation unavailable; retry sign-out.') from error
 

@@ -149,8 +149,12 @@ sio = socketio.AsyncClient(reconnection=False)
 async def disconnect():
     print("DISCONNECTED", flush=True)
 async def main():
-    await sio.connect("http://127.0.0.1:8080", auth={"token":os.environ["HADES_SOCKET_TOKEN"]}, socketio_path="ws/socket.io", transports=["websocket"], wait_timeout=12)
-    print("CONNECTED", flush=True)
+    token = os.environ["HADES_SOCKET_TOKEN"]
+    await sio.connect("http://127.0.0.1:8080", auth={"token":token}, socketio_path="ws/socket.io", transports=["websocket"], wait_timeout=12)
+    joined = await sio.call("user-join", {"auth":{"token":token}}, timeout=12)
+    if not isinstance(joined, dict) or not joined.get("id"):
+        raise RuntimeError("Open WebUI did not acknowledge authenticated user-join")
+    print("CONNECTED:" + sio.sid, flush=True)
     await asyncio.wait_for(sio.wait(), timeout=40)
 asyncio.run(main())
 '''
@@ -166,19 +170,63 @@ asyncio.run(main())
         process.kill()
         raise RuntimeError("Socket.IO session did not connect in time")
     marker = process.stdout.readline().strip()
-    if marker != "CONNECTED":
+    if not marker.startswith("CONNECTED:") or len(marker.split(":", 1)[1]) < 8:
         stderr = process.stderr.read() if process.stderr else ""
-        raise RuntimeError(f"Socket.IO session failed to connect: {marker} {stderr[:500]}")
+        raise RuntimeError(f"Socket.IO session failed to authenticate/connect: {marker} {stderr[-1800:]}")
+    process.hades_sid = marker.split(":", 1)[1]
     return process
 
 
-def require_disconnect(process: subprocess.Popen[str], name: str) -> None:
+def require_session_pool(valkey: str, process: subprocess.Popen[str], user_id: str) -> None:
+    keys = run(["docker", "exec", valkey, "valkey-cli", "-n", "1", "--raw", "--scan", "--pattern", "*session_pool*"]).stdout.splitlines()
+    for key in keys:
+        lines = run(["docker", "exec", valkey, "valkey-cli", "-n", "1", "--raw", "HGETALL", key]).stdout.splitlines()
+        for index in range(0, len(lines) - 1, 2):
+            try:
+                session = json.loads(lines[index + 1])
+            except json.JSONDecodeError:
+                continue
+            if session.get("id") == user_id:
+                # Socket.IO client and server SIDs are distinct; assert the shared
+                # pool contains the authenticated owner, not the client's SID.
+                print("PASS cross-container Socket.IO session is registered in shared Redis session pool")
+                return
+    all_keys = run(["docker", "exec", valkey, "valkey-cli", "-n", "1", "--raw", "KEYS", "*"]).stdout.splitlines()
+    details = []
+    for key in all_keys:
+        kind = run(["docker", "exec", valkey, "valkey-cli", "-n", "1", "--raw", "TYPE", key]).stdout.strip()
+        if kind == "hash":
+            value = run(["docker", "exec", valkey, "valkey-cli", "-n", "1", "--raw", "HGETALL", key]).stdout
+            details.append(f"{key}: {value[:1200]}")
+        else:
+            details.append(f"{key}: type={kind}")
+    raise RuntimeError(
+        f"Cross-container Socket.IO session for user {user_id!r} is absent from the shared Redis session pool; "
+        + "\n".join(details)
+    )
+
+
+def require_disconnect(
+    process: subprocess.Popen[str], name: str, containers: tuple[str, ...] = (), valkey: str = ""
+) -> None:
     if process.stdout is None:
         raise RuntimeError(f"{name}: no Socket.IO output stream")
     ready, _, _ = select.select([process.stdout], [], [], 10)
     marker = process.stdout.readline().strip() if ready else ""
     if marker != "DISCONNECTED":
-        raise RuntimeError(f"{name}: existing Socket.IO session was not disconnected ({marker!r})")
+        diagnostics = []
+        for container in containers:
+            logs = subprocess.run(["docker", "logs", container], capture_output=True, text=True)
+            diagnostics.append(f"{container}: {logs.stdout[-900:]} {logs.stderr[-300:]}")
+        if valkey:
+            keys = run(["docker", "exec", valkey, "valkey-cli", "-n", "1", "--raw", "--scan", "--pattern", "*session_pool*"]).stdout.splitlines()
+            for key in keys:
+                entries = run(["docker", "exec", valkey, "valkey-cli", "--raw", "HGETALL", key]).stdout
+                diagnostics.append(f"{key}: {entries[-1200:]}")
+        raise RuntimeError(
+            f"{name}: existing Socket.IO session was not disconnected ({marker!r}); "
+            + "\n".join(diagnostics)
+        )
     process.wait(timeout=10)
     print(f"PASS {name}: existing Socket.IO session closed")
 
@@ -218,6 +266,7 @@ def main() -> None:
             "-e", "RAG_EMBEDDING_ENGINE=ollama", "-e", "REDIS_URL=redis://redis:6379/0",
             "-e", "WEBSOCKET_MANAGER=redis", "-e", "WEBSOCKET_REDIS_URL=redis://redis:6379/1",
             "-e", "REDIS_SOCKET_CONNECT_TIMEOUT=1",
+            "-e", "WEBUI_SECRET_KEY=synthetic-shared-webui-secret-00000000000000000000000000000000",
             "-v", f"{webui_data_volume}:/app/backend/data", IMAGE,
         ])
         created_containers.append(webui)
@@ -231,6 +280,7 @@ def main() -> None:
             "-e", "RAG_EMBEDDING_ENGINE=ollama", "-e", "REDIS_URL=redis://redis:6379/0",
             "-e", "WEBSOCKET_MANAGER=redis", "-e", "WEBSOCKET_REDIS_URL=redis://redis:6379/1",
             "-e", "REDIS_SOCKET_CONNECT_TIMEOUT=1",
+            "-e", "WEBUI_SECRET_KEY=synthetic-shared-webui-secret-00000000000000000000000000000000",
             "-v", f"{webui_data_volume}:/app/backend/data", IMAGE,
         ])
         created_containers.append(peer)
@@ -260,15 +310,19 @@ def main() -> None:
         }, admin_token)
         if status != 200 or not isinstance(signout_user, dict) or not signout_user.get("token"):
             raise RuntimeError(f"Synthetic sign-out user creation failed (HTTP {status})")
-        user_socket = connect_socket(webui, signout_user["token"])
+        status, _ = api(base, "GET", "/api/v1/users/user/info", token=signout_user["token"])
+        if status != 200:
+            raise RuntimeError(f"Sign-out test user token was invalid before socket connect (HTTP {status})")
+        user_socket = connect_socket(peer, signout_user["token"])
         sockets.append(user_socket)
+        require_session_pool(valkey, user_socket, signout_user["id"])
         status, _ = api(base, "POST", "/api/v1/auths/signout", {}, signout_user["token"])
         if status != 200:
             raise RuntimeError(f"Sign-out with healthy Redis failed (HTTP {status})")
         status, _ = api(base, "GET", "/api/v1/users/user/info", token=signout_user["token"])
         if status != 401:
             raise RuntimeError(f"Signed-out token was not rejected (HTTP {status})")
-        require_disconnect(user_socket, "healthy-store sign-out")
+        require_disconnect(user_socket, "healthy-store sign-out", (webui, peer), valkey)
         print("PASS sign-out stores revocation and rejects the token through HTTP")
         snapshot_restore_revocation(valkey, suffix, created_containers)
 
@@ -298,12 +352,22 @@ def main() -> None:
         status, _ = api(base, "GET", "/api/v1/users/user/info", token=admin_token)
         if status != 200:
             raise RuntimeError(f"Uncompleted sign-out was not retryable after recovery (HTTP {status})")
-        status, recovered_user = api(base, "GET", "/api/v1/users/user/info", token=user["token"])
+        status, recovered_user = api(base, "GET", f"/api/v1/users/{user['id']}", token=admin_token)
         if status != 200 or not isinstance(recovered_user, dict) or recovered_user.get("role") != "user":
-            raise RuntimeError("Failed closed role mutation changed authority despite store outage")
-        status, _ = api(base, "POST", "/api/v1/auths/signout", {}, admin_token)
+            raise RuntimeError(
+                f"Failed closed role mutation changed database authority despite store outage: "
+                f"HTTP {status}, role={recovered_user.get('role') if isinstance(recovered_user, dict) else recovered_user!r}"
+            )
+        status, _ = api(base, "GET", "/api/v1/users/user/info", token=user["token"])
         if status != 200:
-            raise RuntimeError(f"Retry sign-out after store recovery failed (HTTP {status})")
+            raise RuntimeError("Unchanged authority session became invalid after the store recovered")
+        status, signout_result = api(base, "POST", "/api/v1/auths/signout", {}, admin_token)
+        if status != 200:
+            logs = subprocess.run(["docker", "logs", webui], capture_output=True, text=True)
+            raise RuntimeError(
+                f"Retry sign-out after store recovery failed (HTTP {status}, {signout_result!r}): "
+                f"{logs.stdout[-1600:]} {logs.stderr[-1000:]}"
+            )
         status, _ = api(base, "GET", "/api/v1/users/user/info", token=admin_token)
         if status != 401:
             raise RuntimeError(f"Retry sign-out did not revoke the token (HTTP {status})")
@@ -327,13 +391,14 @@ def main() -> None:
         role_user = add_user("Role User")
         role_socket = connect_socket(peer, role_user["token"])
         sockets.append(role_socket)
+        require_session_pool(valkey, role_socket, role_user["id"])
         status, _ = api(base, "POST", f"/api/v1/users/{role_user['id']}/update", {"role": "pending"}, admin_token)
         if status != 200:
             raise RuntimeError(f"Role demotion failed (HTTP {status})")
         status, _ = api(base, "GET", "/api/v1/users/user/info", token=role_user["token"])
         if status != 401:
             raise RuntimeError(f"Old token remained valid after role demotion (HTTP {status})")
-        require_disconnect(role_socket, "role demotion")
+        require_disconnect(role_socket, "role demotion", (webui, peer), valkey)
         print("PASS role demotion revokes the old HTTP token and live socket")
 
         password_user = add_user("Password User")
@@ -422,7 +487,7 @@ def main() -> None:
         status, _ = api(base, "GET", "/api/v1/users/user/info", token=deleted_user["token"])
         if status != 401:
             raise RuntimeError(f"Deleted-account token remained valid (HTTP {status})")
-        require_disconnect(deleted_socket, "account deletion")
+        require_disconnect(deleted_socket, "account deletion", (webui, peer), valkey)
         print("PASS account deletion revokes old HTTP and live socket sessions")
     finally:
         for process in sockets:
