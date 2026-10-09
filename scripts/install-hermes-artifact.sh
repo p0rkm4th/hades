@@ -23,6 +23,7 @@ if [[ -f "$repo_dir/config/versions.env" ]]; then
   # shellcheck disable=SC1091
   source "$repo_dir/config/versions.env"
 fi
+hermes_source_version=${HADES_HERMES_SOURCE_VERSION:-${HADES_HERMES_VERSION:-}}
 uv_version=${HADES_HERMES_UV_VERSION:-}
 if [[ -z "$uv_bin" ]]; then
   if [[ -n "$uv_version" && -x "/opt/hades-hermes-tools/uv-$uv_version/bin/uv" ]]; then
@@ -37,7 +38,8 @@ while (($#)); do
     --artifact) artifact=${2:?--artifact needs a file}; shift 2 ;;
     --url) url=${2:?--url needs a URL}; shift 2 ;;
     --sha256) expected_sha=${2:?--sha256 needs a checksum}; shift 2 ;;
-    -h|--help) echo 'usage: install-hermes-artifact.sh --prefix ABS_DIR [--artifact ABS_FILE | --url URL --sha256 SHA256]'; exit 0 ;;
+    --version) hermes_source_version=${2:?--version needs a version}; shift 2 ;;
+    -h|--help) echo 'usage: install-hermes-artifact.sh --prefix ABS_DIR [--artifact ABS_FILE | --url URL --sha256 SHA256] [--version VERSION]'; exit 0 ;;
     *) echo "FAIL unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -48,7 +50,11 @@ validate_build_tools() {
     echo 'FAIL could not read the Hermes Python interpreter version' >&2; exit 1;
   }
   [[ "$python_version" =~ ^3\.(11|12|13)$ ]] || {
-    echo "FAIL Hermes ${HADES_HERMES_VERSION:-0.21.2} requires Python >=3.11,<3.14 (found ${python_version:-unknown})" >&2; exit 1;
+    if [[ "$python_version" == '3.14' && "$hermes_source_version" == '0.21.6' ]]; then
+      : # Hermes 0.21.6's published project metadata supports Python 3.14.
+    else
+      echo "FAIL Hermes ${hermes_source_version:-unknown} requires Python >=3.11,<3.14 (found ${python_version:-unknown})" >&2; exit 1
+    fi
   }
   [[ -n "$uv_bin" && -x "$uv_bin" ]] || { echo 'FAIL pinned uv is unavailable; run scripts/prepare-hades-host.sh --apply' >&2; exit 1; }
   uv_reported=$("$uv_bin" --version 2>/dev/null | awk '{print $1 " " $2}' || true)
@@ -91,6 +97,6 @@ install -d -m 0755 "$prefix/bin"
 printf '%s\n' '#!/usr/bin/env bash' "exec $prefix/venv/bin/python -m hermes_cli.main \"\$@\"" > "$prefix/bin/hermes"
 chmod 0755 "$prefix/bin/hermes"
 printf 'artifact_url=%s\nartifact_version=%s\nartifact_sha256=%s\ninstallation=python-venv-uv-locked-editable\nsource=%s\n' \
-  "${url:-local-file}" "${HADES_HERMES_SOURCE_VERSION:-unknown}" "$actual_sha" "$prefix/source" > "$prefix/provenance"
+  "${url:-local-file}" "${hermes_source_version:-unknown}" "$actual_sha" "$prefix/source" > "$prefix/provenance"
 chmod 0644 "$prefix/provenance"
-printf 'PASS Hermes %s installed from verified artifact %s\n' "${HADES_HERMES_VERSION:-unknown}" "$actual_sha"
+printf 'PASS Hermes %s installed from verified artifact %s\n' "${hermes_source_version:-unknown}" "$actual_sha"

@@ -27,6 +27,7 @@ sha=$(sha256sum "$fixture/source.tar.gz" | awk '{print $1}')
 cat > "$fixture/python314" <<'PY'
 #!/usr/bin/env bash
 if [[ "$1" == -c ]]; then printf '3.14\n'; exit 0; fi
+if [[ "$1" == '-m' && "$2" == 'venv' ]]; then mkdir -p "$3/bin"; exit 0; fi
 exit 1
 PY
 chmod 755 "$fixture/python314"
@@ -52,6 +53,12 @@ fi
 [[ "$*" == 'sync --extra all --extra hindsight --locked' ]]
 UV
 chmod 755 "$fixture/python313" "$fixture/uv"
+HADES_HERMES_PYTHON="$fixture/python314" HADES_UV_EXECUTABLE="$fixture/uv" \
+  bash "$repo_dir/scripts/install-hermes-artifact.sh" --prefix "$fixture/python314-prefix" \
+  --artifact "$fixture/source.tar.gz" --sha256 "$sha" --version 0.21.6 \
+  >"$fixture/python314-candidate.out" 2>&1
+grep -q 'PASS Hermes 0.21.6 installed' "$fixture/python314-candidate.out"
+grep -q '^artifact_version=0.21.6$' "$fixture/python314-prefix/provenance"
 HADES_HERMES_PYTHON="$fixture/python313" HADES_UV_EXECUTABLE="$fixture/uv" \
   bash "$repo_dir/scripts/install-hermes-artifact.sh" --prefix "$fixture/uv-prefix" \
   --artifact "$fixture/source.tar.gz" --sha256 "$sha" >"$fixture/uv.out" 2>&1
