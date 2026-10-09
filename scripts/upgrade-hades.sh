@@ -46,6 +46,9 @@ case "$component" in
   hermes)
     private_record='private Hermes package/deployment record'
     candidate_version=${HADES_HERMES_CANDIDATE_VERSION:-unknown}
+    candidate_source_url=${HADES_HERMES_CANDIDATE_SOURCE_URL:-unknown}
+    candidate_source_sha256=${HADES_HERMES_CANDIDATE_SOURCE_SHA256:-unknown}
+    candidate_source_commit=${HADES_HERMES_CANDIDATE_SOURCE_COMMIT:-unknown}
     ;;
   open-webui)
     private_record='private Open WebUI immutable artifact/deployment record'
@@ -60,6 +63,9 @@ if [[ -n "${private_record:-}" ]]; then
   echo "PLAN source: $repo_dir/config/versions.env plus $private_record"
   echo "PLAN candidate version: $candidate_version"
   [[ -z "${candidate_image:-}" ]] || echo "PLAN candidate image: $candidate_image"
+  [[ -z "${candidate_source_url:-}" ]] || echo "PLAN candidate source URL: $candidate_source_url"
+  [[ -z "${candidate_source_sha256:-}" ]] || echo "PLAN candidate source SHA-256: $candidate_source_sha256"
+  [[ -z "${candidate_source_commit:-}" ]] || echo "PLAN candidate source commit: $candidate_source_commit"
   echo 'PLAN required sequence: verified backup -> installer preflight -> private-record validation -> restart -> health -> doctor -> validate -> rollback retention -> owner acceptance'
   ((apply)) && fail "$component is plan-only; use its private operator record and acceptance workflow"
   exit 0
