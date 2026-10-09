@@ -2,7 +2,8 @@
 set -euo pipefail
 command -v docker >/dev/null 2>&1 || { echo 'FAIL docker is required for Hindsight runtime test' >&2; exit 1; }
 source config/versions.env
-docker image inspect "$HADES_HINDSIGHT_IMAGE" >/dev/null 2>&1 || { echo "FAIL pinned Hindsight image is not available locally: $HADES_HINDSIGHT_IMAGE" >&2; exit 1; }
+hindsight_image=${HADES_HINDSIGHT_TEST_IMAGE:-$HADES_HINDSIGHT_IMAGE}
+docker image inspect "$hindsight_image" >/dev/null 2>&1 || { echo "FAIL Hindsight test image is not available locally: $hindsight_image" >&2; exit 1; }
 name="hades-hindsight-runtime-${$}"
 volume="hades-hindsight-runtime-data-${$}"
 cleanup() { docker rm -f "$name" >/dev/null 2>&1 || true; docker volume rm "$volume" >/dev/null 2>&1 || true; }
@@ -11,7 +12,7 @@ docker volume create "$volume" >/dev/null
 docker run -d --name "$name" -p '127.0.0.1::8888' -p '127.0.0.1::9999' -v "$volume":/home/hindsight/.pg0 \
   -e HINDSIGHT_API_HOST=0.0.0.0 -e HINDSIGHT_API_PORT=8888 -e HINDSIGHT_API_ENABLE_OBSERVATIONS=true \
   -e HINDSIGHT_API_WORKER_ID="$name" \
-  -e HINDSIGHT_API_LLM_BASE_URL=http://127.0.0.1:1 -e HINDSIGHT_API_LLM_API_KEY=synthetic "$HADES_HINDSIGHT_IMAGE" >/dev/null
+  -e HINDSIGHT_API_LLM_BASE_URL=http://127.0.0.1:1 -e HINDSIGHT_API_LLM_API_KEY=synthetic "$hindsight_image" >/dev/null
 api_port=$(docker inspect "$name" --format '{{(index (index .NetworkSettings.Ports "8888/tcp") 0).HostPort}}')
 ready=0
 for attempt in $(seq 1 60); do
