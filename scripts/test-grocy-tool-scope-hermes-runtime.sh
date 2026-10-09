@@ -76,21 +76,52 @@ for name in (
         }},
         handler=lambda **_kwargs: "synthetic registry result",
     )
-deferred_catalog = hades._hades_grocy_tool_definitions(
-    lambda **_kwargs: [
+deferred_registry.register(
+    name="mcp_grocy_recipe_authoring_recipe_set_servings",
+    toolset="mcp-grocy-recipe-authoring",
+    schema={"description": "synthetic recipe serving companion", "parameters": {
+        "type": "object", "properties": {}, "required": [],
+    }},
+    handler=lambda **_kwargs: "synthetic serving result",
+)
+native_catalog_calls = []
+def native_grocy_definitions(**kwargs):
+    native_catalog_calls.append(kwargs)
+    assert kwargs.get("skip_tool_search_assembly") is True, kwargs
+    names_with_registry_tools = names + [
+        "mcp__grocy__stock_overview_tool",
+        "mcp__grocy__shopping_list_view_tool",
+        "mcp__grocy__shopping_list_add_tool",
+    ]
+    return [
         {"type": "function", "function": {
-            "name": name, "description": "deferred MCP bridge",
+            "name": name, "description": "native raw registered MCP schema",
             "parameters": {"type": "object", "properties": {}},
         }}
-        for name in ("tool_search", "tool_describe", "tool_call")
+        for name in names_with_registry_tools
     ]
-)
+deferred_catalog = hades._hades_grocy_tool_definitions(native_grocy_definitions)
 deferred_names = {row["function"]["name"] for row in deferred_catalog}
 assert "mcp__grocy__stock_overview_tool" in deferred_names, deferred_names
 assert "mcp__grocy__shopping_list_view_tool" in deferred_names, deferred_names
 assert "mcp__grocy__shopping_list_add_tool" in deferred_names, deferred_names
-assert {"tool_search", "tool_describe", "tool_call"}.issubset(deferred_names), deferred_names
-print("PASS deferred Hermes MCP catalog reconciles direct Grocy schemas before intent filtering")
+assert "mcp_grocy_recipe_authoring_recipe_set_servings" in deferred_names, deferred_names
+assert not ({"tool_search", "tool_describe", "tool_call"} & deferred_names), deferred_names
+assert len(native_catalog_calls) == 1, native_catalog_calls
+print("PASS native Hermes raw-schema option replaces HADES Grocy registry reconciliation")
+import model_tools as native_model_tools
+runtime_catalog = hades._hades_grocy_tool_definitions(
+    native_model_tools.get_tool_definitions
+)
+runtime_names = {row["function"]["name"] for row in runtime_catalog}
+assert {
+    "mcp__grocy__stock_overview_tool",
+    "mcp__grocy__shopping_list_view_tool",
+    "mcp__grocy__shopping_list_add_tool",
+    "mcp_grocy_recipe_authoring_recipe_set_servings",
+}.issubset(runtime_names), runtime_names
+assert not ({"tool_search", "tool_describe", "tool_call"} & runtime_names), runtime_names
+print("PASS exact Hermes runtime returns direct registered Grocy schemas when HADES opts out of bridge assembly")
 catalog = [
     {"type": "function", "function": {
         "name": name, "description": "synthetic scope fixture",

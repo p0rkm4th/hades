@@ -8040,46 +8040,25 @@ try:
     _hades_logger = logging.getLogger("hades.overlay")
     _hades_memory_local = threading.local()
     def _hades_grocy_tool_definitions(_get_tool_definitions):
-        """Return the canonical Grocy tools plus the serving companion.
+        """Return Hermes' raw Grocy schemas for HADES scope and intent filters.
 
-        Hermes can defer MCP schemas behind its generic tool-search bridge.
-        In that mode ``get_tool_definitions`` returns only the three bridge
-        functions even after MCP discovery has populated the registry. Merge
-        direct definitions from the exact HADES MCP toolsets before applying
-        scope and intent filters, so the API route cannot silently narrow a
-        Grocy turn to an empty catalog.
+        Hermes' native ``skip_tool_search_assembly`` option requests registered
+        schemas before progressive disclosure replaces them with the generic
+        search bridge. Use that supported path instead of rebuilding a second
+        catalog from the registry.
         """
         definitions = _get_tool_definitions(
-            enabled_toolsets=_HADES_GROCY_TOOLSETS, quiet_mode=True
+            enabled_toolsets=_HADES_GROCY_TOOLSETS,
+            quiet_mode=True,
+            skip_tool_search_assembly=True,
         )
-        try:
-            from tools.registry import registry as _hades_registry
-            for toolset in _HADES_GROCY_TOOLSETS:
-                names = _hades_registry.get_tool_names_for_toolset(toolset)
-                if names:
-                    definitions.extend(
-                        _hades_registry.get_definitions(set(names), quiet=True)
-                    )
-        except Exception as exc:
-            _hades_logger.warning("Grocy MCP registry reconciliation failed: %s", exc)
-        companion_names = {"mcp_grocy_recipe_authoring_recipe_set_servings"}
-        missing = {
-            name for name in companion_names
-            if not any(tool.get("function", {}).get("name") == name for tool in definitions)
-        }
-        if missing:
-            try:
-                from tools.registry import registry as _hades_registry
-                definitions.extend(_hades_registry.get_definitions(missing, quiet=True))
-            except Exception as exc:
-                _hades_logger.warning("Grocy/recipe tool reconciliation failed: %s", exc)
         unique = {}
         for tool in definitions:
             name = tool.get("function", {}).get("name")
             if name:
                 unique[name] = tool
         _hades_logger.warning(
-            "Grocy tool catalog reconciled: total=%d serving_tool=%s",
+            "Grocy raw tool catalog loaded: total=%d serving_tool=%s",
             len(unique), "mcp_grocy_recipe_authoring_recipe_set_servings" in unique,
         )
         return list(unique.values())

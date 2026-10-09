@@ -27,6 +27,21 @@ insufficient as an authorization control.
   It establishes the adapter boundary against the exact Hermes runtime; it is
   not production Grocy or household acceptance.
 
+## Native catalog path adopted
+
+Hermes 0.21.6 exposes the registered MCP schemas directly when HADES calls
+`get_tool_definitions(..., skip_tool_search_assembly=True)`. HADES now uses
+that native option before applying its route and subject filters. This
+replaced a second registry enumeration and a special fallback for the recipe
+serving tool. The exact-candidate runtime check also calls Hermes'
+`get_tool_definitions` with synthetic registered Grocy tools and confirms the
+raw schemas are returned without the generic `tool_search` bridge.
+
+This removes catalog reconstruction only. HADES still filters recipe tools by
+authenticated owner/household scope and denies forged deferred calls before
+handler dispatch; Hermes' generic deferred catalog is rebuilt from enabled
+toolsets and does not enforce those HADES-specific grants.
+
 ## Decision
 
 Retain the narrow authorization adapter and native Hermes tool-search
