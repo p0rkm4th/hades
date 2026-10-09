@@ -1,5 +1,6 @@
 ARG OPEN_WEBUI_BASE_IMAGE=ghcr.io/open-webui/open-webui@sha256:6bb1fbe8ab0a3e0456067f493044ffb66a30a65a34be47f6a5862176a370dd16
 FROM ${OPEN_WEBUI_BASE_IMAGE}
+ARG HADES_OPEN_WEBUI_FAIL_CLOSED_REVOCATION=false
 
 COPY webui/hades-theme.css /app/backend/open_webui/static/hades-theme.css
 COPY webui/hades-theme.js /app/backend/open_webui/static/hades-theme.js
@@ -19,9 +20,11 @@ COPY webui/hades_stream_disconnect_compat.py /opt/hades/hades_stream_disconnect_
 COPY integrations/actual-finance-import /opt/hades/finance-import
 COPY webui/channel_response_compat.py /opt/hades/channel_response_compat.py
 COPY webui/ldap_group_sync_compat.py /opt/hades/ldap_group_sync_compat.py
+COPY webui/auth_revocation_fail_closed_compat.py /opt/hades/auth_revocation_fail_closed_compat.py
 COPY webui/entrypoint.sh /opt/hades/entrypoint.sh
 RUN python3 /opt/hades/channel_response_compat.py \
     && python3 /opt/hades/ldap_group_sync_compat.py \
+    && if [ "$HADES_OPEN_WEBUI_FAIL_CLOSED_REVOCATION" = "true" ]; then python3 /opt/hades/auth_revocation_fail_closed_compat.py; fi \
     && python3 /opt/hades/finance_upload_compat.py \
     && python3 /opt/hades/receipt_upload_compat.py \
     && python3 /opt/hades/task_notification_compat.py \

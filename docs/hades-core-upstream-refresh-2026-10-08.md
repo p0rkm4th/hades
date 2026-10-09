@@ -216,3 +216,37 @@ under 0.11.1. This closes only the candidate-pair staging migration gate;
 production data, LDAP state, external build provenance, and owner acceptance
 remain unqualified. See
 [`hades-core-open-webui-0114-migration-rollback-20261009.md`](hades-core-open-webui-0114-migration-rollback-20261009.md).
+
+### Open WebUI revocation-store outage candidate — 2026-10-09
+
+The unpatched Open WebUI 0.11.4 candidate accepted an existing bearer token
+after its Redis revocation store became unavailable. The opt-in
+`HADES_OPEN_WEBUI_FAIL_CLOSED_REVOCATION` build adapter now denies token
+validation when Redis is absent, surfaces a 503 on Redis errors, and makes
+sign-out report failure while closing that user's local Socket.IO sessions.
+The production build default remains off.
+
+Source-contract tests passed for both the deployed 0.11.1 source shape and the
+0.11.4 candidate source shape. A disposable integration run passed against
+Open WebUI candidate image
+`sha256:32406d39e00a495152231c9010ea35ac9687644b7e60f400244c62067c8ac289`
+and Valkey 9.1.2 image
+`valkey/valkey:9.1.2-alpine@sha256:3b83b0b6a598bb390c8186a408a69949772f439548a81c5ea0ab7ccf102c248d`:
+
+- Healthy-store sign-out revoked the bearer token and disconnected its
+  existing Socket.IO session.
+- With Valkey stopped, authenticated HTTP returned 503, sign-out returned
+  503, and its existing Socket.IO session disconnected.
+- After Valkey restart, AOF retained the earlier revocation; the failed
+  sign-out remained retryable and the retry revoked the token.
+- The test used synthetic accounts and a private disposable network/volume;
+  its containers, volume, and network were removed.
+
+This establishes the behavior of this local candidate under the exercised
+conditions only. It does not qualify external image build provenance, the
+production Valkey deployment, database backup/restore of revocation state,
+multi-replica Socket.IO/session behavior, or production rollout. Keep the
+adapter opt-in and production unchanged until those deployment-specific gates
+are addressed. Delete the adapter when supported upstream behavior fails
+closed for unavailable revocation storage and preserves the tested sign-out
+contract.
