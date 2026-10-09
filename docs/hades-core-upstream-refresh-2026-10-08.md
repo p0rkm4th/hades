@@ -36,8 +36,11 @@ owner preference or a release qualification.
 1. Reproduce the workspace pair from a clean, reviewable source commit and
    expand the balanced subset; investigate the out-of-catalog mutation attempt
    and fix-turn tool loop.
-2. Qualify Hermes 0.21.6 session continuity, MCP refresh, tool search, and
-   authenticated multi-user UI against the exact candidate artifact.
+2. Qualify Hermes 0.21.6 session continuity, MCP refresh, and authenticated
+   multi-user UI against the exact candidate artifact. Deferred tool search
+   and its owner/household Grocy authorization boundary passed the focused
+   candidate runtime check; see
+   [`hades-core-hermes-0216-tool-search-scope-review-20261008.md`](hades-core-hermes-0216-tool-search-scope-review-20261008.md).
 3. Stage Hindsight 0.10.3 and test native Hermes plugin/process behavior for
    removable HADES compatibility code.
 4. Identify and pin the actually deployed inference runtime before any

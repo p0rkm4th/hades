@@ -9,9 +9,18 @@ if [[ -z "$hermes_python" ]]; then
 fi
 [[ -x "$hermes_python" ]] || { echo 'FAIL Hermes Python 3.11 is unavailable' >&2; exit 2; }
 hermes_source=$(env -u PYTHONPATH "$hermes_python" -c 'import pathlib, run_agent; print(pathlib.Path(run_agent.__file__).resolve().parent)')
+hindsight_plugin_dir=${HADES_HERMES_TEST_HINDSIGHT_PLUGIN_DIR:-}
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-grocy-tool-scope.XXXXXX")
 chmod 700 "$work"
 mkdir -m 700 "$work/home" "$work/hermes"
+if [[ -n "$hindsight_plugin_dir" ]]; then
+  [[ -d "$hindsight_plugin_dir" ]] || {
+    echo "FAIL Hindsight test plugin directory is unavailable: $hindsight_plugin_dir" >&2
+    exit 2
+  }
+  mkdir -m 700 "$work/hermes/plugins"
+  ln -s "$hindsight_plugin_dir" "$work/hermes/plugins/hindsight"
+fi
 trap 'find "$work" -depth -mindepth 1 -delete 2>/dev/null || true; rmdir "$work" 2>/dev/null || true' EXIT
 hermes_overlay_dir=${HADES_HERMES_OVERLAY_DIR:-$repo_dir/hermes}
 [[ -f "$hermes_overlay_dir/sitecustomize.py" ]] || {
