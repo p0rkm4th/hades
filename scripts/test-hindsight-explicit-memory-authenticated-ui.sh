@@ -127,7 +127,8 @@ step='starting disposable Open WebUI'
 docker run -d --name "$webui_name" --add-host host.docker.internal:host-gateway \
   -p "127.0.0.1:${webui_port}:8080" \
   -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
-  -e ENABLE_OPENAI_API=true \
+  -e ENABLE_OPENAI_API=true -e ENABLE_TITLE_GENERATION=false \
+  -e ENABLE_FOLLOW_UP_GENERATION=false -e ENABLE_TAGS_GENERATION=false \
   -e "OPENAI_API_BASE_URLS=http://host.docker.internal:${gateway_port}/v1" \
   -e "OPENAI_API_KEYS=$api_key" \
   -e 'OPENAI_API_CONFIGS={"0":{"headers":{"X-Hermes-Session-Key":"hades-user-{{USER_ID}}"}}}' \
