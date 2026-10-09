@@ -406,7 +406,7 @@ def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Serialize outcomes without answers, prompts, schemas, or raw provider calls."""
     sample_keys = (
         "sample", "first_stack", "hindsight_idle_after_hades", "runtime_normalization",
-        "runtime_after_automatic_retain",
+        "runtime_after_automatic_retain", "hindsight_retain_readiness",
     )
     outcome_keys = (
         "fresh_recall_expected_marker_present", "fresh_recall_stale_mango_present",
@@ -1004,6 +1004,95 @@ def wait_hindsight_idle(url: str, bank_id: str, timeout: int = 180,
     }
 
 
+def list_hindsight_retain_operations(url: str, bank_id: str, status: str,
+                                    request_timeout: float = 2.0) -> dict[str, Any]:
+    """Return aggregate retain-operation state without exposing operation payloads."""
+    if status not in {"pending", "processing"}:
+        raise ValueError("unsupported Hindsight operation status")
+    base = (
+        f"{url.rstrip('/')}/v1/default/banks/"
+        f"{urllib.parse.quote(bank_id, safe='-_')}/operations"
+    )
+    query = urllib.parse.urlencode({"status": status, "type": "retain", "limit": 100})
+    started = time.monotonic()
+    try:
+        with urllib.request.urlopen(f"{base}?{query}", timeout=request_timeout) as response:
+            payload = json.load(response)
+        rows = payload.get("operations", []) if isinstance(payload, dict) else []
+        if not isinstance(rows, list):
+            raise RuntimeError("Hindsight operation response has an invalid shape")
+        return {
+            "status": status,
+            "count": len(rows),
+            "bank_missing": False,
+            "elapsed_ms": round((time.monotonic() - started) * 1000, 1),
+        }
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            # Hindsight 0.10.3 returns 404 for an operation query before the
+            # actor bank is created by its first asynchronous retain.
+            return {
+                "status": status,
+                "count": None,
+                "bank_missing": True,
+                "elapsed_ms": round((time.monotonic() - started) * 1000, 1),
+            }
+        raise RuntimeError(
+            f"Hindsight {status} retain-operation query failed ({exc.code})"
+        ) from None
+    except Exception as exc:
+        raise RuntimeError(
+            f"Hindsight {status} retain-operation query failed ({type(exc).__name__})"
+        ) from None
+
+
+def wait_hindsight_retains(url: str, bank_id: str, timeout: float = 8.0,
+                           poll_interval: float = 0.25) -> dict[str, Any]:
+    """Boundedly wait for one actor bank's pending/processing retain work."""
+    deadline = time.monotonic() + timeout
+    polls = 0
+    idle_polls = 0
+    last: dict[str, Any] = {}
+    max_active = 0
+    while time.monotonic() < deadline:
+        request_timeout = min(2.0, deadline - time.monotonic())
+        pending = list_hindsight_retain_operations(
+            url, bank_id, "pending", request_timeout=request_timeout
+        )
+        request_timeout = min(2.0, deadline - time.monotonic())
+        if request_timeout <= 0:
+            break
+        processing = list_hindsight_retain_operations(
+            url, bank_id, "processing", request_timeout=request_timeout
+        )
+        polls += 1
+        last = {"pending": pending, "processing": processing}
+        if pending["bank_missing"] or processing["bank_missing"]:
+            idle_polls = 0
+        else:
+            active = int(pending["count"]) + int(processing["count"])
+            max_active = max(max_active, active)
+            idle_polls = idle_polls + 1 if active == 0 else 0
+            if idle_polls >= 2:
+                return {
+                    "ready": True,
+                    "reason": "no_pending_or_processing_retains",
+                    "polls": polls,
+                    "max_active_retains": max_active,
+                    "elapsed_ms": round((timeout - max(0.0, deadline - time.monotonic())) * 1000, 1),
+                    "last": last,
+                }
+        time.sleep(min(poll_interval, max(0.0, deadline - time.monotonic())))
+    return {
+        "ready": False,
+        "reason": "timeout",
+        "polls": polls,
+        "max_active_retains": max_active,
+        "elapsed_ms": round(timeout * 1000, 1),
+        "last": last,
+    }
+
+
 def normalize_ollama_for_arm(ollama_url: str, benchmark, interactive_model: str,
                              extractor_model: str, context: int = CONTEXT_LENGTH) -> dict[str, Any]:
     """Start each comparison arm with only the interactive model resident."""
@@ -1578,6 +1667,10 @@ def main() -> int:
         help="compare a two-turn fact/follow-up conversation using authenticated X-Hermes-Session-Id continuation",
     )
     parser.add_argument(
+        "--wait-for-pending-retain", action="store_true",
+        help="in --automatic-only mode, wait up to 8 seconds for the HADES subject bank's queued retain before automatic recall",
+    )
+    parser.add_argument(
         "--first-stack", choices=("plain", "hades"),
         help="starting stack for this paired pass; each invocation creates a fresh disposable Hindsight volume",
     )
@@ -1641,6 +1734,8 @@ def main() -> int:
         )
     if sum((args.automatic_only, args.core09_only, args.same_session_only)) > 1:
         parser.error("--automatic-only, --core09-only, and --same-session-only are mutually exclusive")
+    if args.wait_for_pending_retain and not args.automatic_only:
+        parser.error("--wait-for-pending-retain requires --automatic-only")
     if args.hindsight_llm_max_concurrent < 1:
         parser.error("--hindsight-llm-max-concurrent must be at least 1")
     if args.hindsight_plain_retrieval:
@@ -1866,6 +1961,20 @@ def main() -> int:
                     )[stack] = runtime_residency_snapshot(
                         ollama, benchmark, MODEL, args.hindsight_model
                     )
+                    if args.wait_for_pending_retain and stack == "hades":
+                        readiness = wait_hindsight_retains(
+                            hindsight_url, memory_bank, timeout=8.0
+                        )
+                        sample_result["hindsight_retain_readiness"] = readiness
+                        print(json.dumps({
+                            "sample": sample + 1,
+                            "stack": stack,
+                            "stage": "bounded_retain_readiness",
+                            "ready": readiness["ready"],
+                            "wait_ms": readiness["elapsed_ms"],
+                            "polls": readiness["polls"],
+                            "max_active_retains": readiness["max_active_retains"],
+                        }), flush=True)
                     automatic_recall = measure_turn(
                         gateway, benchmark, "automatic_recall",
                         f"memory-pair-{stack}-{round_id}-automatic-recall",
@@ -2352,6 +2461,10 @@ def main() -> int:
                     if args.automatic_only or args.core09_only else
                     "Persistent gateway/home and memory bank within each stack; the same synthetic preference is re-saved and corrected every sample; recall uses a new Hermes session ID."
                 ),
+                "automatic_retain_readiness_probe": (
+                    "Before HADES automatic recall, poll only the authenticated subject bank's pending and processing retain operations for up to 8 seconds; require two consecutive empty observations. The wait duration and aggregate state are captured separately from chat latency."
+                    if args.wait_for_pending_retain else "disabled"
+                ),
                 "model": MODEL,
                 "ollama_version": version,
                 "openai_chat_context_probe_prompt_tokens": context_probe_prompt_tokens,
@@ -2462,6 +2575,7 @@ def main() -> int:
                 "The model digest is staged local Qwen; this does not prove equality with production model weights.",
                 "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
                 "The owner core-09 recall is measured once immediately after save and again for both stacks after HADES background memory work drains; readiness delay and settled recall are separate outcomes.",
+                "When enabled, the bounded readiness experiment waits only for pending/processing retain operations in the HADES synthetic subject bank; it is not part of the production overlay and its wait is reported separately from response timing.",
                 "Same-session continuity sends a synthetic fact and its follow-up in separate API calls under the same authenticated X-Hermes-Session-Id; cross-session memory and Open WebUI household acceptance are separate gates.",
                 "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
                 "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review.",
