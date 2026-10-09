@@ -7328,6 +7328,34 @@ def _hades_subject_from_session_key(session_key):
     return subject
 
 
+def _hades_bind_memory_provider_bank(memory_provider, bank_id):
+    """Bind a Hindsight provider and its cached bank sets to one trusted subject.
+
+    Hindsight 0.10.3 caches ``_write_bank_ids`` during provider initialization.
+    Updating only ``_bank_id`` leaves automatic retain writing to the profile's
+    static bank, while scoped recall reads the new bank. Clear configured
+    cross-bank fan-out and rebuild the write set after identity is validated.
+    Remove this compatibility binding when upstream supports per-request bank
+    selection without stale cached write/recall sets.
+    """
+    if not hasattr(memory_provider, "_bank_id"):
+        return False
+    memory_provider._bank_id = bank_id
+    if hasattr(memory_provider, "_mirror_to_own_bank"):
+        memory_provider._mirror_to_own_bank = False
+    if hasattr(memory_provider, "_additional_bank_ids"):
+        memory_provider._additional_bank_ids = []
+    if hasattr(memory_provider, "_recall_additional_bank_ids"):
+        memory_provider._recall_additional_bank_ids = []
+    if hasattr(memory_provider, "_write_bank_ids"):
+        build_write_bank_ids = getattr(memory_provider, "_build_write_bank_ids", None)
+        if callable(build_write_bank_ids):
+            memory_provider._write_bank_ids = build_write_bank_ids()
+        else:
+            memory_provider._write_bank_ids = [bank_id]
+    return True
+
+
 def _hades_session_scope(session_key):
     """Return the server-selected capability scope for a gateway session."""
     if not isinstance(session_key, str):
@@ -8411,6 +8439,7 @@ try:
     _HADES_EXPLICIT_MEMORY_RECALL = re.compile(
         r"\b(?:what\s+do\s+you\s+remember|what\s+do\s+i\s+remember|"
         r"what\s+is\s+(?:the|my)\s+.*(?:memory|fact|marker|fruit)|"
+        r"what\s+(?:was|is|were|are)\s+(?:the|my)\s+.{1,80}\s+i\s+mentioned|"
         r"recall|look\s+in\s+(?:your|my)\s+memory)\b",
         re.IGNORECASE,
     )
@@ -8693,11 +8722,13 @@ try:
     _hindsight.HindsightMemoryProvider.sync_turn = _hades_sync_turn
 
     async def _hades_aretain(self, *args, **kwargs):
-        kwargs["retain_async"] = True
+        # Keep automatic provider writes off the user-facing critical path,
+        # while preserving an explicit caller's synchronous-retain request.
+        kwargs.setdefault("retain_async", True)
         return await _hades_original_aretain(self, *args, **kwargs)
 
     async def _hades_aretain_batch(self, *args, **kwargs):
-        kwargs["retain_async"] = True
+        kwargs.setdefault("retain_async", True)
         return await _hades_original_aretain_batch(self, *args, **kwargs)
 
     _HindsightClient.aretain = _hades_aretain
@@ -9075,8 +9106,7 @@ try:
             else:
                 memory_bank = "hades-denied"
             for memory_provider in self._memory_manager.providers:
-                if hasattr(memory_provider, "_bank_id"):
-                    memory_provider._bank_id = memory_bank
+                _hades_bind_memory_provider_bank(memory_provider, memory_bank)
                 if hasattr(memory_provider, "_auto_recall"):
                     # The profile intentionally disables global auto-recall;
                     # once a trusted subject has selected an isolated bank,

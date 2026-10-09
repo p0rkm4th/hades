@@ -1,0 +1,611 @@
+{
+  "schema_version": 1,
+  "classification": "incomplete; no preference or stack comparison",
+  "source_revision": "e39944a8daa305b1e305f982d27aae89a96a54aa",
+  "failure": {
+    "stage": "sample_1_hades_core09_recall_after_idle",
+    "error_type": "KeyError"
+  },
+  "repetitions": [
+    {
+      "sample": 1,
+      "first_stack": "plain",
+      "hindsight_idle_after_hades": {
+        "idle": true,
+        "polls": 29,
+        "proxy_active_requests": 0,
+        "elapsed_ms": 28866.2,
+        "last_state": {
+          "banks": {
+            "hades-synthetic": {
+              "pending": {},
+              "processing": {}
+            },
+            "hades-owner": {
+              "pending": {},
+              "processing": {}
+            }
+          },
+          "operations": {
+            "pending": {},
+            "processing": {}
+          },
+          "stats": {
+            "pending_operations": 0,
+            "operations_by_status": {
+              "completed": 15
+            }
+          },
+          "bank_count": 2
+        }
+      },
+      "runtime_normalization": {
+        "plain": {
+          "interactive_model_resident": true,
+          "interactive_context_length": 65536,
+          "interactive_size_vram_bytes": 12912427006,
+          "extractor_shares_interactive_model": true,
+          "extractor_resident": true,
+          "extractor_was_resident_before_reset": true,
+          "extractor_unload_ms": null,
+          "interactive_warmup_ms": 1449.9,
+          "normalization_calls_excluded_from_turn_timing": true
+        },
+        "hades": {
+          "interactive_model_resident": true,
+          "interactive_context_length": 65536,
+          "interactive_size_vram_bytes": 12912427006,
+          "extractor_shares_interactive_model": true,
+          "extractor_resident": true,
+          "extractor_was_resident_before_reset": true,
+          "extractor_unload_ms": null,
+          "interactive_warmup_ms": 349.3,
+          "normalization_calls_excluded_from_turn_timing": true
+        }
+      },
+      "runtime_after_automatic_retain": {
+        "plain": {
+          "interactive_model_loaded": true,
+          "interactive_context_length": 65536,
+          "interactive_vram_bytes": 12912427006,
+          "memory_model_loaded": true,
+          "memory_model_context_length": 65536,
+          "memory_model_vram_bytes": 12912427006
+        },
+        "hades": {
+          "interactive_model_loaded": true,
+          "interactive_context_length": 65536,
+          "interactive_vram_bytes": 12912427006,
+          "memory_model_loaded": true,
+          "memory_model_context_length": 65536,
+          "memory_model_vram_bytes": 12912427006
+        }
+      },
+      "stacks": {
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1373.5,
+              "total_ms": 1887.3,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3309,
+                "completion_tokens": 24,
+                "request_bytes": 14175,
+                "message_bytes": 10538,
+                "system_message_bytes": 10480,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 3157.5,
+              "total_ms": 3479.3,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 6762,
+                "completion_tokens": 74,
+                "request_bytes": 28842,
+                "message_bytes": 21566,
+                "system_message_bytes": 20960,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 1737.2,
+              "total_ms": 2017.9,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3370,
+                "completion_tokens": 14,
+                "request_bytes": 14538,
+                "message_bytes": 10901,
+                "system_message_bytes": 10849,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 3160.6,
+              "total_ms": 3427.6,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 6891,
+                "completion_tokens": 74,
+                "request_bytes": 29615,
+                "message_bytes": 22339,
+                "system_message_bytes": 21698,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 1331.9,
+              "total_ms": 1462.3,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3386,
+                "completion_tokens": 7,
+                "request_bytes": 14592,
+                "message_bytes": 10955,
+                "system_message_bytes": 10887,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_recall_after_idle",
+              "status": 200,
+              "ttft_ms": 255.0,
+              "total_ms": 370.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3386,
+                "completion_tokens": 7,
+                "request_bytes": 14592,
+                "message_bytes": 10955,
+                "system_message_bytes": 10887,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            }
+          ],
+          "automatic_recall_expected_marker_present": true,
+          "automatic_retained_fact_visible": null,
+          "core09_recall_expected_marker_present": true,
+          "core09_recall_after_idle_expected_marker_present": true,
+          "automatic_retention_state_before_recall": null
+        },
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1284.3,
+              "total_ms": 1947.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 730,
+                "completion_tokens": 28,
+                "request_bytes": 3150,
+                "message_bytes": 2973,
+                "system_message_bytes": 2915,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "automatic_retain",
+              "status": 200,
+              "ttft_ms": 1222.0,
+              "total_ms": 1618.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 733,
+                "completion_tokens": 17,
+                "request_bytes": 3146,
+                "message_bytes": 2969,
+                "system_message_bytes": 2915,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "automatic_recall",
+              "status": 200,
+              "ttft_ms": 2956.6,
+              "total_ms": 3111.6,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 729,
+                "completion_tokens": 5,
+                "request_bytes": 3144,
+                "message_bytes": 2967,
+                "system_message_bytes": 2915,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 46.1,
+              "total_ms": 47.3,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 22.4,
+              "total_ms": 23.1,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "core09_recall_after_idle",
+              "status": 200,
+              "ttft_ms": 15.0,
+              "total_ms": 15.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            }
+          ],
+          "automatic_recall_expected_marker_present": false,
+          "automatic_retained_fact_visible": false,
+          "core09_recall_expected_marker_present": false,
+          "core09_recall_after_idle_expected_marker_present": false,
+          "core09_fact_visibility_after_drain": {
+            "canonical_bank": true,
+            "explicit_bank_tagged": false
+          },
+          "automatic_retention_state_before_recall": {
+            "operations": {
+              "pending": {
+                "error": "HTTPError",
+                "status_code": 404
+              },
+              "processing": {
+                "error": "HTTPError",
+                "status_code": 404
+              }
+            },
+            "stats": {
+              "error": "HTTPError"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "hindsight_ollama_calls": [
+    {
+      "route": "other",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 90,
+      "status": 200,
+      "elapsed_ms": 9105.5,
+      "response_bytes": 917,
+      "prompt_eval_count": null,
+      "eval_count": null,
+      "total_duration_ns": null,
+      "load_duration_ns": null,
+      "generation_controls": {},
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 65536,
+      "loaded_model_size_bytes": 22685247058,
+      "loaded_model_size_vram_bytes": 12912427006
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18853,
+      "status": 200,
+      "elapsed_ms": 5520.6,
+      "response_bytes": 349,
+      "prompt_eval_count": 2188,
+      "eval_count": 10,
+      "total_duration_ns": 5519852011,
+      "load_duration_ns": 2311589,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 65536,
+      "loaded_model_size_bytes": 22685247058,
+      "loaded_model_size_vram_bytes": 12912427006
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18919,
+      "status": 200,
+      "elapsed_ms": 2918.5,
+      "response_bytes": 352,
+      "prompt_eval_count": 2211,
+      "eval_count": 10,
+      "total_duration_ns": 2917753527,
+      "load_duration_ns": 1872692,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 65536,
+      "loaded_model_size_bytes": 22685247058,
+      "loaded_model_size_vram_bytes": 12912427006
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18913,
+      "status": 200,
+      "elapsed_ms": 4873.5,
+      "response_bytes": 709,
+      "prompt_eval_count": 2205,
+      "eval_count": 115,
+      "total_duration_ns": 4872819046,
+      "load_duration_ns": 2181086,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 65536,
+      "loaded_model_size_bytes": 22685247058,
+      "loaded_model_size_vram_bytes": 12912427006
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18480,
+      "status": 200,
+      "elapsed_ms": 3041.6,
+      "response_bytes": 688,
+      "prompt_eval_count": 2027,
+      "eval_count": 112,
+      "total_duration_ns": 3040929793,
+      "load_duration_ns": 1737401,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 65536,
+      "loaded_model_size_bytes": 22685247058,
+      "loaded_model_size_vram_bytes": 12912427006
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 18853,
+      "status": 200,
+      "elapsed_ms": 3267.7,
+      "response_bytes": 752,
+      "prompt_eval_count": 2190,
+      "eval_count": 116,
+      "total_duration_ns": 3266937747,
+      "load_duration_ns": 1742893,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 65536,
+      "loaded_model_size_bytes": 22685247058,
+      "loaded_model_size_vram_bytes": 12912427006
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 15156,
+      "status": 200,
+      "elapsed_ms": 9113.2,
+      "response_bytes": 609,
+      "prompt_eval_count": 3269,
+      "eval_count": 89,
+      "total_duration_ns": 9112537724,
+      "load_duration_ns": 1703515,
+      "generation_controls": {
+        "temperature": 0.0
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 65536,
+      "loaded_model_size_bytes": 22685247058,
+      "loaded_model_size_vram_bytes": 12912427006
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 15166,
+      "status": 200,
+      "elapsed_ms": 5215.2,
+      "response_bytes": 677,
+      "prompt_eval_count": 3280,
+      "eval_count": 121,
+      "total_duration_ns": 5214484692,
+      "load_duration_ns": 2076067,
+      "generation_controls": {
+        "temperature": 0.0
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 65536,
+      "loaded_model_size_bytes": 22685247058,
+      "loaded_model_size_vram_bytes": 12912427006
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3.6:35b",
+      "stream": false,
+      "request_bytes": 15223,
+      "status": 200,
+      "elapsed_ms": 3174.6,
+      "response_bytes": 776,
+      "prompt_eval_count": 3273,
+      "eval_count": 125,
+      "total_duration_ns": 3173901947,
+      "load_duration_ns": 2318268,
+      "generation_controls": {
+        "temperature": 0.0
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 65536,
+      "loaded_model_size_bytes": 22685247058,
+      "loaded_model_size_vram_bytes": 12912427006
+    }
+  ],
+  "preference_bucket": "UNASSIGNED; no owner dogfood"
+}

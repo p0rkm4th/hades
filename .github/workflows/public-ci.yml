@@ -176,6 +176,10 @@ jobs:
         run: python scripts/test-hindsight-aggregate-stats.py
       - name: Check Hindsight explicit-memory ownership and fallback
         run: python scripts/test-hindsight-explicit-memory-route.py
+      - name: Check Hindsight async retain policy preserves explicit sync writes
+        run: python scripts/test-hindsight-async-retain-policy.py
+      - name: Check Hindsight provider subject-bank binding
+        run: python scripts/test-hindsight-provider-bank-scope.py
       - name: Check focused Hindsight overlay composition
         run: python scripts/test-prepare-hindsight-overlay-candidate.py
       - name: Check multi-user long synthetic dogfood

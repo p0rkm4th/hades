@@ -117,6 +117,7 @@ namespace = {
     "_HADES_EXPLICIT_MEMORY_RECALL": re.compile(
         r"\b(?:what\s+do\s+you\s+remember|what\s+do\s+i\s+remember|"
         r"what\s+is\s+(?:the|my)\s+.*(?:memory|fact|marker|fruit)|"
+        r"what\s+(?:was|is|were|are)\s+(?:the|my)\s+.{1,80}\s+i\s+mentioned|"
         r"recall|look\s+in\s+(?:your|my)\s+memory)\b",
         re.IGNORECASE,
     ),
@@ -187,6 +188,7 @@ prefetch_provider = prefetch.__self__
 for prompt in (
     "Remember that my favorite fruit is mango.",
     "What do you remember about the fruit I enjoy?",
+    "What was the savings target I mentioned?",
     "What is my favorite fruit?",
     "What is my favrite frut?",
 ):
@@ -233,6 +235,20 @@ try:
     client = FakeClient.instances[-1]
     assert client.calls == [], client.calls
     assert client.closed
+
+    # Natural follow-ups such as "what was ... I mentioned" must use the
+    # authenticated private-memory path instead of the ordinary-chat fallback.
+    state["items"] = [
+        {
+            "tags": ["hades-explicit-memory"],
+            "text": "User explicitly asked HADES to remember: My savings target is $3,000.",
+            "entities": [{"text": "My savings target is $3,000", "type": "explicit_fact"}],
+            "updated_at": "2026-10-09T12:00:00Z",
+        },
+    ]
+    answer = route("What was the savings target I mentioned?", "alpha", "owner")
+    assert "$3,000" in answer, answer
+    assert FakeClient.instances[-1].calls == [], FakeClient.instances[-1].calls
 
     # Entity arrays are normalized to their text, not Python's repr of dicts.
     state["items"] = [
