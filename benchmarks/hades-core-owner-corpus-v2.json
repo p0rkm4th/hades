@@ -748,7 +748,7 @@
       "core-28",
       "core-31"
     ],
-    "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; current-source coding diagnosis/fix, README comprehension, named-file explanation and search; small edit with focused test; and a five-turn inspect/edit/test/diff-review/commit workflow. All workflow arms used the same Hermes 0.21.5 / Ollama 0.40.1 / Qwen3.6:35b setup and isolated rootless sandbox. The current workflow run passed independent tests, source-scope checks, and clean commits in all four arms. PLAIN made the explicit diff review in both runs; HADES made it in one run and made the diff inspection during the commit turn in the other. No owner preference has been collected.",
+    "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; current-source coding diagnosis/fix, README comprehension, named-file explanation and search; small edit with focused test; and a five-turn inspect/edit/test/diff-review/commit workflow. The historical Hermes 0.21.5 workflow passed independent tests, source-scope checks, and clean commits in all four arms. A later matched Hermes 0.21.6 replay passed independent tests and source-scope checks in all four arms, but HADES skipped explicit diff review and failed to commit in both HADES arms; PLAIN committed in both. No owner preference has been collected.",
     "unreplayed_case_count": 29,
     "owner_preference_labels": 0,
     "owner_preference_status": "unassigned",
@@ -1510,5 +1510,51 @@
       "benchmarks/hades-core-workspace-schema-stable-v1.json"
     ],
     "report": "docs/hades-core-workspace-schema-cache-experiment-20261008.md"
+  },
+  "latest_workspace_workflow_to_commit_hermes0216": {
+    "case_ids": [
+      "core-25",
+      "core-26",
+      "core-28",
+      "core-31"
+    ],
+    "source_revision": "5c87f371ebc6ce0a57e8b69ff318e04b8cb88890",
+    "classification": "two order-balanced synthetic five-turn workspace workflows on Hermes 0.21.6; both HADES runs passed independent focused tests and source-scope checks but failed to make a clean commit; no owner preference or human answer-quality review",
+    "runtime": "Hermes 0.21.6, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable sandbox image",
+    "order": "PLAIN then HADES; HADES then PLAIN",
+    "median_task_seconds": {
+      "plain": 46.36525,
+      "hades": 51.93655
+    },
+    "median_provider_generations_per_task": {
+      "plain": 12,
+      "hades": 12
+    },
+    "median_tool_outputs_per_task": {
+      "plain": 7.5,
+      "hades": 16
+    },
+    "explicit_diff_review_calls": {
+      "plain": 1,
+      "hades": 0
+    },
+    "verified_clean_commits": {
+      "plain": 2,
+      "hades": 0
+    },
+    "independent_tests_passed": {
+      "plain": 2,
+      "hades": 2
+    },
+    "expected_source_only_changes": {
+      "plain": 2,
+      "hades": 2
+    },
+    "owner_preference": "UNASSIGNED",
+    "limitations": "Two synthetic pairs on one small typo fixture; direct Hermes AIAgent route, no human answer-quality review, Open WebUI persistence, deployed parity, or Scotty preference. HADES skipped explicit diff review and failed to commit in both runs; PLAIN committed both.",
+    "metrics_record": "benchmarks/hades-core-owner-workflow-to-commit-hermes0216-20261008.json",
+    "report": "docs/hades-core-owner-workflow-hermes0216-2026-10-08.md",
+    "current_candidate_qualification": "NOT QUALIFIED: current Hermes 0.21.6 replay reproduced HADES review/commit failure in 2/2 runs; historical Hermes 0.21.5 success does not qualify this candidate.",
+    "next_action": "Diagnose the repeated HADES commit-turn tool loop from sanitized phase metrics, then repeat on a committed fix."
   }
 }

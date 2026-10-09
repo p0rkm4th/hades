@@ -14,4 +14,6 @@ The replay script is [`benchmark-hades-owner-subset.py`](../scripts/benchmark-ha
 - Tool-backed synthetic comparisons do not establish deployed Open WebUI behavior or owner-visible performance.
 - HADES and PLAIN STACK must be rechecked against the same staged upstream/runtime when candidates change.
 
+The latest matched workspace-to-commit replay uses Hermes 0.21.6 and is recorded in [the candidate report](hades-core-owner-workflow-hermes0216-2026-10-08.md): HADES passed focused tests and source-scope checks in both runs, but skipped explicit diff review and failed to commit in both; PLAIN committed both. Sanitized diagnostics show HADES attempted terminal calls when the valid workspace-tool catalog was empty. This is a P1 continuation/capability-availability issue requiring diagnosis; workspace coding is not qualified. The older Hermes 0.21.5 result remains historical and does not override this current-candidate failure.
+
 The corpus remains a testing instrument. It does not establish that HADES is preferred, and direct Scotty dogfood remains a release gate.
