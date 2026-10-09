@@ -119,6 +119,49 @@ PY
 }
 
 backup_container_python hades-open-webui /app/backend/data/webui.db open-webui.db
+open_webui_auth_state=absent
+require_auth_state_backup=${HADES_REQUIRE_OPEN_WEBUI_AUTH_STATE_BACKUP:-0}
+webui_env=$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' hades-open-webui 2>/dev/null || true)
+if printf '%s\n' "$webui_env" | grep -q '^REDIS_URL='; then
+  require_auth_state_backup=1
+fi
+if docker inspect hades-open-webui-auth-state >/dev/null 2>&1; then
+  docker exec hades-open-webui-auth-state valkey-cli ping | grep -qx PONG || {
+    printf 'FAIL Open WebUI auth-state Valkey is not healthy\n' >&2
+    exit 1
+  }
+  [[ -n "${HADES_OPEN_WEBUI_VALKEY_IMAGE:-}" ]] || {
+    printf 'FAIL pinned Valkey image is required to validate auth-state backup\n' >&2
+    exit 1
+  }
+  last_save_before=$(docker exec hades-open-webui-auth-state valkey-cli --raw LASTSAVE | tr -d '\r')
+  [[ "$last_save_before" =~ ^[0-9]+$ ]] || { printf 'FAIL invalid Valkey LASTSAVE value\n' >&2; exit 1; }
+  docker exec hades-open-webui-auth-state valkey-cli BGSAVE >/dev/null
+  saved=0
+  for _ in $(seq 1 90); do
+    persistence=$(docker exec hades-open-webui-auth-state valkey-cli --raw INFO persistence)
+    last_save_after=$(docker exec hades-open-webui-auth-state valkey-cli --raw LASTSAVE | tr -d '\r')
+    in_progress=$(printf '%s\n' "$persistence" | sed -n 's/^rdb_bgsave_in_progress://p' | tr -d '\r')
+    save_status=$(printf '%s\n' "$persistence" | sed -n 's/^rdb_last_bgsave_status://p' | tr -d '\r')
+    if [[ "$in_progress" == 0 && "$save_status" == ok && "$last_save_after" =~ ^[0-9]+$ && "$last_save_after" -gt "$last_save_before" ]]; then
+      saved=1
+      break
+    fi
+    sleep 1
+  done
+  [[ "$saved" == 1 ]] || { printf 'FAIL Valkey RDB snapshot did not complete successfully\n' >&2; exit 1; }
+  docker cp hades-open-webui-auth-state:/data/dump.rdb "$output/open-webui-auth-state.rdb"
+  [[ -s "$output/open-webui-auth-state.rdb" ]] || { printf 'FAIL Valkey RDB snapshot is empty\n' >&2; exit 1; }
+  docker run --rm --network none --entrypoint valkey-check-rdb \
+    -v "$output:/backup:ro" "$HADES_OPEN_WEBUI_VALKEY_IMAGE" \
+    /backup/open-webui-auth-state.rdb >/dev/null
+  chmod 600 "$output/open-webui-auth-state.rdb"
+  open_webui_auth_state=present
+elif [[ "$require_auth_state_backup" == 1 ]]; then
+  printf 'FAIL P0 backup requires the Open WebUI auth-state store\n' >&2
+  exit 1
+fi
+
 lldap_container=${HADES_LLDAP_CONTAINER:-hades-lldap-production}
 backup_container_quiesced "$lldap_container" /data/users.db lldap-users.db
 backup_container_php hades-grocy /config/data/grocy.db grocy.db
@@ -173,10 +216,13 @@ actual_version=$HADES_ACTUAL_VERSION
 grocy_adapter_revision=$HADES_GROCY_ADAPTER_REVISION
 agent_zero_adapter_revision=$HADES_AGENT_ZERO_ADAPTER_REVISION
 phase3_state=$phase3_state
+open_webui_auth_state=$open_webui_auth_state
+open_webui_valkey_image=$HADES_OPEN_WEBUI_VALKEY_IMAGE
 EOF
 chmod 600 "$output/MANIFEST"
-(cd "$output" && sha256sum ./*.db MANIFEST > SHA256SUMS)
+backup_files=("$output"/*.db "$output"/*.rdb "$output"/MANIFEST)
+(cd "$output" && sha256sum "${backup_files[@]##*/}" > SHA256SUMS)
 chmod 600 "$output/SHA256SUMS"
 printf 'PASS SQLite backup: %s\n' "$output"
 artifact_count=$(find "$output" -maxdepth 1 -type f -name '*.db' | wc -l)
-printf 'PASS artifacts=%s metadata=1 checksums=1 phase3_state=%s\n' "$artifact_count" "$phase3_state"
+printf 'PASS artifacts=%s metadata=1 checksums=1 phase3_state=%s open_webui_auth_state=%s\n' "$artifact_count" "$phase3_state" "$open_webui_auth_state"

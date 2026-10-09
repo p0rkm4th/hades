@@ -14,18 +14,31 @@
     },
     {
       "component": "Open WebUI",
-      "pinned_version": "0.11.1 tracked Dockerfile plus immutable base",
+      "pinned_version": "production 0.11.1; P0 candidate 0.11.4 immutable base",
       "artifact_type": "tracked Dockerfile plus immutable upstream base",
       "immutable_reference": "config/versions.env:HADES_OPEN_WEBUI_BASE_IMAGE",
       "artifact_source": "config/versions.env:HADES_OPEN_WEBUI_BUILD_SOURCE",
       "state_relationship": "build output is software custody; WebUI database and assets are persistent state",
-      "persistent_state": ["WebUI database", "vector data", "theme assets"],
+      "persistent_state": ["WebUI database", "uploaded/vector data", "theme assets", "Open WebUI auth-state volume is specified in the 0.11.4 P0 deployment"],
       "required_secret_inputs": ["HADES_HERMES_API_KEY", "HADES_OPEN_WEBUI_DATA"],
       "network_dependency": "LLDAP and Hermes; authenticated Task notification reads use the Hermes gateway server-side",
-      "startup_order": 2,
+      "startup_order": 3,
       "health_check": "WebUI health, login, chat reload, and actor-isolated Task notification snapshot",
       "restore_check": "SQLite integrity, marker conversation reload, and asset match",
       "required_assets": ["webui/hades-theme.css", "webui/hades-theme.js", "webui/finance-upload.js", "webui/receipt-upload.js"]
+    },
+    {
+      "component": "Open WebUI auth-state Valkey",
+      "pinned_version": "config/versions.env:HADES_OPEN_WEBUI_VALKEY_IMAGE",
+      "artifact_type": "immutable OCI image",
+      "immutable_reference": "config/versions.env:HADES_OPEN_WEBUI_VALKEY_IMAGE",
+      "state_relationship": "persistent AOF/RDB volume stores JWT revocation markers and Socket.IO coordination state",
+      "persistent_state": ["hades-open-webui-auth-state volume"],
+      "required_secret_inputs": [],
+      "network_dependency": "private internal network shared only with Open WebUI",
+      "startup_order": 2,
+      "health_check": "Valkey PING and Open WebUI authenticated-session contract",
+      "restore_check": "RDB/AOF restore, old-token rejection, and cross-worker Socket.IO revocation"
     },
     {
       "component": "Hindsight",
@@ -37,7 +50,7 @@
       "persistent_state": ["embedded PostgreSQL cluster", "subject-bank mappings"],
       "required_secret_inputs": ["HADES_HINDSIGHT_LLM_API_KEY", "HADES_HINDSIGHT_DATA"],
       "network_dependency": "private memory API",
-      "startup_order": 3,
+      "startup_order": 4,
       "health_check": "PostgreSQL readiness and Hindsight health",
       "restore_check": "native export restore and subject-scoped marker recall"
     },
@@ -49,7 +62,7 @@
       "persistent_state": ["Grocy database", "configuration", "inventory and recipes"],
       "required_secret_inputs": ["HADES_GROCY_API_KEY_FILE"],
       "network_dependency": "private Grocy API",
-      "startup_order": 4,
+      "startup_order": 5,
       "health_check": "Grocy HTTP health",
       "restore_check": "SQLite integrity, stock, shopping-list, and recipe checks"
     },
@@ -73,7 +86,7 @@
       "persistent_state": ["profile", "sessions", "skills"],
       "required_secret_inputs": ["HADES_HERMES_PROFILE", "model endpoint", "Hermes release artifact"],
       "network_dependency": "Open WebUI, Hindsight, Grocy, SearXNG, and Agent Zero",
-      "startup_order": 5,
+      "startup_order": 6,
       "health_check": "private API health and authenticated model contract",
       "restore_check": "profile parse, bounded tool call, and reload/restart",
       "required_profile": "hermes/config.yaml.example"
@@ -85,7 +98,7 @@
       "required_secret_inputs": [],
       "optional_secret_inputs": ["HADES_AGENT_ZERO_OPERATOR_PASSWORD_FILE enables native UI login and synchronizes the running API token to Hermes; disabled when unset", "HADES_AGENT_ZERO_CREDENTIAL_FILE for externally managed API credentials"],
       "network_dependency": "private operator API",
-      "startup_order": 6,
+      "startup_order": 7,
       "health_check": "health, native UI auth when enabled, and synchronized API credential matches live service",
       "restore_check": "isolated volume restore and harmless delegation"
     },
@@ -99,7 +112,7 @@
       "persistent_state": ["configuration"],
       "required_secret_inputs": ["optional provider settings", "HADES_SEARXNG_DATA"],
       "network_dependency": "private search API and approved providers",
-      "startup_order": 7,
+      "startup_order": 8,
       "health_check": "JSON search response",
       "restore_check": "configuration parse and provider search check"
     },

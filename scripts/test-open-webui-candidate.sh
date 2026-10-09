@@ -4,7 +4,12 @@ set -Eeuo pipefail
 # Candidate-only acceptance. The caller supplies an already-built immutable
 # image; this script never changes the production version manifest.
 image=${1:?usage: test-open-webui-candidate.sh IMAGE}
+# This gate is part of the full P0 acceptance and must use the pinned store.
+# shellcheck disable=SC1091
+source config/versions.env
 bash scripts/verify-openwebui-candidate-artifact.sh "$image"
+python3 scripts/test-open-webui-auth-revocation-candidate.py "$image" "$HADES_OPEN_WEBUI_VALKEY_IMAGE"
+python3 scripts/test-open-webui-ldap-group-sync-candidate.py "$image"
 
 HADES_PRIVATE_CHAT_WEBUI_IMAGE="$image" \
 HADES_PRIVATE_CHAT_WEBUI_PORT="${HADES_PRIVATE_CHAT_WEBUI_PORT:-18895}" \

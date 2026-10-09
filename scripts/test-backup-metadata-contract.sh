@@ -12,7 +12,9 @@ fi
 echo 'PASS symlinked backup destination rejected'
 grep -q 'source "$repo_dir/config/versions.env"' "$helper" || { echo 'FAIL backup helper omits authoritative manifest'; exit 1; }
 grep -q 'backup_format=1' "$helper" || { echo 'FAIL backup metadata format is missing'; exit 1; }
-grep -Fq 'sha256sum ./*.db MANIFEST > SHA256SUMS' "$helper" || { echo 'FAIL backup metadata is not checksummed'; exit 1; }
+grep -Fq 'sha256sum "${backup_files[@]##*/}" > SHA256SUMS' "$helper" || { echo 'FAIL backup metadata does not checksum all state artifacts'; exit 1; }
+grep -Fq 'open-webui-auth-state.rdb' "$helper" || { echo 'FAIL backup helper omits persistent Open WebUI revocation state'; exit 1; }
+grep -Fq 'open_webui_valkey_image=$HADES_OPEN_WEBUI_VALKEY_IMAGE' "$helper" || { echo 'FAIL backup metadata omits the Valkey image pin'; exit 1; }
 grep -Fq 'HADES_EPSILON_PHASE3_STATE_FILE' "$helper" || { echo 'FAIL backup helper omits isolated Phase 3 state'; exit 1; }
 grep -Fq 'lldap_container=${HADES_LLDAP_CONTAINER:-hades-lldap-production}' "$helper" || { echo 'FAIL backup helper does not support reconstructed LLDAP container names'; exit 1; }
 grep -Fq 'source.backup(destination)' "$helper" || { echo 'FAIL backup helper does not use SQLite online backup API'; exit 1; }

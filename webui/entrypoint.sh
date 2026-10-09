@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+required_security_adapters='fail-closed-jwt,authority-revocation,ldap-empty-group'
+if [[ "${HADES_OPEN_WEBUI_SECURITY_ADAPTERS:-}" == "$required_security_adapters" && -z "${REDIS_URL:-}" ]]; then
+  echo 'FATAL HADES security candidate requires a configured persistent revocation store' >&2
+  exit 78
+fi
+
 marker='<!-- HADES ODYSSEUS THEME -->'
 asset_version='remote-prefs-20-phase3-result-notifications'
 if ! grep -q "$marker" /app/build/index.html; then

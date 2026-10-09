@@ -3,6 +3,32 @@ name: hades-open-webui
 # Generated from this tracked template. Values remain operator/environment
 # references so rendered records contain no secret contents.
 services:
+  auth-state:
+    # This store has no published port and is attached only to the private
+    # internal auth-state network shared with Open WebUI.
+    image: ${HADES_OPEN_WEBUI_VALKEY_IMAGE:?set a pinned HADES_OPEN_WEBUI_VALKEY_IMAGE}
+    container_name: hades-open-webui-auth-state
+    restart: unless-stopped
+    command:
+      - valkey-server
+      - --save
+      - ""
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - always
+      - --protected-mode
+      - "no"
+    volumes:
+      - open-webui-auth-state:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      - hades-auth-state
+
   open-webui:
     image: ${HADES_OPEN_WEBUI_IMAGE:?set HADES_OPEN_WEBUI_IMAGE from the artifact contract}
     container_name: hades-open-webui
@@ -12,6 +38,11 @@ services:
     environment:
       ENABLE_SIGNUP: "false"
       WEBUI_AUTH: "true"
+      # JWT revocation state is security-critical. The adapter rejects auth
+      # when this dedicated persistent private Valkey store is unavailable.
+      REDIS_URL: redis://hades-open-webui-auth-state:6379/0
+      WEBSOCKET_MANAGER: redis
+      WEBSOCKET_REDIS_URL: redis://hades-open-webui-auth-state:6379/1
       # LDAP is the shared production identity path. Local password auth stays
       # enabled as an emergency/admin fallback; LDAP users still authenticate
       # through the normal Open WebUI login page.
@@ -76,6 +107,9 @@ services:
       AUDIO_TTS_OPENAI_API_KEY: "${HADES_VOICE_API_KEY:-}"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      auth-state:
+        condition: service_healthy
     volumes:
       - ${HADES_OPEN_WEBUI_DATA:?set HADES_OPEN_WEBUI_DATA}:/app/backend/data:Z
       - ${HADES_CONFIG_ROOT:?set HADES_CONFIG_ROOT}/assets/hades-theme.css:/app/backend/open_webui/static/hades-theme.css:ro,Z
@@ -92,6 +126,7 @@ services:
       # Open WebUI needs only the private LDAP identity network for sign-in;
       # model and application traffic remains on its existing networks.
       - hades-identity
+      - hades-auth-state
 
 networks:
   hades-application:
@@ -106,3 +141,10 @@ networks:
   hades-grocy:
     name: hades-grocy-net
     external: true
+  hades-auth-state:
+    name: hades-open-webui-auth-state-net
+    internal: true
+
+volumes:
+  open-webui-auth-state:
+    name: hades-open-webui-auth-state

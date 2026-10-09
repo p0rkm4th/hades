@@ -6,7 +6,7 @@ from pathlib import Path
 
 source = Path("docs/backup-restore.md").read_text(encoding="utf-8")
 required = (
-    "Phase 3 automation", "LLDAP", "Open WebUI", "Hindsight", "Grocy", "Actual Budget",
+    "Phase 3 automation", "LLDAP", "Open WebUI", "Open WebUI auth state", "Hindsight", "Grocy", "Actual Budget",
     "Hermes", "Agent Zero", "SearXNG", "HADES private configuration",
 )
 matrix_start = source.index("| Component | Authority / reconstructability |")

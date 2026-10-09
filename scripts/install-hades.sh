@@ -26,7 +26,7 @@ if [[ "$test_mode" == 1 && -z "$inputs" ]]; then inputs="$repo_dir/config/operat
 source "$inputs"
 # The repository manifest is authoritative; operator inputs cannot override pins.
 source "$repo_dir/config/versions.env"
-export HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD HADES_NGINX_IMAGE
+export HADES_LLDAP_IMAGE HADES_HINDSIGHT_IMAGE HADES_GROCY_IMAGE HADES_AGENT_ZERO_IMAGE HADES_SEARXNG_IMAGE_RECORD HADES_NGINX_IMAGE HADES_OPEN_WEBUI_VALKEY_IMAGE
 fail() { echo "FAIL $*" >&2; exit 1; }
 source_revision=archive
 source_tree=unavailable
@@ -450,7 +450,7 @@ preflight() {
   available_kb=$(df -Pk / | awk 'NR == 2 {print $4}')
   [[ "$available_kb" =~ ^[0-9]+$ ]] || fail 'could not determine free disk on the root filesystem'
   required_disk_kb=41943040
-  images_to_check=("$HADES_LLDAP_IMAGE" "$HADES_HINDSIGHT_IMAGE" "$HADES_GROCY_IMAGE" "$HADES_AGENT_ZERO_IMAGE" "$HADES_SEARXNG_IMAGE_RECORD" "${HADES_OPEN_WEBUI_IMAGE:-}")
+  images_to_check=("$HADES_LLDAP_IMAGE" "$HADES_HINDSIGHT_IMAGE" "$HADES_GROCY_IMAGE" "$HADES_AGENT_ZERO_IMAGE" "$HADES_SEARXNG_IMAGE_RECORD" "$HADES_OPEN_WEBUI_VALKEY_IMAGE" "${HADES_OPEN_WEBUI_IMAGE:-}")
   all_pinned_images_cached=1
   for image in "${images_to_check[@]}"; do
     [[ -n "$image" ]] || continue

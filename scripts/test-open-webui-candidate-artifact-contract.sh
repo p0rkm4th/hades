@@ -15,6 +15,7 @@ case "$format" in
   *org.opencontainers.image.revision*) printf '%s\n' "${FAKE_UPSTREAM_COMMIT:?}" ;;
   *org.hades.open-webui.source-commit*) printf '%s\n' "${FAKE_HADES_COMMIT:?}" ;;
   *org.hades.open-webui.base-image*) printf '%s\n' "${FAKE_BASE_IMAGE:?}" ;;
+  *org.hades.open-webui.security-adapters*) printf '%s\n' "${FAKE_SECURITY_ADAPTERS:?}" ;;
   *) echo "unexpected fake docker format: $format" >&2; exit 2 ;;
 esac
 SH
@@ -26,9 +27,10 @@ export FAKE_UPSTREAM_VERSION="$HADES_OPEN_WEBUI_CANDIDATE_VERSION"
 export FAKE_UPSTREAM_COMMIT="$HADES_OPEN_WEBUI_CANDIDATE_SOURCE_COMMIT"
 export FAKE_HADES_COMMIT="$HADES_OPEN_WEBUI_CANDIDATE_HADES_COMMIT"
 export FAKE_BASE_IMAGE="$HADES_OPEN_WEBUI_CANDIDATE_IMAGE"
+export FAKE_SECURITY_ADAPTERS="$HADES_OPEN_WEBUI_CANDIDATE_SECURITY_ADAPTERS"
 bash "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" synthetic-image >/dev/null
 
-for field in FAKE_IMAGE_ID FAKE_UPSTREAM_VERSION FAKE_UPSTREAM_COMMIT FAKE_HADES_COMMIT FAKE_BASE_IMAGE; do
+for field in FAKE_IMAGE_ID FAKE_UPSTREAM_VERSION FAKE_UPSTREAM_COMMIT FAKE_HADES_COMMIT FAKE_BASE_IMAGE FAKE_SECURITY_ADAPTERS; do
   original=${!field}
   printf -v "$field" '%s' "${original}mismatch"
   export "$field"
@@ -47,6 +49,10 @@ grep -q -- '--label "org.hades.open-webui.source-commit=$source_commit"' <<<"$bu
 }
 grep -q -- '--label "org.hades.open-webui.base-image=$base_override"' <<<"$builder" || {
   echo 'FAIL Open WebUI builder omits immutable base provenance label' >&2
+  exit 1
+}
+grep -q -- '--label "org.hades.open-webui.security-adapters=$HADES_OPEN_WEBUI_CANDIDATE_SECURITY_ADAPTERS"' <<<"$builder" || {
+  echo 'FAIL Open WebUI builder omits required security adapter provenance' >&2
   exit 1
 }
 for script in test-open-webui-candidate.sh test-open-webui-populated-migration.sh; do

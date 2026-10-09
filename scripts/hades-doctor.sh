@@ -386,10 +386,37 @@ if command -v docker >/dev/null 2>&1; then
       doctor_fail=1
     fi
   done
-  for container in hades-lldap hades-open-webui hades-hindsight hades-grocy hades-agent-zero hades-searxng; do
+  required_containers=(hades-lldap hades-open-webui hades-hindsight hades-grocy hades-agent-zero hades-searxng)
+  if [[ "$HADES_OPEN_WEBUI_VERSION" == "$HADES_OPEN_WEBUI_CANDIDATE_VERSION" ]]; then
+    required_containers+=(hades-open-webui-auth-state)
+  fi
+  for container in "${required_containers[@]}"; do
     status=$(docker inspect -f '{{.State.Status}}' "$container" 2>/dev/null || true)
     if [[ "$status" == running ]]; then echo "PASS container $container"; else echo "FAIL container $container state=${status:-missing}"; doctor_fail=1; fi
   done
+  if [[ "$HADES_OPEN_WEBUI_VERSION" == "$HADES_OPEN_WEBUI_CANDIDATE_VERSION" ]]; then
+    auth_state_image=$(docker inspect -f '{{.Config.Image}}' hades-open-webui-auth-state 2>/dev/null || true)
+    if [[ "$auth_state_image" == "$HADES_OPEN_WEBUI_VALKEY_IMAGE" ]]; then
+      echo 'PASS pinned Open WebUI revocation store image'
+    else
+      echo 'FAIL Open WebUI revocation store image differs from the manifest'
+      doctor_fail=1
+    fi
+    auth_state_mount=$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Name}}{{end}}{{end}}' hades-open-webui-auth-state 2>/dev/null || true)
+    if [[ "$auth_state_mount" == hades-open-webui-auth-state ]]; then
+      echo 'PASS persistent Open WebUI revocation store volume'
+    else
+      echo 'FAIL Open WebUI revocation store is not on the expected persistent volume'
+      doctor_fail=1
+    fi
+    auth_state_health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' hades-open-webui-auth-state 2>/dev/null || true)
+    if [[ "$auth_state_health" == healthy ]]; then
+      echo 'PASS Open WebUI revocation store health'
+    else
+      echo "FAIL Open WebUI revocation store health=${auth_state_health:-not-configured}"
+      doctor_fail=1
+    fi
+  fi
   agent_zero_workspace_env_mode=$(docker exec --user 0 hades-agent-zero stat -c '%a' /a0/usr/.env 2>/dev/null || true)
   if [[ "$agent_zero_workspace_env_mode" == 600 ]]; then
     echo 'PASS Agent Zero private workspace secret permissions'
