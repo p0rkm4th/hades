@@ -1715,7 +1715,7 @@
       "hades": 2
     },
     "owner_preference": "UNASSIGNED",
-    "limitations": "Two synthetic workflow pairs using direct Hermes AIAgent rather than Open WebUI/deployed gateway. No answer-text quality review, owner preference, remote push, or deployment parity. HADES gathered diff evidence outside the dedicated review phase in both tasks; dedicated review sequencing is not qualified. Latency variance remains.",
+    "limitations": "Two synthetic workflow pairs using direct Hermes AIAgent rather than Open WebUI/deployed gateway. No answer-text quality review, owner preference, remote push, or deployment parity. HADES supplies authenticated diff evidence during the dedicated review turn and executes explicit git diff commands during other stages in both pairs; the evidence was not manually quality-reviewed. Latency variance remains.",
     "metrics_record": "benchmarks/hades-core-owner-workspace-workflow-ollama0402-current-rootless-two-repeat-20261009.json",
     "report": "docs/hades-core-owner-workspace-workflow-ollama0402-2026-10-09.md",
     "harness_setup_note": "Initial attempt failed before task turns because fixture linked the Hindsight repository root; harness now links the nested hindsight-integrations/hermes provider package. Failed setup attempt excluded from task metrics."

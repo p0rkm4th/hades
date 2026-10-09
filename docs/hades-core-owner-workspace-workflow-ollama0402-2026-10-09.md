@@ -18,16 +18,18 @@ HADES overlay and Hindsight provider. The sanitized full metrics are in
 | Median provider calls per task | 13.5 | 11.5 |
 | Median tool results per task | 9 | 7 |
 | Focused-test terminal calls across two tasks | 8 | 2 |
-| Explicit Git diff calls in dedicated review turns | 1 | 0 |
+| Explicit Git diff tool calls in dedicated review turns | 1 | 0; authenticated diff evidence supplied by HADES |
 | Verified source-only commits | 2/2 | 2/2 |
 | Independent focused tests and diff checks passed | 2/2 | 2/2 |
 
-HADES gathered Git diff evidence outside the dedicated review phase in both
-tasks. Thus, the tasks ended with verified commits, but HADES did not honor the
-review sequence as cleanly as the scripted conversation requested. The two
-samples also showed task-time spread (50.15–63.95 s PLAIN; 52.41–54.80 s
-HADES), so the 3.45-second median difference is diagnostic, not a general
-latency claim.
+HADES supplied authenticated, bounded Git diff evidence directly in each
+dedicated review turn and disabled tool calls there by design; one HADES review
+turn also read a file. HADES additionally ran explicit `git diff` commands in
+non-review phases in both tasks, which may be redundant given the injected
+review evidence. The model's generated review was not retained, so the review
+content itself is unscored. The two samples showed task-time spread (50.15–
+63.95 s PLAIN; 52.41–54.80 s HADES), so the 3.45-second median difference is
+diagnostic, not a general latency claim.
 
 ## Decision and limits
 
@@ -39,11 +41,11 @@ WebUI and deployed authentication behave the same way. The benchmark uses a
 direct Hermes agent path and synthetic project. No answer-text quality review,
 owner preference, remote push, or deployed parity was measured.
 
-The HADES review-turn sequencing remains a concrete friction item: it did not
-call the diff tool in either dedicated review turn, although its native diff
-evidence was available elsewhere in each task. Keep this as a follow-up to
-review naturally with Scotty; do not add benchmark-only routing or weaken the
-workspace authority boundary to force a scripted score.
+The open review question is whether the native diff evidence produces a useful,
+accurate explanation for Scotty, and whether explicit `git diff` commands in
+other HADES stages add value. Review those behaviors in natural dogfood; do not
+add benchmark-only routing or weaken the workspace authority boundary to force
+a scripted score.
 
 The initial launch before this result failed during fixture setup, before any
 task turn, because the test harness linked Hermes to the Hindsight repository
