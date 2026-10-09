@@ -2,8 +2,8 @@
 set -Eeuo pipefail
 umask 077
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-hermes_source=${HADES_WORKSPACE_TEST_HERMES_SOURCE:-/mnt/shared/hades-core-usability-reset/Hermes-v0.21.5-hades-candidate}
-hermes_python=${HADES_WORKSPACE_TEST_HERMES_PYTHON:-$hermes_source/.venv/bin/python}
+hermes_source=${HADES_WORKSPACE_TEST_HERMES_SOURCE:-/mnt/shared/hades-core-usability-reset/Hermes-v0.21.6-hades-candidate}
+hermes_python=${HADES_WORKSPACE_TEST_HERMES_PYTHON:-$hermes_source/venv/bin/python}
 [[ -x "$hermes_python" ]] || { echo "FAIL Hermes candidate Python is unavailable: $hermes_python" >&2; exit 2; }
 [[ -d "$hermes_source" ]] || { echo "FAIL Hermes candidate source is unavailable: $hermes_source" >&2; exit 2; }
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-workspace-escalation.XXXXXX")

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "HADES Core Comparative Owner Corpus — Seed v2 with memory supplement",
-  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The current five-turn coding workflow passes independent tests and clean commits on both stacks after repairing workspace follow-up routing. HADES still misses the explicit diff-review turn in one of two runs, although it inspects the diff before both commits; see the current workflow replay.",
+  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The current five-turn coding workflow passes independent tests and clean commits on both stacks after repairing workspace follow-up routing. HADES still misses the explicit diff-review turn in one of two runs. Stable five-schema workspace exposure is the current Hermes 0.21.6 coding-escalation candidate after a focused cache-reuse replay; broad task and owner-preference qualification remain open.",
   "source_note": "Cases are hand-authored sanitized paraphrases, not verbatim transcripts. The Sept. 24 owner dogfood report documents real prompt families including recipe availability, pantry expiry, spaghetti inventory/list, homelab/network/model/backup status, restaurants, subscriptions, weekend affordability, lease prepayment, restock, savings target, and morning briefing. Replace/add cases only from owner-approved evidence; never copy secrets, financial records, private memories, or household content into this file. The five v2 memory supplement cases are synthetic examples authored for policy coverage; they are not transcripts or claims about Scotty.",
   "comparison_contract": {
     "same_model_and_quantization": true,
@@ -911,7 +911,7 @@
         "contracts": "runtime and authenticated gateway pass; diagnosis schema is stable five tools but execution allowlist is only read_file/search_files; malicious undeclared patch rejected without changing fixture bytes",
         "real_model_replay_pending": false,
         "owner_preference_labels": 0,
-        "status": "rejected as default behavior after three-case replay; code reverted to read-only two-schema diagnosis",
+        "status": "historical Hermes 0.21.5 rejection; superseded as the current candidate by latest_workspace_stable_schema_comparison on Hermes 0.21.6; owner preference and broad qualification remain open",
         "runtime": "Hermes 0.21.5; Ollama 0.40.0; Qwen3.6 35B Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c; context 65,536; rootless Docker 29.8.2/cgroupfs, daemon and task networks none; identical /workspace environment_hint",
         "repeats_per_stack": 2,
         "plain_median_task_seconds": 29.37195,
@@ -1446,5 +1446,37 @@
     "limitations": "Two synthetic pairs on one fixture; PLAIN modified the workspace during diagnosis in one repeat, so task outcomes differ. Direct AIAgent path only; no human answer-quality review, Open WebUI persistence, deployed parity, Git workflow, or Scotty preference. Latency is diagnostic only.",
     "metrics_record": "benchmarks/hades-core-workspace-discovery-prompt-v1-20261008.json",
     "report": "docs/hades-core-workspace-discovery-prompt-comparison-2026-10-08.md"
+  },
+  "latest_workspace_stable_schema_comparison": {
+    "source_revision": "cbf46e807e4c2546b3cca9ce781ef6d480f86e98",
+    "classification": "two order-balanced repeats per schema strategy on one synthetic geometry diagnosis-to-fix task; Hermes 0.21.6, Ollama 0.40.1; candidate result only",
+    "dynamic": {
+      "diagnosis_schemas": 2,
+      "schema_bytes": 3662,
+      "median_task_seconds": 41.85,
+      "median_diagnosis_seconds": 21.93,
+      "median_first_action_request_seconds": 14.86,
+      "action_cached_prompt_tokens": 0,
+      "diagnosis_workspace_edits": 0
+    },
+    "stable": {
+      "diagnosis_schemas": 5,
+      "schema_bytes": 10529,
+      "median_task_seconds": 34.82,
+      "median_diagnosis_seconds": 25.83,
+      "median_first_action_request_seconds": 4.07,
+      "median_action_cached_prompt_tokens": 4996,
+      "diagnosis_workspace_edits": 0
+    },
+    "security_contract": "Hermes valid_tool_names permits only read_file and search_files during diagnosis; focused Hermes 0.21.6 runtime test passed, including rejection without dispatch of a synthetic diagnosis-time patch call.",
+    "decision": "Retain stable schemas as a provisional coding-escalation default: in this small matched task, action cache reuse outweighed the added diagnosis cost. Do not infer preference for standalone explanations; evaluate stop-after-diagnosis cases and collect owner preference.",
+    "all_independent_tests_passed": true,
+    "owner_preference_labels": 0,
+    "limitations": "One synthetic geometry fixture, two repeats per strategy, direct AIAgent without Open WebUI; no owner preference, broad coding-task coverage, or deployment qualification.",
+    "metrics_records": [
+      "benchmarks/hades-core-workspace-schema-dynamic-v1.json",
+      "benchmarks/hades-core-workspace-schema-stable-v1.json"
+    ],
+    "report": "docs/hades-core-workspace-schema-cache-experiment-20261008.md"
   }
 }
