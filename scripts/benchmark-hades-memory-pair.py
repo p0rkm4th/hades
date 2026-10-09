@@ -1090,6 +1090,7 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
                    hades_scope: str, hades_recall_types: str,
                    hades_recall_budget: str,
                    hades_prefer_observations: bool,
+                   hades_recall_sync: bool,
                    capture_recall_diagnostics: bool = False):
     executable = hermes_executable(hermes_root)
     provider_port = proxy_module.unused_port()
@@ -1139,6 +1140,7 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
             "api_key": "synthetic-local-benchmark",
             "bank_id": "hades-synthetic",
             "recall_budget": hades_recall_budget,
+            "recall_sync": hades_recall_sync,
         }
         if hades_recall_types == "all":
             hindsight_config["recall_types"] = ["observation", "world", "experience"]
@@ -1431,6 +1433,10 @@ def main() -> int:
         help="synthetic HADES recall-type setting; all enables observation, world and experience",
     )
     parser.add_argument(
+        "--hades-recall-sync", action="store_true",
+        help="test the pinned Hindsight provider's supported synchronous recall mode; adds recall latency to the current turn",
+    )
+    parser.add_argument(
         "--hades-recall-budget", choices=("low", "mid"), default="mid",
         help="synthetic HADES recall budget; low tests the upstream fast-lookup profile",
     )
@@ -1556,7 +1562,8 @@ def main() -> int:
                 stack, ROOT, args.hindsight_plugin, benchmark, hindsight_url, temp,
                 ollama, hermes_root, args.hades_scope, args.hades_recall_types,
                 args.hades_recall_budget,
-                args.hades_prefer_observations, args.capture_recall_diagnostics,
+                args.hades_prefer_observations, args.hades_recall_sync,
+                args.capture_recall_diagnostics,
             )
 
         for stack in ("plain", "hades"):
@@ -2128,6 +2135,7 @@ def main() -> int:
                 "hades_scope": args.hades_scope,
                 "hades_recall_types": args.hades_recall_types,
                 "hades_recall_budget": args.hades_recall_budget,
+                "hades_recall_sync": args.hades_recall_sync,
                 "hades_prefer_observations": args.hades_prefer_observations,
                 "recall_diagnostics_captured": args.capture_recall_diagnostics,
                 "recall_timing_diagnostics_captured": args.capture_recall_diagnostics,
