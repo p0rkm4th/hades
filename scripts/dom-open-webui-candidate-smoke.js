@@ -7,7 +7,10 @@ const baseUrl = process.env.HADES_CANDIDATE_BROWSER_URL;
 const email = process.env.HADES_CANDIDATE_BROWSER_EMAIL;
 const password = process.env.HADES_CANDIDATE_BROWSER_PASSWORD;
 const fixtureFile = process.env.HADES_CANDIDATE_BROWSER_FILE;
-if (!baseUrl || !email || !password || !fixtureFile) {
+const expectedReply = process.env.HADES_CANDIDATE_BROWSER_EXPECTED_REPLY || 'Alpha-private-fact-confirmed';
+const forbiddenText = process.env.HADES_CANDIDATE_BROWSER_FORBIDDEN_TEXT || '';
+const prompt = process.env.HADES_CANDIDATE_BROWSER_PROMPT || 'Please confirm the Alpha browser conversation.';
+if (!baseUrl || !email || !password) {
   console.error('FAIL candidate browser test requires its disposable URL and synthetic login');
   process.exit(2);
 }
@@ -56,6 +59,9 @@ if (!baseUrl || !email || !password || !fixtureFile) {
       await page.locator('input[type="password"]').fill(password);
       await page.locator('button[type="submit"]').click();
       await page.waitForSelector('#chat-input', { timeout: 30000 });
+      if (forbiddenText && (await page.locator('body').innerText()).includes(forbiddenText)) {
+        throw new Error('account landing page displayed another account\'s private response marker');
+      }
     });
 
     await timed('HADES theme and upload controls render', async () => {
@@ -82,21 +88,23 @@ if (!baseUrl || !email || !password || !fixtureFile) {
       await dialog.waitFor({ state: 'hidden', timeout: 5000 });
     });
 
-    await timed('file picker uploads a synthetic text attachment', async () => {
-      await page.locator('input[type="file"]').last().setInputFiles(fixtureFile);
-      await page.getByText('candidate-usability.txt', { exact: false }).waitFor({ state: 'visible', timeout: 15000 });
-      const upload = networkEvents.find(item => item.kind === 'response' && item.path.startsWith('/api/v1/files'));
-      if (!upload || upload.status < 200 || upload.status >= 300) throw new Error('file upload did not return a successful API response');
-    });
+    if (fixtureFile) {
+      await timed('file picker uploads a synthetic text attachment', async () => {
+        await page.locator('input[type="file"]').last().setInputFiles(fixtureFile);
+        await page.getByText('candidate-usability.txt', { exact: false }).waitFor({ state: 'visible', timeout: 15000 });
+        const upload = networkEvents.find(item => item.kind === 'response' && item.path.startsWith('/api/v1/files'));
+        if (!upload || upload.status < 200 || upload.status >= 300) throw new Error('file upload did not return a successful API response');
+      });
+    }
 
     await timed('model response through the visible chat composer', async () => {
       const input = page.locator('#chat-input');
-      await input.fill('Please confirm the Alpha browser conversation.');
+      await input.fill(prompt);
       await page.locator('#send-message-button').click();
       try {
         await page.waitForFunction(
-          () => document.querySelector('#response-content-container')?.innerText.includes('Alpha-private-fact-confirmed'),
-          null,
+          expected => document.querySelector('#response-content-container')?.innerText.includes(expected),
+          expectedReply,
           { timeout: 10000 },
         );
       } catch (_) {
@@ -118,11 +126,11 @@ if (!baseUrl || !email || !password || !fixtureFile) {
       await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForSelector('#chat-input', { timeout: 30000 });
       await page.waitForFunction(
-        () => document.querySelector('#response-content-container')?.innerText.includes('Alpha-private-fact-confirmed'),
-        null,
+        expected => document.querySelector('#response-content-container')?.innerText.includes(expected),
+        expectedReply,
         { timeout: 30000 },
       );
-      if (!(await page.locator('body').innerText()).includes('candidate-usability.txt')) {
+      if (fixtureFile && !(await page.locator('body').innerText()).includes('candidate-usability.txt')) {
         throw new Error('uploaded file reference did not persist with the reloaded conversation');
       }
     });

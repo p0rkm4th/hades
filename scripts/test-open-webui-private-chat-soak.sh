@@ -119,10 +119,27 @@ beta=$(curl -fsS -X POST "http://127.0.0.1:${webui_port}/api/v1/auths/add" \
   -H "Authorization: Bearer $alpha_token" -H 'Content-Type: application/json' \
   --data '{"name":"Beta","email":"beta-private@example.invalid","password":"Synthetic-Only-123!","role":"user"}')
 beta_token=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])' <<<"$beta")
+users=$(curl -fsS "http://127.0.0.1:${webui_port}/api/v1/users/" -H "Authorization: Bearer $alpha_token")
+alpha_id=$(python3 -c 'import json,sys; d=json.load(sys.stdin); d=d.get("users",d.get("items",d)) if isinstance(d,dict) else d; print(next(u["id"] for u in d if u.get("email")=="alpha-private@example.invalid"))' <<<"$users")
+beta_id=$(python3 -c 'import json,sys; d=json.load(sys.stdin); d=d.get("users",d.get("items",d)) if isinstance(d,dict) else d; print(next(u["id"] for u in d if u.get("email")=="beta-private@example.invalid"))' <<<"$users")
 
 curl -fsS -X POST "http://127.0.0.1:${webui_port}/openai/config/update" \
   -H "Authorization: Bearer $alpha_token" -H 'Content-Type: application/json' \
   --data "{\"ENABLE_OPENAI_API\":true,\"OPENAI_API_BASE_URLS\":[\"http://host.docker.internal:${model_port}/v1\"],\"OPENAI_API_KEYS\":[\"synthetic\"],\"OPENAI_API_CONFIGS\":{}}" >/dev/null
+model_access=$(python3 - "$alpha_id" "$beta_id" <<'PY'
+import json, sys
+users = sys.argv[1:]
+print(json.dumps({'id': 'synthetic-private-model', 'name': 'synthetic-private-model',
+                  'access_grants': [{'principal_type': 'user', 'principal_id': user,
+                                    'permission': 'read'} for user in users]}))
+PY
+)
+curl -fsS -X POST "http://127.0.0.1:${webui_port}/api/v1/models/model/access/update" \
+  -H "Authorization: Bearer $alpha_token" -H 'Content-Type: application/json' \
+  --data "$model_access" >/dev/null
+beta_models=$(curl -fsS "http://127.0.0.1:${webui_port}/api/models" -H "Authorization: Bearer $beta_token")
+python3 -c 'import json,sys; d=json.load(sys.stdin); models=d if isinstance(d,list) else d.get("data",d.get("models",[])); assert any(m.get("id")=="synthetic-private-model" for m in models), "verified household user has no granted model"' <<<"$beta_models"
+printf 'PASS verified household user has explicit read access to the synthetic model\n'
 
 if [[ -n "${HADES_PLAYWRIGHT_MODULE:-}" ]]; then
   HADES_CANDIDATE_BROWSER_URL="http://127.0.0.1:${webui_port}" \
@@ -152,6 +169,16 @@ for _ in $(seq 1 60); do
 done
 grep -q 'Alpha-private-fact-confirmed' <<<"$chat" || { echo 'FAIL Alpha response was not persisted' >&2; exit 1; }
 printf 'PASS Alpha private response persisted\n'
+
+if [[ -n "${HADES_PLAYWRIGHT_MODULE:-}" ]]; then
+  HADES_CANDIDATE_BROWSER_URL="http://127.0.0.1:${webui_port}" \
+  HADES_CANDIDATE_BROWSER_EMAIL=beta-private@example.invalid \
+  HADES_CANDIDATE_BROWSER_PASSWORD=Synthetic-Only-123! \
+  HADES_CANDIDATE_BROWSER_EXPECTED_REPLY=Beta-private-fact-confirmed \
+  HADES_CANDIDATE_BROWSER_FORBIDDEN_TEXT=Alpha-private-fact-confirmed \
+  HADES_CANDIDATE_BROWSER_PROMPT='Please confirm the Beta browser conversation.' \
+  node scripts/dom-open-webui-candidate-smoke.js
+fi
 
 beta_status=$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${webui_port}/api/v1/chats/${chat_id}" -H "Authorization: Bearer $beta_token")
 [[ "$beta_status" == 401 || "$beta_status" == 403 ]] || { echo "FAIL Beta accessed Alpha chat with HTTP $beta_status" >&2; exit 1; }

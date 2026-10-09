@@ -90,3 +90,23 @@ migration, persistence, private-chat isolation, restart, SQLite-integrity, and
 snapshot-restore rollback replay. See
 [`hades-core-open-webui-0114-migration-rollback-20261009.md`](hades-core-open-webui-0114-migration-rollback-20261009.md).
 Production data was not used; production remains on 0.11.1.
+
+## Household browser acceptance — 2026-10-09
+
+The full candidate suite was rerun against the exact patched image
+`sha256:86b448b4ae005c7971f96930f8a52677ed788d8f726dfe679367cd2046e4650e`
+with Playwright 1.63.0. In addition to the owner upload and chat smoke, a
+separate Beta browser session verified a visible model, a model-backed reply,
+absence of Alpha's private response in Beta's account, and Beta chat
+persistence after reload. API acceptance also rechecked private-chat access
+denial, restart persistence, Channels member posting/read-back, admin boundary,
+anonymous denial, and a model mention reaching the synthetic backend.
+
+The synthetic fixture grants model read access individually to Alpha and Beta
+through Open WebUI's supported model-access endpoint. This matches the
+documented household onboarding contract; it does not claim automatic LDAP
+group-to-model synchronization. The first Beta browser attempt exposed that a
+promoted account with no model grant has an empty model selector. After the
+fixture applied the required explicit grant, the same Beta browser flow passed.
+All disposable containers, volumes, browser profiles, users, and networks were
+removed. Production remains unchanged.
