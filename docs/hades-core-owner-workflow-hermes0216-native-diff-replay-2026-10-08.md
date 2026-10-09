@@ -65,13 +65,20 @@ checks. HADES committed successfully in both repeats. PLAIN median task time
 was 45.22 s; HADES was 50.21 s (11% slower). HADES also used more model calls
 (median 12.5 vs. 11) and tool results (8.5 vs. 6.5).
 
-| Phase | PLAIN median | HADES median |
+| Phase duration | PLAIN median | HADES median |
 |---|---:|---:|
 | Inspect | 22.41 s | 23.27 s |
-| Edit | 28.19 s | 30.65 s |
-| Focused test | 35.16 s | 39.19 s |
-| Diff review | 40.10 s | 42.99 s |
-| Commit | 45.22 s | 50.20 s |
+| Edit | 5.78 s | 7.38 s |
+| Focused test | 6.97 s | 8.54 s |
+| Diff review | 4.94 s | 3.79 s |
+| Commit | 5.12 s | 7.22 s |
+
+Phase durations are differences between each run's cumulative phase checkpoints;
+each column is the median of two samples, so phase medians need not sum to the
+median whole-task time. All measured requests in both arms exposed the same
+13,479-byte tool-schema catalog. HADES's extra time accumulated mainly in the
+edit, focused-test, and commit stages, which also had more tool results or
+model calls; the initial inspect generation was similarly slow in both arms.
 
 The explicit diff-review call occurred in one of two HADES runs; the other
 review turn made no tool call. HADES issued two additional `git diff` calls
