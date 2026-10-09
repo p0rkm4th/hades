@@ -62,3 +62,6 @@ coding tasks. The follow-up prompt did not produce a speed win in either
 two-repeat comparison, and the new matched run still found a HADES latency gap.
 This is not a usability qualification: Scotty's preference, answer quality,
 deployed Open WebUI behavior, and broader coding tasks were not measured.
+The later [concise native diff review replay](hades-core-owner-workspace-concise-review-candidate-20261008.md)
+reduces review response length and generation time modestly, while the larger
+HADES/PLAIN task-time gap remains.
