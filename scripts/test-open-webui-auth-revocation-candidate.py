@@ -254,12 +254,18 @@ def main() -> None:
         status, _ = api(base, "GET", "/api/v1/users/user/info", token=user["token"])
         if status != 200:
             raise RuntimeError(f"Healthy Redis did not authenticate user (HTTP {status})")
-        user_socket = connect_socket(webui, user["token"])
+        status, signout_user = api(base, "POST", "/api/v1/auths/add", {
+            "name": "Synthetic Signout User", "email": f"signout-{suffix}@example.invalid",
+            "password": "Synthetic-Only-123!", "role": "user",
+        }, admin_token)
+        if status != 200 or not isinstance(signout_user, dict) or not signout_user.get("token"):
+            raise RuntimeError(f"Synthetic sign-out user creation failed (HTTP {status})")
+        user_socket = connect_socket(webui, signout_user["token"])
         sockets.append(user_socket)
-        status, _ = api(base, "POST", "/api/v1/auths/signout", {}, user["token"])
+        status, _ = api(base, "POST", "/api/v1/auths/signout", {}, signout_user["token"])
         if status != 200:
             raise RuntimeError(f"Sign-out with healthy Redis failed (HTTP {status})")
-        status, _ = api(base, "GET", "/api/v1/users/user/info", token=user["token"])
+        status, _ = api(base, "GET", "/api/v1/users/user/info", token=signout_user["token"])
         if status != 401:
             raise RuntimeError(f"Signed-out token was not rejected (HTTP {status})")
         require_disconnect(user_socket, "healthy-store sign-out")
@@ -286,7 +292,7 @@ def main() -> None:
         run(["docker", "start", valkey])
         wait_valkey(valkey)
         time.sleep(0.5)
-        status, _ = api(base, "GET", "/api/v1/users/user/info", token=user["token"])
+        status, _ = api(base, "GET", "/api/v1/users/user/info", token=signout_user["token"])
         if status != 401:
             raise RuntimeError(f"Persistent revocation was lost after Valkey restart (HTTP {status})")
         status, _ = api(base, "GET", "/api/v1/users/user/info", token=admin_token)
@@ -370,16 +376,42 @@ def main() -> None:
         replacement_iat = float(decode_jwt_payload(changed_login["token"]).get("iat", -1))
         if replacement_iat <= marker:
             raise RuntimeError("Immediate replacement JWT iat is not newer than the revocation marker")
-        status, _ = api(base, "GET", "/api/v1/users/user/info", token=changed_login["token"])
+
+        # Force the same integer-second edge deterministically by placing a
+        # synthetic marker 1.25 seconds ahead; create_session_response must wait
+        # until a JWT NumericDate is strictly newer than it.
+        forced_marker = int(time.time()) + 1.25
+        run(["docker", "exec", valkey, "valkey-cli", "SET", marker_keys[0], str(forced_marker), "EX", "60"])
+        forced_start = time.monotonic()
+        status, forced_login = api(base, "POST", "/api/v1/auths/signin", {
+            "email": f"self-password-user-{suffix}@example.invalid",
+            "password": "Synthetic-Self-Changed-123!",
+        })
+        forced_elapsed = time.monotonic() - forced_start
+        if status != 200 or not isinstance(forced_login, dict) or not forced_login.get("token"):
+            raise RuntimeError(f"Forced same-second replacement login failed (HTTP {status})")
+        forced_iat = float(decode_jwt_payload(forced_login["token"]).get("iat", -1))
+        if forced_iat <= forced_marker or forced_elapsed < 0.75 or forced_elapsed > 3.5:
+            raise RuntimeError(
+                f"JWT timestamp edge was not exercised safely: iat={forced_iat}, "
+                f"marker={forced_marker}, elapsed={forced_elapsed:.3f}s"
+            )
+        status, _ = api(base, "GET", "/api/v1/users/user/info", token=forced_login["token"])
         if status != 200:
-            raise RuntimeError(f"Replacement token was invalid immediately after password change (HTTP {status})")
+            raise RuntimeError("Token issued after waiting past the revocation marker was rejected")
+        status, _ = api(base, "GET", "/api/v1/users/user/info", token=changed_login["token"])
+        if status != 401:
+            raise RuntimeError("Token issued before the future marker remained valid")
         status, _ = api(base, "POST", "/api/v1/auths/signin", {
             "email": f"self-password-user-{suffix}@example.invalid",
             "password": "Synthetic-Only-123!",
         })
         if status not in (400, 401):
             raise RuntimeError(f"Old self-service password remained accepted (HTTP {status})")
-        print(f"PASS self-service password revocation and immediate replacement token ({self_elapsed:.3f}s)")
+        print(
+            f"PASS self-service password revocation, immediate login ({self_elapsed:.3f}s), "
+            f"and forced timestamp-edge wait ({forced_elapsed:.3f}s)"
+        )
 
         deleted_user = add_user("Deleted User")
         deleted_socket = connect_socket(peer, deleted_user["token"])
