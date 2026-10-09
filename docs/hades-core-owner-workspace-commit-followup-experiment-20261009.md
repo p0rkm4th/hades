@@ -45,6 +45,28 @@ uncommitted worktree in both HADES tasks. All PLAIN STACK tasks in these runs
 committed successfully. The candidate code was discarded; the workspace
 overlay and runtime test script are unchanged by this experiment.
 
+## What the candidate comparison does not isolate
+
+The fresh-diff and explicit-terminal candidates changed two things on the
+commit follow-up: they injected newly collected diff context, and they removed
+all earlier `tool` messages and assistant messages containing `tool_calls`
+from the conversation history sent to the model. The forced-terminal
+candidate did the same while also setting a function-specific `tool_choice`.
+The baseline retained the conversation history. Therefore the 1/2 and 0/2
+candidate results cannot be attributed to fresh diff context, the extra
+instruction, or history filtering individually. The evidence supports
+rejecting those combined candidates, not a claim that the added diff evidence
+itself reduces commit reliability.
+
+The next comparison should preserve the baseline history and vary one factor
+at a time: first test fresh diff context alone, then history filtering alone
+only if there is a concrete reason to remove those messages. A candidate must
+be judged by independent commit, source-scope, test, and clean-worktree checks;
+HTTP success or a final model response is not proof of a commit. The local
+Ollama 0.40.2 forced-choice result also shows that this specific setting did
+not produce a tool call in these two requests; it does not establish a general
+runtime guarantee or explain the other candidate failures.
+
 The sanitized runner output for the baseline and all candidates is in
 [`benchmarks`](../benchmarks):
 
