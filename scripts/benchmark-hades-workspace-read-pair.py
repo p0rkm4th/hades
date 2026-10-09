@@ -354,7 +354,15 @@ def inspect_sandbox_image_id(docker_bin: str, image: str) -> str:
         and canonical(fields[0]) == canonical(image)
     ]
     if len(matches) != 1 or not matches[0].startswith("sha256:"):
-        raise RuntimeError("rootless daemon does not contain the exact pinned sandbox digest")
+        available = [
+            canonical(fields[0])
+            for line in listing.splitlines()
+            if len(fields := line.split(maxsplit=1)) == 2
+        ]
+        raise RuntimeError(
+            "rootless daemon does not contain the exact pinned sandbox digest: "
+            f"expected={canonical(image)!r}, available={available!r}"
+        )
     return matches[0]
 
 
