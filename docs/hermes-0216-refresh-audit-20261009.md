@@ -16,6 +16,11 @@
 - Hermes 0.21.6's official `pyproject.toml` declares `requires-python =
   ">=3.11,<3.15"`, with an adjacent comment that 3.14 is the newest supported
   Python and older versions are allowed to permit existing installs to update.
+- Hermes build tool pin: uv 0.12.15. The official uv release page now lists
+  0.12.24 (released 2026-10-08) as latest. Its notes include package-hash
+  verification fixes and workspace-cache fixes. **INVESTIGATE** this build-tool
+  refresh separately: 0.12.15 has just completed the exact candidate install,
+  while 0.12.24 has not yet been exercised against HADES' locked install path.
 
 Authoritative sources: [Hermes Agent releases](https://github.com/NousResearch/hermes-agent/releases),
 [v0.21.6 pyproject.toml](https://github.com/NousResearch/hermes-agent/blob/v0.21.6/pyproject.toml),
