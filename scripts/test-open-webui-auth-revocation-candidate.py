@@ -112,13 +112,18 @@ def snapshot_restore_revocation(valkey: str, suffix: str, created: list[str]) ->
             "-v", f"{rdb}:/backup/dump.rdb:ro", VALKEY_IMAGE, "/backup/dump.rdb",
         ])
         run([
-            "docker", "run", "-d", "--name", restore_name, "--network", "none",
-            "-v", f"{rdb}:/data/dump.rdb:ro", VALKEY_IMAGE,
-            "valkey-server", "--dir", "/data", "--dbfilename", "dump.rdb",
+            "docker", "create", "--name", restore_name, "--network", "none",
+            VALKEY_IMAGE, "valkey-server", "--dir", "/data", "--dbfilename", "dump.rdb",
             "--save", "", "--appendonly", "no",
         ])
         created.append(restore_name)
-        wait_valkey(restore_name)
+        run(["docker", "cp", str(rdb), f"{restore_name}:/data/dump.rdb"])
+        run(["docker", "start", restore_name])
+        try:
+            wait_valkey(restore_name)
+        except Exception as error:
+            logs = subprocess.run(["docker", "logs", restore_name], capture_output=True, text=True)
+            raise RuntimeError(f"Disposable Valkey RDB restore failed to start: {logs.stdout[-1200:]} {logs.stderr[-1200:]}") from error
         restored = run(["docker", "exec", restore_name, "valkey-cli", "--raw", "GET", key]).stdout.strip()
         if restored != expected:
             raise RuntimeError("Disposable RDB restore did not preserve the token-revocation marker")
