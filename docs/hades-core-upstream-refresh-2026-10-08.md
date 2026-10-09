@@ -44,7 +44,23 @@ matters to HADES's multi-user and workspace gates:
 - Sign-out and token revocation now close existing live connections. The
   disposable HADES candidate check currently proves that a disabled account's
   existing token is rejected on a later HTTP request; it does not exercise a
-  live browser/WebSocket session during sign-out or revocation.
+  live browser/WebSocket session during sign-out or revocation. Source review
+  found a stronger deployment gap: Open WebUI's `invalidate_token` only stores
+  a token revocation marker and disconnects its sessions when Redis is
+  configured. With no Redis, `is_valid_token` accepts the token and
+  `invalidate_token` returns without revoking it. The tracked HADES Open WebUI
+  compose template has no `REDIS_URL`, so the candidate's offboarding HTTP
+  check passes because account deletion makes user lookup fail; it does not
+  prove sign-out or token revocation. This follows from the candidate's
+  [`auth.py`](https://github.com/open-webui/open-webui/blob/v0.11.4/backend/open_webui/utils/auth.py)
+  and [`auths.py`](https://github.com/open-webui/open-webui/blob/v0.11.4/backend/open_webui/routers/auths.py)
+  implementation. A new disposable run against local image
+  `hades-open-webui:0.11.4-ldap-group-revocation-candidate` confirmed the
+  consequence: `/api/v1/auths/signout` returned 200, then the same bearer token
+  still received HTTP 200 from `/api/v1/users/user/info`. The instance had no
+  `REDIS_URL`; it was removed after the probe. Treat sign-out as ineffective
+  for token replay until the revocation dependency and outage behavior are
+  qualified.
 - Role mapping from an identity provider is now applied at sign-in, and
   unreadable role claims fail closed. Candidate acceptance should verify the
   actual HADES/LLDAP mapping instead of inferring it from group membership.
@@ -63,9 +79,14 @@ matters to HADES's multi-user and workspace gates:
 
 The candidate remains **HOLD for production**. Existing synthetic acceptance
 covers private chat isolation/persistence, LDAP group synchronization on a new
-login, account removal, and database restore rollback. The new live-session,
-role-claim, and open-terminal revocation checks are explicit remaining gates;
-owner-visible acceptance and external build provenance also remain open.
+login, account removal, and database restore rollback. Token revocation is a
+P1 gate: qualify a private, pinned revocation store and test sign-out, account
+offboarding, and role changes against both HTTP and already-open Socket.IO
+sessions, including the store-unavailable case. The release's fail-open Redis
+error behavior must be reviewed against HADES's authority contract before
+adoption. Also test identity-provider role mapping and open-terminal access
+revocation if terminal capability is enabled. Owner-visible acceptance and
+external build provenance remain open.
 
 ## Owner-facing and core runtime components
 
