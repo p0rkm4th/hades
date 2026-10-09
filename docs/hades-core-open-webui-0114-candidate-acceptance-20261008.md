@@ -62,3 +62,16 @@ reconstructed-deployment acceptance remain open. The locally built image has
 an immutable ID but no embedded HADES-source provenance; record an external
 build attestation or equivalent provenance for any promotion. Keep production
 at 0.11.1 until the remaining gates pass.
+
+## Repeat verification — 2026-10-09
+
+The candidate acceptance command was rerun from the usability-reset checkout
+against the same immutable local image ID and repository digest. Private-chat
+isolation/persistence and Channels membership, shared-message persistence,
+anonymous denial, and non-admin membership boundaries all passed again. The
+private-chat suite also repeated the synthetic owner browser login, theme
+asset, file-upload, chat persistence, and reload smoke. Containers and volumes
+were removed by the harness. This repeat does not expand the qualification
+boundary above: LDAP group synchronization, broader household browser use,
+file extraction/retrieval quality, migration/rollback, external build
+provenance, and direct owner preference remain open.
