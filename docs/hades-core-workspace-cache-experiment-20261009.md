@@ -61,10 +61,16 @@ Hermes 0.21.6 source explains why the initial cache theory was incomplete:
 `agent/conversation_loop.py` says tool schemas are serialized ahead of the
 system prompt, while this HADES review request intentionally exposes zero tool
 schemas. Hermes places prefill messages after the system prompt in
-`agent/turn_request_assembly.py`. This makes tool-surface variation a plausible
-cache-prefix break even when the system text is stable. The benchmark did not
-isolate that cause, so treat it as a hypothesis for a small request-order
-experiment, not a proven attribution.
+`agent/turn_request_assembly.py`.
+
+A separate two-condition Ollama cache isolation check supports the tool-surface
+explanation. With identical messages and the same five representative workspace
+schemas on both calls, the second request reused 570/574 prompt tokens. After
+changing from those five schemas to no schemas, the second request reused 0
+tokens. This confirms that this request shape invalidates the cache when the
+tool catalog changes. It does not prove how much of the full HADES task delay
+comes from that cache miss; the synthetic schemas were representative, not the
+exact Hermes catalog. See the [isolated cache metrics](../benchmarks/hades-core-tool-schema-cache-isolation-20261009.json).
 
 The benchmark telemetry now scans all API message roles when recording whether
 diff evidence was present. It stores only booleans and does not retain prompt,

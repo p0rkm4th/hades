@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-09",
+  "purpose": "Isolate whether an Ollama OpenAI chat request changing its tool catalog invalidates prompt-cache reuse.",
+  "method": {
+    "ollama": "0.40.1",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "loaded_context": 65536,
+    "route": "/v1/chat/completions",
+    "temperature": 0.1,
+    "seed": 1234,
+    "max_tokens": 2,
+    "tool_choice": "none",
+    "messages": "Identical synthetic system and user messages for every call; content not retained.",
+    "tool_schemas": "Five representative workspace schemas; schema text not retained.",
+    "cache_reset": "Model unloaded and identically rewarmed before each sequence."
+  },
+  "sequences": [
+    {
+      "name": "same_five_schema_catalog",
+      "first": {
+        "tool_schema_count": 5,
+        "prompt_tokens": 574,
+        "cached_tokens": 0,
+        "elapsed_ms": 1749.6
+      },
+      "second": {
+        "tool_schema_count": 5,
+        "prompt_tokens": 574,
+        "cached_tokens": 570,
+        "elapsed_ms": 101.4
+      }
+    },
+    {
+      "name": "five_schemas_then_zero",
+      "first": {
+        "tool_schema_count": 5,
+        "prompt_tokens": 574,
+        "cached_tokens": 0,
+        "elapsed_ms": 1744.7
+      },
+      "second": {
+        "tool_schema_count": 0,
+        "prompt_tokens": 36,
+        "cached_tokens": 0,
+        "elapsed_ms": 479.0
+      }
+    }
+  ],
+  "finding": "For this request shape, repeating the same tool catalog reused 570 of 574 prompt tokens. Changing from five tool schemas to zero reused no prompt tokens.",
+  "limitations": [
+    "One two-request sequence per condition.",
+    "The five schemas were representative synthetic workspace schemas, not captured Hermes schemas.",
+    "This isolates Ollama cache behavior and does not measure the complete HADES review path or establish how much of the end-to-end delay it explains."
+  ]
+}
