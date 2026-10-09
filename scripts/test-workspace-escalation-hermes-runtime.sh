@@ -357,7 +357,8 @@ diff_review_history=[
 def native_diff_review(agent,user_message,*args,**kwargs):
  agent._current_turn_id='synthetic-diff-review-turn'
  assert set(agent.valid_tool_names)==set(),agent.valid_tool_names
- assert agent.tools==[],agent.tools
+ names={tool['function']['name'] for tool in agent.tools}
+ assert names=={'read_file','search_files','write_file','patch','terminal'},names
  assert agent.request_overrides.get('tool_choice')=='none',agent.request_overrides
  prompt=agent.ephemeral_system_prompt
  assert '<workspace_diff>' in prompt,prompt
@@ -370,6 +371,23 @@ def native_diff_review(agent,user_message,*args,**kwargs):
  assert isinstance(history,list),kwargs
  assert all(m.get('role')!='tool' and not m.get('tool_calls') for m in history),history
  assert any(m.get('content')=='I fixed and tested review.py.' for m in history),history
+ from types import SimpleNamespace
+ from agent.turn_tool_validation import validate_tool_calls
+ denied_terminal=SimpleNamespace(
+  id='synthetic-review-terminal',type='function',
+  function=SimpleNamespace(name='terminal',arguments='{"command":"id"}'),
+ )
+ denied_message=SimpleNamespace(content=None,tool_calls=[denied_terminal])
+ validation_messages=[]
+ agent._invalid_tool_retries=0
+ validation=validate_tool_calls(
+  agent,denied_message,'tool_calls',messages=validation_messages,
+  conversation_history=history,api_call_count=1,
+  effective_task_id='synthetic-diff-review-chat',
+ )
+ assert validation.action=='continue',validation
+ assert validation_messages[-1].get('name')=='terminal',validation_messages
+ assert 'does not exist' in validation_messages[-1].get('content','').lower(),validation_messages
  response='The diff changes review.py from return 1 to return 2; no other changes are shown.'
  return {'final_response':response,
   'messages':[{'role':'user','content':user_message},{'role':'assistant','content':response}],
@@ -383,7 +401,7 @@ diff_review=diff_review_agent.run_conversation(
 assert 'return 1 to return 2' in diff_review.get('final_response',''),diff_review
 assert diff_review_agent.request_overrides=={},diff_review_agent.request_overrides
 assert get_terminal_scope() is None,get_terminal_scope()
-print('PASS explicit diff review uses bounded native Git evidence with tools disabled')
+print('PASS explicit diff review retains schemas for caching but denies every tool call')
 calls=[]
 terminal_results=[]
 action_deltas=[]

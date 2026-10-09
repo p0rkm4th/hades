@@ -12152,15 +12152,18 @@ try:
             else:
                 self.tools = _workspace_tools
             if _workspace_diff_review:
-                # The native diff has already supplied the only needed
-                # evidence. Remove tool schemas entirely for this answer;
-                # some local models can still emit stale terminal calls even
-                # when tool_choice='none' is requested.
-                self.tools = []
-            self.valid_tool_names = {
-                tool.get("function", {}).get("name") for tool in self.tools
-                if tool.get("function", {}).get("name")
-            }
+                # Keep the same request schema prefix as the preceding coding
+                # turns, while granting no executable tool names. Hermes sends
+                # schemas ahead of the system prompt; dropping them here defeats
+                # prefix caching. tool_choice='none' below prevents a normal call,
+                # and valid_tool_names remains the dispatch-side authority.
+                self.tools = list(_workspace_tools)
+                self.valid_tool_names = set()
+            else:
+                self.valid_tool_names = {
+                    tool.get("function", {}).get("name") for tool in self.tools
+                    if tool.get("function", {}).get("name")
+                }
             _workspace_prompt = (
                 "Workspace diff review only. Use the supplied authenticated read-only Git "
                 "diff evidence to identify changed files and changes. Say clearly if the "
