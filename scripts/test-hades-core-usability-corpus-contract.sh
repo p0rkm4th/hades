@@ -31,7 +31,36 @@ assert coverage["unreplayed_case_count"] == 29
 assert len(coverage["chat_only_case_ids"]) + len(coverage["tool_backed_case_ids"]) + coverage["unreplayed_case_count"] == len(cases)
 for case in cases:
     assert case["turns"] and all(isinstance(turn, str) and turn.strip() for turn in case["turns"])
+
+reference_keys = {
+    "metrics_record",
+    "metrics_records",
+    "report",
+    "intermediate_failure_metrics_record",
+}
+references = set()
+
+def collect_references(value):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key in reference_keys:
+                if isinstance(child, str):
+                    references.add(child)
+                elif isinstance(child, list):
+                    references.update(item for item in child if isinstance(item, str))
+            collect_references(child)
+    elif isinstance(value, list):
+        for child in value:
+            collect_references(child)
+
+collect_references(data)
+repo_root = path.parent.parent.resolve()
+for reference in references:
+    target = (repo_root / reference).resolve()
+    assert target.is_relative_to(repo_root), f"corpus reference escapes repository: {reference}"
+    assert target.is_file(), f"corpus artifact reference is missing: {reference}"
+
 serialized = path.read_text(encoding="utf-8")
 assert not re.search(r"(?i)(sk-[a-z0-9]{20,}|gh[pousr]_[a-z0-9]{20,}|password\s*[:=])", serialized)
-print(f"PASS: {len(cases)} sanitized corpus cases across {len(categories)} categories; owner labels remain unassigned")
+print(f"PASS: {len(cases)} sanitized corpus cases across {len(categories)} categories; {len(references)} evidence references resolve; owner labels remain unassigned")
 PY

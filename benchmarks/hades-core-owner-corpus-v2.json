@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "HADES Core Comparative Owner Corpus — Seed v2 with memory supplement",
-  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The current five-turn coding workflow passes independent tests and clean commits on both stacks after repairing workspace follow-up routing. HADES still misses the explicit diff-review turn in one of two runs. Stable five-schema workspace exposure is the current Hermes 0.21.6 coding-escalation candidate after a focused cache-reuse replay; broad task and owner-preference qualification remain open.",
+  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The latest five-turn coding workflow replay on Hermes 0.21.5 (not requalified on the 0.21.6 candidate) passes independent tests and clean commits on both stacks after repairing workspace follow-up routing. HADES still misses the explicit diff-review turn in one of two runs. Stable five-schema workspace exposure is the current Hermes 0.21.6 coding-escalation candidate after a focused cache-reuse replay; broad task and owner-preference qualification remain open.",
   "source_note": "Cases are hand-authored sanitized paraphrases, not verbatim transcripts. The Sept. 24 owner dogfood report documents real prompt families including recipe availability, pantry expiry, spaghetti inventory/list, homelab/network/model/backup status, restaurants, subscriptions, weekend affordability, lease prepayment, restock, savings target, and morning briefing. Replace/add cases only from owner-approved evidence; never copy secrets, financial records, private memories, or household content into this file. The five v2 memory supplement cases are synthetic examples authored for policy coverage; they are not transcripts or claims about Scotty.",
   "comparison_contract": {
     "same_model_and_quantization": true,
@@ -1057,16 +1057,30 @@
         "report": "docs/hades-core-owner-edit-to-test-current-stable-2026-10-08.md"
       },
       "core-28": {
-        "status": "two order-balanced synthetic workflow pairs; PLAIN reviewed the diff 2/2, HADES 0/2; owner preference unassigned",
-        "result": "The explicit diff-review turn produced a Git diff call in PLAIN both times and none in HADES. HADES made one diff call later during a commit turn. Independent scope checks confirmed only the intended source file changed in all four arms.",
+        "status": "two synthetic order-balanced workflow pairs on Hermes 0.21.5 (not requalified on current Hermes 0.21.6 candidate); PLAIN explicitly reviewed the diff 2/2, HADES 1/2; both stacks inspected before commit; owner preference unassigned",
+        "result": "The explicit diff-review turn produced a Git diff call in PLAIN 2/2 and HADES 1/2. HADES inspected the diff before commit in both tasks. Both stacks passed independent focused tests, changed only the intended source, and made verified clean commits 2/2. The explicit review-turn miss in one HADES repeat remains a conversation-timing defect.",
         "metrics_record": "benchmarks/hades-core-owner-workflow-to-commit-current-stable-20261008.json",
-        "report": "docs/hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md"
+        "report": "docs/hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md",
+        "previous_replay": {
+          "status": "Earlier workspace workflow replay: HADES explicit diff review 0/2 and failed to make verified commits 0/2 due to workspace tools not resolving.",
+          "result": "Superseded by the repaired current workflow replay; retained as historical failure evidence."
+        },
+        "intermediate_failure_metrics_record": "benchmarks/hades-core-owner-workflow-to-commit-after-git-review-route-20261008.json",
+        "current_candidate_qualification": "NOT QUALIFIED: this workflow replay used Hermes 0.21.5. Its behavioral and commit results are useful historical evidence, not a current Hermes 0.21.6 qualification.",
+        "next_replay": "Repeat the complete workflow on Hermes 0.21.6; specifically verify that a direct diff review occurs when requested, then inspect and verify the clean commit."
       },
       "core-31": {
-        "status": "two order-balanced synthetic workflow pairs; PLAIN committed cleanly 2/2, HADES 0/2; owner preference unassigned",
-        "result": "Both stacks passed independent focused tests and changed only the expected source file. PLAIN created one verified commit and left a clean workspace in each pair. HADES created no verified commit; commit-stage tool calls included three tool-not-found errors across the two tasks.",
+        "status": "two synthetic order-balanced workflow pairs on Hermes 0.21.5 (not requalified on current Hermes 0.21.6 candidate); PLAIN and HADES both committed cleanly 2/2 after workspace follow-up routing repair; owner preference unassigned",
+        "result": "Both stacks passed independent focused tests, changed only the intended source, and left verified clean commits in both repeats. HADES used fewer median model generations (13 vs 18) and tool results (8.5 vs 13.5), with similar median task time (62.30s vs 62.80s); n=2, so this is not a general efficiency or preference claim.",
         "metrics_record": "benchmarks/hades-core-owner-workflow-to-commit-current-stable-20261008.json",
-        "report": "docs/hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md"
+        "report": "docs/hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md",
+        "previous_replay": {
+          "status": "Earlier workspace workflow replay: HADES verified commits 0/2, with three commit-stage tool-not-found errors.",
+          "result": "Superseded by the repaired current workflow replay; retained as historical failure evidence."
+        },
+        "intermediate_failure_metrics_record": "benchmarks/hades-core-owner-workflow-to-commit-after-git-review-route-20261008.json",
+        "current_candidate_qualification": "NOT QUALIFIED: this workflow replay used Hermes 0.21.5. Its behavioral and commit results are useful historical evidence, not a current Hermes 0.21.6 qualification.",
+        "next_replay": "Repeat the complete workflow on Hermes 0.21.6; specifically verify that a direct diff review occurs when requested, then inspect and verify the clean commit."
       }
     },
     "latest_workspace_escalation_ollama0401": {
@@ -1365,7 +1379,7 @@
       "core-31"
     ],
     "source_revision": "75241cfa96602142ef3776b4b2f9c28efec5586c",
-    "classification": "two order-balanced synthetic five-turn workspace workflows; no owner preference or human answer-quality review",
+    "classification": "two order-balanced synthetic five-turn workspace workflows on Hermes 0.21.5 as captured at run time; not requalified on the current Hermes 0.21.6 candidate; no owner preference or human answer-quality review",
     "runtime": "Hermes 0.21.5, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable sandbox image",
     "order": "PLAIN then HADES; HADES then PLAIN",
     "task_seconds_by_stack": {
@@ -1431,7 +1445,9 @@
     "owner_preference": "UNASSIGNED",
     "limitations": "Two synthetic pairs on one small typo fixture; direct Hermes AIAgent route, no human answer-quality review, Open WebUI persistence, deployed parity, or Scotty preference. HADES skipped the explicit diff-review turn in one repeat but inspected the diff before committing in both.",
     "metrics_record": "benchmarks/hades-core-owner-workflow-to-commit-current-stable-20261008.json",
-    "report": "docs/hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md"
+    "report": "docs/hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md",
+    "current_candidate_qualification": "NOT QUALIFIED: replay runtime was Hermes 0.21.5; re-run on Hermes 0.21.6 before treating this as current-candidate workspace evidence.",
+    "next_action": "Repeat the same order-balanced workflow on the Hermes 0.21.6 candidate, including the explicit diff-review turn and verified commit."
   },
   "latest_workspace_discovery_prompt_comparison": {
     "case_ids": [

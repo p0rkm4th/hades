@@ -1,0 +1,323 @@
+{
+  "date": "2026-10-08",
+  "source_revision": "17565eff9f983eb762e196740434e5e2e520d452",
+  "classification": "four order-balanced synthetic geometry multi-file diagnosis-to-fix pairs; no owner preference labels",
+  "method": {
+    "hermes": "0.21.5 (same staged install and code in both arms)",
+    "ollama": "0.40.1 official Linux AMD64 archive, SHA-256 a7aebbe3dd76ccf1351a56a3e57218ad4863cb5f9a9938c58de87a37555e355d",
+    "model": "Qwen3.6 35B Q4_K_M",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "context_tokens": 65536,
+    "hardware": "NVIDIA RTX 3080 Ti",
+    "sandbox_image": "docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d",
+    "container_network": "disabled",
+    "sampling": "benchmark repeat/call seeds; reasoning disabled",
+    "scenario_descriptor": "synthetic geometry project, multifile layout; diagnose then explicit \u201cfix\u201d follow-up"
+  },
+  "summary": {
+    "repeats": 4,
+    "median_by_stack": {
+      "plain": {
+        "task_elapsed_ms": 39129.0,
+        "provider_generations": 9.0,
+        "tool_results": 11.5,
+        "diagnosis_first_provider_content_ms": 12984.5,
+        "diagnosis_test_output_turns": 2,
+        "action_test_output_turns": 2,
+        "diagnosis_workspace_changes": 2,
+        "independent_test_passes": 4
+      },
+      "hades": {
+        "task_elapsed_ms": 50296.1,
+        "provider_generations": 7.5,
+        "tool_results": 10.0,
+        "diagnosis_first_provider_content_ms": 8530.4,
+        "diagnosis_test_output_turns": 0,
+        "action_test_output_turns": 3,
+        "diagnosis_workspace_changes": 0,
+        "independent_test_passes": 3
+      }
+    },
+    "paired_hades_minus_plain_task_ms": {
+      "0": 11152.5,
+      "1": 5047.9000000000015,
+      "2": 19511.500000000007,
+      "3": 14180.099999999999
+    },
+    "median_paired_hades_minus_plain_task_ms": 12666.3,
+    "verified_independent_tests_passed": 7,
+    "verified_independent_tests_total": 8,
+    "diagnosis_workspace_changes_by_stack": {
+      "plain": 2,
+      "hades": 0
+    },
+    "source_only_changes_by_stack": {
+      "plain": 4,
+      "hades": 3
+    }
+  },
+  "tasks": [
+    {
+      "stack": "plain",
+      "repeat": 0,
+      "task_elapsed_ms": 35536.0,
+      "provider_generations": 8,
+      "tool_results": 8,
+      "diagnosis_elapsed_ms": 28709.9,
+      "action_elapsed_ms": 35534.6,
+      "diagnosis_first_provider_content_ms": 12874.7,
+      "diagnosis_changed_workspace": false,
+      "assistant_test_markers_seen": {
+        "diagnose": false,
+        "fix": true
+      },
+      "tool_schemas": {
+        "diagnose": {
+          "count": 8,
+          "bytes": 12590
+        },
+        "fix": {
+          "count": 8,
+          "bytes": 12590
+        }
+      },
+      "verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "stack": "hades",
+      "repeat": 0,
+      "task_elapsed_ms": 46688.5,
+      "provider_generations": 7,
+      "tool_results": 9,
+      "diagnosis_elapsed_ms": 26493.3,
+      "action_elapsed_ms": 46687.0,
+      "diagnosis_first_provider_content_ms": 8481.8,
+      "diagnosis_changed_workspace": false,
+      "assistant_test_markers_seen": {
+        "diagnose": false,
+        "fix": true
+      },
+      "tool_schemas": {
+        "diagnose": {
+          "count": 2,
+          "bytes": 3662
+        },
+        "fix": {
+          "count": 5,
+          "bytes": 9575
+        }
+      },
+      "verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "stack": "hades",
+      "repeat": 1,
+      "task_elapsed_ms": 43582.3,
+      "provider_generations": 6,
+      "tool_results": 8,
+      "diagnosis_elapsed_ms": 23505.3,
+      "action_elapsed_ms": 43580.6,
+      "diagnosis_first_provider_content_ms": 8579.0,
+      "diagnosis_changed_workspace": false,
+      "assistant_test_markers_seen": {
+        "diagnose": false,
+        "fix": true
+      },
+      "tool_schemas": {
+        "diagnose": {
+          "count": 2,
+          "bytes": 3662
+        },
+        "fix": {
+          "count": 5,
+          "bytes": 9575
+        }
+      },
+      "verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "stack": "plain",
+      "repeat": 1,
+      "task_elapsed_ms": 38534.4,
+      "provider_generations": 8,
+      "tool_results": 11,
+      "diagnosis_elapsed_ms": 37388.0,
+      "action_elapsed_ms": 38532.1,
+      "diagnosis_first_provider_content_ms": 13207.9,
+      "diagnosis_changed_workspace": true,
+      "assistant_test_markers_seen": {
+        "diagnose": true,
+        "fix": false
+      },
+      "tool_schemas": {
+        "diagnose": {
+          "count": 8,
+          "bytes": 12590
+        },
+        "fix": {
+          "count": 8,
+          "bytes": 12590
+        }
+      },
+      "verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "stack": "plain",
+      "repeat": 2,
+      "task_elapsed_ms": 50144.6,
+      "provider_generations": 11,
+      "tool_results": 12,
+      "diagnosis_elapsed_ms": 48081.9,
+      "action_elapsed_ms": 50142.4,
+      "diagnosis_first_provider_content_ms": 12986.0,
+      "diagnosis_changed_workspace": true,
+      "assistant_test_markers_seen": {
+        "diagnose": true,
+        "fix": false
+      },
+      "tool_schemas": {
+        "diagnose": {
+          "count": 8,
+          "bytes": 12590
+        },
+        "fix": {
+          "count": 8,
+          "bytes": 12590
+        }
+      },
+      "verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "stack": "hades",
+      "repeat": 2,
+      "task_elapsed_ms": 69656.1,
+      "provider_generations": 16,
+      "tool_results": 18,
+      "diagnosis_elapsed_ms": 43316.9,
+      "action_elapsed_ms": 69654.8,
+      "diagnosis_first_provider_content_ms": 8402.0,
+      "diagnosis_changed_workspace": false,
+      "assistant_test_markers_seen": {
+        "diagnose": false,
+        "fix": true
+      },
+      "tool_schemas": {
+        "diagnose": {
+          "count": 2,
+          "bytes": 3662
+        },
+        "fix": {
+          "count": 5,
+          "bytes": 9575
+        }
+      },
+      "verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    },
+    {
+      "stack": "hades",
+      "repeat": 3,
+      "task_elapsed_ms": 53903.7,
+      "provider_generations": 8,
+      "tool_results": 11,
+      "diagnosis_elapsed_ms": 33349.1,
+      "action_elapsed_ms": 53901.5,
+      "diagnosis_first_provider_content_ms": 8580.5,
+      "diagnosis_changed_workspace": false,
+      "assistant_test_markers_seen": {
+        "diagnose": false,
+        "fix": false
+      },
+      "tool_schemas": {
+        "diagnose": {
+          "count": 2,
+          "bytes": 3662
+        },
+        "fix": {
+          "count": 5,
+          "bytes": 9575
+        }
+      },
+      "verification": {
+        "test_exit_code": 1,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": false,
+        "changed_path_count": 0,
+        "working_tree_has_uncommitted_changes": false
+      }
+    },
+    {
+      "stack": "plain",
+      "repeat": 3,
+      "task_elapsed_ms": 39723.6,
+      "provider_generations": 10,
+      "tool_results": 13,
+      "diagnosis_elapsed_ms": 18883.8,
+      "action_elapsed_ms": 39721.6,
+      "diagnosis_first_provider_content_ms": 12983.0,
+      "diagnosis_changed_workspace": false,
+      "assistant_test_markers_seen": {
+        "diagnose": false,
+        "fix": true
+      },
+      "tool_schemas": {
+        "diagnose": {
+          "count": 8,
+          "bytes": 12590
+        },
+        "fix": {
+          "count": 8,
+          "bytes": 12590
+        }
+      },
+      "verification": {
+        "test_exit_code": 0,
+        "diff_check_exit_code": 0,
+        "only_expected_source_changed": true,
+        "changed_path_count": 1,
+        "working_tree_has_uncommitted_changes": true
+      }
+    }
+  ],
+  "limitations": [
+    "A synthetic single-issue coding fixture does not represent owner preference or broad coding quality.",
+    "HADES reduced diagnosis tool schemas and avoided diagnosis-time workspace changes in these trials, but had a longer median diagnosis-to-fix time; one HADES arm failed independent tests and made no expected source change.",
+    "The runner uses a direct Hermes AIAgent route and does not qualify Open WebUI persistence, deployed gateway authentication, Git commit behavior, or larger coding tasks.",
+    "Local model generation variance remains material despite matched runtime, model, context, and repeat/call seeds."
+  ]
+}

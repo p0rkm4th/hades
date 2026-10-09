@@ -1,0 +1,369 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "title": "PLAIN/HADES matched core-4 ordinary conversation subset, five repeats",
+  "classification": "synthetic chat-only diagnostic; no owner preference labels",
+  "source_revision": "58c2ee18a3dfa6b103b7f581f68ad543eb3f92cb",
+  "source_revision_scope": "HADES product code at the base revision; the benchmark runner and child-environment helper are fingerprinted separately by SHA-256 fields.",
+  "benchmark_runner_script_sha256": "c002675c35e5980a894a503e26b6088552376ef5502287226594e1da7a782e4e",
+  "runtime": {
+    "hermes_version": "0.21.5 (2026.9.24)",
+    "ollama_version": "0.40.0",
+    "model": "qwen3.6:35b",
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "quantization": "Q4_K_M",
+    "hardware": [
+      "NVIDIA GeForce RTX 3080 Ti Laptop GPU, 16384 MiB"
+    ],
+    "context_tokens": 65536,
+    "loaded_context_verified": true,
+    "max_output_tokens": 512,
+    "reasoning": "disabled"
+  },
+  "methodology": {
+    "case_ids": [
+      "core-01",
+      "core-02",
+      "core-03",
+      "core-04"
+    ],
+    "repeats": 5,
+    "turns_per_stack": 30,
+    "persistent_gateways": true,
+    "independent_conversation_history": true,
+    "pair_order": "alternated by case/repeat; serialized requests",
+    "title_generation_enabled": true,
+    "title_model_upgrade_enabled": false,
+    "api_toolsets": [],
+    "child_environment": "allowlisted runtime basics only; inherited service credentials and proxy variables excluded",
+    "capture": "timings, token counts, byte sizes and call counts only; no prompts or completions retained"
+  },
+  "summary": {
+    "plain": {
+      "turns": 30,
+      "successful_turns": 30,
+      "model_generations": 30,
+      "median_ttft_ms": 1157.2,
+      "median_total_ms": 1745.0,
+      "median_prompt_tokens": 727.5,
+      "mean_serialized_input_bytes_per_generation": 3128.5,
+      "schema_counts": [
+        0
+      ],
+      "tool_calls_emitted": 0,
+      "all_provider_responses_http_200": true,
+      "all_provider_contexts_65536": true
+    },
+    "hades": {
+      "turns": 30,
+      "successful_turns": 30,
+      "model_generations": 30,
+      "median_ttft_ms": 1193.9,
+      "median_total_ms": 1550.8,
+      "median_prompt_tokens": 722.5,
+      "mean_serialized_input_bytes_per_generation": 3073.9,
+      "schema_counts": [
+        0
+      ],
+      "tool_calls_emitted": 0,
+      "all_provider_responses_http_200": true,
+      "all_provider_contexts_65536": true
+    }
+  },
+  "paired_timing": {
+    "ttft": {
+      "paired_turns": 30,
+      "median_delta_ms": 37.2,
+      "hades_faster_pairs": 12,
+      "hades_slower_pairs": 18,
+      "minimum_delta_ms": -220.1,
+      "maximum_delta_ms": 223.5
+    },
+    "total": {
+      "paired_turns": 30,
+      "median_delta_ms": -47.5,
+      "hades_faster_pairs": 19,
+      "hades_slower_pairs": 11,
+      "minimum_delta_ms": -2014.9,
+      "maximum_delta_ms": 1439.7
+    }
+  },
+  "per_case": {
+    "core-01": {
+      "plain": {
+        "turns": 5,
+        "model_generations": 5,
+        "median_ttft_ms": 1221.0,
+        "median_total_ms": 1469.6
+      },
+      "hades": {
+        "turns": 5,
+        "model_generations": 5,
+        "median_ttft_ms": 1267.1,
+        "median_total_ms": 1435.3
+      }
+    },
+    "core-02": {
+      "plain": {
+        "turns": 5,
+        "model_generations": 5,
+        "median_ttft_ms": 1207.1,
+        "median_total_ms": 1259.4
+      },
+      "hades": {
+        "turns": 5,
+        "model_generations": 5,
+        "median_ttft_ms": 1202.1,
+        "median_total_ms": 1248.3
+      }
+    },
+    "core-03": {
+      "plain": {
+        "turns": 10,
+        "model_generations": 10,
+        "median_ttft_ms": 1021.8,
+        "median_total_ms": 2173.7
+      },
+      "hades": {
+        "turns": 10,
+        "model_generations": 10,
+        "median_ttft_ms": 990.9,
+        "median_total_ms": 2446.9
+      }
+    },
+    "core-04": {
+      "plain": {
+        "turns": 10,
+        "model_generations": 10,
+        "median_ttft_ms": 869.6,
+        "median_total_ms": 1956.7
+      },
+      "hades": {
+        "turns": 10,
+        "model_generations": 10,
+        "median_ttft_ms": 910.8,
+        "median_total_ms": 1693.2
+      }
+    }
+  },
+  "paired_deltas": [
+    {
+      "case": "core-01",
+      "repeat": 1,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 84.1,
+      "total_delta_hades_minus_plain_ms": -58.8
+    },
+    {
+      "case": "core-01",
+      "repeat": 2,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 48.9,
+      "total_delta_hades_minus_plain_ms": -3.8
+    },
+    {
+      "case": "core-01",
+      "repeat": 3,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": -12.9,
+      "total_delta_hades_minus_plain_ms": -36.1
+    },
+    {
+      "case": "core-01",
+      "repeat": 4,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 148.5,
+      "total_delta_hades_minus_plain_ms": 250.1
+    },
+    {
+      "case": "core-01",
+      "repeat": 5,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 33.3,
+      "total_delta_hades_minus_plain_ms": -394.3
+    },
+    {
+      "case": "core-02",
+      "repeat": 1,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": -84.2,
+      "total_delta_hades_minus_plain_ms": -73.1
+    },
+    {
+      "case": "core-02",
+      "repeat": 2,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 86.4,
+      "total_delta_hades_minus_plain_ms": 100.0
+    },
+    {
+      "case": "core-02",
+      "repeat": 3,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": -9.6,
+      "total_delta_hades_minus_plain_ms": -18.2
+    },
+    {
+      "case": "core-02",
+      "repeat": 4,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 115.6,
+      "total_delta_hades_minus_plain_ms": 113.8
+    },
+    {
+      "case": "core-02",
+      "repeat": 5,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": -11.6,
+      "total_delta_hades_minus_plain_ms": -11.8
+    },
+    {
+      "case": "core-03",
+      "repeat": 1,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 99.9,
+      "total_delta_hades_minus_plain_ms": 25.3
+    },
+    {
+      "case": "core-03",
+      "repeat": 1,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": 41.2,
+      "total_delta_hades_minus_plain_ms": -152.7
+    },
+    {
+      "case": "core-03",
+      "repeat": 2,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": -35.9,
+      "total_delta_hades_minus_plain_ms": -1710.2
+    },
+    {
+      "case": "core-03",
+      "repeat": 2,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": -132.1,
+      "total_delta_hades_minus_plain_ms": -745.0
+    },
+    {
+      "case": "core-03",
+      "repeat": 3,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 185.3,
+      "total_delta_hades_minus_plain_ms": -2014.9
+    },
+    {
+      "case": "core-03",
+      "repeat": 3,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": -220.1,
+      "total_delta_hades_minus_plain_ms": -293.4
+    },
+    {
+      "case": "core-03",
+      "repeat": 4,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": -13.0,
+      "total_delta_hades_minus_plain_ms": 1160.0
+    },
+    {
+      "case": "core-03",
+      "repeat": 4,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": 223.5,
+      "total_delta_hades_minus_plain_ms": 407.7
+    },
+    {
+      "case": "core-03",
+      "repeat": 5,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 93.0,
+      "total_delta_hades_minus_plain_ms": 295.0
+    },
+    {
+      "case": "core-03",
+      "repeat": 5,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": 63.7,
+      "total_delta_hades_minus_plain_ms": 1439.7
+    },
+    {
+      "case": "core-04",
+      "repeat": 1,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": -60.3,
+      "total_delta_hades_minus_plain_ms": -254.9
+    },
+    {
+      "case": "core-04",
+      "repeat": 1,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": -204.8,
+      "total_delta_hades_minus_plain_ms": 291.6
+    },
+    {
+      "case": "core-04",
+      "repeat": 2,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 104.5,
+      "total_delta_hades_minus_plain_ms": 541.6
+    },
+    {
+      "case": "core-04",
+      "repeat": 2,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": 189.6,
+      "total_delta_hades_minus_plain_ms": -382.4
+    },
+    {
+      "case": "core-04",
+      "repeat": 3,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": -105.0,
+      "total_delta_hades_minus_plain_ms": 205.2
+    },
+    {
+      "case": "core-04",
+      "repeat": 3,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": 154.6,
+      "total_delta_hades_minus_plain_ms": -677.4
+    },
+    {
+      "case": "core-04",
+      "repeat": 4,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": 183.0,
+      "total_delta_hades_minus_plain_ms": -179.7
+    },
+    {
+      "case": "core-04",
+      "repeat": 4,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": 12.0,
+      "total_delta_hades_minus_plain_ms": -740.4
+    },
+    {
+      "case": "core-04",
+      "repeat": 5,
+      "turn": 1,
+      "ttft_delta_hades_minus_plain_ms": -32.1,
+      "total_delta_hades_minus_plain_ms": -206.7
+    },
+    {
+      "case": "core-04",
+      "repeat": 5,
+      "turn": 2,
+      "ttft_delta_hades_minus_plain_ms": 5.1,
+      "total_delta_hades_minus_plain_ms": -232.9
+    }
+  ],
+  "limitations": [
+    "Synthetic owner-pattern prompts; no response quality or naturalness grading.",
+    "Owner preference was not collected.",
+    "No Open WebUI browser path, production deployment parity, or memory recall quality was measured.",
+    "Local latency varies by task; these samples do not establish an overall winner.",
+    "Twenty-nine pairs had prompt-specific context; some timing outliers remain."
+  ],
+  "benchmark_environment_helper_sha256": "b1e4868eebd9f753e9b3a65d17ff0a038769fa00664ff3af9afa2348d14cd7ab"
+}
