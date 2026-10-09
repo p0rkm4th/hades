@@ -1,0 +1,802 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-09",
+  "title": "Isolated counterbalanced core-09 explicit savings-memory comparison",
+  "classification": "synthetic local comparative benchmark; no owner preference or release qualification",
+  "source_revision": "238ed118687fa59a1dd4a0649fb23f8f1bac070a",
+  "method": {
+    "samples": 1,
+    "hermes_version": "Hermes Agent v0.21.6 (2026.9.24) · upstream 818c13be",
+    "counterbalance": "One paired pass; hades runs first. Repeated comparisons require separate invocations so each gets an empty disposable Hindsight volume.",
+    "sequence": [
+      "owner core-01 greeting",
+      "core-09 explicit synthetic save",
+      "core-09 fresh-session immediate and post-drain recall"
+    ],
+    "owner_corpus_case_map": {
+      "core-01": "Hey, how's your morning going?",
+      "core-09": {
+        "save": "Remember that my savings target is $3,000.",
+        "recall": "What was the savings target I mentioned?"
+      }
+    },
+    "synthetic_case_catalog": {},
+    "state_scope": "Persistent gateway/home and memory bank within each stack; recall uses a new Hermes session ID.",
+    "model": "qwen3.6:35b",
+    "ollama_version": "0.40.2",
+    "openai_chat_context_probe_prompt_tokens": 7010,
+    "openai_chat_context_probe_minimum_tokens": 5000,
+    "openai_chat_context_probe_loaded_context": 65536,
+    "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+    "model_quantization": "Q4_K_M",
+    "ollama_loaded_context_after_stack_warmups": 65536,
+    "hermes_ollama_context_configured": 65536,
+    "measured_context_verification": "The same Ollama OpenAI-compatible chat endpoint must accept a >5k-token probe without a per-request context override, and /api/ps must report the configured context immediately after that probe. Every Hermes provider generation must request the configured context. Runtime /api/ps is sampled at each provider response boundary and retained per generation; when HADES background inference has already evicted the interactive model, the boundary records non-residency. The measured HADES run is then interpreted with the exact-route startup probe and global OLLAMA_CONTEXT_LENGTH setting, while plain turns must remain resident at the target context.",
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight:0.10.3@sha256:b5da1a9aece1f53a15f12821fb1470f358ed6c74dfaa0c4b1a39c3f3ae93e002",
+    "hindsight_model": "qwen3:14b",
+    "hindsight_model_digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+    "hindsight_model_quantization": "Q4_K_M",
+    "hindsight_llm_max_concurrent": 1,
+    "retain_mode": "concise",
+    "observations_enabled": true,
+    "stored_text_policy": "Assistant response text is evaluated only in memory and is never printed or persisted; aggregate marker metrics are retained.",
+    "reasoning": "disabled per request",
+    "max_output_tokens": 512,
+    "user_generation_overrides": {
+      "temperature": 0.1,
+      "top_p": 0.95,
+      "scope": "all Hermes provider generations in both benchmark arms"
+    },
+    "effective_sampler_capture": "Provider traces persist the actual temperature/top_p fields sent to the common local Ollama runtime; the artifact can be checked for equality.",
+    "plain_toolset": [
+      "memory"
+    ],
+    "hades_toolset": [],
+    "hades_scope": "owner",
+    "hades_recall_types": "observation",
+    "hades_recall_budget": "mid",
+    "hades_prefer_observations": false,
+    "recall_diagnostics_captured": true,
+    "recall_timing_diagnostics_captured": true,
+    "post_idle_recall_type_diagnostic": "Not run in focused mode.",
+    "hades_bank": "hades-owner",
+    "hades_provider_path": "separately installed upstream Hindsight provider; local_external mode; loopback disposable service; authenticated subject bank selected by HADES; explicit facts use a chunks bank with local embeddings",
+    "hindsight_network_mode": "bridge",
+    "hindsight_inference_accounting": "The local proxy records Hindsight-to-Ollama API route, safe scalar controls, byte counts, response timing, and Ollama usage counters; request/response bodies, prompts, facts, and credentials are never persisted. These background calls are additional HADES inference and are reported separately from user-facing Hermes provider generations.",
+    "retrieval_score_diagnostics": "For HADES only, opt-in diagnostic logs retain up to eight result ranks, canonical memory types, and numeric retrieval scores; query text, facts, IDs, tags, entities, and subjects are excluded.",
+    "hindsight_residency_capture": "After forwarding each Hindsight request response, the proxy samples local Ollama /api/ps and records only the matching model's residency status, context length, total size, and VRAM size. A not_resident or unavailable observation is retained explicitly; the probe occurs after the measured response and is excluded from its elapsed time.",
+    "interactive_residency_capture": "The runner samples /api/ps after each automatic retain and immediately before the next read, storing only role-based residency, context length, and VRAM bytes for the interactive and Hindsight models; no model names or response data are retained in this probe.",
+    "arm_isolation": "Before measured arms, the runner drains Hindsight warmup work. Before each stack arm, it unloads the extractor, warms and verifies the interactive model at the configured context, and records normalization timings outside measured turns. After every HADES arm, it polls pending/processing operations across every bank in the disposable Hindsight database until two consecutive idle observations; unavailable status or timeout aborts the run. This prevents background work from carrying across counterbalanced arms.",
+    "warmups": {
+      "plain": {
+        "status": 200,
+        "provider_generations": 1
+      },
+      "hades": {
+        "status": 200,
+        "provider_generations": 1
+      },
+      "hindsight_idle": {
+        "idle": true,
+        "polls": 2,
+        "proxy_active_requests": 0,
+        "elapsed_ms": 1010.1,
+        "last_state": {
+          "banks": {},
+          "operations": {
+            "pending": {},
+            "processing": {}
+          },
+          "stats": {
+            "pending_operations": 0,
+            "operations_by_status": {}
+          },
+          "bank_count": 0
+        }
+      }
+    },
+    "data": "The owner core-09 recall wording uses only a synthetic savings target ($3,000). Automatic cross-session Denver fact and favorite-fruit save/correction remain synthetic controls. Temporary homes, container and database volume.",
+    "privacy": "Ollama endpoint restricted to loopback; Ollama server launched with OLLAMA_NO_CLOUD=1. Hindsight used Docker bridge networking with its host API published only on loopback and the accounting proxy bound only to the bridge gateway; synthetic benchmark data only.",
+    "explicit_list_diagnostics": "Aggregate HADES-only counts for listed items, lexical matches and candidates, plus exception type. No query, memory text, IDs, tags, entities or subject values are persisted."
+  },
+  "summary_by_stack_and_turn": {
+    "plain.ordinary": {
+      "samples": 1,
+      "median_ttft_ms": 7454.6,
+      "median_total_ms": 8091.5,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3313,
+      "median_request_bytes": 14175,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.automatic_retain": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.automatic_recall": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.core09_save": {
+      "samples": 1,
+      "median_ttft_ms": 3791.7,
+      "median_total_ms": 4031.1,
+      "median_provider_generations": 2,
+      "median_tool_schema_exposures": 2,
+      "median_tool_schema_bytes_exposed": 6898,
+      "median_tool_calls": 1,
+      "median_prompt_tokens": 6775,
+      "median_request_bytes": 28877,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.core09_recall": {
+      "samples": 1,
+      "median_ttft_ms": 1834.2,
+      "median_total_ms": 1934.7,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3376,
+      "median_request_bytes": 14557,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": 1
+    },
+    "plain.core09_recall_after_idle": {
+      "samples": 1,
+      "median_ttft_ms": 149.5,
+      "median_total_ms": 278.8,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 1,
+      "median_tool_schema_bytes_exposed": 3449,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 3376,
+      "median_request_bytes": 14557,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": 1
+    },
+    "plain.save": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.correction": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.implicit_recall": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "plain.fresh_recall": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.ordinary": {
+      "samples": 1,
+      "median_ttft_ms": 1335.3,
+      "median_total_ms": 1531.4,
+      "median_provider_generations": 1,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 733,
+      "median_request_bytes": 3150,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.automatic_retain": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.automatic_recall": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.core09_save": {
+      "samples": 1,
+      "median_ttft_ms": 12662.4,
+      "median_total_ms": 12663.8,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.core09_recall": {
+      "samples": 1,
+      "median_ttft_ms": 35.0,
+      "median_total_ms": 36.0,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": 1
+    },
+    "hades.core09_recall_after_idle": {
+      "samples": 1,
+      "median_ttft_ms": 38.7,
+      "median_total_ms": 40.1,
+      "median_provider_generations": 0,
+      "median_tool_schema_exposures": 0,
+      "median_tool_schema_bytes_exposed": 0,
+      "median_tool_calls": 0,
+      "median_prompt_tokens": 0,
+      "median_request_bytes": 0,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": 1
+    },
+    "hades.save": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.correction": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.implicit_recall": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    },
+    "hades.fresh_recall": {
+      "samples": 0,
+      "median_ttft_ms": null,
+      "median_total_ms": null,
+      "median_provider_generations": null,
+      "median_tool_schema_exposures": null,
+      "median_tool_schema_bytes_exposed": null,
+      "median_tool_calls": null,
+      "median_prompt_tokens": null,
+      "median_request_bytes": null,
+      "fresh_recalls_with_expected_marker": null,
+      "fresh_recalls_with_stale_mango": null,
+      "implicit_recalls_with_expected_marker": null,
+      "implicit_recalls_with_stale_mango": null,
+      "automatic_recalls_with_expected_marker": null,
+      "owner_corpus_recalls_with_expected_marker": null
+    }
+  },
+  "supplement_summary": {},
+  "hades_recall_diagnostics": [],
+  "hades_recall_timing_diagnostics": [],
+  "explicit_memory_list_diagnostics": [
+    {
+      "items": 1,
+      "lexical_matches": 1,
+      "candidates": 1,
+      "error": "none"
+    },
+    {
+      "items": 2,
+      "lexical_matches": 2,
+      "candidates": 2,
+      "error": "none"
+    }
+  ],
+  "hindsight_ollama_calls": [
+    {
+      "route": "other",
+      "model": "qwen3:14b",
+      "stream": false,
+      "request_bytes": 88,
+      "status": 200,
+      "elapsed_ms": 12107.0,
+      "response_bytes": 933,
+      "prompt_eval_count": null,
+      "eval_count": null,
+      "total_duration_ns": null,
+      "load_duration_ns": null,
+      "generation_controls": {},
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 40960,
+      "loaded_model_size_bytes": 16369697421,
+      "loaded_model_size_vram_bytes": 15100343746
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3:14b",
+      "stream": false,
+      "request_bytes": 18478,
+      "status": 200,
+      "elapsed_ms": 12531.4,
+      "response_bytes": 653,
+      "prompt_eval_count": 2296,
+      "eval_count": 97,
+      "total_duration_ns": 12530685099,
+      "load_duration_ns": 4213337690,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 40960,
+      "loaded_model_size_bytes": 16369697421,
+      "loaded_model_size_vram_bytes": 15100343746
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3:14b",
+      "stream": false,
+      "request_bytes": 15183,
+      "status": 200,
+      "elapsed_ms": 10013.3,
+      "response_bytes": 647,
+      "prompt_eval_count": 3238,
+      "eval_count": 103,
+      "total_duration_ns": 10012249128,
+      "load_duration_ns": 2367542,
+      "generation_controls": {
+        "temperature": 0.0
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 40960,
+      "loaded_model_size_bytes": 16369697421,
+      "loaded_model_size_vram_bytes": 15100343746
+    }
+  ],
+  "repetitions": [
+    {
+      "sample": 1,
+      "first_stack": "hades",
+      "hindsight_idle_after_hades": {
+        "idle": true,
+        "polls": 13,
+        "proxy_active_requests": 0,
+        "elapsed_ms": 12308.7,
+        "last_state": {
+          "banks": {
+            "hades-owner": {
+              "pending": {},
+              "processing": {}
+            }
+          },
+          "operations": {
+            "pending": {},
+            "processing": {}
+          },
+          "stats": {
+            "pending_operations": 0,
+            "operations_by_status": {
+              "completed": 1
+            }
+          },
+          "bank_count": 1
+        }
+      },
+      "runtime_normalization": {
+        "hades": {
+          "interactive_model_resident": true,
+          "interactive_context_length": 65536,
+          "interactive_size_vram_bytes": 12912427006,
+          "extractor_shares_interactive_model": false,
+          "extractor_resident": false,
+          "extractor_was_resident_before_reset": false,
+          "extractor_unload_ms": null,
+          "interactive_warmup_ms": 186.9,
+          "normalization_calls_excluded_from_turn_timing": true
+        },
+        "plain": {
+          "interactive_model_resident": true,
+          "interactive_context_length": 65536,
+          "interactive_size_vram_bytes": 12912427006,
+          "extractor_shares_interactive_model": false,
+          "extractor_resident": false,
+          "extractor_was_resident_before_reset": true,
+          "extractor_unload_ms": 1.0,
+          "interactive_warmup_ms": 7546.7,
+          "normalization_calls_excluded_from_turn_timing": true
+        }
+      },
+      "stacks": {
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1335.3,
+              "total_ms": 1531.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 733,
+                "completion_tokens": 8,
+                "request_bytes": 3150,
+                "message_bytes": 2973,
+                "system_message_bytes": 2915,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 12662.4,
+              "total_ms": 12663.8,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 35.0,
+              "total_ms": 36.0,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "core09_recall_after_idle",
+              "status": 200,
+              "ttft_ms": 38.7,
+              "total_ms": 40.1,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            }
+          ],
+          "core09_recall_expected_marker_present": true,
+          "core09_fact_visibility_after_save": {
+            "canonical_bank": true,
+            "explicit_tagged_canonical_bank": true
+          },
+          "core09_recall_after_idle_expected_marker_present": true,
+          "core09_bank_visibility_after_drain": {
+            "canonical_bank": true,
+            "explicit_bank_tagged": false
+          }
+        },
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 7454.6,
+              "total_ms": 8091.5,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3313,
+                "completion_tokens": 28,
+                "request_bytes": 14175,
+                "message_bytes": 10538,
+                "system_message_bytes": 10480,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 3791.7,
+              "total_ms": 4031.1,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 6775,
+                "completion_tokens": 74,
+                "request_bytes": 28877,
+                "message_bytes": 21601,
+                "system_message_bytes": 20960,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 1834.2,
+              "total_ms": 1934.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3376,
+                "completion_tokens": 7,
+                "request_bytes": 14557,
+                "message_bytes": 10920,
+                "system_message_bytes": 10852,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_recall_after_idle",
+              "status": 200,
+              "ttft_ms": 149.5,
+              "total_ms": 278.8,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3376,
+                "completion_tokens": 7,
+                "request_bytes": 14557,
+                "message_bytes": 10920,
+                "system_message_bytes": 10852,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            }
+          ],
+          "core09_recall_expected_marker_present": true,
+          "core09_fact_visibility_after_save": null,
+          "core09_recall_after_idle_expected_marker_present": true
+        }
+      }
+    }
+  ],
+  "preference_bucket": "UNASSIGNED; no owner dogfood",
+  "semantic_correctness_review": "UNSCORED: expected-marker presence is descriptive only and is not semantic correctness; human review is required.",
+  "limitations": [
+    "The model digest is staged local Qwen; this does not prove equality with production model weights.",
+    "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
+    "The owner core-09 recall is measured once immediately after save and again for both stacks after HADES background memory work drains; readiness delay and settled recall are separate outcomes.",
+    "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
+    "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review."
+  ],
+  "source_worktree_state": "dirty during replay; based on source_revision listed; diagnostic or entity-tie and queue-pruning changes were not yet committed"
+}

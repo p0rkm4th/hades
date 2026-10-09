@@ -1,0 +1,337 @@
+{
+  "schema_version": 1,
+  "classification": "incomplete synthetic local comparative benchmark; summary failed before completion; no owner preference or release qualification",
+  "source_revision": "238ed118687fa59a1dd4a0649fb23f8f1bac070a",
+  "failure": {
+    "stage": "sample_1_plain_core09_recall_after_idle",
+    "error_type": "KeyError"
+  },
+  "repetitions": [
+    {
+      "sample": 1,
+      "first_stack": "hades",
+      "hindsight_idle_after_hades": {
+        "idle": true,
+        "polls": 13,
+        "proxy_active_requests": 0,
+        "elapsed_ms": 12182.6,
+        "last_state": {
+          "banks": {
+            "hades-owner": {
+              "pending": {},
+              "processing": {}
+            }
+          },
+          "operations": {
+            "pending": {},
+            "processing": {}
+          },
+          "stats": {
+            "pending_operations": 0,
+            "operations_by_status": {
+              "completed": 1
+            }
+          },
+          "bank_count": 1
+        }
+      },
+      "runtime_normalization": {
+        "hades": {
+          "interactive_model_resident": true,
+          "interactive_context_length": 65536,
+          "interactive_size_vram_bytes": 12912427006,
+          "extractor_shares_interactive_model": false,
+          "extractor_resident": false,
+          "extractor_was_resident_before_reset": false,
+          "extractor_unload_ms": null,
+          "interactive_warmup_ms": 226.0,
+          "normalization_calls_excluded_from_turn_timing": true
+        },
+        "plain": {
+          "interactive_model_resident": true,
+          "interactive_context_length": 65536,
+          "interactive_size_vram_bytes": 12912427006,
+          "extractor_shares_interactive_model": false,
+          "extractor_resident": false,
+          "extractor_was_resident_before_reset": true,
+          "extractor_unload_ms": 1.2,
+          "interactive_warmup_ms": 7586.8,
+          "normalization_calls_excluded_from_turn_timing": true
+        }
+      },
+      "stacks": {
+        "hades": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 1550.2,
+              "total_ms": 1845.1,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 730,
+                "completion_tokens": 7,
+                "request_bytes": 3150,
+                "message_bytes": 2973,
+                "system_message_bytes": 2915,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 13360.9,
+              "total_ms": 13362.1,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 28.1,
+              "total_ms": 29.2,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            },
+            {
+              "turn": "core09_recall_after_idle",
+              "status": 200,
+              "ttft_ms": 28.1,
+              "total_ms": 29.1,
+              "metrics": {
+                "provider_generations": 0,
+                "tool_schema_exposures": 0,
+                "tool_schema_bytes_exposed": 0,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "request_bytes": 0,
+                "message_bytes": 0,
+                "system_message_bytes": 0,
+                "context_tokens_per_generation": [],
+                "runtime_observation_per_generation": []
+              }
+            }
+          ],
+          "core09_recall_expected_marker_present": false,
+          "core09_recall_after_idle_expected_marker_present": true,
+          "core09_fact_visibility_after_drain": {
+            "canonical_bank": true,
+            "explicit_bank_tagged": false
+          }
+        },
+        "plain": {
+          "turns": [
+            {
+              "turn": "ordinary",
+              "status": 200,
+              "ttft_ms": 7488.0,
+              "total_ms": 8135.7,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3309,
+                "completion_tokens": 28,
+                "request_bytes": 14175,
+                "message_bytes": 10538,
+                "system_message_bytes": 10480,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_save",
+              "status": 200,
+              "ttft_ms": 4445.5,
+              "total_ms": 4674.9,
+              "metrics": {
+                "provider_generations": 2,
+                "tool_schema_exposures": 2,
+                "tool_schema_bytes_exposed": 6898,
+                "tool_calls_emitted": 1,
+                "prompt_tokens": 6767,
+                "completion_tokens": 74,
+                "request_bytes": 28877,
+                "message_bytes": 21601,
+                "system_message_bytes": 20960,
+                "context_tokens_per_generation": [
+                  65536,
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  },
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_recall",
+              "status": 200,
+              "ttft_ms": 1749.5,
+              "total_ms": 1878.3,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3372,
+                "completion_tokens": 7,
+                "request_bytes": 14557,
+                "message_bytes": 10920,
+                "system_message_bytes": 10852,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            },
+            {
+              "turn": "core09_recall_after_idle",
+              "status": 200,
+              "ttft_ms": 139.6,
+              "total_ms": 263.4,
+              "metrics": {
+                "provider_generations": 1,
+                "tool_schema_exposures": 1,
+                "tool_schema_bytes_exposed": 3449,
+                "tool_calls_emitted": 0,
+                "prompt_tokens": 3372,
+                "completion_tokens": 7,
+                "request_bytes": 14557,
+                "message_bytes": 10920,
+                "system_message_bytes": 10852,
+                "context_tokens_per_generation": [
+                  65536
+                ],
+                "runtime_observation_per_generation": [
+                  {
+                    "model_resident_at_response_boundary": "resident",
+                    "loaded_context_tokens": 65536
+                  }
+                ]
+              }
+            }
+          ],
+          "core09_recall_expected_marker_present": true,
+          "core09_recall_after_idle_expected_marker_present": true
+        }
+      }
+    }
+  ],
+  "hindsight_ollama_calls": [
+    {
+      "route": "other",
+      "model": "qwen3:14b",
+      "stream": false,
+      "request_bytes": 88,
+      "status": 200,
+      "elapsed_ms": 10318.5,
+      "response_bytes": 801,
+      "prompt_eval_count": null,
+      "eval_count": null,
+      "total_duration_ns": null,
+      "load_duration_ns": null,
+      "generation_controls": {},
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 40960,
+      "loaded_model_size_bytes": 16369697421,
+      "loaded_model_size_vram_bytes": 15100343746
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3:14b",
+      "stream": false,
+      "request_bytes": 18478,
+      "status": 200,
+      "elapsed_ms": 13244.2,
+      "response_bytes": 653,
+      "prompt_eval_count": 2296,
+      "eval_count": 97,
+      "total_duration_ns": 13243560975,
+      "load_duration_ns": 4926638365,
+      "generation_controls": {
+        "num_predict": 64000,
+        "temperature": 0.1
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 40960,
+      "loaded_model_size_bytes": 16369697421,
+      "loaded_model_size_vram_bytes": 15100343746
+    },
+    {
+      "route": "/api/chat",
+      "model": "qwen3:14b",
+      "stream": false,
+      "request_bytes": 15183,
+      "status": 200,
+      "elapsed_ms": 10394.2,
+      "response_bytes": 646,
+      "prompt_eval_count": 3238,
+      "eval_count": 103,
+      "total_duration_ns": 10393473574,
+      "load_duration_ns": 1916023,
+      "generation_controls": {
+        "temperature": 0.0
+      },
+      "loaded_model_residency": "resident",
+      "loaded_model_context_length": 40960,
+      "loaded_model_size_bytes": 16369697421,
+      "loaded_model_size_vram_bytes": 15100343746
+    }
+  ],
+  "preference_bucket": "UNASSIGNED; no owner dogfood",
+  "source_worktree_state": "dirty during replay; based on source_revision listed; diagnostic or entity-tie and queue-pruning changes were not yet committed"
+}

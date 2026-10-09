@@ -193,6 +193,45 @@ def read_safe_recall_diagnostics(log_path: pathlib.Path, offset: int = 0):
     return rows, next_offset
 
 
+def read_safe_explicit_list_diagnostics(log_path: pathlib.Path, offset: int = 0):
+    """Read aggregate counts for explicit Hindsight list matching only."""
+    marker = "Explicit Hindsight list diagnostics "
+    rows = []
+    try:
+        with log_path.open("rb") as stream:
+            stream.seek(max(0, offset))
+            while True:
+                raw_line = stream.readline()
+                if not raw_line:
+                    break
+                line = raw_line.decode("utf-8", errors="replace")
+                start = line.find(marker)
+                if start < 0:
+                    continue
+                fields = dict(re.findall(
+                    r"([a-z_]+)=([A-Za-z0-9_.,:-]+)",
+                    line[start + len(marker):],
+                ))
+                counts = {}
+                valid = True
+                for key in ("items", "lexical_matches", "candidates"):
+                    value = fields.get(key)
+                    if value is None or not value.isdecimal():
+                        valid = False
+                        break
+                    counts[key] = int(value)
+                if not valid:
+                    continue
+                error = fields.get("error", "unknown")
+                if error != "none" and not error.isidentifier():
+                    error = "unknown"
+                rows.append({**counts, "error": error})
+            next_offset = stream.tell()
+    except OSError:
+        return [], offset
+    return rows, next_offset
+
+
 def read_safe_recall_timings(log_path: pathlib.Path, offset: int = 0):
     """Read allowlisted automatic-recall timing fields, never log text fields."""
     marker = "HADES timing stage=automatic_recall "
@@ -279,6 +318,7 @@ def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "automatic_retained_fact_visible_after_drain",
         "automatic_recall_after_idle_expected_marker_present",
         "core09_recall_expected_marker_present",
+        "core09_fact_visibility_after_save",
         "core09_recall_after_idle_expected_marker_present",
         "core09_fact_visibility_after_drain",
     )
@@ -1351,7 +1391,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--core09-only", action="store_true",
-        help="run greeting, automatic-memory control, core-09 explicit save/recall, and settled recall; skip unrelated memory cases",
+        help="run the ordinary greeting and core-09 explicit save/recall in isolation; automatic-memory behavior has a separate mode",
     )
     parser.add_argument(
         "--first-stack", choices=("plain", "hades"),
@@ -1569,47 +1609,48 @@ def main() -> int:
                                   "provider_calls": ordinary["metrics"]["provider_generations"]}),
                       flush=True)
 
-                automatic_fact = measure_turn(
-                    gateway, benchmark, "automatic_retain",
-                    f"memory-pair-{stack}-{round_id}-automatic-retain",
-                    [{"role": "user", "content": "I moved to Denver in 2024."}],
-                )
-                rows.append(automatic_fact)
-                automatic_retention_state = (
-                    hindsight_bank_lifecycle(
-                        hindsight_url, memory_bank
+                if not args.core09_only:
+                    automatic_fact = measure_turn(
+                        gateway, benchmark, "automatic_retain",
+                        f"memory-pair-{stack}-{round_id}-automatic-retain",
+                        [{"role": "user", "content": "I moved to Denver in 2024."}],
                     )
-                    if stack == "hades" else None
-                )
-                sample_result.setdefault(
-                    "runtime_after_automatic_retain", {}
-                )[stack] = runtime_residency_snapshot(
-                    ollama, benchmark, MODEL, args.hindsight_model
-                )
-                automatic_recall = measure_turn(
-                    gateway, benchmark, "automatic_recall",
-                    f"memory-pair-{stack}-{round_id}-automatic-recall",
-                    [{"role": "user", "content": "Where did I say I moved?"}],
-                )
-                rows.append(automatic_recall)
-                automatic_marker_present = (
-                    "denver" in automatic_recall["answer"].casefold()
-                )
-                automatic_fact_visible = (
-                    retained_fact_visible(
-                        hindsight_url,
-                        memory_bank,
-                        "Denver",
+                    rows.append(automatic_fact)
+                    automatic_retention_state = (
+                        hindsight_bank_lifecycle(
+                            hindsight_url, memory_bank
+                        )
+                        if stack == "hades" else None
                     )
-                    if stack == "hades" else None
-                )
-                print(json.dumps({"sample": sample + 1, "stack": stack,
-                                  "turn": "automatic_recall",
-                                  "total_ms": automatic_recall["total_ms"],
-                                  "provider_calls": automatic_recall["metrics"]["provider_generations"],
-                                  "tool_calls": automatic_recall["metrics"]["tool_calls_emitted"],
-                                  "expected_marker_present": automatic_marker_present,
-                                  "retained_fact_visible": automatic_fact_visible}), flush=True)
+                    sample_result.setdefault(
+                        "runtime_after_automatic_retain", {}
+                    )[stack] = runtime_residency_snapshot(
+                        ollama, benchmark, MODEL, args.hindsight_model
+                    )
+                    automatic_recall = measure_turn(
+                        gateway, benchmark, "automatic_recall",
+                        f"memory-pair-{stack}-{round_id}-automatic-recall",
+                        [{"role": "user", "content": "Where did I say I moved?"}],
+                    )
+                    rows.append(automatic_recall)
+                    automatic_marker_present = (
+                        "denver" in automatic_recall["answer"].casefold()
+                    )
+                    automatic_fact_visible = (
+                        retained_fact_visible(
+                            hindsight_url,
+                            memory_bank,
+                            "Denver",
+                        )
+                        if stack == "hades" else None
+                    )
+                    print(json.dumps({"sample": sample + 1, "stack": stack,
+                                      "turn": "automatic_recall",
+                                      "total_ms": automatic_recall["total_ms"],
+                                      "provider_calls": automatic_recall["metrics"]["provider_generations"],
+                                      "tool_calls": automatic_recall["metrics"]["tool_calls_emitted"],
+                                      "expected_marker_present": automatic_marker_present,
+                                      "retained_fact_visible": automatic_fact_visible}), flush=True)
 
                 if args.automatic_only:
                     sample_result["stacks"][stack] = {
@@ -1670,6 +1711,18 @@ def main() -> int:
                     [{"role": "user", "content": "Remember that my savings target is $3,000."}],
                 )
                 rows.append(core09_save)
+                core09_visibility_after_save = (
+                    {
+                        "canonical_bank": retained_fact_visible(
+                            hindsight_url, memory_bank, "$3,000"
+                        ),
+                        "explicit_tagged_canonical_bank": retained_fact_visible(
+                            hindsight_url, memory_bank, "$3,000",
+                            required_tag="hades-explicit-memory",
+                        ),
+                    }
+                    if stack == "hades" else None
+                )
                 core09_recall = measure_turn(
                     gateway, benchmark, "core09_recall",
                     f"memory-pair-{stack}-{round_id}-core09-recall",
@@ -1687,12 +1740,9 @@ def main() -> int:
                 if args.core09_only:
                     sample_result["stacks"][stack] = {
                         "turns": [safe_turn_record(row) for row in rows],
-                        "automatic_recall_expected_fact": "Denver",
-                        "automatic_recall_expected_marker_present": automatic_marker_present,
-                        "automatic_retained_fact_visible": automatic_fact_visible,
-                        "automatic_retention_state_before_recall": automatic_retention_state,
                         "core09_recall_expected_fact": "$3,000 synthetic savings target",
                         "core09_recall_expected_marker_present": core09_marker_present,
+                        "core09_fact_visibility_after_save": core09_visibility_after_save,
                     }
                     if stack == "hades":
                         failure_stage = f"hindsight_idle_after_core09_hades_{sample + 1}"
@@ -1948,7 +1998,7 @@ def main() -> int:
                     ),
                     "automatic_recalls_with_expected_marker": (
                         sum(s["stacks"][stack]["automatic_recall_expected_marker_present"] for s in repetitions)
-                        if turn == "automatic_recall" else None
+                        if turn == "automatic_recall" and not args.core09_only else None
                     ),
                     "owner_corpus_recalls_with_expected_marker": (
                         sum(s["stacks"][stack][
@@ -2005,7 +2055,7 @@ def main() -> int:
             "title": (
                 "Focused ordinary chat and synthetic automatic-memory recall comparison"
                 if args.automatic_only else
-                "Focused counterbalanced core-09 savings-memory comparison"
+                "Isolated counterbalanced core-09 explicit savings-memory comparison"
                 if args.core09_only else
                 "Counterbalanced owner-core-09 savings recall and synthetic memory correction comparison"
             ),
@@ -2021,7 +2071,7 @@ def main() -> int:
                 "sequence": (
                     ["owner core-01 greeting", "synthetic automatic personal-fact retain/recall"]
                     if args.automatic_only else
-                    ["owner core-01 greeting", "synthetic automatic-memory control", "core-09 explicit synthetic save and natural recall", "core-09 immediate and post-drain recall"]
+                    ["owner core-01 greeting", "core-09 explicit synthetic save", "core-09 fresh-session immediate and post-drain recall"]
                     if args.core09_only else
                     ["owner core-01 greeting", "synthetic automatic personal-fact retain/recall", "owner core-09 explicit synthetic save and natural recall wording", "core-09 immediate and post-drain recall", "synthetic favorite-fruit save/correction", "fresh-session implicit recall", "fresh-session explicit recall"]
                 ),
@@ -2119,6 +2169,12 @@ def main() -> int:
             ),
             "hades_recall_timing_diagnostics": (
                 read_safe_recall_timings(gateways["hades"]["log_path"])[0]
+                if args.capture_recall_diagnostics else []
+            ),
+            "explicit_memory_list_diagnostics": (
+                read_safe_explicit_list_diagnostics(
+                    gateways["hades"]["log_path"]
+                )[0]
                 if args.capture_recall_diagnostics else []
             ),
             "hindsight_ollama_calls": bridge.snapshot() if bridge is not None else [],

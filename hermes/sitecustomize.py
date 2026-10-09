@@ -7298,6 +7298,20 @@ def _hades_install_public_research_lineage_shortcut():
         _hades_logger.warning("public research lineage completion hook unavailable: %s", type(exc).__name__)
 
 
+_HADES_LOW_VALUE_MEMORY_TURN = re.compile(
+    r"^\s*(?:hi|hello|hey|good\s+morning|good\s+afternoon|good\s+evening|"
+    r"how\s+are\s+you(?:\s+doing)?|what['’]?s\s+up|"
+    r"hey,?\s+how['’]?s\s+your\s+morning\s+going)[.!?]*\s*$",
+    re.IGNORECASE,
+)
+_HADES_MEMORY_LOOKUP_TURN = re.compile(
+    r"\b(?:where\s+did\s+i\s+say|what\s+did\s+i\s+say|"
+    r"what\s+did\s+i\s+tell\s+you|what\s+was\s+.{1,80}\s+i\s+mentioned|"
+    r"what\s+do\s+you\s+remember)\b",
+    re.IGNORECASE,
+)
+
+
 def _hades_should_skip_automatic_memory(user_content, assistant_content):
     """Decide whether a completed turn is unsafe for automatic private retain.
 
@@ -7306,7 +7320,10 @@ def _hades_should_skip_automatic_memory(user_content, assistant_content):
     this decision; user text is the authority for domain classification, while
     transient assistant/tool failures are always suppressed.
     """
-    return (_hades_nonpersonal_state_turn(user_content)
+    user_text = str(user_content or "").strip()
+    return (_HADES_LOW_VALUE_MEMORY_TURN.fullmatch(user_text) is not None
+            or _HADES_MEMORY_LOOKUP_TURN.search(user_text) is not None
+            or _hades_nonpersonal_state_turn(user_text)
             or _hades_transient_error_text(assistant_content))
 
 
@@ -8590,13 +8607,18 @@ try:
                 return len(exact) + approximate
 
             recent = []
+            listed_item_count = 0
+            lexical_match_count = 0
+            list_error_type = "none"
             try:
                 from urllib.parse import urlencode
                 from urllib.request import urlopen
                 list_url = f"{os.environ.get('HADES_HINDSIGHT_URL', 'http://127.0.0.1:8888').rstrip('/')}/v1/default/banks/{bank}/memories/list?{urlencode({'tags': 'hades-explicit-memory', 'tags_match': 'any', 'state': 'valid', 'limit': 100})}"
                 with urlopen(list_url, timeout=2) as listed_response:
                     listed = json.load(listed_response)
-                for item in (listed.get("items", []) if isinstance(listed, dict) else []):
+                listed_items = listed.get("items", []) if isinstance(listed, dict) else []
+                listed_item_count = len(listed_items) if isinstance(listed_items, list) else 0
+                for item in listed_items:
                     if isinstance(item, dict):
                         raw_tags = item.get("tags")
                         raw_value = item.get("text")
@@ -8648,14 +8670,23 @@ try:
                     )
                     overlap = max(item_overlap, entity_overlap)
                     if overlap:
+                        lexical_match_count += 1
                         candidate = (
                             entity_candidate
-                            if entity_overlap >= item_overlap and entity_candidate
+                            if entity_overlap > item_overlap and entity_candidate
                             else value
                         )
                         recent.append((overlap, str(updated), candidate))
-            except Exception:
+            except Exception as exc:
                 recent = []
+                list_error_type = type(exc).__name__
+            _hades_logger.info(
+                "Explicit Hindsight list diagnostics items=%d lexical_matches=%d candidates=%d error=%s",
+                listed_item_count,
+                lexical_match_count,
+                len(recent),
+                list_error_type,
+            )
             if recent:
                 # Resolve corrections per subject before ranking lexical
                 # matches. Otherwise an older, longer memory can win on

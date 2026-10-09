@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-09",
+  "title": "Isolated Hindsight synchronous-retain contention probe",
+  "classification": "synthetic diagnostic; not product qualification or owner preference evidence",
+  "source_revision": "238ed118687fa59a1dd4a0649fb23f8f1bac070a",
+  "runtime": {
+    "hermes": "0.21.6 client venv",
+    "ollama": "0.40.2",
+    "hindsight_image": "ghcr.io/vectorize-io/hindsight:0.10.3@sha256:b5da1a9aece1f53a15f12821fb1470f358ed6c74dfaa0c4b1a39c3f3ae93e002",
+    "interactive_model": "qwen3.6:35b Q4_K_M, digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, context 65536",
+    "hindsight_model": "qwen3:14b Q4_K_M, digest bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8, loaded context 40960",
+    "hindsight_llm_max_concurrent": 1
+  },
+  "method": "Fresh disposable Hindsight container and bank per probe, same local Ollama modelstore, Hindsight pinned Python client, retain_async=false, 30-second timeout, synthetic fact only. One probe had no other active/queued Hindsight work and no interactive model resident. One loaded qwen3.6:35b at the configured context before sync retain. The contention probe first submitted three async synthetic retains, polled aggregate lifecycle state until processing and pending work were active, then issued one sync explicit retain. No HADES process was running in these probes.",
+  "results": [
+    {
+      "condition": "idle; interactive model absent",
+      "sync_outcome": "returned",
+      "elapsed_ms": 7523.5,
+      "success": true,
+      "items_count": 1,
+      "fact_visible_immediately": true,
+      "extractor_call_elapsed_ms": [
+        4587.4,
+        7441.7
+      ]
+    },
+    {
+      "condition": "idle; interactive model resident at 65536 context",
+      "sync_outcome": "returned",
+      "elapsed_ms": 12471.1,
+      "success": true,
+      "items_count": 1,
+      "fact_visible_immediately": true,
+      "interactive_model_resident_after": false,
+      "extractor_call_elapsed_ms": [
+        16704.7,
+        12381.0
+      ]
+    },
+    {
+      "condition": "three active async retains; aggregate state observed processing=3 pending=3; interactive model resident at 65536 context",
+      "sync_outcome": "timeout",
+      "elapsed_ms": 30987.3,
+      "success": null,
+      "items_count": null,
+      "fact_visibility": "not measured",
+      "extractor_call_elapsed_ms": [
+        13875.0,
+        16647.1,
+        10681.3
+      ]
+    }
+  ],
+  "conclusion": "The idle synchronous path completed under 15 seconds in both sampled model-residency conditions. A concurrently active Hindsight async backlog reproduced the 30-second explicit-retain timeout. This supports queue contention as a sufficient cause in the isolated probe; it does not prove the exact number or state of jobs in the paired replay. The 35B interactive model was evicted by Hindsight inference even when sync retain succeeded, so local model residency remains a separate HADES tax.",
+  "privacy": "Only aggregate timing, booleans, model digests, usage counters, and operation counts are retained. Synthetic fact text, response bodies, operation IDs, and bank rows are excluded. Disposable Hindsight containers and volumes were removed; isolated Ollama was stopped; production untouched.",
+  "source_worktree_state": "dirty during replay; based on source_revision listed; diagnostic or entity-tie and queue-pruning changes were not yet committed"
+}

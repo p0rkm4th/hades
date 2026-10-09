@@ -250,6 +250,19 @@ try:
     assert "$3,000" in answer, answer
     assert FakeClient.instances[-1].calls == [], FakeClient.instances[-1].calls
 
+    # When a partial entity label ties the full memory's lexical score, keep
+    # the full canonical text so the answer does not discard the remembered
+    # value (for example, a numeric target).
+    state["items"] = [{
+        "tags": ["hades-explicit-memory"],
+        "text": "User explicitly asked HADES to remember: My savings target is $3,000.",
+        "entities": [{"text": "savings target", "type": "explicit_fact"}],
+        "updated_at": "2026-10-09T12:00:00Z",
+    }]
+    answer = route("What was the savings target I mentioned?", "alpha", "owner")
+    assert "$3,000" in answer, answer
+    assert FakeClient.instances[-1].calls == [], FakeClient.instances[-1].calls
+
     # Entity arrays are normalized to their text, not Python's repr of dicts.
     state["items"] = [
         {

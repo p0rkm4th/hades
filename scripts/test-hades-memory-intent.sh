@@ -83,6 +83,9 @@ for personal in ('I prefer basil', 'I hate mushrooms', 'my favorite dinner is pa
 # wrapper. Assistant/tool output must not promote or demote a personal user
 # turn except for the explicit transient-error suppression rule.
 assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The web result says rain.") is False
+assert overlay._hades_should_skip_automatic_memory("Hey, how's your morning going?", "I'm doing well.") is True
+assert overlay._hades_should_skip_automatic_memory("Where did I say I moved?", "You said Denver.") is True
+assert overlay._hades_should_skip_automatic_memory("What was the savings target I mentioned?", "You said $3,000.") is True
 assert overlay._hades_should_skip_automatic_memory("Grocy says there are 2 cartons of milk", "Current stock: 2 cartons.") is True
 assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The service is unavailable.") is True
 assert overlay._hades_should_skip_automatic_memory("HADES_TASK_NOTIFICATION_FEED_V1", '{"version":1,"tasks":[]}') is True
