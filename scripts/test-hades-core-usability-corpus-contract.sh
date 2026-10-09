@@ -27,8 +27,16 @@ assert required <= categories, f"missing categories: {sorted(required - categori
 assert all(case.get("owner_preference") is None for case in cases)
 coverage = data["replay_coverage"]
 assert coverage["owner_preference_labels"] == 0
-assert coverage["unreplayed_case_count"] == 29
-assert len(coverage["chat_only_case_ids"]) + len(coverage["tool_backed_case_ids"]) + coverage["unreplayed_case_count"] == len(cases)
+chat_ids = coverage["chat_only_case_ids"]
+tool_ids = coverage["tool_backed_case_ids"]
+assert len(chat_ids) == len(set(chat_ids)), "chat-only case IDs must be unique"
+assert len(tool_ids) == len(set(tool_ids)), "tool-backed case IDs must be unique"
+assert set(chat_ids).isdisjoint(tool_ids), "chat-only and tool-backed coverage must not overlap"
+covered_ids = set(chat_ids) | set(tool_ids)
+assert covered_ids <= set(ids), f"coverage references unknown cases: {sorted(covered_ids - set(ids))}"
+assert coverage["unreplayed_case_count"] == len(cases) - len(covered_ids), (
+    "unreplayed count must equal corpus size minus uniquely covered cases"
+)
 for case in cases:
     assert case["turns"] and all(isinstance(turn, str) and turn.strip() for turn in case["turns"])
 
