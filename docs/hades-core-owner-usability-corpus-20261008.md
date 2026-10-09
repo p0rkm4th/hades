@@ -51,6 +51,14 @@ turn was 835 ms slower at the median and used more generated tokens; answer
 quality cannot be reviewed from the redacted artifact. See the [recovery
 report](hades-core-recovery-ollama0402-20261009.md) and [measurements](../benchmarks/hades-core-owner-recovery-v1-hermes0216-ollama0402-3repeats-20261009.json).
 
+A fresh three-repeat `conversation-v1` comparison on the same Ollama 0.40.2
+runtime returned content on all 48 turns per arm, with one generation per turn
+and no exposed or called tools. HADES median TTFT was 9 ms lower, while median
+total latency was 91 ms higher; median prompt size was four tokens higher.
+No answer-quality or preference review was collected. See the [comparison
+report](hades-core-conversation-v1-hermes-0216-ollama-0402-comparison-20261009.md)
+and [sanitized measurements](../benchmarks/hades-core-owner-conversation-v1-hermes0216-ollama0402-3repeats-20261009.json).
+
 The [Git environment profile](hades-core-owner-workspace-diff-review-git-environment-profile-20261009.md)
 traces the two-pair replay's slow diff-review setup to Hermes' hardened native
 Git collector. That replay uses a fresh package-manager home per arm and
