@@ -6500,7 +6500,6 @@ _HADES_HOMELAB_INTENT = re.compile(
     r"virtual\s+machine(?:s)?|\bvm\b|container(?:s)?|sandbox(?:es)?|workload(?:s)?|"
     r"website(?:s)?|gpu(?:s)?|inference|ollama|"
     r"(?:proxmox|homelab|home\s+lab)\s+backups?|"
-    r"(?:what\s+changed|recent\s+(?:activity|changes?)|changes?\s+since\s+yesterday)|"
     r"(?:which|what)\s+(?:ai\s+)?models?\s+(?:are\s+)?(?:available|running|loaded)|"
     r"where\s+should\s+i\s+(?:run|host|put)\s+(?:another\s+|a\s+)?(?:ai\s+)?model|"
     r"which\s+(?:machine|server|gpu|box)\b.{0,40}\b(?:host|run|fit|get)\b.{0,40}\bmodel|"

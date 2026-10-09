@@ -159,6 +159,21 @@ coding_history=[
  {'role':'user','content':'Fix the typo in validation.py.'},
  {'role':'assistant','content':'I fixed and tested the file.'},
 ]
+review_question='Show me exactly what changed and whether anything unrelated is in the diff.'
+review_context=workspace_policy.is_workspace_request(review_question,coding_history)
+assert review_context
+review_intent=hades._hades_conversation_intent_text(
+ review_question,coding_history
+)
+assert not hades._hades_is_homelab_intent(review_intent),review_intent
+assert hades._hades_is_homelab_intent(
+ 'What changed in the homelab since yesterday?'
+)
+homelab_followup=hades._hades_conversation_intent_text(
+ 'What changed since yesterday?',
+ [{'role':'user','content':'Check recent homelab activity.'}],
+)
+assert hades._hades_is_homelab_intent(homelab_followup),homelab_followup
 assert workspace_policy.is_workspace_request(
  'Commit the change we just verified with a clear message.', coding_history
 )
