@@ -186,10 +186,13 @@ agent=create_agent('synthetic-owner','synthetic-unqualified-chat')
 hades._hades_original_run_conversation=lambda *args,**kwargs: (_ for _ in ()).throw(AssertionError('model invoked without rootless sandbox'))
 if not real_rootless:
  runtime_denied=agent.run_conversation('Read answer.txt and tell me the exact token.',task_id='synthetic-unqualified-chat')
- assert 'can\'t access project files in this chat' in runtime_denied.get('final_response','').lower(),runtime_denied
+ assert 'rootless sandbox' in runtime_denied.get('final_response','').lower(),runtime_denied
  assert runtime_denied.get('api_calls') == 0,runtime_denied
  print('PASS HADES denies workspace activation when only rootful Docker is available')
  workspace_policy.sandbox_runtime_available=lambda: True
+ # The production gate above is tested against the real engine. This later
+ # wiring test mocks both prerequisites so it does not depend on a local image.
+ workspace_policy.pinned_image_available=lambda _image=None: True
  workspace_policy.sandbox_runtime_available=lambda: False
  fallback_agent=create_agent('synthetic-owner','synthetic-diagnosis-fallback')
  fallback_tools=[]
@@ -226,6 +229,7 @@ def native_inspection(agent,user_message,*args,**kwargs):
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
  assert 'use read_file and search_files on /workspace' in prompt,prompt
+ assert 'do not repeat search_files after relevant paths are returned' in prompt,prompt
  assert 'do not edit files, run commands or tests, or claim changes' in prompt,prompt
  assert 'do not pass a directory to read_file' in prompt,prompt
  assert get_terminal_scope() is not None
@@ -280,6 +284,7 @@ def native_read(agent,user_message,*args,**kwargs):
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
  assert 'read the relevant source and test files once' in prompt,prompt
  assert 'make one search_files call' in prompt,prompt
+ assert 'do not repeat search_files after relevant paths are returned' in prompt,prompt
  assert 'do not guess test or configuration filenames' in prompt,prompt
  assert terminal_env('TERMINAL_ENV') == 'docker'
  assert terminal_env('TERMINAL_DOCKER_NETWORK') == 'false'
