@@ -484,6 +484,14 @@ def docker_bridge_gateway() -> str:
     return str(gateway)
 
 
+def hindsight_retain_environment(hindsight_model: str, retain_model: str) -> list[str]:
+    """Override only Hindsight fact extraction for staged comparison."""
+    result = []
+    if retain_model != hindsight_model:
+        result.extend(["-e", f"HINDSIGHT_API_RETAIN_LLM_MODEL={retain_model}"])
+    return result
+
+
 class HindsightOllamaProxy(ThreadingHTTPServer):
     """Forward Hindsight's local Ollama traffic and retain aggregate metrics only."""
     daemon_threads = True
@@ -1094,17 +1102,22 @@ def wait_hindsight_retains(url: str, bank_id: str, timeout: float = 8.0,
 
 
 def normalize_ollama_for_arm(ollama_url: str, benchmark, interactive_model: str,
-                             extractor_model: str, context: int = CONTEXT_LENGTH) -> dict[str, Any]:
+                             extractor_model: str, context: int = CONTEXT_LENGTH,
+                             additional_extractor_models: tuple[str, ...] = ()) -> dict[str, Any]:
     """Start each comparison arm with only the interactive model resident."""
     base = ollama_url.rstrip("/")
-    unload = None
     initial_rows = benchmark.local_json(f"{base}/api/ps").get("models", [])
-    extractor_was_resident = any(
-        row.get("name") == extractor_model for row in initial_rows
-    )
-    if extractor_model != interactive_model and extractor_was_resident:
+    memory_models = tuple(dict.fromkeys((extractor_model, *additional_extractor_models)))
+    memory_models_were_resident = {
+        model: any(row.get("name") == model for row in initial_rows)
+        for model in memory_models
+    }
+    unload_timings = {}
+    for memory_model, was_resident in memory_models_were_resident.items():
+        if memory_model == interactive_model or not was_resident:
+            continue
         payload = json.dumps({
-            "model": extractor_model,
+            "model": memory_model,
             "prompt": "",
             "stream": False,
             "keep_alive": 0,
@@ -1117,8 +1130,8 @@ def normalize_ollama_for_arm(ollama_url: str, benchmark, interactive_model: str,
         started = time.monotonic()
         with urllib.request.urlopen(request, timeout=360) as response:
             if response.status != 200:
-                raise RuntimeError("Ollama extractor unload failed")
-        unload = round((time.monotonic() - started) * 1000, 1)
+                raise RuntimeError("Ollama memory-model unload failed")
+        unload_timings[memory_model] = round((time.monotonic() - started) * 1000, 1)
 
     payload = json.dumps({
         "model": interactive_model,
@@ -1142,16 +1155,25 @@ def normalize_ollama_for_arm(ollama_url: str, benchmark, interactive_model: str,
         raise RuntimeError("Ollama interactive model is not resident after arm normalization")
     shared_model = extractor_model == interactive_model
     extractor_resident = any(row.get("name") == extractor_model for row in rows)
-    if extractor_resident and not shared_model:
-        raise RuntimeError("Ollama extractor remains resident after arm normalization")
+    extra_memory_resident = [
+        model for model in additional_extractor_models
+        if model != interactive_model and any(row.get("name") == model for row in rows)
+    ]
+    if (extractor_resident and not shared_model) or extra_memory_resident:
+        raise RuntimeError("Ollama memory model remains resident after arm normalization")
     return {
         "interactive_model_resident": True,
         "interactive_context_length": resident.get("context_length"),
         "interactive_size_vram_bytes": resident.get("size_vram"),
         "extractor_shares_interactive_model": shared_model,
         "extractor_resident": extractor_resident,
-        "extractor_was_resident_before_reset": extractor_was_resident,
-        "extractor_unload_ms": unload,
+        "extractor_was_resident_before_reset": memory_models_were_resident.get(extractor_model, False),
+        "additional_extractor_models_were_resident_before_reset": sum(
+            memory_models_were_resident.get(model, False)
+            for model in additional_extractor_models
+        ),
+        "memory_model_unload_calls": len(unload_timings),
+        "memory_model_unload_total_ms": round(sum(unload_timings.values()), 1),
         "interactive_warmup_ms": warmup_ms,
         "normalization_calls_excluded_from_turn_timing": True,
     }
@@ -1190,13 +1212,19 @@ def summarize_runtime_residency(rows: list[dict[str, Any]],
 
 def runtime_residency_snapshot(ollama_url: str, benchmark,
                                interactive_model: str,
-                               extractor_model: str) -> dict[str, Any]:
+                               extractor_model: str,
+                               additional_memory_models: tuple[str, ...] = ()) -> dict[str, Any]:
     rows = benchmark.local_json(
         f"{ollama_url.rstrip('/')}/api/ps"
     ).get("models", [])
     if not isinstance(rows, list):
         rows = []
-    return summarize_runtime_residency(rows, interactive_model, extractor_model)
+    result = summarize_runtime_residency(rows, interactive_model, extractor_model)
+    result["additional_memory_models_loaded"] = sum(
+        any(isinstance(row, dict) and row.get("name") == model for row in rows)
+        for model in additional_memory_models
+    )
+    return result
 
 
 def measure_memory_supplement_case(gateway: dict[str, Any], benchmark,
@@ -1266,7 +1294,8 @@ def measure_memory_supplement_case(gateway: dict[str, Any], benchmark,
 def start_hindsight(image: str, ollama_bridge_url: str, run_id: str, volume: str,
     hindsight_model: str, network_mode: str = "bridge",
     llm_max_concurrent: int = 1, retain_mode: str = "concise",
-    enable_observations: bool = True, plain_retrieval: bool = False):
+    enable_observations: bool = True, plain_retrieval: bool = False,
+    retain_model: str | None = None):
     subprocess.run(["docker", "volume", "create", volume], check=True, capture_output=True)
     api_port = 8888
     control_port = 9999
@@ -1312,6 +1341,9 @@ def start_hindsight(image: str, ollama_bridge_url: str, run_id: str, volume: str
             "-e", "HINDSIGHT_API_ENABLE_GRAPH_RETRIEVAL=false",
             "-e", "HINDSIGHT_API_ENABLE_RERANKING=false",
         ])
+    command.extend(hindsight_retain_environment(
+        hindsight_model, retain_model or hindsight_model
+    ))
     command.append(image)
     subprocess.run(
         command,
@@ -1680,6 +1712,10 @@ def main() -> int:
     parser.add_argument("--hindsight-image", default=DEFAULT_IMAGE)
     parser.add_argument("--hindsight-model", default=DEFAULT_HINDSIGHT_MODEL)
     parser.add_argument(
+        "--hindsight-retain-model", default=None,
+        help="optional local Ollama model for Hindsight fact extraction; other memory operations keep --hindsight-model",
+    )
+    parser.add_argument(
         "--hindsight-llm-max-concurrent", type=int, default=1,
         help="global LLM cap for disposable Hindsight; lower concurrency bounds contention on the shared local Ollama runtime",
     )
@@ -1780,6 +1816,12 @@ def main() -> int:
     )
     if not hindsight_model_row:
         parser.error(f"{args.hindsight_model} is absent from local Ollama /api/tags")
+    retain_model = args.hindsight_retain_model or args.hindsight_model
+    hindsight_retain_model_row = next(
+        (row for row in model_rows if row.get("name") == retain_model), None
+    )
+    if not hindsight_retain_model_row:
+        parser.error(f"{retain_model} is absent from local Ollama /api/tags")
     try:
         context_probe = benchmark.local_json(
             f"{ollama}/v1/chat/completions",
@@ -1843,6 +1885,7 @@ def main() -> int:
             args.hindsight_retain_mode,
             not args.hindsight_disable_observations,
             args.hindsight_plain_retrieval,
+            retain_model,
         )
         container_started = True
         for stack in ("plain", "hades"):
@@ -1887,7 +1930,10 @@ def main() -> int:
                 failure_stage = f"sample_{sample + 1}_{stack}"
                 sample_result.setdefault("runtime_normalization", {})[stack] = (
                     normalize_ollama_for_arm(
-                        ollama, benchmark, MODEL, args.hindsight_model, CONTEXT_LENGTH
+                        ollama, benchmark, MODEL, args.hindsight_model, CONTEXT_LENGTH,
+                        additional_extractor_models=(
+                            (retain_model,) if retain_model != args.hindsight_model else ()
+                        ),
                     )
                 )
                 gateway = gateways[stack]
@@ -1959,7 +2005,10 @@ def main() -> int:
                     sample_result.setdefault(
                         "runtime_after_automatic_retain", {}
                     )[stack] = runtime_residency_snapshot(
-                        ollama, benchmark, MODEL, args.hindsight_model
+                        ollama, benchmark, MODEL, args.hindsight_model,
+                        additional_memory_models=(
+                            (retain_model,) if retain_model != args.hindsight_model else ()
+                        ),
                     )
                     if args.wait_for_pending_retain and stack == "hades":
                         readiness = wait_hindsight_retains(
@@ -2479,6 +2528,9 @@ def main() -> int:
                 "hindsight_model": args.hindsight_model,
                 "hindsight_model_digest": hindsight_model_row.get("digest"),
                 "hindsight_model_quantization": hindsight_model_row.get("details", {}).get("quantization_level"),
+                "hindsight_retain_model": retain_model,
+                "hindsight_retain_model_digest": hindsight_retain_model_row.get("digest"),
+                "hindsight_retain_model_quantization": hindsight_retain_model_row.get("details", {}).get("quantization_level"),
                 "hindsight_llm_max_concurrent": args.hindsight_llm_max_concurrent,
                 "retain_mode": args.hindsight_retain_mode,
                 "observations_enabled": not args.hindsight_disable_observations,
