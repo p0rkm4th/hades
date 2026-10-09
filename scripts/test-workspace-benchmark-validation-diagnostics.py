@@ -31,6 +31,27 @@ assert MODULE.workspace_catalog_snapshot(agent) == {
     "valid_workspace_tools": ["read_file", "terminal"],
     "present_workspace_tool_schemas": ["read_file", "search_files"],
 }
+assert MODULE.workspace_diff_evidence_markers([
+    {"role": "system", "content": "<workspace_diff>secret source text"},
+]) == {
+    "workspace_diff_evidence_present": True,
+    "workspace_diff_evidence_truncated": False,
+    "workspace_diff_evidence_unavailable": False,
+}
+assert MODULE.workspace_diff_evidence_markers([
+    {"role": "system", "content": "The diff evidence below is truncated."},
+]) == {
+    "workspace_diff_evidence_present": False,
+    "workspace_diff_evidence_truncated": True,
+    "workspace_diff_evidence_unavailable": False,
+}
+assert MODULE.workspace_diff_evidence_markers([
+    {"role": "system", "content": "Diff evidence is unavailable."},
+]) == {
+    "workspace_diff_evidence_present": False,
+    "workspace_diff_evidence_truncated": False,
+    "workspace_diff_evidence_unavailable": True,
+}
 def sample_route(value):
     return value
 

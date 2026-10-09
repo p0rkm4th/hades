@@ -358,6 +358,20 @@ def inspect_sandbox_image_id(docker_bin: str, image: str) -> str:
     return matches[0]
 
 
+def workspace_diff_evidence_markers(messages: list[dict[str, Any]]) -> dict[str, bool]:
+    """Record only whether bounded native diff evidence was present, never its text."""
+    system_text = "\n".join(
+        str(message.get("content") or "")
+        for message in messages
+        if isinstance(message, dict) and message.get("role") == "system"
+    )
+    return {
+        "workspace_diff_evidence_present": "<workspace_diff>" in system_text,
+        "workspace_diff_evidence_truncated": "diff evidence below is truncated" in system_text.lower(),
+        "workspace_diff_evidence_unavailable": "diff evidence is unavailable" in system_text.lower(),
+    }
+
+
 def reset_and_warm_model(base_url: str) -> int:
     """Give each comparison arm the same loaded model and prompt-cache seed."""
     unloaded = local_json(
@@ -558,6 +572,7 @@ class ProviderProxy(ThreadingHTTPServer):
                                     for marker in (*parent.fixture_names, "rectangle_area", "celsius_to_fahrenheit", "discounted_total"))
                             for m in messages[:-1]
                         ),
+                        **workspace_diff_evidence_markers(messages),
                     },
                     "message_bytes": sum(
                         len(json.dumps(m, ensure_ascii=False, separators=(",", ":")).encode())
