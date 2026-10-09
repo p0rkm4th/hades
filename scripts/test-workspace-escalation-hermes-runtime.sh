@@ -363,6 +363,8 @@ def native_diff_review(agent,user_message,*args,**kwargs):
  assert '<workspace_diff>' in prompt,prompt
  assert 'return 1' in prompt and 'return 2' in prompt,prompt
  assert 'untrusted evidence' in prompt.lower(),prompt
+ assert 'keep the answer concise' in prompt.lower(),prompt
+ assert 'whether unrelated changes appear' in prompt.lower(),prompt
  assert 'do not edit files or run commands' in prompt.lower(),prompt
  history=kwargs.get('conversation_history')
  assert isinstance(history,list),kwargs
