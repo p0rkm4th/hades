@@ -36,6 +36,31 @@ assert MODULE.command_runs_tests("python -B -m unittest tests.test_feature")
 assert MODULE.command_runs_tests("pytest -q tests/test_feature.py")
 assert not MODULE.command_runs_tests("python scripts/check_workspace.py")
 assert not MODULE.command_runs_tests(None)
+for prompt, phase in (
+    (MODULE.DIAGNOSE_PROMPT, "diagnose"),
+    (MODULE.FIX_PROMPT, "fix"),
+    (MODULE.PROMPT, "read"),
+    (MODULE.README_PROMPT, "readme"),
+    (MODULE.EXPLAIN_PROMPT, "explain"),
+    (MODULE.SEARCH_PROMPT, "search"),
+    (MODULE.SMALL_EDIT_CONTEXT_PROMPT, "inspect"),
+    (MODULE.SMALL_EDIT_PROMPT, "edit"),
+    (MODULE.FOCUSED_TEST_PROMPT, "focused_test"),
+    (MODULE.SMALL_DIFF_PROMPT, "review_diff"),
+    (MODULE.COMMIT_PROMPT, "commit"),
+):
+    assert MODULE.classify_benchmark_phase([
+        {"role": "user", "content": prompt},
+    ]) == phase
+assert MODULE.classify_benchmark_phase([
+    {"role": "user", "content": MODULE.SMALL_DIFF_PROMPT},
+    {"role": "assistant", "content": "I'll inspect the diff."},
+    {"role": "user", "content": MODULE.COMMIT_PROMPT},
+]) == "commit"
+assert MODULE.classify_benchmark_phase([
+    {"role": "user", "content": "an unseeded owner request"},
+]) == "other"
+assert MODULE.classify_benchmark_phase(None) == "other"
 assert MODULE.workspace_diff_evidence_markers([
     {"role": "system", "content": "<workspace_diff>secret source text"},
 ]) == {

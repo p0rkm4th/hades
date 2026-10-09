@@ -85,6 +85,30 @@ SMALL_EDIT_PROMPT = "Fix the typo in the error message in this file."
 FOCUSED_TEST_PROMPT = "Run the focused test for the change we just made."
 SMALL_DIFF_PROMPT = "Show me exactly what changed and whether anything unrelated is in the diff."
 COMMIT_PROMPT = "Commit the change we just verified with a clear message."
+
+
+def classify_benchmark_phase(messages: Any) -> str:
+    """Label provider requests by the latest seeded task turn, without storing it."""
+    if not isinstance(messages, list):
+        return "other"
+    latest_user = next(
+        (str(message.get("content") or "") for message in reversed(messages)
+         if isinstance(message, dict) and message.get("role") == "user"),
+        "",
+    ).strip()
+    return {
+        DIAGNOSE_PROMPT: "diagnose",
+        FIX_PROMPT: "fix",
+        PROMPT: "read",
+        README_PROMPT: "readme",
+        EXPLAIN_PROMPT: "explain",
+        SEARCH_PROMPT: "search",
+        SMALL_EDIT_CONTEXT_PROMPT: "inspect",
+        SMALL_EDIT_PROMPT: "edit",
+        FOCUSED_TEST_PROMPT: "focused_test",
+        SMALL_DIFF_PROMPT: "review_diff",
+        COMMIT_PROMPT: "commit",
+    }.get(latest_user, "other")
 API_KEY = "synthetic-workspace-pair-key"
 WORKSPACE_ENVIRONMENT_HINT = (
     "The active project workspace for file and coding tasks is mounted at /workspace. "
@@ -465,7 +489,12 @@ class ProviderProxy(ThreadingHTTPServer):
         super().__init__(address, self.handler_type())
 
     def sampling_seed(self, stack: str, repeat: int, phase: str) -> tuple[int, int]:
-        phase_offsets = {"diagnose": 0, "fix": 1000, "read": 2000, "other": 3000}
+        phase_offsets = {
+            "diagnose": 0, "fix": 1000, "read": 2000,
+            "readme": 3000, "explain": 4000, "search": 5000,
+            "inspect": 6000, "edit": 7000, "focused_test": 8000,
+            "review_diff": 9000, "commit": 10000, "other": 11000,
+        }
         key = (stack, repeat, phase)
         with self.seed_lock:
             ordinal = self.seed_counts.get(key, 0)
@@ -500,16 +529,7 @@ class ProviderProxy(ThreadingHTTPServer):
                     request = {}
                 messages = request.get("messages") or []
                 schemas = request.get("tools") or []
-                latest_user = next(
-                    (str(m.get("content") or "") for m in reversed(messages)
-                     if isinstance(m, dict) and m.get("role") == "user"),
-                    "",
-                )
-                phase = (
-                    "diagnose" if latest_user.strip() == DIAGNOSE_PROMPT else
-                    "fix" if latest_user.strip() == FIX_PROMPT else
-                    "read" if latest_user.strip() == PROMPT else "other"
-                )
+                phase = classify_benchmark_phase(messages)
                 auth = self.headers.get("Authorization", "")
                 api_key = auth.removeprefix("Bearer ").strip()
                 benchmark_identity = re.fullmatch(
