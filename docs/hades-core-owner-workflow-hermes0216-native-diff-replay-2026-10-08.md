@@ -23,6 +23,32 @@ Two order-balanced synthetic five-turn workflows (`core-25`, `core-26`, `core-28
 
 The HADES native diff evidence was complete in both review turns. Both HADES runs committed cleanly, and their focused tests passed. This closes the specific terminal-activation and missed-commit failure on this fixture. HADES was 19.48 seconds slower at the median (about 42%) in this small sample, so this is not a net usability win yet. The benchmark cannot rate the generated review explanations because it deliberately retains no response text; direct owner review is required.
 
+## Latency profile
+
+The recorded phase timestamps are cumulative from task start. Taking adjacent
+timestamp differences gives these median per-phase durations:
+
+| Phase | PLAIN | HADES |
+|---|---:|---:|
+| Inspect | 25.89 s | 21.58 s |
+| Edit | 5.18 s | 5.47 s |
+| Focused test | 7.08 s | 12.68 s |
+| Diff review | 3.54 s | 18.68 s |
+| Commit | 5.01 s | 7.78 s |
+
+The diff-review turn accounts for most of the observed gap in both pairs. HADES
+streamed its first review delta at 60–70 ms, then continued generating until
+17.3–20.0 s. PLAIN's review streams completed in 2.1–4.9 s. The HADES review
+used no tools, and the measured API-call count was one for each HADES review;
+the PLAIN review used one and two calls. This points to time spent generating
+the review response, rather than tool discovery, but the artifact has no
+provider-proxy records (`provider_metrics` is empty for every phase). It does
+not contain prompt token counts or generation token counts for this workflow,
+so the cause within the model request remains unresolved. Focused-test and
+commit phases also add smaller HADES delays. A further comparison needs valid
+per-request provider telemetry before attributing those costs to the overlay,
+context, or model.
+
 ## Status
 
 This is partial synthetic evidence. It is not deployed Open WebUI acceptance, broad coding qualification, or Scotty preference. The HADES overlay's system context remains roughly 1.1 KB larger than PLAIN for the workspace stages. Focused-test tool calls and generation latency deserve the next profile. The owner corpus still has 29/55 cases without direct replay and no preference labels.
