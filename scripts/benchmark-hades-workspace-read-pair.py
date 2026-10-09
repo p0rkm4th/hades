@@ -322,6 +322,42 @@ def local_json(
         return json.loads(response.read())
 
 
+def inspect_sandbox_image_id(docker_bin: str, image: str) -> str:
+    """Resolve an already-present image by immutable digest.
+
+    Some Docker Engine versions reject ``image inspect repo@sha256:...`` even
+    when that exact value appears in the local image's RepoDigests. Fall back
+    to the daemon's digest listing and require an exact repository+digest
+    match; never substitute a tag or merely compatible image.
+    """
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]*@sha256:[0-9a-f]{64}", image):
+        raise RuntimeError("sandbox image must be pinned by immutable sha256 digest")
+    try:
+        return subprocess.check_output(
+            [docker_bin, "image", "inspect", "--format", "{{.Id}}", image],
+            text=True, stderr=subprocess.DEVNULL,
+        ).strip()
+    except subprocess.CalledProcessError:
+        listing = subprocess.check_output(
+            [docker_bin, "image", "ls", "--digests", "--no-trunc", "--format",
+             "{{.Repository}}@{{.Digest}} {{.ID}}"],
+            text=True,
+        )
+
+    def canonical(reference: str) -> str:
+        return reference.removeprefix("docker.io/")
+
+    matches = [
+        fields[1]
+        for line in listing.splitlines()
+        if len(fields := line.split(maxsplit=1)) == 2
+        and canonical(fields[0]) == canonical(image)
+    ]
+    if len(matches) != 1 or not matches[0].startswith("sha256:"):
+        raise RuntimeError("rootless daemon does not contain the exact pinned sandbox digest")
+    return matches[0]
+
+
 def reset_and_warm_model(base_url: str) -> int:
     """Give each comparison arm the same loaded model and prompt-cache seed."""
     unloaded = local_json(
@@ -1454,10 +1490,7 @@ def main() -> int:
     docker_storage_driver = subprocess.check_output(
         [docker_bin, "info", "--format", "{{.Driver}}"], text=True,
     ).strip()
-    sandbox_image_id = subprocess.check_output(
-        [docker_bin, "image", "inspect", "--format", "{{.Id}}", args.sandbox_image],
-        text=True,
-    ).strip()
+    sandbox_image_id = inspect_sandbox_image_id(docker_bin, args.sandbox_image)
 
     # Hermes treats /home/* as a host cwd that must be remapped to /workspace.
     # Keep the synthetic host workspace under this Linux path so the probe

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import importlib.util
 import pathlib
+import subprocess
 import sys
+from unittest.mock import patch
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -24,6 +26,31 @@ assert MODULE.common_prefix_byte_count(b"", b"not empty") == 0
 assert MODULE.EXPLAIN_PROMPT == "In discount.py, explain what discounted_total does in plain English."
 assert MODULE.FIXTURE_CASES["discount"]["source"] == "discount.py"
 assert "return price - percent" in MODULE.FIXTURE_CASES["discount"]["source_content"]
+
+digest = "sha256:" + "a" * 64
+image = f"nikolaik/python-nodejs@{digest}"
+image_id = "sha256:" + "b" * 64
+def fake_image_lookup(command, *, text, stderr=None):
+    if command[1:3] == ["image", "inspect"]:
+        raise subprocess.CalledProcessError(1, command)
+    assert command[1:4] == ["image", "ls", "--digests"]
+    return f"other/repo@{digest} sha256:{'c' * 64}\nnikolaik/python-nodejs@{digest} {image_id}\n"
+
+with patch.object(MODULE.subprocess, "check_output", side_effect=fake_image_lookup):
+    assert MODULE.inspect_sandbox_image_id("docker", image) == image_id
+with patch.object(MODULE.subprocess, "check_output", side_effect=fake_image_lookup):
+    try:
+        MODULE.inspect_sandbox_image_id("docker", f"missing/repo@{digest}")
+    except RuntimeError as exc:
+        assert "exact pinned sandbox digest" in str(exc)
+    else:
+        raise AssertionError("accepted a different locally available sandbox digest")
+try:
+    MODULE.inspect_sandbox_image_id("docker", "nikolaik/python-nodejs:latest")
+except RuntimeError as exc:
+    assert "immutable sha256 digest" in str(exc)
+else:
+    raise AssertionError("accepted a mutable sandbox tag")
 
 calls: list[tuple[str, dict | None]] = []
 warmed = False
