@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 from typing import Any
 
 
-PACKAGE = os.environ.get("HADES_PLAYWRIGHT_MCP_PACKAGE", "@playwright/mcp@0.0.81")
+PACKAGE = os.environ.get("HADES_PLAYWRIGHT_MCP_PACKAGE", "@playwright/mcp@0.0.83")
 ALLOWED_TOOLS = frozenset({
     "browser_navigate",
     "browser_snapshot",
@@ -99,8 +99,8 @@ def filtered_tools(tools: Any) -> list[dict[str, Any]]:
 
 
 def build_command(hosts: tuple[str, ...], config_path: str | None = None) -> list[str]:
-    if not re.fullmatch(r"@playwright/mcp@0\.0\.81", PACKAGE):
-        raise ValueError("Playwright MCP package must remain pinned to @playwright/mcp@0.0.81")
+    if not re.fullmatch(r"@playwright/mcp@0\.0\.83", PACKAGE):
+        raise ValueError("Playwright MCP package must remain pinned to @playwright/mcp@0.0.83")
     command = [
         "npx", "--yes", PACKAGE,
         "--isolated", "--headless", "--browser", "chromium",

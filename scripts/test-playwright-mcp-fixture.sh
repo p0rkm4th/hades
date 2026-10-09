@@ -24,7 +24,7 @@ const fixture = http.createServer((req, res) => {
 
 fixture.listen(0, '127.0.0.1', () => {
   const port = fixture.address().port;
-  const child = spawn('npx', ['--yes', '@playwright/mcp@0.0.81', '--isolated', '--headless', '--browser', 'chromium'], {
+  const child = spawn('npx', ['--yes', '@playwright/mcp@0.0.83', '--isolated', '--headless', '--browser', 'chromium'], {
     stdio: ['pipe', 'pipe', 'inherit']
   });
   let buffer = '';
@@ -64,13 +64,13 @@ fixture.listen(0, '127.0.0.1', () => {
     const listed = await rpc('tools/list');
     const names = listed.result.tools.map(tool => tool.name);
     if (!names.includes('browser_navigate') || !names.includes('browser_snapshot')) {
-      throw new Error('required Playwright tools are missing');
+      throw new Error('required Playwright tools are missing: ' + names.join(', '));
     }
     await rpc('tools/call', {name: 'browser_navigate', arguments: {url: 'http://127.0.0.1:' + port + '/'}});
     const snapshot = await rpc('tools/call', {name: 'browser_snapshot', arguments: {}});
     const text = (snapshot.result.content || []).map(item => item.text || '').join('\n');
     if (!text.includes('Recipe intake') || !text.includes('DRAFT ONLY') || text.includes('Submitted')) {
-      throw new Error('unexpected fixture snapshot or premature submission');
+      throw new Error('unexpected fixture snapshot or premature submission: ' + text.slice(0, 1200));
     }
     if (submissions !== 0) throw new Error('fixture submitted before explicit browser action');
     const button = text.match(/button "Apply" \[ref=(e[0-9]+)\]/);
