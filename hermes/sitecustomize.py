@@ -12627,11 +12627,14 @@ try:
             time.sleep(0.25)
     _hades_threading.Thread(target=_hades_gateway_patch_watcher, daemon=True).start()
 
-    # Bound admission waits separately from the idle-turn watchdog. A client
-    # that disappears can leave an in-process holder alive while the next
-    # request waits at lease admission; the upstream 30-minute default turns
-    # that into a household-wide stall. Keep this compatibility setting
-    # explicit and removable when Hermes exposes a supported config knob.
+    # Bound durable cross-process admission waits separately from the idle-turn
+    # watchdog. A client that disappears can leave a holder alive while the
+    # next request waits at database lease admission; the upstream 30-minute
+    # default can turn that into a household-wide stall. Hermes 0.21.6's
+    # agent.gateway_turn_lease_timeout config controls a distinct, process-local
+    # gateway lease and does not change agent.turn_facade_lease's durable DB
+    # wait. Remove this override only when upstream exposes a supported setting
+    # for that durable wait and a cross-process regression test proves it.
     import agent.turn_facade_lease as _hades_turn_lease
     _hades_turn_lease.LEASE_WAIT_SECONDS = float(
         os.environ.get("HADES_SESSION_LEASE_WAIT_SECONDS", "30")
