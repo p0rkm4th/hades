@@ -44,6 +44,14 @@ assert MODULE.workspace_diff_evidence_markers([
     "workspace_diff_evidence_unavailable": False,
 }
 assert MODULE.workspace_diff_evidence_markers([
+    {"role": "system", "content": "stable workspace review policy"},
+    {"role": "user", "content": "<workspace_diff>secret source text"},
+]) == {
+    "workspace_diff_evidence_present": True,
+    "workspace_diff_evidence_truncated": False,
+    "workspace_diff_evidence_unavailable": False,
+}
+assert MODULE.workspace_diff_evidence_markers([
     {"role": "system", "content": "The diff evidence below is truncated."},
 ]) == {
     "workspace_diff_evidence_present": False,

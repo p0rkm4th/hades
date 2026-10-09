@@ -389,16 +389,16 @@ def inspect_sandbox_image_id(docker_bin: str, image: str) -> str:
 
 
 def workspace_diff_evidence_markers(messages: list[dict[str, Any]]) -> dict[str, bool]:
-    """Record only whether bounded native diff evidence was present, never its text."""
-    system_text = "\n".join(
+    """Record whether bounded native diff evidence was present in any API role."""
+    request_text = "\n".join(
         str(message.get("content") or "")
         for message in messages
-        if isinstance(message, dict) and message.get("role") == "system"
+        if isinstance(message, dict)
     )
     return {
-        "workspace_diff_evidence_present": "<workspace_diff>" in system_text,
-        "workspace_diff_evidence_truncated": "diff evidence below is truncated" in system_text.lower(),
-        "workspace_diff_evidence_unavailable": "diff evidence is unavailable" in system_text.lower(),
+        "workspace_diff_evidence_present": "<workspace_diff>" in request_text,
+        "workspace_diff_evidence_truncated": "diff evidence below is truncated" in request_text.lower(),
+        "workspace_diff_evidence_unavailable": "diff evidence is unavailable" in request_text.lower(),
     }
 
 
