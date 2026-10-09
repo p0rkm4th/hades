@@ -1673,5 +1673,51 @@
     "report": "docs/hades-core-owner-workflow-hermes0216-native-diff-replay-2026-10-08.md",
     "current_candidate_qualification": "PARTIAL: context-aware commit follow-up and source-only clean commits pass 2/2; native diff evidence reaches read-only review with tools disabled in 2/2; generated review quality is not human-rated, owner preference is unassigned, and HADES remains slower than PLAIN by 19.48s median.",
     "next_action": "Have Scotty review a natural workspace follow-up and compare answer usefulness; profile the 19.48s workflow tax, especially focused-test tool calls and prompt/context size, before claiming a usability improvement."
+  },
+  "latest_workspace_workflow_to_commit_ollama0402_rootless": {
+    "case_ids": [
+      "core-25",
+      "core-26",
+      "core-28",
+      "core-31"
+    ],
+    "source_revision": "e5016c8735a426908eb38f094372f8651a099bcd",
+    "classification": "two counterbalanced synthetic five-stage workflow pairs on Hermes 0.21.6 and Ollama 0.40.2; no answer-quality rating or owner preference",
+    "runtime": "Hermes 0.21.6 upstream commit 818c13be1dc4fd28987e1e881a9408224afd4535, Ollama 0.40.2, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable network-disabled sandbox, shared prewarmed isolated package-manager state",
+    "order": "PLAIN then HADES; HADES then PLAIN",
+    "median_task_seconds": {
+      "plain": 57.04905,
+      "hades": 53.60275
+    },
+    "median_provider_generations_per_task": {
+      "plain": 13.5,
+      "hades": 11.5
+    },
+    "median_tool_results_per_task": {
+      "plain": 9,
+      "hades": 7
+    },
+    "focused_test_terminal_calls_across_two_tasks": {
+      "plain": 8,
+      "hades": 2
+    },
+    "explicit_review_phase_git_diff_calls": {
+      "plain": 1,
+      "hades": 0
+    },
+    "hades_diff_evidence_outside_review_phase": 2,
+    "focused_tests_and_diff_checks_passed": {
+      "plain": 2,
+      "hades": 2
+    },
+    "verified_source_only_commits": {
+      "plain": 2,
+      "hades": 2
+    },
+    "owner_preference": "UNASSIGNED",
+    "limitations": "Two synthetic workflow pairs using direct Hermes AIAgent rather than Open WebUI/deployed gateway. No answer-text quality review, owner preference, remote push, or deployment parity. HADES gathered diff evidence outside the dedicated review phase in both tasks; dedicated review sequencing is not qualified. Latency variance remains.",
+    "metrics_record": "benchmarks/hades-core-owner-workspace-workflow-ollama0402-current-rootless-two-repeat-20261009.json",
+    "report": "docs/hades-core-owner-workspace-workflow-ollama0402-2026-10-09.md",
+    "harness_setup_note": "Initial attempt failed before task turns because fixture linked the Hindsight repository root; harness now links the nested hindsight-integrations/hermes provider package. Failed setup attempt excluded from task metrics."
   }
 }

@@ -1720,6 +1720,10 @@ def main() -> int:
     parser.add_argument("--home", type=pathlib.Path)
     parser.add_argument("--workspace", type=pathlib.Path)
     parser.add_argument("--provider-url")
+    parser.add_argument(
+        "--keep-temp-on-error", action="store_true",
+        help="retain the mode-0700 synthetic fixture and local logs only when a parent benchmark run fails",
+    )
     args = parser.parse_args()
     if args.fixture_case is None:
         args.fixture_case = "error_message" if args.scenario == "workflow-to-commit" else "geometry"
@@ -1823,6 +1827,7 @@ def main() -> int:
     processes: list[subprocess.Popen] = []
     logs: list[Any] = []
     records: list[dict[str, Any]] = []
+    successful_run = False
     try:
         for repeat in range(args.repeats):
             order = (args.stack,) if args.stack else (
@@ -1882,7 +1887,18 @@ def main() -> int:
                 if stack == "hades":
                     plugins = home / "plugins"
                     plugins.mkdir(mode=0o700)
-                    (plugins / "hindsight").symlink_to(args.hindsight_plugin.resolve(), target_is_directory=True)
+                    hindsight_source = args.hindsight_plugin.resolve()
+                    # The staged Hindsight release repository contains several
+                    # integrations. Hermes discovers the provider package itself,
+                    # not the repository root.
+                    nested_provider = hindsight_source / "hindsight-integrations" / "hermes"
+                    if nested_provider.is_dir():
+                        hindsight_source = nested_provider
+                    if not (hindsight_source / "__init__.py").is_file():
+                        raise RuntimeError(
+                            f"Hindsight provider package is unavailable under {args.hindsight_plugin}"
+                        )
+                    (plugins / "hindsight").symlink_to(hindsight_source, target_is_directory=True)
 
                 config = {
                     "gateway": {"standalone": True},
@@ -2444,6 +2460,7 @@ def main() -> int:
             ],
         }
         print(json.dumps(public_metric_record(output), indent=2, ensure_ascii=False))
+        successful_run = True
         return 0
     finally:
         for process in processes:
@@ -2457,7 +2474,10 @@ def main() -> int:
             log.close()
         proxy.shutdown()
         proxy.server_close()
-        shutil.rmtree(temp, ignore_errors=True)
+        if args.keep_temp_on_error and not successful_run:
+            print(f"Protected synthetic benchmark diagnostics retained at {temp}", file=sys.stderr)
+        else:
+            shutil.rmtree(temp, ignore_errors=True)
 
 
 if __name__ == "__main__":
