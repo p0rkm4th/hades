@@ -31,6 +31,11 @@ assert MODULE.workspace_catalog_snapshot(agent) == {
     "valid_workspace_tools": ["read_file", "terminal"],
     "present_workspace_tool_schemas": ["read_file", "search_files"],
 }
+assert MODULE.command_runs_tests("python -m unittest discover -v")
+assert MODULE.command_runs_tests("python -B -m unittest tests.test_feature")
+assert MODULE.command_runs_tests("pytest -q tests/test_feature.py")
+assert not MODULE.command_runs_tests("python scripts/check_workspace.py")
+assert not MODULE.command_runs_tests(None)
 assert MODULE.workspace_diff_evidence_markers([
     {"role": "system", "content": "<workspace_diff>secret source text"},
 ]) == {

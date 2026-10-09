@@ -142,6 +142,15 @@ def public_metric_record(value: Any) -> Any:
     return value
 
 
+def command_runs_tests(command: Any) -> bool:
+    """Classify common test commands without retaining command text."""
+    return isinstance(command, str) and bool(re.search(
+        r"(?i)(?:\bpython\s+(?:(?:-[a-z0-9][\w-]*)(?:=\S+)?\s+)*(?:-m\s+)?unittest\b|"
+        r"\bpytest\b)",
+        command,
+    ))
+
+
 def workspace_catalog_snapshot(agent: Any) -> dict[str, Any]:
     """Expose only the bounded workspace tool names present at validation time."""
     workspace_names = {"read_file", "search_files", "write_file", "patch", "terminal"}
@@ -1272,9 +1281,7 @@ def child(args: argparse.Namespace) -> int:
                             rf"(?:write|patch|replace|multiply|\*|sed\s+-i).{{0,80}}(?:{fixture_name_pattern})",
                             command_value,
                         )),
-                        "runs_unittest": isinstance(command_value, str) and bool(re.search(
-                            r"(?i)(?:python\s+(?:-m\s+)?unittest|pytest)", command_value
-                        )),
+                        "runs_unittest": command_runs_tests(command_value),
                         "uses_git_diff": isinstance(command_value, str) and bool(re.search(
                             r"(?i)\bgit\s+diff\b", command_value
                         )),

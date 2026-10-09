@@ -44,6 +44,18 @@ follow-up](hades-core-owner-workflow-hermes0216-native-diff-replay-2026-10-08.md
 This candidate's sanitized measurements are in
 [`hades-core-owner-workspace-followup-prompt-candidate-20261008.json`](../benchmarks/hades-core-owner-workspace-followup-prompt-candidate-20261008.json).
 
+## Telemetry limitation found during follow-up
+
+The runner's `runs_unittest` marker did not recognize Python interpreter flags
+before `-m unittest` (for example, `python -B -m unittest`). The candidate
+artifact therefore has terminal tool counts and test-output markers, but its
+command-purpose labels can undercount unittest invocations. The classifier
+now handles interpreter flags and has focused coverage; historical command
+text was intentionally discarded, so the existing artifact cannot be
+reclassified. This does not change the measured tool-call totals or independent
+test outcomes. A fresh replay is needed before drawing conclusions about
+redundant test execution.
+
 ## Status
 
 Keep this prompt change as a candidate pending the focused-test loop diagnosis
