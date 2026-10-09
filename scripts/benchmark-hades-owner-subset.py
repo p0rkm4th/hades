@@ -513,7 +513,8 @@ def local_json(url: str, payload: dict[str, Any] | None = None,
         return json.loads(response.read())
 
 
-def chat(port: int, stack: str, case: str, messages: list[dict[str, str]], max_tokens: int):
+def chat(port: int, stack: str, case: str, messages: list[dict[str, str]], max_tokens: int,
+         session_id: str | None = None):
     body = {
         "model": MODEL,
         "messages": messages,
@@ -530,16 +531,19 @@ def chat(port: int, stack: str, case: str, messages: list[dict[str, str]], max_t
     stream_event_count = 0
     status = None
     try:
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+            "X-Hermes-Session-Key": f"hades-user-{stack}-synthetic",
+        }
+        if session_id:
+            headers["X-Hermes-Session-Id"] = session_id
         connection.request(
             "POST",
             "/v1/chat/completions",
             body=json.dumps(body, ensure_ascii=False).encode(),
-            headers={
-                "Authorization": f"Bearer {API_KEY}",
-                "Content-Type": "application/json",
-                "Accept": "text/event-stream",
-                "X-Hermes-Session-Key": f"hades-user-{stack}-synthetic",
-            },
+            headers=headers,
         )
         response = connection.getresponse()
         status = response.status

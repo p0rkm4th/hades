@@ -419,6 +419,7 @@ def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "core09_recall_after_idle_expected_marker_present",
         "core09_fact_visibility_after_drain",
         "hindsight_chunk_recall_after_turn",
+        "same_session_recall_expected_marker_present",
     )
     safe_samples = []
     for sample in repetitions:
@@ -1482,12 +1483,14 @@ def deterministic_hades_memory_turn(turn: str) -> bool:
 
 
 def measure_turn(gateway: dict[str, Any], proxy_module, turn: str, session: str,
-                 messages: list[dict[str, str]], max_tokens: int = 512):
+                 messages: list[dict[str, str]], max_tokens: int = 512,
+                 session_id_header: str | None = None):
     proxy = gateway["proxy"]
     before = len(proxy.snapshot())
     try:
         row = proxy_module.chat(
-            gateway["api_port"], gateway["stack"], session, messages, max_tokens
+            gateway["api_port"], gateway["stack"], session, messages, max_tokens,
+            session_id=session_id_header,
         )
         proxy.wait_idle()
         error = None
@@ -1571,6 +1574,10 @@ def main() -> int:
         help="run the ordinary greeting and core-09 explicit save/recall in isolation; automatic-memory behavior has a separate mode",
     )
     parser.add_argument(
+        "--same-session-only", action="store_true",
+        help="compare a two-turn fact/follow-up conversation using authenticated X-Hermes-Session-Id continuation",
+    )
+    parser.add_argument(
         "--first-stack", choices=("plain", "hades"),
         help="starting stack for this paired pass; each invocation creates a fresh disposable Hindsight volume",
     )
@@ -1632,8 +1639,8 @@ def main() -> int:
         parser.error(
             "use exactly one paired pass per fresh Hindsight volume; run separate invocations for additional independent samples"
         )
-    if args.automatic_only and args.core09_only:
-        parser.error("--automatic-only and --core09-only are mutually exclusive")
+    if sum((args.automatic_only, args.core09_only, args.same_session_only)) > 1:
+        parser.error("--automatic-only, --core09-only, and --same-session-only are mutually exclusive")
     if args.hindsight_llm_max_concurrent < 1:
         parser.error("--hindsight-llm-max-concurrent must be at least 1")
     if args.hindsight_plain_retrieval:
@@ -1662,7 +1669,7 @@ def main() -> int:
         parser.error("docker is required to create a disposable Hindsight service")
 
     benchmark = load_owner_benchmark()
-    memory_supplement = [] if args.core09_only else load_memory_supplement()
+    memory_supplement = [] if (args.core09_only or args.automatic_only or args.same_session_only) else load_memory_supplement()
     memory_bank = synthetic_memory_bank(args.hades_scope)
     ollama = args.ollama_url.rstrip("/")
     try:
@@ -1791,6 +1798,45 @@ def main() -> int:
                 gateway = gateways[stack]
                 round_id = f"{sample + 1:02d}"
                 rows = []
+                if args.same_session_only:
+                    session_id = f"hades-ux-continuity-{stack}-{round_id}"
+                    fact_turn = measure_turn(
+                        gateway, benchmark, "same_session_fact",
+                        f"same-session-{stack}-{round_id}-fact",
+                        [{"role": "user", "content": "I moved to Denver in 2024."}],
+                        session_id_header=session_id,
+                    )
+                    rows.append(fact_turn)
+                    followup_turn = measure_turn(
+                        gateway, benchmark, "same_session_recall",
+                        f"same-session-{stack}-{round_id}-followup",
+                        [{"role": "user", "content": "Where did I say I moved?"}],
+                        session_id_header=session_id,
+                    )
+                    rows.append(followup_turn)
+                    same_session_marker = "denver" in followup_turn["answer"].casefold()
+                    sample_result["stacks"][stack] = {
+                        "turns": [safe_turn_record(row) for row in rows],
+                        "same_session_recall_expected_marker_present": same_session_marker,
+                    }
+                    print(json.dumps({
+                        "sample": sample + 1,
+                        "stack": stack,
+                        "turn": "same_session_recall",
+                        "total_ms": followup_turn["total_ms"],
+                        "provider_calls": followup_turn["metrics"]["provider_generations"],
+                        "tool_calls": followup_turn["metrics"]["tool_calls_emitted"],
+                        "expected_marker_present": same_session_marker,
+                    }), flush=True)
+                    if stack == "hades":
+                        failure_stage = f"hindsight_idle_after_same_session_{sample + 1}"
+                        idle = wait_hindsight_idle(hindsight_url, memory_bank, proxy=bridge)
+                        sample_result["hindsight_idle_after_hades"] = idle
+                        if not idle["idle"]:
+                            raise RuntimeError(
+                                "Hindsight background operations did not drain after same-session probe"
+                            )
+                    continue
                 ordinary = measure_turn(
                     gateway, benchmark, "ordinary",
                     f"memory-pair-{stack}-{round_id}-ordinary",
@@ -2104,7 +2150,7 @@ def main() -> int:
                                       "hindsight_idle_after_hades": idle["elapsed_ms"],
                                       "barrier": barrier_label,
                                       "polls": idle["polls"]}), flush=True)
-            if not args.automatic_only:
+            if not args.automatic_only and not args.same_session_only:
                 # Keep the immediate recall above as owner-visible readiness
                 # evidence, then test the same exact fact after HADES reports
                 # all memory work idle. Run both stacks after that barrier so
@@ -2149,7 +2195,8 @@ def main() -> int:
             for turn in (
                 "ordinary", "automatic_retain", "automatic_recall", "core09_save",
                 "core09_recall", "core09_recall_after_idle", "save", "correction",
-                "implicit_recall", "fresh_recall",
+                "implicit_recall", "fresh_recall", "same_session_fact",
+                "same_session_recall",
                 *supplement_turn_names,
             ):
                 rows = [
@@ -2182,25 +2229,29 @@ def main() -> int:
                     ),
                     "fresh_recalls_with_expected_marker": (
                         sum(s["stacks"][stack]["fresh_recall_expected_marker_present"] for s in repetitions)
-                        if turn == "fresh_recall" and not args.automatic_only and not args.core09_only else None
+                        if turn == "fresh_recall" and not args.automatic_only and not args.core09_only and not args.same_session_only else None
                     ),
                     "fresh_recalls_with_stale_mango": (
                         sum(s["stacks"][stack]["fresh_recall_stale_mango_present"]
                             for s in repetitions)
-                        if turn == "fresh_recall" and not args.automatic_only and not args.core09_only else None
+                        if turn == "fresh_recall" and not args.automatic_only and not args.core09_only and not args.same_session_only else None
                     ),
                     "implicit_recalls_with_expected_marker": (
                         sum(s["stacks"][stack]["implicit_recall_expected_marker_present"] for s in repetitions)
-                        if turn == "implicit_recall" and not args.automatic_only and not args.core09_only else None
+                        if turn == "implicit_recall" and not args.automatic_only and not args.core09_only and not args.same_session_only else None
                     ),
                     "implicit_recalls_with_stale_mango": (
                         sum(s["stacks"][stack]["implicit_recall_stale_mango_present"]
                             for s in repetitions)
-                        if turn == "implicit_recall" and not args.automatic_only and not args.core09_only else None
+                        if turn == "implicit_recall" and not args.automatic_only and not args.core09_only and not args.same_session_only else None
                     ),
                     "automatic_recalls_with_expected_marker": (
                         sum(s["stacks"][stack]["automatic_recall_expected_marker_present"] for s in repetitions)
-                        if turn == "automatic_recall" and not args.core09_only else None
+                        if turn == "automatic_recall" and not args.core09_only and not args.same_session_only else None
+                    ),
+                    "same_session_recalls_with_expected_marker": (
+                        sum(s["stacks"][stack]["same_session_recall_expected_marker_present"] for s in repetitions)
+                        if turn == "same_session_recall" and args.same_session_only else None
                     ),
                     "owner_corpus_recalls_with_expected_marker": (
                         sum(s["stacks"][stack][
@@ -2209,7 +2260,7 @@ def main() -> int:
                             else "core09_recall_expected_marker_present"
                         ] for s in repetitions)
                         if turn in {"core09_recall", "core09_recall_after_idle"}
-                        and not args.automatic_only else None
+                        and not args.automatic_only and not args.same_session_only else None
                     ),
                 }
 
@@ -2255,6 +2306,8 @@ def main() -> int:
             "schema_version": 1,
             "date": time.strftime("%Y-%m-%d"),
             "title": (
+                "Synthetic same-session continuity comparison"
+                if args.same_session_only else
                 "Focused ordinary chat and synthetic automatic-memory recall comparison"
                 if args.automatic_only else
                 "Isolated counterbalanced core-09 explicit savings-memory comparison"
@@ -2271,6 +2324,8 @@ def main() -> int:
                 "hermes_version": hermes_version,
                 "counterbalance": f"One paired pass; {args.first_stack or 'plain'} runs first. Repeated comparisons require separate invocations so each gets an empty disposable Hindsight volume.",
                 "sequence": (
+                    ["synthetic automatic personal fact", "same-transcript follow-up using X-Hermes-Session-Id"]
+                    if args.same_session_only else
                     ["owner core-01 greeting", "synthetic automatic personal-fact retain/recall"]
                     if args.automatic_only else
                     ["owner core-01 greeting", "core-09 explicit synthetic save", "core-09 fresh-session immediate and post-drain recall"]
@@ -2279,7 +2334,7 @@ def main() -> int:
                 ),
                 "owner_corpus_case_map": {
                     "core-01": OWNER_CORE_01_GREETING,
-                    **({} if args.automatic_only else {
+                    **({} if args.automatic_only or args.same_session_only else {
                         "core-09": {"save": "Remember that my savings target is $3,000.", "recall": OWNER_CORE_09_RECALL},
                     }),
                 },
@@ -2291,6 +2346,8 @@ def main() -> int:
                     for row in memory_supplement
                 },
                 "profile_continuity": (
+                    "The fact turn and follow-up are separate API calls with the same authenticated X-Hermes-Session-Id; Hermes loads the stored transcript for the follow-up."
+                    if args.same_session_only else
                     "Persistent gateway/home and memory bank within each stack; recall uses a new Hermes session ID."
                     if args.automatic_only or args.core09_only else
                     "Persistent gateway/home and memory bank within each stack; the same synthetic preference is re-saved and corrected every sample; recall uses a new Hermes session ID."
@@ -2357,7 +2414,11 @@ def main() -> int:
                     )
                     for key, value in warmups.items()
                 },
-                "data": "The owner core-09 recall wording uses only a synthetic savings target ($3,000). Automatic cross-session Denver fact and favorite-fruit save/correction remain synthetic controls. Temporary homes, container and database volume.",
+                "data": (
+                    "Same-session continuity uses only the synthetic fact that the user moved to Denver in 2024. Temporary homes, container and database volume."
+                    if args.same_session_only else
+                    "The owner core-09 recall wording uses only a synthetic savings target ($3,000). Automatic cross-session Denver fact and favorite-fruit save/correction remain synthetic controls. Temporary homes, container and database volume."
+                ),
         "privacy": (
             "Ollama endpoint restricted to loopback; Ollama server launched with OLLAMA_NO_CLOUD=1. "
             + ("Hindsight used Docker host networking with API/control-plane listeners and accounting proxy bound only to 127.0.0.1 on ephemeral ports; synthetic benchmark data only. "
@@ -2401,6 +2462,7 @@ def main() -> int:
                 "The model digest is staged local Qwen; this does not prove equality with production model weights.",
                 "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
                 "The owner core-09 recall is measured once immediately after save and again for both stacks after HADES background memory work drains; readiness delay and settled recall are separate outcomes.",
+                "Same-session continuity sends a synthetic fact and its follow-up in separate API calls under the same authenticated X-Hermes-Session-Id; cross-session memory and Open WebUI household acceptance are separate gates.",
                 "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
                 "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review.",
             ],
