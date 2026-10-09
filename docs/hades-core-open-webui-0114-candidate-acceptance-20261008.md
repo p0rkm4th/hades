@@ -35,17 +35,27 @@ All checks passed:
 - Anonymous Channels access is denied with HTTP 401.
 - A Channels model mention reaches the synthetic OpenAI backend and its
   streamed response is persisted in the channel timeline.
+- Synthetic owner browser login, HADES theme CSS/JS loading, visible upload
+  input, a model reply sent through the chat composer, and chat persistence
+  after page reload; zero browser page errors. This used
+  [`dom-open-webui-candidate-smoke.js`](../scripts/dom-open-webui-candidate-smoke.js)
+  with Playwright 1.63.0 and the disposable backend.
 
 Candidate containers, volumes, and networks were absent after the acceptance
 script completed.
 
+The browser run surfaced an Open WebUI release-notes dialog on first login.
+It intercepts the chat send control until dismissed; the visible dismiss
+button worked. Keep this first-use step in the owner dogfood notes rather than
+hiding the dialog with a HADES CSS override.
+
 ## Qualification boundary
 
-This passes the script's synthetic private-chat and Channels acceptance for
-the exact artifact built from the recorded review checkout. It is not
-owner-visible UI acceptance or production promotion. LDAP/group provisioning
-behavior, theme/assets in a browser, file upload and file-picker behavior,
-shared-folder behavior, full migration and rollback, and
+This passes synthetic private-chat, Channels, and limited owner-authenticated
+browser acceptance for the exact artifact built from the recorded review
+checkout. It is not direct Scotty dogfood or production promotion. LDAP/group
+provisioning behavior, actual file upload and file-picker behavior, shared
+folders, broader responsive/theme review, full migration and rollback, and
 reconstructed-deployment acceptance remain open. The locally built image has
 an immutable ID but no embedded HADES-source provenance; record an external
 build attestation or equivalent provenance for any promotion. Keep production

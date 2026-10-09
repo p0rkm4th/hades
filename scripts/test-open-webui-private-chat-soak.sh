@@ -47,6 +47,20 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404); self.end_headers(); return
         user_text = next((m.get("content", "") for m in request.get("messages", []) if m.get("role") == "user"), "")
         reply = "Alpha-private-fact-confirmed" if "Alpha" in user_text else "Beta-private-fact-confirmed"
+        if request.get("stream"):
+            chunks = [
+                {"id": "synthetic-completion", "object": "chat.completion.chunk", "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}]},
+                {"id": "synthetic-completion", "object": "chat.completion.chunk", "choices": [{"index": 0, "delta": {"content": reply}, "finish_reason": None}]},
+                {"id": "synthetic-completion", "object": "chat.completion.chunk", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+            ]
+            body = "".join(f"data: {json.dumps(chunk)}\n\n" for chunk in chunks) + "data: [DONE]\n\n"
+            encoded = body.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Content-Length", str(len(encoded)))
+            self.end_headers(); self.wfile.write(encoded); self.wfile.flush()
+            return
         body = json.dumps({
             "id": "synthetic-completion", "object": "chat.completion", "created": int(time.time()),
             "model": MODEL, "choices": [{"index": 0, "message": {"role": "assistant", "content": reply}, "finish_reason": "stop"}],
@@ -88,6 +102,13 @@ beta_token=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])' 
 curl -fsS -X POST "http://127.0.0.1:${webui_port}/openai/config/update" \
   -H "Authorization: Bearer $alpha_token" -H 'Content-Type: application/json' \
   --data "{\"ENABLE_OPENAI_API\":true,\"OPENAI_API_BASE_URLS\":[\"http://host.docker.internal:${model_port}/v1\"],\"OPENAI_API_KEYS\":[\"synthetic\"],\"OPENAI_API_CONFIGS\":{}}" >/dev/null
+
+if [[ -n "${HADES_PLAYWRIGHT_MODULE:-}" ]]; then
+  HADES_CANDIDATE_BROWSER_URL="http://127.0.0.1:${webui_port}" \
+  HADES_CANDIDATE_BROWSER_EMAIL=alpha-private@example.invalid \
+  HADES_CANDIDATE_BROWSER_PASSWORD=Synthetic-Only-123! \
+  node scripts/dom-open-webui-candidate-smoke.js
+fi
 
 message_id=$(python3 -c 'import uuid; print(uuid.uuid4())')
 assistant_id=$(python3 -c 'import uuid; print(uuid.uuid4())')
