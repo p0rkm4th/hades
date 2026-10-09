@@ -68,7 +68,8 @@ def main() -> None:
         assert signout.index("await redis.set") < signout.index("disconnect_user_sessions")
         assert "Session revocation unavailable" in revoke
         assert "await redis.set" in revoke
-        assert "repr(revoked_at)" in revoke
+        assert "int(datetime.now(UTC).timestamp())" in revoke
+        assert "str(revoked_at)" in revoke
         assert "disconnect_user_sessions" in revoke
 
     print("PASS token validation, sign-out, and account-wide revocation fail closed")

@@ -11,6 +11,7 @@ assumptions or a Valkey restart.
 from __future__ import annotations
 
 import argparse
+import math
 import sqlite3
 import subprocess
 import time
@@ -53,20 +54,23 @@ def main() -> None:
         raise SystemExit("FAIL auth-state Valkey is not ready")
 
     # Give all already-issued NumericDate (integer-second) JWTs a strict
-    # cutoff. New logins wait in the candidate adapter until iat exceeds it.
-    cutoff = repr(time.time() + 5.0)
+    # cutoff. Integer markers are understood by both 0.11.4 and the rollback
+    # 0.11.1 image when it is connected to this same revocation store.
+    cutoff = int(time.time()) + 5
     for user_id in user_ids:
         key = f"{args.redis_prefix}:auth:user:{user_id}:revoked_at"
         current = run(["docker", "exec", args.valkey_container, "valkey-cli", "--raw", "GET", key])
         try:
-            already = float(current) if current else float("-inf")
-        except ValueError as error:
+            already = math.ceil(float(current)) if current else -1
+        except (OverflowError, ValueError) as error:
             raise SystemExit("FAIL invalid pre-existing user revocation marker") from error
-        if already < float(cutoff):
-            run(["docker", "exec", args.valkey_container, "valkey-cli", "--raw", "SET", key, cutoff])
+        if not math.isfinite(already):
+            raise SystemExit("FAIL non-finite pre-existing user revocation marker")
+        marker = max(cutoff, already)
+        run(["docker", "exec", args.valkey_container, "valkey-cli", "--raw", "SET", key, str(marker)])
         actual = run(["docker", "exec", args.valkey_container, "valkey-cli", "--raw", "GET", key])
         ttl = run(["docker", "exec", args.valkey_container, "valkey-cli", "--raw", "PTTL", key])
-        if float(actual) < float(cutoff) or ttl != "-1":
+        if int(actual) < cutoff or ttl != "-1":
             raise SystemExit("FAIL user revocation marker was not stored permanently")
 
     print(

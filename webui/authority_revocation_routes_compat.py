@@ -174,7 +174,7 @@ def apply_auths() -> None:
         replacement = """    from open_webui.utils.auth import REDIS_KEY_PREFIX
 
     # HADES_AUTHORITY_REVOCATION_COMPAT: do not issue a JWT whose integer iat
-    # predates the fractional marker written during an authority change.
+    # is not strictly newer than the compatible integer revocation marker.
     redis = getattr(request.app.state, 'redis', None)
     if redis is None:
         raise HTTPException(503, detail='Session verification unavailable.')

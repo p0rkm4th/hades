@@ -248,10 +248,12 @@ docker stop "$name" >/dev/null
 docker rm "$name" >/dev/null
 docker volume create "$rollback_volume" >/dev/null
 docker create --name "$rollback_name" \
+  --network "$network" \
   -p "127.0.0.1:${port}:8080" \
   --add-host host.docker.internal:host-gateway \
   -v "$rollback_volume:/app/backend/data" \
   -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
+  -e REDIS_URL=redis://hades-valkey:6379/0 \
   -e WEBUI_SECRET_KEY=synthetic-openwebui-backup-test-key \
   -e ENABLE_CHANNELS=true -e USER_PERMISSIONS_FEATURES_CHANNELS=true \
   "$old_image" >/dev/null
@@ -263,6 +265,15 @@ for _ in $(seq 1 90); do
   sleep 1
 done
 curl -fsS "http://127.0.0.1:${port}/health" >/dev/null
+old_owner_rollback_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/users/user/info" -H "Authorization: Bearer $token")
+old_beta_rollback_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/users/user/info" -H "Authorization: Bearer $beta_token")
+[[ "$old_owner_rollback_status" == 401 && "$old_beta_rollback_status" == 401 ]] || {
+  echo "FAIL rollback restored pre-upgrade JWT authority (owner=$old_owner_rollback_status beta=$old_beta_rollback_status)" >&2
+  exit 1
+}
+printf 'PASS rollback 0.11.1 with persistent Valkey rejects pre-upgrade owner and household JWTs\n'
 rollback_login=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/signin" \
   -H 'Content-Type: application/json' \
   --data '{"email":"migration-owner@example.invalid","password":"Synthetic-Only-123!"}')
@@ -299,4 +310,36 @@ rollback_private_file_status=$(curl -sS -o /dev/null -w '%{http_code}' \
 rollback_integrity=$(docker exec "$rollback_name" python3 -c \
   'import sqlite3; print(sqlite3.connect("/app/backend/data/webui.db").execute("PRAGMA integrity_check").fetchone()[0])')
 [[ "$rollback_integrity" == ok ]] || { echo "FAIL rollback SQLite integrity: $rollback_integrity" >&2; exit 1; }
+docker restart "$auth_state_name" >/dev/null
+for _ in $(seq 1 30); do
+  if docker exec "$auth_state_name" valkey-cli ping 2>/dev/null | rg -q PONG; then break; fi
+  sleep 1
+done
+docker exec "$auth_state_name" valkey-cli ping | rg -q PONG
+docker restart "$rollback_name" >/dev/null
+for _ in $(seq 1 90); do
+  if curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1; then break; fi
+  sleep 1
+done
+curl -fsS "http://127.0.0.1:${port}/health" >/dev/null
+old_owner_restart_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/users/user/info" -H "Authorization: Bearer $token")
+old_beta_restart_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/users/user/info" -H "Authorization: Bearer $beta_token")
+[[ "$old_owner_restart_status" == 401 && "$old_beta_restart_status" == 401 ]] || {
+  echo "FAIL rollback restart lost pre-upgrade JWT revocation (owner=$old_owner_restart_status beta=$old_beta_restart_status)" >&2
+  exit 1
+}
+curl -fsS "http://127.0.0.1:${port}/api/v1/users/user/info" \
+  -H "Authorization: Bearer $rollback_token" >/dev/null
+curl -fsS "http://127.0.0.1:${port}/api/v1/users/user/info" \
+  -H "Authorization: Bearer $rollback_beta_token" >/dev/null
+curl -fsS "http://127.0.0.1:${port}/api/v1/chats/${chat_id}" \
+  -H "Authorization: Bearer $rollback_token" | rg -q Migration-state-marker-7f2a
+curl -fsS "http://127.0.0.1:${port}/api/v1/files/${file_id}/content" \
+  -H "Authorization: Bearer $rollback_token" -o "$tmp/upload-after-rollback-restart.docx"
+cmp "$tmp/migration-fixture.docx" "$tmp/upload-after-rollback-restart.docx"
+curl -fsS "http://127.0.0.1:${port}/api/v1/channels/${channel_id}/messages" \
+  -H "Authorization: Bearer $rollback_beta_token" | rg -q 'Synthetic migration channel marker'
+printf 'PASS rollback restart retains legacy-session rejection and fresh-session access\n'
 printf 'PASS rollback restored full synthetic app-data snapshot on Open WebUI %s; owner/Beta identity, chat, channel access, private-chat/file isolation, DOCX bytes, and SQLite integrity survived\n' "$old_version"

@@ -58,7 +58,9 @@ image ID:
   upload. It also seeded permanent per-user revocation markers from a
   read-only pre-upgrade database copy before candidate startup and verified
   both pre-upgrade owner and household JWTs were rejected while fresh logins,
-  existing chats, and uploads remained usable.
+  existing chats, and uploads remained usable. Rollback to 0.11.1 keeps the
+  same pinned Valkey revocation state attached and verifies those legacy JWTs
+  remain rejected after rollback and restart.
 - The acceptance wrapper ran `scripts/test-openwebui-disabled-role-session.sh`
   with candidate image ID
   `sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469`;
@@ -101,13 +103,20 @@ starts empty and cannot by itself revoke JWTs issued by 0.11.1. Do not rotate
 `WEBUI_SECRET_KEY` as a shortcut: Open WebUI also derives OAuth and other
 encrypted configuration keys from it unless separately configured. The
 cutover must quiesce ingress and stop the old app, take and verify the final
-pre-upgrade database copy, seed permanent `open-webui:auth:user:<id>:revoked_at`
-markers with `scripts/seed-open-webui-session-revocations.py`, then start the
-exact candidate. The helper reads only user IDs from an integrity-checked,
-read-only SQLite copy, requires an explicit `--confirm-quiesced` assertion,
-and gives existing integer-second JWT issue times a five-second cutoff. New
-logins wait until their JWT issue time is newer than that cutoff. Preserve the
-same signing key and keep the seeded Valkey markers in the production backup.
+pre-upgrade database copy, seed permanent integer
+`open-webui:auth:user:<id>:revoked_at` markers with
+`scripts/seed-open-webui-session-revocations.py`, then start the exact
+candidate. The helper reads only user IDs from an integrity-checked, read-only
+SQLite copy, requires an explicit `--confirm-quiesced` assertion, and gives
+existing integer-second JWT issue times a five-second cutoff. New logins wait
+until their JWT issue time is newer than that cutoff. Preserve the same signing
+key and keep the seeded Valkey markers in the production backup. If rollback
+to 0.11.1 is required, attach the same persistent Valkey state and keep
+external ingress closed until it is healthy and all cutover markers are
+present and the integer cutoff has passed; 0.11.1 does not wait before issuing
+a new login token. The 0.11.1 image can parse these integer markers. Do not
+reopen owner/household ingress to the vulnerable 0.11.1 DOCX preview after
+rollback; keep service access isolated until a patched image is restored.
 
 The populated synthetic 0.11.1 → 0.11.4 migration now verifies this behavior
 against candidate image ID

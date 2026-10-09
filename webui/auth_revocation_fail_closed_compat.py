@@ -85,14 +85,14 @@ REPLACEMENTS = {
         raise HTTPException(503, detail='Session revocation unavailable; retry the operation.')
 
     expires_delta = parse_duration(await Config.get('auth.jwt_expiry'))
-    # NumericDate in JWTs has one-second precision. The fractional marker
-    # rejects existing same-second tokens; the login adapter waits until the
-    # next second before issuing a replacement token after group reconciliation.
-    revoked_at = datetime.now(UTC).timestamp()
+    # Use an integer NumericDate-compatible marker. The login adapter waits
+    # until iat is strictly newer, and Open WebUI 0.11.1 can also parse this
+    # marker during a data rollback when it is configured with the same Redis.
+    revoked_at = int(datetime.now(UTC).timestamp())
     try:
         await redis.set(
             f'{REDIS_KEY_PREFIX}:auth:user:{user_id}:revoked_at',
-            repr(revoked_at),
+            str(revoked_at),
             ex=int(expires_delta.total_seconds()) if expires_delta else None,
         )
     except RedisError as error:

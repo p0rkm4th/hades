@@ -31,9 +31,13 @@ done
 grep -Fq 'org.hades.open-webui.security-adapters' "$repo_dir/scripts/build-open-webui-artifact.sh" || { echo 'FAIL candidate image omits security adapter provenance'; exit 1; }
 grep -Fq 'org.hades.open-webui.security-adapters' "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" || { echo 'FAIL candidate verifier omits security adapter provenance'; exit 1; }
 grep -Fq 'open-webui-auth-state.rdb' "$repo_dir/scripts/backup-sqlite-state.sh" && grep -Fq 'valkey-check-rdb' "$repo_dir/scripts/backup-sqlite-state.sh" && grep -Fq 'HADES_REQUIRE_OPEN_WEBUI_AUTH_STATE_BACKUP' "$repo_dir/scripts/backup-sqlite-state.sh" || { echo 'FAIL recovery helper omits required validated Valkey revocation backup'; exit 1; }
-for marker in 'confirm-quiesced' 'mode=ro&immutable=1' 'PRAGMA integrity_check' 'revoked_at' 'PTTL' 'time.time() + 5.0'; do
+for marker in 'confirm-quiesced' 'mode=ro&immutable=1' 'PRAGMA integrity_check' 'revoked_at' 'PTTL' 'int(time.time()) + 5'; do
   grep -Fq "$marker" "$cutover_revocations" || { echo "FAIL cutover session invalidation omits $marker"; exit 1; }
 done
 grep -Fq 'seed-open-webui-session-revocations.py' "$repo_dir/scripts/test-open-webui-populated-migration.sh" || { echo 'FAIL populated migration does not exercise legacy-session invalidation'; exit 1; }
+grep -Fq 'REDIS_URL=redis://hades-valkey:6379/0' "$repo_dir/scripts/test-open-webui-populated-migration.sh" || { echo 'FAIL rollback rehearsal omits persistent legacy-compatible revocation store'; exit 1; }
+grep -Fq 'pre-upgrade JWT authority' "$repo_dir/scripts/test-open-webui-populated-migration.sh" || { echo 'FAIL rollback rehearsal omits legacy-token rejection'; exit 1; }
+grep -Fq 'int(datetime.now(UTC).timestamp())' "$auth" || { echo 'FAIL user revocation markers are not integer-compatible with rollback'; exit 1; }
+grep -Fq 'str(revoked_at)' "$auth" || { echo 'FAIL integer user revocation markers are not serialized compatibly'; exit 1; }
 
 echo 'PASS Open WebUI P0 auth, authority, storage, and artifact security contract'
