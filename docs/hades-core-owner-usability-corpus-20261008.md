@@ -43,6 +43,14 @@ preference were not collected, so this is not evidence that shorter responses
 are better. See the [0.40.2 comparison report](hades-core-ordinary-chat-ollama0402-20261009.md)
 and its [sanitized artifact](../benchmarks/hades-core-owner-conversation-hermes0216-ollama0402-core4-five-repeat-20261009.json).
 
+The same staged runtime also ran the three-repeat recovery subset. HADES gave
+direct missing-capability answers for the absent project workspace and backup
+source, avoiding six model generations total, but its median latency across
+the subset was 138 ms slower than PLAIN STACK. Its `core-38` status-summary
+turn was 835 ms slower at the median and used more generated tokens; answer
+quality cannot be reviewed from the redacted artifact. See the [recovery
+report](hades-core-recovery-ollama0402-20261009.md) and [measurements](../benchmarks/hades-core-owner-recovery-v1-hermes0216-ollama0402-3repeats-20261009.json).
+
 The [Git environment profile](hades-core-owner-workspace-diff-review-git-environment-profile-20261009.md)
 traces the two-pair replay's slow diff-review setup to Hermes' hardened native
 Git collector. That replay uses a fresh package-manager home per arm and

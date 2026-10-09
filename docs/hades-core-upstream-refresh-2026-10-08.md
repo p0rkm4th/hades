@@ -108,3 +108,20 @@ from that tag's official `sha256sum.txt`. Ollama 0.40.2 has not been staged or
 run here, and no production runtime was changed. The Linux archive is about
 1.44 GB before model storage; staging it still requires a private isolated
 model directory and a disk-space check before first model load.
+
+## 2026-10-09 staging update
+
+The dated staging note above is superseded for Ollama 0.40.2: its official
+archive was checksum-verified, its isolated API identified as 0.40.2, and the
+RTX 3080 Ti was detected. The exact Qwen3.6 35B manifest used in the matched
+comparison was pulled to isolated staging storage; production `~/.ollama` and
+the production runtime were not changed. The five-repeat ordinary-chat replay
+and three-repeat recovery replay both used a verified 65,536-token context.
+The ordinary-chat report is
+[`hades-core-ordinary-chat-ollama0402-20261009.md`](hades-core-ordinary-chat-ollama0402-20261009.md);
+the recovery report is
+[`hades-core-recovery-ollama0402-20261009.md`](hades-core-recovery-ollama0402-20261009.md).
+Recovery results show HADES avoiding six model generations for truthful
+missing-capability responses, but its aggregate median was still 138 ms slower
+than PLAIN STACK. Neither replay retained answer text or owner-preference
+labels. These results qualify neither production parity nor owner preference.
