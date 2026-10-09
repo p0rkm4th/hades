@@ -71,3 +71,15 @@ rootless workspace contract and a two-pair full workflow rerun both passed.
 HADES remains slower at task level, and the disposable profiles still include
 cold package-manager startup. This evidence is not owner preference or a
 production measurement.
+
+An independent three-repeat replay of the same eight-case ordinary
+conversation-v1 subset used the same Hermes 0.21.6, Ollama 0.40.2, Qwen3.6 35B
+digest, context, sampling, and runner with an offset case order. All 48 turns
+per stack returned content, with no tool schemas or calls. Median TTFT was
+1.061 s PLAIN and 1.071 s HADES; median total latency was 1.690 s and 1.704 s.
+The first three-repeat batch measured 1.084 s / 1.075 s TTFT and 1.615 s /
+1.706 s total. This independent repeat supports the same limited conclusion:
+ordinary-chat timing is close on this synthetic slice. It adds no corpus
+coverage and no evidence about answer quality or owner preference. See the
+[refreshed comparison report](hades-core-conversation-v1-hermes-0216-ollama-0402-comparison-20261009.md)
+and [sanitized artifact](../benchmarks/hades-core-owner-conversation-v1-hermes0216-ollama0402-refresh-20261009.json).

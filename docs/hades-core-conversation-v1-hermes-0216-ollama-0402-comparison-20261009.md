@@ -33,6 +33,27 @@ memory or domain data, Open WebUI/frontend, coding/action workflow, or
 production parity check. The measured HADES system instructions are part of
 the stack comparison. This does not qualify the full corpus or usability.
 
+## Independent same-source repeat — 2026-10-09
+
+The three-repeat conversation-v1 comparison was rerun with the same benchmark
+runner, candidate artifacts, model digest, 65,536 context, and sampling. The
+HADES source tree had no code changes from the earlier run. Pair order was
+offset by one case to balance which stack ran first. The sanitized record is
+[`hades-core-owner-conversation-v1-hermes0216-ollama0402-refresh-20261009.json`](../benchmarks/hades-core-owner-conversation-v1-hermes0216-ollama0402-refresh-20261009.json).
+An initial launch was correctly rejected before corpus turns because the
+restarted Ollama service had defaulted to 4,096 context. The service was
+restarted with an explicit 65,536 context, and the accepted artifact verifies
+the loaded context for both arms.
+
+All 48 turns per stack returned content, with 48 provider generations, zero
+tool schemas, and zero tool calls. Median TTFT was 1,061 ms PLAIN and 1,071 ms
+HADES; median total latency was 1,690 ms and 1,704 ms. Median prompt size was
+744 versus 748 tokens. This run again shows closely matched ordinary-chat
+timing and a small HADES prompt-size increase. It is an independent repeat of
+the same synthetic slice, not new corpus coverage. Answer text was not
+retained; HADES's slightly larger answer length is not a quality score. No
+owner preference or human quality/naturalness review was collected.
+
 ## Evidence
 
 - Metrics-only artifact: [`hades-core-owner-conversation-v1-hermes0216-ollama0402-3repeats-20261009.json`](../benchmarks/hades-core-owner-conversation-v1-hermes0216-ollama0402-3repeats-20261009.json)

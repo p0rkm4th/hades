@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "HADES Core Comparative Owner Corpus — Seed v2 with memory supplement",
-  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The latest Hermes 0.21.6 five-turn coding workflow replay passed focused tests and clean source-only commits on both stacks in 2/2 runs. HADES used Hermes' hardened native working-diff helper to provide complete read-only diff evidence in both review turns with zero tools exposed. Median task time remained 66.19s for HADES vs 46.70s for PLAIN. The run is synthetic; human answer quality, owner preference, deployed UI, and broad coding qualification remain open.",
+  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage; 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases have no direct replay; owner preference qualification remains open. The latest Hermes 0.21.6 five-turn coding workflow replay passed focused tests and clean source-only commits on both stacks in 2/2 runs. HADES used Hermes' hardened native working-diff helper to provide complete read-only diff evidence in both review turns with zero tools exposed. Median task time remained 66.19s for HADES vs 46.70s for PLAIN. The run is synthetic; human answer quality, owner preference, deployed UI, and broad coding qualification remain open. An independent same-source three-repeat replay of the same eight ordinary conversation cases again returned content for all 48 turns per stack with zero tools; median total latency was 1.690s PLAIN and 1.704s HADES. It adds no new case coverage and no owner-quality or preference evidence.",
   "source_note": "Cases are hand-authored sanitized paraphrases, not verbatim transcripts. The Sept. 24 owner dogfood report documents real prompt families including recipe availability, pantry expiry, spaghetti inventory/list, homelab/network/model/backup status, restaurants, subscriptions, weekend affordability, lease prepayment, restock, savings target, and morning briefing. Replace/add cases only from owner-approved evidence; never copy secrets, financial records, private memories, or household content into this file. The five v2 memory supplement cases are synthetic examples authored for policy coverage; they are not transcripts or claims about Scotty.",
   "comparison_contract": {
     "same_model_and_quantization": true,
@@ -1264,6 +1264,52 @@
       "result": "All 96 turns returned content, with zero tool schemas and zero model tool calls. PLAIN made 48 provider generations; HADES made 45 because its three core-08 pantry-expiry requests returned through the explicit canonical-source-unavailable fast path. Excluding all of core-08 to avoid comparing different follow-up histories leaves 42 model turns per stack: median TTFT/total was 1.015/1.626s PLAIN and 1.082/1.568s HADES; paired median deltas were -37 ms TTFT and -13 ms total. The missing-source path returned content at a 40 ms median and its task-specific response is covered by the Grocy runtime contract test.",
       "limitations": "Synthetic conversation prompts; no quality or naturalness scoring. The fixture intentionally has no household source or domain tools. No owner preference or production/Open WebUI parity. The 55-case corpus still has 36 IDs without direct replay and zero preference labels.",
       "metrics_record": "benchmarks/hades-core-conversation-v1-three-repeat-20261007.json"
+    },
+    "independent_conversation_v1_repeat": {
+      "case_ids": [
+        "core-01",
+        "core-02",
+        "core-03",
+        "core-04",
+        "core-05",
+        "core-07",
+        "core-08",
+        "core-39"
+      ],
+      "repeats": 3,
+      "turns_per_stack": 48,
+      "artifact": "benchmarks/hades-core-owner-conversation-v1-hermes0216-ollama0402-refresh-20261009.json",
+      "source_revision": "d27ff4a6b66abc10ddfa2bb29fbde272d42b03be",
+      "hermes": "0.21.6 / 818c13be1dc4fd28987e1e881a9408224afd4535",
+      "ollama": "0.40.2",
+      "model_digest": "a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c",
+      "verified_context_tokens": 65536,
+      "median_ttft_ms": {
+        "plain": 1060.55,
+        "hades": 1071.2
+      },
+      "median_total_ms": {
+        "plain": 1689.85,
+        "hades": 1704.45
+      },
+      "median_prompt_tokens": {
+        "plain": 743.5,
+        "hades": 747.5
+      },
+      "generations": {
+        "plain": 48,
+        "hades": 48
+      },
+      "tool_schemas_exposed": {
+        "plain": 0,
+        "hades": 0
+      },
+      "tool_calls": {
+        "plain": 0,
+        "hades": 0
+      },
+      "owner_preference": "UNASSIGNED",
+      "limitations": "Independent repeat of the existing synthetic eight-case slice; no additional case coverage, answer-text review, naturalness rating, owner preference, memory/domain/tool use, Open WebUI, or production parity."
     }
   },
   "latest_workspace_read_pair_comparison": {
