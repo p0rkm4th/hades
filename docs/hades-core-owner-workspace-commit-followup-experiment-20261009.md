@@ -67,6 +67,42 @@ Ollama 0.40.2 forced-choice result also shows that this specific setting did
 not produce a tool call in these two requests; it does not establish a general
 runtime guarantee or explain the other candidate failures.
 
+## Fresh diff context alone — paired rerun
+
+A corrected benchmark hook reached the HADES child and called the native
+workspace-diff helper at commit entry. It appended the helper's returned
+bounded text to the ephemeral prompt, preserved full conversation history,
+and left `tool_choice` unchanged. The capture confirms 661 characters of
+complete diff evidence; provider requests carried 14,385 system bytes versus
+13,722 in the same-source no-injection control. Both stacks used Hermes
+0.21.6, Ollama 0.40.2, the same Qwen3.6 35B digest, 65,536-token context,
+rootless Docker 29.8.2, the immutable network-disabled sandbox, a shared
+prewarmed package-manager store, and the same two synthetic multifile tasks.
+
+| Measure | PLAIN STACK | HADES with fresh diff context |
+|---|---:|---:|
+| Median task time | 54.97 s | 53.64 s |
+| Median model API calls per task | 13.5 | 12 |
+| Median tool results per task | 9.5 | 7.5 |
+| Focused tests and source-only commits | 2/2 | 2/2 |
+| HADES `git diff` outside review phase | — | 0 calls |
+| HADES `git diff` during review phase | — | 1 call |
+
+The HADES candidate preserved completion and clean-worktree results, but the
+single same-source no-injection control also committed successfully and made
+no diff calls outside its review phase. The candidate run introduced one
+review-phase `git diff` call, and its 1.33-second median advantage over PLAIN
+does not isolate the effect of the prompt addition. Two pairs are too few to
+show that the added 661 characters improved task quality, time, or reliability.
+Reject the prompt addition for now: it has no demonstrated advantage over the
+same-source HADES control and increased context/tool overhead. The experiment
+is synthetic; no owner preference or response-quality rating was collected.
+
+One earlier diagnostic run was invalid because the benchmark hook referenced
+a parent-only workspace variable. The sanitized diagnostic records its
+`NameError`; it is excluded from the stack comparison. The corrected runner
+uses the child workspace path. Artifacts: [`fresh diff candidate`](../benchmarks/hades-core-workspace-commit-followup-fresh-diff-only-ollama0402-20261009.json), [same-source no-injection control](../benchmarks/hades-core-workspace-commit-followup-baseline-same-source-ollama0402-20261009.json), and [invalid harness diagnostic](../benchmarks/hades-core-workspace-commit-followup-fresh-diff-diagnostic-ollama0402-20261009.json).
+
 The sanitized runner output for the baseline and all candidates is in
 [`benchmarks`](../benchmarks):
 

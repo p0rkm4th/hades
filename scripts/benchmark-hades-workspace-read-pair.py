@@ -1115,6 +1115,7 @@ def child(args: argparse.Namespace) -> int:
     tool_validation_diagnostics: list[dict[str, Any]] = []
     original_run_windows_by_phase: dict[str, list[tuple[float, float]]] = {}
     overlay_helper_windows_by_phase: dict[str, dict[str, list[float]]] = {}
+    fresh_diff_context_observations: dict[str, list[dict[str, Any]]] = {}
     overlay_helper_originals: list[tuple[Any, str, Any]] = []
     overlay_profile_module = None
     overlay_profile_original = None
@@ -1135,9 +1136,50 @@ def child(args: argparse.Namespace) -> int:
         def capture_original_run_window(agent_instance: Any, *call_args: Any,
                                         **call_kwargs: Any) -> Any:
             window_started = time.perf_counter()
+            saved_ephemeral_prompt = getattr(agent_instance, "ephemeral_system_prompt", None)
+            injected_commit_diff = False
+            phase_at_call = str(stream_state["phase"])
+            injection_observation = {
+                "phase": phase_at_call,
+                "scenario": args.scenario,
+                "prototype_enabled": bool(args.prototype_fresh_diff_on_commit),
+                "context_characters": None,
+                "evidence_available": None,
+                "evidence_unavailable": None,
+                "evidence_truncated": None,
+                "error_class": None,
+            }
+            fresh_diff_context_observations.setdefault(phase_at_call, []).append(
+                injection_observation
+            )
             try:
+                if (
+                    args.prototype_fresh_diff_on_commit
+                    and args.scenario == "workflow-to-commit"
+                    and phase_at_call == "commit"
+                ):
+                    import workspace as workspace_helpers
+                    try:
+                        fresh_diff = workspace_helpers.native_workspace_diff_context(
+                            pathlib.Path(args.workspace)
+                        )
+                    except Exception as exc:
+                        injection_observation["error_class"] = type(exc).__name__
+                        raise
+                    injection_observation.update({
+                        "context_characters": len(fresh_diff),
+                        "evidence_available": "<workspace_diff>" in fresh_diff,
+                        "evidence_unavailable": "evidence is unavailable" in fresh_diff,
+                        "evidence_truncated": "evidence below is truncated" in fresh_diff,
+                    })
+                    agent_instance.ephemeral_system_prompt = "\n\n".join(
+                        part for part in (saved_ephemeral_prompt, fresh_diff) if part
+                    )
+                    injected_commit_diff = True
                 return overlay_profile_original(agent_instance, *call_args, **call_kwargs)
             finally:
+                if injected_commit_diff:
+                    agent_instance.ephemeral_system_prompt = saved_ephemeral_prompt
                 original_run_windows_by_phase.setdefault(
                     str(stream_state["phase"]), []
                 ).append((window_started, time.perf_counter()))
@@ -1308,6 +1350,17 @@ def child(args: argparse.Namespace) -> int:
             if not next_history:
                 next_history = list(prior_history)
             final_text = str(result.get("final_response") or "") if isinstance(result, dict) else ""
+            final_text_folded = final_text.casefold()
+            if "privacy check is unavailable" in final_text_folded:
+                response_class = "privacy_preflight_unavailable"
+            elif "workspace actions are unavailable" in final_text_folded:
+                response_class = "workspace_actions_unavailable"
+            elif "couldn't verify a workspace tool result" in final_text_folded:
+                response_class = "workspace_tool_result_unverified"
+            elif "couldn't activate the isolated workspace" in final_text_folded:
+                response_class = "workspace_scope_activation_failed"
+            else:
+                response_class = "other_or_model_response"
             last_assistant_text = next(
                 (str(message.get("content") or "") for message in reversed(next_history)
                  if isinstance(message, dict) and message.get("role") == "assistant"),
@@ -1462,6 +1515,10 @@ def child(args: argparse.Namespace) -> int:
                 }),
                 "response_present": bool(final_text),
                 "response_characters": len(final_text),
+                "response_class": response_class,
+                "fresh_diff_context_observations": fresh_diff_context_observations.pop(
+                    phase_name, []
+                ),
                 "response_contains_expected_token": TOKEN in final_text,
                 "response_contains_search_target": (
                     SEARCH_TARGET_PATH.casefold() in final_text.casefold()
@@ -1630,6 +1687,10 @@ def main() -> int:
     parser.add_argument(
         "--prototype-force-terminal-after-mutation", action="store_true",
         help="benchmark-only HADES experiment: use Hermes tool_choice to require one terminal call after a successful workspace code mutation",
+    )
+    parser.add_argument(
+        "--prototype-fresh-diff-on-commit", action="store_true",
+        help="benchmark-only HADES experiment: add fresh authenticated diff evidence to the commit turn without changing conversation history",
     )
     parser.add_argument(
         "--prototype-host-workspace-verification-mapping", action="store_true",
@@ -1876,6 +1937,8 @@ def main() -> int:
                           "--provider-url", f"http://127.0.0.1:{proxy_port}/v1"]
                 if args.prototype_force_terminal_after_mutation:
                     command.append("--prototype-force-terminal-after-mutation")
+                if args.prototype_fresh_diff_on_commit:
+                    command.append("--prototype-fresh-diff-on-commit")
                 if args.prototype_host_workspace_verification_mapping:
                     command.append("--prototype-host-workspace-verification-mapping")
                 if stack == "hades":
@@ -2271,6 +2334,9 @@ def main() -> int:
             "date": datetime.date.today().isoformat(),
             "source_revision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
             "method": {
+                "benchmark_runner_sha256": hashlib.sha256(
+                    pathlib.Path(__file__).resolve().read_bytes()
+                ).hexdigest(),
                 "hermes": subprocess.check_output(
                     [str(hermes_executable(args.hermes_root)), "--version"], text=True,
                 ).strip() + " clean install for both arms; HADES arm loads current sitecustomize overlay",
@@ -2310,6 +2376,10 @@ def main() -> int:
                 "workspace_verification_experiment": (
                     "after a successful workspace code mutation in an action turn, set Hermes request_overrides.tool_choice to the named native terminal tool for one follow-up tool round; restore prior overrides after that round"
                     if args.prototype_force_terminal_after_mutation else None
+                ),
+                "fresh_diff_context_experiment": (
+                    "HADES commit turn only: append fresh authenticated workspace diff evidence to the ephemeral system prompt; preserve all conversation history and leave tool_choice unchanged"
+                    if args.prototype_fresh_diff_on_commit else None
                 ),
                 "host_workspace_verification_mapping_experiment": (
                     "benchmark-only mapping of container /workspace mutation paths and terminal evidence cwd to the current fixture's canonical host project root"
