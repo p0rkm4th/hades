@@ -142,6 +142,22 @@ def public_metric_record(value: Any) -> Any:
     return value
 
 
+def workspace_catalog_snapshot(agent: Any) -> dict[str, Any]:
+    """Expose only the bounded workspace tool names present at validation time."""
+    workspace_names = {"read_file", "search_files", "write_file", "patch", "terminal"}
+    valid_names = set(getattr(agent, "valid_tool_names", None) or ()) & workspace_names
+    schemas = getattr(agent, "tools", None)
+    schema_names = {
+        tool.get("function", {}).get("name")
+        for tool in schemas
+        if isinstance(tool, dict) and isinstance(tool.get("function"), dict)
+    } & workspace_names if isinstance(schemas, list) else set()
+    return {
+        "valid_workspace_tools": sorted(valid_names),
+        "present_workspace_tool_schemas": sorted(schema_names),
+    }
+
+
 FIXTURE_CASES = {
     "geometry": {
         "source": "geometry.py",
@@ -940,12 +956,11 @@ def child(args: argparse.Namespace) -> int:
         # Record only names from this benchmark's fixed workspace-tool allowlist.
         # The model-emitted name may contain arbitrary text and is not retained.
         workspace_names = {"read_file", "search_files", "write_file", "patch", "terminal"}
+        catalog_snapshot = workspace_catalog_snapshot(agent)
         tool_validation_diagnostics.append({
             "phase": str(stream_state["phase"]),
             "attempted_workspace_tool": name if name in workspace_names else "other",
-            "valid_workspace_tools": sorted(
-                set(getattr(agent, "valid_tool_names", None) or ()) & workspace_names
-            ),
+            **catalog_snapshot,
         })
         return original_repair_tool_call(name)
 
