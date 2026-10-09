@@ -20,6 +20,8 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+printf '%s\n' 'Synthetic owner browser upload fixture for HADES candidate acceptance.' > "$tmp/candidate-usability.txt"
+chmod 0600 "$tmp/candidate-usability.txt"
 
 cat > "$tmp/backend.py" <<'PY'
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -32,6 +34,12 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
+        if self.path == "/api/tags":
+            body = json.dumps({"models": [{"name": "nomic-embed-text:latest", "model": "nomic-embed-text:latest", "modified_at": "2026-01-01T00:00:00Z", "size": 0, "digest": "synthetic", "details": {"format": "gguf", "family": "bert", "families": ["bert"], "parameter_size": "1M", "quantization_level": "F32"}}]}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers(); self.wfile.write(body); return
         if self.path != "/v1/models":
             self.send_response(404); self.end_headers(); return
         body = json.dumps({"data": [{"id": MODEL, "object": "model", "owned_by": "synthetic"}]}).encode()
@@ -43,6 +51,18 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get("Content-Length", "0"))
         request = json.loads(self.rfile.read(length) or b"{}")
+        if self.path == "/api/embeddings":
+            body = json.dumps({"embedding": [0.125] * 16}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers(); self.wfile.write(body); return
+        if self.path == "/api/embed":
+            body = json.dumps({"embeddings": [[0.125] * 16 for _ in request.get("input", [])]}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers(); self.wfile.write(body); return
         if self.path != "/v1/chat/completions":
             self.send_response(404); self.end_headers(); return
         user_text = next((m.get("content", "") for m in request.get("messages", []) if m.get("role") == "user"), "")
@@ -78,7 +98,8 @@ docker volume create "$volume" >/dev/null
 docker run -d --name "$name" -p "127.0.0.1:${webui_port}:8080" \
   --add-host host.docker.internal:host-gateway \
   -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
-  -e RAG_EMBEDDING_ENGINE=ollama -v "$volume:/app/backend/data" \
+  -e RAG_EMBEDDING_ENGINE=ollama -e OLLAMA_BASE_URL="http://host.docker.internal:${model_port}" \
+  -v "$volume:/app/backend/data" \
   "$image" >/dev/null
 
 for _ in $(seq 1 90); do
@@ -107,6 +128,7 @@ if [[ -n "${HADES_PLAYWRIGHT_MODULE:-}" ]]; then
   HADES_CANDIDATE_BROWSER_URL="http://127.0.0.1:${webui_port}" \
   HADES_CANDIDATE_BROWSER_EMAIL=alpha-private@example.invalid \
   HADES_CANDIDATE_BROWSER_PASSWORD=Synthetic-Only-123! \
+  HADES_CANDIDATE_BROWSER_FILE="$tmp/candidate-usability.txt" \
   node scripts/dom-open-webui-candidate-smoke.js
 fi
 

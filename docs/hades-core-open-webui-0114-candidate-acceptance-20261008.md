@@ -36,8 +36,10 @@ All checks passed:
 - A Channels model mention reaches the synthetic OpenAI backend and its
   streamed response is persisted in the channel timeline.
 - Synthetic owner browser login, HADES theme CSS/JS loading, visible upload
-  input, a model reply sent through the chat composer, and chat persistence
-  after page reload; zero browser page errors. This used
+  input, successful synthetic text-file upload, a model reply sent through
+  the chat composer, and file/chat reference persistence after page reload;
+  zero browser page errors. A fixed-vector mock embedding endpoint served the
+  disposable upload flow. This used
   [`dom-open-webui-candidate-smoke.js`](../scripts/dom-open-webui-candidate-smoke.js)
   with Playwright 1.63.0 and the disposable backend.
 
@@ -54,7 +56,7 @@ hiding the dialog with a HADES CSS override.
 This passes synthetic private-chat, Channels, and limited owner-authenticated
 browser acceptance for the exact artifact built from the recorded review
 checkout. It is not direct Scotty dogfood or production promotion. LDAP/group
-provisioning behavior, actual file upload and file-picker behavior, shared
+provisioning behavior, document extraction and retrieval quality, shared
 folders, broader responsive/theme review, full migration and rollback, and
 reconstructed-deployment acceptance remain open. The locally built image has
 an immutable ID but no embedded HADES-source provenance; record an external

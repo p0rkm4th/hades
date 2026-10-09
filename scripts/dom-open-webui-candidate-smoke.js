@@ -6,7 +6,8 @@ const { chromium } = require(process.env.HADES_PLAYWRIGHT_MODULE || 'playwright'
 const baseUrl = process.env.HADES_CANDIDATE_BROWSER_URL;
 const email = process.env.HADES_CANDIDATE_BROWSER_EMAIL;
 const password = process.env.HADES_CANDIDATE_BROWSER_PASSWORD;
-if (!baseUrl || !email || !password) {
+const fixtureFile = process.env.HADES_CANDIDATE_BROWSER_FILE;
+if (!baseUrl || !email || !password || !fixtureFile) {
   console.error('FAIL candidate browser test requires its disposable URL and synthetic login');
   process.exit(2);
 }
@@ -20,11 +21,11 @@ if (!baseUrl || !email || !password) {
   page.on('pageerror', error => pageErrors.push(error.message));
   context.on('request', request => {
     const url = new URL(request.url());
-    if (/\/api\/(chat\/completions|models)/.test(url.pathname)) networkEvents.push({ kind: 'request', path: url.pathname });
+    if (/\/api\/(chat\/completions|models|v1\/files)/.test(url.pathname)) networkEvents.push({ kind: 'request', path: url.pathname });
   });
   context.on('response', response => {
     const url = new URL(response.url());
-    if (/\/api\/(chat\/completions|models)/.test(url.pathname)) networkEvents.push({ kind: 'response', status: response.status(), path: url.pathname });
+    if (/\/api\/(chat\/completions|models|v1\/files)/.test(url.pathname)) networkEvents.push({ kind: 'response', status: response.status(), path: url.pathname });
   });
   const checks = [];
   const timed = async (name, action) => {
@@ -81,6 +82,13 @@ if (!baseUrl || !email || !password) {
       await dialog.waitFor({ state: 'hidden', timeout: 5000 });
     });
 
+    await timed('file picker uploads a synthetic text attachment', async () => {
+      await page.locator('input[type="file"]').last().setInputFiles(fixtureFile);
+      await page.getByText('candidate-usability.txt', { exact: false }).waitFor({ state: 'visible', timeout: 15000 });
+      const upload = networkEvents.find(item => item.kind === 'response' && item.path.startsWith('/api/v1/files'));
+      if (!upload || upload.status < 200 || upload.status >= 300) throw new Error('file upload did not return a successful API response');
+    });
+
     await timed('model response through the visible chat composer', async () => {
       const input = page.locator('#chat-input');
       await input.fill('Please confirm the Alpha browser conversation.');
@@ -114,6 +122,9 @@ if (!baseUrl || !email || !password) {
         null,
         { timeout: 30000 },
       );
+      if (!(await page.locator('body').innerText()).includes('candidate-usability.txt')) {
+        throw new Error('uploaded file reference did not persist with the reloaded conversation');
+      }
     });
 
     if (pageErrors.length) throw new Error(`browser reported ${pageErrors.length} page error(s)`);
