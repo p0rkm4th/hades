@@ -84,3 +84,9 @@ add/remove/revocation acceptance; see
 [`hades-core-open-webui-0114-ldap-group-revocation-20261009.md`](hades-core-open-webui-0114-ldap-group-revocation-20261009.md).
 This does not enable LDAP group management in production or qualify immediate
 revocation of existing sessions.
+
+The patched candidate also passed a disposable 0.11.1 to 0.11.4 database
+migration, persistence, private-chat isolation, restart, SQLite-integrity, and
+snapshot-restore rollback replay. See
+[`hades-core-open-webui-0114-migration-rollback-20261009.md`](hades-core-open-webui-0114-migration-rollback-20261009.md).
+Production data was not used; production remains on 0.11.1.

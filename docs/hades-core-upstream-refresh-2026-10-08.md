@@ -137,3 +137,11 @@ image. The candidate remains staging-only: there is no external HADES build
 attestation, migration/rollback qualification, or owner preference evidence.
 Production LDAP group management stays disabled. See
 [`hades-core-open-webui-0114-ldap-group-revocation-20261009.md`](hades-core-open-webui-0114-ldap-group-revocation-20261009.md).
+
+The patched candidate also passed disposable migration from the local HADES
+0.11.1 image, private-chat isolation/persistence through candidate restart,
+SQLite integrity checks, and rollback by restoring the pre-upgrade snapshot
+under 0.11.1. This closes only the candidate-pair staging migration gate;
+production data, LDAP state, external build provenance, and owner acceptance
+remain unqualified. See
+[`hades-core-open-webui-0114-migration-rollback-20261009.md`](hades-core-open-webui-0114-migration-rollback-20261009.md).

@@ -263,6 +263,8 @@ jobs:
         run: python3 scripts/test-open-webui-ldap-group-sync-compat-contract.py
       - name: Compile Open WebUI LDAP group sync checks
         run: python3 -m py_compile webui/ldap_group_sync_compat.py scripts/test-open-webui-ldap-group-sync-compat-contract.py scripts/test-open-webui-ldap-group-sync-candidate.py
+      - name: Compile Open WebUI migration acceptance
+        run: python3 -m py_compile scripts/test-open-webui-migration-rollback-candidate.py
       - name: Check private input contract
         run: bash scripts/test-private-input-contract.sh
       - name: Check generated deployment records
