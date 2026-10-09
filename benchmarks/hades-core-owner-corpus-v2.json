@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "title": "HADES Core Comparative Owner Corpus — Seed v2 with memory supplement",
-  "status": "Partially replayed: 16 chat/conversation case IDs have comparative synthetic coverage and 10 additional household/workspace/coding case IDs have tool-backed fixture comparisons; 29 of 55 cases lack direct replay and owner preference is unassigned. The current Hermes 0.21.6/Ollama 0.40.2 workflow replay passed independent focused tests and clean source-only commits in both stacks in 2/2 pairs. HADES had a modest single-fixture median latency advantage and fewer provider/tool calls, but no human answer-quality or owner-preference scoring. Ordinary-chat comparisons show latency close to PLAIN with no tools in the tested turns; answer quality and preference remain unreviewed.",
+  "status": "Partially replayed: 16 chat/conversation case IDs and 12 additional household/workspace/coding/agentic case IDs have comparative synthetic evidence; 27 of 55 cases lack direct replay and owner preference is unassigned. The latest Hermes 0.21.6/Ollama 0.40.2 diagnosis-then-fix replay passed independent tests and source-scope checks in both stacks in 2/2 pairs. HADES waited for the explicit fix request; PLAIN changed the workspace during diagnosis in both pairs. HADES was slower end to end in this non-equivalent-work comparison. Human answer-quality and owner-preference scoring remain absent.",
   "source_note": "Cases are hand-authored sanitized paraphrases, not verbatim transcripts. The Sept. 24 owner dogfood report documents real prompt families including recipe availability, pantry expiry, spaghetti inventory/list, homelab/network/model/backup status, restaurants, subscriptions, weekend affordability, lease prepayment, restock, savings target, and morning briefing. Replace/add cases only from owner-approved evidence; never copy secrets, financial records, private memories, or household content into this file. The five v2 memory supplement cases are synthetic examples authored for policy coverage; they are not transcripts or claims about Scotty.",
   "comparison_contract": {
     "same_model_and_quantization": true,
@@ -746,10 +746,12 @@
       "core-25",
       "core-26",
       "core-28",
-      "core-31"
+      "core-31",
+      "core-43",
+      "core-44"
     ],
-    "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; current-source coding diagnosis/fix, README comprehension, named-file explanation and search; small edit with focused test; and a five-turn inspect/edit/test/diff-review/commit workflow. On the latest Hermes 0.21.6/Ollama 0.40.2 workflow replay, both stacks passed independent tests, changed only the intended source, and made clean commits in both order-balanced pairs. HADES supplied authenticated native diff evidence in dedicated review turns and had lower median task time/tool use on this fixture; generated review quality and owner preference remain unassigned. Historical Hermes 0.21.6/Ollama 0.40.1 results remain linked below and are not the latest candidate result.",
-    "unreplayed_case_count": 29,
+    "tool_backed_scope": "Synthetic recipe-feasibility and expiry/use reads; current-source coding diagnosis/fix, README comprehension, named-file explanation and search; small edit with focused test; five-turn inspect/edit/test/diff-review/commit; and the two-turn Python diagnosis followed by explicit fix request. On the latest Hermes 0.21.6/Ollama 0.40.2 diagnosis-then-fix replay, both stacks passed independent tests and changed only the expected source in both pairs. PLAIN changed the workspace before the explicit fix request in both diagnosis turns; HADES did not, then patched and tested after the request in both pairs. HADES took longer end to end while doing the requested action sequence; owner preference and generated answer quality remain unreviewed.",
+    "unreplayed_case_count": 27,
     "owner_preference_labels": 0,
     "owner_preference_status": "unassigned",
     "chat_only_case_replay_details": {
@@ -1719,5 +1721,48 @@
     "metrics_record": "benchmarks/hades-core-owner-workspace-workflow-ollama0402-current-rootless-two-repeat-20261009.json",
     "report": "docs/hades-core-owner-workspace-workflow-ollama0402-2026-10-09.md",
     "harness_setup_note": "Initial attempt failed before task turns because fixture linked the Hindsight repository root; harness now links the nested hindsight-integrations/hermes provider package. Failed setup attempt excluded from task metrics."
+  },
+  "latest_agentic_explain_to_fix_ollama0402": {
+    "case_ids": [
+      "core-43",
+      "core-44"
+    ],
+    "source_revision": "3d83370838bed1a3f25dba2514f8439ed543b2b4",
+    "classification": "two order-balanced synthetic diagnose-then-fix conversations on Hermes 0.21.6 and Ollama 0.40.2; no owner preference or answer-quality review",
+    "runtime": "Hermes 0.21.6 upstream commit 818c13be1dc4fd28987e1e881a9408224afd4535, Ollama 0.40.2, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable network-disabled sandbox, matched /workspace environment hint",
+    "order": "PLAIN then HADES; HADES then PLAIN",
+    "median_task_seconds": {
+      "plain": 37.79895,
+      "hades": 47.3252
+    },
+    "median_model_api_calls_per_task": {
+      "plain": 7,
+      "hades": 6
+    },
+    "median_tool_results_per_task": {
+      "plain": 7.5,
+      "hades": 8.5
+    },
+    "workspace_mutations_during_diagnosis": {
+      "plain": 2,
+      "hades": 0
+    },
+    "patch_and_focused_test_after_explicit_fix_request": {
+      "plain": 0,
+      "hades": 2
+    },
+    "independent_tests_and_diff_checks_passed": {
+      "plain": 2,
+      "hades": 2
+    },
+    "only_expected_source_changed": {
+      "plain": 2,
+      "hades": 2
+    },
+    "owner_preference": "UNASSIGNED",
+    "interpretation": "PLAIN was faster but changed the workspace during both diagnosis-only turns and did not act on the later explicit fix request. HADES waited, then patched and tested in both pairs. Because the stacks did different work, task time is not an equivalent-completion comparison. HADES diagnosis used a median 6.5 tool results, mostly file reads after one search; file path values were not retained, so necessity/duplication is unknown.",
+    "limitations": "Two synthetic tasks on one geometry fixture using direct Hermes AIAgent, not deployed Open WebUI. No answer-text quality review, owner preference, broader coding tasks, or deployment parity.",
+    "metrics_record": "benchmarks/hades-core-owner-agentic-core43-44-hermes0216-ollama0402-rootless-two-repeat-20261009.json",
+    "report": "docs/hades-core-owner-agentic-explain-fix-ollama0402-2026-10-09.md"
   }
 }
