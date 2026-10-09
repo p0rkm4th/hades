@@ -15,6 +15,6 @@ hermes_line=$(grep -nF 'install -m 0600 "$HADES_HERMES_SERVICE_FILE"' "$installe
 [[ "$agent_line" -lt "$searx_line" && "$searx_line" -lt "$hermes_line" ]] || {
   echo 'FAIL installer dependency order is not Agent Zero, SearXNG, Hermes'; exit 1;
 }
-grep -q '| Agent Zero |.*| 6 |' "$manifest" || { echo 'FAIL manifest Agent Zero order changed'; exit 1; }
-grep -q '| SearXNG |.*| 7 |' "$manifest" || { echo 'FAIL manifest SearXNG order changed'; exit 1; }
+grep -q '| Agent Zero |.*| 7 |' "$manifest" || { echo 'FAIL manifest Agent Zero order changed'; exit 1; }
+grep -q '| SearXNG |.*| 8 |' "$manifest" || { echo 'FAIL manifest SearXNG order changed'; exit 1; }
 echo 'PASS installer and manifest dependency order'
