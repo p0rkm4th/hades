@@ -12214,6 +12214,31 @@ try:
                     **original_request_overrides,
                     "tool_choice": "none",
                 }
+                history_key = "conversation_history"
+                history_value = kwargs.get(history_key)
+                positional_history_index = 1
+                if not isinstance(history_value, list) and len(args) > positional_history_index:
+                    history_value = args[positional_history_index]
+                if isinstance(history_value, list):
+                    filtered_history = [
+                        message for message in history_value
+                        if not (
+                            isinstance(message, dict)
+                            and (
+                                message.get("role") == "tool"
+                                or (
+                                    message.get("role") == "assistant"
+                                    and message.get("tool_calls")
+                                )
+                            )
+                        )
+                    ]
+                    if history_key in kwargs or len(args) <= positional_history_index:
+                        kwargs[history_key] = filtered_history
+                    else:
+                        positional_args = list(args)
+                        positional_args[positional_history_index] = filtered_history
+                        args = tuple(positional_args)
             try:
                 _workspace_scope_token = _hades_set_terminal_scope(
                     _hades_workspace_terminal_policy(_workspace_path, _workspace_image)

@@ -350,6 +350,8 @@ diff_review_agent=create_agent('synthetic-owner','synthetic-diff-review-chat')
 diff_review_prompt='Show me exactly what changed and whether anything unrelated is in the diff.'
 diff_review_history=[
  {'role':'user','content':'Fix the typo in review.py.'},
+ {'role':'assistant','tool_calls':[{'id':'old-terminal','type':'function','function':{'name':'terminal','arguments':'{"command":"python -m unittest"}'}}]},
+ {'role':'tool','name':'terminal','tool_call_id':'old-terminal','content':'{"exit_code":0,"output":"OK"}'},
  {'role':'assistant','content':'I fixed and tested review.py.'},
 ]
 def native_diff_review(agent,user_message,*args,**kwargs):
@@ -362,6 +364,10 @@ def native_diff_review(agent,user_message,*args,**kwargs):
  assert 'return 1' in prompt and 'return 2' in prompt,prompt
  assert 'untrusted evidence' in prompt.lower(),prompt
  assert 'do not edit files or run commands' in prompt.lower(),prompt
+ history=kwargs.get('conversation_history')
+ assert isinstance(history,list),kwargs
+ assert all(m.get('role')!='tool' and not m.get('tool_calls') for m in history),history
+ assert any(m.get('content')=='I fixed and tested review.py.' for m in history),history
  response='The diff changes review.py from return 1 to return 2; no other changes are shown.'
  return {'final_response':response,
   'messages':[{'role':'user','content':user_message},{'role':'assistant','content':response}],
