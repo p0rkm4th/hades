@@ -20,6 +20,8 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import threading
 
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -58,6 +60,50 @@ def api(base: str, path: str, payload: dict, token: str | None = None) -> dict:
         raise RuntimeError(f"{path} returned HTTP {error.code}: {detail}") from None
 
 
+class SyntheticModelHandler(BaseHTTPRequestHandler):
+    def log_message(self, *_args: object) -> None:
+        pass
+
+    def _reply(self, status: int, body: bytes, content_type: str = "application/json") -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self) -> None:
+        if self.path == "/v1/models":
+            self._reply(200, json.dumps({"data": [{"id": "synthetic-household-model", "object": "model"}]}).encode())
+        elif self.path in ("/api/tags", "/api/version"):
+            self._reply(200, json.dumps({"models": []} if self.path == "/api/tags" else {"version": "synthetic"}).encode())
+        else:
+            self._reply(404, b"{}")
+
+    def do_POST(self) -> None:
+        length = int(self.headers.get("Content-Length", "0"))
+        request = json.loads(self.rfile.read(length) or b"{}")
+        if self.path in ("/api/embeddings", "/api/embed"):
+            body = {"embedding": [0.125] * 16} if self.path.endswith("embeddings") else {"embeddings": [[0.125] * 16]}
+            self._reply(200, json.dumps(body).encode())
+            return
+        if self.path != "/v1/chat/completions":
+            self._reply(404, b"{}")
+            return
+        user_text = " ".join(str(message.get("content", "")) for message in request.get("messages", []) if message.get("role") == "user")
+        reply = "Alpha-ldap-chat-confirmed" if "Alpha" in user_text else "Beta-ldap-chat-confirmed"
+        if request.get("stream"):
+            chunks = [
+                {"id": "synthetic-ldap-chat", "object": "chat.completion.chunk", "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}]},
+                {"id": "synthetic-ldap-chat", "object": "chat.completion.chunk", "choices": [{"index": 0, "delta": {"content": reply}, "finish_reason": None}]},
+                {"id": "synthetic-ldap-chat", "object": "chat.completion.chunk", "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]},
+            ]
+            body = "".join(f"data: {json.dumps(chunk)}\n\n" for chunk in chunks) + "data: [DONE]\n\n"
+            self._reply(200, body.encode(), "text/event-stream")
+            return
+        body = {"id": "synthetic-ldap-chat", "object": "chat.completion", "model": "synthetic-household-model", "choices": [{"index": 0, "message": {"role": "assistant", "content": reply}, "finish_reason": "stop"}]}
+        self._reply(200, json.dumps(body).encode())
+
+
 def dynamic_port(container: str, port: str) -> int:
     inspection = json.loads(run(["docker", "inspect", container]).stdout)[0]
     return int(inspection["NetworkSettings"]["Ports"][port][0]["HostPort"])
@@ -81,11 +127,22 @@ def main() -> None:
     webui = f"hades-ldap-candidate-{suffix}-webui"
     volume = f"hades-ldap-candidate-{suffix}-data"
     created: list[tuple[str, str]] = []
+    model_server: ThreadingHTTPServer | None = None
     try:
         run(["docker", "image", "inspect", IMAGE])
         run(["docker", "image", "inspect", lldap_image])
         run(["docker", "network", "create", network])
         created.append(("network", network))
+        docker_gateway = run([
+            "docker", "network", "inspect", "bridge",
+            "--format", "{{(index .IPAM.Config 0).Gateway}}",
+        ]).stdout.strip()
+        if not re.fullmatch(r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}", docker_gateway):
+            raise RuntimeError("Docker bridge gateway is not a valid IPv4 address")
+        model_server = ThreadingHTTPServer((docker_gateway, 0), SyntheticModelHandler)
+        model_thread = threading.Thread(target=model_server.serve_forever, daemon=True)
+        model_thread.start()
+        model_port = int(model_server.server_address[1])
         with tempfile.TemporaryDirectory(prefix="hades-ldap-candidate-") as raw:
             root = pathlib.Path(raw)
             identity, users, groups = (root / name for name in ("identity", "users", "groups"))
@@ -158,6 +215,7 @@ def main() -> None:
             created.append(("volume", volume))
             run([
                 "docker", "run", "-d", "--rm", "--name", webui, "--network", network,
+                "--add-host", "host.docker.internal:host-gateway",
                 "-p", "127.0.0.1::8080", "-e", "WEBUI_AUTH=true", "-e", "ENABLE_SIGNUP=true",
                 "-e", "ENABLE_LOGIN_FORM=true", "-e", "ENABLE_LDAP=true",
                 "-e", "LDAP_SERVER_HOST=ldap", "-e", "LDAP_SERVER_PORT=3890",
@@ -177,10 +235,11 @@ def main() -> None:
             created.append(("container", webui))
             webui_url = f"http://127.0.0.1:{dynamic_port(webui, '8080/tcp')}"
             wait_health(webui_url + "/health", "Open WebUI candidate", 120)
-            api(webui_url, "/api/v1/auths/signup", {
+            admin = api(webui_url, "/api/v1/auths/signup", {
                 "name": "Synthetic Admin", "email": "synthetic-admin@hades.example.invalid",
                 "password": "Synthetic-Admin-123!",
             })
+            admin_token = admin["token"]
 
             def ldap_login(username: str) -> dict:
                 return api(webui_url, "/api/v1/auths/ldap", {
@@ -212,6 +271,59 @@ def main() -> None:
                 raise RuntimeError("LDAP group membership did not match the fixture for both users")
             print("PASS Alpha/Beta LDAP login, stable subject, user role, and initial group sync")
 
+            api(webui_url, "/openai/config/update", {
+                "ENABLE_OPENAI_API": True,
+                "OPENAI_API_BASE_URLS": [f"http://host.docker.internal:{model_port}/v1"],
+                "OPENAI_API_KEYS": ["synthetic-ldap-model-key"],
+                "OPENAI_API_CONFIGS": {"0": {}},
+            }, admin_token)
+            api(webui_url, "/api/v1/models/model/access/update", {
+                "id": "synthetic-household-model",
+                "name": "synthetic-household-model",
+                "access_grants": [
+                    {"principal_type": "user", "principal_id": user["id"], "permission": "read"}
+                    for user in (alpha, beta)
+                ],
+            }, admin_token)
+            model_request = urllib.request.Request(
+                webui_url + "/api/models",
+                headers={"Authorization": "Bearer " + beta["token"]},
+            )
+            with urllib.request.urlopen(model_request, timeout=20) as response:
+                beta_models = json.load(response)
+            visible_models = beta_models if isinstance(beta_models, list) else beta_models.get("data", beta_models.get("models", []))
+            if not any(row.get("id") == "synthetic-household-model" for row in visible_models):
+                raise RuntimeError("verified LDAP household user has no explicitly granted model")
+            print("PASS verified LDAP household user sees the explicitly granted model")
+
+            playwright_module = os.environ.get("HADES_PLAYWRIGHT_MODULE", "")
+            if playwright_module:
+                base_env = {
+                    "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                    "HOME": os.environ.get("HOME", "/tmp"),
+                    "LANG": os.environ.get("LANG", "C.UTF-8"),
+                    "HADES_CANDIDATE_BROWSER_URL": webui_url,
+                    "HADES_CANDIDATE_BROWSER_PASSWORD": "Synthetic-User-123!",
+                    "HADES_CANDIDATE_BROWSER_PROMPT": "Please confirm the Alpha LDAP browser conversation.",
+                    "HADES_CANDIDATE_BROWSER_EXPECTED_REPLY": "Alpha-ldap-chat-confirmed",
+                    "HADES_PLAYWRIGHT_MODULE": playwright_module,
+                }
+                if os.environ.get("PLAYWRIGHT_BROWSERS_PATH"):
+                    base_env["PLAYWRIGHT_BROWSERS_PATH"] = os.environ["PLAYWRIGHT_BROWSERS_PATH"]
+                base_env["HADES_CANDIDATE_BROWSER_EMAIL"] = "candidate-alpha@hades.example.invalid"
+                base_env["HADES_CANDIDATE_BROWSER_USERNAME"] = "candidate-alpha"
+                subprocess.run(["node", str(REPO / "scripts/dom-open-webui-candidate-smoke.js")], check=True, env=base_env)
+                beta_env = {
+                    **base_env,
+                    "HADES_CANDIDATE_BROWSER_EMAIL": "candidate-beta@hades.example.invalid",
+                    "HADES_CANDIDATE_BROWSER_USERNAME": "candidate-beta",
+                    "HADES_CANDIDATE_BROWSER_PROMPT": "Please confirm the Beta LDAP browser conversation.",
+                    "HADES_CANDIDATE_BROWSER_EXPECTED_REPLY": "Beta-ldap-chat-confirmed",
+                    "HADES_CANDIDATE_BROWSER_FORBIDDEN_TEXT": "Alpha-ldap-chat-confirmed",
+                }
+                subprocess.run(["node", str(REPO / "scripts/dom-open-webui-candidate-smoke.js")], check=True, env=beta_env)
+                print("PASS LDAP Alpha/Beta browser login, independent chats, and private response isolation")
+
             def remove_group(name: str) -> None:
                 result = api(lldap_url, "/api/graphql", {
                     "query": (
@@ -237,6 +349,29 @@ def main() -> None:
             if memberships(beta["id"]):
                 raise RuntimeError("candidate retained stale groups after all LDAP groups were revoked")
             print("PASS total group revocation removes Beta's final Open WebUI membership")
+
+            revoke_env = {
+                "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                "HOME": os.environ.get("HOME", "/tmp"),
+                "LANG": os.environ.get("LANG", "C.UTF-8"),
+                "HADES_LLDAP_URL": lldap_url,
+                "HADES_OPEN_WEBUI_URL": webui_url,
+                "LLDAP_ADMIN_TOKEN": directory_token,
+                "OPEN_WEBUI_ADMIN_TOKEN": admin_token,
+            }
+            subprocess.run([str(REPO / "scripts/revoke-directory-user.sh"), "candidate-beta"], check=True, env=revoke_env)
+            old_token_request = urllib.request.Request(
+                webui_url + "/api/v1/users/user/info",
+                headers={"Authorization": "Bearer " + beta["token"]},
+            )
+            try:
+                urllib.request.urlopen(old_token_request, timeout=20)
+            except urllib.error.HTTPError as error:
+                if error.code not in (401, 403):
+                    raise RuntimeError(f"revoked Beta token returned unexpected HTTP {error.code}") from None
+            else:
+                raise RuntimeError("revoked Beta's existing session token remained usable")
+            print("PASS documented offboarding removes Open WebUI access and invalidates Beta's existing token")
     finally:
         for kind, name in reversed(created):
             command = (
@@ -245,6 +380,9 @@ def main() -> None:
                 else ["docker", "network", "rm", name]
             )
             subprocess.run(command, capture_output=True, text=True)
+        if model_server is not None:
+            model_server.shutdown()
+            model_server.server_close()
 
 
 if __name__ == "__main__":

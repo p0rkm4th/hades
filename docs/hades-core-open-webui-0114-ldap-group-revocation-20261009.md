@@ -55,6 +55,29 @@ procedure still removes the Open WebUI account and invalidates its sessions
 before deleting the LLDAP account. Production LDAP group management remains
 disabled; do not enable group-based access based on this staging result alone.
 
+## LDAP to first browser chat — 2026-10-09
+
+The disposable candidate test now continues past LDAP group sync through the
+actual Open WebUI browser login. Against the same exact candidate image, it
+configured a local synthetic OpenAI-compatible model and explicitly granted
+read access to the two verified Alpha/Beta accounts. The test confirmed the
+model appeared in Beta's authenticated model catalog, then used Playwright to
+log both users in through the LDAP username/password form. Both completed
+separate chats that remained present after browser reload; the Beta page did
+not contain Alpha's private response marker. The same run confirmed distinct
+stable subjects, ordinary-user roles, expected initial group memberships, and
+single/final group revocation after fresh LDAP login. Playwright 1.63.0 and the
+synthetic backend were used; no production identity or service was involved.
+
+This verifies the documented two-step onboarding contract: confirm the LDAP
+identity and household group, then assign that verified Open WebUI user
+explicit model read access. LDAP group membership alone does not grant a model
+or automatically remove a preexisting per-user model grant. The same run then
+used the documented `scripts/revoke-directory-user.sh` procedure to remove
+Beta's Open WebUI account before its LDAP identity; the existing Beta bearer
+token was rejected afterward. Offboarding must continue to use this account
+revocation sequence, as documented in [`shared-identity.md`](shared-identity.md).
+
 No production service, identity, chat, or volume was used. The Docker network,
 containers, volume, identity files, and synthetic users were removed after
 each test.

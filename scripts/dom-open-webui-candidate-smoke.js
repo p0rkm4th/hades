@@ -5,6 +5,7 @@ const { chromium } = require(process.env.HADES_PLAYWRIGHT_MODULE || 'playwright'
 
 const baseUrl = process.env.HADES_CANDIDATE_BROWSER_URL;
 const email = process.env.HADES_CANDIDATE_BROWSER_EMAIL;
+const username = process.env.HADES_CANDIDATE_BROWSER_USERNAME || email;
 const password = process.env.HADES_CANDIDATE_BROWSER_PASSWORD;
 const fixtureFile = process.env.HADES_CANDIDATE_BROWSER_FILE;
 const expectedReply = process.env.HADES_CANDIDATE_BROWSER_EXPECTED_REPLY || 'Alpha-private-fact-confirmed';
@@ -39,6 +40,21 @@ if (!baseUrl || !email || !password) {
   try {
     await timed('login page and owner authentication', async () => {
       await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const usernameInput = page.locator('input[name="username"], #username');
+      await page.locator('input[name="username"], #username, input[type="email"]').first()
+        .waitFor({ state: 'visible', timeout: 15000 });
+      if (await usernameInput.count()) {
+        await usernameInput.fill(username);
+        await page.locator('input[type="password"]').fill(password);
+        const authenticate = page.getByRole('button', { name: /authenticate|sign in|log in/i });
+        if (await authenticate.count()) await authenticate.first().click();
+        else await page.locator('button[type="submit"]').click();
+        await page.waitForSelector('#chat-input', { timeout: 30000 });
+        if (forbiddenText && (await page.locator('body').innerText()).includes(forbiddenText)) {
+          throw new Error('account landing page displayed another account\'s private response marker');
+        }
+        return;
+      }
       const emailInput = page.locator('input[type="email"]');
       if (!await emailInput.count()) {
         const continueWithEmail = page.getByText('Continue with Email', { exact: true });
