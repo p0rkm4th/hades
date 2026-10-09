@@ -30,6 +30,19 @@ work around one commit. Neither run provides owner preference evidence.
 
 The corpus remains a testing instrument. It does not establish that HADES is preferred, and direct Scotty dogfood remains a release gate.
 
+## Current-stable ordinary-chat rerun — 2026-10-09
+
+The five-repeat core-4 subset has now also been replayed on staged Ollama
+0.40.2 with Hermes 0.21.6 and the exact same Qwen3.6 35B model digest,
+65,536 context, seed, temperature, and benchmark runner used by the earlier
+0.40.1 comparison. Both PLAIN STACK and HADES returned content on all 30
+turns, used one generation per turn, and exposed/called no tools. Median TTFT
+was 1.033s PLAIN and 1.049s HADES; median total latency was 1.989s PLAIN and
+1.752s HADES. HADES generated 43% fewer tokens, but response text and owner
+preference were not collected, so this is not evidence that shorter responses
+are better. See the [0.40.2 comparison report](hades-core-ordinary-chat-ollama0402-20261009.md)
+and its [sanitized artifact](../benchmarks/hades-core-owner-conversation-hermes0216-ollama0402-core4-five-repeat-20261009.json).
+
 The [Git environment profile](hades-core-owner-workspace-diff-review-git-environment-profile-20261009.md)
 traces the two-pair replay's slow diff-review setup to Hermes' hardened native
 Git collector. That replay uses a fresh package-manager home per arm and

@@ -13,11 +13,20 @@ latest stable versions remain Open WebUI 0.11.4 (2026-09-21), Hermes Agent
 0.21.6 (2026-10-08), Ollama 0.40.2 (2026-10-08), and Hindsight 0.10.3
 (2026-10-08). No release-only upgrade decision changed since the check below.
 
-The local Ollama endpoint is unavailable, the default `~/.ollama` directory
-contains no model data, and `/opt/hades-stage` is absent. The matched
-0.40.1/Qwen3.6 35B results remain the latest runtime comparison evidence; no
-0.40.2 latency comparison was run or inferred. Production pins remain Open
-WebUI 0.11.1, Hermes 0.21.2,
+The production/default Ollama endpoint is unavailable, and the default
+`~/.ollama` directory contains no model data. Since the initial release
+recheck, a private 0.40.2 candidate was staged under
+`~/Workspaces/HADES/staging/ollama-0.40.2/`. Its official Linux archive passed
+the published SHA-256 check (`726bee78706c281b0eeef00746efe51a044d71c592c3f0b195820707f31fdf04`),
+the isolated API identified as 0.40.2, and its NVIDIA discovery found the
+RTX 3080 Ti. The registry manifest for `qwen3.6:35b` matched the exact earlier
+benchmark digest; it was pulled into the isolated model store, and the runtime
+reported the configured 65,536-token context. A five-repeat PLAIN/HADES
+ordinary-chat comparison passed on this candidate; see
+[`hades-core-ordinary-chat-ollama0402-20261009.md`](hades-core-ordinary-chat-ollama0402-20261009.md).
+This exercises a fresh model pull and inference but not 0.40.2's background
+model upgrade/downgrade behavior. Production pins remain Open WebUI 0.11.1,
+Hermes 0.21.2,
 and Hindsight image digest `sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`;
 the 0.11.4, 0.21.6, and 0.10.3 artifacts remain staging candidates.
 
