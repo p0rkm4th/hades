@@ -377,14 +377,14 @@ def get_workspace_tools(*, read_only: bool = False) -> list[dict[str, Any]]:
         if not isinstance(target, dict):
             raise RuntimeError("Hermes search_files target schema is incomplete")
         target["description"] = (
-            "Required. Use 'files' to discover workspace paths by filename glob; "
-            "use 'content' only when searching text inside known files."
+            "Required. Use 'files' for filename-glob discovery; use 'content' only "
+            "when searching text inside known files. In a follow-up, reuse paths "
+            "already established in the conversation."
         )
         function["description"] = (
             str(function.get("description") or "").rstrip()
-            + " For initial project discovery, search once with target='files', "
-            "pattern='*', path='/workspace'. Do not guess test or configuration "
-            "filenames before reading that result."
+            + " If needed paths are not already established, discover them once "
+            "with target='files', pattern='*', path='/workspace'."
         )
         required = parameters.setdefault("required", [])
         if "target" not in required:

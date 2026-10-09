@@ -227,8 +227,8 @@ assert {t['function']['name'] for t in workspace_policy.get_workspace_tools(read
 workspace_full_tools={t['function']['name']:t['function'] for t in workspace_policy.get_workspace_tools()}
 assert set(workspace_full_tools)=={'read_file','search_files','write_file','patch','terminal'}
 search_description=workspace_full_tools['search_files']['description'].lower()
-assert 'for initial project discovery, search once' in search_description,search_description
-assert 'do not guess test or configuration filenames' in search_description,search_description
+assert 'if needed paths are not already established, discover them once' in search_description,search_description
+assert 'reuse paths already established in the conversation' in workspace_search_schema['properties']['target']['description'].lower(),workspace_search_schema
 for action_tool in ('write_file','patch','terminal'):
  description=workspace_full_tools[action_tool]['description']
  assert 'only on a workspace-action turn' not in description, (action_tool,description)
@@ -397,10 +397,10 @@ def native_read(agent,user_message,*args,**kwargs):
  assert 'terminal result shows that test completed with exit code 0' in prompt,prompt
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
  assert "filename glob, not a regex: use '*' for all names, never '.*'" in prompt,prompt
- assert 'read the relevant source and test files once' in prompt,prompt
- assert 'make one search_files call' in prompt,prompt
- assert 'do not repeat search_files after relevant paths are returned' in prompt,prompt
- assert 'do not guess test or configuration filenames' in prompt,prompt
+ assert 'reuse relevant paths, test commands, and results already established' in prompt,prompt
+ assert 'search or reread only when needed information is missing' in prompt,prompt
+ assert 'use the project command established in prior context or project documentation' in prompt,prompt
+ assert 'do not repeat a successful test or diff check unless the workspace changed' in prompt,prompt
  assert terminal_env('TERMINAL_ENV') == 'docker'
  assert terminal_env('TERMINAL_DOCKER_NETWORK') == 'false'
  assert terminal_env('TERMINAL_DOCKER_FORWARD_ENV') == '[]'
