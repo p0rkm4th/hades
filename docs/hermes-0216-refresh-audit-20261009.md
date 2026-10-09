@@ -17,8 +17,10 @@
   ">=3.11,<3.15"`, with an adjacent comment that 3.14 is the newest supported
   Python and older versions are allowed to permit existing installs to update.
 
-Authoritative sources: [Hermes Agent releases](https://github.com/NousResearch/hermes-agent/releases)
-and [v0.21.6 pyproject.toml](https://github.com/NousResearch/hermes-agent/blob/v0.21.6/pyproject.toml).
+Authoritative sources: [Hermes Agent releases](https://github.com/NousResearch/hermes-agent/releases),
+[v0.21.6 pyproject.toml](https://github.com/NousResearch/hermes-agent/blob/v0.21.6/pyproject.toml),
+[v0.21.6 Hindsight plugin catalog record](https://github.com/NousResearch/hermes-agent/blob/v0.21.6/plugin-catalog/hindsight.yaml),
+and the [uv 0.12.15 release](https://github.com/astral-sh/uv/releases/tag/0.12.15).
 
 ## Decision
 
@@ -31,18 +33,39 @@ acceptance gates.
 
 ## HADES compatibility finding and repair
 
-The installer rejected all Python 3.14 interpreters, even for Hermes 0.21.6.
-This made the candidate benchmark environment (Python 3.14.7) differ from the
-supported HADES installation path. `scripts/install-hermes-artifact.sh` now
-accepts an explicit `--version 0.21.6` candidate install on Python 3.14 while
-keeping the default production 0.21.2 install restricted to Python 3.11–3.13.
-The selected version is recorded in the artifact provenance.
+The installer initially rejected all Python 3.14 interpreters, even for
+Hermes 0.21.6. After allowing that candidate version, a real install exposed a
+second mismatch: Hermes 0.21.6 removed the `hindsight` optional extra. Its
+official `plugin-catalog/hindsight.yaml` instead points to the Hindsight-owned
+Hermes integration (catalog version 1.2.1, commit `d56c4ac`, requiring Hermes
+`>=0.21.4`). The installer now uses versioned dependency profiles: 0.21.2
+retains its upstream `hindsight` extra, while 0.21.6 installs the locked
+`all` profile and leaves the separately managed memory plugin to the plugin
+catalog.
 
-The focused installer contract checks both sides: 0.21.2 remains rejected on
-Python 3.14, while an explicit 0.21.6 candidate install is accepted and records
-its version. This uses a mocked interpreter and package manager; it does not
-prove a full network install, successful import, or service startup on Python
-3.14. Those remain candidate qualification gates.
+A third issue was visible after installation: source archives have no `.git`
+directory, and Hermes deliberately reports an unknown version without its
+native `install-stamp.json`. The installer now invokes Hermes 0.21.6's own
+`scripts/write_install_stamp.py` with the pinned commit, version, and external
+update owner. The CLI now reports `Hermes Agent v0.21.6 ... upstream 818c13be`
+instead of an unknown version. The stamp and adjacent HADES provenance file
+both identify the exact source commit and artifact hash.
+
+A real temporary installation then passed on Python 3.14.7 using the exact
+Hermes archive SHA above and uv 0.12.15. The official uv release asset digest
+was verified as
+`f97935763c04be3e692460a7aaeaaab8fc3b78fcf8b389da820b38ae7423a638`. Locked
+sync installed 106 packages; `import hermes_cli.main` passed and the generated
+Hermes command ran. Artifact provenance recorded source version 0.21.6 and the
+expected archive SHA. The temporary install/cache was removed when the run
+ended.
+
+The focused installer contract checks both dependency profiles and the
+Python boundary: 0.21.2 remains rejected on Python 3.14 and retains its
+Hindsight extra, while 0.21.6 is accepted, omits that obsolete extra, and
+stamps the pinned identity. This proves the candidate artifact install/import
+path, not HADES overlay startup, plugin installation, or service/restart
+behavior.
 
 ## Overlay review state
 
@@ -56,9 +79,8 @@ by-responsibility clean-Hermes comparison remains open; see
 
 ## Remaining gates
 
-- Install the pinned 0.21.6 archive through the revised installer on a clean
-  Python 3.14 environment, then verify provenance, locked dependency sync,
-  imports, service startup, and restart behavior.
+- Resolve the CLI's `vunknown` display for archive installs, then verify HADES
+  overlay startup, plugin installation, service startup, and restart behavior.
 - Finish the overlay responsibility audit and disable each candidate shim in
   turn before deciding whether native behavior replaces it.
 - Complete owner-visible authenticated acceptance and compare ordinary chat,

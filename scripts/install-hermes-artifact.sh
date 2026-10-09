@@ -24,6 +24,7 @@ if [[ -f "$repo_dir/config/versions.env" ]]; then
   source "$repo_dir/config/versions.env"
 fi
 hermes_source_version=${HADES_HERMES_SOURCE_VERSION:-${HADES_HERMES_VERSION:-}}
+hermes_source_commit=${HADES_HERMES_SOURCE_COMMIT:-}
 uv_version=${HADES_HERMES_UV_VERSION:-}
 if [[ -z "$uv_bin" ]]; then
   if [[ -n "$uv_version" && -x "/opt/hades-hermes-tools/uv-$uv_version/bin/uv" ]]; then
@@ -39,7 +40,8 @@ while (($#)); do
     --url) url=${2:?--url needs a URL}; shift 2 ;;
     --sha256) expected_sha=${2:?--sha256 needs a checksum}; shift 2 ;;
     --version) hermes_source_version=${2:?--version needs a version}; shift 2 ;;
-    -h|--help) echo 'usage: install-hermes-artifact.sh --prefix ABS_DIR [--artifact ABS_FILE | --url URL --sha256 SHA256] [--version VERSION]'; exit 0 ;;
+    --commit) hermes_source_commit=${2:?--commit needs a commit SHA}; shift 2 ;;
+    -h|--help) echo 'usage: install-hermes-artifact.sh --prefix ABS_DIR [--artifact ABS_FILE | --url URL --sha256 SHA256] [--version VERSION --commit SHA]'; exit 0 ;;
     *) echo "FAIL unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -62,6 +64,19 @@ validate_build_tools() {
     echo "FAIL Hermes build requires uv ${uv_version:-from config/versions.env} (found ${uv_reported:-unavailable})" >&2; exit 1;
   }
 }
+case "$hermes_source_version" in
+  0.21.2) hermes_sync_args=(--extra all --extra hindsight --locked) ;;
+  # Hermes 0.21.6 moved Hindsight to its external memory-plugin catalog; its
+  # pyproject no longer declares the 0.21.2 `hindsight` extra.
+  0.21.6)
+    hermes_sync_args=(--extra all --locked)
+    hermes_source_commit=${hermes_source_commit:-${HADES_HERMES_CANDIDATE_SOURCE_COMMIT:-}}
+    [[ "$hermes_source_commit" =~ ^[0-9a-f]{40}$ ]] || {
+      echo 'FAIL Hermes 0.21.6 install requires its exact source commit SHA' >&2; exit 1;
+    }
+    ;;
+  *) echo "FAIL Hermes ${hermes_source_version:-unknown} has no reviewed dependency-install profile" >&2; exit 1 ;;
+esac
 if [[ -n "$artifact" ]]; then
   [[ "$artifact" == /* && -f "$artifact" && ! -L "$artifact" ]] || { echo 'FAIL Hermes artifact must be an absolute regular file' >&2; exit 1; }
   [[ -n "$expected_sha" ]] || expected_sha="${HADES_HERMES_SOURCE_SHA256:-}"
@@ -91,8 +106,17 @@ mv "$source_dir" "$prefix/source"
   cd "$prefix/source"
   UV_PROJECT_ENVIRONMENT="$prefix/venv" \
     UV_PYTHON="$prefix/venv/bin/python" \
-    "$uv_bin" sync --extra all --extra hindsight --locked
+    "$uv_bin" sync "${hermes_sync_args[@]}"
 )
+if [[ "$hermes_source_version" == '0.21.6' ]]; then
+  stamp_writer="$prefix/source/scripts/write_install_stamp.py"
+  [[ -f "$stamp_writer" ]] || { echo 'FAIL Hermes 0.21.6 source lacks its native install-stamp writer' >&2; exit 1; }
+  "$python_bin" "$stamp_writer" \
+    --output "$prefix/source/install-stamp.json" \
+    --commit "$hermes_source_commit" \
+    --base-version "$hermes_source_version" \
+    --distance 0 --source build --update-mechanism external
+fi
 install -d -m 0755 "$prefix/bin"
 printf '%s\n' '#!/usr/bin/env bash' "exec $prefix/venv/bin/python -m hermes_cli.main \"\$@\"" > "$prefix/bin/hermes"
 chmod 0755 "$prefix/bin/hermes"
