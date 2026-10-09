@@ -82,6 +82,53 @@ was promoted. The result narrows the next experiment to whether server-side
 retain operation IDs can be observed and joined across provider instances
 without waiting on the user-facing reply path.
 
+## Privacy gate for operation-aware readiness
+
+The pinned Hindsight v0.10.3 source adds terminal operation retention, but its
+configuration defaults `HINDSIGHT_API_OPERATION_RETENTION_DAYS` to `0`, which
+keeps operation rows indefinitely. Retain operation rows can include the
+submitted payload, so an operation-aware path must not be promoted with an
+unbounded payload journal. For any v0.10.3 deployment candidate, set a bounded
+positive retention window and verify the database backend supports the
+upstream cleanup routine; do not log operation IDs or payloads. This is a
+candidate-upgrade gate, not a claim about the currently configured production
+Hindsight 0.9.2 runtime. See the [v0.10.3 source release](https://github.com/vectorize-io/hindsight/releases/tag/v0.10.3),
+the exact [`config.py` revision](https://github.com/vectorize-io/hindsight/blob/eb6df499d35300e5b2f3f029b2e6adda04ed90f8/hindsight-api-slim/hindsight_api/config.py),
+and the [operation API contract](https://github.com/vectorize-io/hindsight/blob/eb6df499d35300e5b2f3f029b2e6adda04ed90f8/skills/hindsight-docs/references/developer/api/operations.md).
+
+## Bank-scoped readiness candidate, compared by retain profile
+
+A temporary HADES prefetch adapter queried only `pending` and `processing`
+`retain` operations for its already-authenticated subject bank, capped its
+wait at 1.25 seconds, requested chunks, and logged only aggregate state and
+elapsed time. The disposable Hindsight service was configured with a
+one-day terminal-operation retention window; expiration itself was not
+exercised. In two single-sample counterbalanced runs using Hindsight's
+chunks/plain-retrieval profile, HADES recalled the fresh synthetic fact in
+both orders (2.99–3.35 seconds); operation visibility took 0.35 seconds when
+the bank was already clear. This shows a promising readiness path for that
+profile only. The synthetic tests do not qualify semantic memory quality,
+corrections, or owner preference.
+
+The same adapter with normal concise retention did not solve the problem. It
+waited its 1.25-second cap while retain remained active, then missed the
+immediate cross-session fact in 33.10 seconds. Hindsight drained in 16.21
+seconds, and a later HADES recall succeeded in 10.01 seconds. A direct
+post-turn probe then found the synthetic marker in one `world` result, with
+zero returned chunks; that probe occurred after the slow HADES turn and does
+not establish availability at the time of the miss. This sample also recorded
+Hindsight extractor calls of 15.30 and 24.94 seconds, so model contention
+remains a material part of the delay. **Do not promote this adapter or chunks
+profile:** the former does not fix concise-mode readiness; the latter changes
+memory behavior and still needs realistic quality and correction evaluation.
+
+Artifacts: [chunks, PLAIN first](../benchmarks/hades-core-memory-operation-aware-chunks-plain-first-20261009.json),
+[chunks, HADES first](../benchmarks/hades-core-memory-operation-aware-chunks-hades-first-20261009.json),
+[concise failure](../benchmarks/hades-core-memory-operation-aware-concise-plain-first-20261009.json),
+and [concise post-turn source probe](../benchmarks/hades-core-memory-operation-aware-concise-chunk-probe-plain-first-20261009.json).
+All retain aggregate timings/statuses only; they contain no submitted operation
+payload or raw conversation text.
+
 ## Native Hermes prefetch check
 
 Two earlier opposite-order probes temporarily disabled HADES' direct
