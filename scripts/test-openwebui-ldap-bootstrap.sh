@@ -8,6 +8,7 @@ umask 077
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # shellcheck disable=SC1091
 source "$repo_dir/config/versions.env"
+source "$repo_dir/scripts/open-webui-candidate-test-runtime.sh"
 image=${HADES_OPEN_WEBUI_LDAP_TEST_IMAGE:-hades-open-webui:0.11.4-candidate}
 image_id=$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null) || {
   echo "FAIL candidate image is not cached: $image" >&2
@@ -24,6 +25,7 @@ lldap="hades-owui-ldap-directory-$suffix"
 webui="hades-owui-ldap-web-$suffix"
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-owui-ldap.XXXXXX")
 cleanup() {
+  hades_candidate_runtime_cleanup
   docker stop "$webui" "$lldap" >/dev/null 2>&1 || true
   for container in "$webui" "$lldap"; do
     for _ in $(seq 1 50); do
@@ -57,6 +59,7 @@ if [[ "$(id -u)" == 0 ]]; then
 fi
 
 docker network create "$network" >/dev/null
+hades_candidate_runtime_start "$network" "ldap-bootstrap-$suffix"
 docker run --rm -d --name "$lldap" --network "$network" \
   -e UID=1000 -e GID=1000 -e TZ=UTC \
   -e LLDAP_LDAP_BASE_DN=dc=hades,dc=local -e LLDAP_LDAP_USER_DN=admin \
@@ -85,7 +88,8 @@ docker exec -e LLDAP_URL=http://localhost:17170 -e LLDAP_ADMIN_USERNAME=admin \
 run_order() {
   local order=$1 first=$2 second=$3 first_role=$4 second_role=$5 data_dir="$work/data-$1"
   local port
-  docker run --rm -d --name "$webui" --network "$network" -p 127.0.0.1::8080 \
+  docker run --rm -d --name "$webui" -p 127.0.0.1::8080 \
+    "${HADES_CANDIDATE_RUNTIME_ARGS[@]}" \
     -e ENABLE_SIGNUP=false -e ENABLE_LOGIN_FORM=true -e ENABLE_LDAP=true \
     -e ENABLE_OLLAMA_API=false -e RAG_EMBEDDING_ENGINE=ollama \
     -e LDAP_SERVER_HOST="$lldap" -e LDAP_SERVER_PORT=3890 -e LDAP_USE_TLS=false \

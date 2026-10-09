@@ -6,13 +6,16 @@ set -Eeuo pipefail
 # temporary volume, and the only published port is a loopback test port.
 name="hades-private-chat-soak-$$"
 volume="hades-private-chat-soak-$$"
+network="hades-private-chat-soak-net-$$"
 webui_port=${HADES_PRIVATE_CHAT_WEBUI_PORT:-18795}
 model_port=${HADES_PRIVATE_CHAT_MODEL_PORT:-18796}
 image=${HADES_PRIVATE_CHAT_WEBUI_IMAGE:-hades-open-webui:0.11.1-hades-reconstructed}
 tmp=$(mktemp -d /tmp/hades-private-chat-soak.XXXXXX)
 cleanup() {
+  hades_candidate_runtime_cleanup
   docker rm -f "$name" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true
+  docker network rm "$network" >/dev/null 2>&1 || true
   kill "${backend_pid:-}" >/dev/null 2>&1 || true
   if [[ -d "$tmp" ]]; then
     find "$tmp" -depth -mindepth 1 -delete 2>/dev/null || true
@@ -20,6 +23,7 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+source "$(dirname "${BASH_SOURCE[0]}")/open-webui-candidate-test-runtime.sh"
 
 cat > "$tmp/backend.py" <<'PY'
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -61,8 +65,10 @@ PY
 python3 "$tmp/backend.py" >/dev/null 2>&1 &
 backend_pid=$!
 docker volume create "$volume" >/dev/null
+docker network create "$network" >/dev/null
+hades_candidate_runtime_start "$network" "private-chat-$$"
 docker run -d --name "$name" -p "127.0.0.1:${webui_port}:8080" \
-  --add-host host.docker.internal:host-gateway \
+  "${HADES_CANDIDATE_RUNTIME_ARGS[@]}" \
   -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
   -e RAG_EMBEDDING_ENGINE=ollama -v "$volume:/app/backend/data" \
   "$image" >/dev/null

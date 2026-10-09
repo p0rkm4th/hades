@@ -5,6 +5,7 @@ umask 077
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 image=${1:?usage: test-openwebui-docx-preview-security.sh IMAGE}
 source "$repo_dir/config/versions.env"
+source "$repo_dir/scripts/open-webui-candidate-test-runtime.sh"
 image_id=$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null) || {
   echo 'FAIL candidate image must already exist locally; refusing an implicit pull' >&2
   exit 2
@@ -29,6 +30,7 @@ mock="hades-docx-ollama-$suffix"
 webui="hades-docx-webui-$suffix"
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-docx-preview.XXXXXX")
 cleanup() {
+  hades_candidate_runtime_cleanup
   docker rm -f "$webui" "$mock" >/dev/null 2>&1 || true
   docker network rm "$network" >/dev/null 2>&1 || true
   find "$work" -depth -mindepth 1 -delete 2>/dev/null || true
@@ -37,6 +39,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 docker network create "$network" >/dev/null
+hades_candidate_runtime_start "$network" "docx-$suffix"
 cat >"$work/mock-ollama.py" <<'PY'
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -110,7 +113,8 @@ PY
 
 docker run --rm -d --name "$mock" --network "$network" --network-alias ollama-mock \
   --entrypoint python3 -v "$work:/test:ro" "$image_id" /test/mock-ollama.py >/dev/null
-docker run --rm -d --name "$webui" --network "$network" -p 127.0.0.1::8080 \
+docker run --rm -d --name "$webui" -p 127.0.0.1::8080 \
+  "${HADES_CANDIDATE_RUNTIME_ARGS[@]}" \
   -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true \
   -e OLLAMA_BASE_URL=http://ollama-mock:11434 -e RAG_EMBEDDING_ENGINE=ollama \
   "$image_id" >/dev/null

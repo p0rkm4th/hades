@@ -5,6 +5,9 @@ set -Eeuo pipefail
 # mounted; one synthetic 0.11.1 user/chat volume is handed to the candidate.
 old_image=${1:?usage: test-open-webui-populated-migration.sh OLD_IMAGE CANDIDATE_IMAGE}
 new_image=${2:?usage: test-open-webui-populated-migration.sh OLD_IMAGE CANDIDATE_IMAGE}
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# shellcheck disable=SC1091
+source "$repo_dir/config/versions.env"
 bash "$(dirname "$0")/verify-openwebui-candidate-artifact.sh" "$new_image"
 old_version=$(docker image inspect "$old_image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')
 new_version=$(docker image inspect "$new_image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')
@@ -16,6 +19,9 @@ name="hades-open-webui-migration-$suffix"
 volume="hades-open-webui-migration-$suffix"
 rollback_name="hades-open-webui-rollback-$suffix"
 rollback_volume="hades-open-webui-rollback-$suffix"
+auth_state_volume="hades-open-webui-migration-auth-state-$suffix"
+network="hades-open-webui-migration-net-$suffix"
+auth_state_name="hades-open-webui-migration-auth-state-$suffix"
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
 backend_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/hades-open-webui-migration.XXXXXX")
@@ -26,6 +32,9 @@ cleanup() {
   docker stop "$rollback_name" >/dev/null 2>&1 || true
   docker rm "$rollback_name" >/dev/null 2>&1 || true
   docker volume rm "$rollback_volume" >/dev/null 2>&1 || true
+  docker volume rm "$auth_state_volume" >/dev/null 2>&1 || true
+  docker rm -f "$auth_state_name" >/dev/null 2>&1 || true
+  docker network rm "$network" >/dev/null 2>&1 || true
   kill "${backend_pid:-}" >/dev/null 2>&1 || true
   find "$tmp" -depth -mindepth 1 -delete 2>/dev/null || true
   rmdir "$tmp" 2>/dev/null || true
@@ -56,16 +65,24 @@ PY
 BACKEND_PORT="$backend_port" python3 "$tmp/backend.py" >/dev/null 2>&1 &
 backend_pid=$!
 docker volume create "$volume" >/dev/null
+docker volume create "$auth_state_volume" >/dev/null
+docker network create "$network" >/dev/null
 
 start_image() {
+  local security_env=()
+  if [[ "$1" == "$new_image" ]]; then
+    security_env=(-e REDIS_URL=redis://hades-valkey:6379/0 -e WEBSOCKET_MANAGER=redis -e WEBSOCKET_REDIS_URL=redis://hades-valkey:6379/1)
+  fi
   docker rm "$name" >/dev/null 2>&1 || true
   docker run -d --name "$name" \
+    --network "$network" \
     -p "127.0.0.1:${port}:8080" \
     --add-host host.docker.internal:host-gateway \
     -v "$volume:/app/backend/data" \
     -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
     -e WEBUI_SECRET_KEY=synthetic-openwebui-backup-test-key \
     -e ENABLE_CHANNELS=true -e USER_PERMISSIONS_FEATURES_CHANNELS=true \
+    "${security_env[@]}" \
     "$1" >/dev/null
   for _ in $(seq 1 90); do
     curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1 && break
@@ -157,6 +174,15 @@ docker rm "$name" >/dev/null
 docker run --rm -v "$volume:/data:ro" -v "$tmp:/backup" --entrypoint tar "$old_image" \
   -C /data -czf /backup/pre-upgrade-data.tar.gz .
 printf 'PASS full stopped application-data volume snapshot captured (SQLite, uploads, and colocated state)\n'
+docker run -d --name "$auth_state_name" --network "$network" --network-alias hades-valkey \
+  -v "$auth_state_volume:/data" "$HADES_OPEN_WEBUI_VALKEY_IMAGE" \
+  valkey-server --appendonly yes --appendfsync always >/dev/null
+for _ in $(seq 1 30); do
+  if docker exec "$auth_state_name" valkey-cli ping 2>/dev/null | rg -q PONG; then break; fi
+  sleep 1
+done
+docker exec "$auth_state_name" valkey-cli ping | rg -q PONG
+printf 'PASS pinned persistent auth-state service ready for migrated candidate\n'
 start_image "$new_image"
 login=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/signin" \
   -H 'Content-Type: application/json' \

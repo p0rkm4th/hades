@@ -7,6 +7,7 @@ umask 077
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 source "$repo_dir/config/versions.env"
 image=${HADES_DISABLED_ROLE_TEST_IMAGE:-hades-open-webui:0.11.1-hades-reconstructed}
+source "$repo_dir/scripts/open-webui-candidate-test-runtime.sh"
 command -v docker >/dev/null 2>&1 || { echo 'FAIL Docker is required' >&2; exit 2; }
 if [[ "${HADES_VERIFY_OPEN_WEBUI_CANDIDATE:-0}" == 1 ]]; then
   bash "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" "$image"
@@ -16,12 +17,17 @@ image_id=$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null) || {
   exit 2
 }
 container="hades-disabled-role-session-$$"
-docker run --rm -d --name "$container" -p 127.0.0.1::8080 \
+network="hades-disabled-role-net-$$"
+docker network create "$network" >/dev/null
+hades_candidate_runtime_start "$network" "disabled-role-$$"
+docker run --rm -d --name "$container" "${HADES_CANDIDATE_RUNTIME_ARGS[@]}" -p 127.0.0.1::8080 \
   -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true \
   -e ENABLE_OLLAMA_API=false -e RAG_EMBEDDING_ENGINE=ollama \
   "$image_id" >/dev/null
 cleanup() {
   docker stop "$container" >/dev/null 2>&1 || true
+  hades_candidate_runtime_cleanup
+  docker network rm "$network" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT INT TERM
 port=$(docker port "$container" 8080/tcp | sed 's/.*://')

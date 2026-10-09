@@ -16,16 +16,14 @@ GHCR `linux/amd64` image manifest digest is
 `sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f`;
 it was independently resolved from the official GHCR registry on 2026-10-08.
 
-The manifest-bound HADES image is `hades-open-webui:0.11.4-candidate-bound`,
-image ID `sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469`.
-It was built from HADES commit `e33b7d18c889775260e5ace804aac0ebf598d8d8`,
-using the candidate upstream digest above. The image labels record both values.
-Compared with the previously exercised image ID
-`sha256:606aee1147dd9e7814f34f6b09a3006767e875c7352e743a32933c676e4d1808`,
-all 38 filesystem layers and all non-label image configuration fields are
-identical; only the two HADES provenance labels were added. The acceptance
-results below apply to the manifest-bound artifact's identical filesystem and
-runtime configuration.
+The current manifest-bound HADES candidate is
+`hades-open-webui:0.11.4-p0-candidate`, image ID
+`sha256:d4c7e8aa08b35ddb81c2098db1fcbb7a6703f774d3000d2c088632b7053564a5`.
+It was built from HADES commit `725b7991e4f776ed074758820d81a59ee916ef80`,
+using the candidate upstream digest above. Image labels bind the source commit,
+base digest, and security adapter set. The earlier image ID
+`sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469`
+is historical DOCX-preview evidence only; it is not the current P0 candidate.
 
 ## Security and product changes relevant to HADES
 
@@ -79,6 +77,19 @@ These are synthetic staging checks. The cross-user replay directly exercises
 the documented session-token theft chain, but it does not prove production
 backup integrity, external secret custody, live cutover/restore, or owner
 preference.
+
+The current candidate passes
+`scripts/test-open-webui-auth-revocation-candidate.py` against its exact image
+ID. This runtime test verifies authenticated cross-container Socket.IO session
+registration and disconnection after sign-out, role demotion, and account
+deletion; token rejection; fail-closed behavior during auth-state store outage;
+retry after store recovery; Valkey AOF restart persistence; isolated RDB
+validation/restore; password-change revocation; and JWT issue-time behavior at
+the revocation timestamp edge. The LDAP empty-group, populated migration and
+rollback, private-chat, Channels, LDAP bootstrap, disabled-role, upload
+isolation, and DOCX replay gates have also passed against this exact candidate
+image ID `sha256:d4c7e8aa08b35ddb81c2098db1fcbb7a6703f774d3000d2c088632b7053564a5`.
+These remain synthetic staging evidence, not live production acceptance.
 
 Run revisions, exact candidate and positive-control image IDs, cross-user
 results, and source-hash bindings are recorded in the

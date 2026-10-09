@@ -2,16 +2,22 @@
 set -euo pipefail
 
 # Disposable authenticated acceptance for pinned Open WebUI Channels.
-name=hades-channels-fixture
-volume=hades-channels-fixture-data
+suffix=$$
+name=hades-channels-fixture-$suffix
+volume=hades-channels-fixture-data-$suffix
+network=hades-channels-fixture-net-$suffix
 port=${HADES_CHANNELS_WEBUI_PORT:-18769}
 image=${HADES_CHANNELS_WEBUI_IMAGE:-hades-open-webui:channel-stage}
 startup_attempts=${HADES_CHANNELS_STARTUP_ATTEMPTS:-120}
+source "$(dirname "${BASH_SOURCE[0]}")/open-webui-candidate-test-runtime.sh"
 
 docker rm -f "$name" >/dev/null 2>&1 || true
 docker volume rm "$volume" >/dev/null 2>&1 || true
 docker volume create "$volume" >/dev/null
+docker network create "$network" >/dev/null
+hades_candidate_runtime_start "$network" "channels-$suffix"
 docker run -d --name "$name" \
+  "${HADES_CANDIDATE_RUNTIME_ARGS[@]}" \
   -p "127.0.0.1:${port}:8080" \
   -v "$volume":/app/backend/data \
   -e ENABLE_SIGNUP=true \
@@ -21,8 +27,10 @@ docker run -d --name "$name" \
   "$image" >/dev/null
 
 cleanup() {
+  hades_candidate_runtime_cleanup
   docker rm -f "$name" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true
+  docker network rm "$network" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 

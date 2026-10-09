@@ -83,7 +83,18 @@ def wait_health(url: str, name: str, attempts: int) -> None:
                 return
         except Exception:
             time.sleep(1)
-    raise RuntimeError(f"{name} did not become healthy")
+    raise RuntimeError(f"{name} did not become healthy after {attempts}s: {url}")
+
+
+def wait_container_health(container: str, name: str, attempts: int) -> None:
+    for _ in range(attempts):
+        state = run(["docker", "inspect", container, "--format", "{{.State.Health.Status}}"]).stdout.strip()
+        if state == "healthy":
+            return
+        if state == "unhealthy":
+            raise RuntimeError(f"{name} became unhealthy")
+        time.sleep(1)
+    raise RuntimeError(f"{name} did not become healthy after {attempts}s")
 
 
 def main() -> None:
@@ -295,7 +306,17 @@ def main() -> None:
             if memberships(beta["id"]) != membership_before_outage:
                 raise RuntimeError("LDAP outage changed a nonempty authoritative membership set")
             run(["docker", "start", lldap])
-            wait_health(lldap_url + "/health", "LLDAP after outage recovery", 60)
+            try:
+                wait_container_health(lldap, "LLDAP after outage recovery", 60)
+            except RuntimeError as error:
+                details = run(["docker", "inspect", lldap, "--format", "{{json .State}} {{json .State.Health}}"])
+                logs = subprocess.run(["docker", "logs", lldap], capture_output=True, text=True)
+                raise RuntimeError(
+                    f"{error}; state={details.stdout}; logs={logs.stdout[-1800:]} {logs.stderr[-800:]}"
+                ) from error
+            # Docker may allocate a new host port when restarting a container
+            # created with an ephemeral published port.
+            lldap_url = f"http://127.0.0.1:{dynamic_port(lldap, '17170/tcp')}"
             print("PASS LDAP outage returns 503 and preserves nonempty authoritative membership")
 
             remove_group("hades-users")

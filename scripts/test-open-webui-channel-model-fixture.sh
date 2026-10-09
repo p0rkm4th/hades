@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
-name=hades-channel-model-fixture
-volume=hades-channel-model-fixture-data
+suffix=$$
+name=hades-channel-model-fixture-$suffix
+volume=hades-channel-model-fixture-data-$suffix
+network=hades-channel-model-fixture-net-$suffix
 port=${HADES_CHANNEL_MODEL_WEBUI_PORT:-18792}
 backend_port=${HADES_CHANNEL_MODEL_BACKEND_PORT:-18793}
 image=${HADES_CHANNEL_MODEL_WEBUI_IMAGE:-hades-open-webui:channel-stage-patched}
 tmp=$(mktemp -d)
 backend="$tmp/backend.py"
-trap 'docker rm -f "$name" >/dev/null 2>&1 || true; docker volume rm "$volume" >/dev/null 2>&1 || true; kill "${backend_pid:-}" >/dev/null 2>&1 || true; rm -rf -- "$tmp"' EXIT
+source "$(dirname "${BASH_SOURCE[0]}")/open-webui-candidate-test-runtime.sh"
+trap 'hades_candidate_runtime_cleanup; docker rm -f "$name" >/dev/null 2>&1 || true; docker volume rm "$volume" >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true; kill "${backend_pid:-}" >/dev/null 2>&1 || true; rm -rf -- "$tmp"' EXIT
 cat >"$backend" <<'PY'
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json, os, time
@@ -29,6 +32,8 @@ PY
 docker rm -f "$name" >/dev/null 2>&1 || true
 docker volume rm "$volume" >/dev/null 2>&1 || true
 docker volume create "$volume" >/dev/null
+docker network create "$network" >/dev/null
+hades_candidate_runtime_start "$network" "channel-model-$suffix"
 HADES_CHANNEL_MODEL_BACKEND_PORT="$backend_port" python3 "$backend" >/dev/null 2>&1 &
 backend_pid=$!
 for attempt in $(seq 1 30); do
@@ -36,7 +41,7 @@ for attempt in $(seq 1 30); do
     [[ "$attempt" == 30 ]] && { echo 'FAIL synthetic model backend did not become ready' >&2; exit 1; }
     sleep 1
 done
-docker run -d --name "$name" -p "127.0.0.1:${port}:8080" --add-host host.docker.internal:host-gateway -v "$volume":/app/backend/data -e ENABLE_SIGNUP=true -e ENABLE_CHANNELS=true -e USER_PERMISSIONS_FEATURES_CHANNELS=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false -e RAG_EMBEDDING_ENGINE=ollama "$image" >/dev/null
+docker run -d --name "$name" "${HADES_CANDIDATE_RUNTIME_ARGS[@]}" -p "127.0.0.1:${port}:8080" -v "$volume":/app/backend/data -e ENABLE_SIGNUP=true -e ENABLE_CHANNELS=true -e USER_PERMISSIONS_FEATURES_CHANNELS=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false -e RAG_EMBEDDING_ENGINE=ollama "$image" >/dev/null
 for attempt in $(seq 1 60); do
     curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1 && break
     [[ "$attempt" == 60 ]] && { echo 'FAIL Open WebUI model fixture did not become healthy' >&2; exit 1; }
