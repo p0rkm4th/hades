@@ -1416,5 +1416,35 @@
     "limitations": "Two synthetic pairs on one small typo fixture; direct Hermes AIAgent route, no human answer-quality review, Open WebUI persistence, deployed parity, or Scotty preference. HADES skipped the explicit diff-review turn in one repeat but inspected the diff before committing in both.",
     "metrics_record": "benchmarks/hades-core-owner-workflow-to-commit-current-stable-20261008.json",
     "report": "docs/hades-core-owner-workflow-to-commit-current-stable-2026-10-08.md"
+  },
+  "latest_workspace_discovery_prompt_comparison": {
+    "case_ids": [
+      "core-25",
+      "core-26"
+    ],
+    "source_revision": "75038dc0d88166a594c5fa0d348ebd3c244f93db",
+    "classification": "two-repeat synthetic diagnose-then-fix comparison; no owner preference or human answer-quality review",
+    "runtime": "Hermes 0.21.6, Ollama 0.40.1, Qwen3.6:35b Q4_K_M digest a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c, verified 65,536 context, rootless Docker 29.8.2, immutable sandbox image sha256:339e5b5a859e23b7cbf0e6fb5376a29cfbc8115af58317cf1b5bc118a04e4fe1",
+    "median_task_seconds": {
+      "plain": 31.4957,
+      "hades": 36.93395
+    },
+    "median_provider_calls_per_task": {
+      "plain": 7,
+      "hades": 6
+    },
+    "median_tool_results_per_task": {
+      "plain": 7.5,
+      "hades": 6
+    },
+    "diagnosis_workspace_changed_turns": {
+      "plain": 1,
+      "hades": 0
+    },
+    "independent_tests_passed": 4,
+    "owner_preference": "UNASSIGNED",
+    "limitations": "Two synthetic pairs on one fixture; PLAIN modified the workspace during diagnosis in one repeat, so task outcomes differ. Direct AIAgent path only; no human answer-quality review, Open WebUI persistence, deployed parity, Git workflow, or Scotty preference. Latency is diagnostic only.",
+    "metrics_record": "benchmarks/hades-core-workspace-discovery-prompt-v1-20261008.json",
+    "report": "docs/hades-core-workspace-discovery-prompt-comparison-2026-10-08.md"
   }
 }
