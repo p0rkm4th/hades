@@ -5,6 +5,27 @@ release status differs. It records authoritative release state and tracked
 pins. A current upstream release is not evidence that HADES production runs
 that version.
 
+## Fresh release recheck — 2026-10-09
+
+The official GitHub Releases API was queried again on 2026-10-09, selecting
+the newest non-draft, non-prerelease release for each core repository. The
+latest stable versions remain Open WebUI 0.11.4 (2026-09-21), Hermes Agent
+0.21.6 (2026-10-08), Ollama 0.40.2 (2026-10-08), and Hindsight 0.10.3
+(2026-10-08). No release-only upgrade decision changed since the check below.
+
+The local Ollama endpoint is unavailable, the default `~/.ollama` directory
+contains no model data, and `/opt/hades-stage` is absent. The matched
+0.40.1/Qwen3.6 35B results remain the latest runtime comparison evidence; no
+0.40.2 latency comparison was run or inferred. Production pins remain Open
+WebUI 0.11.1, Hermes 0.21.2,
+and Hindsight image digest `sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`;
+the 0.11.4, 0.21.6, and 0.10.3 artifacts remain staging candidates.
+
+Sources rechecked: [Open WebUI releases](https://github.com/open-webui/open-webui/releases),
+[Hermes Agent releases](https://github.com/NousResearch/hermes-agent/releases),
+[Ollama releases](https://github.com/ollama/ollama/releases), and
+[Hindsight releases](https://github.com/vectorize-io/hindsight/releases).
+
 ## Owner-facing and core runtime components
 
 | Component | HADES production / candidate record | Latest stable checked 2026-10-08 | Decision |
