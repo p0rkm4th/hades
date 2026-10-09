@@ -1106,5 +1106,6 @@
     "The owner core-09 recall is measured once immediately after save and again for both stacks after HADES background memory work drains; readiness delay and settled recall are separate outcomes.",
     "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
     "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review."
-  ]
+  ],
+  "source_worktree_state": "Uncommitted candidate overlay changes were active during this replay; the reviewed candidate change set was later published as eb6a8a5d23bea90c17264a2a5a0db0784eda25a1. See CAMPAIGN_STATE.md and artifact title for the change stage; source_revision is the checked-out base SHA."
 }

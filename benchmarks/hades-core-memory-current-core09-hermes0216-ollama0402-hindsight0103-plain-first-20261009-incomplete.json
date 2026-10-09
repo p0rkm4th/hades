@@ -607,5 +607,6 @@
       "loaded_model_size_vram_bytes": 12912427006
     }
   ],
-  "preference_bucket": "UNASSIGNED; no owner dogfood"
+  "preference_bucket": "UNASSIGNED; no owner dogfood",
+  "source_worktree_state": "Uncommitted candidate overlay changes were active during this replay; the reviewed candidate change set was later published as eb6a8a5d23bea90c17264a2a5a0db0784eda25a1. See CAMPAIGN_STATE.md and artifact title for the change stage; source_revision is the checked-out base SHA."
 }
