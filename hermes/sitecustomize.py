@@ -12195,7 +12195,7 @@ try:
                 "the turn until a terminal call runs the relevant test and inspects the diff; "
                 "do not repeat a successful test or diff check unless the workspace changed "
                 "after that check. "
-                "if you cannot do that, state the limitation truthfully. A patch or write "
+                "If you cannot do that, state the limitation truthfully. A patch or write "
                 "result is not test evidence. Say a test "
                 "passed only if a workspace terminal result shows that test completed with exit "
                 "code 0; otherwise say it was not run or did not pass. State file contents or "
