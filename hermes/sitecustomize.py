@@ -12151,6 +12151,12 @@ try:
                 ]
             else:
                 self.tools = _workspace_tools
+            if _workspace_diff_review:
+                # The native diff has already supplied the only needed
+                # evidence. Remove tool schemas entirely for this answer;
+                # some local models can still emit stale terminal calls even
+                # when tool_choice='none' is requested.
+                self.tools = []
             self.valid_tool_names = {
                 tool.get("function", {}).get("name") for tool in self.tools
                 if tool.get("function", {}).get("name")

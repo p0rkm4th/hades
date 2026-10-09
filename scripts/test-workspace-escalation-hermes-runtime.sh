@@ -354,8 +354,8 @@ diff_review_history=[
 ]
 def native_diff_review(agent,user_message,*args,**kwargs):
  agent._current_turn_id='synthetic-diff-review-turn'
- assert set(agent.valid_tool_names)=={'read_file','search_files'},agent.valid_tool_names
- assert {t['function']['name'] for t in agent.tools}=={'read_file','search_files'}
+ assert set(agent.valid_tool_names)==set(),agent.valid_tool_names
+ assert agent.tools==[],agent.tools
  assert agent.request_overrides.get('tool_choice')=='none',agent.request_overrides
  prompt=agent.ephemeral_system_prompt
  assert '<workspace_diff>' in prompt,prompt
