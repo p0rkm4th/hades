@@ -212,17 +212,26 @@ def pinned_image_available(image: str | None = None) -> bool:
     binary = _container_runtime_binary()
     if not binary or not _PINNED_IMAGE.fullmatch(value):
         return False
-    try:
-        result = subprocess.run(
-            [binary, "image", "inspect", "--format", "{{.Id}}", value],
-            capture_output=True,
-            text=True,
-            timeout=3,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return False
-    return result.returncode == 0 and bool(result.stdout.strip())
+    candidates = [value]
+    # Docker records Docker Hub RepoDigests without the optional docker.io/
+    # prefix on some engines. Preserve the immutable digest and try that
+    # canonical spelling only when the operator supplied the explicit prefix.
+    if value.startswith("docker.io/"):
+        candidates.append(value.removeprefix("docker.io/"))
+    for candidate in candidates:
+        try:
+            result = subprocess.run(
+                [binary, "image", "inspect", "--format", "{{.Id}}", candidate],
+                capture_output=True,
+                text=True,
+                timeout=3,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        if result.returncode == 0 and result.stdout.strip():
+            return True
+    return False
 
 
 def _container_runtime_binary() -> str | None:

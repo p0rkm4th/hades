@@ -36,6 +36,8 @@ HADES_HERMES_SANDBOX_IMAGE=docker.io/nikolaik/python-nodejs@sha256:6ed4d9fb74dc6
 "$hermes_python" - "$repo_dir" "$work" <<'PY'
 import os,re,sys
 from pathlib import Path
+from subprocess import CompletedProcess
+from unittest.mock import patch
 import run_agent
 import sitecustomize as hades
 import workspace as workspace_policy
@@ -132,6 +134,17 @@ assert workspace_policy.is_workspace_request(workspace_cases[2])
 assert not workspace_policy.is_workspace_request(workspace_cases[3])
 assert not workspace_policy.is_workspace_request(workspace_cases[4])
 assert not workspace_policy.is_workspace_request(workspace_cases[5])
+configured_image='docker.io/nikolaik/python-nodejs@sha256:'+'6ed4d9fb74dc6c7a5caa9120d8d3c507dbf97fb112b7b09d0d9f7d71f1ce919d'
+canonical_image=configured_image.removeprefix('docker.io/')
+with patch.object(workspace_policy.subprocess,'run',side_effect=(
+ CompletedProcess([],1,'','not found'),CompletedProcess([],0,'sha256:verified-image\n',''),
+)) as image_inspect:
+ assert workspace_policy.pinned_image_available(configured_image)
+ assert [call.args[0][-1] for call in image_inspect.call_args_list] == [configured_image,canonical_image]
+with patch.object(workspace_policy.subprocess,'run') as image_inspect:
+ assert not workspace_policy.pinned_image_available('docker.io/nikolaik/python-nodejs:latest')
+ image_inspect.assert_not_called()
+print('PASS Docker Hub digest aliases preserve the immutable image gate')
 if real_rootless:
  assert workspace_policy.sandbox_runtime_available(), 'configured test daemon must report rootless'
  assert workspace_policy.pinned_image_available(), 'pinned sandbox image must be present in test daemon'
