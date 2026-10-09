@@ -97,6 +97,15 @@ tool because the review allowlist was empty; no command executed. Its 1.33-
 second median advantage over PLAIN does not isolate the effect of the prompt
 addition. Two pairs are too few to show that the added 661 characters improved
 task quality, time, or reliability.
+
+This is consistent with Ollama's OpenAI-compatibility documentation, which
+does not list `tool_choice` as a supported `/v1/chat/completions` request
+field. Treat `tool_choice=none` as a provider hint, not an authorization
+control; the empty HADES dispatch allowlist is what rejected the observed
+attempt. The review schema remains visible for prompt-prefix reuse, so a
+provider may still emit an unusable call. Removing review schemas remains an
+unqualified latency/quality tradeoff, not an automatic fix. See the [Ollama
+compatibility field list](https://github.com/ollama/ollama/blob/main/docs/api/openai-compatibility.mdx#supported-request-fields).
 Reject the prompt addition for now: it has no demonstrated advantage over the
 same-source HADES control and increased context/tool overhead. The experiment
 is synthetic; no owner preference or response-quality rating was collected.

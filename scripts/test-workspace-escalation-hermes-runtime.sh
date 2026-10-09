@@ -410,7 +410,7 @@ diff_review=diff_review_agent.run_conversation(
 assert 'return 1 to return 2' in diff_review.get('final_response',''),diff_review
 assert diff_review_agent.request_overrides=={},diff_review_agent.request_overrides
 assert get_terminal_scope() is None,get_terminal_scope()
-print('PASS explicit diff review retains schemas for caching but denies every tool call')
+print('PASS explicit diff review retains schemas for caching and rejects tool calls at validation')
 calls=[]
 terminal_results=[]
 action_deltas=[]

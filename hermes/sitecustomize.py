@@ -12217,8 +12217,9 @@ try:
                     _workspace_path
                 )
                 # The authenticated native diff is already present as bounded
-                # evidence. Force a model answer without tools so stale tool
-                # calls in the conversation cannot escape the read-only lane.
+                # evidence. Request a model answer without tools. Some
+                # OpenAI-compatible providers ignore tool_choice, so the empty
+                # valid_tool_names set above remains the enforcement boundary.
                 self.request_overrides = {
                     **original_request_overrides,
                     "tool_choice": "none",
