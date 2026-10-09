@@ -112,6 +112,45 @@ irrelevant recall, and subject isolation. See the exact [`Hermes provider`
 source](https://github.com/vectorize-io/hindsight/blob/eb6df499d35300e5b2f3f029b2e6adda04ed90f8/hindsight-integrations/hermes/__init__.py)
 and [strategy resolver](https://github.com/vectorize-io/hindsight/blob/eb6df499d35300e5b2f3f029b2e6adda04ed90f8/hindsight-api-slim/hindsight_api/config_resolver.py).
 
+### Disposable mixed per-item profile probe
+
+The candidate was exercised without changing product code. The disposable
+bank used `hades-semantic` as its default with `concise` extraction and set
+`hades-auto-chunks` only on the HADES Hermes provider's automatic retained
+items. The existing explicit HADES save call supplies no item strategy, so it
+was expected to inherit the concise bank default. The disposable server set
+operation retention to one day; cleanup after expiry was not verified. The
+temporary overlay and harness hashes, base revision, and exact settings are
+embedded in each artifact's `method.candidate_profile`.
+
+Across two opposite-order automatic-memory runs, HADES recalled the synthetic
+fact immediately in both samples. Automatic recall took 3.06–3.09 seconds,
+versus 2.02–2.10 seconds for PLAIN; HADES exposed no memory tool schema and
+used 926–938 prompt tokens, versus PLAIN's 3,366–3,374 tokens and one 3,449-byte
+schema. The asynchronous Hindsight queue still took about 16.2 seconds to
+drain, and the HADES settled recall took about 10.2 seconds. Ordinary-chat
+timing was strongly order-sensitive, so these single samples do not establish
+a latency preference.
+
+In one explicit-memory paired probe, HADES' save took 13.27 seconds; the
+explicitly saved marker was immediately available in 25 ms and remained
+available after the automatic queue drained (28 ms). PLAIN's explicit save
+took 3.54 seconds, its first recall 1.93 seconds, and its post-idle recall
+15.81 seconds. This supports the expected explicit-save routing behavior in
+one synthetic example but does not qualify comparative memory quality or
+owner preference. In particular, the candidate did not remove the slow
+explicit HADES save or Hindsight background work.
+
+**Keep this as an experiment, not a production recommendation.** Immediate
+automatic recall is promising, but there is only one sample per order, no
+correction/paraphrase/irrelevance quality review, no expiry verification, and
+the asynchronous work remains costly. More repetitions and direct owner review
+are needed before considering adoption.
+
+Artifacts: [automatic, PLAIN first](../benchmarks/hades-core-memory-peritem-strategy-auto-plain-first-20261009.json),
+[automatic, HADES first](../benchmarks/hades-core-memory-peritem-strategy-auto-hades-first-20261009.json),
+and [explicit save/recall, PLAIN first](../benchmarks/hades-core-memory-peritem-strategy-explicit-plain-first-20261009.json).
+
 ## Bank-scoped readiness candidate, compared by retain profile
 
 A temporary HADES prefetch adapter queried only `pending` and `processing`
