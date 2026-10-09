@@ -16,17 +16,29 @@ The replay script is [`benchmark-hades-owner-subset.py`](../scripts/benchmark-ha
 
 The latest phase-tagged Hermes 0.21.6 workspace-to-commit replay is recorded in the [phase profile report](hades-core-owner-workspace-review-phase-profile-20261009.md). All four stack/repeat arms passed independent test, diff, intended-source scope, commit, and clean-worktree checks. PLAIN STACK median task time was 42.03s; HADES was 64.89s and used more calls (13.5 vs 9) and tool results (9 vs 4). The focused-test stage is the clearest current friction: HADES made repeated searches and reads before running the test, while PLAIN ran the terminal once. HADES also spent 12.11s median in diff review, of which 3.50s was captured at the provider boundary; the remaining time is not yet attributed to an internal stage. This new replay pairs sampling seeds by phase and therefore should not be read as a direct before/after comparison against earlier runs.
 
-HADES' two diff-review turns retained five schemas but had `tool_choice=none`, an empty executable allowlist, and zero tool calls. The [stable-catalog candidate report](hades-core-owner-workspace-review-stable-catalog-candidate-20261009.md) documents the earlier cache-latency improvement. Keep the behavior provisional: the new end-to-end replay remains slower than PLAIN, and neither run collects human answer-quality review or direct Scotty preference. No deployed UI acceptance or broad coding qualification has been collected.
+The earlier stable-catalog candidate removed an invalid schema mismatch but had zero explicit diff-review tool calls. The later [environment-cache paired rerun](hades-core-owner-workspace-env-cache-rerun-20261009.md) has one review-stage call in both stacks and passes both commits, though HADES remains slower. Neither result includes human answer-quality review or direct Scotty preference; no deployed UI acceptance or broad coding qualification has been collected.
 
 A five-repeat prompt-guidance candidate then instructed HADES to read `README.md` or `Makefile` directly when the test command was unknown. This reduced median HADES model calls to 11 versus 14 for PLAIN and focused-test terminal calls to 6 versus 9, but HADES remained slower (61.35s versus 52.11s) and committed only 4/5 tasks versus PLAIN's 5/5. The model still searched or reread during three of five HADES focused-test turns. It also attempted a terminal call during one read-only diff-review turn; Hermes rejected the attempt with the executable allowlist empty. The prompt candidate is rejected. See the [five-repeat experiment report](hades-core-owner-workspace-guidance-five-repeats-20261009.md).
+
+The [environment-cache paired rerun](hades-core-owner-workspace-env-cache-rerun-20261009.md)
+passes both synthetic workflows in each stack and shows HADES with fewer model
+calls and tool results, but HADES remains 8.61 seconds slower by median. The
+per-call environment reuse reduces the persistent-profile collector to about
+0.49 seconds; the full runner's fresh PM home still adds a cold initialization
+before diff review. A shared prewarmed PM-state comparison is the next latency
+measurement. The current result is not owner preference evidence.
 
 The corpus remains a testing instrument. It does not establish that HADES is preferred, and direct Scotty dogfood remains a release gate.
 
 The [Git environment profile](hades-core-owner-workspace-diff-review-git-environment-profile-20261009.md)
-attributes the slow synthetic diff-review stage to Hermes' hardened native Git
-collector: its first `git rev-parse` command takes about 8.55 seconds, while
-the actual `git diff` commands take about 1.05 seconds combined. A staged
-runtime probe measured `selected_git_env()` at 7.89 seconds cold and about
-0.51 seconds warm. This is a two-pair diagnosis, not a product fix; preserve
-the read-only diff and authority contracts while finding a safe way to avoid
-repeated environment resolution.
+traces the two-pair replay's slow diff-review setup to Hermes' hardened native
+Git collector. That replay uses a fresh package-manager home per arm and
+overstates the cold-start cost for a persistent profile: the installed
+Hermes 0.21.6 candidate collected tracked and untracked changes in 2.65 s
+cold and about 2.44 s warm. A context-local HADES adapter now selects the Git
+environment once per collection; a disposable fixture produced identical
+diffs while reducing the collector median from 2.42 s to 0.49 s. The real
+rootless workspace contract and a two-pair full workflow rerun both passed.
+HADES remains slower at task level, and the disposable profiles still include
+cold package-manager startup. This evidence is not owner preference or a
+production measurement.

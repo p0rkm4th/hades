@@ -6,6 +6,7 @@ model supplied path nor a browser supplied path may select a host mount.
 
 from __future__ import annotations
 
+import contextvars
 import copy
 import json
 import os
@@ -106,6 +107,8 @@ _WORKSPACE_CODE_SUFFIXES = frozenset({
     ".rs", ".java", ".c", ".cc", ".cpp", ".h", ".hpp", ".sh", ".bash",
     ".sql", ".html", ".css", ".scss", ".vue", ".svelte",
 })
+_WORKING_DIFF_ENV_CONTEXT_NAME = "_hades_working_diff_git_environment_context"
+_WORKING_DIFF_ENV_SELECTOR_NAME = "_hades_original_working_diff_git_environment_selector"
 
 
 def workspace_enabled() -> bool:
@@ -154,17 +157,62 @@ def is_workspace_diff_review_request(
     )
 
 
+def _working_diff_environment_context(working_diff: Any) -> tuple[Any, Any] | None:
+    """Install a context-local selector so one diff collection resolves PM env once.
+
+    Hermes 0.21.6's native collector calls ``selected_git_env`` once per Git
+    subprocess. Resolving that package-manager environment dominates the work
+    for a small diff. This adapter reuses the exact selected environment only
+    while this synchronous HADES collection is active; concurrent requests and
+    direct Hermes calls still resolve their own environment normally.
+    """
+    context = getattr(working_diff, _WORKING_DIFF_ENV_CONTEXT_NAME, None)
+    original = getattr(working_diff, _WORKING_DIFF_ENV_SELECTOR_NAME, None)
+    if context is not None and callable(original):
+        return context, original
+
+    original = getattr(working_diff, "selected_git_env", None)
+    if not callable(original):
+        return None
+    context = contextvars.ContextVar(
+        f"hades_working_diff_git_environment_{id(working_diff)}", default=None
+    )
+
+    def selected_git_env(base: Any = None) -> dict[str, str]:
+        cached = context.get()
+        if cached is not None and base is None:
+            return cached
+        return original(base)
+
+    setattr(working_diff, _WORKING_DIFF_ENV_SELECTOR_NAME, original)
+    setattr(working_diff, _WORKING_DIFF_ENV_CONTEXT_NAME, context)
+    working_diff.selected_git_env = selected_git_env
+    return context, original
+
+
 def native_workspace_diff_context(workspace: Path, *, max_chars: int = 24000) -> str:
     """Return bounded read-only Git diff evidence from Hermes' hardened helper."""
+    context = None
+    context_token = None
     try:
-        from tools.working_diff import collect_working_diff
+        from tools import working_diff
 
-        result = collect_working_diff(str(workspace), mode="working")
+        collect_environment = _working_diff_environment_context(working_diff)
+        if collect_environment is None:
+            result = working_diff.collect_working_diff(str(workspace), mode="working")
+        else:
+            context, original_selector = collect_environment
+            selected_environment = original_selector()
+            context_token = context.set(selected_environment)
+            result = working_diff.collect_working_diff(str(workspace), mode="working")
     except Exception as exc:
         return (
             "Authenticated workspace diff evidence is unavailable. Do not claim "
             f"to have reviewed the diff ({type(exc).__name__})."
         )
+    finally:
+        if context is not None and context_token is not None:
+            context.reset(context_token)
     if not isinstance(result, dict) or not result.get("success"):
         error = result.get("error", "unknown error") if isinstance(result, dict) else "invalid result"
         return (

@@ -1624,6 +1624,10 @@ def main() -> int:
         help="give both stacks the same supported agent.environment_hint describing the /workspace mount",
     )
     parser.add_argument(
+        "--persistent-pm-state", action="store_true",
+        help="prewarm one isolated Hermes package-manager store and share it across comparison arms",
+    )
+    parser.add_argument(
         "--prototype-force-terminal-after-mutation", action="store_true",
         help="benchmark-only HADES experiment: use Hermes tool_choice to require one terminal call after a successful workspace code mutation",
     )
@@ -1699,6 +1703,38 @@ def main() -> int:
     # exercises the same session-cwd classification as an installed profile.
     temp = pathlib.Path(tempfile.mkdtemp(prefix=".hades-workspace-pair-", dir=ROOT))
     os.chmod(temp, 0o700)
+    shared_pm_runtime = None
+    pm_runtime_prewarm_ms = None
+    if args.persistent_pm_state:
+        shared_pm_runtime = temp / "shared-pm-runtime"
+        pm_bootstrap_home = temp / "pm-bootstrap-home"
+        shared_pm_runtime.mkdir(mode=0o700)
+        pm_bootstrap_home.mkdir(mode=0o700)
+        pm_env = benchmark_child_environment()
+        pm_env.update({
+            "HOME": str(pm_bootstrap_home),
+            "HERMES_HOME": str(pm_bootstrap_home),
+            "HERMES_RUNTIME_DIR": str(shared_pm_runtime),
+            "PYTHONPATH": str(hermes_source(args.hermes_root)),
+        })
+        started = time.perf_counter()
+        warmed = subprocess.run(
+            [str(hermes_python(args.hermes_root)), "-c",
+             "import os, shutil; "
+             "from hermes_cli._subprocess_compat import selected_git_env; "
+             "from pm.paths import store_root; "
+             "env=selected_git_env(); "
+             "assert store_root().resolve() == __import__('pathlib').Path(os.environ['HERMES_RUNTIME_DIR']).resolve(); "
+             "assert shutil.which('git', path=env.get('PATH', '')) is not None; "
+             "print('READY')"],
+            env=pm_env, capture_output=True, text=True, timeout=240,
+        )
+        pm_runtime_prewarm_ms = round((time.perf_counter() - started) * 1000, 1)
+        if warmed.returncode != 0 or warmed.stdout.strip().splitlines()[-1:] != ["READY"]:
+            shutil.rmtree(temp)
+            raise RuntimeError(
+                "isolated shared Hermes package-manager state did not prewarm successfully"
+            )
     docker_trace_path = temp / "docker-cli-trace.jsonl"
     proxy_fixture_keys = ("source",) if args.scenario == "explain" else ("source", "test")
     proxy = ProviderProxy(("127.0.0.1", 0), args.ollama_port, tuple(
@@ -1807,6 +1843,8 @@ def main() -> int:
                             "HADES_DOCKER_TRACE_ROOT": str(temp),
                             "HADES_DOCKER_TRACE_WORKSPACE": str(workspace),
                             "PYTHONUNBUFFERED": "1"})
+                if shared_pm_runtime is not None:
+                    env["HERMES_RUNTIME_DIR"] = str(shared_pm_runtime)
                 if stack == "hades":
                     env["PYTHONPATH"] = os.pathsep.join((str(ROOT / "hermes"), str(ROOT), str(hermes_source(args.hermes_root))))
                     env.update({"HADES_OWNER_SUBJECT_IDS": "synthetic-owner",
@@ -2254,6 +2292,12 @@ def main() -> int:
                 "per_arm_cache_reset": "POST /api/chat with empty messages and keep_alive=0; verify model unload; reload and issue identical /api/generate warmup before every PLAIN or HADES arm",
                 "reasoning": "disabled in both direct AIAgent instances",
                 "runtime": "same isolated rootless Docker daemon and immutable sandbox image; containers network=none",
+                "package_manager_state": (
+                    "one isolated PM store prewarmed before and shared across all arms"
+                    if shared_pm_runtime is not None else
+                    "fresh private HOME/PM store per stack and repeat"
+                ),
+                "package_manager_prewarm_elapsed_ms": pm_runtime_prewarm_ms,
                 "scenario": args.scenario,
                 "fixture_layout": args.fixture_layout if args.scenario in {"escalation", "workflow-to-commit"} else None,
                 "fixture_case": args.fixture_case if args.scenario in {
