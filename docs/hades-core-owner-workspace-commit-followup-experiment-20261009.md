@@ -86,14 +86,17 @@ prewarmed package-manager store, and the same two synthetic multifile tasks.
 | Median tool results per task | 9.5 | 7.5 |
 | Focused tests and source-only commits | 2/2 | 2/2 |
 | HADES `git diff` outside review phase | — | 0 calls |
-| HADES `git diff` during review phase | — | 1 call |
+| HADES review-phase diff attempt | — | 1, rejected before execution |
 
 The HADES candidate preserved completion and clean-worktree results, but the
 single same-source no-injection control also committed successfully and made
-no diff calls outside its review phase. The candidate run introduced one
-review-phase `git diff` call, and its 1.33-second median advantage over PLAIN
-does not isolate the effect of the prompt addition. Two pairs are too few to
-show that the added 661 characters improved task quality, time, or reliability.
+no diff attempts outside its review phase. In one candidate review turn, the
+model attempted a `terminal` call with Git-diff-shaped arguments despite the
+supplied diff and `tool_choice=none`. HADES rejected the call as an invalid
+tool because the review allowlist was empty; no command executed. Its 1.33-
+second median advantage over PLAIN does not isolate the effect of the prompt
+addition. Two pairs are too few to show that the added 661 characters improved
+task quality, time, or reliability.
 Reject the prompt addition for now: it has no demonstrated advantage over the
 same-source HADES control and increased context/tool overhead. The experiment
 is synthetic; no owner preference or response-quality rating was collected.
