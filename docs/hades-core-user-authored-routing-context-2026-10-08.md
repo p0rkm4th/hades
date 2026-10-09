@@ -36,18 +36,33 @@ change, all 15 model-backed HADES turns exposed zero schemas; the same
 `core-05` follow-up carried 3,781 bytes and had 1,295 ms TTFT. PLAIN had no
 schemas in either run.
 
-After the change, the paired median HADES-minus-PLAIN deltas across the 15
-model-backed turns were **+11.5 ms TTFT** and **−11.6 ms total time**. HADES was
-faster in 7/15 TTFT pairs and 8/15 total-time pairs. PLAIN produced 16 model
-generations; HADES produced 15 because its first `core-08` pantry-expiry turn
-returned the bounded deterministic response that canonical Grocy was
-unavailable, without invoking the model. That unavailable-service fallback is
-not counted as an ordinary model-backed comparison.
+After the change, a three-repeat `conversation-v1` replay completed 48 turns
+per stack with content on all turns. PLAIN had 48 provider generations; HADES
+had 45 because each repeat's first `core-08` pantry-expiry turn returned the
+bounded deterministic response that canonical Grocy was unavailable, without
+invoking the model. Those three unavailable-service fallbacks are not counted
+as ordinary model-backed comparisons. Neither stack emitted tool calls. All
+45 model-backed HADES requests exposed zero tool schemas.
+
+Across the 45 model-backed paired turns, the median HADES-minus-PLAIN deltas
+were **+23.6 ms TTFT** and **−38.4 ms total time**. HADES was faster in 12/45
+TTFT pairs and 25/45 total-time pairs. Per-stack median TTFT was 1,073 ms PLAIN
+and 1,073 ms HADES; median total time was 1,693 ms PLAIN and 1,707 ms HADES.
+These medians show no meaningful ordinary-chat latency advantage for either
+stack in this slice. HADES answers were shorter in aggregate, but answer
+quality was not reviewed, so that is not counted as an improvement.
+
+The initial one-repeat runs remain useful as a focused before/after diagnosis:
+an intermittent assistant-history phrase activated the web schema once before
+the filter, and no web schemas appeared in the first post-change replay. The
+three-repeat replay strengthens the post-change tool-exposure evidence; it is
+still a small synthetic comparison, not a preference study.
 
 ## Evidence and limits
 
 - Before: [`before-user-intent-filter`](../benchmarks/hades-core-owner-conversation-v1-hermes0216-ollama0401-before-user-intent-filter-20261008.json)
 - After: [`user-intent-filter`](../benchmarks/hades-core-owner-conversation-v1-hermes0216-ollama0401-user-intent-filter-20261008.json)
+- Three-repeat after: [`user-intent-filter-3repeats`](../benchmarks/hades-core-owner-conversation-v1-hermes0216-ollama0401-user-intent-filter-3repeats-20261008.json)
 - Focused test: [`test-long-conversation-boundary.sh`](../scripts/test-long-conversation-boundary.sh)
 
 This verifies one targeted routing repair and one post-change synthetic
