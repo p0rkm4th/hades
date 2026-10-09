@@ -17,7 +17,7 @@ for line in Path('config/versions.env').read_text(encoding='utf-8').splitlines()
 
 sources = {
     'LLDAP': ['deploy/lldap.compose.yaml'],
-    'Open WebUI': ['deploy/templates/open-webui.compose.yaml', 'webui/Dockerfile', 'webui/channel_response_compat.py', 'webui/task_notification_compat.py', 'webui/finance-upload.js', 'webui/receipt-upload.js'],
+    'Open WebUI': ['deploy/templates/open-webui.compose.yaml', 'webui/Dockerfile', 'webui/channel_response_compat.py', 'webui/ldap_group_sync_compat.py', 'webui/task_notification_compat.py', 'webui/finance-upload.js', 'webui/receipt-upload.js'],
     'Hindsight': ['deploy/templates/hindsight.compose.yaml'],
     'Grocy': ['deploy/grocy.compose.yaml', 'integrations/grocy-mcp', 'integrations/grocy-recipe-authoring', 'scripts/install-grocy-mcp.sh', 'scripts/check-grocy-mcp-runtime.py'],
     'Actual Budget / Finance MCP': ['integrations/actual-finance-readonly'],
@@ -259,6 +259,8 @@ if 'HADES_OPEN_WEB_UI_BASE_IMAGE' in dockerfile or 'ARG OPEN_WEBUI_BASE_IMAGE=gh
     raise SystemExit('FAIL Open WebUI Dockerfile does not retain immutable upstream provenance')
 if 'channel_response_compat.py' not in dockerfile:
     raise SystemExit('FAIL Open WebUI compatibility layer is absent from the build')
+if 'ldap_group_sync_compat.py' not in dockerfile:
+    raise SystemExit('FAIL Open WebUI LDAP group-revocation adapter is absent from the build')
 
 if [item['startup_order'] for item in sorted(components.values(), key=lambda x: x['startup_order'])] != [1, 2, 3, 4, 4, 5, 6, 7, 8]:
     raise SystemExit('FAIL manifest startup order is not a complete 1-8 sequence')

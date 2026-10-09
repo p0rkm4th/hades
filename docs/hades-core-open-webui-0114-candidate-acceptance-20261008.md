@@ -75,3 +75,12 @@ were removed by the harness. This repeat does not expand the qualification
 boundary above: LDAP group synchronization, broader household browser use,
 file extraction/retrieval quality, migration/rollback, external build
 provenance, and direct owner preference remain open.
+
+The unpatched image in the first repeat is not the current staging candidate.
+Its LDAP group test found that removing a user's final directory group left a
+stale Open WebUI membership. The current HADES staging image uses the
+one-condition adapter and passed the full candidate suite plus LDAP
+add/remove/revocation acceptance; see
+[`hades-core-open-webui-0114-ldap-group-revocation-20261009.md`](hades-core-open-webui-0114-ldap-group-revocation-20261009.md).
+This does not enable LDAP group management in production or qualify immediate
+revocation of existing sessions.

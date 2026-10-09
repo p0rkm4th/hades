@@ -18,8 +18,10 @@ COPY webui/stream_disconnect_compat.py /opt/hades/stream_disconnect_compat.py
 COPY webui/hades_stream_disconnect_compat.py /opt/hades/hades_stream_disconnect_compat.py
 COPY integrations/actual-finance-import /opt/hades/finance-import
 COPY webui/channel_response_compat.py /opt/hades/channel_response_compat.py
+COPY webui/ldap_group_sync_compat.py /opt/hades/ldap_group_sync_compat.py
 COPY webui/entrypoint.sh /opt/hades/entrypoint.sh
 RUN python3 /opt/hades/channel_response_compat.py \
+    && python3 /opt/hades/ldap_group_sync_compat.py \
     && python3 /opt/hades/finance_upload_compat.py \
     && python3 /opt/hades/receipt_upload_compat.py \
     && python3 /opt/hades/task_notification_compat.py \

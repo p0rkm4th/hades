@@ -125,3 +125,15 @@ Recovery results show HADES avoiding six model generations for truthful
 missing-capability responses, but its aggregate median was still 138 ms slower
 than PLAIN STACK. Neither replay retained answer text or owner-preference
 labels. These results qualify neither production parity nor owner preference.
+
+The exact Open WebUI 0.11.4 source also had a verified LDAP group-revocation
+gap: removal of a user's final LLDAP group left a stale Open WebUI group after
+fresh login. A guarded build-time adapter now lets upstream's native
+reconciler process the empty group list. The rebuilt local candidate
+`sha256:86b448b4ae005c7971f96930f8a52677ed788d8f726dfe679367cd2046e4650e`
+passed the full synthetic private-chat/Channels suite and the LDAP add,
+single-group-removal, and final-group-removal test against the pinned LLDAP
+image. The candidate remains staging-only: there is no external HADES build
+attestation, migration/rollback qualification, or owner preference evidence.
+Production LDAP group management stays disabled. See
+[`hades-core-open-webui-0114-ldap-group-revocation-20261009.md`](hades-core-open-webui-0114-ldap-group-revocation-20261009.md).
