@@ -12129,19 +12129,26 @@ try:
             self.tools = []
             self.valid_tool_names = set()
         if _workspace_intent:
-            self.tools = _workspace_tools
             _workspace_all_tool_names = {
                 tool.get("function", {}).get("name") for tool in _workspace_tools
             }
-            # Keep the workspace schema stable when a read-only diagnosis is
-            # followed by an explicit action. Ollama otherwise discards most of
-            # its prompt cache when these definitions change. Authorization
-            # remains turn-scoped below: diagnosis can call only read/search.
-            self.valid_tool_names = (
-                _workspace_all_tool_names
-                & set(_hades_workspace_read_only_tool_names)
-                if _workspace_read_only else _workspace_all_tool_names
-            )
+            # Do not advertise tools the current turn cannot call. A stable
+            # five-tool schema improves prompt-cache reuse, but it caused the
+            # model to invoke terminal during read-only diff review even though
+            # valid_tool_names correctly rejected it. Match the visible schema
+            # to the turn-scoped authorization boundary.
+            if _workspace_read_only:
+                self.tools = [
+                    tool for tool in _workspace_tools
+                    if tool.get("function", {}).get("name")
+                    in _hades_workspace_read_only_tool_names
+                ]
+            else:
+                self.tools = _workspace_tools
+            self.valid_tool_names = {
+                tool.get("function", {}).get("name") for tool in self.tools
+                if tool.get("function", {}).get("name")
+            }
             _workspace_prompt = (
                 "Workspace diagnosis only. Use read_file and search_files on /workspace. "
                 "Do not edit files, run commands or tests, or claim changes. Explain what the "

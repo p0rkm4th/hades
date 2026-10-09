@@ -267,7 +267,7 @@ def native_inspection(agent,user_message,*args,**kwargs):
  assert inspection_deltas and inspection_deltas[0] == 'I’ll read the relevant files and explain what I find.\n\n',inspection_deltas
  names={t['function']['name'] for t in agent.tools}
  inspection_catalog.append((names,set(agent.valid_tool_names)))
- assert names == {'read_file','search_files','write_file','patch','terminal'},names
+ assert names == {'read_file','search_files'},names
  assert set(agent.valid_tool_names) == {'read_file','search_files'},agent.valid_tool_names
  prompt=agent.ephemeral_system_prompt.lower()
  assert "target='files', pattern='*', path='/workspace'" in prompt,prompt
@@ -307,10 +307,10 @@ inspection=inspection_agent.run_conversation('Why is this Python test failing?',
 assert 'addition' in inspection.get('final_response',''),inspection
 assert inspection_deltas[-1] == inspection.get('final_response'),inspection_deltas
 assert inspection_catalog == [
- ({'read_file','search_files','write_file','patch','terminal'},{'read_file','search_files'})
+ ({'read_file','search_files'},{'read_file','search_files'})
 ],inspection_catalog
 assert get_terminal_scope() is None,get_terminal_scope()
-print('PASS workspace schemas stay stable; diagnosis authorization remains read/search only')
+print('PASS read-only workspace schema matches its read/search authorization')
 calls=[]
 terminal_results=[]
 action_deltas=[]
