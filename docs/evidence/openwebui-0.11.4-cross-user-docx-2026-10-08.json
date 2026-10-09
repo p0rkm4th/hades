@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "recorded_at": "2026-10-08T22:10:00Z",
+  "recorded_at": "2026-10-09T18:44:16Z",
   "purpose": "Reproduce the shared DOCX preview session-token theft path and verify the pinned Open WebUI candidate blocks it.",
   "candidate": {
     "upstream_version": "0.11.4",
     "upstream_revision": "8bd8b4fac5e059578ac0c74b3c18d11139f88b7d",
     "upstream_base_image": "ghcr.io/open-webui/open-webui@sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f",
-    "hades_image_id": "sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469",
-    "hades_source_commit": "e33b7d18c889775260e5ace804aac0ebf598d8d8",
-    "hades_source_commit_reachable_from": "codex/open-webui-0114-staging-review"
+    "hades_image_id": "sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7",
+    "hades_source_commit": "bbe830973b6fb39196353d2d9e48004ab2243f0a",
+    "hades_source_commit_reachable_from": "codex/openwebui-docx-cross-user-review-20261008"
   },
   "positive_control": {
     "version": "0.11.1",
@@ -20,13 +20,15 @@
     "unsafe_javascript_links": 1
   },
   "candidate_result": {
-    "image_id": "sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469",
+    "image_id": "sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7",
     "result": "pass",
     "preview_rendered": true,
     "active_content_executed": false,
     "household_token_read": false,
     "separately_owned_household_private_file_read": false,
-    "unsafe_javascript_links": 0
+    "unsafe_javascript_links": 0,
+    "rollback_legacy_sessions_rejected": true,
+    "details": "Preview rendered; active content, token access, private canary read, and unsafe javascript link blocked. Exact artifact also passed populated migration and rollback replay; saved pre-upgrade owner and household JWTs rejected after rollback and restart with shared Valkey."
   },
   "method": {
     "accounts": "Disposable synthetic owner and separate household user.",
@@ -55,21 +57,41 @@
       "docx_test_sha256": "6371f6b4d4d854c8fe0e882beaaf2f18ecf572c1899a35707e70b474be747810",
       "positive_control": "pass: token theft and private canary read reproduced",
       "candidate": "pass: script execution, token access, private read, and unsafe link all blocked"
+    },
+    {
+      "scope": "exact candidate full security acceptance, populated migration, and rollback compatibility",
+      "source_commit": "bbe830973b6fb39196353d2d9e48004ab2243f0a",
+      "hades_image_id": "sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7",
+      "result": "pass: staging synthetic acceptance and migration/rollback replay",
+      "coverage": [
+        "DOCX positive control and candidate replay",
+        "owner and household pre-upgrade JWT rejected after 0.11.1 rollback",
+        "revocation survives Valkey and WebUI restart",
+        "fresh sign-ins succeed",
+        "chats, uploads, Channels and private isolation preserved",
+        "SQLite integrity check passed"
+      ],
+      "limitations": [
+        "Synthetic staging only; production backup, production identity wiring, live acceptance, and restart acceptance remain open."
+      ]
     }
   ],
   "current_test_source_sha256": {
-    "scripts/test-openwebui-docx-preview-security.sh": "6371f6b4d4d854c8fe0e882beaaf2f18ecf572c1899a35707e70b474be747810",
-    "scripts/test-open-webui-candidate.sh": "88dc786c90567b8fdc7a1b73e3210c1d6544a8106ee11dcf9c1d59cd299bc2b1",
-    "scripts/test-open-webui-candidate-artifact-contract.sh": "d674d6d38ded185e9bb293f46e2c4e70db1882fcbd7a07f51ec787f6cccaeaa1",
-    "scripts/verify-openwebui-candidate-artifact.sh": "5515adc2a9c814c51d8f1863dab92e87428ec1a3b9991900558e0845816fb692",
-    "scripts/build-open-webui-artifact.sh": "43fdae504eb8f4ad61bc162571f40283a215fd6835159bae2ed723ad35398792",
-    "scripts/test-open-webui-populated-migration.sh": "0d8c8a9645f8ae9fc93dc32a750eab22db4b922f41696930b7567a33a053ad55",
-    "scripts/test-openwebui-disabled-role-session.sh": "ae8cfc622064122181d8f1cf23f4a60079d97d097d296044ddb586a025da940e"
+    "scripts/test-openwebui-docx-preview-security.sh": "3135ae5442423ad33b581e35d00a733b414fb14dcb8477ad78e9bd1af2538ed5",
+    "scripts/test-open-webui-candidate.sh": "3c20a590df902e8f39f3608af8fdf63f3f3b4bb77ec4b83e4a65209e604bfcc8",
+    "scripts/test-open-webui-candidate-artifact-contract.sh": "0ac9cfb4c7c82e42dc8169456d0a361aa2138a8a7b7c866298eac3f543267ba3",
+    "scripts/verify-openwebui-candidate-artifact.sh": "5c2efe4b9deaeb2e809ecb2c2ec0444297365bfd7f351f5b5d684d6e198742a1",
+    "scripts/build-open-webui-artifact.sh": "f302b47afaff54dc6eb525a22bbefa139c540ee981810ffd08e6c388f7b91fe1",
+    "scripts/test-open-webui-populated-migration.sh": "5f8770e2dbc22619456de6c21b38261b381ea4f665f1c0b93ee68ded9f4b2dbf",
+    "scripts/test-openwebui-disabled-role-session.sh": "974f3615d9abc01eb7957b82ef5fa79152a533b161caefd7cddd3f05fcf7f536",
+    "scripts/test-open-webui-auth-revocation-compat.py": "24880fc2da4ff1703e42ad6441190ce93edb78b7ae93a5d8804974d4194670a4",
+    "scripts/test-openwebui-p0-security-contract.sh": "ea79111740817294a08edf81d9cff6dd026eece4fff61ad9be3addbfd306e02b"
   },
   "limitations": [
     "Synthetic users and private canary; no production data or secrets.",
     "This proves the browser-to-session-to-private-file exploit chain on the vulnerable control and its block on the candidate. It is not production migration or owner usability acceptance.",
-    "Production remains on Open WebUI 0.11.1 until exact production backup, cutover, rollback, and owner gates are completed."
+    "Production remains on Open WebUI 0.11.1 until exact production backup, cutover, rollback, and owner gates are completed.",
+    "Latest exact candidate includes integer-second revocation markers compatible with rollback to 0.11.1 when the shared Valkey state is preserved; ingress must remain closed during rollback until revocations are effective. This remains rehearsal evidence, not production proof."
   ],
   "production_changed": false,
   "temporary_containers_volumes_and_networks_removed": true

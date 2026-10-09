@@ -18,8 +18,8 @@ it was independently resolved from the official GHCR registry on 2026-10-08.
 
 The current manifest-bound HADES candidate is
 `hades-open-webui:0.11.4-p0-candidate`, image ID
-`sha256:d4c7e8aa08b35ddb81c2098db1fcbb7a6703f774d3000d2c088632b7053564a5`.
-It was built from HADES commit `725b7991e4f776ed074758820d81a59ee916ef80`,
+`sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7`.
+It was built from HADES commit `bbe830973b6fb39196353d2d9e48004ab2243f0a`,
 using the candidate upstream digest above. Image labels bind the source commit,
 base digest, and security adapter set. The earlier image ID
 `sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469`
@@ -93,7 +93,7 @@ validation/restore; password-change revocation; and JWT issue-time behavior at
 the revocation timestamp edge. The LDAP empty-group, populated migration and
 rollback, private-chat, Channels, LDAP bootstrap, disabled-role, upload
 isolation, and DOCX replay gates have also passed against this exact candidate
-image ID `sha256:d4c7e8aa08b35ddb81c2098db1fcbb7a6703f774d3000d2c088632b7053564a5`.
+image ID `sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7`.
 These remain synthetic staging evidence, not live production acceptance.
 
 ### Legacy-session cutover invariant
@@ -120,7 +120,7 @@ rollback; keep service access isolated until a patched image is restored.
 
 The populated synthetic 0.11.1 → 0.11.4 migration now verifies this behavior
 against candidate image ID
-`sha256:d4c7e8aa08b35ddb81c2098db1fcbb7a6703f774d3000d2c088632b7053564a5`.
+`sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7`.
 It does not yet prove that production ingress is quiesced, that a production
 copy contains every real account, or that live production session revocation
 passes. Those remain cutover gates.
