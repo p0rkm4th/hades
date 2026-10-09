@@ -47,18 +47,18 @@ This candidate's sanitized measurements are in
 ## Telemetry limitation found during follow-up
 
 The runner's `runs_unittest` marker did not recognize Python interpreter flags
-before `-m unittest` (for example, `python -B -m unittest`). The candidate
-artifact therefore has terminal tool counts and test-output markers, but its
-command-purpose labels can undercount unittest invocations. The classifier
-now handles interpreter flags and has focused coverage; historical command
-text was intentionally discarded, so the existing artifact cannot be
-reclassified. This does not change the measured tool-call totals or independent
-test outcomes. A fresh replay is needed before drawing conclusions about
-redundant test execution.
+before `-m unittest` (for example, `python -B -m unittest`). Historical command
+text was intentionally discarded, so the original artifact cannot be
+reclassified. The classifier now handles interpreter flags and has focused
+coverage. The [fresh matched replay](hades-core-owner-workspace-followup-prompt-replay-20261008.md)
+shows one successful HADES unittest call per task; the old uncertainty about
+repeated HADES test execution is resolved for this fixture. The corrected
+telemetry does not change old tool-call totals or independent test outcomes.
 
 ## Status
 
-Keep this prompt change as a candidate pending the focused-test loop diagnosis
-and a broader owner review. It is not a usability qualification: Scotty's
-preference, answer quality, deployed Open WebUI behavior, and broader coding
-tasks were not measured.
+Keep this prompt change as a candidate pending direct owner review and broader
+coding tasks. The follow-up prompt did not produce a speed win in either
+two-repeat comparison, and the new matched run still found a HADES latency gap.
+This is not a usability qualification: Scotty's preference, answer quality,
+deployed Open WebUI behavior, and broader coding tasks were not measured.
