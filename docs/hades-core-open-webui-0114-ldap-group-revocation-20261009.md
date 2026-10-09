@@ -58,3 +58,17 @@ disabled; do not enable group-based access based on this staging result alone.
 No production service, identity, chat, or volume was used. The Docker network,
 containers, volume, identity files, and synthetic users were removed after
 each test.
+
+## Existing-token role revocation — 2026-10-09
+
+The separate disabled-role session contract also passed against the exact
+patched candidate image above. A disposable account received an authenticated
+token; an admin changed its Open WebUI role to `pending`; the same preexisting
+token then received HTTP 401 from both `/api/v1/users/user/info` and
+`/openai/chat/completions`. The completion request was rejected before the
+completion handler. The disposable container was removed after the run.
+
+This verifies immediate rejection after an explicit Open WebUI account-role
+disable. It does not make LDAP group changes invalidate an active session, and
+it does not replace the documented account-revocation procedure for removing
+an account from service.
