@@ -88,6 +88,24 @@ adoption. Also test identity-provider role mapping and open-terminal access
 revocation if terminal capability is enabled. Owner-visible acceptance and
 external build provenance remain open.
 
+### Disposable Redis/Valkey behavior probe — 2026-10-09
+
+The exact HADES 0.11.4 candidate image
+`sha256:86b448b4ae005c7971f96930f8a52677ed788d8f726dfe679367cd2046e4650e`
+was run on an isolated Docker network with the locally staged Valkey 9.1.2
+image `valkey/valkey:9.1-alpine@sha256:a0dbf4c1d5708782907c10e2c72deff317518518b5288a58416981d9db95d30b`.
+With `REDIS_URL=redis://redis:6379/0`, a synthetic user's token returned HTTP
+200 before sign-out and HTTP 401 after sign-out. After stopping Valkey, the
+same token returned HTTP 200 again: upstream deliberately accepts tokens when
+its revocation lookup raises a Redis error. The account and both containers
+were disposable; the network was removed after the probe.
+
+This confirms Redis restores normal sign-out revocation but does not, by itself,
+meet HADES's fail-closed authority contract during store loss. Do not promote
+the candidate or treat Redis configuration alone as a fix. The next candidate
+must reject revoked tokens when the store is unavailable and must qualify the
+behavior of already-open sessions during sign-out and outage.
+
 ## Owner-facing and core runtime components
 
 | Component | HADES production / candidate record | Latest stable checked 2026-10-08 | Decision |
