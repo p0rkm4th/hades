@@ -18,6 +18,7 @@ for line in Path('config/versions.env').read_text(encoding='utf-8').splitlines()
 sources = {
     'LLDAP': ['deploy/lldap.compose.yaml'],
     'Open WebUI': ['deploy/templates/open-webui.compose.yaml', 'webui/Dockerfile', 'webui/channel_response_compat.py', 'webui/task_notification_compat.py', 'webui/finance-upload.js', 'webui/receipt-upload.js'],
+    'Open WebUI auth-state Valkey': ['deploy/templates/open-webui.compose.yaml', 'config/versions.env'],
     'Hindsight': ['deploy/templates/hindsight.compose.yaml'],
     'Grocy': ['deploy/grocy.compose.yaml', 'integrations/grocy-mcp', 'integrations/grocy-recipe-authoring', 'scripts/install-grocy-mcp.sh', 'scripts/check-grocy-mcp-runtime.py'],
     'Actual Budget / Finance MCP': ['integrations/actual-finance-readonly'],
@@ -257,8 +258,8 @@ if 'HADES_OPEN_WEB_UI_BASE_IMAGE' in dockerfile or 'ARG OPEN_WEBUI_BASE_IMAGE=gh
 if 'channel_response_compat.py' not in dockerfile:
     raise SystemExit('FAIL Open WebUI compatibility layer is absent from the build')
 
-if [item['startup_order'] for item in sorted(components.values(), key=lambda x: x['startup_order'])] != [1, 2, 3, 4, 4, 5, 6, 7, 8]:
-    raise SystemExit('FAIL manifest startup order is not a complete 1-8 sequence')
+if [item['startup_order'] for item in sorted(components.values(), key=lambda x: x['startup_order'])] != [1, 2, 3, 4, 4, 5, 6, 7, 8, 8]:
+    raise SystemExit('FAIL manifest startup order is not a complete 1-8 sequence with declared parallel components')
 print('PASS every reconstruction component has tracked source and deployment closure')
 print('PASS immutable image/source pins and Open WebUI compatibility provenance are present')
 print('PASS reconstruction startup order is complete and explicit')

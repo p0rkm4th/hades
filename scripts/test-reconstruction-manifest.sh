@@ -38,7 +38,7 @@ if versions['HADES_HERMES_VERSION'] != versions['HADES_HERMES_SOURCE_VERSION']:
     raise SystemExit('Hermes artifact version differs from the runtime version')
 if machine_components['Actual Budget / Finance MCP']['pinned_version'] != f"{versions['HADES_ACTUAL_VERSION']} server/client pair":
     raise SystemExit('machine manifest Actual version drifted')
-if len(machine_components) != 9 or any(
+if len(machine_components) != 10 or any(
     not all(item.get(field) is not None for field in (
         'pinned_version', 'persistent_state', 'required_secret_inputs',
         'network_dependency', 'startup_order', 'health_check', 'restore_check'))
@@ -68,7 +68,7 @@ if any('already there' in item['classification'].lower() for item in provenance)
 
 source = Path('docs/component-manifest.md').read_text()
 required = (
-    'LLDAP', 'Open WebUI', 'Hindsight', 'Grocy', 'Hermes',
+    'LLDAP', 'Open WebUI', 'Open WebUI auth-state Valkey', 'Hindsight', 'Grocy', 'Hermes',
     'Actual Budget / Finance MCP', 'Agent Zero', 'SearXNG', 'HADES policy/assets/adapters',
 )
 start = source.index('## Reconstruction manifest')
@@ -87,13 +87,14 @@ for component in required:
         raise SystemExit(f'rebuild source is not explicit for {component}')
 expected_order = {
     'LLDAP': '1',
-    'Open WebUI': '2',
-    'Hindsight': '3',
-    'Grocy': '4',
+    'Open WebUI auth-state Valkey': '2',
+    'Open WebUI': '3',
+    'Hindsight': '4',
+    'Grocy': '5',
     'Actual Budget / Finance MCP': '4',
-    'Hermes': '5',
-    'Agent Zero': '6',
-    'SearXNG': '7',
+    'Hermes': '6',
+    'Agent Zero': '7',
+    'SearXNG': '8',
 }
 for component, expected in expected_order.items():
     row = next(line for line in table.splitlines() if line.startswith('| ' + component + ' |'))

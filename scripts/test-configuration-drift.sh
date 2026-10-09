@@ -47,7 +47,7 @@ for template in "${expected_templates[@]}"; do
   }
 done
 
-for component in LLDAP 'Open WebUI' Hindsight Grocy 'Actual Budget / Finance MCP' Hermes 'Agent Zero' SearXNG 'HADES policy/assets/adapters'; do
+for component in LLDAP 'Open WebUI' 'Open WebUI auth-state Valkey' Hindsight Grocy 'Actual Budget / Finance MCP' Hermes 'Agent Zero' SearXNG 'HADES policy/assets/adapters'; do
   grep -Eq "\| ${component} \|" docs/component-manifest.md || {
     printf 'FAIL manifest component missing: %s\n' "$component" >&2
     exit 1
@@ -57,7 +57,7 @@ python3 - <<'PY'
 import json
 from pathlib import Path
 manifest = json.loads(Path('config/reconstruction-manifest.json').read_text())
-if manifest.get('source_of_truth') != 'config/versions.env' or len(manifest.get('components', [])) != 9:
+if manifest.get('source_of_truth') != 'config/versions.env' or len(manifest.get('components', [])) != 10:
     raise SystemExit('FAIL machine reconstruction manifest is incomplete')
 identity = Path('docs/shared-identity.md').read_text()
 if 'historical disposable staging proof' not in identity or 'config/versions.env' not in identity:
