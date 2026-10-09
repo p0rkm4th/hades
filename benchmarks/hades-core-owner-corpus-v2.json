@@ -980,11 +980,12 @@
       }
     },
     "latest_core4_ordinary_chat_comparison": {
-      "source_revision": "58c2ee18a3dfa6b103b7f581f68ad543eb3f92cb",
-      "classification": "five balanced synthetic repeats across core-01–core-04; 30 turns per stack; no response quality or owner-preference scoring",
-      "result": "At Hermes 0.21.5, Ollama 0.40.0, qwen3.6:35b Q4_K_M, and verified 65,536 loaded context, all 60 turns returned content. Each stack made 30 provider generations, emitted zero tool calls, and sent zero tool schemas. PLAIN median TTFT/total 1.157/1.745s; HADES 1.194/1.551s. Paired median HADES-minus-PLAIN deltas were +37 ms TTFT and -48 ms total. Median prompt tokens were 727.5/722.5. This sample shows a thin ordinary chat path and no material HADES overhead; it does not measure answer quality or preference.",
-      "limitations": "Five repeats across four synthetic chat cases; no human naturalness review or owner preference. Does not measure memory, domain tools, workspace actions, Open WebUI, or production deployment parity.",
-      "metrics_record": "benchmarks/hades-core-ordinary-core4-five-repeat-20261007.json"
+      "source_revision": "7a54531dbc342998f52416706032d6d25ff768dc",
+      "classification": "three balanced synthetic repeats across core-01–core-04; 18 turns per stack; Hermes 0.21.6; no response quality or owner-preference scoring",
+      "result": "At Hermes 0.21.6, Ollama 0.40.1, qwen3.6:35b Q4_K_M, and verified 65,536 loaded context, all 36 turns returned content. Each stack made 18 provider generations, emitted zero tool calls, and sent zero tool schemas. PLAIN median TTFT/total 1.068/1.897s; HADES 1.082/1.760s. Paired median HADES-minus-PLAIN deltas were +7 ms TTFT and +61 ms total. HADES generated fewer completion tokens overall (745 vs. 851); answer quality was not reviewed, so per-stack total medians do not establish a HADES speed advantage. Median prompt tokens were 719.5/732.5. No material latency or tool-overhead difference was demonstrated.",
+      "limitations": "Three repeats across four synthetic chat cases; no human naturalness review or owner preference. No memory, domain tools, workspace actions, Open WebUI, or production deployment parity. No new corpus case IDs were covered.",
+      "metrics_record": "benchmarks/hades-core-owner-conversation-v1-hermes0216-ollama0401-core4-three-repeat-20261008.json",
+      "report": "docs/hades-core-ordinary-chat-hermes-0216-comparison-20261008.md"
     },
     "latest_followup_set_comparison": {
       "source_revision": "58c2ee18a3dfa6b103b7f581f68ad543eb3f92cb",
@@ -1234,6 +1235,13 @@
       "limitations": "Two synthetic pairs on one small fixture, direct Hermes AIAgent path, no human answer-quality review, Open WebUI persistence, production gateway authentication, Git commit behavior, or direct Scotty preference. Tool retries and local-model variance make the latency result diagnostic only.",
       "metrics_record": "benchmarks/hades-core-owner-edit-to-test-current-stable-20261008.json",
       "report": "docs/hades-core-owner-edit-to-test-current-stable-2026-10-08.md"
+    },
+    "previous_core4_ordinary_chat_comparison_hermes0215": {
+      "source_revision": "58c2ee18a3dfa6b103b7f581f68ad543eb3f92cb",
+      "classification": "five balanced synthetic repeats across core-01–core-04; 30 turns per stack; no response quality or owner-preference scoring",
+      "result": "At Hermes 0.21.5, Ollama 0.40.0, qwen3.6:35b Q4_K_M, and verified 65,536 loaded context, all 60 turns returned content. Each stack made 30 provider generations, emitted zero tool calls, and sent zero tool schemas. PLAIN median TTFT/total 1.157/1.745s; HADES 1.194/1.551s. Paired median HADES-minus-PLAIN deltas were +37 ms TTFT and -48 ms total. Median prompt tokens were 727.5/722.5. This sample shows a thin ordinary chat path and no material HADES overhead; it does not measure answer quality or preference.",
+      "limitations": "Five repeats across four synthetic chat cases; no human naturalness review or owner preference. Does not measure memory, domain tools, workspace actions, Open WebUI, or production deployment parity.",
+      "metrics_record": "benchmarks/hades-core-ordinary-core4-five-repeat-20261007.json"
     }
   },
   "latest_workspace_read_pair_comparison": {
