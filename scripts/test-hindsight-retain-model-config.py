@@ -20,4 +20,15 @@ assert module.hindsight_retain_environment("qwen3:14b", "qwen3:14b") == []
 assert module.hindsight_retain_environment("qwen3:14b", "qwen3:8b") == [
     "-e", "HINDSIGHT_API_RETAIN_LLM_MODEL=qwen3:8b"
 ]
-print("PASS retain-only model override leaves other Hindsight operations unchanged")
+assert module.hindsight_ollama_context_environment(None) == []
+assert module.hindsight_ollama_context_environment(8192) == [
+    "-e", "HINDSIGHT_API_LLM_OLLAMA_NUM_CTX=8192"
+]
+for invalid in (0, -1, True, "8192"):
+    try:
+        module.hindsight_ollama_context_environment(invalid)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(f"accepted invalid Hindsight num_ctx: {invalid!r}")
+print("PASS retain-only model and native Ollama context overrides preserve operation scope")

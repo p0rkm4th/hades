@@ -492,6 +492,15 @@ def hindsight_retain_environment(hindsight_model: str, retain_model: str) -> lis
     return result
 
 
+def hindsight_ollama_context_environment(num_ctx: int | None) -> list[str]:
+    """Set Hindsight's documented native Ollama context override when requested."""
+    if num_ctx is None:
+        return []
+    if isinstance(num_ctx, bool) or not isinstance(num_ctx, int) or num_ctx < 1:
+        raise ValueError("Hindsight Ollama num_ctx must be a positive integer")
+    return ["-e", f"HINDSIGHT_API_LLM_OLLAMA_NUM_CTX={num_ctx}"]
+
+
 class HindsightOllamaProxy(ThreadingHTTPServer):
     """Forward Hindsight's local Ollama traffic and retain aggregate metrics only."""
     daemon_threads = True
@@ -1295,7 +1304,8 @@ def start_hindsight(image: str, ollama_bridge_url: str, run_id: str, volume: str
     hindsight_model: str, network_mode: str = "bridge",
     llm_max_concurrent: int = 1, retain_mode: str = "concise",
     enable_observations: bool = True, plain_retrieval: bool = False,
-    retain_model: str | None = None):
+    retain_model: str | None = None,
+    ollama_num_ctx: int | None = None):
     subprocess.run(["docker", "volume", "create", volume], check=True, capture_output=True)
     api_port = 8888
     control_port = 9999
@@ -1344,6 +1354,7 @@ def start_hindsight(image: str, ollama_bridge_url: str, run_id: str, volume: str
     command.extend(hindsight_retain_environment(
         hindsight_model, retain_model or hindsight_model
     ))
+    command.extend(hindsight_ollama_context_environment(ollama_num_ctx))
     command.append(image)
     subprocess.run(
         command,
@@ -1684,6 +1695,7 @@ def write_incomplete_artifact(output: pathlib.Path, *, source_revision: str,
 
 
 def main() -> int:
+    global CONTEXT_LENGTH
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--samples", type=int, default=1)
     parser.add_argument(
@@ -1707,10 +1719,18 @@ def main() -> int:
         help="starting stack for this paired pass; each invocation creates a fresh disposable Hindsight volume",
     )
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11445")
+    parser.add_argument(
+        "--user-context-length", type=int, default=CONTEXT_LENGTH,
+        help="measured user-model context length (default: 65536)",
+    )
     parser.add_argument("--hermes-root", type=pathlib.Path, default=DEFAULT_HERMES)
     parser.add_argument("--hindsight-plugin", type=pathlib.Path, default=DEFAULT_PLUGIN)
     parser.add_argument("--hindsight-image", default=DEFAULT_IMAGE)
     parser.add_argument("--hindsight-model", default=DEFAULT_HINDSIGHT_MODEL)
+    parser.add_argument(
+        "--hindsight-ollama-num-ctx", type=int, default=None,
+        help="upstream HINDSIGHT_API_LLM_OLLAMA_NUM_CTX override for the disposable Hindsight service",
+    )
     parser.add_argument(
         "--hindsight-retain-model", default=None,
         help="optional local Ollama model for Hindsight fact extraction; other memory operations keep --hindsight-model",
@@ -1764,6 +1784,11 @@ def main() -> int:
         default=ROOT / "benchmarks/hades-core-memory-paired-v2.json",
     )
     args = parser.parse_args()
+    if args.user_context_length < 1:
+        parser.error("--user-context-length must be a positive integer")
+    CONTEXT_LENGTH = args.user_context_length
+    if args.hindsight_ollama_num_ctx is not None and args.hindsight_ollama_num_ctx < 1:
+        parser.error("--hindsight-ollama-num-ctx must be a positive integer")
     if args.samples != 1:
         parser.error(
             "use exactly one paired pass per fresh Hindsight volume; run separate invocations for additional independent samples"
@@ -1886,6 +1911,7 @@ def main() -> int:
             not args.hindsight_disable_observations,
             args.hindsight_plain_retrieval,
             retain_model,
+            args.hindsight_ollama_num_ctx,
         )
         container_started = True
         for stack in ("plain", "hades"):
@@ -1897,15 +1923,27 @@ def main() -> int:
                 args.capture_recall_diagnostics,
             )
 
+        warmup_runtime_normalization = {}
         for stack in ("plain", "hades"):
             failure_stage = f"{stack}_warmup"
             gateway = gateways[stack]
+            # Hindsight's startup health probe may have loaded its LLM before
+            # either stack is warmed. Reset the shared runtime to the same
+            # interactive-model-only state before each stack's warmup; otherwise
+            # PLAIN can fail or inherit HADES-only VRAM residency.
+            warmup_runtime_normalization[stack] = normalize_ollama_for_arm(
+                ollama, benchmark, MODEL, args.hindsight_model, CONTEXT_LENGTH,
+                additional_extractor_models=(
+                    (retain_model,) if retain_model != args.hindsight_model else ()
+                ),
+            )
             warmups[stack] = measure_turn(
                 gateway, benchmark, "warmup", "memory-pair-warmup",
                 [{"role": "user", "content": "Hi."}], 64,
             )
             if not warmups[stack]["answer"]:
                 raise RuntimeError(f"{stack} warmup returned no assistant response")
+        warmups["runtime_normalization"] = warmup_runtime_normalization
 
         failure_stage = "hindsight_idle_after_warmups"
         warmup_idle = wait_hindsight_idle(
@@ -2528,6 +2566,7 @@ def main() -> int:
                 "hindsight_model": args.hindsight_model,
                 "hindsight_model_digest": hindsight_model_row.get("digest"),
                 "hindsight_model_quantization": hindsight_model_row.get("details", {}).get("quantization_level"),
+                "hindsight_ollama_num_ctx": args.hindsight_ollama_num_ctx,
                 "hindsight_retain_model": retain_model,
                 "hindsight_retain_model_digest": hindsight_retain_model_row.get("digest"),
                 "hindsight_retain_model_quantization": hindsight_retain_model_row.get("details", {}).get("quantization_level"),
@@ -2572,7 +2611,7 @@ def main() -> int:
                 "arm_isolation": "Before measured arms, the runner drains Hindsight warmup work. Before each stack arm, it unloads the extractor, warms and verifies the interactive model at the configured context, and records normalization timings outside measured turns. After every HADES arm, it polls pending/processing operations across every bank in the disposable Hindsight database until two consecutive idle observations; unavailable status or timeout aborts the run. This prevents background work from carrying across counterbalanced arms.",
                 "warmups": {
                     key: (
-                        value if key == "hindsight_idle" else {
+                        value if key in {"hindsight_idle", "runtime_normalization"} else {
                             "status": value["status"],
                             "provider_generations": value["metrics"]["provider_generations"],
                         }
