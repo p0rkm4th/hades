@@ -96,6 +96,22 @@ Hindsight 0.9.2 runtime. See the [v0.10.3 source release](https://github.com/vec
 the exact [`config.py` revision](https://github.com/vectorize-io/hindsight/blob/eb6df499d35300e5b2f3f029b2e6adda04ed90f8/hindsight-api-slim/hindsight_api/config.py),
 and the [operation API contract](https://github.com/vectorize-io/hindsight/blob/eb6df499d35300e5b2f3f029b2e6adda04ed90f8/skills/hindsight-docs/references/developer/api/operations.md).
 
+## Native per-item extraction strategy opportunity
+
+The exact Hindsight v0.10.3 source supports named per-item retain strategies:
+the Hermes provider adds its configured `retain_strategy` to each retained
+item, and Hindsight applies hierarchical overrides such as
+`retain_extraction_mode` for that item. This may allow a bank to keep concise
+semantic extraction as its default while selected automatic turns use the
+chunks mode that was fast in the diagnostic replay. It is only a source-level
+opportunity so far; HADES has not configured or tested this mixed profile.
+The next candidate should keep explicit saves on concise extraction, apply the
+chunks strategy only to automatic turns if Hindsight's API supports that
+boundary cleanly, then compare immediate recall, paraphrase, correction,
+irrelevant recall, and subject isolation. See the exact [`Hermes provider`
+source](https://github.com/vectorize-io/hindsight/blob/eb6df499d35300e5b2f3f029b2e6adda04ed90f8/hindsight-integrations/hermes/__init__.py)
+and [strategy resolver](https://github.com/vectorize-io/hindsight/blob/eb6df499d35300e5b2f3f029b2e6adda04ed90f8/hindsight-api-slim/hindsight_api/config_resolver.py).
+
 ## Bank-scoped readiness candidate, compared by retain profile
 
 A temporary HADES prefetch adapter queried only `pending` and `processing`
