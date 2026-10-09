@@ -7633,19 +7633,20 @@ def _hades_recipe_servings_response(user_text, subject, scope, conversation_key)
 
 
 def _hades_conversation_intent_text(user_message, conversation_history):
-    """Build bounded routing context without truncating the current turn.
+    """Build bounded user-authored routing context without truncating this turn.
 
-    Recent history provides pronoun/domain continuity, but the current user
-    request is authoritative for this turn and must remain inside the cap.
+    Recent user messages provide pronoun/domain continuity. Assistant output
+    can be stale or mistaken and must not activate a capability for a new turn;
+    the full conversation remains available to the model for normal follow-up.
     """
     history_parts = []
     if isinstance(conversation_history, list):
         for message in conversation_history[-8:]:
             if isinstance(message, dict):
-                # Tool payloads are observations, not user intent. They may
-                # be stale, contradictory, or attacker-controlled and must
-                # not steer a later capability/authority decision.
-                if message.get("role") == "tool":
+                # Only user-authored messages establish intent. Assistant
+                # output and tool payloads can be stale, contradictory, or
+                # attacker-controlled and must not activate later routing.
+                if message.get("role") != "user":
                     continue
                 content = message.get("content", "")
                 if isinstance(content, str):

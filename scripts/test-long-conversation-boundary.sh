@@ -37,7 +37,21 @@ stale = overlay._hades_conversation_intent_text(
 assert "finance balance" not in stale and "Agent Zero executed" not in stale
 assert "Alpha prefers basil" in stale
 
-oversized = [{"role": "assistant", "content": "x" * 12000}]
+# Prior assistant prose is conversational context for the model, not proof of
+# the user's intent. It must not trigger web or current-information routing on
+# a short follow-up that the user did not ask to research.
+followup = overlay._hades_conversation_intent_text(
+    "What about the other one?",
+    [
+        {"role": "user", "content": "Compare these two local model options."},
+        {"role": "assistant", "content": "The newer version is current online; I can search the web for more."},
+    ],
+)
+assert "Compare these two local model options." in followup
+assert "newer version is current online" not in followup
+assert not overlay._HADES_LIVE_WEB_INTENT.search(followup)
+
+oversized = [{"role": "user", "content": "x" * 12000}]
 text = overlay._hades_conversation_intent_text(
     "current query must survive truncation", oversized
 )
