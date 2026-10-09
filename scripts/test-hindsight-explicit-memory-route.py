@@ -176,6 +176,7 @@ class FakePrefetchProvider:
 
     def __init__(self):
         self.semantic_calls = []
+        self._config = {}
 
     def _run_hindsight_operation(self, operation):
         return operation(FakeSemanticClient(self.semantic_calls))
@@ -197,6 +198,13 @@ assert prefetch("### Task:\nGenerate a concise title summarizing the chat histor
 assert prefetch_provider.semantic_calls == [], prefetch_provider.semantic_calls
 assert prefetch("Tell me about the restaurant I liked") == ""
 assert len(prefetch_provider.semantic_calls) == 1, prefetch_provider.semantic_calls
+assert "include_chunks" not in prefetch_provider.semantic_calls[-1]
+prefetch_provider._config["include_chunks"] = True
+assert prefetch("Tell me what I said about that trip") == ""
+assert prefetch_provider.semantic_calls[-1]["include_chunks"] is True
+prefetch_provider._config["include_chunks"] = False
+assert prefetch("Tell me about that trip again") == ""
+assert "include_chunks" not in prefetch_provider.semantic_calls[-1]
 old_urlopen = urllib.request.urlopen
 old_endpoint = os.environ.get("HADES_HINDSIGHT_URL")
 urllib.request.urlopen = fake_urlopen

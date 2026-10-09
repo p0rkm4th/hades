@@ -232,6 +232,56 @@ def read_safe_explicit_list_diagnostics(log_path: pathlib.Path, offset: int = 0)
     return rows, next_offset
 
 
+def read_safe_hades_prefetch_diagnostics(log_path: pathlib.Path, offset: int = 0):
+    """Read prefetch outcomes without queries, banks, facts, IDs, or prompt text."""
+    marker = "HADES prefetch diagnostics "
+    allowed_statuses = {"completed", "skipped", "error"}
+    allowed_reasons = {
+        "tools_mode", "auto_recall_disabled", "empty_query", "auxiliary_prompt",
+        "explicit_memory_route", "nonpersonal_state",
+    }
+    allowed_types = {"world", "experience", "observation"}
+    rows = []
+    try:
+        with log_path.open("rb") as stream:
+            stream.seek(max(0, offset))
+            while True:
+                raw_line = stream.readline()
+                if not raw_line:
+                    break
+                line = raw_line.decode("utf-8", errors="replace")
+                start = line.find(marker)
+                if start < 0:
+                    continue
+                fields = dict(re.findall(
+                    r"([a-z_]+)=([A-Za-z0-9_.,:-]+)",
+                    line[start + len(marker):],
+                ))
+                status = fields.get("status")
+                count = fields.get("results")
+                if status not in allowed_statuses or not count or not count.isdecimal():
+                    continue
+                row: dict[str, Any] = {
+                    "status": status,
+                    "result_count": int(count),
+                    "result_types": sorted({
+                        kind for kind in fields.get("types", "").split(",")
+                        if kind in allowed_types
+                    }),
+                }
+                reason = fields.get("reason")
+                if reason in allowed_reasons:
+                    row["skip_reason"] = reason
+                error = fields.get("error")
+                if status == "error" and error and error.isidentifier():
+                    row["error_type"] = error
+                rows.append(row)
+            next_offset = stream.tell()
+    except OSError:
+        return [], offset
+    return rows, next_offset
+
+
 def read_safe_recall_timings(log_path: pathlib.Path, offset: int = 0):
     """Read allowlisted automatic-recall timing fields, never log text fields."""
     marker = "HADES timing stage=automatic_recall "
@@ -321,6 +371,7 @@ def safe_repetitions(repetitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "core09_fact_visibility_after_save",
         "core09_recall_after_idle_expected_marker_present",
         "core09_fact_visibility_after_drain",
+        "hindsight_chunk_recall_after_turn",
     )
     safe_samples = []
     for sample in repetitions:
@@ -658,6 +709,73 @@ def hindsight_recall_candidate_diagnostic(url: str,
             row["elapsed_ms"] = round((time.monotonic() - started) * 1000, 1)
             rows.append(row)
     return rows
+
+
+def hindsight_chunk_recall_diagnostic(url: str, bank_id: str,
+                                     query: str, marker: str) -> dict[str, Any]:
+    """Probe the documented raw-chunk recall API without retaining result text."""
+    endpoint = (
+        f"{url.rstrip('/')}/v1/default/banks/"
+        f"{urllib.parse.quote(bank_id, safe='-_')}/memories/recall"
+    )
+    body = json.dumps({
+        "query": query,
+        "types": ["world", "experience"],
+        "budget": "low",
+        "max_tokens": 1200,
+        "include_chunks": True,
+        "max_chunk_tokens": 1200,
+    }).encode()
+    request = urllib.request.Request(
+        endpoint, data=body,
+        headers={
+            "Authorization": "Bearer synthetic-local-benchmark",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        method="POST",
+    )
+    started = time.monotonic()
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.load(response)
+        results = payload.get("results", []) if isinstance(payload, dict) else []
+        chunks = payload.get("chunks", {}) if isinstance(payload, dict) else {}
+        if not isinstance(results, list):
+            results = []
+        if not isinstance(chunks, dict):
+            chunks = {}
+        result_types: dict[str, int] = {}
+        for row in results:
+            if isinstance(row, dict):
+                kind = str(row.get("type") or "unknown")
+                result_types[kind] = result_types.get(kind, 0) + 1
+        marker_folded = marker.casefold()
+        return {
+            "result_count": len(results),
+            "result_type_counts": result_types,
+            "chunk_count": len(chunks),
+            "marker_in_result": any(
+                marker_folded in str(row.get("text") or "").casefold()
+                for row in results if isinstance(row, dict)
+            ),
+            "marker_in_chunk": any(
+                marker_folded in str(row.get("text") or "").casefold()
+                for row in chunks.values() if isinstance(row, dict)
+            ),
+            "elapsed_ms": round((time.monotonic() - started) * 1000, 1),
+        }
+    except urllib.error.HTTPError as exc:
+        return {
+            "error_type": "HTTPError",
+            "status_code": int(exc.code),
+            "elapsed_ms": round((time.monotonic() - started) * 1000, 1),
+        }
+    except Exception as exc:
+        return {
+            "error_type": type(exc).__name__,
+            "elapsed_ms": round((time.monotonic() - started) * 1000, 1),
+        }
 
 
 def hindsight_bank_lifecycle(url: str, bank_id: str) -> dict[str, Any]:
@@ -1011,7 +1129,7 @@ def measure_memory_supplement_case(gateway: dict[str, Any], benchmark,
 def start_hindsight(image: str, ollama_bridge_url: str, run_id: str, volume: str,
     hindsight_model: str, network_mode: str = "bridge",
     llm_max_concurrent: int = 1, retain_mode: str = "concise",
-    enable_observations: bool = True):
+    enable_observations: bool = True, plain_retrieval: bool = False):
     subprocess.run(["docker", "volume", "create", volume], check=True, capture_output=True)
     api_port = 8888
     control_port = 9999
@@ -1031,8 +1149,7 @@ def start_hindsight(image: str, ollama_bridge_url: str, run_id: str, volume: str
         host = "0.0.0.0"
     else:
         raise ValueError("unsupported Hindsight staging network mode")
-    subprocess.run(
-        [
+    command = [
             "docker", "run", "-d", "--name", run_id,
             *network_args,
             "-v", f"{volume}:/home/hindsight/.pg0",
@@ -1050,8 +1167,17 @@ def start_hindsight(image: str, ollama_bridge_url: str, run_id: str, volume: str
             "-e", f"HINDSIGHT_API_RETAIN_EXTRACTION_MODE={retain_mode}",
             "-e", "HINDSIGHT_API_LLM_API_KEY=synthetic-local-benchmark",
             "-e", "HINDSIGHT_API_EMBEDDINGS_PROVIDER=local",
-            image,
-        ],
+        ]
+    if plain_retrieval:
+        command.extend([
+            "-e", "HINDSIGHT_API_ENABLE_TEXT_SEARCH=false",
+            "-e", "HINDSIGHT_API_ENABLE_TEMPORAL_RETRIEVAL=false",
+            "-e", "HINDSIGHT_API_ENABLE_GRAPH_RETRIEVAL=false",
+            "-e", "HINDSIGHT_API_ENABLE_RERANKING=false",
+        ])
+    command.append(image)
+    subprocess.run(
+        command,
         check=True,
         capture_output=True,
         text=True,
@@ -1090,7 +1216,8 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
                    hades_scope: str, hades_recall_types: str,
                    hades_recall_budget: str,
                    hades_prefer_observations: bool,
-                   hades_recall_sync: bool,
+                   hades_retain_sync: bool,
+                   hades_include_chunks: bool,
                    capture_recall_diagnostics: bool = False):
     executable = hermes_executable(hermes_root)
     provider_port = proxy_module.unused_port()
@@ -1140,7 +1267,8 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
             "api_key": "synthetic-local-benchmark",
             "bank_id": "hades-synthetic",
             "recall_budget": hades_recall_budget,
-            "recall_sync": hades_recall_sync,
+            "retain_async": not hades_retain_sync,
+            "include_chunks": hades_include_chunks,
         }
         if hades_recall_types == "all":
             hindsight_config["recall_types"] = ["observation", "world", "experience"]
@@ -1186,7 +1314,9 @@ def create_gateway(stack: str, root: pathlib.Path, plugin: pathlib.Path,
         env.update(
             {
                 "HADES_HINDSIGHT_URL": hindsight_url or "",
-                "HADES_MEMORY_SCORE_DIAGNOSTICS": "1" if stack == "hades" else "0",
+                "HADES_MEMORY_SCORE_DIAGNOSTICS": (
+                    "1" if stack == "hades" and capture_recall_diagnostics else "0"
+                ),
                 "HINDSIGHT_MODE": "local_external",
                 "HINDSIGHT_API_URL": hindsight_url or "",
                 "HINDSIGHT_API_KEY": "synthetic-local-benchmark",
@@ -1417,6 +1547,18 @@ def main() -> int:
         help="disable derived observation consolidation for the disposable Hindsight service",
     )
     parser.add_argument(
+        "--hades-retain-sync", action="store_true",
+        help="test the upstream provider's retain_async=false setting for eligible automatic-memory turns",
+    )
+    parser.add_argument(
+        "--hades-include-chunks", action="store_true",
+        help="test HADES prefetch with Hindsight's supported include_chunks=true recall option",
+    )
+    parser.add_argument(
+        "--hindsight-plain-retrieval", action="store_true",
+        help="apply Hindsight's documented single-bank RAG profile (chunks, no observations, vector-only recall stages)",
+    )
+    parser.add_argument(
         "--capture-recall-diagnostics", action="store_true",
         help="enable HADES INFO logs temporarily and retain only allowlisted recall ranks, types and scores",
     )
@@ -1431,10 +1573,6 @@ def main() -> int:
     parser.add_argument(
         "--hades-recall-types", choices=("observation", "all"), default="observation",
         help="synthetic HADES recall-type setting; all enables observation, world and experience",
-    )
-    parser.add_argument(
-        "--hades-recall-sync", action="store_true",
-        help="test the pinned Hindsight provider's supported synchronous recall mode; adds recall latency to the current turn",
     )
     parser.add_argument(
         "--hades-recall-budget", choices=("low", "mid"), default="mid",
@@ -1457,6 +1595,12 @@ def main() -> int:
         parser.error("--automatic-only and --core09-only are mutually exclusive")
     if args.hindsight_llm_max_concurrent < 1:
         parser.error("--hindsight-llm-max-concurrent must be at least 1")
+    if args.hindsight_plain_retrieval:
+        if args.hindsight_retain_mode != "chunks":
+            parser.error("--hindsight-plain-retrieval requires --hindsight-retain-mode chunks")
+        if args.hindsight_disable_observations:
+            parser.error("--hindsight-plain-retrieval already disables observations")
+        args.hindsight_disable_observations = True
     try:
         hermes_root = args.hermes_root.resolve(strict=True)
         executable = hermes_executable(hermes_root)
@@ -1555,6 +1699,7 @@ def main() -> int:
             args.hindsight_llm_max_concurrent,
             args.hindsight_retain_mode,
             not args.hindsight_disable_observations,
+            args.hindsight_plain_retrieval,
         )
         container_started = True
         for stack in ("plain", "hades"):
@@ -1562,7 +1707,8 @@ def main() -> int:
                 stack, ROOT, args.hindsight_plugin, benchmark, hindsight_url, temp,
                 ollama, hermes_root, args.hades_scope, args.hades_recall_types,
                 args.hades_recall_budget,
-                args.hades_prefer_observations, args.hades_recall_sync,
+                args.hades_prefer_observations, args.hades_retain_sync,
+                args.hades_include_chunks,
                 args.capture_recall_diagnostics,
             )
 
@@ -1651,6 +1797,14 @@ def main() -> int:
                         )
                         if stack == "hades" else None
                     )
+                    chunk_recall_after_turn = (
+                        hindsight_chunk_recall_diagnostic(
+                            hindsight_url, memory_bank,
+                            "Where did I say I moved?", "Denver",
+                        )
+                        if stack == "hades" and args.automatic_only
+                        and args.hindsight_plain_retrieval else None
+                    )
                     print(json.dumps({"sample": sample + 1, "stack": stack,
                                       "turn": "automatic_recall",
                                       "total_ms": automatic_recall["total_ms"],
@@ -1666,6 +1820,7 @@ def main() -> int:
                         "automatic_recall_expected_marker_present": automatic_marker_present,
                         "automatic_retained_fact_visible": automatic_fact_visible,
                         "automatic_retention_state_before_recall": automatic_retention_state,
+                        "hindsight_chunk_recall_after_turn": chunk_recall_after_turn,
                     }
                     if stack == "hades":
                         failure_stage = f"hindsight_idle_after_focused_hades_{sample + 1}"
@@ -2117,6 +2272,7 @@ def main() -> int:
                 "hindsight_llm_max_concurrent": args.hindsight_llm_max_concurrent,
                 "retain_mode": args.hindsight_retain_mode,
                 "observations_enabled": not args.hindsight_disable_observations,
+                "plain_retrieval_profile": args.hindsight_plain_retrieval,
                 "assistant_response_storage": (
                     "Assistant response text is evaluated only in memory and is never printed or persisted; aggregate marker metrics are retained."
                     if args.automatic_only else
@@ -2135,8 +2291,9 @@ def main() -> int:
                 "hades_scope": args.hades_scope,
                 "hades_recall_types": args.hades_recall_types,
                 "hades_recall_budget": args.hades_recall_budget,
-                "hades_recall_sync": args.hades_recall_sync,
                 "hades_prefer_observations": args.hades_prefer_observations,
+                "hades_retain_async": not args.hades_retain_sync,
+                "hades_include_chunks": args.hades_include_chunks,
                 "recall_diagnostics_captured": args.capture_recall_diagnostics,
                 "recall_timing_diagnostics_captured": args.capture_recall_diagnostics,
                 "post_idle_recall_type_diagnostic": (
@@ -2181,6 +2338,12 @@ def main() -> int:
             ),
             "explicit_memory_list_diagnostics": (
                 read_safe_explicit_list_diagnostics(
+                    gateways["hades"]["log_path"]
+                )[0]
+                if args.capture_recall_diagnostics else []
+            ),
+            "hades_prefetch_diagnostics": (
+                read_safe_hades_prefetch_diagnostics(
                     gateways["hades"]["log_path"]
                 )[0]
                 if args.capture_recall_diagnostics else []

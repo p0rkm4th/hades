@@ -8773,9 +8773,33 @@ try:
         HADES uses the direct recall endpoint here so the current query gets
         its context synchronously; reflection remains intentionally disabled.
         """
+        def record_prefetch_diagnostic(status, *, results=None, reason="", error=None):
+            if os.environ.get("HADES_MEMORY_SCORE_DIAGNOSTICS") != "1":
+                return
+            result_rows = results if isinstance(results, (list, tuple)) else []
+            result_types = sorted({
+                str(getattr(item, "type", ""))
+                for item in result_rows
+                if getattr(item, "type", None) in {"world", "experience", "observation"}
+            })
+            _hades_logger.info(
+                "HADES prefetch diagnostics status=%s results=%d types=%s reason=%s error=%s",
+                status,
+                len(result_rows),
+                ",".join(result_types) or "none",
+                reason or "none",
+                type(error).__name__ if error is not None else "none",
+            )
+
         if self._memory_mode == "tools" or not self._auto_recall or not query.strip():
+            record_prefetch_diagnostic(
+                "skipped",
+                reason=("tools_mode" if self._memory_mode == "tools" else
+                        "auto_recall_disabled" if not self._auto_recall else "empty_query"),
+            )
             return ""
         if _hades_is_hermes_auxiliary_prompt(query):
+            record_prefetch_diagnostic("skipped", reason="auxiliary_prompt")
             _hades_logger.debug(
                 "Skipping Hindsight prefetch for Hermes auxiliary generation"
             )
@@ -8784,6 +8808,7 @@ try:
             _HADES_EXPLICIT_MEMORY_INTENT.search(query)
             or _hades_explicit_memory_recall_requested(query)
         ):
+            record_prefetch_diagnostic("skipped", reason="explicit_memory_route")
             _hades_logger.info(
                 "Skipping automatic Hindsight prefetch for explicit memory route"
             )
@@ -8794,6 +8819,7 @@ try:
         # dependency failure. Explicit memory requests may still compose with
         # a Grocy read.
         if _hades_nonpersonal_state_turn(query) and not _HADES_EXPLICIT_MEMORY_INTENT.search(query):
+            record_prefetch_diagnostic("skipped", reason="nonpersonal_state")
             return ""
         if self._recall_max_input_chars and len(query) > self._recall_max_input_chars:
             query = query[:self._recall_max_input_chars]
@@ -8808,10 +8834,17 @@ try:
             recall_kwargs["tags_match"] = self._recall_tags_match
         if self._recall_types:
             recall_kwargs["types"] = self._recall_types
+        # The upstream Hindsight API can include source chunks in recall
+        # results. Its Hermes provider does not expose this option; keep the
+        # adapter opt-in because chunks mode is a plain-retrieval profile,
+        # not a general memory-quality setting.
+        if bool(getattr(self, "_config", {}).get("include_chunks", False)):
+            recall_kwargs["include_chunks"] = True
         try:
             response = self._run_hindsight_operation(
                 lambda client: client.arecall(**recall_kwargs)
             )
+            record_prefetch_diagnostic("completed", results=response.results or [])
             seen = set()
             lines = []
             for item in (response.results or []):
@@ -8836,7 +8869,8 @@ try:
                 "Do not call tools to look up information already present here."
             )
             return header + "\n\n" + "\n".join(lines)
-        except Exception:
+        except Exception as exc:
+            record_prefetch_diagnostic("error", error=exc)
             return ""
 
     def _hades_memory_tools(self):

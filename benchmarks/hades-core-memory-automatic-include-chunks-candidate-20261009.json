@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "date": "2026-10-09",
-  "title": "Automatic-memory recall_sync flag diagnostic (overridden by HADES prefetch hook)",
-  "classification": "synthetic local diagnostic; requested recall_sync setting did not control the HADES prefetch path and is invalid as evidence about native Hermes recall_sync",
-  "source_revision": "665ae23f6c881b3a5112bcee49519694d1b60e8e",
+  "title": "Focused ordinary chat and synthetic automatic-memory recall comparison",
+  "classification": "synthetic local comparative benchmark; no owner preference or release qualification",
+  "source_revision": "94f18d3980d8efebc202da5f1e6ccd617e168331",
   "method": {
     "samples": 1,
     "hermes_version": "Hermes Agent v0.21.6 (2026.9.24) · upstream 818c13be",
@@ -33,7 +33,8 @@
     "hindsight_model_quantization": "Q4_K_M",
     "hindsight_llm_max_concurrent": 1,
     "retain_mode": "chunks",
-    "observations_enabled": true,
+    "observations_enabled": false,
+    "plain_retrieval_profile": true,
     "stored_text_policy": "Assistant response text is evaluated only in memory and is never printed or persisted; aggregate marker metrics are retained.",
     "reasoning": "disabled per request",
     "max_output_tokens": 512,
@@ -51,6 +52,8 @@
     "hades_recall_types": "all",
     "hades_recall_budget": "mid",
     "hades_prefer_observations": false,
+    "hades_retain_async": true,
+    "hades_include_chunks": true,
     "recall_diagnostics_captured": true,
     "recall_timing_diagnostics_captured": true,
     "post_idle_recall_type_diagnostic": "Not run in focused mode.",
@@ -75,7 +78,7 @@
         "idle": true,
         "polls": 2,
         "proxy_active_requests": 0,
-        "elapsed_ms": 1009.6,
+        "elapsed_ms": 1010.1,
         "last_state": {
           "banks": {},
           "operations": {
@@ -91,21 +94,18 @@
       }
     },
     "data": "The owner core-09 recall wording uses only a synthetic savings target ($3,000). Automatic cross-session Denver fact and favorite-fruit save/correction remain synthetic controls. Temporary homes, container and database volume.",
-    "privacy": "Ollama endpoint restricted to loopback; Ollama server launched with OLLAMA_NO_CLOUD=1. Hindsight used Docker bridge networking with its host API published only on loopback and the accounting proxy bound only to the bridge gateway; synthetic benchmark data only.",
-    "explicit_list_diagnostics": "Aggregate HADES-only counts for listed items, lexical matches and candidates, plus exception type. No query, memory text, IDs, tags, entities or subject values are persisted.",
-    "recall_sync_setting_requested": true,
-    "recall_sync_effective_for_hades": "No. hermes/sitecustomize.py binds HindsightMemoryProvider.prefetch to _hades_prefetch, which directly calls arecall; provider.prefetch and its recall_sync branch are bypassed."
+    "privacy": "Ollama endpoint restricted to loopback; Ollama server launched with OLLAMA_NO_CLOUD=1. Hindsight used Docker bridge networking with its host API published only on loopback and the accounting proxy bound only to the bridge gateway; synthetic benchmark data only."
   },
   "summary_by_stack_and_turn": {
     "plain.ordinary": {
       "samples": 1,
-      "median_ttft_ms": 1336.8,
-      "median_total_ms": 1921.0,
+      "median_ttft_ms": 1369.6,
+      "median_total_ms": 1960.4,
       "median_provider_generations": 1,
       "median_tool_schema_exposures": 1,
       "median_tool_schema_bytes_exposed": 3449,
       "median_tool_calls": 0,
-      "median_prompt_tokens": 3309,
+      "median_prompt_tokens": 3317,
       "median_request_bytes": 14175,
       "fresh_recalls_with_expected_marker": null,
       "fresh_recalls_with_stale_mango": null,
@@ -116,13 +116,13 @@
     },
     "plain.automatic_retain": {
       "samples": 1,
-      "median_ttft_ms": 3251.0,
-      "median_total_ms": 3668.5,
+      "median_ttft_ms": 3165.0,
+      "median_total_ms": 3223.6,
       "median_provider_generations": 2,
       "median_tool_schema_exposures": 2,
       "median_tool_schema_bytes_exposed": 6898,
       "median_tool_calls": 1,
-      "median_prompt_tokens": 6762,
+      "median_prompt_tokens": 6778,
       "median_request_bytes": 28842,
       "fresh_recalls_with_expected_marker": null,
       "fresh_recalls_with_stale_mango": null,
@@ -133,13 +133,13 @@
     },
     "plain.automatic_recall": {
       "samples": 1,
-      "median_ttft_ms": 1740.7,
-      "median_total_ms": 1991.6,
+      "median_ttft_ms": 1833.3,
+      "median_total_ms": 1954.2,
       "median_provider_generations": 1,
       "median_tool_schema_exposures": 1,
       "median_tool_schema_bytes_exposed": 3449,
       "median_tool_calls": 0,
-      "median_prompt_tokens": 3370,
+      "median_prompt_tokens": 3378,
       "median_request_bytes": 14538,
       "fresh_recalls_with_expected_marker": null,
       "fresh_recalls_with_stale_mango": null,
@@ -269,13 +269,13 @@
     },
     "hades.ordinary": {
       "samples": 1,
-      "median_ttft_ms": 1277.1,
-      "median_total_ms": 1552.5,
+      "median_ttft_ms": 1327.5,
+      "median_total_ms": 1901.5,
       "median_provider_generations": 1,
       "median_tool_schema_exposures": 0,
       "median_tool_schema_bytes_exposed": 0,
       "median_tool_calls": 0,
-      "median_prompt_tokens": 730,
+      "median_prompt_tokens": 736,
       "median_request_bytes": 3150,
       "fresh_recalls_with_expected_marker": null,
       "fresh_recalls_with_stale_mango": null,
@@ -286,13 +286,13 @@
     },
     "hades.automatic_retain": {
       "samples": 1,
-      "median_ttft_ms": 1229.3,
-      "median_total_ms": 1348.8,
+      "median_ttft_ms": 1293.1,
+      "median_total_ms": 1411.4,
       "median_provider_generations": 1,
       "median_tool_schema_exposures": 0,
       "median_tool_schema_bytes_exposed": 0,
       "median_tool_calls": 0,
-      "median_prompt_tokens": 733,
+      "median_prompt_tokens": 739,
       "median_request_bytes": 3146,
       "fresh_recalls_with_expected_marker": null,
       "fresh_recalls_with_stale_mango": null,
@@ -303,13 +303,13 @@
     },
     "hades.automatic_recall": {
       "samples": 1,
-      "median_ttft_ms": 1329.1,
-      "median_total_ms": 1966.2,
+      "median_ttft_ms": 1253.1,
+      "median_total_ms": 1424.0,
       "median_provider_generations": 1,
       "median_tool_schema_exposures": 0,
       "median_tool_schema_bytes_exposed": 0,
       "median_tool_calls": 0,
-      "median_prompt_tokens": 729,
+      "median_prompt_tokens": 735,
       "median_request_bytes": 3144,
       "fresh_recalls_with_expected_marker": null,
       "fresh_recalls_with_stale_mango": null,
@@ -442,6 +442,32 @@
   "hades_recall_diagnostics": [],
   "hades_recall_timing_diagnostics": [],
   "explicit_memory_list_diagnostics": [],
+  "hades_prefetch_diagnostics": [
+    {
+      "status": "error",
+      "result_count": 0,
+      "result_types": [],
+      "error_type": "NotFoundException"
+    },
+    {
+      "status": "error",
+      "result_count": 0,
+      "result_types": [],
+      "error_type": "NotFoundException"
+    },
+    {
+      "status": "completed",
+      "result_count": 0,
+      "result_types": []
+    },
+    {
+      "status": "completed",
+      "result_count": 1,
+      "result_types": [
+        "world"
+      ]
+    }
+  ],
   "hindsight_ollama_calls": [
     {
       "route": "other",
@@ -449,33 +475,13 @@
       "stream": false,
       "request_bytes": 88,
       "status": 200,
-      "elapsed_ms": 21760.0,
-      "response_bytes": 975,
+      "elapsed_ms": 19006.2,
+      "response_bytes": 727,
       "prompt_eval_count": null,
       "eval_count": null,
       "total_duration_ns": null,
       "load_duration_ns": null,
       "generation_controls": {},
-      "loaded_model_residency": "resident",
-      "loaded_model_context_length": 40960,
-      "loaded_model_size_bytes": 16369697421,
-      "loaded_model_size_vram_bytes": 15100343746
-    },
-    {
-      "route": "/api/chat",
-      "model": "qwen3:14b",
-      "stream": false,
-      "request_bytes": 15350,
-      "status": 200,
-      "elapsed_ms": 14367.0,
-      "response_bytes": 645,
-      "prompt_eval_count": 3300,
-      "eval_count": 101,
-      "total_duration_ns": 14366203278,
-      "load_duration_ns": 4566241658,
-      "generation_controls": {
-        "temperature": 0.0
-      },
       "loaded_model_residency": "resident",
       "loaded_model_context_length": 40960,
       "loaded_model_size_bytes": 16369697421,
@@ -488,9 +494,9 @@
       "first_stack": "plain",
       "hindsight_idle_after_hades": {
         "idle": true,
-        "polls": 16,
+        "polls": 2,
         "proxy_active_requests": 0,
-        "elapsed_ms": 15209.6,
+        "elapsed_ms": 1020.8,
         "last_state": {
           "banks": {
             "hades-owner": {
@@ -505,7 +511,7 @@
           "stats": {
             "pending_operations": 0,
             "operations_by_status": {
-              "completed": 3
+              "completed": 2
             }
           },
           "bank_count": 1
@@ -520,7 +526,7 @@
           "extractor_resident": false,
           "extractor_was_resident_before_reset": false,
           "extractor_unload_ms": null,
-          "interactive_warmup_ms": 1443.3,
+          "interactive_warmup_ms": 1460.3,
           "normalization_calls_excluded_from_turn_timing": true
         },
         "hades": {
@@ -531,7 +537,7 @@
           "extractor_resident": false,
           "extractor_was_resident_before_reset": false,
           "extractor_unload_ms": null,
-          "interactive_warmup_ms": 280.9,
+          "interactive_warmup_ms": 239.6,
           "normalization_calls_excluded_from_turn_timing": true
         }
       },
@@ -559,15 +565,15 @@
             {
               "turn": "ordinary",
               "status": 200,
-              "ttft_ms": 1336.8,
-              "total_ms": 1921.0,
+              "ttft_ms": 1369.6,
+              "total_ms": 1960.4,
               "metrics": {
                 "provider_generations": 1,
                 "tool_schema_exposures": 1,
                 "tool_schema_bytes_exposed": 3449,
                 "tool_calls_emitted": 0,
-                "prompt_tokens": 3309,
-                "completion_tokens": 24,
+                "prompt_tokens": 3317,
+                "completion_tokens": 28,
                 "request_bytes": 14175,
                 "message_bytes": 10538,
                 "system_message_bytes": 10480,
@@ -585,15 +591,15 @@
             {
               "turn": "automatic_retain",
               "status": 200,
-              "ttft_ms": 3251.0,
-              "total_ms": 3668.5,
+              "ttft_ms": 3165.0,
+              "total_ms": 3223.6,
               "metrics": {
                 "provider_generations": 2,
                 "tool_schema_exposures": 2,
                 "tool_schema_bytes_exposed": 6898,
                 "tool_calls_emitted": 1,
-                "prompt_tokens": 6762,
-                "completion_tokens": 82,
+                "prompt_tokens": 6778,
+                "completion_tokens": 63,
                 "request_bytes": 28842,
                 "message_bytes": 21566,
                 "system_message_bytes": 20960,
@@ -616,15 +622,15 @@
             {
               "turn": "automatic_recall",
               "status": 200,
-              "ttft_ms": 1740.7,
-              "total_ms": 1991.6,
+              "ttft_ms": 1833.3,
+              "total_ms": 1954.2,
               "metrics": {
                 "provider_generations": 1,
                 "tool_schema_exposures": 1,
                 "tool_schema_bytes_exposed": 3449,
                 "tool_calls_emitted": 0,
-                "prompt_tokens": 3370,
-                "completion_tokens": 14,
+                "prompt_tokens": 3378,
+                "completion_tokens": 3,
                 "request_bytes": 14538,
                 "message_bytes": 10901,
                 "system_message_bytes": 10849,
@@ -642,6 +648,7 @@
           ],
           "automatic_recall_expected_marker_present": true,
           "automatic_retained_fact_visible": null,
+          "hindsight_chunk_recall_after_turn": null,
           "automatic_retention_state_before_recall": null
         },
         "hades": {
@@ -649,15 +656,15 @@
             {
               "turn": "ordinary",
               "status": 200,
-              "ttft_ms": 1277.1,
-              "total_ms": 1552.5,
+              "ttft_ms": 1327.5,
+              "total_ms": 1901.5,
               "metrics": {
                 "provider_generations": 1,
                 "tool_schema_exposures": 0,
                 "tool_schema_bytes_exposed": 0,
                 "tool_calls_emitted": 0,
-                "prompt_tokens": 730,
-                "completion_tokens": 13,
+                "prompt_tokens": 736,
+                "completion_tokens": 22,
                 "request_bytes": 3150,
                 "message_bytes": 2973,
                 "system_message_bytes": 2915,
@@ -675,14 +682,14 @@
             {
               "turn": "automatic_retain",
               "status": 200,
-              "ttft_ms": 1229.3,
-              "total_ms": 1348.8,
+              "ttft_ms": 1293.1,
+              "total_ms": 1411.4,
               "metrics": {
                 "provider_generations": 1,
                 "tool_schema_exposures": 0,
                 "tool_schema_bytes_exposed": 0,
                 "tool_calls_emitted": 0,
-                "prompt_tokens": 733,
+                "prompt_tokens": 739,
                 "completion_tokens": 5,
                 "request_bytes": 3146,
                 "message_bytes": 2969,
@@ -701,14 +708,14 @@
             {
               "turn": "automatic_recall",
               "status": 200,
-              "ttft_ms": 1329.1,
-              "total_ms": 1966.2,
+              "ttft_ms": 1253.1,
+              "total_ms": 1424.0,
               "metrics": {
                 "provider_generations": 1,
                 "tool_schema_exposures": 0,
                 "tool_schema_bytes_exposed": 0,
                 "tool_calls_emitted": 0,
-                "prompt_tokens": 729,
+                "prompt_tokens": 735,
                 "completion_tokens": 5,
                 "request_bytes": 3144,
                 "message_bytes": 2967,
@@ -718,8 +725,8 @@
                 ],
                 "runtime_observation_per_generation": [
                   {
-                    "resident_at_generation_boundary": "not_resident",
-                    "loaded_context_tokens": null
+                    "resident_at_generation_boundary": "resident",
+                    "loaded_context_tokens": 65536
                   }
                 ]
               }
@@ -727,17 +734,17 @@
             {
               "turn": "automatic_recall_after_idle",
               "status": 200,
-              "ttft_ms": 10034.3,
-              "total_ms": 10110.9,
+              "ttft_ms": 2008.0,
+              "total_ms": 2068.7,
               "metrics": {
                 "provider_generations": 1,
                 "tool_schema_exposures": 0,
                 "tool_schema_bytes_exposed": 0,
                 "tool_calls_emitted": 0,
-                "prompt_tokens": 948,
-                "completion_tokens": 2,
-                "request_bytes": 3951,
-                "message_bytes": 3774,
+                "prompt_tokens": 941,
+                "completion_tokens": 3,
+                "request_bytes": 3918,
+                "message_bytes": 3741,
                 "system_message_bytes": 2915,
                 "context_tokens_per_generation": [
                   65536
@@ -755,6 +762,16 @@
           "automatic_retained_fact_visible": true,
           "automatic_retained_fact_visible_after_drain": true,
           "automatic_recall_after_idle_expected_marker_present": true,
+          "hindsight_chunk_recall_after_turn": {
+            "result_count": 1,
+            "result_type_counts": {
+              "world": 1
+            },
+            "chunk_count": 0,
+            "marker_in_result": true,
+            "marker_in_chunk": false,
+            "elapsed_ms": 23.6
+          },
           "automatic_retention_state_before_recall": {
             "operations": {
               "pending": {
@@ -781,8 +798,22 @@
     "Gateway stack order is balanced, but each task sequence is serialized and no human quality ratings were collected.",
     "The owner core-09 recall is measured once immediately after save and again for both stacks after HADES background memory work drains; readiness delay and settled recall are separate outcomes.",
     "A fresh recall is a new Hermes session in the same private profile/subject. This does not qualify Open WebUI authentication, household UI isolation, or populated production data migration.",
-    "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review.",
-    "The requested recall_sync=true setting did not affect HADES because the overlay replaces the provider prefetch method. Treat this run only as a repeated HADES direct-arecall observation, not a native Hermes recall_sync comparison."
+    "Provider metrics are aggregate structural/timing data. Naturalness and whether Scotty prefers either workflow require direct owner review."
   ],
-  "source_worktree_state": "based on 665ae23f6c881b3a5112bcee49519694d1b60e8e with an uncommitted benchmark-only recall_sync option; HADES overlay overrode this setting, so it had no effect on the measured HADES path"
+  "source_worktree_state": "dirty at capture; based on 94f18d3980d8efebc202da5f1e6ccd617e168331 plus local uncommitted benchmark, adapter, diagnostics, and contract-test changes",
+  "source_modified_paths_at_capture": [
+    "CAMPAIGN_STATE.md",
+    "hermes/sitecustomize.py",
+    "scripts/benchmark-hades-memory-pair.py",
+    "scripts/test-benchmark-hades-memory-safe-diagnostics.py",
+    "scripts/test-hindsight-explicit-memory-route.py"
+  ],
+  "interpretation": {
+    "configured_hades_include_chunks": true,
+    "immediate_recall": "The automatic fact was not returned by HADES prefetch; fresh-session reply completed in 1424.0 ms.",
+    "direct_api_probe": "23.6 ms after that turn, the same bank/query through Hindsight recall with include_chunks=true returned one world result containing the synthetic marker.",
+    "settled_recall": "After a 1020.8 ms idle drain, the new-session HADES recall returned the marker in 2068.7 ms.",
+    "conclusion": "include_chunks alone does not resolve the write/index visibility race; the HADES prefetch ran before the retained source became searchable.",
+    "scope": "One synthetic paired sample; no owner preference, quality review, reliability qualification, or release qualification."
+  }
 }
