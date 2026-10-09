@@ -73,7 +73,12 @@ agent_class = run_agent.AIAgent
 assert getattr(agent_class.run_conversation, "__name__", "") == "_hades_run_conversation", "HADES hook did not patch the Hermes agent runtime"
 assert hades._hades_is_homelab_intent("Which models are available?"), "inference catalog question missed the live homelab route"
 assert hades._hades_is_homelab_intent("Where should I run another model?"), "model placement question missed the live homelab route"
-assert hades._hades_is_homelab_intent("What changed since yesterday?"), "recent activity question missed the live homelab route"
+assert not hades._hades_is_homelab_intent("What changed since yesterday?"), "generic activity wording must not activate homelab"
+assert hades._hades_is_homelab_intent("What changed in the homelab since yesterday?"), "explicit homelab activity missed its live route"
+assert hades._hades_is_homelab_intent(hades._hades_conversation_intent_text(
+    "What changed since yesterday?",
+    [{"role": "user", "content": "Check recent homelab activity."}],
+)), "homelab activity follow-up lost its explicit prior domain"
 node_followup_history = [
     {"role": "user", "content": "What is wrong with deep-inference-node?"},
     {"role": "assistant", "content": "I checked the current inference host."},
@@ -107,9 +112,28 @@ unverified_backup_denial = hades._hades_direct_proxmox_backup_status(
 )
 assert "couldn't verify this HADES session" in unverified_backup_denial
 activity_answer = hades._hades_direct_homelab_recent_activity(
-    "What changed since yesterday?", owner, "owner"
+    "What changed in the homelab since yesterday?", owner, "owner"
 )
 assert "synthetic recent homelab activity" in activity_answer, activity_answer
+assert hades._hades_direct_homelab_recent_activity(
+    "What changed since yesterday?", owner, "owner"
+) is None
+activity_followup = hades._hades_direct_homelab_recent_activity(
+    "What changed since yesterday?", owner, "owner",
+    history=[{"role": "user", "content": "Check recent homelab activity."}],
+)
+assert "synthetic recent homelab activity" in activity_followup, activity_followup
+assert hades._hades_direct_homelab_recent_activity(
+    "Show me exactly what changed and whether anything unrelated is in the diff.",
+    owner, "owner", history=[{"role": "user", "content": "Fix validation.py."}],
+) is None
+assert hades._hades_direct_homelab_recent_activity(
+    "What changed since yesterday?", owner, "owner",
+    history=[
+        {"role": "user", "content": "Check recent homelab activity."},
+        {"role": "user", "content": "Fix validation.py."},
+    ],
+) is None
 assert hades._hades_direct_homelab_recent_activity(
     "What changed since yesterday?", beta, "household"
 ) is None
@@ -639,6 +663,11 @@ with tempfile.TemporaryDirectory(prefix="hades-hermes-task-runtime-") as tmp:
     hermes_home = root / "hermes"
     home.mkdir(mode=0o700)
     hermes_home.mkdir(mode=0o700)
+    hindsight_plugin = os.environ.get("HADES_HERMES_TEST_HINDSIGHT_PLUGIN", "").strip()
+    if hindsight_plugin:
+        plugin_dir = hermes_home / "plugins"
+        plugin_dir.mkdir(mode=0o700)
+        (plugin_dir / "hindsight").symlink_to(Path(hindsight_plugin).resolve(), target_is_directory=True)
     homelab = root / "homelab"
     adapter = homelab / "integrations" / "homelab-readonly"
     adapter.mkdir(parents=True, mode=0o700)

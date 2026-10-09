@@ -5759,13 +5759,37 @@ def _hades_direct_proxmox_backup_status(user_text, subject, scope):
         return "I couldn't verify current Proxmox backup status from the configured read-only sources."
 
 
-def _hades_direct_homelab_recent_activity(user_text, subject, scope):
-    """Answer explicit owner recent-change questions from bounded live sources."""
+def _hades_direct_homelab_recent_activity(user_text, subject, scope, history=None):
+    """Answer explicitly homelab-scoped recent-change questions from live sources."""
     text = str(user_text or "")
     if scope != "owner" or not subject or not re.search(
         r"\b(?:what\s+changed|recent\s+(?:activity|changes?)|activity\s+(?:since|in\s+the\s+last)|changes?\s+since\s+yesterday)\b",
         text, re.IGNORECASE,
     ):
+        return None
+    domain_anchor = re.compile(
+        r"\b(?:homelab|homlab|home\s+lab|proxmox|netbox|uptime\s+kuma|"
+        r"infrastructure|server(?:s)?|node(?:s)?|guest(?:s)?|virtual\s+machines?|"
+        r"\bvm\b|container(?:s)?|gpu(?:s)?|network|host(?:s)?)\b",
+        re.IGNORECASE,
+    )
+    candidates = [text]
+    if isinstance(history, list):
+        previous_user = next((
+            str(message.get("content") or "")
+            for message in reversed(history)
+            if isinstance(message, dict) and message.get("role") == "user"
+        ), "")
+        if previous_user:
+            candidates.append(previous_user)
+    explicit_homelab_context = any(
+        domain_anchor.search(re.sub(
+            r"(?<![\w./-])[\w./-]+\.(?:py|pyi|js|jsx|ts|tsx|go|rs|java|c|cc|cpp|h|hpp|sh|bash|toml|yaml|yml|json|md|txt|sql)\b",
+            " ", candidate,
+        ))
+        for candidate in candidates
+    )
+    if not explicit_homelab_context:
         return None
     if re.search(r"\b(?:change|edit|fix|restart|reboot|deploy|update|remove|delete|create)\b", text, re.IGNORECASE):
         return None
@@ -10556,6 +10580,7 @@ try:
                 user_message,
                 getattr(self, "_hades_subject", ""),
                 self._hades_session_scope,
+                history=_hades_history,
             )
             if direct_activity_response:
                 callback = getattr(self, "stream_delta_callback", None)
