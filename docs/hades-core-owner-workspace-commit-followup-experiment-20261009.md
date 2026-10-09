@@ -115,6 +115,43 @@ a parent-only workspace variable. The sanitized diagnostic records its
 `NameError`; it is excluded from the stack comparison. The corrected runner
 uses the child workspace path. Artifacts: [`fresh diff candidate`](../benchmarks/hades-core-workspace-commit-followup-fresh-diff-only-ollama0402-20261009.json), [same-source no-injection control](../benchmarks/hades-core-workspace-commit-followup-baseline-same-source-ollama0402-20261009.json), and [invalid harness diagnostic](../benchmarks/hades-core-workspace-commit-followup-fresh-diff-diagnostic-ollama0402-20261009.json).
 
+## Hide review schemas — matched prototype
+
+This follow-up changed only HADES review-turn schema visibility. The five
+workspace schemas were removed for the read-only review request and restored
+afterward; the empty valid-tool allowlist remained in force. Hermes 0.21.6,
+Ollama 0.40.2, Qwen3.6 35B digest
+`a7eb95c53bcf96b4bdd008d0fab4a5dac88047d9c1a7a9ab88ed453423fbd87c`, verified
+65,536 context, rootless Docker 29.8.2, the same immutable network-disabled
+sandbox, and shared prewarmed package-manager state were used in two
+order-balanced PLAIN/HADES pairs.
+
+| Measure | PLAIN STACK | HADES, no review schemas |
+|---|---:|---:|
+| Median whole-task time | 66.42 s | 64.77 s |
+| Median model API calls per task | 13.5 | 11 |
+| Median tool results per task | 9 | 7 |
+| Tested source-only commits | 2/2 | 1/2 |
+| HADES `git diff` outside review phase | — | 1 call |
+| Review tool calls | 1 in 2 turns | 0 in 2 turns |
+| Review duration | 3.03 s, 5.88 s | 11.77 s, 11.14 s |
+| Review schema definitions | 8 | 0 |
+| Review cached prompt tokens | 7,471 and 7,890/7,942 | 0 and 0 |
+
+All four focused tests passed, but one HADES task ended with an uncommitted
+worktree after its commit turn produced no tool call. The faster HADES median
+is not a usability win because one task did less work and failed the requested
+commit. Hiding schemas removed the rejected review call in this small sample,
+but increased median review time from 5.39 s in the three adjacent visible-
+schema HADES captures to 11.46 s, with zero prompt-cache hits. The visible
+schema captures committed 3/3; the hidden-schema candidate committed 1/2.
+These cross-run samples are small and do not prove causation, but they give no
+support for promoting the schema-hiding change. Its lower generation/tool
+counts accompany one incomplete HADES task and are not a gain. Reject it. Keep
+the schemas for prefix reuse and the empty allowlist as the execution boundary;
+`tool_choice` remains only a provider hint. The sanitized matched artifact is
+[`hidden review schemas`](../benchmarks/hades-core-owner-workspace-hidden-review-schema-ollama0402-20261009.json).
+
 The sanitized runner output for the baseline and all candidates is in
 [`benchmarks`](../benchmarks):
 
@@ -128,17 +165,15 @@ not prompt or answer text. The fixtures and account identities were synthetic.
 
 ## Runtime test status and next action
 
-The focused overlay assertions verified that a commit immediately following
-an explicit diff-review request received fresh authenticated diff evidence
-and retained the authorized workspace tool surface. The full Hermes runtime
-script then stopped later in its fabricated-result case with a
-`privacy check is unavailable` response. This script did not pass end to end;
-the privacy-check failure needs separate diagnosis.
+The earlier Hermes runtime run stopped in its fabricated-result case with a
+`privacy check is unavailable` response. A fresh run on 2026-10-09 passed the
+full `scripts/test-workspace-escalation-hermes-runtime.sh`, including
+fabricated-result handling, no-rootless-runtime fallback, diff-review tool
+rejection, owner workspace activation, and household isolation. The prior
+failure did not reproduce; no production runtime was changed.
 
-Do not retain prompt-only diff-context or forced-tool-choice behavior. The next
-useful step is to inspect the exact HADES completion and tool-validation
-boundary for commit requests, then test a native Hermes capability or a small
-adapter that guarantees truthful commit status without claiming an unverified
-commit. Any candidate must complete 2/2 commits and pass the existing
-workspace containment and verification contracts before it can replace the
-current behavior.
+Do not retain prompt-only diff-context, forced-tool-choice, or hidden-review-
+schema changes. The next useful step is to profile the HADES commit phase's
+extra diff call and the no-tool commit failure, then test one bounded change at
+a time. Any candidate must complete 2/2 commits and pass the existing workspace
+containment and verification contracts before it can replace current behavior.

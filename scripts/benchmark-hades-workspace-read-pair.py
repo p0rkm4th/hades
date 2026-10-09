@@ -1138,6 +1138,8 @@ def child(args: argparse.Namespace) -> int:
             window_started = time.perf_counter()
             saved_ephemeral_prompt = getattr(agent_instance, "ephemeral_system_prompt", None)
             injected_commit_diff = False
+            saved_review_tools = getattr(agent_instance, "tools", None)
+            review_tools_hidden = False
             phase_at_call = str(stream_state["phase"])
             injection_observation = {
                 "phase": phase_at_call,
@@ -1149,10 +1151,19 @@ def child(args: argparse.Namespace) -> int:
                 "evidence_truncated": None,
                 "error_class": None,
             }
+            injection_observation["review_schemas_hidden"] = False
             fresh_diff_context_observations.setdefault(phase_at_call, []).append(
                 injection_observation
             )
             try:
+                if (
+                    args.prototype_hide_tools_on_review
+                    and args.scenario == "workflow-to-commit"
+                    and phase_at_call == "review_diff"
+                ):
+                    agent_instance.tools = []
+                    review_tools_hidden = True
+                    injection_observation["review_schemas_hidden"] = True
                 if (
                     args.prototype_fresh_diff_on_commit
                     and args.scenario == "workflow-to-commit"
@@ -1180,6 +1191,8 @@ def child(args: argparse.Namespace) -> int:
             finally:
                 if injected_commit_diff:
                     agent_instance.ephemeral_system_prompt = saved_ephemeral_prompt
+                if review_tools_hidden:
+                    agent_instance.tools = saved_review_tools
                 original_run_windows_by_phase.setdefault(
                     str(stream_state["phase"]), []
                 ).append((window_started, time.perf_counter()))
@@ -1693,6 +1706,10 @@ def main() -> int:
         help="benchmark-only HADES experiment: add fresh authenticated diff evidence to the commit turn without changing conversation history",
     )
     parser.add_argument(
+        "--prototype-hide-tools-on-review", action="store_true",
+        help="benchmark-only HADES experiment: hide all workspace tool schemas during read-only diff review, then restore them",
+    )
+    parser.add_argument(
         "--prototype-host-workspace-verification-mapping", action="store_true",
         help="benchmark-only prototype: map container /workspace edit/evidence paths to the current fixture root",
     )
@@ -1939,6 +1956,8 @@ def main() -> int:
                     command.append("--prototype-force-terminal-after-mutation")
                 if args.prototype_fresh_diff_on_commit:
                     command.append("--prototype-fresh-diff-on-commit")
+                if args.prototype_hide_tools_on_review:
+                    command.append("--prototype-hide-tools-on-review")
                 if args.prototype_host_workspace_verification_mapping:
                     command.append("--prototype-host-workspace-verification-mapping")
                 if stack == "hades":
@@ -2380,6 +2399,10 @@ def main() -> int:
                 "fresh_diff_context_experiment": (
                     "HADES commit turn only: append fresh authenticated workspace diff evidence to the ephemeral system prompt; preserve all conversation history and leave tool_choice unchanged"
                     if args.prototype_fresh_diff_on_commit else None
+                ),
+                "hide_tools_on_review_experiment": (
+                    "HADES read-only diff-review turn only: remove all workspace tool schemas from the request, preserve the empty execution allowlist and tool_choice hint, then restore the prior schemas"
+                    if args.prototype_hide_tools_on_review else None
                 ),
                 "host_workspace_verification_mapping_experiment": (
                     "benchmark-only mapping of container /workspace mutation paths and terminal evidence cwd to the current fixture's canonical host project root"
