@@ -54,3 +54,32 @@ context, or model.
 This is partial synthetic evidence. It is not deployed Open WebUI acceptance, broad coding qualification, or Scotty preference. The HADES overlay's system context remains roughly 1.1 KB larger than PLAIN for the workspace stages. Focused-test tool calls and generation latency deserve the next profile. The owner corpus still has 29/55 cases without direct replay and no preference labels.
 
 Sanitized measurements: [`hades-core-owner-workflow-hermes0216-3e15d5d2.json`](../benchmarks/hades-core-owner-workflow-hermes0216-3e15d5d2.json).
+
+## Matched telemetry follow-up
+
+A fresh two-repeat replay on the same source, Hermes 0.21.6, Ollama 0.40.1,
+Qwen3.6:35b digest, 65,536-token context, and immutable rootless sandbox
+captured per-request proxy metrics. All four tasks passed independent tests,
+`git diff --check`, source-scope checks, one-commit checks, and clean-worktree
+checks. HADES committed successfully in both repeats. PLAIN median task time
+was 45.22 s; HADES was 50.21 s (11% slower). HADES also used more model calls
+(median 12.5 vs. 11) and tool results (8.5 vs. 6.5).
+
+| Phase | PLAIN median | HADES median |
+|---|---:|---:|
+| Inspect | 22.41 s | 23.27 s |
+| Edit | 28.19 s | 30.65 s |
+| Focused test | 35.16 s | 39.19 s |
+| Diff review | 40.10 s | 42.99 s |
+| Commit | 45.22 s | 50.20 s |
+
+The explicit diff-review call occurred in one of two HADES runs; the other
+review turn made no tool call. HADES issued two additional `git diff` calls
+outside the review phase and five focused-test terminal calls versus two for
+PLAIN. This is a real remaining workflow friction point despite clean
+independent verification. The captured telemetry now supports analysis of
+request size, tool schemas, token counts, generation timing, and model calls;
+it still does not rate generated answer quality or owner preference.
+
+Sanitized follow-up measurements:
+[`hades-core-owner-workflow-hermes0216-telemetry-followup-20261008.json`](../benchmarks/hades-core-owner-workflow-hermes0216-telemetry-followup-20261008.json).
