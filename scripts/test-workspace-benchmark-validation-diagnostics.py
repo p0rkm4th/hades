@@ -61,6 +61,32 @@ assert MODULE.classify_benchmark_phase([
     {"role": "user", "content": "an unseeded owner request"},
 ]) == "other"
 assert MODULE.classify_benchmark_phase(None) == "other"
+assert MODULE.run_call_timing(10.0, 12.0, []) == {
+    "wrapper_elapsed_ms": 2000.0,
+    "original_run_call_count": 0,
+    "original_run_elapsed_ms": None,
+    "overlay_pre_ms": None,
+    "overlay_post_ms": None,
+    "interstitial_ms": None,
+    "overlay_outside_original_ms": None,
+}
+timing = MODULE.run_call_timing(10.0, 12.0, [(10.2, 11.7)])
+assert timing == {
+    "wrapper_elapsed_ms": 2000.0,
+    "original_run_call_count": 1,
+    "original_run_elapsed_ms": 1500.0,
+    "overlay_pre_ms": 200.0,
+    "overlay_post_ms": 300.0,
+    "interstitial_ms": 0.0,
+    "overlay_outside_original_ms": 500.0,
+}
+timing = MODULE.run_call_timing(10.0, 13.0, [(10.2, 10.7), (11.0, 11.4)])
+assert timing["original_run_call_count"] == 2
+assert timing["interstitial_ms"] == 300.0
+assert timing["wrapper_elapsed_ms"] == (
+    timing["original_run_elapsed_ms"]
+    + timing["overlay_outside_original_ms"]
+)
 assert MODULE.workspace_diff_evidence_markers([
     {"role": "system", "content": "<workspace_diff>secret source text"},
 ]) == {

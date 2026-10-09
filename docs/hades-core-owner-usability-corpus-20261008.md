@@ -21,3 +21,12 @@ HADES' two diff-review turns retained five schemas but had `tool_choice=none`, a
 A five-repeat prompt-guidance candidate then instructed HADES to read `README.md` or `Makefile` directly when the test command was unknown. This reduced median HADES model calls to 11 versus 14 for PLAIN and focused-test terminal calls to 6 versus 9, but HADES remained slower (61.35s versus 52.11s) and committed only 4/5 tasks versus PLAIN's 5/5. The model still searched or reread during three of five HADES focused-test turns. It also attempted a terminal call during one read-only diff-review turn; Hermes rejected the attempt with the executable allowlist empty. The prompt candidate is rejected. See the [five-repeat experiment report](hades-core-owner-workspace-guidance-five-repeats-20261009.md).
 
 The corpus remains a testing instrument. It does not establish that HADES is preferred, and direct Scotty dogfood remains a release gate.
+
+The [Git environment profile](hades-core-owner-workspace-diff-review-git-environment-profile-20261009.md)
+attributes the slow synthetic diff-review stage to Hermes' hardened native Git
+collector: its first `git rev-parse` command takes about 8.55 seconds, while
+the actual `git diff` commands take about 1.05 seconds combined. A staged
+runtime probe measured `selected_git_env()` at 7.89 seconds cold and about
+0.51 seconds warm. This is a two-pair diagnosis, not a product fix; preserve
+the read-only diff and authority contracts while finding a safe way to avoid
+repeated environment resolution.

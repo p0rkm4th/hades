@@ -109,6 +109,40 @@ def classify_benchmark_phase(messages: Any) -> str:
         SMALL_DIFF_PROMPT: "review_diff",
         COMMIT_PROMPT: "commit",
     }.get(latest_user, "other")
+
+
+def run_call_timing(started: float, ended: float,
+                    original_windows: list[tuple[float, float]]) -> dict[str, Any]:
+    """Separate the overlay wrapper time from Hermes' original run call."""
+    wrapper_ms = max(0.0, (ended - started) * 1000)
+    valid = sorted(
+        (float(begin), float(finish))
+        for begin, finish in original_windows
+        if started <= begin <= finish <= ended
+    )
+    original_ms = sum((finish - begin) * 1000 for begin, finish in valid)
+    if not valid:
+        return {
+            "wrapper_elapsed_ms": round(wrapper_ms, 1),
+            "original_run_call_count": 0,
+            "original_run_elapsed_ms": None,
+            "overlay_pre_ms": None,
+            "overlay_post_ms": None,
+            "interstitial_ms": None,
+            "overlay_outside_original_ms": None,
+        }
+    pre_ms = max(0.0, (valid[0][0] - started) * 1000)
+    post_ms = max(0.0, (ended - valid[-1][1]) * 1000)
+    interstitial_ms = max(0.0, wrapper_ms - original_ms - pre_ms - post_ms)
+    return {
+        "wrapper_elapsed_ms": round(wrapper_ms, 1),
+        "original_run_call_count": len(valid),
+        "original_run_elapsed_ms": round(original_ms, 1),
+        "overlay_pre_ms": round(pre_ms, 1),
+        "overlay_post_ms": round(post_ms, 1),
+        "interstitial_ms": round(interstitial_ms, 1),
+        "overlay_outside_original_ms": round(pre_ms + post_ms + interstitial_ms, 1),
+    }
 API_KEY = "synthetic-workspace-pair-key"
 WORKSPACE_ENVIRONMENT_HINT = (
     "The active project workspace for file and coding tasks is mounted at /workspace. "
@@ -1079,6 +1113,89 @@ def child(args: argparse.Namespace) -> int:
         load_soul_identity=False,
     )
     tool_validation_diagnostics: list[dict[str, Any]] = []
+    original_run_windows_by_phase: dict[str, list[tuple[float, float]]] = {}
+    overlay_helper_windows_by_phase: dict[str, dict[str, list[float]]] = {}
+    overlay_helper_originals: list[tuple[Any, str, Any]] = []
+    overlay_profile_module = None
+    overlay_profile_original = None
+    if args.stack == "hades":
+        overlay_profile_module = sys.modules.get("sitecustomize")
+        expected_overlay_path = (ROOT / "hermes" / "sitecustomize.py").resolve()
+        loaded_overlay_path = pathlib.Path(
+            getattr(overlay_profile_module, "__file__", "") or "."
+        ).resolve()
+        if overlay_profile_module is None or loaded_overlay_path != expected_overlay_path:
+            raise RuntimeError("HADES overlay timing capture could not identify the loaded sitecustomize module")
+        overlay_profile_original = getattr(
+            overlay_profile_module, "_hades_original_run_conversation", None
+        )
+        if not callable(overlay_profile_original):
+            raise RuntimeError("HADES overlay timing capture could not find Hermes' original run method")
+
+        def capture_original_run_window(agent_instance: Any, *call_args: Any,
+                                        **call_kwargs: Any) -> Any:
+            window_started = time.perf_counter()
+            try:
+                return overlay_profile_original(agent_instance, *call_args, **call_kwargs)
+            finally:
+                original_run_windows_by_phase.setdefault(
+                    str(stream_state["phase"]), []
+                ).append((window_started, time.perf_counter()))
+
+        overlay_profile_module._hades_original_run_conversation = capture_original_run_window
+
+        import workspace as workspace_helpers
+        from tools import working_diff as working_diff_helpers
+
+        def time_workspace_helper(name: str, original: Any):
+            def measured(*call_args: Any, **call_kwargs: Any) -> Any:
+                helper_started = time.perf_counter()
+                try:
+                    return original(*call_args, **call_kwargs)
+                finally:
+                    helper_elapsed = (time.perf_counter() - helper_started) * 1000
+                    phase_helpers = overlay_helper_windows_by_phase.setdefault(
+                        str(stream_state["phase"]), {}
+                    )
+                    phase_helpers.setdefault(name, []).append(helper_elapsed)
+            return measured
+
+        for helper_name in (
+            "resolve_workspace", "get_workspace_tools",
+            "register_workspace_session", "native_workspace_diff_context",
+            "terminal_policy",
+        ):
+            helper = getattr(workspace_helpers, helper_name, None)
+            if callable(helper):
+                overlay_helper_originals.append((workspace_helpers, helper_name, helper))
+                setattr(
+                    workspace_helpers, helper_name,
+                    time_workspace_helper(f"workspace.{helper_name}", helper),
+                )
+        collect_diff = getattr(working_diff_helpers, "collect_working_diff", None)
+        if callable(collect_diff):
+            overlay_helper_originals.append((working_diff_helpers, "collect_working_diff", collect_diff))
+            working_diff_helpers.collect_working_diff = time_workspace_helper(
+                "tools.working_diff.collect_working_diff", collect_diff
+            )
+        git_run = getattr(working_diff_helpers, "_run", None)
+        if callable(git_run):
+            overlay_helper_originals.append((working_diff_helpers, "_run", git_run))
+
+            def time_git_run(*call_args: Any, **call_kwargs: Any) -> Any:
+                started = time.perf_counter()
+                try:
+                    return git_run(*call_args, **call_kwargs)
+                finally:
+                    args = call_args[0] if call_args else call_kwargs.get("args", [])
+                    command = str(args[0]) if isinstance(args, (list, tuple)) and args else "unknown"
+                    elapsed = (time.perf_counter() - started) * 1000
+                    phase_helpers = overlay_helper_windows_by_phase.setdefault(
+                        str(stream_state["phase"]), {}
+                    )
+                    phase_helpers.setdefault(f"git.{command}", []).append(elapsed)
+
+            working_diff_helpers._run = time_git_run
     original_repair_tool_call = agent._repair_tool_call
 
     def capture_tool_validation_catalog(name: str):
@@ -1156,6 +1273,7 @@ def child(args: argparse.Namespace) -> int:
                 "task_id": task_id,
                 "conversation_history": prior_history,
             }
+            run_call_started = time.perf_counter()
             if args.stack == "hades":
                 result, route_return_line = call_with_return_line(
                     agent.run_conversation, **run_arguments
@@ -1163,6 +1281,21 @@ def child(args: argparse.Namespace) -> int:
             else:
                 result = agent.run_conversation(**run_arguments)
                 route_return_line = None
+            run_call_ended = time.perf_counter()
+            original_windows = original_run_windows_by_phase.pop(phase_name, [])
+            helper_windows = overlay_helper_windows_by_phase.pop(phase_name, {})
+            helper_timing = {
+                name: {
+                    "call_count": len(values),
+                    "elapsed_ms": round(sum(values), 1),
+                }
+                for name, values in sorted(helper_windows.items())
+            }
+            if args.stack == "plain":
+                original_windows = [(run_call_started, run_call_ended)]
+            run_timing = run_call_timing(
+                run_call_started, run_call_ended, original_windows
+            )
             messages = result.get("messages") if isinstance(result, dict) else []
             messages = messages if isinstance(messages, list) else []
             # Hermes may return the full transcript or just the latest turn. Keep
@@ -1321,6 +1454,8 @@ def child(args: argparse.Namespace) -> int:
                 "phase": phase_name,
                 "prompt_id": phase_name,
                 "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
+                "run_call_timing": run_timing,
+                "overlay_helper_timing": helper_timing,
                 "stream_progress": stream_metrics.get(phase_name, {
                     "delta_count": 0, "character_count": 0,
                     "first_delta_ms": None, "last_delta_ms": None,
@@ -1453,6 +1588,10 @@ def child(args: argparse.Namespace) -> int:
         print("RESULT:" + json.dumps(summary, ensure_ascii=False))
         return 0
     finally:
+        for helper_module, helper_name, helper_original in reversed(overlay_helper_originals):
+            setattr(helper_module, helper_name, helper_original)
+        if overlay_profile_module is not None and overlay_profile_original is not None:
+            overlay_profile_module._hades_original_run_conversation = overlay_profile_original
         if original_tool_executor is not None:
             agent._execute_tool_calls = original_tool_executor
         if original_mutation_recorder is not None:
