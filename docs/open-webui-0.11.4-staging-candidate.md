@@ -55,7 +55,10 @@ image ID:
   using a synthetic 0.11.1 database. It preserved synthetic owner and
   household local signup accounts, private chats and uploaded DOCX bytes, shared-channel state, and
   SQLite integrity; the household account remained unable to read the private
-  upload.
+  upload. It also seeded permanent per-user revocation markers from a
+  read-only pre-upgrade database copy before candidate startup and verified
+  both pre-upgrade owner and household JWTs were rejected while fresh logins,
+  existing chats, and uploads remained usable.
 - The acceptance wrapper ran `scripts/test-openwebui-disabled-role-session.sh`
   with candidate image ID
   `sha256:110d8c280b165eeb26bc5c5bad0dce675b376399f18e04954f71e6338f596469`;
@@ -90,6 +93,28 @@ rollback, private-chat, Channels, LDAP bootstrap, disabled-role, upload
 isolation, and DOCX replay gates have also passed against this exact candidate
 image ID `sha256:d4c7e8aa08b35ddb81c2098db1fcbb7a6703f774d3000d2c088632b7053564a5`.
 These remain synthetic staging evidence, not live production acceptance.
+
+### Legacy-session cutover invariant
+
+Production currently has no revocation store. The new Valkey store therefore
+starts empty and cannot by itself revoke JWTs issued by 0.11.1. Do not rotate
+`WEBUI_SECRET_KEY` as a shortcut: Open WebUI also derives OAuth and other
+encrypted configuration keys from it unless separately configured. The
+cutover must quiesce ingress and stop the old app, take and verify the final
+pre-upgrade database copy, seed permanent `open-webui:auth:user:<id>:revoked_at`
+markers with `scripts/seed-open-webui-session-revocations.py`, then start the
+exact candidate. The helper reads only user IDs from an integrity-checked,
+read-only SQLite copy, requires an explicit `--confirm-quiesced` assertion,
+and gives existing integer-second JWT issue times a five-second cutoff. New
+logins wait until their JWT issue time is newer than that cutoff. Preserve the
+same signing key and keep the seeded Valkey markers in the production backup.
+
+The populated synthetic 0.11.1 → 0.11.4 migration now verifies this behavior
+against candidate image ID
+`sha256:d4c7e8aa08b35ddb81c2098db1fcbb7a6703f774d3000d2c088632b7053564a5`.
+It does not yet prove that production ingress is quiesced, that a production
+copy contains every real account, or that live production session revocation
+passes. Those remain cutover gates.
 
 Run revisions, exact candidate and positive-control image IDs, cross-user
 results, and source-hash bindings are recorded in the

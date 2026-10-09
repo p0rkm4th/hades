@@ -183,7 +183,21 @@ for _ in $(seq 1 30); do
 done
 docker exec "$auth_state_name" valkey-cli ping | rg -q PONG
 printf 'PASS pinned persistent auth-state service ready for migrated candidate\n'
+# Revoke every pre-upgrade account before the candidate can accept traffic.
+# This exercises the production cutover strategy without rotating the WebUI
+# signing/encryption secret and without touching production state.
+python3 "$repo_dir/scripts/seed-open-webui-session-revocations.py" \
+  "$tmp/pre-upgrade-webui.db" --valkey-container "$auth_state_name" --confirm-quiesced
 start_image "$new_image"
+old_owner_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/users/user/info" -H "Authorization: Bearer $token")
+old_beta_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  "http://127.0.0.1:${port}/api/v1/users/user/info" -H "Authorization: Bearer $beta_token")
+[[ "$old_owner_status" == 401 && "$old_beta_status" == 401 ]] || {
+  echo "FAIL pre-upgrade JWT survived candidate startup (owner=$old_owner_status beta=$old_beta_status)" >&2
+  exit 1
+}
+printf 'PASS owner and household JWTs issued before upgrade were rejected by permanent per-user cutover markers\n'
 login=$(curl -fsS -X POST "http://127.0.0.1:${port}/api/v1/auths/signin" \
   -H 'Content-Type: application/json' \
   --data '{"email":"migration-owner@example.invalid","password":"Synthetic-Only-123!"}')

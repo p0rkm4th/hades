@@ -6,6 +6,7 @@ dockerfile="$repo_dir/webui/Dockerfile"
 auth="$repo_dir/webui/auth_revocation_fail_closed_compat.py"
 socket_adapter="$repo_dir/webui/socket_disconnect_fail_closed_compat.py"
 routes="$repo_dir/webui/authority_revocation_routes_compat.py"
+cutover_revocations="$repo_dir/scripts/seed-open-webui-session-revocations.py"
 
 grep -Fq 'HADES_OPEN_WEBUI_VALKEY_IMAGE:?set a pinned HADES_OPEN_WEBUI_VALKEY_IMAGE' "$compose" || { echo 'FAIL auth-state image is not required'; exit 1; }
 grep -Fq -- '--appendfsync' "$compose" && grep -Fq '      - always' "$compose" || { echo 'FAIL Valkey revocation writes are not configured for durable fsync'; exit 1; }
@@ -30,5 +31,9 @@ done
 grep -Fq 'org.hades.open-webui.security-adapters' "$repo_dir/scripts/build-open-webui-artifact.sh" || { echo 'FAIL candidate image omits security adapter provenance'; exit 1; }
 grep -Fq 'org.hades.open-webui.security-adapters' "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" || { echo 'FAIL candidate verifier omits security adapter provenance'; exit 1; }
 grep -Fq 'open-webui-auth-state.rdb' "$repo_dir/scripts/backup-sqlite-state.sh" && grep -Fq 'valkey-check-rdb' "$repo_dir/scripts/backup-sqlite-state.sh" && grep -Fq 'HADES_REQUIRE_OPEN_WEBUI_AUTH_STATE_BACKUP' "$repo_dir/scripts/backup-sqlite-state.sh" || { echo 'FAIL recovery helper omits required validated Valkey revocation backup'; exit 1; }
+for marker in 'confirm-quiesced' 'mode=ro&immutable=1' 'PRAGMA integrity_check' 'revoked_at' 'PTTL' 'time.time() + 5.0'; do
+  grep -Fq "$marker" "$cutover_revocations" || { echo "FAIL cutover session invalidation omits $marker"; exit 1; }
+done
+grep -Fq 'seed-open-webui-session-revocations.py' "$repo_dir/scripts/test-open-webui-populated-migration.sh" || { echo 'FAIL populated migration does not exercise legacy-session invalidation'; exit 1; }
 
 echo 'PASS Open WebUI P0 auth, authority, storage, and artifact security contract'
