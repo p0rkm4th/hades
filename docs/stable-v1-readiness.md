@@ -21,7 +21,7 @@ rewritten.
 
 | Component | Production role | Current state | Canonical authority |
 |---|---|---|---|
-| Open WebUI | owner-facing conversation surface | exact 0.11.4 HADES image deployed and healthy; direct owner/household acceptance pending | conversations, users, settings |
+| Open WebUI | owner-facing conversation surface | exact 0.11.4 HADES image deployed and healthy; synthetic DOCX/revocation checks pass. Owner/household browser acceptance, recovery-key usability, LDAP group policy, and fresh encrypted backup/Valkey marker-preserving restore remain open | conversations, users, settings |
 | Hermes | agent execution and tool lifecycle | 0.21.2 active on HADES guest; systemd running, zero restarts at 2026-09-25 01:43 UTC; 0.14.0 rollback artifact retained | turn execution and tool results |
 | Hindsight | durable personal context | healthy, subject-scoped overlay | private semantic memory |
 | Grocy | household pantry and grocery state | healthy, shared | inventory, shopping, recipes |

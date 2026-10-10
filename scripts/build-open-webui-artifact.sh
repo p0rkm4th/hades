@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-tag=${1:-hades-open-webui:0.11.1-hades}
+tag=${1:-hades-open-webui:0.11.4-p0-candidate}
 source "$repo_dir/config/versions.env"
 base_override=${HADES_OPEN_WEBUI_BASE_IMAGE_OVERRIDE:-$HADES_OPEN_WEBUI_CANDIDATE_IMAGE}
 source_commit=$(git -C "$repo_dir" rev-parse HEAD)

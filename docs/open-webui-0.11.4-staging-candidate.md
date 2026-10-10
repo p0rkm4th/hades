@@ -29,7 +29,16 @@ Production verification using synthetic identities and data passed:
   associated rows were removed. The live database passed `quick_check` and
   again contained the six pre-existing production users.
 - The encrypted recovery archive and rollback image were integrity checked
-  and restored in a bounded rehearsal. Owner-side recovery-key decryption has
+  and restored in a bounded rehearsal. The application archive was captured
+  before cutover from 0.11.1, so it does not contain the new populated Valkey
+  auth-state volume or its legacy-session revocation markers. It proves
+  recovery of the pre-upgrade data, not recovery of today's deployed authority
+  state. A fresh encrypted post-cutover archive must include a Valkey RDB and
+  pass `scripts/verify-open-webui-auth-state-backup.py` against the pinned
+  Valkey image before recovery readiness is claimed. That validator now checks
+  exact parity for active integer user markers and active token markers after an
+  isolated restore; its synthetic Valkey test passes. It has not yet been run
+  against a fresh production snapshot. Owner-side recovery-key decryption has
   not yet been confirmed.
 
 Direct owner/household browser acceptance of real logins, existing chats, and
@@ -57,8 +66,8 @@ GHCR `linux/amd64` image manifest digest is
 `sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f`;
 it was independently resolved from the official GHCR registry on 2026-10-08.
 
-The current manifest-bound HADES candidate is
-`hades-open-webui:0.11.4-p0-candidate`, image ID
+The current manifest-bound HADES candidate is locally tagged
+`hades-open-webui:0.11.4-rollback-compatible-candidate`, image ID
 `sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7`.
 It was built from HADES commit `bbe830973b6fb39196353d2d9e48004ab2243f0a`,
 using the candidate upstream digest above. Image labels bind the source commit,
@@ -78,10 +87,14 @@ also list fixes in 0.11.4. The release additionally includes chat-branch,
 streaming, terminal skill discovery, and file-handling fixes that matter to
 conversation continuity and workspace escalation.
 
-The tracked production pin remains in the DOCX advisory's affected range. A
-read-only production check on 2026-10-08 found chat uploads enabled, so this is
-an active P0 exposure. No exploitation was observed. The staged fix does not
-close that exposure until production is safely upgraded.
+At the time of the original staging review on 2026-10-08, the tracked
+production pin was in the DOCX advisory's affected range. A read-only
+production check found chat uploads enabled, so this was the active exposure
+that triggered the P0. No exploitation was observed in that check. The
+subsequent exact-artifact production cutover and synthetic live security tests
+are recorded at the top of this document and in the dated production evidence
+record; recovery, owner acceptance, LDAP policy disposition, and main
+convergence remain open.
 
 ## Staging evidence
 

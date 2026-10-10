@@ -24,6 +24,10 @@
     "backup_restored_to_temporary_state_and_verified": true,
     "rollback_image_restored_and_identity_verified": true,
     "production_shaped_migration_and_rollback_rehearsal": "PASS",
+    "pre_cutover_application_backup_source_version": "0.11.1",
+    "pre_cutover_backup_includes_deployed_valkey_auth_state": false,
+    "post_cutover_backup_restore_validator": "Implemented; synthetic Valkey RDB restore preserved the exact permanent user and active token-revocation marker sets.",
+    "post_cutover_backup_with_revocation_marker_restore_verification": "PENDING",
     "owner_side_recovery_key_decryption_confirmation": "PENDING"
   },
   "production_acceptance": {
@@ -65,6 +69,7 @@
   "limitations": [
     "Synthetic production accounts were used for live identity, DOCX, and session tests; this does not substitute for owner and household browser acceptance.",
     "LDAP group reconciliation was tested against production LLDAP with an isolated Open WebUI database because production group creation remains disabled.",
+    "The verified private application archive predates cutover and therefore cannot recover current Valkey revocation markers; post-cutover backup/restore qualification is required.",
     "Private recovery artifacts, locations, and signing material are not included in this public evidence record."
   ]
 }

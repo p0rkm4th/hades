@@ -14,6 +14,10 @@ grep -q 'source "$repo_dir/config/versions.env"' "$helper" || { echo 'FAIL backu
 grep -q 'backup_format=1' "$helper" || { echo 'FAIL backup metadata format is missing'; exit 1; }
 grep -Fq 'sha256sum "${backup_files[@]##*/}" > SHA256SUMS' "$helper" || { echo 'FAIL backup metadata does not checksum all state artifacts'; exit 1; }
 grep -Fq 'open-webui-auth-state.rdb' "$helper" || { echo 'FAIL backup helper omits persistent Open WebUI revocation state'; exit 1; }
+grep -Fq 'verify-open-webui-auth-state-backup.py' "$helper" || { echo 'FAIL backup helper does not restore-check the auth-state snapshot'; exit 1; }
+grep -Fq 'open_webui_auth_state_restore_validation=$open_webui_auth_state_restore_validation' "$helper" || { echo 'FAIL backup manifest omits auth-state restore validation'; exit 1; }
+grep -Fq -- '--minimum-user-markers "$open_webui_minimum_user_revocation_markers"' "$helper" || { echo 'FAIL backup helper does not enforce the configured legacy user-marker floor'; exit 1; }
+python3 -m py_compile "$repo_dir/scripts/verify-open-webui-auth-state-backup.py" || { echo 'FAIL auth-state restore validator does not compile'; exit 1; }
 grep -Fq 'open_webui_valkey_image=$HADES_OPEN_WEBUI_VALKEY_IMAGE' "$helper" || { echo 'FAIL backup metadata omits the Valkey image pin'; exit 1; }
 grep -Fq 'HADES_EPSILON_PHASE3_STATE_FILE' "$helper" || { echo 'FAIL backup helper omits isolated Phase 3 state'; exit 1; }
 grep -Fq 'lldap_container=${HADES_LLDAP_CONTAINER:-hades-lldap-production}' "$helper" || { echo 'FAIL backup helper does not support reconstructed LLDAP container names'; exit 1; }
@@ -28,5 +32,6 @@ for field in lldap_image hindsight_image_digest grocy_image agent_zero_image act
 done
 grep -q 'metadata_count=0' "$repo_dir/scripts/check-recovery-artifacts.sh" || { echo 'FAIL recovery validator omits metadata validation'; exit 1; }
 grep -q 'metadata_checksum=' "$repo_dir/scripts/check-recovery-artifacts.sh" || { echo 'FAIL recovery validator does not bind metadata to sibling checksums'; exit 1; }
+grep -Fq 'open_webui_auth_state_restore_validation=exact_revocation_marker_set_restored' "$repo_dir/scripts/check-recovery-artifacts.sh" || { echo 'FAIL recovery validator accepts auth-state backup without marker restore proof'; exit 1; }
 grep -q 'backup destination must not be a symlink' "$helper" || { echo 'FAIL backup helper follows symlinked destination'; exit 1; }
 echo 'PASS SQLite backups carry authoritative version metadata'

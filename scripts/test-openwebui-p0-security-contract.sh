@@ -30,7 +30,9 @@ for adapter in auth_revocation_fail_closed_compat.py ldap_group_sync_compat.py a
 done
 grep -Fq 'org.hades.open-webui.security-adapters' "$repo_dir/scripts/build-open-webui-artifact.sh" || { echo 'FAIL candidate image omits security adapter provenance'; exit 1; }
 grep -Fq 'org.hades.open-webui.security-adapters' "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" || { echo 'FAIL candidate verifier omits security adapter provenance'; exit 1; }
-grep -Fq 'open-webui-auth-state.rdb' "$repo_dir/scripts/backup-sqlite-state.sh" && grep -Fq 'valkey-check-rdb' "$repo_dir/scripts/backup-sqlite-state.sh" && grep -Fq 'HADES_REQUIRE_OPEN_WEBUI_AUTH_STATE_BACKUP' "$repo_dir/scripts/backup-sqlite-state.sh" || { echo 'FAIL recovery helper omits required validated Valkey revocation backup'; exit 1; }
+grep -Fq 'open-webui-auth-state.rdb' "$repo_dir/scripts/backup-sqlite-state.sh" && grep -Fq 'verify-open-webui-auth-state-backup.py' "$repo_dir/scripts/backup-sqlite-state.sh" && grep -Fq 'HADES_REQUIRE_OPEN_WEBUI_AUTH_STATE_BACKUP' "$repo_dir/scripts/backup-sqlite-state.sh" || { echo 'FAIL recovery helper omits required restored Valkey revocation backup'; exit 1; }
+grep -Fq 'valkey-check-rdb' "$repo_dir/scripts/verify-open-webui-auth-state-backup.py" || { echo 'FAIL auth-state recovery validator does not verify RDB structure'; exit 1; }
+grep -Fq 'restored RDB did not preserve the exact revocation marker set' "$repo_dir/scripts/verify-open-webui-auth-state-backup.py" || { echo 'FAIL auth-state recovery validator does not verify restored marker parity'; exit 1; }
 for marker in 'confirm-quiesced' 'mode=ro&immutable=1' 'PRAGMA integrity_check' 'revoked_at' 'PTTL' 'int(time.time()) + 5'; do
   grep -Fq "$marker" "$cutover_revocations" || { echo "FAIL cutover session invalidation omits $marker"; exit 1; }
 done

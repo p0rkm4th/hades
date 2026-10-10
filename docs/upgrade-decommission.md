@@ -39,7 +39,7 @@ authority-bearing services are not changed together:
 
 | Component | Current production baseline | Candidate/action | Acceptance gate |
 |---|---|---|---|
-| Open WebUI | exact 0.11.4 HADES image is deployed and healthy | Keep the minimum proven security adapters; evaluate Channels/native behavior after P0 closure | backup, rollback, production DOCX, synthetic LDAP, session revocation, and restart checks pass; owner/household browser acceptance and main convergence remain gates |
+| Open WebUI | exact 0.11.4 HADES image is deployed and healthy | Keep the minimum proven security adapters; evaluate Channels/native behavior after P0 closure | Pre-cutover 0.11.1 backup and rollback rehearsal exist, and production DOCX, synthetic LDAP/session revocation, and restart checks pass. The old archive omitted current Valkey auth-state, so fresh encrypted post-cutover backup plus marker-preserving restore proof, recovery-key usability, owner/household browser acceptance, LDAP policy disposition, and main convergence remain gates |
 | Hermes | 0.21.2 active; 0.14.0 rollback artifact retained | qualify a later pinned upstream version as a separate candidate | bounded candidate suite, rollback-backed owner-authenticated rehearsal, and owner approval |
 | Hindsight | pinned digest, API/control ports 8888/9999 | upgrade one digest after backup and runtime/read-back checks | memory persistence, subject mapping, restart, and no port collision |
 | Grocy | pinned digest | upgrade one digest after canonical backup | inventory, recipe, shopping-list, restart, and reconciliation checks |

@@ -43,6 +43,10 @@ for field in FAKE_IMAGE_ID FAKE_UPSTREAM_VERSION FAKE_UPSTREAM_COMMIT FAKE_HADES
 done
 
 builder=$(<"$repo_dir/scripts/build-open-webui-artifact.sh")
+grep -Fq 'tag=${1:-hades-open-webui:0.11.4-p0-candidate}' <<<"$builder" || {
+  echo 'FAIL Open WebUI builder default tag does not match the qualified production candidate' >&2
+  exit 1
+}
 grep -q -- '--label "org.hades.open-webui.source-commit=$source_commit"' <<<"$builder" || {
   echo 'FAIL Open WebUI builder omits HADES source provenance label' >&2
   exit 1

@@ -41,6 +41,27 @@ EOF
 chmod 600 "$fixture/MANIFEST"
 (cd "$fixture" && sha256sum ./*.db MANIFEST > SHA256SUMS)
 chmod 600 "$fixture/SHA256SUMS"
+
+mkdir -m 700 "$fixture/auth-state"
+cat > "$fixture/auth-state/MANIFEST" <<'EOF'
+backup_format=1
+hades_manifest_version=1
+hermes_version=0.21.6
+open_webui_version=0.11.4
+lldap_image=lldap:test@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+hindsight_image_digest=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+grocy_image=grocy:test@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+agent_zero_image=agent:test@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+actual_version=26.9.0
+open_webui_auth_state=present
+open_webui_auth_state_restore_validation=exact_revocation_marker_set_restored
+open_webui_valkey_image=valkey:test@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+open_webui_minimum_user_revocation_markers=6
+EOF
+printf 'synthetic-rdb-fixture\n' > "$fixture/auth-state/open-webui-auth-state.rdb"
+chmod 600 "$fixture/auth-state/MANIFEST" "$fixture/auth-state/open-webui-auth-state.rdb"
+(cd "$fixture/auth-state" && sha256sum MANIFEST open-webui-auth-state.rdb > SHA256SUMS)
+chmod 600 "$fixture/auth-state/SHA256SUMS"
 "$VALIDATOR" "$fixture" >/dev/null
 for db in "$fixture"/*.db; do
   [[ ! -e "$db-wal" && ! -e "$db-shm" ]] || { printf 'FAIL validator created SQLite sidecars\n'; exit 1; }
@@ -59,6 +80,17 @@ expect_rejected() {
 sed -i '/  MANIFEST$/d' "$fixture/SHA256SUMS"
 expect_rejected 'metadata without sibling checksum coverage' "$fixture"
 (cd "$fixture" && sha256sum MANIFEST >> SHA256SUMS)
+
+mv "$fixture/auth-state/open-webui-auth-state.rdb" "$fixture/auth-state/omitted.rdb"
+(cd "$fixture/auth-state" && sha256sum MANIFEST omitted.rdb > SHA256SUMS)
+expect_rejected 'declared auth-state backup without its RDB' "$fixture"
+mv "$fixture/auth-state/omitted.rdb" "$fixture/auth-state/open-webui-auth-state.rdb"
+(cd "$fixture/auth-state" && sha256sum MANIFEST open-webui-auth-state.rdb > SHA256SUMS)
+sed -i 's/open_webui_auth_state_restore_validation=.*/open_webui_auth_state_restore_validation=not-run/' "$fixture/auth-state/MANIFEST"
+(cd "$fixture/auth-state" && sha256sum MANIFEST open-webui-auth-state.rdb > SHA256SUMS)
+expect_rejected 'auth-state RDB without isolated marker restore proof' "$fixture"
+sed -i 's/open_webui_auth_state_restore_validation=.*/open_webui_auth_state_restore_validation=exact_revocation_marker_set_restored/' "$fixture/auth-state/MANIFEST"
+(cd "$fixture/auth-state" && sha256sum MANIFEST open-webui-auth-state.rdb > SHA256SUMS)
 
 ln -s "$fixture" "$root_link"
 expect_rejected 'symlinked recovery root' "$root_link"

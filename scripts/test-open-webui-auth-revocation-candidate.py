@@ -89,6 +89,17 @@ def snapshot_restore_revocation(valkey: str, suffix: str, created: list[str]) ->
     if not expected:
         raise RuntimeError("Could not read the synthetic revocation marker before backup")
 
+    # Cover both migration-seeded persistent cutoffs and ordinary expiring
+    # user-revocation markers in the same restored snapshot.
+    run([
+        "docker", "exec", valkey, "valkey-cli", "SET",
+        f"open-webui:auth:user:synthetic-{suffix}:revoked_at", "2000000000",
+    ])
+    run([
+        "docker", "exec", valkey, "valkey-cli", "SET",
+        f"open-webui:auth:user:expiring-{suffix}:revoked_at", "2000000000", "EX", "3600",
+    ])
+
     before = int(run(["docker", "exec", valkey, "valkey-cli", "--raw", "LASTSAVE"]).stdout.strip())
     run(["docker", "exec", valkey, "valkey-cli", "BGSAVE"])
     for _ in range(90):
@@ -107,6 +118,12 @@ def snapshot_restore_revocation(valkey: str, suffix: str, created: list[str]) ->
         run(["docker", "cp", f"{valkey}:/data/dump.rdb", str(rdb)])
         if rdb.stat().st_size == 0:
             raise RuntimeError("Synthetic Valkey RDB is empty")
+        run([
+            "python3", str(pathlib.Path(__file__).resolve().parent / "verify-open-webui-auth-state-backup.py"), str(rdb),
+            "--source-container", valkey, "--image", VALKEY_IMAGE,
+            "--minimum-user-markers", "2",
+            "--minimum-token-markers", "1",
+        ])
         run([
             "docker", "run", "--rm", "--network", "none", "--entrypoint", "valkey-check-rdb",
             "-v", f"{rdb}:/backup/dump.rdb:ro", VALKEY_IMAGE, "/backup/dump.rdb",
@@ -345,7 +362,11 @@ def main() -> None:
 
         run(["docker", "start", valkey])
         wait_valkey(valkey)
-        time.sleep(0.5)
+        # The Socket.IO Redis manager owns a separate reconnecting pub/sub
+        # connection. A successful valkey-cli PING only proves the server is
+        # ready, not that this background connection has re-established.
+        # Allow its bounded retry loop to reconnect before testing revocation.
+        time.sleep(2.5)
         status, _ = api(base, "GET", "/api/v1/users/user/info", token=signout_user["token"])
         if status != 401:
             raise RuntimeError(f"Persistent revocation was lost after Valkey restart (HTTP {status})")
