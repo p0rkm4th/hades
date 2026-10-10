@@ -11,6 +11,15 @@ archive_source=$(mktemp -d)
 root_link="$fixture-root-link"
 trap 'rm -rf -- "$fixture" "$archive_source" "$root_link"' EXIT
 
+expect_rejected() {
+  local label=$1 path=$2
+  if "$VALIDATOR" "$path" >/dev/null 2>&1; then
+    printf 'FAIL %s was accepted\n' "$label"
+    exit 1
+  fi
+  printf 'PASS %s rejected\n' "$label"
+}
+
 python3 - "$fixture" <<'PY'
 import sqlite3
 import sys
@@ -54,7 +63,7 @@ grocy_image=grocy:test@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccc
 agent_zero_image=agent:test@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
 actual_version=26.9.0
 open_webui_auth_state=present
-open_webui_auth_state_restore_validation=exact_revocation_marker_set_restored
+open_webui_auth_state_restore_validation=exact_revocation_marker_value_and_expiry_set_restored
 open_webui_valkey_image=valkey:test@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 open_webui_minimum_user_revocation_markers=6
 EOF
@@ -66,16 +75,13 @@ chmod 600 "$fixture/auth-state/SHA256SUMS"
 for db in "$fixture"/*.db; do
   [[ ! -e "$db-wal" && ! -e "$db-shm" ]] || { printf 'FAIL validator created SQLite sidecars\n'; exit 1; }
 done
-printf 'PASS valid recovery metadata accepted\n'
 
-expect_rejected() {
-  local label=$1 path=$2
-  if "$VALIDATOR" "$path" >/dev/null 2>&1; then
-    printf 'FAIL %s was accepted\n' "$label"
-    exit 1
-  fi
-  printf 'PASS %s rejected\n' "$label"
-}
+sed -i 's/open_webui_minimum_user_revocation_markers=6/open_webui_minimum_user_revocation_markers=1/' "$fixture/auth-state/MANIFEST"
+(cd "$fixture/auth-state" && sha256sum MANIFEST open-webui-auth-state.rdb > SHA256SUMS)
+expect_rejected 'insufficient legacy user-revocation inventory' "$fixture"
+sed -i 's/open_webui_minimum_user_revocation_markers=1/open_webui_minimum_user_revocation_markers=6/' "$fixture/auth-state/MANIFEST"
+(cd "$fixture/auth-state" && sha256sum MANIFEST open-webui-auth-state.rdb > SHA256SUMS)
+printf 'PASS valid recovery metadata accepted\n'
 
 sed -i '/  MANIFEST$/d' "$fixture/SHA256SUMS"
 expect_rejected 'metadata without sibling checksum coverage' "$fixture"
@@ -89,7 +95,7 @@ mv "$fixture/auth-state/omitted.rdb" "$fixture/auth-state/open-webui-auth-state.
 sed -i 's/open_webui_auth_state_restore_validation=.*/open_webui_auth_state_restore_validation=not-run/' "$fixture/auth-state/MANIFEST"
 (cd "$fixture/auth-state" && sha256sum MANIFEST open-webui-auth-state.rdb > SHA256SUMS)
 expect_rejected 'auth-state RDB without isolated marker restore proof' "$fixture"
-sed -i 's/open_webui_auth_state_restore_validation=.*/open_webui_auth_state_restore_validation=exact_revocation_marker_set_restored/' "$fixture/auth-state/MANIFEST"
+sed -i 's/open_webui_auth_state_restore_validation=.*/open_webui_auth_state_restore_validation=exact_revocation_marker_value_and_expiry_set_restored/' "$fixture/auth-state/MANIFEST"
 (cd "$fixture/auth-state" && sha256sum MANIFEST open-webui-auth-state.rdb > SHA256SUMS)
 
 ln -s "$fixture" "$root_link"

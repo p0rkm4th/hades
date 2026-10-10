@@ -124,6 +124,17 @@ def snapshot_restore_revocation(valkey: str, suffix: str, created: list[str]) ->
             "--minimum-user-markers", "2",
             "--minimum-token-markers", "1",
         ])
+        malformed_key = f"open-webui:auth:user:malformed-{suffix}:revoked_at"
+        run(["docker", "exec", valkey, "valkey-cli", "HSET", malformed_key, "value", "2000000000"])
+        malformed = subprocess.run([
+            "python3", str(pathlib.Path(__file__).resolve().parent / "verify-open-webui-auth-state-backup.py"),
+            str(rdb), "--source-container", valkey, "--image", VALKEY_IMAGE,
+            "--minimum-user-markers", "2", "--minimum-token-markers", "1",
+        ], check=False, capture_output=True, text=True)
+        run(["docker", "exec", valkey, "valkey-cli", "DEL", malformed_key])
+        if malformed.returncode == 0:
+            raise RuntimeError("Auth-state backup verifier ignored a malformed revocation key")
+        print("PASS auth-state verifier rejects malformed matching keys")
         run([
             "docker", "run", "--rm", "--network", "none", "--entrypoint", "valkey-check-rdb",
             "-v", f"{rdb}:/backup/dump.rdb:ro", VALKEY_IMAGE, "/backup/dump.rdb",
@@ -144,6 +155,19 @@ def snapshot_restore_revocation(valkey: str, suffix: str, created: list[str]) ->
         restored = run(["docker", "exec", restore_name, "valkey-cli", "--raw", "GET", key]).stdout.strip()
         if restored != expected:
             raise RuntimeError("Disposable RDB restore did not preserve the token-revocation marker")
+        expiring_user_key = f"open-webui:auth:user:expiring-{suffix}:revoked_at"
+        run(["docker", "exec", restore_name, "valkey-cli", "PEXPIRE", expiring_user_key, "30000"])
+        run(["docker", "exec", restore_name, "valkey-cli", "SAVE"])
+        shortened_rdb = pathlib.Path(raw) / "shortened-expiry.rdb"
+        run(["docker", "cp", f"{restore_name}:/data/dump.rdb", str(shortened_rdb)])
+        altered = subprocess.run([
+            "python3", str(pathlib.Path(__file__).resolve().parent / "verify-open-webui-auth-state-backup.py"),
+            str(shortened_rdb), "--source-container", valkey, "--image", VALKEY_IMAGE,
+            "--minimum-user-markers", "2", "--minimum-token-markers", "1",
+        ], check=False, capture_output=True, text=True)
+        if altered.returncode == 0:
+            raise RuntimeError("Auth-state backup verifier accepted a shortened user-marker expiry")
+        print("PASS isolated RDB verifier rejects shortened revocation-marker expiry")
     print("PASS pinned Valkey RDB validates, restores, and preserves a synthetic revocation marker")
 
 

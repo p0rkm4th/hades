@@ -122,13 +122,17 @@ backup_container_python hades-open-webui /app/backend/data/webui.db open-webui.d
 open_webui_auth_state=absent
 open_webui_auth_state_restore_validation=not-run
 require_auth_state_backup=${HADES_REQUIRE_OPEN_WEBUI_AUTH_STATE_BACKUP:-0}
-open_webui_minimum_user_revocation_markers=${HADES_OPEN_WEBUI_MIN_REVOCATION_MARKERS:-1}
+open_webui_minimum_user_revocation_markers=${HADES_OPEN_WEBUI_MIN_REVOCATION_MARKERS:-0}
 open_webui_minimum_token_revocation_markers=${HADES_OPEN_WEBUI_MIN_TOKEN_REVOCATION_MARKERS:-0}
 webui_env=$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' hades-open-webui 2>/dev/null || true)
 if printf '%s\n' "$webui_env" | grep -q '^REDIS_URL='; then
   require_auth_state_backup=1
 fi
 if docker inspect hades-open-webui-auth-state >/dev/null 2>&1; then
+  [[ "$open_webui_minimum_user_revocation_markers" =~ ^[1-9][0-9]*$ ]] || {
+    printf 'FAIL set HADES_OPEN_WEBUI_MIN_REVOCATION_MARKERS to the protected cutover marker inventory\n' >&2
+    exit 1
+  }
   docker exec hades-open-webui-auth-state valkey-cli ping | grep -qx PONG || {
     printf 'FAIL Open WebUI auth-state Valkey is not healthy\n' >&2
     exit 1
@@ -163,7 +167,7 @@ if docker inspect hades-open-webui-auth-state >/dev/null 2>&1; then
     --minimum-token-markers "$open_webui_minimum_token_revocation_markers"
   chmod 600 "$output/open-webui-auth-state.rdb"
   open_webui_auth_state=present
-  open_webui_auth_state_restore_validation=exact_revocation_marker_set_restored
+  open_webui_auth_state_restore_validation=exact_revocation_marker_value_and_expiry_set_restored
 elif [[ "$require_auth_state_backup" == 1 ]]; then
   printf 'FAIL P0 backup requires the Open WebUI auth-state store\n' >&2
   exit 1

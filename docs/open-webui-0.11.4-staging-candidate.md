@@ -36,8 +36,11 @@ Production verification using synthetic identities and data passed:
   state. A fresh encrypted post-cutover archive must include a Valkey RDB and
   pass `scripts/verify-open-webui-auth-state-backup.py` against the pinned
   Valkey image before recovery readiness is claimed. That validator now checks
-  exact parity for active integer user markers and active token markers after an
-  isolated restore; its synthetic Valkey test passes. It has not yet been run
+  exact parity for active integer user markers, active token markers, and
+  absolute expiries after an isolated restore; its synthetic Valkey test passes.
+  The backup helper requires an explicit six-marker cutover floor for current
+  production rather than assuming the source contains every legacy cutoff. It
+  has not yet been run
   against a fresh production snapshot. Owner-side recovery-key decryption has
   not yet been confirmed.
 

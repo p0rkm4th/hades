@@ -21,28 +21,48 @@ def run(args: list[str], *, check: bool = True) -> str:
     return result.stdout.strip()
 
 
-def marker_snapshot(container: str, pattern: str, *, integer_value: bool) -> dict[str, str]:
+def marker_snapshot(container: str, pattern: str, *, integer_value: bool) -> dict[str, tuple[str, int]]:
     keys = run([
         "docker", "exec", container, "valkey-cli", "--raw", "--scan",
         "--pattern", pattern,
     ]).splitlines()
-    markers: dict[str, str] = {}
+    markers: dict[str, tuple[str, int]] = {}
     for key in keys:
+        expires_at = run([
+            "docker", "exec", container, "valkey-cli", "--raw", "PEXPIRETIME", key,
+        ])
+        if expires_at == "-2":
+            continue  # The marker expired between SCAN and inspection.
         kind = run(["docker", "exec", container, "valkey-cli", "--raw", "TYPE", key])
+        if kind != "string":
+            expires_after_type = run([
+                "docker", "exec", container, "valkey-cli", "--raw", "PEXPIRETIME", key,
+            ])
+            if expires_after_type == "-2":
+                continue
+            raise RuntimeError("matching revocation key is not a string")
         value = run(["docker", "exec", container, "valkey-cli", "--raw", "GET", key])
-        ttl = run(["docker", "exec", container, "valkey-cli", "--raw", "PTTL", key])
-        if kind != "string" or ttl == "-2" or not value:
-            continue  # It expired between SCAN and GET; it is no longer authority.
+        if not value:
+            expires_after_read = run([
+                "docker", "exec", container, "valkey-cli", "--raw", "PEXPIRETIME", key,
+            ])
+            if expires_after_read == "-2":
+                continue
+            raise RuntimeError("matching revocation key has an empty value")
+        try:
+            expires_at_ms = int(expires_at)
+        except ValueError as error:
+            raise RuntimeError("matching revocation key has an invalid expiry") from error
         if integer_value:
             try:
                 int(value)
             except ValueError as error:
                 raise RuntimeError("user-revocation marker is not an integer timestamp") from error
-            if ttl != "-1" and (not ttl.isdecimal() or int(ttl) <= 0):
+            if expires_at_ms != -1 and expires_at_ms <= 0:
                 raise RuntimeError("user-revocation marker has an invalid expiry")
-        elif value != "1" or not ttl.isdecimal() or int(ttl) <= 0:
+        elif value != "1" or expires_at_ms <= 0:
             raise RuntimeError("token-revocation marker has an invalid value or expiry")
-        markers[key] = value
+        markers[key] = (value, expires_at_ms)
     return markers
 
 
@@ -110,7 +130,7 @@ def main() -> None:
         restored_token_markers = marker_snapshot(restore_container, token_pattern, integer_value=False)
         if (restored_user_markers != source_user_markers
                 or restored_token_markers != source_token_markers):
-            raise RuntimeError("restored RDB did not preserve the exact revocation marker set")
+            raise RuntimeError("restored RDB did not preserve exact revocation marker values and expiries")
     finally:
         subprocess.run(["docker", "rm", "-f", restore_container], check=False,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

@@ -132,14 +132,14 @@ while IFS= read -r -d '' metadata; do
     grep -Eq "^${field}=.+$" "$metadata" || { printf 'FAIL recovery metadata field: %s\n' "$field"; exit 1; }
   done
   if grep -qx 'open_webui_auth_state=present' "$metadata"; then
-    grep -qx 'open_webui_auth_state_restore_validation=exact_revocation_marker_set_restored' "$metadata" || {
+    grep -qx 'open_webui_auth_state_restore_validation=exact_revocation_marker_value_and_expiry_set_restored' "$metadata" || {
       printf 'FAIL recovery metadata does not prove an isolated Valkey marker restore\n'; exit 1;
     }
     grep -Eq '^open_webui_valkey_image=.+@sha256:[0-9a-f]{64}$' "$metadata" || {
       printf 'FAIL recovery metadata omits immutable Valkey image provenance\n'; exit 1;
     }
-    grep -Eq '^open_webui_minimum_user_revocation_markers=[1-9][0-9]*$' "$metadata" || {
-      printf 'FAIL recovery metadata omits a positive user-revocation marker floor\n'; exit 1;
+    grep -Eq '^open_webui_minimum_user_revocation_markers=([6-9]|[1-9][0-9]+)$' "$metadata" || {
+      printf 'FAIL recovery metadata omits the six-marker legacy cutover floor\n'; exit 1;
     }
     auth_state_rdb="$(dirname "$metadata")/open-webui-auth-state.rdb"
     [[ -s "$auth_state_rdb" ]] || {

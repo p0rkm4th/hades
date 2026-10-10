@@ -72,7 +72,7 @@ component version, image digest, endpoint, or startup dependency changes, the
 reconstruction manifest and operator record must be updated together. Ambiguous
 private state is deliberately retained until an owner-authorized migration.
 
-### Observed runtime reconciliation — 2026-10-10
+### Observed runtime reconciliation — 2026-09-14; Open WebUI reverified 2026-10-10
 
 The live, public-safe topology was compared with the manifest without reading
 environment values or persistent data:
