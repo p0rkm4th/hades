@@ -17,11 +17,11 @@ the current-tree guard; the 90 legacy history matches remain. Current-tree and
 introduced-release Gitleaks scans have no findings. No old public history was
 rewritten.
 
-## Observed component contract (last read-only recheck: 2026-09-25)
+## Observed component contract (last read-only recheck: 2026-10-10)
 
 | Component | Production role | Current state | Canonical authority |
 |---|---|---|---|
-| Open WebUI | owner-facing conversation surface | pinned 0.11.1 deployment | conversations, users, settings |
+| Open WebUI | owner-facing conversation surface | exact 0.11.4 HADES image deployed and healthy; direct owner/household acceptance pending | conversations, users, settings |
 | Hermes | agent execution and tool lifecycle | 0.21.2 active on HADES guest; systemd running, zero restarts at 2026-09-25 01:43 UTC; 0.14.0 rollback artifact retained | turn execution and tool results |
 | Hindsight | durable personal context | healthy, subject-scoped overlay | private semantic memory |
 | Grocy | household pantry and grocery state | healthy, shared | inventory, shopping, recipes |

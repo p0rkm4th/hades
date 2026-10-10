@@ -1,4 +1,45 @@
-# Open WebUI 0.11.4 staging candidate
+# Open WebUI 0.11.4 security qualification
+
+## Current production status — 2026-10-10
+
+The P0 cutover deployed the exact qualified Open WebUI 0.11.4 HADES artifact
+on 2026-10-09. Production currently runs image ID
+`sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7`,
+built from HADES source `bbe830973b6fb39196353d2d9e48004ab2243f0a`, with
+upstream source `8bd8b4fac5e059578ac0c74b3c18d11139f88b7d` and immutable
+upstream digest
+`sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f`.
+After a clean restart on 2026-10-10, the exact image remained healthy and
+`/health` returned healthy.
+
+Production verification using synthetic identities and data passed:
+
+- Owner and household synthetic LDAP sign-ins succeeded through production
+  identity wiring; both received the standard-user role and could enumerate
+  the deployed model catalog.
+- The DOCX preview security regression passed against production storage and
+  the exact deployed artifact: harmless preview rendered, active content did
+  not execute, the session token was not exposed, the separately owned canary
+  was not readable, and no actionable `javascript:` links remained.
+- A valid synthetic session was rejected after sign-out; a fresh LDAP login
+  succeeded. LDAP group addition, single-group removal, final-group removal,
+  and old-token revocation passed with production LLDAP and an isolated WebUI
+  test database. Production's persisted group-creation policy was not changed.
+- Synthetic test files, chats, LLDAP users/groups, WebUI accounts, and their
+  associated rows were removed. The live database passed `quick_check` and
+  again contained the six pre-existing production users.
+- The encrypted recovery archive and rollback image were integrity checked
+  and restored in a bounded rehearsal. Owner-side recovery-key decryption has
+  not yet been confirmed.
+
+Direct owner/household browser acceptance of real logins, existing chats, and
+private-chat isolation is still pending. The persisted production LDAP group
+creation policy also needs owner disposition. Main convergence and post-main
+CI have not yet run. **P0 remains OPEN.**
+
+The staging decision and results below record the pre-cutover state. Any
+statement below that production remained on 0.11.1 describes that historical
+state and is superseded by the current production status above.
 
 ## Decision
 

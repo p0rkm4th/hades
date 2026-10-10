@@ -90,8 +90,8 @@
   "limitations": [
     "Synthetic users and private canary; no production data or secrets.",
     "This proves the browser-to-session-to-private-file exploit chain on the vulnerable control and its block on the candidate. It is not production migration or owner usability acceptance.",
-    "Production remains on Open WebUI 0.11.1 until exact production backup, cutover, rollback, and owner gates are completed.",
-    "Latest exact candidate includes integer-second revocation markers compatible with rollback to 0.11.1 when the shared Valkey state is preserved; ingress must remain closed during rollback until revocations are effective. This remains rehearsal evidence, not production proof."
+    "At this record's capture time (2026-10-09T18:44:16Z), production remained on Open WebUI 0.11.1. That state was superseded by the production cutover; see openwebui-0.11.4-production-security-2026-10-10.json.",
+    "Rollback to 0.11.1 with the shared Valkey revocation state remains rehearsal evidence. Keep ingress closed during rollback until revocations are effective."
   ],
   "production_changed": false,
   "temporary_containers_volumes_and_networks_removed": true

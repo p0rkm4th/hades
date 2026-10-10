@@ -39,7 +39,7 @@ authority-bearing services are not changed together:
 
 | Component | Current production baseline | Candidate/action | Acceptance gate |
 |---|---|---|---|
-| Open WebUI | pinned 0.11.1 image plus the tracked HADES compatibility layer | 0.11.4 is the current immutable staging candidate; keep the Channels patch only if native behavior still needs it | candidate acceptance and cross-user DOCX replay pass; production backup/cutover/rollback rehearsal and owner UI acceptance remain gates |
+| Open WebUI | exact 0.11.4 HADES image is deployed and healthy | Keep the minimum proven security adapters; evaluate Channels/native behavior after P0 closure | backup, rollback, production DOCX, synthetic LDAP, session revocation, and restart checks pass; owner/household browser acceptance and main convergence remain gates |
 | Hermes | 0.21.2 active; 0.14.0 rollback artifact retained | qualify a later pinned upstream version as a separate candidate | bounded candidate suite, rollback-backed owner-authenticated rehearsal, and owner approval |
 | Hindsight | pinned digest, API/control ports 8888/9999 | upgrade one digest after backup and runtime/read-back checks | memory persistence, subject mapping, restart, and no port collision |
 | Grocy | pinned digest | upgrade one digest after canonical backup | inventory, recipe, shopping-list, restart, and reconciliation checks |
@@ -50,9 +50,9 @@ Open WebUI and Hermes therefore require two separate controlled changes. The
 remaining owner input is authentication/acceptance and rollback approval, not
 a need to run an unattended or bulk upgrade.
 
-The 2026-09-15 Open WebUI candidate note below is historical. Open WebUI
-production remains pinned at 0.11.1; the 0.11.4 candidate evidence is recorded
-in [`open-webui-0.11.4-staging-candidate.md`](open-webui-0.11.4-staging-candidate.md).
+The earlier Open WebUI staging decision is superseded by the 2026-10-09 P0
+production cutover. Exact deployed provenance and remaining owner gates are
+recorded in [`open-webui-0.11.4-staging-candidate.md`](open-webui-0.11.4-staging-candidate.md).
 Hermes 0.21.2 was later promoted on HADES guest and is the current
 `config/versions.env` reconstruction pin. Hermes 0.14.0 remains a rollback
 artifact. Future promotions still require a separately qualified candidate.

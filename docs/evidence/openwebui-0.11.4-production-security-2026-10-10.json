@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-10T16:57:31Z",
+  "status": "P0_OPEN_OWNER_ACCEPTANCE_PENDING",
+  "source_state_at_record": {
+    "canonical_main": "627b7c5fc4fa875bdab78abc25133897b50a882d",
+    "p0_review_branch": "codex/openwebui-docx-cross-user-review-20261008",
+    "p0_review_sha_before_this_evidence_update": "22ff48a7a8e7bcc703309305e5e9d9ff1090a06d",
+    "public_ci_on_prior_p0_sha": "37975364229:PASS"
+  },
+  "production_artifact": {
+    "open_webui_version": "0.11.4",
+    "upstream_source_commit": "8bd8b4fac5e059578ac0c74b3c18d11139f88b7d",
+    "upstream_image_digest": "sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f",
+    "hades_image_id": "sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7",
+    "hades_build_source_commit": "bbe830973b6fb39196353d2d9e48004ab2243f0a",
+    "production_container_id": "3b37f5cb8b49b4c1796d9a39b10171cbb3a28845f5b95e2b5771be167dbce6e2",
+    "cutover_date": "2026-10-09",
+    "post_cutover_restart": "2026-10-10T16:48:17Z",
+    "post_restart_health": "PASS"
+  },
+  "recovery": {
+    "encrypted_application_backup_created_and_integrity_checked": true,
+    "backup_restored_to_temporary_state_and_verified": true,
+    "rollback_image_restored_and_identity_verified": true,
+    "production_shaped_migration_and_rollback_rehearsal": "PASS",
+    "owner_side_recovery_key_decryption_confirmation": "PENDING"
+  },
+  "production_acceptance": {
+    "synthetic_owner_and_household_ldap_auth": "PASS",
+    "synthetic_owner_and_household_model_catalog_access": "PASS",
+    "docx_preview_rendered": true,
+    "docx_active_content_executed": false,
+    "cross_user_session_token_exposed": false,
+    "separately_owned_private_canary_read": false,
+    "actionable_javascript_links": 0,
+    "artifact_bound_to_live_docx_result": true,
+    "valid_session_signout_rejected_that_token": true,
+    "fresh_login_after_signout": true,
+    "clean_restart_exact_image_and_health": "PASS",
+    "database_quick_check_after_test_cleanup": "PASS",
+    "preexisting_production_user_count_after_cleanup": 6,
+    "synthetic_webui_users_chats_files_remaining": 0
+  },
+  "production_lldap_group_test": {
+    "identity_source": "production LLDAP with synthetic-only users and groups",
+    "open_webui_storage": "isolated disposable test database",
+    "addition_single_removal_final_group_removal": "PASS",
+    "old_token_revocation_after_each_change": "PASS",
+    "original_synthetic_group_membership_restored_before_cleanup": true,
+    "production_persisted_group_creation_setting_changed": false
+  },
+  "owner_gates": {
+    "real_owner_and_household_browser_login": "PENDING",
+    "existing_chats_present": "PENDING",
+    "private_chat_isolation_in_owner_browser": "PENDING",
+    "production_ldap_group_policy_disposition": "PENDING",
+    "owner_side_recovery_key_decryption": "PENDING"
+  },
+  "remaining_source_gates": {
+    "canonical_main_convergence": "PENDING",
+    "post_promotion_public_ci": "PENDING",
+    "security_review_branch_retirement": "PENDING"
+  },
+  "limitations": [
+    "Synthetic production accounts were used for live identity, DOCX, and session tests; this does not substitute for owner and household browser acceptance.",
+    "LDAP group reconciliation was tested against production LLDAP with an isolated Open WebUI database because production group creation remains disabled.",
+    "Private recovery artifacts, locations, and signing material are not included in this public evidence record."
+  ]
+}

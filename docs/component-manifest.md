@@ -79,7 +79,7 @@ environment values or persistent data:
 
 | Observed component | Runtime evidence | Reconciliation |
 |---|---|---|
-| Open WebUI | Local HADES theme image derived from pinned 0.11.1 base, LAN binding on `:3000` | The tracked Dockerfile and immutable base now explain the application layer; the local image digest remains runtime evidence only |
+| Open WebUI | HADES image `sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7` derived from pinned 0.11.4 base, LAN binding on `:3000` | Exact image/source provenance and production acceptance state are recorded in the Open WebUI P0 evidence; owner/household browser acceptance remains open |
 | SearXNG | `searxng/searxng:2026.5.31-7159b8aed@sha256:35b089054ac9b4257976107e71673d9e30ac17c9b50bbf8b4783f2f6d1d1981f`, loopback `:8080` | Generated template consumes the immutable manifest reference; tracked settings remain the public configuration source |
 | LLDAP | Pinned `hades-lldap` on loopback `:17170`; separate local-only production/staging instance on `:17171` | The second instance is staging topology, not a replacement authority; identity migration must be explicitly selected |
 | Grocy / Agent Zero | Pinned compose digests and loopback bindings match tracked contracts | No drift found |
