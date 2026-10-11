@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-11T17:21:24Z",
+  "status": "RECOVERY_BACKUP_AND_RESTORE_PASS_OWNER_ESCROW_CONFIRMATION_PENDING",
+  "production_artifact": {
+    "open_webui_version": "0.11.4",
+    "upstream_source_commit": "8bd8b4fac5e059578ac0c74b3c18d11139f88b7d",
+    "upstream_image_digest": "sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f",
+    "hades_image_id": "sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7",
+    "hades_build_source_commit": "bbe830973b6fb39196353d2d9e48004ab2243f0a",
+    "production_container_id": "3b37f5cb8b49b4c1796d9a39b10171cbb3a28845f5b95e2b5771be167dbce6e2",
+    "health_after_backup_capture_restart": "PASS"
+  },
+  "encrypted_backup": {
+    "created_at": "2026-10-11T17:21:24Z",
+    "size_bytes": 1014515370,
+    "sha256": "7ac0057b86cca30df81aabde3f3673728443cd2c76d0bcb590963fa316193944",
+    "mode": "0600",
+    "custody": "encrypted off-host archive and separately encrypted age identity escrow",
+    "coverage": [
+      "Open WebUI database, uploads, vector/cache data",
+      "Open WebUI signing key and Grocy integration secret",
+      "receipt ledger and HADES UI assets",
+      "private Compose/runtime configuration and operator environment",
+      "identity integration Compose configuration",
+      "candidate override/environment, P0 version manifest",
+      "Valkey revocation-state RDB"
+    ]
+  },
+  "restore_validation": {
+    "encrypted_archive_checksum": "PASS",
+    "decrypted_and_extracted_in_tmpfs": "PASS",
+    "zstd_tar_integrity": "PASS",
+    "open_webui_sqlite_quick_check": "PASS",
+    "upload_files_present": 138,
+    "sample_upload_bytes_read": 64,
+    "required_paths_present": 12,
+    "restored_symlinks": 0,
+    "valkey_rdb_sha256": "a346ec72632bfd00e132097913cbbce235fde3e4d741a202e38316c5a3856cd5",
+    "valkey_rdb_image_id": "sha256:3b83b0b6a598bb390c8186a408a69949772f439548a81c5ea0ab7ccf102c248d",
+    "valkey_rdb_restore": "PASS; exact active marker values and absolute expiries preserved",
+    "active_user_revocation_markers": 8,
+    "active_token_revocation_markers": 1,
+    "malformed_markers": 0,
+    "permanent_cutover_user_marker_floor": 6
+  },
+  "owner_recovery_gate": {
+    "escrow_created_and_checksum_verified": true,
+    "owner_private_key_is_passphrase_protected": true,
+    "documented_break_glass_decryption_path": "NOT FOUND; the documented recovery procedure requires the passphrase-protected owner SSH private key, and age cannot use its loaded ssh-agent identity.",
+    "owner_side_escrow_decrypt_and_archive_readability_confirmation": "PENDING"
+  },
+  "handling": "No production application data, secrets, or plaintext recovery identity were written to persistent local storage. The recovery identity and restored archive existed only in tmpfs during verification and were scheduled for cleanup after evidence capture."
+}

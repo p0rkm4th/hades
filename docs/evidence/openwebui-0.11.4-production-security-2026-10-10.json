@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "recorded_at": "2026-10-10T16:57:31Z",
-  "status": "P0_OPEN_OWNER_ACCEPTANCE_PENDING",
+  "status": "P0_OPEN_OWNER_RECOVERY_CONFIRMATION_PENDING",
   "source_state_at_record": {
     "canonical_main": "627b7c5fc4fa875bdab78abc25133897b50a882d",
     "p0_review_branch": "codex/openwebui-docx-cross-user-review-20261008",
@@ -26,8 +26,14 @@
     "production_shaped_migration_and_rollback_rehearsal": "PASS",
     "pre_cutover_application_backup_source_version": "0.11.1",
     "pre_cutover_backup_includes_deployed_valkey_auth_state": false,
-    "post_cutover_backup_restore_validator": "Implemented; synthetic Valkey RDB restore preserved the exact permanent user and active token-revocation marker sets.",
-    "post_cutover_backup_with_revocation_marker_restore_verification": "PENDING",
+    "post_cutover_backup_restore_validator": "PASS on 2026-10-11; fresh encrypted full-state backup restored from the archived artifact in tmpfs, and the archived Valkey RDB was independently restored with exact active marker value and expiry parity.",
+    "post_cutover_backup_with_revocation_marker_restore_verification": "PASS; 8 active user markers and 1 active token marker preserved, including the six-marker permanent cutover inventory.",
+    "post_cutover_recovery_artifact_sha256": "7ac0057b86cca30df81aabde3f3673728443cd2c76d0bcb590963fa316193944",
+    "post_cutover_recovery_artifact_size_bytes": 1014515370,
+    "post_cutover_valkey_rdb_sha256": "a346ec72632bfd00e132097913cbbce235fde3e4d741a202e38316c5a3856cd5",
+    "post_cutover_recovery_coverage": "Open WebUI SQLite, uploads, vector/cache data, signing secret, Grocy integration secret, receipt ledger, UI assets, private deployment Compose/config, operator env, LLDAP Compose, candidate override/env, P0 version manifest, and Valkey RDB.",
+    "post_cutover_recovery_validation": "Encrypted SHA-256 verified; decrypted/extracted only in tmpfs; zstd/tar integrity passed; Open WebUI SQLite quick_check passed; 138 uploads present with sample bytes readable; 12 required paths present; no symlinks in restored tree.",
+    "post_cutover_restart_after_capture": "PASS; same exact image/container returned healthy.",
     "owner_side_recovery_key_decryption_confirmation": "PENDING"
   },
   "production_acceptance": {
@@ -58,8 +64,9 @@
     "real_owner_and_household_browser_login": "PENDING",
     "existing_chats_present": "PENDING",
     "private_chat_isolation_in_owner_browser": "PENDING",
-    "production_ldap_group_policy_disposition": "PENDING",
-    "owner_side_recovery_key_decryption": "PENDING"
+    "production_ldap_group_policy_disposition": "RESOLVED per accepted HADES policy: no automatic group creation; mapped membership authoritative; authoritative empty removes mapped authority; outage is indeterminate, not empty.",
+    "owner_side_recovery_key_decryption": "PENDING; escrow uses passphrase-protected owner SSH key; the documented/available ssh-agent path cannot decrypt it.",
+    "subjective_owner_browser_dogfood": "DEFERRED to Core Usability Reset; synthetic owner/household role acceptance against production wiring passed."
   },
   "remaining_source_gates": {
     "canonical_main_convergence": "PENDING",
