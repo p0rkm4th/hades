@@ -11,6 +11,26 @@ from pathlib import Path
 
 
 tree = ast.parse(Path("hermes/sitecustomize.py").read_text(encoding="utf-8"))
+run_conversation = next(
+    node for node in ast.walk(tree)
+    if isinstance(node, ast.FunctionDef) and node.name == "_hades_run_conversation"
+)
+# Domain history can carry entities and conversational scope, but deterministic
+# recipe reads must receive the current operation. Otherwise a prior "list my
+# recipes" turn can override a later ingredients or stock question.
+recipe_reads = [
+    node for node in ast.walk(run_conversation)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == "_hades_direct_grocy_recipe_read"
+]
+assert len(recipe_reads) == 2, len(recipe_reads)
+assert all(
+    node.args
+    and isinstance(node.args[0], ast.Name)
+    and node.args[0].id == "current_text"
+    for node in recipe_reads
+), "direct recipe reads must use the current turn, not reconstructed history"
 wanted = {
     "_hades_is_household_inventory_intent",
     "_hades_normalize_kitchen_typo",

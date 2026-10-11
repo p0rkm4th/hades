@@ -11460,7 +11460,7 @@ try:
                     "completed": True,
                 }
             direct_recipe_response = _hades_direct_grocy_recipe_read(
-                _hades_intent_text or user_message
+                current_text
             )
             if direct_recipe_response:
                 direct_recipe_response = _hades_prepare_grocy_offer(
