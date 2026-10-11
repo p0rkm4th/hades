@@ -23,7 +23,7 @@
     "encrypted_application_backup_created_and_integrity_checked": true,
     "backup_restored_to_temporary_state_and_verified": true,
     "rollback_image_restored_and_identity_verified": true,
-    "production_shaped_migration_and_rollback_rehearsal": "PASS",
+    "production_shaped_migration_and_rollback_rehearsal": "PASS on the exact candidate against a RAM-only restored production snapshot; existing table row counts did not decrease, non-SQLite files stayed byte-identical, synthetic owner/household private-chat and file isolation held, shared membership and Channels behavior worked, and uploaded DOCX bytes plus SQLite integrity survived migration and rollback.",
     "pre_cutover_application_backup_source_version": "0.11.1",
     "pre_cutover_backup_includes_deployed_valkey_auth_state": false,
     "post_cutover_backup_restore_validator": "PASS on 2026-10-11; fresh encrypted full-state backup restored from the archived artifact in tmpfs, and the archived Valkey RDB was independently restored with exact active marker value and expiry parity.",
@@ -39,6 +39,10 @@
   "production_acceptance": {
     "synthetic_owner_and_household_ldap_auth": "PASS",
     "synthetic_owner_and_household_model_catalog_access": "PASS",
+    "private_chat_and_file_isolation": "PASS in the exact-artifact production-shaped migration/rollback rehearsal with synthetic actors; production DOCX canary fetch was denied.",
+    "channels_and_shared_membership": "PASS in exact-artifact candidate acceptance and production-shaped migration/rollback rehearsal.",
+    "uploads_preserved_and_readable": "PASS; post-cutover backup restore contains 138 upload files and a sample was read successfully; synthetic DOCX upload and preview rendered in production.",
+    "cross_user_upload_isolation": "PASS in exact-artifact populated migration/rollback acceptance; production DOCX private canary remained unreadable.",
     "docx_preview_rendered": true,
     "docx_active_content_executed": false,
     "cross_user_session_token_exposed": false,
@@ -47,6 +51,8 @@
     "artifact_bound_to_live_docx_result": true,
     "valid_session_signout_rejected_that_token": true,
     "fresh_login_after_signout": true,
+    "disabled_role_old_token_rejected": "PASS in exact-candidate synthetic revocation acceptance (role demotion to pending returns HTTP 401 and disconnects live socket).",
+    "deleted_user_old_token_rejected": "PASS in exact-candidate synthetic revocation acceptance (account deletion returns HTTP 401 for old token and disconnects live socket).",
     "clean_restart_exact_image_and_health": "PASS",
     "database_quick_check_after_test_cleanup": "PASS",
     "preexisting_production_user_count_after_cleanup": 6,
@@ -60,10 +66,17 @@
     "original_synthetic_group_membership_restored_before_cleanup": true,
     "production_persisted_group_creation_setting_changed": false
   },
+  "production_ldap_live_configuration": {
+    "ldap_enabled": true,
+    "group_management": true,
+    "automatic_group_creation": false,
+    "group_attribute": "memberOf",
+    "readback": "PASS from the running Open WebUI database after cutover; values match the settled HADES policy."
+  },
   "owner_gates": {
-    "real_owner_and_household_browser_login": "PENDING",
-    "existing_chats_present": "PENDING",
-    "private_chat_isolation_in_owner_browser": "PENDING",
+    "real_owner_and_household_browser_login": "DEFERRED to Core Usability Reset; synthetic actors verified both production LDAP roles, and direct owner UX is not a P0 security gate.",
+    "existing_chats_present": "PASS by exact-artifact production-shaped migration/rollback row-count and file-tree preservation; current full production database is included in the verified recovery archive.",
+    "private_chat_isolation_in_owner_browser": "PASS for the security contract using synthetic actors in the exact-artifact production-shaped migration/rollback rehearsal; direct owner UX remains deferred.",
     "production_ldap_group_policy_disposition": "RESOLVED per accepted HADES policy: no automatic group creation; mapped membership authoritative; authoritative empty removes mapped authority; outage is indeterminate, not empty.",
     "owner_side_recovery_key_decryption": "PENDING; escrow uses passphrase-protected owner SSH key; the documented/available ssh-agent path cannot decrypt it.",
     "subjective_owner_browser_dogfood": "DEFERRED to Core Usability Reset; synthetic owner/household role acceptance against production wiring passed."
