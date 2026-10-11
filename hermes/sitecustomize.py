@@ -5410,13 +5410,15 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
             return "Detailed Proxmox VM and container inventory is available only in an owner session."
         if not subject:
             return "I couldn't verify this owner session, so I can't read Proxmox guest inventory."
-    if not _hades_is_homelab_intent(text) and not re.search(
+    if not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|guests?|containers?|running\s+on|what\s+is\s+on|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"minecraft|jellyfin)\b",
         text,
         re.IGNORECASE,
     ) and not _hades_configured_homelab_alias_match(text) and not (
+        scope == "owner" and _HADES_NETWORK_INVENTORY_INTENT.search(text)
+    ) and not (
         scope == "owner" and (
             _hades_homelab_service_coverage_intent(text)
             or _hades_broad_homelab_status_intent(text)

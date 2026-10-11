@@ -131,6 +131,9 @@ namespace = {
     '_HADES_HOMELAB_INTENT': re.compile(
         r'\b(?:homelab|server|node|computer|network|minecraft|hades)\b', re.I
     ),
+    '_HADES_NETWORK_INVENTORY_INTENT': re.compile(
+        r'\b(?:what(?:' + "'" + r's| is|s)\s+(?:in|on)\s+(?:my|our|the)\s+network)\b', re.I
+    ),
 }
 namespace['__file__'] = str(repository_root / 'hermes' / 'sitecustomize.py')
 exec(compile(ast.Module(body=functions, type_ignores=[]), 'sitecustomize.py', 'exec'), namespace)
