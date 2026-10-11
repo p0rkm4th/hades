@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "recorded_at": "2026-10-11T17:21:24Z",
-  "status": "RECOVERY_BACKUP_AND_RESTORE_PASS_OWNER_ESCROW_CONFIRMATION_PENDING",
+  "status": "RECOVERY_BACKUP_AND_RESTORE_PASS_OWNER_ESCROW_CONFIRMATION_PASS",
   "production_artifact": {
     "open_webui_version": "0.11.4",
     "upstream_source_commit": "8bd8b4fac5e059578ac0c74b3c18d11139f88b7d",
@@ -48,7 +48,7 @@
     "escrow_created_and_checksum_verified": true,
     "owner_private_key_is_passphrase_protected": true,
     "documented_break_glass_decryption_path": "NOT FOUND; the documented recovery procedure requires the passphrase-protected owner SSH private key, and age cannot use its loaded ssh-agent identity.",
-    "owner_side_escrow_decrypt_and_archive_readability_confirmation": "PENDING"
+    "owner_side_escrow_decrypt_and_archive_readability_confirmation": "PASS; owner reported local verification on Hades: the personal ~/.ssh/id_ed25519 decrypted backup-identity.owner.age, and the recovered identity decrypted and read the encrypted archive. Verified artifact SHA-256: 7ac0057b86cca30df81aabde3f3673728443cd2c76d0bcb590963fa316193944."
   },
-  "handling": "No production application data, secrets, or plaintext recovery identity were written to persistent local storage. The recovery identity and restored archive existed only in tmpfs during verification and were scheduled for cleanup after evidence capture."
+  "handling": "Operator restore validation used tmpfs and cleaned the recovery identity and restored archive. Owner separately confirmed escrow and archive readability on Hades without sharing the passphrase or private key."
 }

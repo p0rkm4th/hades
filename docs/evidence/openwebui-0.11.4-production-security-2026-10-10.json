@@ -1,12 +1,13 @@
 {
   "schema_version": 1,
-  "recorded_at": "2026-10-10T16:57:31Z",
-  "status": "P0_OPEN_OWNER_RECOVERY_CONFIRMATION_PENDING",
+  "recorded_at": "2026-10-11T18:02:26Z",
+  "status": "P0_SECURITY_ACCEPTANCE_PASS",
   "source_state_at_record": {
-    "canonical_main": "627b7c5fc4fa875bdab78abc25133897b50a882d",
+    "canonical_main_before_final_recovery-evidence_update": "af583beacd8ac1f7ddc9703d826e16b1f911729a",
     "p0_review_branch": "codex/openwebui-docx-cross-user-review-20261008",
-    "p0_review_sha_before_this_evidence_update": "22ff48a7a8e7bcc703309305e5e9d9ff1090a06d",
-    "public_ci_on_prior_p0_sha": "37975364229:PASS"
+    "p0_review_sha_before_final_recovery-evidence_update": "af583beacd8ac1f7ddc9703d826e16b1f911729a",
+    "public_ci_on_prior_main_sha": "38159951041:PASS",
+    "redundant_review_branches_retired": "PASS; P0 branch exactly matched canonical main, staging branch had no unique commits; both remote refs deleted after promotion and CI."
   },
   "production_artifact": {
     "open_webui_version": "0.11.4",
@@ -34,7 +35,7 @@
     "post_cutover_recovery_coverage": "Open WebUI SQLite, uploads, vector/cache data, signing secret, Grocy integration secret, receipt ledger, UI assets, private deployment Compose/config, operator env, LLDAP Compose, candidate override/env, P0 version manifest, and Valkey RDB.",
     "post_cutover_recovery_validation": "Encrypted SHA-256 verified; decrypted/extracted only in tmpfs; zstd/tar integrity passed; Open WebUI SQLite quick_check passed; 138 uploads present with sample bytes readable; 12 required paths present; no symlinks in restored tree.",
     "post_cutover_restart_after_capture": "PASS; same exact image/container returned healthy.",
-    "owner_side_recovery_key_decryption_confirmation": "PENDING"
+    "owner_side_recovery_key_decryption_confirmation": "PASS; owner reported local recovery test on Hades: personal ~/.ssh/id_ed25519 decrypted backup-identity.owner.age, and recovered identity decrypted and read the encrypted archive with SHA-256 7ac0057b86cca30df81aabde3f3673728443cd2c76d0bcb590963fa316193944."
   },
   "production_acceptance": {
     "synthetic_owner_and_household_ldap_auth": "PASS",
@@ -76,20 +77,14 @@
   "owner_gates": {
     "real_owner_and_household_browser_login": "DEFERRED to Core Usability Reset; synthetic actors verified both production LDAP roles, and direct owner UX is not a P0 security gate.",
     "existing_chats_present": "PASS by exact-artifact production-shaped migration/rollback row-count and file-tree preservation; current full production database is included in the verified recovery archive.",
-    "private_chat_isolation_in_owner_browser": "PASS for the security contract using synthetic actors in the exact-artifact production-shaped migration/rollback rehearsal; direct owner UX remains deferred.",
+    "private_chat_isolation_security_contract": "PASS using synthetic actors in the exact-artifact production-shaped migration/rollback rehearsal; direct owner UX remains deferred.",
     "production_ldap_group_policy_disposition": "RESOLVED per accepted HADES policy: no automatic group creation; mapped membership authoritative; authoritative empty removes mapped authority; outage is indeterminate, not empty.",
-    "owner_side_recovery_key_decryption": "PENDING; escrow uses passphrase-protected owner SSH key; the documented/available ssh-agent path cannot decrypt it.",
+    "owner_side_recovery_key_decryption": "PASS; owner confirmed the escrow and archive decrypt/read check locally without disclosing the passphrase or private key.",
     "subjective_owner_browser_dogfood": "DEFERRED to Core Usability Reset; synthetic owner/household role acceptance against production wiring passed."
   },
-  "remaining_source_gates": {
-    "canonical_main_convergence": "PENDING",
-    "post_promotion_public_ci": "PENDING",
-    "security_review_branch_retirement": "PENDING"
-  },
   "limitations": [
-    "Synthetic production accounts were used for live identity, DOCX, and session tests; this does not substitute for owner and household browser acceptance.",
+    "Synthetic actors prove the P0 security contract. Subjective owner and household browser dogfood is deferred to the Core Usability Reset.",
     "LDAP group reconciliation was tested against production LLDAP with an isolated Open WebUI database because production group creation remains disabled.",
-    "The verified private application archive predates cutover and therefore cannot recover current Valkey revocation markers; post-cutover backup/restore qualification is required.",
     "Private recovery artifacts, locations, and signing material are not included in this public evidence record."
   ]
 }
