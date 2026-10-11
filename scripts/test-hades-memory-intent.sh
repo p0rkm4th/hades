@@ -20,7 +20,7 @@ required = (
     '_hades_service_health_target',
     '_hades_should_skip_automatic_memory',
     '_hades_explicit_memory_intent',
-    'skipping automatic hindsight retain for non-personal or transient-error turn',
+    'skipping automatic hindsight retain; explicit memory routes handle writes',
     '_hindsight.hindsightmemoryprovider.sync_turn = _hades_sync_turn',
     'stale personal semantic-memory claims',
     '_hades_grocy_action_intent',
@@ -82,7 +82,7 @@ for personal in ('I prefer basil', 'I hate mushrooms', 'my favorite dinner is pa
 # Exercise the actual dependency-free retain decision used by the runtime
 # wrapper. Assistant/tool output must not promote or demote a personal user
 # turn except for the explicit transient-error suppression rule.
-assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The web result says rain.") is False
+assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The web result says rain.") is True
 assert overlay._hades_should_skip_automatic_memory("Grocy says there are 2 cartons of milk", "Current stock: 2 cartons.") is True
 assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The service is unavailable.") is True
 assert overlay._hades_should_skip_automatic_memory("HADES_TASK_NOTIFICATION_FEED_V1", '{"version":1,"tasks":[]}') is True
@@ -97,6 +97,66 @@ for public_research_turn in (
     'Run an OSINT lookup for Synthetic Corporation.',
 ):
     assert overlay._hades_should_skip_automatic_memory(public_research_turn, 'Synthetic public-source result.') is True
+
+for inventory in (
+    "what's in my kitchen?",
+    'what ingredients do i have?',
+    'what ingredients do i have in my kiytchen?',
+    'whats in the kichen?',
+    "what's in my pantry?",
+    'what food do we have?',
+    'what can i cook with what we have?',
+):
+    assert overlay._hades_is_household_inventory_intent(inventory), inventory
+for ordinary in (
+    'how does a refrigerator cool food?',
+    'what does kitchen mean in restaurant terminology?',
+    'what should i cook for dinner?',
+    'do we have a plan?',
+    'what do we have to do about the router?',
+    "what's in the database?",
+):
+    assert not overlay._hades_is_household_inventory_intent(ordinary), ordinary
+for network in (
+    "what's in my network?",
+    'what devices are in my network?',
+    "what's running at home?",
+    "what's on the homelab?",
+    'what servers do i have?',
+):
+    assert overlay._hades_is_homelab_intent(network), network
+for ordinary in (
+    'what is a neural network?',
+    'explain TCP networking',
+    'how does a social network grow?',
+    "what's a network effect?",
+):
+    assert not overlay._hades_is_homelab_intent(ordinary), ordinary
+
+read_prompts = (
+    "what's in my kitchen?", 'what ingredients do i have?', 'what food do we have?',
+    "what's in my pantry?", "what's in my network?", "what's running in my homelab?",
+    "did you forget what's in my pantry?", "why don't you remember my network setup?",
+    'what did i tell you about my kitchen?',
+)
+for prompt in read_prompts:
+    assert overlay._hades_explicit_memory_mutation_intent(prompt) is None, prompt
+    assert overlay._hades_should_skip_automatic_memory(prompt, 'synthetic answer'), prompt
+
+positive_mutations = (
+    ('remember that I keep the spare key in the drawer', [], 'I keep the spare key in the drawer', 'retain'),
+    ('save that preference', [{'role': 'user', 'content': 'I prefer basil.'}], 'I prefer basil', 'retain'),
+    ('forget what I told you about the old router', [], 'Forget the old router', 'forget'),
+    ('remove that memory', [{'role': 'assistant', 'content': 'I remember: the old router was named X.'}], 'Remove the old router was named X', 'forget'),
+    ('update your memory: the server is no longer called X', [], 'The server is no longer called X', 'update'),
+    ('correct what you remember about Y', [], 'Correct Y with the new confirmed name', 'update'),
+)
+for prompt, history, content, operation in positive_mutations:
+    intent = overlay._hades_explicit_memory_mutation_intent(prompt, history)
+    assert intent and intent['operation'] == operation, (prompt, intent)
+    assert overlay._hades_should_skip_automatic_memory(prompt, 'synthetic answer', history), prompt
 print('PASS memory intent regression')
 print('PASS automatic Hindsight retain gate suppresses live/transient state')
+print('PASS owner routing and read-style prompts cannot authorize memory writes')
+print('PASS explicit target-bound memory mutation controls remain authorized')
 PY

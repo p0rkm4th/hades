@@ -12,7 +12,8 @@ recipe = Path('integrations/grocy-recipe-authoring/server.py').read_text().lower
 
 for fragment in (
     'call web_search before answering',
-    'allowed_memory = {"hindsight_recall", "hindsight_retain"}',
+    'allowed_memory = {"hindsight_recall"}',
+    'if tool_name == "hindsight_retain":',
     'if completion_only_model:',
     'self.tools = []',
     'if agent_zero_intent and not household_session:',

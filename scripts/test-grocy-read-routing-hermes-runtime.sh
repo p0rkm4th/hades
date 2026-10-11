@@ -27,12 +27,67 @@ env -u GROCY_URL -u GROCY_API_KEY -u GROCY_API_KEY_FILE \
 "$hermes_python" - "$repo_dir" <<'PY'
 import sys
 import datetime
+import json
+import urllib.request
 import run_agent
 import sitecustomize as hades
+from plugins.memory.hindsight import HindsightMemoryProvider
 
 assert run_agent.AIAgent.run_conversation.__name__ == "_hades_run_conversation"
 assert hades._hades_grocy_base_url() == "http://127.0.0.1:9"
 assert hades._hades_grocy_api_key() == "synthetic-only"
+actual_grocy_read = hades._hades_direct_household_grocy_read
+grocy_requests = []
+class SyntheticGrocyResponse:
+    def __enter__(self): return self
+    def __exit__(self, *_args): return False
+    def read(self): return b'[{"product":{"name":"milk"},"amount":2}]'
+def synthetic_grocy_urlopen(request, timeout=5):
+    grocy_requests.append((request.full_url, request.get_method(), timeout))
+    return SyntheticGrocyResponse()
+real_urlopen = urllib.request.urlopen
+urllib.request.urlopen = synthetic_grocy_urlopen
+try:
+    for prompt in (
+        "what's in my kitchen?",
+        "what ingredients do i have in my kiytchen?",
+    ):
+        grocy_requests.clear()
+        answer = actual_grocy_read(prompt)
+        assert "milk (2 units)" in answer, (prompt, answer)
+        assert len(grocy_requests) == 1 and grocy_requests[0][0].endswith("/api/stock"), (prompt, grocy_requests)
+finally:
+    urllib.request.urlopen = real_urlopen
+
+# Exercise the actual provider handler as a fail-closed mutation boundary.
+# The fake downstream handler records calls but never touches Hindsight.
+provider = object.__new__(HindsightMemoryProvider)
+provider._memory_mode = "hybrid"
+saved_handlers = HindsightMemoryProvider._TOOL_HANDLERS
+mutation_calls = []
+HindsightMemoryProvider._TOOL_HANDLERS = dict(saved_handlers)
+HindsightMemoryProvider._TOOL_HANDLERS["hindsight_retain"] = (
+    "content",
+    lambda _provider, args: mutation_calls.append(dict(args)) or "Memory stored successfully.",
+    "Failed to store memory",
+)
+try:
+    read_schemas = provider.get_tool_schemas()
+    assert "hindsight_retain" not in {schema["name"] for schema in read_schemas}
+    blocked = provider.handle_tool_call(
+        "hindsight_retain", {"content": "What ingredients do I have in my kitchen?"}
+    )
+    assert "not changed" in blocked and mutation_calls == [], (blocked, mutation_calls)
+    for prompt in (
+        "remember that I keep the spare key in the drawer",
+        "forget the old router",
+        "update your memory: the server is now Maple",
+    ):
+        blocked = provider.handle_tool_call("hindsight_retain", {"content": prompt})
+        assert "not changed" in blocked and mutation_calls == [], (prompt, blocked, mutation_calls)
+finally:
+    HindsightMemoryProvider._TOOL_HANDLERS = saved_handlers
+
 reads = []
 def synthetic_read(text):
     reads.append(text)
@@ -56,6 +111,90 @@ agent = run_agent.AIAgent(
     skip_background_review=True,
     load_soul_identity=False,
 )
+
+for inventory_prompt in (
+    "what's in my kitchen?",
+    'what ingredients do i have?',
+    'what ingredients do i have in my kiytchen?',
+    'whats in the kichen?',
+    "what's in my pantry?",
+    'what food do we have?',
+    'do we have eggs?',
+):
+    reads.clear()
+    inventory_result = agent.run_conversation(inventory_prompt)
+    assert inventory_result.get('completed') is True, (inventory_prompt, inventory_result)
+    assert inventory_result.get('api_calls') == 0, (inventory_prompt, inventory_result)
+    assert reads == [inventory_prompt], (inventory_prompt, reads)
+
+network_reads = []
+def synthetic_homelab_source(tool_name, arguments=None):
+    network_reads.append(tool_name)
+    return {
+        "status": "OK",
+        "online_names": ["synthetic-server"],
+        "inventory_only_names": [],
+        "availability_summary": [],
+        "resources": [],
+    }
+hades._hades_direct_homelab_tool_result = synthetic_homelab_source
+owner_agent = run_agent.AIAgent(
+    gateway_session_key="hades-user-synthetic-owner",
+    session_id="synthetic-owner-chat",
+    stream_delta_callback=lambda _chunk: None,
+    base_url="http://127.0.0.1:9/v1",
+    api_key="synthetic-only",
+    provider="custom",
+    api_mode="chat_completions",
+    model="synthetic-no-call",
+    enabled_toolsets=[],
+    disabled_toolsets=[],
+    quiet_mode=True,
+    skip_context_files=True,
+    skip_memory=True,
+    skip_background_review=True,
+    load_soul_identity=False,
+)
+assert owner_agent._hades_session_scope == "owner", owner_agent._hades_session_scope
+for prompt in ("what's in my network?", "what devices are in my network?", "what's running in my homelab?", "what servers do i have?"):
+    network_reads.clear()
+    result = owner_agent.run_conversation(prompt)
+    assert result.get("api_calls") == 0 and "synthetic-server" in result.get("final_response", ""), (prompt, result)
+    assert network_reads == ["homelab_summary"], (prompt, network_reads)
+    network_reads.clear()
+
+original_model_run = hades._hades_original_run_conversation
+def synthetic_model_fallback(_agent, prompt, *args, **kwargs):
+    return {
+        'final_response': 'synthetic ordinary-chat response',
+        'messages': [{'role': 'assistant', 'content': 'synthetic ordinary-chat response'}],
+        'api_calls': 1,
+        'completed': True,
+    }
+hades._hades_original_run_conversation = synthetic_model_fallback
+try:
+    for ordinary_prompt in (
+        "what is a neural network?",
+        "explain TCP networking",
+        "how does a social network grow?",
+        "what's a network effect?",
+    ):
+        network_reads.clear()
+        owner_agent.run_conversation(ordinary_prompt)
+        assert network_reads == [], (ordinary_prompt, network_reads)
+    for ordinary_prompt in (
+        'how does a refrigerator cool food?',
+        'what does kitchen mean in restaurant terminology?',
+        'explain neural networks',
+        'help me write a Python function',
+        'what should i cook for dinner?',
+    ):
+        reads.clear()
+        ordinary_result = agent.run_conversation(ordinary_prompt)
+        assert reads == [], (ordinary_prompt, reads)
+finally:
+    hades._hades_original_run_conversation = original_model_run
+
 offer = "I can add only the missing items to the shared shopping list if you'd like."
 decline_history = [
     {"role": "assistant", "content": f"Not quite yet: recipe needs eggs. {offer}"},
@@ -369,6 +508,9 @@ assert compound_food and "Not quite yet: Synthetic Cocoa Pudding still needs coc
 assert "Known to expire within 7 days: milk" in compound_food, compound_food
 assert sum(row[0] == "POST" for row in offer_requests) == compound_write_count, offer_requests
 urllib.request.urlopen = real_urlopen
+print("PASS kitchen and typo prompts read synthetic canonical Grocy stock")
+print("PASS natural network inventory prompts read synthetic canonical homelab source; educational networking stays model-only")
+print("PASS Hindsight model retain calls are rejected and automatic sync is disabled")
 print("PASS Grocy offer affirmative is same-chat, stale-stock-checked, single-write, and canonically read back")
 print("PASS Grocy offer decline and cross-chat confirmation perform no shopping-list write")
 print("PASS expired Grocy stock does not suppress missing recipe ingredients from shopping list")

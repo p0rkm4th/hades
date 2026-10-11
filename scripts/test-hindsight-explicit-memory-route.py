@@ -25,6 +25,7 @@ FUNCTIONS = {
         "_hades_overlay_non_hermes_interpreter",
         "_hades_is_hermes_auxiliary_prompt",
         "_hades_explicit_memory_recall_requested",
+        "_hades_explicit_memory_mutation_intent",
         "_hades_ensure_memory_bank",
         "_hades_direct_memory_response",
         "_hades_prefetch",
@@ -34,6 +35,7 @@ REQUIRED_FUNCTIONS = {
     "_hades_overlay_non_hermes_interpreter",
     "_hades_is_hermes_auxiliary_prompt",
     "_hades_explicit_memory_recall_requested",
+    "_hades_explicit_memory_mutation_intent",
     "_hades_ensure_memory_bank",
     "_hades_direct_memory_response",
     "_hades_prefetch",
@@ -88,6 +90,7 @@ class FakeResponse:
 
 state = {"items": []}
 requests: list[tuple[str, int]] = []
+patches: list[tuple[str, dict[str, object]]] = []
 created_banks: set[str] = set()
 list_unavailable = False
 
@@ -101,6 +104,18 @@ def fake_urlopen(url: str, *, timeout: int):
     if method == "PUT":
         created_banks.add(target.rsplit("/", 1)[-1])
         return FakeResponse({"id": target.rsplit("/", 1)[-1]})
+    if method == "PATCH":
+        payload = json.loads(url.data.decode("utf-8"))
+        patches.append((target, payload))
+        memory_id = target.rsplit("/", 1)[-1]
+        item = next((row for row in state["items"] if row.get("id") == memory_id), None)
+        if item is not None:
+            item.update(payload)
+        return FakeResponse({"id": memory_id, **payload})
+    if "/memories/" in target and "/memories/list?" not in target:
+        memory_id = target.rsplit("/", 1)[-1]
+        item = next((row for row in state["items"] if row.get("id") == memory_id), None)
+        return FakeResponse(item or {})
     if "/banks?" in target:
         rows = [{"id": bank} for bank in sorted(created_banks)]
         return FakeResponse({"items": rows, "limit": 100, "offset": 0, "total": len(rows)})
@@ -136,6 +151,10 @@ exec(compile(ast.Module(
         next(node for node in ast.walk(TREE)
              if isinstance(node, ast.Assign)
              and any(isinstance(target, ast.Name) and target.id == "_HADES_HERMES_AUXILIARY_PROMPT" for target in node.targets)),
+        next(node for node in ast.walk(TREE)
+             if isinstance(node, ast.Assign)
+             and any(isinstance(target, ast.Name) and target.id == "_HADES_EXPLICIT_MEMORY_MUTATION" for target in node.targets)),
+        FUNCTIONS["_hades_explicit_memory_mutation_intent"],
         FUNCTIONS["_hades_overlay_non_hermes_interpreter"],
         FUNCTIONS["_hades_is_hermes_auxiliary_prompt"],
         FUNCTIONS["_hades_explicit_memory_recall_requested"],
@@ -372,6 +391,46 @@ try:
     assert retain[0] == "retain" and retain[1]["bank_id"] == "hades-user-gamma"
     assert retain[1]["tags"] == ["hades-explicit-memory"] and retain[1]["retain_async"] is False
     assert "hades-user-gamma" in created_banks, created_banks
+
+    # Forget/update use Hindsight's curation API, never retain; selection must
+    # identify one exact actor-scoped memory before changing it.
+    state["items"] = [{
+        "id": "memory-router-1",
+        "tags": ["hades-explicit-memory"],
+        "text": "The old router was named Cedar.",
+        "state": "valid",
+    }]
+    answer = route("forget what I told you about the old router Cedar", "gamma", "household")
+    assert "forgotten" in answer, answer
+    assert patches[-1] == (
+        "http://hindsight.synthetic:8888/v1/default/banks/hades-user-gamma/memories/memory-router-1",
+        {"state": "invalidated", "reason": "User explicitly asked HADES to forget this fact."},
+    ), patches[-1]
+    state["items"] = [{
+        "id": "memory-router-1",
+        "tags": ["hades-explicit-memory"],
+        "text": "The old router was named Cedar.",
+        "state": "valid",
+    }]
+    answer = route("update your memory: the old router Cedar is now called Maple", "gamma", "household")
+    assert "updated" in answer, answer
+    assert patches[-1][1]["text"] == "the old router Cedar is now called Maple", patches[-1]
+    before = len(patches)
+    answer = route("correct what you remember about Y", "gamma", "household")
+    assert "what should i change" in answer.casefold() and len(patches) == before, (answer, patches)
+    answer = route("update your memory: the server is now called Maple", "gamma", "household")
+    assert "Nothing was changed" in answer and len(patches) == before, (answer, patches)
+
+    state["items"] = [
+        {"id": "memory-a", "tags": ["hades-explicit-memory"], "text": "The router is Cedar."},
+        {"id": "memory-b", "tags": ["hades-explicit-memory"], "text": "The router is Maple."},
+    ]
+    before = len(patches)
+    answer = route("forget what I told you about the router", "gamma", "household")
+    assert "Nothing was changed" in answer and len(patches) == before, (answer, patches)
+    state["items"] = [{"id": "memory-server", "tags": ["hades-explicit-memory"], "text": "A server is used at home."}]
+    answer = route("forget the server", "gamma", "household")
+    assert "Nothing was changed" in answer and len(patches) == before, (answer, patches)
 
     # An existing bank is not recreated or renamed.
     created_banks.add("hades-user-existing")

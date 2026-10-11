@@ -14,14 +14,16 @@ def require(fragment):
         raise SystemExit(f'missing composition contract: {fragment}')
 
 require('if memory_intent and isinstance(original_tools, list):')
-require('allowed_memory = {"hindsight_recall", "hindsight_retain"}')
+require('allowed_memory = {"hindsight_recall"}')
+require('return [_hindsight.recall_schema]')
+require('if tool_name == "hindsight_retain":')
 require('if web_intent:')
 require('== "web_search"')
 require('if agent_zero_intent and not household_session:')
 require('endswith(\n                        "agent_zero_delegate"')
 require('household_session = getattr(self, "_hades_session_scope", "") == "household"')
 require('_hades_nonpersonal_state_turn(user_text)')
-require('skipping automatic hindsight retain for non-personal or transient-error turn')
+require('skipping automatic hindsight retain; explicit memory routes handle writes')
 
 # The household denial must remain on the Agent Zero gate; prompt wording
 # cannot create owner authority or make the entire tool catalog visible.

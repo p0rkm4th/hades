@@ -18,7 +18,6 @@ from contextlib import contextmanager
 from pathlib import Path
 import sys
 
-
 def _hades_prepare_generated_integrations_path():
     """Prefer the packaged HADES integrations while retaining checkout adapters."""
     configured = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
@@ -2286,9 +2285,102 @@ _HADES_TRANSIENT_ERROR = re.compile(
 
 _HADES_SHARED_MEMORY_INTENT = re.compile(
     r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|pantry|inventory|stock|"
-    r"recipe|food|ingredient|bought|purchase|purchased|consume|consumed|used up|out of|add it|remove it)\b",
+    r"recipe|food|ingredients?|bought|purchase|purchased|consume|consumed|used up|out of|add it|remove it)\b",
     re.IGNORECASE,
 )
+
+_HADES_KITCHEN_TYPO = re.compile(r"\b(?:kiytchen|kichen|kitcen)\b", re.IGNORECASE)
+_HADES_HOUSEHOLD_INVENTORY_CONTEXT = re.compile(
+    r"\b(?:what(?:'s| is|s)\s+in|what\s+do\s+(?:i|we)\s+have|do\s+we\s+have|"
+    r"do\s+i\s+have|what\s+(?:ingredients?|food|groceries)\s+do\s+(?:i|we)\s+have|"
+    r"what(?:'s| is)\s+left|anything\s+(?:low|running\s+low)|what\s+can\s+i\s+cook\s+with)\b",
+    re.IGNORECASE,
+)
+
+
+def _hades_normalize_kitchen_typo(text):
+    """Normalize only the small kitchen typo family observed in owner prompts."""
+    return _HADES_KITCHEN_TYPO.sub("kitchen", str(text or ""))
+
+
+def _hades_is_household_inventory_intent(user_text):
+    """Recognize household stock questions without catching food explanations."""
+    text = _hades_normalize_kitchen_typo(user_text)
+    if re.search(r"\b(?:mean(?:ing)?|restaurant|refrigerat(?:ion|or)|preserv(?:e|ation))\b", text, re.IGNORECASE):
+        return False
+    if not _HADES_HOUSEHOLD_INVENTORY_CONTEXT.search(text):
+        return False
+    if re.search(r"\b(?:kitchen|pantry|food|ingredients?|grocer(?:y|ies)|inventory|stock|shopping\s+list|cook\s+with|fridge|refrigerator|anything\s+(?:running\s+)?low)\b", text, re.IGNORECASE):
+        return True
+    if re.fullmatch(r"\s*(?:what\s+do\s+we\s+have|what(?:'s|\s+is)\s+left)\s*[?!.,]*\s*", text, re.IGNORECASE):
+        return True
+    item_question = re.search(r"\bdo\s+(?:i|we)\s+have\s+(.+?)\s*[?!.,]*$", text, re.IGNORECASE)
+    return bool(item_question and _HADES_GROCY_ITEM_FRAGMENT.fullmatch(item_question.group(1).strip()))
+
+
+_HADES_EXPLICIT_MEMORY_MUTATION = re.compile(
+    r"^\s*(?:please\s+)?(?:"
+    r"(?P<retain>remember|memorize|save|store)\s+(?:(?:that|this)\s+)?(?P<retain_target>.+?)|"
+    r"(?P<forget>forget|remove|delete)\s+(?:what\s+i\s+told\s+you\s+about\s+)?(?P<forget_target>.+?)|"
+    r"(?P<update>update|change|correct)\s+(?:what\s+you\s+remember\s+about\s+|your\s+)?(?:memory\s*:\s*)?(?P<update_target>.+?)"
+    r")\s*[.!?]*\s*$",
+    re.IGNORECASE,
+)
+
+
+def _hades_explicit_memory_mutation_intent(user_text, conversation_history=None):
+    """Return a current-turn, operation-specific memory mutation request."""
+    match = _HADES_EXPLICIT_MEMORY_MUTATION.fullmatch(str(user_text or ""))
+    if not match:
+        return None
+    for group, operation in (("retain", "retain"), ("forget", "forget"), ("update", "update")):
+        if match.group(group):
+            target = str(match.group(f"{group}_target") or "").strip(" .!?\t\n")
+            action = str(match.group(group) or "").casefold()
+            if action in {"remember", "memorize"} and not re.match(
+                r"^(?:(?:that|this)\s+|(?:i|my)\b)", target, re.IGNORECASE
+            ):
+                return None
+            meaningful = [word for word in re.findall(r"[a-z0-9][a-z0-9'-]*", target.casefold())
+                          if word not in {"that", "this", "memory", "fact", "preference", "it", "my", "the", "about"}]
+            if not meaningful:
+                rows = conversation_history if isinstance(conversation_history, list) else []
+                if operation == "retain" and re.fullmatch(r"(?:(?:that|this)\s+)?preference", target, re.IGNORECASE):
+                    for row in reversed(rows):
+                        if not isinstance(row, dict) or row.get("role") != "user":
+                            continue
+                        prior = str(row.get("content") or "").strip()
+                        fact = re.search(
+                            r"\b(?:i\s+(?:prefer|like|love|hate|dislike)|my\s+(?:favorite|favourite))\b.+",
+                            prior,
+                            re.IGNORECASE,
+                        )
+                        if fact:
+                            target = fact.group(0).strip(" .!?\t\n")
+                            meaningful = [word for word in re.findall(r"[a-z0-9][a-z0-9'-]*", target.casefold())
+                                          if word not in {"that", "this", "memory", "fact", "preference", "it", "my", "the", "about"}]
+                            break
+                if not meaningful and operation == "forget" and re.fullmatch(r"(?:that|this)\s+memory", target, re.IGNORECASE):
+                    for row in reversed(rows):
+                        if not isinstance(row, dict) or row.get("role") != "assistant":
+                            continue
+                        prior = str(row.get("content") or "").strip()
+                        fact = re.search(
+                            r"(?:I remember:\s*|I stored that as private memory for this account:\s*`?)(.+?)(?:`|$)",
+                            prior,
+                            re.IGNORECASE,
+                        )
+                        if fact:
+                            target = fact.group(1).strip(" .!?\t\n")
+                            meaningful = [word for word in re.findall(r"[a-z0-9][a-z0-9'-]*", target.casefold())
+                                          if word not in {"that", "this", "memory", "fact", "preference", "it", "my", "the", "about"}]
+                            break
+                if not meaningful:
+                    return None
+            return {"operation": operation, "target": target}
+    return None
+
+
 _HADES_HERMES_AUXILIARY_PROMPT = re.compile(
     r"^\s*###\s*Task:\s*(?:"
     r"generate\s+a\s+concise\s+title\b|"
@@ -2326,7 +2418,7 @@ _HADES_GROCY_ITEM_FRAGMENT = re.compile(
 _HADES_MEAL_RECOMMENDATION_INTENT = re.compile(
     r"\b(?:what|which|are\s+there|is\s+there)\b.{0,80}\b(?:dinner|meals?|recipes?|dishes?)\b.{0,80}"
     r"\b(?:i|we)\s+(?:can|could|should)\s+(?:make|cook|prepare)\b|"
-    r"\b(?:what|which)\s+(?:can|could|should)\s+(?:i|we)\s+(?:make|cook|prepare)\b|"
+    r"\b(?:what|which)\s+(?:can|could)\s+(?:i|we)\s+(?:make|cook|prepare)\b|"
     r"\b(?:suggest|recommend|pick|choose)\b.{0,60}\b(?:dinner|meals?|recipes?|dishes?)\b",
     re.IGNORECASE,
 )
@@ -2343,7 +2435,7 @@ def _hades_is_current_grocy_read_turn(grocy_intent, current_text):
     return bool(
         grocy_intent
         and not _HADES_GROCY_ACTION_INTENT.search(text)
-        and not re.search(r"\b(?:recipe|ingredient|make|cook|fulfill|missing)\b", text, re.IGNORECASE)
+        and not re.search(r"\b(?:recipe|make|cook|fulfill|missing)\b", text, re.IGNORECASE)
     )
 
 
@@ -5296,7 +5388,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         r"responding|reachable|performance|slow|broken|failing|wrong|unavailable)\b",
         text,
         re.IGNORECASE,
-    ) and not _hades_homelab_resource_ranking_intent(text)
+    ) and not _HADES_NETWORK_INVENTORY_INTENT.search(text) and not _hades_homelab_resource_ranking_intent(text)
     if _definition_question:
         return None
     if _hades_homelab_guest_visibility_intent(text) and scope != "owner":
@@ -5318,7 +5410,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
             return "Detailed Proxmox VM and container inventory is available only in an owner session."
         if not subject:
             return "I couldn't verify this owner session, so I can't read Proxmox guest inventory."
-    if not re.search(
+    if not _hades_is_homelab_intent(text) and not re.search(
         r"\b(?:servers?|homelab|homlab|home\s+lab|proxmox|vm|virtual\s+machine|"
         r"node|computers?|guests?|containers?|running\s+on|what\s+is\s+on|network\s+(?:scan|status|connectivity|health|devices?|(?:is\s+)?(?:slow|down|offline|unavailable|broken)|feel(?:s|ing)?\s+slow)|"
         r"minecraft|jellyfin)\b",
@@ -6510,10 +6602,28 @@ _HADES_HOMELAB_INTENT = re.compile(
     re.IGNORECASE,
 )
 
+_HADES_NETWORK_INVENTORY_INTENT = re.compile(
+    r"\b(?:what(?:'s| is|s)\s+(?:in|on)\s+(?:my|our|the)\s+network|"
+    r"what\s+devices?\s+(?:are|is)\s+(?:in|on)\s+(?:my|our|the)\s+network|"
+    r"what\s+machines?\s+do\s+(?:i|we)\s+have|"
+    r"what(?:'s| is|s)\s+running\s+(?:at|in)\s+home|"
+    r"what(?:'s| is|s)\s+(?:in|on)\s+(?:my|our|the)\s+homelab)\b",
+    re.IGNORECASE,
+)
+
 
 def _hades_is_homelab_intent(user_text):
+    text = str(user_text or "")
+    if re.search(
+        r"\b(?:neural|social)\s+network\b|\bnetwork\s+effect\b|"
+        r"\b(?:explain|teach|define)\b[^.!?]{0,50}\b(?:TCP\s+)?networking\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return False
     return bool(
-        _HADES_HOMELAB_INTENT.search(str(user_text or ""))
+        _HADES_NETWORK_INVENTORY_INTENT.search(text)
+        or _HADES_HOMELAB_INTENT.search(text)
         or _hades_configured_homelab_alias_match(user_text)
         or _hades_broad_homelab_status_intent(user_text)
         or _hades_homelab_service_coverage_intent(user_text)
@@ -6547,6 +6657,8 @@ def _hades_nonpersonal_state_turn(user_text):
         or _hades_homelab_resource_ranking_intent(user_text)
         or _hades_broad_homelab_status_intent(user_text)
         or _HADES_SHARED_MEMORY_INTENT.search(user_text)
+        or _hades_is_household_inventory_intent(user_text)
+        or _hades_is_homelab_intent(user_text)
         or _HADES_GROCY_ACTION_INTENT.search(user_text)
         or _HADES_GROCY_ITEM_FRAGMENT.search(user_text)
         or _HADES_NONPERSONAL_STATE_INTENT.search(user_text)
@@ -7275,16 +7387,14 @@ def _hades_install_public_research_lineage_shortcut():
         _hades_logger.warning("public research lineage completion hook unavailable: %s", type(exc).__name__)
 
 
-def _hades_should_skip_automatic_memory(user_content, assistant_content):
-    """Decide whether a completed turn is unsafe for automatic private retain.
+def _hades_should_skip_automatic_memory(user_content, assistant_content, conversation_history=None):
+    """Disable implicit end-of-turn retention; writes use direct bounded routes.
 
     Keep this policy dependency-free so it can be regression-tested without
-    importing Hermes or Hindsight. The runtime sync wrapper below delegates to
-    this decision; user text is the authority for domain classification, while
-    transient assistant/tool failures are always suppressed.
+    importing Hermes or Hindsight. Explicit mutations use the authenticated
+    direct route, which has operation and target checks.
     """
-    return (_hades_nonpersonal_state_turn(user_content)
-            or _hades_transient_error_text(assistant_content))
+    return True
 
 
 def _hades_subject_from_session_key(session_key):
@@ -8471,7 +8581,7 @@ try:
             if not any(isinstance(row, dict) and row.get("id") == bank for row in rows):
                 raise
 
-    def _hades_direct_memory_response(user_text, subject, scope):
+    def _hades_direct_memory_response(user_text, subject, scope, conversation_history=None):
         """Perform explicit memory turns through the authenticated bank.
 
         The generic capability explainer must not swallow a real "remember
@@ -8483,14 +8593,14 @@ try:
         if scope not in {"owner", "household"} or not subject:
             return None
         recall_requested = _hades_explicit_memory_recall_requested(text)
+        mutation = _hades_explicit_memory_mutation_intent(text, conversation_history)
         if recall_requested:
             intent = "recall"
         else:
-            match = re.match(r"^\s*(?:please\s+)?remember(?:\s+that)?\s+(.+?)\s*[.!?]*\s*$", text, re.IGNORECASE)
-            if not match:
+            if not mutation:
                 return None
-            intent = "retain"
-            fact = match.group(1).strip()
+            intent = mutation["operation"]
+            fact = mutation["target"]
             if not fact or len(fact) > 1000:
                 return "I couldn't store that memory safely; the fact was empty or too long."
         bank = "hades-owner" if scope == "owner" else f"hades-user-{subject}"
@@ -8508,6 +8618,74 @@ try:
                 )
                 client.close()
                 return f"I stored that as private memory for this account: `{fact}`. It is not shared household state."
+            if intent in {"forget", "update"}:
+                if intent == "update" and not re.search(
+                    r"\b(?:is|are|was|were|now|instead|to|should\s+be|called)\b",
+                    fact,
+                    re.IGNORECASE,
+                ):
+                    client.close()
+                    return "What should I change that memory to? I haven't changed anything."
+                from urllib.parse import quote, urlencode
+                from urllib.request import Request, urlopen
+                list_url = f"{os.environ.get('HADES_HINDSIGHT_URL', 'http://127.0.0.1:8888').rstrip('/')}/v1/default/banks/{bank}/memories/list?{urlencode({'tags': 'hades-explicit-memory', 'tags_match': 'any', 'state': 'valid', 'limit': 100})}"
+                with urlopen(list_url, timeout=5) as listed_response:
+                    listed = json.load(listed_response)
+                target_words = {
+                    word for word in re.findall(r"[a-z0-9][a-z0-9'-]{2,}", fact.casefold())
+                    if word not in {"what", "you", "remember", "about", "your", "memory", "the", "is", "are", "was", "were", "no", "longer", "called", "update", "change", "correct"}
+                }
+                if intent == "update":
+                    replacement_form = re.match(
+                        r"^(.+?)\s+(?:is|was|are|were)\s+now\s+(?:called|named)\s+(.+)$",
+                        fact,
+                        re.IGNORECASE,
+                    )
+                    if replacement_form:
+                        target_words = {
+                            word for word in re.findall(r"[a-z0-9][a-z0-9'-]{2,}", replacement_form.group(1).casefold())
+                            if word not in {"the", "my", "this", "that", "memory", "is", "was", "are", "were", "now", "called", "named"}
+                        }
+                if len(target_words) < 2:
+                    client.close()
+                    return "I couldn't identify one exact private memory to change. Nothing was changed; please name the fact more specifically."
+                scored = []
+                for item in listed.get("items", []) if isinstance(listed, dict) else []:
+                    if not isinstance(item, dict) or not item.get("id"):
+                        continue
+                    value = str(item.get("text") or "")
+                    words = set(re.findall(r"[a-z0-9][a-z0-9'-]{2,}", value.casefold()))
+                    overlap = len(target_words & words)
+                    if target_words and target_words.issubset(words):
+                        scored.append((overlap, str(item["id"]), value))
+                scored.sort(reverse=True)
+                if not scored or (len(scored) > 1 and scored[0][0] == scored[1][0]):
+                    client.close()
+                    return "I couldn't identify one exact private memory to change. Nothing was changed; please name the fact more specifically."
+                score, memory_id, old_text = scored[0]
+                if score != len(target_words):
+                    client.close()
+                    return "I couldn't identify one exact private memory to change. Nothing was changed; please name the fact more specifically."
+                endpoint = f"{os.environ.get('HADES_HINDSIGHT_URL', 'http://127.0.0.1:8888').rstrip('/')}/v1/default/banks/{bank}/memories/{quote(memory_id, safe='')}"
+                patch = {"state": "invalidated", "reason": "User explicitly asked HADES to forget this fact."} if intent == "forget" else {"text": fact, "reason": "User explicitly corrected this fact."}
+                request = Request(endpoint, data=json.dumps(patch).encode("utf-8"), headers={"Content-Type": "application/json"}, method="PATCH")
+                with urlopen(request, timeout=5) as patched_response:
+                    patched = json.load(patched_response)
+                with urlopen(endpoint, timeout=5) as verified_response:
+                    verified = json.load(verified_response)
+                client.close()
+                if (
+                    not isinstance(patched, dict)
+                    or str(patched.get("id") or memory_id) != memory_id
+                    or not isinstance(verified, dict)
+                    or str(verified.get("id") or "") != memory_id
+                    or (intent == "forget" and verified.get("state") != "invalidated")
+                    or (intent == "update" and (verified.get("state") != "valid" or verified.get("text") != fact))
+                ):
+                    return "I couldn't verify that private memory change. Please check before trying again."
+                if intent == "forget":
+                    return "I marked the matching private memory as forgotten."
+                return f"I updated the matching private memory to: `{fact}`."
             # Hindsight's semantic recall can legitimately return many older
             # paraphrases ahead of a newly retained explicit fact.  For this
             # narrow authenticated memory path, check the same bank's recent
@@ -8654,25 +8832,26 @@ try:
                 return "I couldn't find a matching private memory for this account. I did not use another user's bank."
             return "I remember: " + " ".join(rows[:3])
         except Exception as exc:
+            try:
+                if "client" in locals():
+                    client.close()
+            except Exception:
+                pass
             _hades_logger.warning("Explicit Hindsight operation failed: %s", type(exc).__name__)
             return "I couldn't complete that private memory operation. Nothing was represented as remembered."
 
     def _hades_sync_turn(self, user_content, assistant_content, *, session_id=""):
-        """Keep shared household turns out of private semantic memory.
+        """Disable implicit turn retention; explicit writes use the direct route.
 
-        Grocy is the canonical household store. Hermes' generic automatic
-        retain path otherwise persists the entire completed turn, including
-        live shopping-list/tool results, into the authenticated user's private
-        Hindsight bank. Explicit memory requests remain eligible for retain;
-        ordinary shared-state turns do not become personal memory by accident.
+        Hermes' generic automatic retain path persists the entire completed
+        turn, including live domain results. All automatic sync writes are
+        disabled; explicit memory operations use the authenticated direct route.
         """
-        # Classify from the user's request only. Assistant/tool output is
-        # untrusted generated text and must not decide whether a turn is
-        # private or shared.
+        # The assistant content is untrusted and is never a write authority.
         user_text = str(user_content or "")
         if _hades_should_skip_automatic_memory(user_text, assistant_content):
             _hades_logger.info(
-                "Skipping automatic Hindsight retain for non-personal or transient-error turn"
+                "Skipping automatic Hindsight retain; explicit memory routes handle writes"
             )
             return None
         return _hades_original_sync_turn(
@@ -8769,9 +8948,16 @@ try:
     def _hades_memory_tools(self):
         if self._memory_mode == "context":
             return []
-        return [_hindsight.RETAIN_SCHEMA, _hindsight.RECALL_SCHEMA]
+        return [_hindsight.RECALL_SCHEMA]
 
     def _hades_handle_tool_call(self, tool_name, args, **kwargs):
+        if tool_name == "hindsight_retain":
+            _hades_logger.warning(
+                "Blocked model-invoked Hindsight retain; explicit writes use the authenticated direct route"
+            )
+            return json.dumps({
+                "result": "Memory was not changed because model-invoked writes are disabled. Use an explicit memory request."
+            })
         started = time.perf_counter()
         try:
             result = _hades_original_handle_tool_call(self, tool_name, args, **kwargs)
@@ -9391,6 +9577,7 @@ try:
             user_message,
             getattr(self, "_hades_subject", ""),
             getattr(self, "_hades_session_scope", ""),
+            kwargs.get("conversation_history"),
         )
         if _early_memory_response and getattr(self, "_hades_session_scope", "") in {"household", "owner"}:
             callback = getattr(self, "stream_delta_callback", None)
@@ -10796,19 +10983,20 @@ try:
             re.IGNORECASE,
         ))
         grocy_intent = re.search(
-            r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|food|pantry|pantrie|inventory|"
+            r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|pantry|pantrie|inventory|"
             r"what(?:'s| is) in stock|do we have)\b",
             _hades_intent_text,
             re.IGNORECASE,
-        ) or _HADES_GROCY_ACTION_INTENT.search(_hades_intent_text) or _HADES_MEAL_RECOMMENDATION_INTENT.search(_hades_intent_text)
+        ) or _HADES_GROCY_ACTION_INTENT.search(_hades_intent_text) or _HADES_MEAL_RECOMMENDATION_INTENT.search(_hades_intent_text) or _hades_is_household_inventory_intent(_hades_intent_text)
         current_text = str(user_message or "")
         current_grocy_intent = bool(
             re.search(
-                r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|food|pantry|"
+                r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|pantry|"
                 r"pantrie|inventory|what(?:'s| is) in stock|do we have)\b",
                 current_text,
                 re.IGNORECASE,
             )
+            or _hades_is_household_inventory_intent(current_text)
             or _HADES_GROCY_ACTION_INTENT.search(current_text)
             or _HADES_GROCY_ITEM_FRAGMENT.search(current_text)
             or _HADES_MEAL_RECOMMENDATION_INTENT.search(current_text)
@@ -11914,11 +12102,11 @@ try:
             self.stream_delta_callback = None
             self._stream_callback = None
         # A memory question must not expose unrelated mutation tools to a
-        # small local model. Keep the provider's direct memory schemas, but
-        # enforce the same boundary in the agent's executable tool set for
-        # both streaming and non-streaming callers.
+        # small local model. Recall stays available for explicit memory reads;
+        # Model tools may read personal memory, but all writes use the
+        # deterministic authenticated route and cannot be model-composed.
         if memory_intent and isinstance(original_tools, list):
-            allowed_memory = {"hindsight_recall", "hindsight_retain"}
+            allowed_memory = {"hindsight_recall"}
             if grocy_intent:
                 # Mixed memory/domain requests are especially difficult for
                 # small local models when the whole household catalog is
