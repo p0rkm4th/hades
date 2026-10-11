@@ -5,7 +5,19 @@ private topology, account identifiers, source credentials, host paths, rollback
 locations, and raw owner-acceptance transcripts belong in protected operator
 records.
 
-## Current authoritative checkpoint — 2026-10-06 UTC
+## Current authoritative checkpoint — 2026-10-11
+
+**Canonical source:** `main` is `99d8b706eb5263250400f55dc257ba43f191905d`. Exact-SHA Public CI run [38162158388](https://github.com/p0rkm4th/hades/actions/runs/38162158388) passed (`public-safety-and-regressions`).
+
+**Open WebUI P0: CLOSED.** Production runs Open WebUI 0.11.4 from the qualified upstream digest `sha256:332438e079ad23bb11b0ab278b43e7c98b50e8cec14b0840281644e8a289f49f`; the deployed HADES image identity is recorded in the protected production evidence. Exact-artifact DOCX cross-user security acceptance, owner data preservation, fresh backup and recovery, restart persistence, revocation contracts, canonical convergence, and post-promotion CI passed. Owner-side escrow recovery was confirmed PASS for the recorded backup artifact. Redundant P0 review branches were retired.
+
+**Current mission:** resume the HADES Core Usability Reset with the owner-reported domain-routing failure. Read-style household inventory and infrastructure questions must reach their canonical read sources; a read-style question must never trigger a personal-memory mutation. Reproduce and trace the owner-reported kitchen, ingredient-typo, and network-routing failures before changing behavior. Root cause and repair are not yet claimed.
+
+**Next exact action:** after this P0 truth commit passes hosted Public CI, create one focused owner-routing branch from that new `main` tip. Use old usability branches only as evidence and patch references. Preserve the existing diagnosis/action authority boundary while routing work proceeds.
+
+## Historical checkpoints — retained below; superseded for current status
+
+### Historical checkpoint — 2026-10-06 UTC (superseded)
 
 **Repository:** code-bearing `main` is `381543b0af21c1e1abcbf90642eb8b586f553d62`, fast-forwarded from `0cba8008a5fd0ed1a6ea1b2633379490f6cec7d8` after NYX-007 review ACCEPT and candidate Public CI [37398017938](https://github.com/p0rkm4th/hades/actions/runs/37398017938) passed. Post-promotion main CI [37398145659](https://github.com/p0rkm4th/hades/actions/runs/37398145659) passed. The change extracts bounded Proxmox archived-task page reads shared by backup and recent-activity views; credentials, transport, source configuration, and effective `VM.Audit` scope calculation remain in the adapter. Unknown/empty scope performs no task reads; task rows are field-allowlisted. The exact clean 17-module package composed from the candidate includes/imports the provider.
 

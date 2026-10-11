@@ -2,10 +2,21 @@
 
 This is a public, sanitized handoff. Live machine identities, addresses,
 private account identifiers, credentials, deployment identifiers, and raw
-acceptance transcripts belong in protected operator records. These statements
-summarize engineering evidence; they are not a live infrastructure probe.
+acceptance transcripts belong in protected operator records.
 
-## Current mission checkpoint — 2026-10-06 UTC
+## Current mission checkpoint — 2026-10-11
+
+`main` is `99d8b706eb5263250400f55dc257ba43f191905d`; exact-SHA Public CI run [38162158388](https://github.com/p0rkm4th/hades/actions/runs/38162158388) passed.
+
+**Open WebUI 0.11.4 P0: CLOSED.** The qualified exact artifact is live, cross-user DOCX content is blocked, owner recovery escrow was verified for the recorded backup, and production recovery, restart, revocation, canonical convergence, and post-promotion CI evidence pass. The obsolete recovery gate is closed and must not be reopened unless the verified recovery artifacts are replaced or contradicted.
+
+**Active usability work:** direct owner dogfood exposed read-style household inventory and infrastructure questions that were routed incorrectly; one inventory phrasing reached a memory reconciliation/mutation path. These are owner-reported failures, not yet independently reproduced in a clean candidate. No fix is claimed.
+
+**Immediate sequence:** finish this small P0 truth-only commit and require its hosted Public CI to pass. Then create a single focused owner-routing branch from the resulting `main`. Reproduce the owner cases across production behavior, canonical `main`, and relevant old implementation evidence before editing. Enforce read-intent → zero-memory-mutation at the actual state-changing boundary, then fix kitchen/inventory and network intent with focused authority and ordinary-chat regressions.
+
+## Historical checkpoints — retained below; superseded for current status
+
+### Historical mission checkpoint — 2026-10-06 UTC (superseded)
 
 Code-bearing `main` is `381543b0af21c1e1abcbf90642eb8b586f553d62`, fast-forwarded from reviewed base `0cba8008a5fd0ed1a6ea1b2633379490f6cec7d8`. NYX-007 accepted the scoped Proxmox archived-task reader extraction and candidate Public CI [37398017938](https://github.com/p0rkm4th/hades/actions/runs/37398017938) passed; post-promotion main CI [37398145659](https://github.com/p0rkm4th/hades/actions/runs/37398145659) passed. The reader is shared by backup status and recent activity while credentials, transport, and `VM.Audit` scope computation remain in the adapter. It does not fetch tasks for unknown/empty scope, filters by effective guest IDs, and projects only approved task fields. Exact clean 17-module package composition/import passes. No production deployment is claimed.
 
