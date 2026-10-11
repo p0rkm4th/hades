@@ -28,7 +28,11 @@ env -u GROCY_URL -u GROCY_API_KEY -u GROCY_API_KEY_FILE \
 import sys
 import datetime
 import json
+import os
+import tempfile
 import urllib.request
+from datetime import date, timedelta
+from pathlib import Path
 import run_agent
 import sitecustomize as hades
 from plugins.memory.hindsight import HindsightMemoryProvider
@@ -132,10 +136,17 @@ def synthetic_homelab_source(tool_name, arguments=None):
     network_reads.append(tool_name)
     return {
         "status": "OK",
-        "online_names": ["synthetic-server"],
-        "inventory_only_names": [],
-        "availability_summary": [],
-        "resources": [],
+        "online_names": ["Thanatos", "Synthetic Node"],
+        "inventory_only_names": ["Unknown Node"],
+        "availability_summary": [
+            {"name": "Synthetic Node check", "status": "down", "freshness": "FRESH"},
+        ],
+        "resources": [
+            {"name": "Thanatos", "currently_online": True, "runtime_status": "running",
+             "runtime_detail": {"name": "Thanatos", "vmid": 101, "status": "running", "node": "Synthetic Host"}},
+            {"name": "Synthetic Node", "currently_online": True, "runtime_status": "running",
+             "runtime_detail": {"name": "Synthetic Node", "vmid": 102, "status": "running", "node": "Synthetic Host"}},
+        ],
     }
 hades._hades_direct_homelab_tool_result = synthetic_homelab_source
 owner_agent = run_agent.AIAgent(
@@ -159,20 +170,117 @@ assert owner_agent._hades_session_scope == "owner", owner_agent._hades_session_s
 for prompt in ("what's in my network?", "what devices are in my network?", "what's running in my homelab?", "what servers do i have?"):
     network_reads.clear()
     result = owner_agent.run_conversation(prompt)
-    assert result.get("api_calls") == 0 and "synthetic-server" in result.get("final_response", ""), (prompt, result)
+    assert result.get("api_calls") == 0 and "Thanatos" in result.get("final_response", ""), (prompt, result)
     assert network_reads == ["homelab_summary"], (prompt, network_reads)
     network_reads.clear()
 
+# Same-chat owner health follow-ups must retain node scope but refresh and
+# synthesize the new operation from a new canonical summary read.
+homelab_history = []
+for prompt, expected in (
+    ("how's my network?", "Some configured homelab evidence needs attention"),
+    ("what about Thanatos and all the nodes?", "Thanatos VM 101"),
+    ("are any of the nodes showing any problems?", "Uptime Kuma's configured probes failed"),
+):
+    request_history = [*homelab_history, {"role": "user", "content": prompt}]
+    network_reads.clear()
+    result = owner_agent.run_conversation(prompt, conversation_history=request_history)
+    assert result.get("completed") is True and result.get("api_calls") == 0, result
+    assert expected in result.get("final_response", ""), (prompt, result)
+    assert network_reads == ["homelab_summary"], (prompt, network_reads)
+    homelab_history.extend([
+        {"role": "user", "content": prompt},
+        {"role": "assistant", "content": result["final_response"]},
+    ])
+print("PASS same-chat homelab health keeps node scope and refreshes the summary per operation")
+
 original_model_run = hades._hades_original_run_conversation
+original_grocy_definitions = hades._hades_grocy_tool_definitions
+original_recipe_read = hades._hades_direct_grocy_recipe_read
+synthetic_grocy_tools = [
+    {"type": "function", "function": {"name": "mcp_grocy_recipes_list_tool", "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {"name": "mcp_grocy_recipe_details_tool", "parameters": {"type": "object", "properties": {"recipe_name": {"type": "string"}}}}},
+    {"type": "function", "function": {"name": "mcp_grocy_stock_overview_tool", "parameters": {"type": "object", "properties": {}}}},
+]
+hades._hades_grocy_tool_definitions = lambda _getter: synthetic_grocy_tools
+hades._hades_direct_grocy_recipe_read = lambda _text: None
+captured_choices = []
 def synthetic_model_fallback(_agent, prompt, *args, **kwargs):
+    captured_choices.append(dict(getattr(_agent, "request_overrides", {}) or {}))
     return {
         'final_response': 'synthetic ordinary-chat response',
         'messages': [{'role': 'assistant', 'content': 'synthetic ordinary-chat response'}],
         'api_calls': 1,
         'completed': True,
-    }
+}
 hades._hades_original_run_conversation = synthetic_model_fallback
 try:
+    for prompt, expected_tool in (
+        ("list my recipes", "mcp_grocy_recipes_list_tool"),
+        ("what ingredients are in Chicken Cordon Bleu?", "mcp_grocy_recipe_details_tool"),
+    ):
+        captured_choices.clear()
+        result = agent.run_conversation(prompt)
+        assert result.get("completed") is True, (prompt, result)
+        assert captured_choices and captured_choices[-1].get("tool_choice", {}).get("function", {}).get("name") == expected_tool, (prompt, captured_choices, result)
+    # Historical recipe-list operation must not remain selected for the new
+    # current-turn operation; kitchen stock is routed deterministically.
+    captured_choices.clear()
+    stock_history = [
+        {"role": "user", "content": "list my recipes"},
+        {"role": "assistant", "content": "Synthetic recipe list"},
+        {"role": "user", "content": "whats in my kiytchen?"},
+    ]
+    stock_result = agent.run_conversation("whats in my kiytchen?", conversation_history=stock_history)
+    assert stock_result.get("completed") is True and stock_result.get("api_calls") == 0, stock_result
+    assert "milk" in stock_result.get("final_response", "").lower(), stock_result
+    assert captured_choices == [], "stock read should use the direct canonical Grocy route"
+    print("PASS same-chat Grocy operation changes select recipe details and direct stock independently")
+
+    # Finance row aggregation is deterministic and same-chat follow-ups retain
+    # the merchant/period rather than repeating only source coverage metadata.
+    today = date.today()
+    coverage = today - timedelta(days=31)
+    with tempfile.TemporaryDirectory(prefix="hades-finance-task-completion-") as finance_dir:
+        finance_path = Path(finance_dir) / "synthetic.csv"
+        finance_path.write_text(
+            "Date,Description,Amount,Category,Status\n"
+            f"{today.year}-01-12,7 Brew,-10.00,Coffee,Posted\n"
+            f"{today.year}-02-04,7BREW Coffee,-12.50,Coffee,Cleared\n"
+            f"{today.year}-02-08,7 Brew refund,2.00,Coffee,Posted\n"
+            f"{today.year}-03-01,Synthetic Grocery,-44.00,Groceries,Posted\n"
+            f"{coverage.isoformat()},7 Brew,-3.00,Coffee,Pending\n"
+            f"{today.year - 1}-12-20,7 Brew,-100.00,Coffee,Posted\n",
+            encoding="utf-8",
+        )
+        previous_finance_path = os.environ.get("HADES_FINANCE_CSV_PATH")
+        os.environ["HADES_FINANCE_CSV_PATH"] = str(finance_path)
+        try:
+            finance_prompt = "How much have I spent at 7 Brew year-to-date?"
+            first_history = [{"role": "user", "content": finance_prompt}]
+            first_finance = owner_agent.run_conversation(
+                finance_prompt, conversation_history=first_history,
+            )
+            assert "posted net spending at 7 Brew is $20.50" in first_finance.get("final_response", ""), first_finance
+            followup_history = [
+                {"role": "user", "content": finance_prompt},
+                {"role": "assistant", "content": "CSV coverage metadata"},
+                {"role": "user", "content": "But I need to know"},
+                {"role": "assistant", "content": first_finance["final_response"]},
+                {"role": "user", "content": "Calculate how much I spent there"},
+            ]
+            second_finance = owner_agent.run_conversation(
+                "Calculate how much I spent there", conversation_history=followup_history,
+            )
+            assert "posted net spending at 7 Brew is $20.50" in second_finance.get("final_response", ""), second_finance
+            assert "Pending transactions total $3.00" in second_finance.get("final_response", ""), second_finance
+            assert "not a complete year-to-date total" in second_finance.get("final_response", ""), second_finance
+            print("PASS same-chat finance follow-ups deterministically aggregate rows with posted, refund, pending, and coverage semantics")
+        finally:
+            if previous_finance_path is None:
+                os.environ.pop("HADES_FINANCE_CSV_PATH", None)
+            else:
+                os.environ["HADES_FINANCE_CSV_PATH"] = previous_finance_path
     for ordinary_prompt in (
         "what is a neural network?",
         "explain TCP networking",
@@ -194,6 +302,8 @@ try:
         assert reads == [], (ordinary_prompt, reads)
 finally:
     hades._hades_original_run_conversation = original_model_run
+    hades._hades_grocy_tool_definitions = original_grocy_definitions
+    hades._hades_direct_grocy_recipe_read = original_recipe_read
 
 offer = "I can add only the missing items to the shared shopping list if you'd like."
 decline_history = [

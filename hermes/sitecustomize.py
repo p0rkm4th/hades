@@ -2432,11 +2432,11 @@ def _hades_is_current_grocy_read_turn(grocy_intent, current_text):
     inferred mutation or force that read through model routing.
     """
     text = str(current_text or "")
-    return bool(
-        grocy_intent
-        and not _HADES_GROCY_ACTION_INTENT.search(text)
-        and not re.search(r"\b(?:recipe|make|cook|fulfill|missing)\b", text, re.IGNORECASE)
-    )
+    if not grocy_intent or _HADES_GROCY_ACTION_INTENT.search(text):
+        return False
+    if _hades_is_household_inventory_intent(text):
+        return True
+    return not re.search(r"\b(?:recipes?|ingredients?|make|cook|fulfill|missing)\b", text, re.IGNORECASE)
 
 
 def _hades_grocy_product_names(rows, base_url, api_key):
@@ -3614,6 +3614,32 @@ def _hades_live_proxmox_vm_rows():
         return []
 
 
+def _hades_finance_followup_query(user_text, conversation_history, scope):
+    """Reuse finance intent on terse same-chat follow-ups, not old results."""
+    current = str(user_text or "").strip()
+    if scope != "owner" or not re.search(
+        r"\b(?:but\s+i\s+need\s+to\s+know|calculate\s+(?:how\s+much|the\s+total)|"
+        r"how\s+much\s+did\s+i\s+spend\s+there|what\s+was\s+the\s+total)\b",
+        current, re.IGNORECASE,
+    ):
+        return current
+    finance_pattern = re.compile(
+        r"\b(?:finance|spending|spent|transactions?|merchant|year[ -]to[ -]date|ytd|this\s+year)\b",
+        re.IGNORECASE,
+    )
+    for row in reversed(conversation_history if isinstance(conversation_history, list) else []):
+        if not isinstance(row, dict) or row.get("role") != "user":
+            continue
+        prior = str(row.get("content") or "").strip()
+        if prior.casefold() == current.casefold():
+            continue
+        if finance_pattern.search(prior) and re.search(r"\b(?:at|with|from)\s+\w", prior, re.IGNORECASE):
+            return prior + "\n" + current
+        if _hades_is_household_inventory_intent(prior) or _hades_is_homelab_intent(prior):
+            break
+    return current
+
+
 def _hades_direct_finance_guidance(user_text):
     """Answer owner finance questions from the explicitly authorized CSV.
 
@@ -3689,6 +3715,51 @@ def _hades_direct_finance_guidance(user_text):
                     monthly[row["date"].strftime("%Y-%m")] += -row["amount"] if row["amount"] < 0 else Decimal("0")
                 def money(value):
                     return f"${value.quantize(Decimal('0.01')):,.2f}"
+                ytd_request = bool(re.search(
+                    r"\b(?:year[ -]to[ -]date|ytd|this\s+year|since\s+january)\b",
+                    lowered_text, re.IGNORECASE,
+                ))
+                merchant_match = re.search(
+                    r"\b(?:at|with|from)\s+(.+?)(?=\s+(?:year[ -]to[ -]date|ytd|this\s+year|so\s+far|since\s+january)\b|[?.!]*$)",
+                    text, re.IGNORECASE,
+                )
+                if ytd_request and merchant_match:
+                    merchant = re.sub(r"\s+", " ", merchant_match.group(1)).strip(" .,!?:;'“”\"")
+                    merchant = re.sub(r"^(?:the|a|an)\s+", "", merchant, flags=re.IGNORECASE)
+                    merchant_key = re.sub(r"[^a-z0-9]+", "", merchant.casefold())
+                    if merchant_key:
+                        from datetime import date as _date
+                        today = _date.today()
+                        year_start = _date(today.year, 1, 1)
+                        matching = [
+                            row for row in rows
+                            if year_start <= row["date"] <= today
+                            and merchant_key in re.sub(
+                                r"[^a-z0-9]+", "",
+                                (row["description"] + " " + row["category"]).casefold(),
+                            )
+                        ]
+                        posted = [row for row in matching if row["status"].casefold() != "pending"]
+                        pending_rows = [row for row in matching if row["status"].casefold() == "pending"]
+                        posted_net = sum((-row["amount"] for row in posted), Decimal("0"))
+                        pending_net = sum((-row["amount"] for row in pending_rows), Decimal("0"))
+                        coverage_end = min(last, today)
+                        if not matching:
+                            result = (
+                                f"I found no matching {merchant} transactions in the available {today.year} records. "
+                                f"The CSV covers {first} through {last}; this is a read-only statement result."
+                            )
+                        else:
+                            result = (
+                                f"From the available records through {coverage_end}, posted net spending at {merchant} "
+                                f"is {money(posted_net)} across {len(posted)} transactions."
+                            )
+                            if pending_rows:
+                                result += f" Pending transactions total {money(pending_net)} across {len(pending_rows)} rows; they are not included in the posted total."
+                            if last < today:
+                                result += f" The source has no later coverage than {last}, so this is not a complete year-to-date total."
+                            result += " Refunds and credits offset posted spending according to the statement's signed amounts."
+                        return f"CSV finance read (owner-only, read-only): {result} {source_note}"
                 month_change_question = bool(
                     re.search(r"\b(?:spend(?:ing)?|spent|expenses?)\b", lowered_text)
                     and re.search(
@@ -4770,7 +4841,8 @@ def _hades_broad_homelab_status_intent(text):
         r"is\s+everything\s+(?:okay|ok|alright|all\s+right|healthy|good)"
         r"(?:\s+with\s+(?:the\s+)?(?:homelab|home\s+lab|lab))?|"
         r"is\s+the\s+(?:homelab|home\s+lab|lab)\s+(?:okay|ok|alright|all\s+right|healthy|good)|"
-        r"how(?:['’]s|\s+is)\s+(?:the\s+)?(?:homelab|home\s+lab|lab)\s+doing)\s*[?.!]*\s*$",
+        r"how(?:['’]s|\s+is)\s+(?:the\s+)?(?:homelab|home\s+lab|lab)\s+doing|"
+        r"how(?:['’]s|\s+is)\s+(?:my\s+)?network|network\s+health\s+status)\s*[?.!]*\s*$",
         str(text or ""), re.IGNORECASE,
     ))
 
@@ -5507,7 +5579,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
                 summary["online_names"] = list(dict.fromkeys(
                     [*summary.get("online_names", []), *[item["name"] for item in guest_resources if item["currently_online"]]]
                 ))
-        target = _hades_configured_homelab_alias_match(text)
+        all_nodes_request = bool(re.search(
+            r"\b(?:all|every|other)\s+(?:of\s+)?(?:the\s+)?nodes?\b",
+            text, re.IGNORECASE,
+        ))
+        target = None if all_nodes_request else _hades_configured_homelab_alias_match(text)
         if not target:
             named_resources = [
                 str(resource.get("name") or "").strip()
@@ -6606,6 +6682,7 @@ _HADES_HOMELAB_INTENT = re.compile(
 
 _HADES_NETWORK_INVENTORY_INTENT = re.compile(
     r"\b(?:what(?:'s| is|s)\s+(?:in|on)\s+(?:my|our|the)\s+network|"
+    r"how(?:['’]s|\s+is)\s+(?:my|our|the)\s+network|"
     r"what\s+devices?\s+(?:are|is)\s+(?:in|on)\s+(?:my|our|the)\s+network|"
     r"what\s+machines?\s+do\s+(?:i|we)\s+have|"
     r"what(?:'s| is|s)\s+running\s+(?:at|in)\s+home|"
@@ -7826,6 +7903,77 @@ def _hades_homelab_inference_followup_prompt(user_message, scope, conversation_h
     if recent_placement and size:
         return f"Can a {size.group('size')} {size.group('unit')} model fit?"
     return current
+
+
+def _hades_homelab_read_followup_query(user_message, scope, conversation_history):
+    """Keep homelab scope across turns while requesting a fresh summary read.
+
+    Only entity/scope context is carried forward.  The prior operation or
+    assistant result is never reused as live evidence.
+    """
+    current = str(user_message or "").strip()
+    if scope != "owner" or not current:
+        return current
+    previous_user = ""
+    for row in reversed(conversation_history if isinstance(conversation_history, list) else []):
+        if not isinstance(row, dict) or row.get("role") != "user":
+            continue
+        content = str(row.get("content") or "").strip()
+        if content.casefold() == current.casefold():
+            continue
+        previous_user = content
+        break
+    network_health = bool(re.search(
+        r"\bhow(?:['’]s|\s+is)\s+(?:my\s+)?network\b|"
+        r"\b(?:network|homelab|home\s+lab)\b.{0,30}\b(?:health|healthy|problems?|issues?)\b",
+        current, re.IGNORECASE,
+    ))
+    anaphoric_node_health = bool(
+        previous_user
+        and _hades_is_homelab_intent(previous_user)
+        and re.search(r"\b(?:the|those|these|any\s+of\s+the)\s+(?:other\s+)?nodes?\b|\bany\s+of\s+them\b", current, re.IGNORECASE)
+        and re.search(r"\b(?:problem|issue|wrong|health|status|down|degrad)\w*\b", current, re.IGNORECASE)
+    )
+    all_nodes = bool(re.search(r"\b(?:all|every|other)\s+(?:of\s+)?(?:the\s+)?nodes?\b", current, re.IGNORECASE))
+    if network_health:
+        return "network health status"
+    if anaphoric_node_health:
+        return "homelab nodes problems status"
+    if all_nodes and previous_user and _hades_is_homelab_intent(previous_user):
+        return "homelab all nodes status"
+    return current
+
+
+def _hades_grocy_read_operation(user_text):
+    """Select the current Grocy read operation without inheriting old operations."""
+    text = str(user_text or "")
+    if _HADES_GROCY_ACTION_INTENT.search(text):
+        return None
+    if re.search(r"\brecipe\b.{0,100}\b(?:ingredients?|details?)\b|"
+                 r"\b(?:ingredients?|details?)\b.{0,100}\b(?:recipe|cordon|chicken)\b|"
+                 r"\bingredients?\s+(?:in|for|of)\s+[A-Z][\w'-]*(?:\s+[A-Z][\w'-]*){0,5}", text, re.IGNORECASE):
+        return "recipe_details_tool"
+    if re.search(r"\b(?:list|show|which|what\s+are)\b.{0,50}\brecipes?\b|\brecipes?\s+(?:list|available)\b", text, re.IGNORECASE):
+        return "recipes_list_tool"
+    if _hades_is_household_inventory_intent(text) or re.search(
+        r"\b(?:stock|pantry|kitchen|what\s+food\s+do\s+we\s+have|what\s+do\s+we\s+have)\b",
+        _hades_normalize_kitchen_typo(text), re.IGNORECASE,
+    ):
+        return "stock_overview_tool"
+    if re.search(r"\bshopping\s+list\b", text, re.IGNORECASE):
+        return "shopping_list_view_tool"
+    return None
+
+
+def _hades_grocy_read_tool_choice(user_text, tools):
+    """Return a named Hermes tool choice only when that current read exists."""
+    operation = _hades_grocy_read_operation(user_text)
+    if not operation:
+        return None
+    tool = next((item for item in tools if str(item.get("function", {}).get("name", "")).endswith(operation)), None)
+    if not tool:
+        return None
+    return {"type": "function", "function": {"name": tool["function"]["name"]}}
 
 
 def _hades_preemptive_grocy_offer_decline(user_message, conversation_history):
@@ -10176,13 +10324,16 @@ try:
         # reconstruction; otherwise a long persistent chat can spend the
         # provider's entire turn budget rebuilding stale context for a reply
         # that never needs model inference.
+        _early_finance_query = _hades_finance_followup_query(
+            user_message, _hades_history, self._hades_session_scope,
+        )
         _early_finance_request = bool(re.search(
             r"\b(?:finance|finances|finaces|bank|spend|spending|spent|budget|"
             r"transaction|account|checking|savings|credit\s+card|money|cost|paid|"
             r"expense|expenses|subscription|subscriptions|recurring|utilities?|"
             r"restaurant|doordash|coffee|rent|lease|paycheck|bills?)\b|"
             r"\bprivate\s+(?:account|checking|savings|finance|finances)\b",
-            str(user_message or ""), re.IGNORECASE,
+            str(_early_finance_query or ""), re.IGNORECASE,
         )) and not bool(re.search(
             r"\b(?:morning|briefing|homelab|grocy|grocery|groceries|pantry|recipe|network|"
             r"health\s+watch|backup\s+coverage|restock)\b",
@@ -10203,7 +10354,7 @@ try:
                 "completed": True,
             }
         if _early_finance_request and self._hades_session_scope == "owner":
-            _early_finance_response = _hades_direct_finance_guidance(user_message)
+            _early_finance_response = _hades_direct_finance_guidance(_early_finance_query)
             if _early_finance_response:
                 callback = getattr(self, "stream_delta_callback", None)
                 if callback:
@@ -10767,7 +10918,9 @@ try:
                     "completed": True,
                 }
             direct_homelab_response = _hades_direct_homelab_read(
-                user_message,
+                _hades_homelab_read_followup_query(
+                    user_message, self._hades_session_scope, _hades_history,
+                ),
                 getattr(self, "_hades_subject", ""),
                 self._hades_session_scope,
                 conversation_history=_hades_history,
@@ -10985,7 +11138,7 @@ try:
             re.IGNORECASE,
         ))
         grocy_intent = re.search(
-            r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|pantry|pantrie|inventory|"
+            r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|recipes?|ingredients?|pantry|pantrie|inventory|"
             r"what(?:'s| is) in stock|do we have)\b",
             _hades_intent_text,
             re.IGNORECASE,
@@ -10993,7 +11146,7 @@ try:
         current_text = str(user_message or "")
         current_grocy_intent = bool(
             re.search(
-                r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|recipe|pantry|"
+                r"\b(?:grocy|grocery|groceries|grocry|grocerys|shopping list|recipes?|ingredients?|pantry|"
                 r"pantrie|inventory|what(?:'s| is) in stock|do we have)\b",
                 current_text,
                 re.IGNORECASE,
@@ -11026,7 +11179,7 @@ try:
         elif not current_grocy_intent:
             previous_grocy_intent = bool(
                 re.search(
-                    r"\b(?:grocy|grocery|groceries|grocry|shopping list|recipe|food|pantry|"
+                    r"\b(?:grocy|grocery|groceries|grocry|shopping list|recipes?|ingredients?|food|pantry|"
                     r"inventory|stock|do we have)\b",
                     previous_user_text,
                     re.IGNORECASE,
@@ -11605,7 +11758,7 @@ try:
                 grocy_text = str(_hades_intent_text or user_message or "")
                 action_turn = bool(_HADES_GROCY_ACTION_INTENT.search(grocy_text))
                 recipe_turn = bool(re.search(
-                    r"\b(?:recipe|ingredient|make|cook|fulfill|missing)\b",
+                    r"\b(?:recipes?|ingredients?|make|cook|fulfill|missing)\b",
                     grocy_text,
                     re.IGNORECASE,
                 ))
@@ -11699,6 +11852,15 @@ try:
                     self.valid_tool_names = {
                         t["function"]["name"] for t in grocy_tools
                     }
+                    if not recipe_web_compound:
+                        _read_choice = _hades_grocy_read_tool_choice(
+                            current_text, grocy_tools,
+                        )
+                        if _read_choice:
+                            self.request_overrides = {
+                                **self.request_overrides,
+                                "tool_choice": _read_choice,
+                            }
                     _hades_logger.warning(
                         "API Grocy intent narrowed tool catalog to %d tools",
                         len(grocy_tools),
