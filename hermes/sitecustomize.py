@@ -7725,10 +7725,12 @@ def _hades_automatic_memory_actor_bound(provider, session_id):
     """Require an opted-in subject, trusted session, and exactly its write bank.
 
     The empty-by-default server allowlist makes rollout explicit and supports
-    synthetic-owner acceptance without enabling writes for every user.
+    synthetic-owner acceptance without enabling writes for every user. Hermes
+    0.21.2 exposes its server-resolved bank as ``_bank_id``; it has no separate
+    write-bank list, so validate the exact resolved bank here.
     """
     subject = str(getattr(provider, "_user_id", "") or "").strip()
-    banks = getattr(provider, "_write_bank_ids", None)
+    bank = str(getattr(provider, "_bank_id", "") or "").strip()
     session = str(session_id or "").strip()
     allowed = {
         value.strip()
@@ -7739,8 +7741,7 @@ def _hades_automatic_memory_actor_bound(provider, session_id):
         session
         and subject in allowed
         and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", subject)
-        and isinstance(banks, (list, tuple))
-        and list(banks) == [f"hades-user-{subject}"]
+        and bank == f"hades-user-{subject}"
     )
 
 

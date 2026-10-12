@@ -183,23 +183,23 @@ assert overlay._hades_automatic_memory_qualification("I prefer basil", "The serv
 from types import SimpleNamespace
 previous_allowlist = os.environ.get("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS")
 os.environ.pop("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS", None)
-bound = SimpleNamespace(_user_id="synthetic-owner", _write_bank_ids=["hades-user-synthetic-owner"])
+bound = SimpleNamespace(_user_id="synthetic-owner", _bank_id="hades-user-synthetic-owner")
 assert not overlay._hades_automatic_memory_actor_bound(bound, "conversation-alpha")
 os.environ["HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS"] = "synthetic-owner,synthetic-household"
 assert overlay._hades_automatic_memory_actor_bound(bound, "conversation-alpha")
 assert not overlay._hades_automatic_memory_actor_bound(
-    SimpleNamespace(_user_id="", _write_bank_ids=["hades-owner"]), "conversation-alpha"
+    SimpleNamespace(_user_id="", _bank_id="hades-owner"), "conversation-alpha"
 )
 assert not overlay._hades_automatic_memory_actor_bound(
-    SimpleNamespace(_user_id="synthetic-owner", _write_bank_ids=["hades-user-other"]), "conversation-alpha"
+    SimpleNamespace(_user_id="synthetic-owner", _bank_id="hades-user-other"), "conversation-alpha"
 )
 assert not overlay._hades_automatic_memory_actor_bound(
-    SimpleNamespace(_user_id="synthetic-owner", _write_bank_ids=["hades-user-synthetic-owner", "shared"]),
+    SimpleNamespace(_user_id="synthetic-owner", _bank_id="hades-user-synthetic-owner-shared"),
     "conversation-alpha",
 )
 assert not overlay._hades_automatic_memory_actor_bound(bound, "")
 assert not overlay._hades_automatic_memory_actor_bound(
-    SimpleNamespace(_user_id="synthetic-other", _write_bank_ids=["hades-user-synthetic-other"]),
+    SimpleNamespace(_user_id="synthetic-other", _bank_id="hades-user-synthetic-other"),
     "conversation-alpha",
 )
 
@@ -216,7 +216,7 @@ first = overlay._hades_sync_qualified_memory_turn(
     spy_sync,
 )
 second_provider = SimpleNamespace(
-    _user_id="synthetic-household", _write_bank_ids=["hades-user-synthetic-household"]
+    _user_id="synthetic-household", _bank_id="hades-user-synthetic-household"
 )
 second = overlay._hades_sync_qualified_memory_turn(
     second_provider,
@@ -236,7 +236,7 @@ denied = overlay._hades_sync_qualified_memory_turn(
 )
 assert denied["status"] == "REJECTED" and not denied["submitted"]
 denied_actor = overlay._hades_sync_qualified_memory_turn(
-    SimpleNamespace(_user_id="synthetic-owner", _write_bank_ids=["hades-user-other"]),
+    SimpleNamespace(_user_id="synthetic-owner", _bank_id="hades-user-other"),
     "I prefer basil.", "", "conversation-delta", spy_sync
 )
 assert denied_actor["reason"] == "actor_binding_unavailable", denied_actor
