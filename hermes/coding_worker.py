@@ -71,6 +71,10 @@ _CODING_TEST_REQUEST = re.compile(
     r"|\btest\s+(?:it|this|the\s+(?:change|fix|code))\b",
     re.IGNORECASE,
 )
+_CODING_READ_ONLY_REQUEST = re.compile(
+    r"^\s*(?:(?:please|just)\s+)?(?:inspect|explain|show|review|check|analyze|summarize)\b",
+    re.IGNORECASE,
+)
 _CODING_SENSITIVE_DOMAIN = re.compile(
     r"\b(?:memory|remember|recall|forget|grocy|grocery|groceries|recipe|"
     r"ingredient|pantry|kitchen|stock|homelab|network|proxmox|netbox|"
@@ -181,6 +185,11 @@ def _workspace_mutation_authorized(prompt: str, history: list[dict[str, str]]) -
     """Authorize workspace writes only for current edit/test intent or its continuation."""
     if _CODING_EDIT_REQUEST.search(prompt) or _CODING_TEST_REQUEST.search(prompt):
         return True
+    # A read-only request such as "show me the diff" remains read-only even
+    # when it follows an edit in this conversation.  Context continuity must
+    # not silently grant the current turn a writable mount.
+    if _CODING_READ_ONLY_REQUEST.search(prompt):
+        return False
     if not _CODING_CONTINUATION.search(prompt):
         return False
     previous_user_request = next(

@@ -57,6 +57,14 @@ class CodingWorkerRoutingTests(unittest.TestCase):
             "continue after the failed command",
             [{"role": "user", "content": "Inspect this project and explain the failure."}],
         ))
+        self.assertFalse(_workspace_mutation_authorized(
+            "Show me what changed.",
+            [{"role": "user", "content": "Fix the failing test."}],
+        ))
+        self.assertFalse(_workspace_mutation_authorized(
+            "Review the diff.",
+            [{"role": "user", "content": "Make the change and run the focused test."}],
+        ))
 
     def test_ordinary_chat_is_not_captured(self) -> None:
         for prompt in (
