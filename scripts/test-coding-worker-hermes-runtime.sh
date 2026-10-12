@@ -16,6 +16,7 @@ PYTHONPATH="$repo_dir/hermes" \
 HADES_HERMES_OVERLAY_DIR="$repo_dir/hermes" \
 HADES_CODING_PROJECT_ROOT="$repo_dir" \
 HADES_CODING_WORKER_ENABLED=1 \
+HADES_CODING_WORKER_CONVERSATION_ID=synthetic-owner-coding-conversation \
 HADES_CODING_WORKSPACE_BINDINGS_FILE="$tmp/bindings.json" \
 HADES_CODING_WORKSPACE_ROOT="$tmp/workspaces" \
 HADES_OWNER_SUBJECT_IDS=synthetic-owner \
@@ -31,6 +32,11 @@ def fake_worker(**kwargs):
     return {"outcome": "SUCCEEDED", "final_response": "synthetic verified coding result"}
 
 coding_worker.run_coding_worker = fake_worker
+native_calls = []
+def fake_native(self, *args, **kwargs):
+    native_calls.append((self, args, kwargs))
+    return {"final_response": "ordinary Hermes path", "messages": [], "api_calls": 1}
+hades._hades_original_run_conversation = fake_native
 base = {
     "base_url": "http://127.0.0.1:9/v1", "api_key": "synthetic-only",
     "provider": "custom", "api_mode": "chat_completions", "model": "synthetic-no-call",
@@ -53,6 +59,22 @@ assert calls[0]["subject"] == "synthetic-owner"
 assert calls[0]["scope"] == "owner"
 assert calls[0]["conversation_id"] == "synthetic-owner-coding-conversation"
 assert calls[0]["repo_root"] == __import__("pathlib").Path(".").resolve()
+
+# Even with the feature flag enabled, a different conversation stays on the
+# ordinary Hermes path; the disposable fixture cannot capture unrelated work.
+other = run_agent.AIAgent(
+    gateway_session_key="hades-user-synthetic-owner",
+    session_id="unallowlisted-conversation",
+    stream_delta_callback=lambda _chunk: None,
+    **base,
+)
+other_result = other.run_conversation(
+    "Inspect this repository and explain why the focused test fails.",
+    conversation_history=[],
+)
+assert len(calls) == 1, calls
+assert len(native_calls) == 1 and native_calls[0][0] is other
+assert other_result["final_response"] == "ordinary Hermes path"
 
 household = run_agent.AIAgent(
     gateway_session_key="hades-user-synthetic-household",

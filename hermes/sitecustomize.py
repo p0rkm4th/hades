@@ -12437,7 +12437,15 @@ try:
         if routed:
             self.model = "qwen3:8b"
         try:
-            coding_worker_enabled = os.environ.get("HADES_CODING_WORKER_ENABLED", "").strip() == "1"
+            # Coding dogfood is deliberately allowlisted by one server-known
+            # conversation ID. Enabling the worker alone must not route every
+            # owner coding request into a disposable fixture workspace.
+            coding_worker_enabled = (
+                os.environ.get("HADES_CODING_WORKER_ENABLED", "").strip() == "1"
+                and bool(os.environ.get("HADES_CODING_WORKER_CONVERSATION_ID", "").strip())
+                and str(getattr(self, "_hades_conversation_id", "") or "")
+                == os.environ.get("HADES_CODING_WORKER_CONVERSATION_ID", "").strip()
+            )
             coding_history = kwargs.get("conversation_history")
             if not isinstance(coding_history, list):
                 coding_history = next(
