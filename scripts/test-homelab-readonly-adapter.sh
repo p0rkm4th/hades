@@ -582,7 +582,7 @@ timestamp_quality = {
     item["name"]: item for item in timestamp_quality_summary["availability_summary"]
 }
 assert timestamp_quality["missing-time-probe"]["status"] == "up"
-assert timestamp_quality["missing-time-probe"]["freshness"] == "UNKNOWN"
+assert timestamp_quality["missing-time-probe"]["freshness"] == "UNKNOWN", timestamp_quality["missing-time-probe"]
 assert "observed_at" not in timestamp_quality["missing-time-probe"]
 assert timestamp_quality["malformed-time-probe"]["status"] == "up"
 assert timestamp_quality["malformed-time-probe"]["freshness"] == "UNKNOWN"
