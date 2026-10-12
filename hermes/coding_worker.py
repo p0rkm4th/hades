@@ -53,6 +53,30 @@ _CODING_CONTINUATION = re.compile(
     r"\b(?:continue|retry|try\s+again|check\s+(?:whether|if)|revert|show\s+me\s+what\s+changed)\b",
     re.IGNORECASE,
 )
+_CODING_SENSITIVE_DOMAIN = re.compile(
+    r"\b(?:memory|remember|recall|forget|grocy|grocery|groceries|recipe|"
+    r"ingredient|pantry|kitchen|stock|homelab|network|proxmox|netbox|"
+    r"finance|bank|transaction|spending|budget|credit\s+card|web\s+search)\b",
+    re.IGNORECASE,
+)
+
+
+def coding_worker_conversation_allowed(
+    *, scope: str, conversation_id: str, prompt: str, environ: Any = None,
+) -> bool:
+    """Apply the temporary server-side dogfood allowlist and domain boundary."""
+    environment = os.environ if environ is None else environ
+    allowed_conversation = str(
+        environment.get("HADES_CODING_WORKER_CONVERSATION_ID", "") or ""
+    ).strip()
+    return bool(
+        environment.get("HADES_CODING_WORKER_ENABLED", "").strip() == "1"
+        and scope == "owner"
+        and allowed_conversation
+        and conversation_id == allowed_conversation
+        and isinstance(prompt, str)
+        and not _CODING_SENSITIVE_DOMAIN.search(prompt)
+    )
 
 
 def should_route_to_coding_worker(prompt: str, history: Any = None) -> bool:
@@ -407,4 +431,9 @@ def run_coding_worker(
         }
 
 
-__all__ = ["CodingWorkerError", "run_coding_worker", "should_route_to_coding_worker"]
+__all__ = [
+    "CodingWorkerError",
+    "coding_worker_conversation_allowed",
+    "run_coding_worker",
+    "should_route_to_coding_worker",
+]

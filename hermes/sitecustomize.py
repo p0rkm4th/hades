@@ -9558,15 +9558,12 @@ try:
         # A single server-allowlisted owner conversation can use the isolated
         # coding worker. Run it before legacy domain adapters so their routing
         # helpers cannot intercept a coding turn. Other owner chats stay native.
-        coding_conversation = os.environ.get(
-            "HADES_CODING_WORKER_CONVERSATION_ID", ""
-        ).strip()
+        coding_conversation = str(
+            getattr(self, "_hades_conversation_id", "") or ""
+        )
         if (
             os.environ.get("HADES_CODING_WORKER_ENABLED", "").strip() == "1"
-            and coding_conversation
-            and str(getattr(self, "_hades_conversation_id", "") or "")
-            == coding_conversation
-            and getattr(self, "_hades_session_scope", "") == "owner"
+            and os.environ.get("HADES_CODING_WORKER_CONVERSATION_ID", "").strip()
         ):
             coding_history = kwargs.get("conversation_history")
             if not isinstance(coding_history, list):
@@ -9584,10 +9581,18 @@ try:
             if not coding_sensitive_domain:
                 try:
                     from hermes.coding_worker import (
+                        coding_worker_conversation_allowed as _hades_coding_allowed,
                         run_coding_worker as _hades_run_coding_worker,
                         should_route_to_coding_worker as _hades_should_route_coding,
                     )
-                    if _hades_should_route_coding(coding_text, coding_history):
+                    if (
+                        _hades_coding_allowed(
+                            scope=str(getattr(self, "_hades_session_scope", "") or ""),
+                            conversation_id=coding_conversation,
+                            prompt=coding_text,
+                        )
+                        and _hades_should_route_coding(coding_text, coding_history)
+                    ):
                         project_root = Path(
                             os.environ.get("HADES_CODING_PROJECT_ROOT") or os.getcwd()
                         ).resolve(strict=True)
