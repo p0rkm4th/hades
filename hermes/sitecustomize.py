@@ -9340,22 +9340,61 @@ try:
         Open WebUI can forward its canonical chat ID in a configured custom
         header.  A ContextVar keeps that request identity isolated across
         concurrent agent tasks; it never changes Hermes session behavior.
+
+        Patch the concrete API adapter before it registers its route. Hermes
+        versions that copy a mixin method onto the adapter (or define the
+        method directly) will not observe a later patch to the mixin alone.
         """
         import sys as _hades_sys
-        module = _hades_sys.modules.get(
+        import importlib as _hades_importlib
+
+        installed = False
+        # Current Hermes 0.21.2 API server owns this concrete handler. Importing
+        # the module here makes the patch deterministic before APIServerAdapter
+        # is instantiated and its bound route is registered.
+        try:
+            module = _hades_sys.modules.get("gateway.platforms.api_server")
+            if module is None:
+                module = _hades_importlib.import_module(
+                    "gateway.platforms.api_server"
+                )
+            adapter = getattr(module, "APIServerAdapter", None)
+            handler = getattr(adapter, "_handle_chat_completions", None)
+            if handler is not None and not getattr(
+                handler, "_hades_chat_id_context", False
+            ):
+                adapter._handle_chat_completions = (
+                    _hades_wrap_openwebui_chat_id_context(handler)
+                )
+                _hades_logger.info(
+                    "HADES Open WebUI chat identity context installed on API adapter"
+                )
+                installed = True
+            elif handler is not None:
+                installed = True
+        except Exception as exc:
+            _hades_logger.debug(
+                "HADES API adapter chat identity patch not ready: %s", exc
+            )
+
+        # Keep compatibility with Hermes builds that inherit and register the
+        # OpenAI route mixin directly. Patching both is safe: the concrete
+        # adapter wrapper is idempotent and ContextVar state remains request-local.
+        route_module = _hades_sys.modules.get(
             "gateway.platforms.api_server_openai_routes"
         )
-        mixin = getattr(module, "OpenAICompatRoutesMixin", None) if module else None
-        if mixin is None:
-            return False
-        original = mixin._handle_chat_completions
-        if getattr(original, "_hades_chat_id_context", False):
-            return True
-        mixin._handle_chat_completions = _hades_wrap_openwebui_chat_id_context(
-            original
+        mixin = (
+            getattr(route_module, "OpenAICompatRoutesMixin", None)
+            if route_module else None
         )
-        _hades_logger.info("HADES Open WebUI chat identity context installed")
-        return True
+        if mixin is not None:
+            original = mixin._handle_chat_completions
+            if not getattr(original, "_hades_chat_id_context", False):
+                mixin._handle_chat_completions = (
+                    _hades_wrap_openwebui_chat_id_context(original)
+                )
+                installed = True
+        return installed
 
     # The API gateway can construct agents after MCP discovery but before the
     # dynamic server alias is visible to its platform allowlist. Reconcile

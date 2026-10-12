@@ -84,18 +84,10 @@ owner = run_agent.AIAgent(
     stream_delta_callback=lambda _chunk: None,
     **base,
 )
-route_module = sys.modules.get("gateway.platforms.api_server_openai_routes")
-if route_module is None:
-    import types
-    route_module = types.ModuleType("gateway.platforms.api_server_openai_routes")
-    class FakeOpenAICompatRoutesMixin:
-        async def _handle_chat_completions(self, request):
-            return hades._hades_openwebui_chat_id.get()
-    route_module.OpenAICompatRoutesMixin = FakeOpenAICompatRoutesMixin
-    sys.modules["gateway.platforms.api_server_openai_routes"] = route_module
+from gateway.platforms import api_server
 assert hades._hades_install_openwebui_chat_id_context()
 assert getattr(
-    route_module.OpenAICompatRoutesMixin._handle_chat_completions,
+    api_server.APIServerAdapter._handle_chat_completions,
     "_hades_chat_id_context",
     False,
 )
