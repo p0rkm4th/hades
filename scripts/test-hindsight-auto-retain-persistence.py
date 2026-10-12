@@ -29,50 +29,95 @@ FACT_RESPONSE = json.dumps({"facts": [{
 model_requests: list[dict[str, str]] = []
 
 
+def synthetic_fact_for(text: str) -> str:
+    lowered = text.casefold()
+    if "main project" in lowered and "hades" in lowered:
+        return "The synthetic user's main project is HADES."
+    if "lyxa" in lowered:
+        return "The synthetic user's cat is named Lyxa."
+    if "neovim" in lowered:
+        return "The synthetic user prefers Neovim for coding."
+    if "vim" in lowered or "editor" in lowered:
+        return "The synthetic user prefers Vim for coding."
+    return FACT
+
+
+def synthetic_fact_family(text: str) -> str:
+    lowered = text.casefold()
+    if "cat" in lowered and "lyxa" in lowered:
+        return "relationship"
+    if "main project" in lowered:
+        return "project"
+    if "editor" in lowered or "vim" in lowered or "neovim" in lowered:
+        return "editor"
+    return "other"
+
+
 class Model(http.server.BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
-        model_requests.append({"path": self.path, "model": str(body.get("model", ""))})
         messages = [message for message in body.get("messages", []) if isinstance(message, dict)]
         message_text = "\n".join(
             str(message.get("content", ""))
             for message in messages
         )
         user_text = "\n".join(str(message.get("content", "")) for message in messages if message.get("role") == "user")
+        model_requests.append({
+            "path": self.path, "model": str(body.get("model", "")),
+            "consolidation": "source_fact_ids" in message_text,
+            "user_text": user_text[:240],
+        })
         source_ids = re.findall(r"\[([0-9a-f]{8}-[0-9a-f-]{27,})\]", message_text, re.IGNORECASE)
+        new_fact_text = user_text
+        if "### New facts" in new_fact_text:
+            new_fact_text = new_fact_text.split("### New facts", 1)[1].split("### Existing observations", 1)[0]
         if "source_fact_ids" in message_text and source_ids:
-            selected_fact = (
-                "The synthetic user prefers Neovim for coding."
-                if "neovim" in message_text.casefold()
-                else "The synthetic user prefers Vim for coding."
-                if "vim" in message_text.casefold()
-                else FACT
+            fact_rows = re.findall(
+                r"^\[([0-9a-f]{8}-[0-9a-f-]{27,})\]\s*(.+)$",
+                new_fact_text, re.IGNORECASE | re.MULTILINE,
             )
-            observation_ids = re.findall(
-                r'"id"\s*:\s*"([0-9a-f]{8}-[0-9a-f-]{27,})"',
-                user_text, re.IGNORECASE,
+            grouped: dict[str, tuple[str, str]] = {}
+            for fact_id, fact_text in fact_rows:
+                family = synthetic_fact_family(fact_text)
+                selected_fact = synthetic_fact_for(fact_text)
+                previous = grouped.get(family)
+                # The correction fixture deliberately batches the earlier Vim
+                # assertion after the Neovim correction. Keep the explicit
+                # correction authoritative instead of relying on batch order.
+                if previous is None or (
+                    "neovim" in selected_fact.casefold()
+                    and "neovim" not in previous[1].casefold()
+                ):
+                    grouped[family] = (fact_id, selected_fact)
+            observation_text = user_text.split("### Existing observations", 1)[-1]
+            observation_rows = re.findall(
+                r'"id"\s*:\s*"([0-9a-f]{8}-[0-9a-f-]{27,})".*?"text"\s*:\s*"([^"]*)"',
+                observation_text, re.IGNORECASE | re.DOTALL,
             )
-            if observation_ids:
-                action = {"creates": [], "updates": [{
-                    "text": selected_fact,
-                    "observation_id": observation_ids[-1],
-                    "source_fact_ids": [source_ids[-1]],
-                    "reason": "Same synthetic preference facet; update its current value.",
-                }], "deletes": []}
-            else:
-                action = {"creates": [{
-                    "text": selected_fact,
-                    "source_fact_ids": [source_ids[-1]],
-                    "reason": "Synthetic durable preference for recall qualification.",
-                }], "updates": [], "deletes": []}
+            creates, updates = [], []
+            for family, (fact_id, selected_fact) in grouped.items():
+                same_facet = next((
+                    (observation_id, text)
+                    for observation_id, text in observation_rows
+                    if synthetic_fact_family(text) == family
+                ), None)
+                if same_facet:
+                    updates.append({
+                        "text": selected_fact,
+                        "observation_id": same_facet[0],
+                        "source_fact_ids": [fact_id],
+                        "reason": "Same synthetic fact facet; update its current value.",
+                    })
+                else:
+                    creates.append({
+                        "text": selected_fact,
+                        "source_fact_ids": [fact_id],
+                        "reason": "Synthetic durable fact for recall qualification.",
+                    })
+            action = {"creates": creates, "updates": updates, "deletes": []}
             response_text = json.dumps(action)
         else:
-            if "neovim" in message_text.casefold():
-                extracted_fact = "The synthetic user prefers Neovim for coding."
-            elif "vim" in message_text.casefold():
-                extracted_fact = "The synthetic user prefers Vim for coding."
-            else:
-                extracted_fact = FACT
+            extracted_fact = synthetic_fact_for(user_text or message_text)
             response_text = json.dumps({"facts": [{
                 "what": extracted_fact,
                 "when": "N/A", "where": "N/A", "who": "user",
@@ -170,12 +215,14 @@ def main() -> None:
                 "bank_id_template": "hades-user-{user}", "auto_retain": True,
                 "retain_async": False, "retain_every_n_turns": 1,
                 "auto_recall": True, "recall_sync": True,
-                "recall_types": ["observation"], "budget": "low",
+                # Narrow retrieval should pass only the top matching fact;
+                # production remains at its existing 400-token setting.
+                "recall_types": ["observation"], "budget": "low", "recall_max_tokens": 16,
             }), encoding="utf-8")
             env = os.environ.copy()
             env.update({
                 "HERMES_HOME": temp_home,
-                "HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS": "synthetic-alpha,synthetic-beta,synthetic-correction",
+                "HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS": "synthetic-alpha,synthetic-beta,synthetic-correction,synthetic-recall",
                 "HADES_HINDSIGHT_URL": api,
                 "PYTHONPATH": os.pathsep.join(filter(None, [str(ROOT / "hermes"), str(ROOT), env.get("PYTHONPATH", "")])),
             })
@@ -213,20 +260,39 @@ elif mode == "journey":
     print(json.dumps({"mode": mode, "bank": p._bank_id, "subject": p._user_id,
                       "drains": drains, "retain_calls": len(retain_calls)}))
     p.shutdown()
+elif mode == "recall_suite":
+    prompts = json.loads(sys.argv[4])
+    drains = []
+    for prompt in prompts:
+        p.sync_turn(prompt, "", session_id=session)
+        drains.append(p._wait_for_retains_drained(60))
+    print(json.dumps({"mode": mode, "bank": p._bank_id, "subject": p._user_id,
+                      "drains": drains, "retain_calls": len(retain_calls)}))
+    p.shutdown()
 else:
-    answer = p._do_recall("What personal answer style does this user prefer? concise technical answers")
-    print(json.dumps({"mode": mode, "bank": p._bank_id, "subject": p._user_id, "answer": answer[0], "count": answer[1]}))
+    query = sys.argv[4] if len(sys.argv) > 4 else "What personal answer style does this user prefer? concise technical answers"
+    raw = p._recall(query)
+    answer = p._do_recall(query)
+    print(json.dumps({"mode": mode, "bank": p._bank_id, "subject": p._user_id,
+                      "answer": answer[0], "count": answer[1],
+                      "results": [{"text": item.text, "scores": getattr(item, "scores", None)} for item in raw]}))
     p.shutdown()
 '''
-            def invoke(mode: str, subject: str, session: str) -> dict:
+            def invoke(mode: str, subject: str, session: str, payload: str | None = None) -> dict:
                 extra_args = json.dumps([
                     "My preferred editor is Vim.",
                     "Actually, I switched to Neovim.",
                     "Actually, I switched to Neovim.",
-                ]) if mode == "journey" else None
+                ]) if mode == "journey" else json.dumps([
+                    "My preferred editor is Neovim.",
+                    "My cat's name is Lyxa.",
+                    "My main project is HADES.",
+                ]) if mode == "recall_suite" else None
                 args = [str(hermes_python), "-c", worker, mode, subject, session]
                 if extra_args is not None:
                     args.append(extra_args)
+                elif payload is not None:
+                    args.append(payload)
                 completed = subprocess.run(args,
                     cwd=ROOT, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                     timeout=90, check=True)
@@ -268,7 +334,9 @@ else:
             print("PASS assistant-only inferred secret was absent from canonical memory")
 
             correction = invoke("journey", "synthetic-correction", "chat-correction")
-            corrected_recall = invoke("recall", "synthetic-correction", "chat-correction-new")
+            corrected_recall = invoke(
+                "recall", "synthetic-correction", "chat-correction-new", "Which coding editor do I prefer?"
+            )
             if (correction["retain_calls"] != 3 or correction["drains"] != [True, True, True]
                     or "neovim" not in corrected_recall["answer"].casefold()
                     or re.search(r"\bvim\b", corrected_recall["answer"].casefold())):
@@ -280,6 +348,28 @@ else:
                 raise RuntimeError(f"repeated preference created duplicate recalled observations: {corrected_recall}")
             print("PASS same-actor preference correction updated the current Hindsight observation")
             print("PASS repeated preference did not create duplicate recalled observations")
+
+            recall_suite = invoke("recall_suite", "synthetic-recall", "chat-recall-suite")
+            editor_recall = invoke("recall", "synthetic-recall", "chat-recall-editor", "Which coding editor do I prefer?")
+            cat_recall = invoke("recall", "synthetic-recall", "chat-recall-cat", "What is my cat's name?")
+            project_recall = invoke("recall", "synthetic-recall", "chat-recall-project", "What is my main project?")
+            recall_rows = request_json(
+                api + "/v1/default/banks/hades-user-synthetic-recall/memories/list?state=valid&limit=100"
+            ).get("items", [])
+            first_text = lambda result: str((result.get("results") or [{}])[0].get("text", "")).casefold()
+            if "neovim" not in first_text(editor_recall):
+                raise RuntimeError(f"editor query did not rank the matching preference first: {editor_recall}")
+            if "lyxa" not in first_text(cat_recall):
+                raise RuntimeError(f"relationship query did not rank the matching name first: {cat_recall}")
+            if "hades" not in first_text(project_recall):
+                raise RuntimeError(f"project query did not rank the matching fact first: {project_recall}")
+            if any(result["count"] != 1 for result in (editor_recall, cat_recall, project_recall)):
+                raise RuntimeError(
+                    "narrow recall query returned irrelevant observations despite the bounded token budget: "
+                    f"editor={editor_recall}; relationship={cat_recall}; project={project_recall}"
+                )
+            print("PASS editor, relationship, and project queries rank their matching durable fact first")
+            print("PASS each narrow query excludes unrelated synthetic observations within the bounded token budget")
     finally:
         server.shutdown()
         server.server_close()
