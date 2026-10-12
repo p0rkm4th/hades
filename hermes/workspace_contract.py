@@ -37,6 +37,13 @@ def _recognized_test_command(command: str) -> str | None:
         tokens = shlex.split(command)
     except ValueError:
         return None
+    # Hermes' local terminal backend prefixes its configured cwd in some
+    # 0.21.2 dispatches. Accept only this exact workspace prefix; an arbitrary
+    # directory or additional shell composition remains unrecognized.
+    if tokens[:3] == ["cd", "/workspace", "&&"]:
+        tokens = tokens[3:]
+    if tokens and tokens[-1] == "2>&1":
+        tokens = tokens[:-1]
     if (
         not tokens
         or any(re.search(r"[;&|<>$`\\\n\r]", token) for token in tokens)
@@ -716,6 +723,9 @@ def verify_commit(
         return CommitVerification("VERIFY", "commit paths do not exactly match the staged intent captured for this call", invocation.head, after.head, committed)
     if test_evidence is None or not test_evidence.passed:
         return CommitVerification("VERIFY", "passing focused-test evidence is absent", invocation.head, after.head, committed)
+    # A coding operation may continue across conversational turns. A prior-turn
+    # test is still valid only when the same task/session, pre-commit HEAD, exact
+    # selected paths, and committed source fingerprint all match below.
     if (
         test_evidence.subject != binding.subject
         or test_evidence.workspace != binding.root
@@ -724,7 +734,6 @@ def verify_commit(
         or test_evidence.head != invocation.head
         or test_evidence.task_id != invocation.task_id
         or test_evidence.session_id != invocation.session_id
-        or test_evidence.turn_id != invocation.turn_id
         or test_evidence.paths != selected
     ):
         return CommitVerification("VERIFY", "test evidence belongs to a different actor, workspace, operation, or source set", invocation.head, after.head, committed)

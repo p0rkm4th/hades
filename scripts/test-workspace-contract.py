@@ -4,6 +4,9 @@
 from __future__ import annotations
 
 import os
+import shutil
+import socket
+import socketserver
 import subprocess
 import sys
 import tempfile
@@ -331,12 +334,20 @@ class WorkspaceContractTests(unittest.TestCase):
 
     def test_edit_after_test_invalidates_test_evidence(self) -> None:
         evidence = self.test_evidence
+        object.__setattr__(evidence, "turn_id", "prior-coding-turn-001")
         (self.repo / "calc.py").write_text("def answer():\n    return 43\n", encoding="utf-8")
         self.git("add", "calc.py")
         self.git("commit", "-qm", "changed after test")
         result = self.verify(evidence=evidence)
         self.assertEqual(result.outcome, "VERIFY")
         self.assertIn("tested source differs", result.reason)
+
+    def test_prior_turn_test_is_valid_when_task_and_committed_source_match(self) -> None:
+        evidence = self.test_evidence
+        object.__setattr__(evidence, "turn_id", "prior-coding-turn-001")
+        self.git("commit", "-qm", "requested fix")
+        result = self.verify(evidence=evidence)
+        self.assertEqual(result.outcome, "SUCCEEDED", result.reason)
 
     def test_test_must_be_tied_to_preoperation_head(self) -> None:
         invalid = self.test_evidence
@@ -353,6 +364,27 @@ class WorkspaceContractTests(unittest.TestCase):
                 command="echo 'pytest 1 passed'",
                 tool_call_id="not-a-test-call",
             )
+
+    def test_hermes_workspace_prefix_is_accepted_only_for_test_evidence(self) -> None:
+        snapshot = self.snapshot()
+        invocation = begin_test_invocation(
+            self.binding,
+            snapshot,
+            paths={"calc.py"},
+            command="cd /workspace && python3 -m unittest -q 2>&1",
+            tool_call_id="hermes-prefixed-test-call",
+        )
+        self.assertEqual(invocation.command, "cd /workspace && python3 -m unittest -q 2>&1")
+        for command in (
+            "cd /tmp && python3 -m unittest -q",
+            "cd /workspace && python3 -m unittest -q && rm -rf /workspace",
+            "cd /workspace && python3 -m unittest -q 2>&1 || true",
+        ):
+            with self.subTest(command=command), self.assertRaises(WorkspaceEvidenceError):
+                begin_test_invocation(
+                    self.binding, snapshot, paths={"calc.py"}, command=command,
+                    tool_call_id="rejected-prefixed-test-call",
+                )
 
     def test_test_result_is_tied_to_actual_invocation_and_source(self) -> None:
         before_test = self.snapshot()
@@ -525,6 +557,63 @@ class WorkspaceContractTests(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(marker.read_text(encoding="utf-8"), "runtime")
+
+    def test_inference_socket_bridge_does_not_enable_general_egress(self) -> None:
+        self.require_namespace()
+        if (not shutil.which("ncat", path="/usr/bin:/bin")
+                or not Path("/usr/bin/setsid").is_file()):
+            self.skipTest("test-only inference bridge requires ncat and setsid")
+        relay_dir = self.base / "relay"
+        relay_dir.mkdir(mode=0o700)
+        socket_path = relay_dir / "inference.sock"
+
+        class EchoHandler(socketserver.StreamRequestHandler):
+            def handle(self) -> None:
+                self.wfile.write(self.rfile.read(5))
+
+        server = socketserver.UnixStreamServer(str(socket_path), EchoHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            result = run_isolated_workspace(
+                self.binding.repository,
+                [
+                    "python3",
+                    "-c",
+                    "import socket,time; s=None\n"
+                    "for _ in range(30):\n"
+                    " try: s=socket.create_connection(('127.0.0.1',18137),timeout=1); break\n"
+                    " except OSError: time.sleep(.1)\n"
+                    "assert s is not None; s.sendall(b'ping!'); assert s.recv(5)==b'ping!'\n"
+                    "s.close(); x=socket.socket(); x.settimeout(.5)\n"
+                    "try: x.connect(('1.1.1.1',443)); raise SystemExit('external route available')\n"
+                    "except OSError: pass\n"
+                    "finally: x.close()\n",
+                ],
+                timeout=30,
+                unix_socket=socket_path,
+                enable_loopback=True,
+            )
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+    def test_inference_socket_requires_explicit_loopback(self) -> None:
+        self.require_namespace()
+        relay_dir = self.base / "relay-no-loopback"
+        relay_dir.mkdir(mode=0o700)
+        socket_path = relay_dir / "inference.sock"
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        server.bind(str(socket_path))
+        try:
+            with self.assertRaisesRegex(ValueError, "requires isolated loopback"):
+                run_isolated_workspace(
+                    self.binding.repository, ["true"], unix_socket=socket_path
+                )
+        finally:
+            server.close()
 
     def test_concurrent_namespaces_keep_workspace_mounts_separate(self) -> None:
         self.require_namespace()
