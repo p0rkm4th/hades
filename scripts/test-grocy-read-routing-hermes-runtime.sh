@@ -180,7 +180,7 @@ homelab_history = []
 for prompt, expected in (
     ("how's my network?", "Some configured homelab evidence needs attention"),
     ("what about Thanatos and all the nodes?", "Thanatos VM 101"),
-    ("are any of the nodes showing any problems?", "Uptime Kuma's configured probes failed"),
+    ("are any of the nodes showing any problems?", "Failing configured checks"),
 ):
     request_history = [*homelab_history, {"role": "user", "content": prompt}]
     network_reads.clear()
@@ -188,6 +188,10 @@ for prompt, expected in (
     assert result.get("completed") is True and result.get("api_calls") == 0, result
     assert expected in result.get("final_response", ""), (prompt, result)
     assert network_reads == ["homelab_summary"], (prompt, network_reads)
+    if prompt == "are any of the nodes showing any problems?":
+        assert "Repository backup freshness" not in result["final_response"], result
+        assert "No blocker was reported" not in result["final_response"], result
+        assert len(result["final_response"]) < 1200, result
     homelab_history.extend([
         {"role": "user", "content": prompt},
         {"role": "assistant", "content": result["final_response"]},

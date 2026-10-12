@@ -5584,6 +5584,17 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         summary = _hades_direct_homelab_tool_result("homelab_summary")
         if not isinstance(summary, dict):
             return None
+        node_problem_request = bool(re.search(
+            r"\b(?:nodes?|hosts?|servers?)\b.{0,40}\b(?:problems?|issues?|failures?|wrong|down|degraded)\b|"
+            r"\b(?:problems?|issues?|failures?|wrong|down|degraded)\b.{0,40}\b(?:nodes?|hosts?|servers?)\b",
+            text,
+            re.IGNORECASE,
+        ))
+        if scope == "owner" and node_problem_request:
+            # A problem-focused follow-up needs a concise current conclusion,
+            # not the previous all-node diagnostic report. The health view
+            # retains probe failures, source disagreements, and unknown coverage.
+            return _hades_homelab_health_summary_response(summary)
         if node_load_target:
             if not subject:
                 return "I couldn't verify this owner session, so I can't read host load."
