@@ -18,6 +18,23 @@ from contextlib import contextmanager
 from pathlib import Path
 import sys
 
+def _hades_import_coding_worker():
+    """Load the worker only from its root-configured, immutable release."""
+    configured_root = os.environ.get("HADES_CODING_PROJECT_ROOT", "").strip()
+    if not configured_root:
+        raise RuntimeError("coding worker release root is not configured")
+    root = Path(configured_root)
+    if root.is_symlink():
+        raise RuntimeError("coding worker release root must not be a symlink")
+    root = root.resolve(strict=True)
+    if not (root / "hermes" / "coding_worker.py").is_file():
+        raise RuntimeError("coding worker release is incomplete")
+    resolved = str(root)
+    if resolved not in sys.path:
+        sys.path.insert(0, resolved)
+    from hermes import coding_worker
+    return coding_worker
+
 def _hades_prepare_generated_integrations_path():
     """Prefer the packaged HADES integrations while retaining checkout adapters."""
     configured = os.environ.get("HADES_INTEGRATIONS_ROOT", "").strip()
@@ -9580,10 +9597,13 @@ try:
             )
             if not coding_sensitive_domain:
                 try:
-                    from hermes.coding_worker import (
-                        coding_worker_conversation_allowed as _hades_coding_allowed,
-                        run_coding_worker as _hades_run_coding_worker,
-                        should_route_to_coding_worker as _hades_should_route_coding,
+                    _hades_coding_worker = _hades_import_coding_worker()
+                    _hades_coding_allowed = (
+                        _hades_coding_worker.coding_worker_conversation_allowed
+                    )
+                    _hades_run_coding_worker = _hades_coding_worker.run_coding_worker
+                    _hades_should_route_coding = (
+                        _hades_coding_worker.should_route_to_coding_worker
                     )
                     if (
                         _hades_coding_allowed(
@@ -9594,7 +9614,7 @@ try:
                         and _hades_should_route_coding(coding_text, coding_history)
                     ):
                         project_root = Path(
-                            os.environ.get("HADES_CODING_PROJECT_ROOT") or os.getcwd()
+                            os.environ["HADES_CODING_PROJECT_ROOT"]
                         ).resolve(strict=True)
                         if not (
                             os.environ.get("HADES_CODING_WORKSPACE_BINDINGS_FILE")

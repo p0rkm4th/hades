@@ -11,9 +11,11 @@ fi
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/hades-coding-runtime.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 chmod 700 "$tmp"
+(
+cd "$tmp"
 HERMES_HOME="$tmp/hermes-home" \
 HOME="$tmp" \
-PYTHONPATH="$overlay_dir:$repo_dir" \
+PYTHONPATH="$overlay_dir" \
 HADES_HERMES_OVERLAY_DIR="$overlay_dir" \
 HADES_CODING_PROJECT_ROOT="$repo_dir" \
 HADES_CODING_WORKER_ENABLED=1 \
@@ -22,12 +24,18 @@ HADES_CODING_WORKSPACE_BINDINGS_FILE="$tmp/bindings.json" \
 HADES_CODING_WORKSPACE_ROOT="$tmp/workspaces" \
 HADES_OWNER_SUBJECT_IDS=synthetic-owner \
 "$hermes_python" - <<'PY'
+import os
+import sys
 import run_agent
 import sitecustomize as hades
-from hermes import coding_worker
 from pathlib import Path
 
 assert Path(hades.__file__).resolve() == Path(__import__("os").environ["HADES_HERMES_OVERLAY_DIR"]) / "sitecustomize.py", hades.__file__
+project_root = Path(os.environ["HADES_CODING_PROJECT_ROOT"]).resolve()
+assert str(project_root) not in sys.path
+coding_worker = hades._hades_import_coding_worker()
+assert Path(coding_worker.__file__).resolve() == project_root / "hermes" / "coding_worker.py"
+assert str(project_root) in sys.path
 
 assert run_agent.AIAgent.run_conversation.__name__ == "_hades_run_conversation"
 calls = []
@@ -65,7 +73,7 @@ assert len(calls) == 1, calls
 assert calls[0]["subject"] == "synthetic-owner"
 assert calls[0]["scope"] == "owner"
 assert calls[0]["conversation_id"] == "synthetic-owner-coding-conversation"
-assert calls[0]["repo_root"] == __import__("pathlib").Path(".").resolve()
+assert calls[0]["repo_root"] == project_root
 
 # Even with the feature flag enabled, a different conversation stays on the
 # ordinary Hermes path; the disposable fixture cannot capture unrelated work.
@@ -95,3 +103,4 @@ assert len(calls) == 1, calls
 assert household_result["final_response"] != "synthetic verified coding result"
 print("PASS: trusted owner coding request entered worker lane; household did not")
 PY
+)
