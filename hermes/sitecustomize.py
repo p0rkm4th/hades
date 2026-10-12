@@ -3035,6 +3035,20 @@ def _hades_direct_grocy_recipe_read(user_text, expiring_product_ids=None):
         text,
         re.IGNORECASE,
     ))
+    ingredient_match = re.search(
+        r"\b(?:what\s+)?ingredients?\s+(?:are\s+)?(?:in|for|of)\s+(?:the\s+)?(?P<name>[^?.!\n]{2,120})",
+        text,
+        re.IGNORECASE,
+    )
+    ingredient_recipe_name = (
+        re.sub(r"\s+", " ", ingredient_match.group("name")).strip(" .,!?:;")
+        if ingredient_match else ""
+    )
+    ingredient_detail_request = bool(
+        ingredient_recipe_name
+        and not _HADES_GROCY_ACTION_INTENT.search(text)
+        and not re.search(r"\b(?:kitchen|kiytchen|kichen|kitcen|pantry|stock|what\s+do\s+(?:i|we)\s+have)\b", text, re.IGNORECASE)
+    )
     specific_recipe_match = None if inventory_request or broad_meal_request else re.search(
         r"\bcan\s+(?:i|we)\s+(?:still\s+)?make\s+(?:the\s+)?(.+?)"
         r"(?:\s+(?:with|using)\s+(?:what\s+we\s+have|current\s+stock|the\s+current\s+stock)"
@@ -3063,7 +3077,7 @@ def _hades_direct_grocy_recipe_read(user_text, expiring_product_ids=None):
         text,
         re.IGNORECASE,
     ):
-        if not not_make_request and not inventory_request and not specific_recipe_request and not broad_meal_request:
+        if not not_make_request and not inventory_request and not specific_recipe_request and not broad_meal_request and not ingredient_detail_request:
             return None
     base_url = _hades_grocy_base_url()
     api_key = _hades_grocy_api_key()
@@ -3120,6 +3134,59 @@ def _hades_direct_grocy_recipe_read(user_text, expiring_product_ids=None):
             if not isinstance(row, dict) or not str(row.get("recipe_id", "")).isdigit():
                 continue
             by_recipe.setdefault(int(row["recipe_id"]), []).append(row)
+        if ingredient_detail_request:
+            requested = ingredient_recipe_name.casefold()
+            selected = [
+                row for row in recipes
+                if isinstance(row, dict)
+                and str(row.get("name") or "").strip().casefold() == requested
+            ]
+            if len(selected) != 1:
+                return (
+                    f"I couldn't match {ingredient_recipe_name!r} to one saved Grocy recipe. "
+                    "Nothing was changed."
+                )
+            recipe = selected[0]
+            recipe_name = str(recipe.get("name") or ingredient_recipe_name)
+            ingredients = by_recipe.get(int(recipe["id"]), [])
+            if not ingredients:
+                return f"Grocy has no ingredients recorded for {recipe_name}. Nothing was changed."
+            try:
+                quantity_units = get("/api/objects/quantity_units")
+            except Exception:
+                quantity_units = []
+            unit_by_id = {
+                str(row.get("id")): row for row in quantity_units
+                if isinstance(row, dict) and str(row.get("id", "")).isdigit()
+            } if isinstance(quantity_units, list) else {}
+            details = []
+            for ingredient in ingredients:
+                product_id = ingredient.get("product_id")
+                product = product_by_id.get(int(product_id)) if str(product_id).isdigit() else None
+                name = str(product.get("name") or "").strip() if isinstance(product, dict) else ""
+                if not name:
+                    name = "an unresolved Grocy product"
+                try:
+                    amount = float(ingredient.get("amount"))
+                    amount_text = f"{amount:g}"
+                except (TypeError, ValueError):
+                    amount_text = "amount not recorded"
+                    amount = None
+                unit = unit_by_id.get(str(ingredient.get("qu_id")))
+                unit_name = ""
+                if isinstance(unit, dict):
+                    preferred_unit = (
+                        unit.get("name_plural") if amount is not None and amount != 1
+                        else unit.get("name")
+                    )
+                    unit_name = str(preferred_unit or unit.get("name") or unit.get("name_plural") or "").strip()
+                quantity = amount_text + (f" {unit_name}" if unit_name else "")
+                details.append(f"{name} ({quantity})")
+            return (
+                f"Grocy lists these ingredients for {recipe_name}: "
+                + "; ".join(details)
+                + ". Nothing was changed."
+            )
         candidates = []
         conversion_cache = {}
         for recipe in recipes:

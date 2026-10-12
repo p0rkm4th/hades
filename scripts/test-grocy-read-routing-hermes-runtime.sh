@@ -368,6 +368,7 @@ payloads = {
     "/api/objects/products": [],
     "/api/stock": [],
 }
+baseline_payloads = {path: list(rows) for path, rows in payloads.items()}
 def synthetic_grocy_open(request, timeout=5):
     assert request.get_header("Grocy-api-key") == "synthetic-only"
     path = urllib.parse.urlparse(request.full_url).path
@@ -383,6 +384,53 @@ assert recipe_reads == [
     "/api/objects/recipes", "/api/objects/recipes_pos",
     "/api/objects/products", "/api/stock",
 ], recipe_reads
+
+# A named recipe-ingredient request is a distinct canonical read operation.
+# The previous recipe-list result may remain in chat context, but the current
+# turn must be resolved to the named recipe's ingredient positions.
+payloads["/api/objects/recipes"] = [
+    {"id": 1, "name": "Chicken Cordon Bleu"},
+    {"id": 2, "name": "Synthetic Recipe B"},
+    {"id": 3, "name": "Synthetic Recipe C"},
+]
+payloads["/api/objects/recipes_pos"] = [
+    {"id": 11, "recipe_id": 1, "product_id": 10, "amount": 2, "qu_id": 1},
+    {"id": 12, "recipe_id": 1, "product_id": 11, "amount": 0.5, "qu_id": 2},
+    {"id": 13, "recipe_id": 2, "product_id": 12, "amount": 3, "qu_id": 1},
+]
+payloads["/api/objects/products"] = [
+    {"id": 10, "name": "Synthetic Chicken"},
+    {"id": 11, "name": "Synthetic Cheese"},
+    {"id": 12, "name": "Unrelated Product"},
+]
+payloads["/api/objects/quantity_units"] = [
+    {"id": 1, "name": "piece", "name_plural": "pieces"},
+    {"id": 2, "name": "kilogram", "name_plural": "kilograms"},
+]
+recipe_reads.clear()
+ingredient_history = [
+    {"role": "user", "content": "list my recipes"},
+    {"role": "assistant", "content": "Synthetic recipe list"},
+    {"role": "user", "content": "what ingredients are in Chicken Cordon Bleu?"},
+]
+ingredient_result = agent.run_conversation(
+    "what ingredients are in Chicken Cordon Bleu?",
+    conversation_history=ingredient_history,
+)
+assert ingredient_result.get("completed") is True, ingredient_result
+assert ingredient_result.get("api_calls") == 0, ingredient_result
+ingredient_answer = ingredient_result.get("final_response", "")
+assert "Grocy lists these ingredients for Chicken Cordon Bleu" in ingredient_answer, ingredient_result
+assert "Synthetic Chicken (2 pieces)" in ingredient_answer, ingredient_result
+assert "Synthetic Cheese (0.5 kilograms)" in ingredient_answer, ingredient_result
+assert "Unrelated Product" not in ingredient_answer, ingredient_result
+assert recipe_reads == [
+    "/api/objects/recipes", "/api/objects/recipes_pos",
+    "/api/objects/products", "/api/stock", "/api/objects/quantity_units",
+], recipe_reads
+print("PASS same-chat named recipe ingredient read returns only the current recipe from canonical Grocy")
+payloads.clear()
+payloads.update(baseline_payloads)
 
 # Natural meal-planning questions with a follow-up clause must use shared
 # saved recipes and stock instead of falling through to unconstrained chat or

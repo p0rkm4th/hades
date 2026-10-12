@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import ast
+import json
 import os
 import re
 import tempfile
+import urllib.request
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -38,6 +40,7 @@ wanted = {
     "_hades_grocy_read_tool_choice",
     "_hades_finance_followup_query",
     "_hades_direct_finance_guidance",
+    "_hades_direct_grocy_recipe_read",
     "_hades_homelab_read_followup_query",
 }
 functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
@@ -46,6 +49,8 @@ scope = {
     "re": re,
     "os": os,
     "Path": Path,
+    "json": json,
+    "urllib": urllib,
     "_HADES_KITCHEN_TYPO": re.compile(r"\b(?:kiytchen|kichen|kitcen)\b", re.I),
     "_HADES_HOUSEHOLD_INVENTORY_CONTEXT": re.compile(
         r"\b(?:what(?:'s| is|s)\s+in|what\s+do\s+(?:i|we)\s+have|"
@@ -54,9 +59,17 @@ scope = {
     "_HADES_GROCY_ACTION_INTENT": re.compile(
         r"\b(?:add|remove|consume|create|update|delete|change)\b", re.I
     ),
+    "_HADES_MEAL_RECOMMENDATION_INTENT": re.compile(
+        r"\b(?:what|which)\s+(?:can|could)\s+(?:i|we)\s+(?:make|cook)\b", re.I
+    ),
     "_hades_is_homelab_intent": lambda text: bool(re.search(r"homelab|network|nodes?|thanatos", text, re.I)),
     "_hades_is_meal_budget_intent": lambda _text: False,
-    "_hades_logger": type("Logger", (), {"warning": lambda *_a, **_k: None})(),
+    "_hades_grocy_base_url": lambda: "http://grocy.synthetic",
+    "_hades_grocy_api_key": lambda: "synthetic-key",
+    "_hades_logger": type("Logger", (), {
+        "info": lambda *_a, **_k: None,
+        "warning": lambda *_a, **_k: None,
+    })(),
 }
 exec(compile(ast.Module(body=functions, type_ignores=[]), "sitecustomize.py", "exec"), scope)
 
@@ -79,6 +92,71 @@ assert choice("what ingredients are in Chicken Cordon Bleu?", tools) == {
     "type": "function", "function": {"name": "mcp_grocy_recipe_details_tool"}
 }
 assert choice("what ingredients are in Chicken Cordon Bleu?", tools[:1]) is None
+
+# Exercise the canonical recipe detail read with three recipes and separate
+# stock data. The detail operation must return only that recipe's ingredient
+# positions, using GETs, while kitchen inventory wording remains a stock task.
+grocy_payloads = {
+    "/api/objects/recipes": [
+        {"id": 1, "name": "Chicken Cordon Bleu"},
+        {"id": 2, "name": "Recipe B"},
+        {"id": 3, "name": "Recipe C"},
+    ],
+    "/api/objects/recipes_pos": [
+        {"recipe_id": 1, "product_id": 10, "amount": 2, "qu_id": 1},
+        {"recipe_id": 1, "product_id": 11, "amount": 0.5, "qu_id": 2},
+        {"recipe_id": 2, "product_id": 12, "amount": 3, "qu_id": 1},
+    ],
+    "/api/objects/products": [
+        {"id": 10, "name": "Synthetic Chicken"},
+        {"id": 11, "name": "Synthetic Cheese"},
+        {"id": 12, "name": "Unrelated Product"},
+    ],
+    "/api/stock": [],
+    "/api/objects/quantity_units": [
+        {"id": 1, "name": "piece", "name_plural": "pieces"},
+        {"id": 2, "name": "kilogram", "name_plural": "kilograms"},
+    ],
+}
+grocy_requests = []
+
+class SyntheticGrocyResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self):
+        return json.dumps(self.payload).encode()
+
+def synthetic_recipe_urlopen(request, timeout=5):
+    path = request.full_url.removeprefix("http://grocy.synthetic")
+    grocy_requests.append((path, request.get_method(), timeout))
+    return SyntheticGrocyResponse(grocy_payloads[path])
+
+real_urlopen = urllib.request.urlopen
+urllib.request.urlopen = synthetic_recipe_urlopen
+try:
+    ingredients = scope["_hades_direct_grocy_recipe_read"](
+        "what ingredients are in Chicken Cordon Bleu?"
+    )
+    assert "Grocy lists these ingredients for Chicken Cordon Bleu" in ingredients
+    assert "Synthetic Chicken (2 pieces)" in ingredients
+    assert "Synthetic Cheese (0.5 kilograms)" in ingredients
+    assert "Unrelated Product" not in ingredients
+    assert all(method == "GET" for _, method, _ in grocy_requests)
+    assert {path for path, _, _ in grocy_requests} == set(grocy_payloads)
+    grocy_requests.clear()
+    assert scope["_hades_direct_grocy_recipe_read"](
+        "what ingredients do i have in my kiytchen?"
+    ) is None
+    assert grocy_requests == []
+finally:
+    urllib.request.urlopen = real_urlopen
 
 homelab_followup = scope["_hades_homelab_read_followup_query"]
 journey = [
