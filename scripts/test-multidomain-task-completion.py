@@ -207,6 +207,20 @@ with tempfile.TemporaryDirectory(prefix="hades-multidomain-finance-") as temp:
         second = finance(followup)
         assert "posted net spending at 7 Brew is $20.50" in second, second
         assert "100.00" not in second
+        explicit_followup = scope["_hades_finance_followup_query"](
+            "Calculate how much I spent there", [
+                {"role": "user", "content": "How much have I spent at 7 Brew year-to-date?"},
+                {"role": "assistant", "content": first},
+                {"role": "user", "content": "But I need to know"},
+                {"role": "assistant", "content": second},
+                {"role": "user", "content": "Calculate how much I spent there"},
+            ], "owner",
+        )
+        assert "7 Brew" in explicit_followup and "year-to-date" in explicit_followup
+        third = finance(explicit_followup)
+        assert "posted net spending at 7 Brew is $20.50" in third, third
+        assert "Pending transactions total $3.00" in third, third
+        assert "100.00" not in third
     finally:
         if old is None:
             os.environ.pop("HADES_FINANCE_CSV_PATH", None)
