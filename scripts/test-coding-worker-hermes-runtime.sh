@@ -48,13 +48,13 @@ async def fake_handler(_self, request):
         None, hades._hades_openwebui_chat_id.get
     )
 wrapped_handler = hades._hades_wrap_openwebui_chat_id_context(fake_handler)
-async def probe_chat_id(chat_id):
+async def probe_chat_id(chat_id, header="X-Hades-OpenWebUI-Chat-Id"):
     return await wrapped_handler(
-        object(), SimpleNamespace(headers={"X-Hades-OpenWebUI-Chat-Id": chat_id})
+        object(), SimpleNamespace(headers={header: chat_id})
     )
 async def probe_concurrent_chat_ids():
     return await asyncio.gather(
-        probe_chat_id("synthetic-chat-left"),
+        probe_chat_id("synthetic-chat-left", "X-OpenWebUI-Chat-Id"),
         probe_chat_id("synthetic-chat-right"),
     )
 probe_ids = asyncio.run(probe_concurrent_chat_ids())

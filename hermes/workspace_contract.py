@@ -244,6 +244,7 @@ class CommitInvocation:
     head: str
     status_entries: frozenset[tuple[str, str]]
     expected_paths: frozenset[str]
+    source_fingerprint: str
     command: str
     task_id: str
     session_id: str
@@ -668,6 +669,7 @@ def begin_commit_invocation(
     paths = _validate_paths(staged_paths | (command_paths or frozenset()))
     if not paths:
         raise WorkspaceEvidenceError("commit request has no staged paths")
+    source_fingerprint = _path_fingerprint(binding.repository, paths)
     return CommitInvocation(
         subject=binding.subject,
         workspace=binding.root,
@@ -676,6 +678,7 @@ def begin_commit_invocation(
         head=snapshot.head,
         status_entries=snapshot.status_entries,
         expected_paths=paths,
+        source_fingerprint=source_fingerprint,
         command=command,
         task_id=snapshot.task_id,
         session_id=snapshot.session_id,
@@ -739,22 +742,43 @@ def verify_commit(
         operation_state = "FAILED"
     if invocation.head == after.head:
         if operation_state == "UNKNOWN":
-            return CommitVerification(
-                "VERIFY",
-                "no new commit is visible, but the commit operation outcome is ambiguous",
-                invocation.head,
-                after.head,
-                frozenset(),
+            try:
+                source_unchanged = (
+                    _path_fingerprint(binding.repository, selected)
+                    == invocation.source_fingerprint
+                )
+            except WorkspaceEvidenceError:
+                source_unchanged = False
+            before_unselected = frozenset(
+                row for row in invocation.status_entries if row[1] not in selected
             )
+            after_unselected = frozenset(
+                row for row in after.status_entries if row[1] not in selected
+            )
+            if not source_unchanged or before_unselected != after_unselected:
+                return CommitVerification(
+                    "VERIFY",
+                    "HEAD is unchanged but source or unrelated workspace state changed during the ambiguous operation",
+                    invocation.head,
+                    after.head,
+                    frozenset(),
+                )
+            # This is a fresh canonical repository snapshot bound to the
+            # invocation. It proves no requested commit occurred and that the
+            # intended source did not change; a controlled retry is safe.
+            return CommitVerification("FAILED", "canonical repository state proves no new commit exists", invocation.head, after.head, frozenset())
         return CommitVerification("FAILED", "no new commit exists in the bound repository", invocation.head, after.head, frozenset())
-    if operation_state != "SUCCEEDED":
+    if operation_state == "FAILED":
         return CommitVerification(
             "VERIFY",
-            "repository advanced, but this terminal commit call did not return confirmed success",
+            "repository advanced despite a failed terminal result; reconcile before any retry",
             invocation.head,
             after.head,
             frozenset(),
         )
+    # A missing or interrupted Hermes response is not success by itself. It
+    # may nevertheless be reconciled as success below when canonical Git
+    # state proves the exact requested direct-child commit and tested source.
     if not selected:
         return CommitVerification("VERIFY", "no intended source paths were bound to this commit request", invocation.head, after.head, frozenset())
     try:

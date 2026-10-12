@@ -72,8 +72,12 @@ def _hades_wrap_openwebui_chat_id_context(handler):
 
     @wraps(handler)
     async def wrapped(self, request):
+        # Open WebUI forwards its canonical chat ID using this default header.
+        # Keep the HADES-specific name as an explicit-config compatibility alias.
         chat_id = str(
-            request.headers.get("X-Hades-OpenWebUI-Chat-Id", "") or ""
+            request.headers.get("X-OpenWebUI-Chat-Id", "")
+            or request.headers.get("X-Hades-OpenWebUI-Chat-Id", "")
+            or ""
         ).strip()
         token = _hades_openwebui_chat_id.set(chat_id)
         try:

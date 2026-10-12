@@ -134,15 +134,23 @@ def main() -> int:
                 "from pathlib import Path; (Path('/')/'home'/'scotty'/'.cinder-sandbox-probe').write_text('unexpected')"
             ),
         ),
+        # Ordinary failures are intentionally part of this fixture. Hermes
+        # must consume each failure and continue with the same workspace.
+        _terminal_response("bad-path-07", "python3 -m unittest -q test_missing"),
+        _tool_response("edit-wrong-08", "write_file", {
+            "path": "calc.py", "content": "def answer():\n    return 40\n",
+        }),
+        _terminal_response("test-fails-09", "python3 -m unittest -q"),
+        _tool_response("read-after-failure-10", "read_file", {"path": "calc.py"}),
         _tool_response(
-            "edit-file-07",
+            "edit-file-11",
             "write_file",
             {"path": "calc.py", "content": "def answer():\n    return 42\n"},
         ),
-        _terminal_response("test-08", "python3 -m unittest -q"),
-        _terminal_response("diff-09", "git diff -- calc.py"),
-        _terminal_response("stage-10", "git add calc.py"),
-        _terminal_response("commit-11", "git commit -m 'Fix answer calculation'"),
+        _terminal_response("test-12", "python3 -m unittest -q"),
+        _terminal_response("diff-13", "git diff -- calc.py"),
+        _terminal_response("stage-14", "git add calc.py"),
+        _terminal_response("commit-15", "git commit -m 'Fix answer calculation'"),
         _response(_message("Fixed the failing test and committed the change."), "stop"),
     ]
 
@@ -256,7 +264,9 @@ def main() -> int:
     agent._interruptible_api_call = _next_response
     try:
         result = agent.run_conversation(
-            "Inspect this project, fix the failing test, run it, review the diff, then commit the fix.",
+            "Inspect this project. The first test command I gave you is intentionally misspelled, "
+            "and the first edit is intentionally wrong. Read the failures, correct the implementation, "
+            "rerun the focused test, review the diff, then commit the fix.",
             task_id=TASK_ID,
         )
         payload = _jsonable({

@@ -260,7 +260,64 @@ class WorkspaceContractTests(unittest.TestCase):
         )
         self.assertEqual(result.outcome, "FAILED")
 
-    def test_ambiguous_commit_without_new_head_requires_verification(self) -> None:
+    def test_lost_commit_response_with_unchanged_head_is_failed(self) -> None:
+        result = verify_commit(
+            self.binding,
+            invocation=self.commit_invocation,
+            after=self.snapshot(),
+            test_evidence=self.test_evidence,
+            operation=None,
+            commit_requested=True,
+        )
+        self.assertEqual(result.outcome, "FAILED")
+        self.assertIn("canonical repository state proves", result.reason)
+
+    def test_ambiguous_commit_with_unchanged_head_but_changed_source_requires_verify(self) -> None:
+        (self.repo / "calc.py").write_text("def answer():\n    return 43\n", encoding="utf-8")
+        result = verify_commit(
+            self.binding,
+            invocation=self.commit_invocation,
+            after=self.snapshot(),
+            test_evidence=self.test_evidence,
+            operation=None,
+            commit_requested=True,
+        )
+        self.assertEqual(result.outcome, "VERIFY")
+        self.assertIn("source or unrelated workspace state changed", result.reason)
+
+    def test_lost_commit_response_reconciles_from_canonical_git_state(self) -> None:
+        self.commit("calc.py")
+        result = verify_commit(
+            self.binding,
+            invocation=self.commit_invocation,
+            after=self.snapshot(),
+            test_evidence=self.test_evidence,
+            operation=None,
+            commit_requested=True,
+        )
+        self.assertEqual(result.outcome, "SUCCEEDED", result.reason)
+        self.assertEqual(result.before_head, self.commit_invocation.head)
+        self.assertNotEqual(result.after_head, result.before_head)
+        self.assertEqual(result.committed_paths, frozenset({"calc.py"}))
+
+    def test_lost_response_with_unrelated_advanced_head_stays_verify(self) -> None:
+        (self.repo / "unrelated.txt").write_text("unrelated\n", encoding="utf-8")
+        self.git("add", "unrelated.txt")
+        self.git("commit", "-qm", "unrelated commit")
+        result = verify_commit(
+            self.binding,
+            invocation=self.commit_invocation,
+            after=self.snapshot(),
+            test_evidence=self.test_evidence,
+            operation=None,
+            commit_requested=True,
+        )
+        self.assertEqual(result.outcome, "VERIFY")
+
+    def test_lost_response_with_extra_commit_paths_stays_verify(self) -> None:
+        (self.repo / "unrelated.txt").write_text("unrelated\n", encoding="utf-8")
+        self.git("add", "calc.py", "unrelated.txt")
+        self.git("commit", "-qm", "mixed commit")
         result = verify_commit(
             self.binding,
             invocation=self.commit_invocation,

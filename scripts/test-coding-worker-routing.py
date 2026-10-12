@@ -13,11 +13,29 @@ from hermes.coding_worker import (  # noqa: E402
     coding_worker_conversation_allowed,
     should_route_to_coding_worker,
     _workspace_mutation_authorized,
+    _explicit_commit,
     _validate_worker_result_identity,
 )
 
 
 class CodingWorkerRoutingTests(unittest.TestCase):
+    def test_commit_authority_respects_current_turn_negation(self) -> None:
+        for prompt in (
+            "Make a plausible correction, but do not commit yet.",
+            "Make the change and don't commit it.",
+            "Fix the test without committing the fix.",
+            "Please hold off on committing until I review the diff.",
+        ):
+            with self.subTest(prompt=prompt):
+                self.assertFalse(_explicit_commit(prompt))
+        for prompt in (
+            "Commit the fix.",
+            "Make the change and commit it.",
+            "Please commit this after the tests pass.",
+        ):
+            with self.subTest(prompt=prompt):
+                self.assertTrue(_explicit_commit(prompt))
+
     def test_worker_result_requires_hades_ids_but_not_hermes_turn_id(self) -> None:
         result = {
             "subject": "owner-1",
@@ -82,6 +100,12 @@ class CodingWorkerRoutingTests(unittest.TestCase):
         self.assertTrue(_workspace_mutation_authorized("Could you please fix this bug?", []))
         self.assertTrue(_workspace_mutation_authorized("I need you to change this function.", []))
         self.assertTrue(_workspace_mutation_authorized("Run the focused test.", []))
+        self.assertTrue(_workspace_mutation_authorized(
+            "Make a plausible first correction that remains incomplete.", []
+        ))
+        self.assertFalse(_workspace_mutation_authorized(
+            "Tell me how to make a correction to this function.", []
+        ))
         self.assertFalse(_workspace_mutation_authorized("Commit the fix.", []))
         self.assertFalse(_workspace_mutation_authorized("Do not edit anything; just inspect it.", []))
 

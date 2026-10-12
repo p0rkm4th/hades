@@ -189,12 +189,21 @@ def main() -> int:
         max_tokens=_config["max_tokens"],
     )
     agent._disable_streaming = True
+    agent.ephemeral_system_prompt = (
+        "You are working in one disposable repository. Use Hermes native terminal, read_file, "
+        "and write_file tools directly; do not call tool_call or tool_search. Make one tool call "
+        "at a time. After a command fails, read its result, inspect current files or Git state, "
+        "then choose a corrected operation. Never repeat a state-changing command until you have "
+        "checked canonical Git state."
+    )
     try:
         history = None
         prompts = (
-            "Inspect calc.py and test_calc.py, confirm the focused test fails, fix only "
-            "calc.py, rerun the focused test, and inspect `git diff -- calc.py`. The "
-            "terminal starts in /workspace. Do not search unrelated files.",
+            "First run exactly `python3 -m unittest -q test_missing` as an intentionally "
+            "bad test path. When it fails, inspect the real calc.py and test_calc.py, "
+            "confirm the actual focused test fails, fix only calc.py, rerun the focused "
+            "test, and inspect `git diff -- calc.py`. The terminal starts in /workspace. "
+            "Read the failures and continue; do not stop after either failure or search unrelated files.",
             "Continue this same task. First inspect actual git status and HEAD; do not "
             "repeat any commit that already happened. If the fix is not committed, rerun "
             "`python3 -m unittest -q` now and verify it passes, inspect `git diff -- calc.py`, "

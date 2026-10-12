@@ -103,7 +103,8 @@ def _rebuild(raw: dict, workspace: Path) -> CommitInvocation:
         subject=raw["subject"], workspace=workspace, repository=workspace,
         branch=raw["branch"], head=raw["head"],
         status_entries=frozenset(tuple(row) for row in raw["status_entries"]),
-        expected_paths=frozenset(raw["expected_paths"]), command=raw["command"],
+        expected_paths=frozenset(raw["expected_paths"]),
+        source_fingerprint=raw["source_fingerprint"], command=raw["command"],
         task_id=raw["task_id"], session_id=raw["session_id"], turn_id=raw["turn_id"],
         tool_call_id=raw["tool_call_id"],
     )
@@ -118,6 +119,10 @@ def main() -> int:
     endpoint_host, endpoint_port, model_id, context_length, ollama_num_ctx, max_tokens = _endpoint(
         args.model_config.resolve(strict=True)
     )
+    # The coding recovery task needs enough completion budget for tool
+    # selection plus concise progress. Keep this test-only budget bounded by
+    # the configured context; do not change the production profile.
+    max_tokens = min(max(max_tokens, 4096), context_length - 1)
     python = hermes_root / "venv/bin/python"
     if not python.exists():
         raise RuntimeError("Hermes venv interpreter is unavailable")
@@ -203,6 +208,16 @@ def main() -> int:
             and row.get("test_evidence", {}).get("head") == before.head
             and row.get("terminal_result", {}).get("exit_code") == 0
         ]
+        failed_tests = [
+            row for row in tests
+            if row.get("test_evidence", {}).get("exit_code") not in (None, 0)
+            and row.get("terminal_result", {}).get("exit_code") not in (None, 0)
+        ]
+        bad_path_recovered = any(
+            "test_missing" in str(row.get("args", {}).get("command", ""))
+            and row.get("terminal_result", {}).get("exit_code") not in (None, 0)
+            for row in calls.values()
+        )
         if not successful_tests or len(commits) != 1 or not writes or not reads or not diffs:
             summary = [
                 (row.get("tool_name"),
@@ -217,6 +232,11 @@ def main() -> int:
                 f"edits:{len(writes)} reads:{len(reads)} diffs:{len(diffs)}, "
                 f"tool_calls={summary}, "
                 f"final={str(payload.get('final_response', ''))[:500]}"
+            )
+        if not bad_path_recovered or not failed_tests:
+            raise RuntimeError(
+                "real model did not recover from both the intentional command error "
+                "and the fixture's initial failing test"
             )
         passed_test = successful_tests[-1]
 

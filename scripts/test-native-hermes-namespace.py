@@ -52,7 +52,10 @@ def main() -> int:
     parser.add_argument("--hermes-root", type=Path, required=True)
     args = parser.parse_args()
     hermes_root = args.hermes_root.resolve(strict=True)
-    python = hermes_root / "venv/bin/python"
+    python = next((path for path in (
+        hermes_root / "venv/bin/python",
+        hermes_root / ".venv/bin/python",
+    ) if path.is_file()), hermes_root / "venv/bin/python")
     if not python.is_file():
         raise SystemExit("Hermes venv Python is absent")
 
@@ -118,32 +121,56 @@ def main() -> int:
             file_calls = payload.get("file_tool_calls", {})
             read_calls = [record for record in file_calls.values() if record.get("tool_name") == "read_file"]
             write_calls = [record for record in file_calls.values() if record.get("tool_name") == "write_file"]
-            if len(read_calls) != 2 or len(write_calls) != 1:
-                raise RuntimeError("Hermes native file tools did not perform the expected reads and edit")
+            if len(read_calls) != 3 or len(write_calls) != 2:
+                raise RuntimeError("Hermes native file tools did not re-inspect and correct the failing edit")
             try:
                 read_payloads = [json.loads(record["result"]) for record in read_calls]
-                write_payload = json.loads(write_calls[0]["result"])
+                write_payloads = [json.loads(record["result"]) for record in write_calls]
             except (KeyError, TypeError, ValueError) as exc:
                 raise RuntimeError("Hermes native file tool returned no structured trusted result") from exc
             if sorted(payload.get("content", "") for payload in read_payloads) != sorted((
                 "1|def answer():\n2|    return 41\n3|",
                 "1|import unittest\n2|from calc import answer\n3|\n4|class AnswerTest(unittest.TestCase):\n5|    def test_answer(self):\n6|        self.assertEqual(answer(), 42)\n7|",
+                "1|def answer():\n2|    return 40\n3|",
             )):
-                raise RuntimeError("Hermes native file reads did not return the fixture source")
+                raise RuntimeError("Hermes native file reads did not return initial and post-failure source")
             if (
-                write_calls[0].get("args", {}).get("path") != "calc.py"
-                or write_payload.get("verified") is not True
-                or write_payload.get("resolved_path") != "/workspace/calc.py"
+                any(row.get("args", {}).get("path") != "calc.py" for row in write_calls)
+                or any(row.get("verified") is not True for row in write_payloads)
+                or any(row.get("resolved_path") != "/workspace/calc.py" for row in write_payloads)
             ):
                 raise RuntimeError("Hermes native file edit did not verify the expected workspace path")
             test_records = [record for record in calls.values() if "test_evidence" in record]
+            successful_test_records = [
+                record for record in test_records
+                if record.get("test_evidence", {}).get("exit_code") == 0
+                and record.get("terminal_result", {}).get("exit_code") == 0
+            ]
             commit_records = [record for record in calls.values() if "commit_invocation" in record]
-            if len(test_records) != 1 or len(commit_records) != 1:
-                raise RuntimeError("Hermes lifecycle evidence did not capture exactly one test and commit")
-            test_record = test_records[0]
+            if len(successful_test_records) != 1 or len(commit_records) != 1:
+                raise RuntimeError("Hermes lifecycle evidence did not capture one passing test and one commit")
+            test_record = successful_test_records[0]
             commit_record = commit_records[0]
             if test_record.get("terminal_result", {}).get("exit_code") != 0:
                 raise RuntimeError("Hermes focused test did not pass")
+            if not any(
+                record.get("command") == "python3 -m unittest -q test_missing"
+                and record.get("terminal_result", {}).get("exit_code") not in (None, 0)
+                for record in calls.values()
+            ):
+                raise RuntimeError("Hermes did not recover from the intentional bad test path")
+            if not any(
+                record.get("command") == "python3 -m unittest -q"
+                and record.get("terminal_result", {}).get("exit_code") not in (None, 0)
+                for record in calls.values()
+            ):
+                raise RuntimeError("Hermes did not observe the intentionally incorrect edit failing")
+            if len(write_calls) != 2:
+                raise RuntimeError("Hermes did not adjust the source after the failing test")
+            if not all(call_id in calls for call_id in (
+                "test-fails-09", "read-after-failure-10", "edit-file-11", "test-12", "commit-15",
+            )):
+                raise RuntimeError("Hermes did not complete the scripted recovery sequence")
             if not any(
                 record.get("terminal_result", {}).get("exit_code", 0) != 0
                 and "cinder-sandbox-probe" in record.get("command", "")
@@ -183,6 +210,7 @@ def main() -> int:
                 head=raw_commit["head"],
                 status_entries=frozenset(tuple(item) for item in raw_commit["status_entries"]),
                 expected_paths=_path_set(raw_commit["expected_paths"]),
+                source_fingerprint=raw_commit["source_fingerprint"],
                 command=raw_commit["command"],
                 task_id=raw_commit["task_id"],
                 session_id=raw_commit["session_id"],

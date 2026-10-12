@@ -88,6 +88,7 @@ _CODING_EDIT_REQUEST = re.compile(
     r"^\s*(?:(?:please|now|go\s+ahead\s+and)\s+)?"
     r"(?:fix|edit|change|modify|write|add|remove|delete|create|implement|revert|undo)\b"
     r"|\b(?:make|apply)\s+(?:the\s+)?(?:change|fix|patch)\b"
+    r"|^\s*(?:(?:please|now)\s+){0,2}make\s+(?:a|an|the)\s+(?:(?:small|minor|partial|incomplete|deliberate(?:ly)?|wrong|first|plausible|temporary)\s+)*(?:change|correction|edit|patch)\b"
     r"|\b(?:can|could|would|will|need|want)\s+you\s+(?:to\s+)?(?:please\s+)?"
     r"(?:fix|edit|change|modify|write|add|remove|delete|create|implement|revert|undo)\b",
     re.IGNORECASE,
@@ -198,6 +199,16 @@ def _stop_process(process: subprocess.Popen) -> None:
 
 def _explicit_commit(text: str) -> bool:
     import re
+    # A nearby positive verb such as “make the change” must not override an
+    # explicit current-turn instruction to defer or avoid committing.
+    if re.search(
+        r"\b(?:do\s+not|don't|dont|never|no)\s+commit\b|"
+        r"\bwithout\s+committing\b|\bhold\s+off\s+(?:on\s+)?committing\b|"
+        r"\bwait\s+to\s+commit\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return False
     return bool(re.search(
         r"\b(?:commit\s+(?:the\s+)?(?:fix|change|result|work)|"
         r"make\b.{0,120}\bcommit\b|commit\s+it|please\s+commit|"
