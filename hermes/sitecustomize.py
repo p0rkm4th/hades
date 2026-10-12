@@ -3136,11 +3136,22 @@ def _hades_direct_grocy_recipe_read(user_text, expiring_product_ids=None):
             by_recipe.setdefault(int(row["recipe_id"]), []).append(row)
         if ingredient_detail_request:
             requested = ingredient_recipe_name.casefold()
+            normalize_recipe_name = lambda value: re.sub(
+                r"[^a-z0-9]+", "", str(value or "").casefold()
+            )
             selected = [
                 row for row in recipes
                 if isinstance(row, dict)
                 and str(row.get("name") or "").strip().casefold() == requested
             ]
+            if not selected:
+                requested_key = normalize_recipe_name(ingredient_recipe_name)
+                selected = [
+                    row for row in recipes
+                    if isinstance(row, dict)
+                    and requested_key
+                    and requested_key in normalize_recipe_name(row.get("name"))
+                ]
             if len(selected) != 1:
                 return (
                     f"I couldn't match {ingredient_recipe_name!r} to one saved Grocy recipe. "

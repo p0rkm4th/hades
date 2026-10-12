@@ -150,6 +150,19 @@ try:
     assert "Unrelated Product" not in ingredients
     assert all(method == "GET" for _, method, _ in grocy_requests)
     assert {path for path, _, _ in grocy_requests} == set(grocy_payloads)
+    grocy_payloads["/api/objects/recipes"][0]["name"] = "Family: Chicken Cordon Bleu"
+    grocy_requests.clear()
+    ingredients = scope["_hades_direct_grocy_recipe_read"](
+        "what ingredients are in Chicken Cordon Bleu?"
+    )
+    assert "Grocy lists these ingredients for Family: Chicken Cordon Bleu" in ingredients
+    assert "Synthetic Chicken (2 pieces)" in ingredients
+    grocy_payloads["/api/objects/recipes"][1]["name"] = "Chicken Cordon Bleu Special"
+    grocy_requests.clear()
+    ambiguous = scope["_hades_direct_grocy_recipe_read"](
+        "what ingredients are in Chicken Cordon Bleu?"
+    )
+    assert "couldn't match" in ambiguous
     grocy_requests.clear()
     assert scope["_hades_direct_grocy_recipe_read"](
         "what ingredients do i have in my kiytchen?"
