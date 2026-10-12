@@ -51,9 +51,18 @@ class CodingWorkspacePoolTests(unittest.TestCase):
 
     def test_one_conversation_reuses_its_clone(self) -> None:
         first = self.resolve("conversation-one")
+        self.assertNotEqual(first.root, self.source)
+        (first.root / "app.py").write_text("def answer(): return 43\n", encoding="utf-8")
         second = self.resolve("conversation-one")
         self.assertEqual(first.root, second.root)
-        self.assertNotEqual(first.root, self.source)
+        self.assertEqual(
+            (second.root / "app.py").read_text(encoding="utf-8"),
+            "def answer(): return 43\n",
+        )
+        self.assertEqual(
+            (self.source / "app.py").read_text(encoding="utf-8"),
+            "def answer(): return 42\n",
+        )
         result = subprocess.run(
             ["git", "-C", str(first.root), "config", "user.name"],
             check=True, capture_output=True, text=True,
