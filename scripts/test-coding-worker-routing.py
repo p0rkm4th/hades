@@ -9,13 +9,50 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from hermes.coding_worker import (  # noqa: E402
+    CodingWorkerError,
     coding_worker_conversation_allowed,
     should_route_to_coding_worker,
     _workspace_mutation_authorized,
+    _validate_worker_result_identity,
 )
 
 
 class CodingWorkerRoutingTests(unittest.TestCase):
+    def test_worker_result_requires_hades_ids_but_not_hermes_turn_id(self) -> None:
+        result = {
+            "subject": "owner-1",
+            "session_id": "conversation-1",
+            "task_id": "task-1",
+            "turn_id": "hades-turn-1",
+            "completed": True,
+        }
+        self.assertIs(
+            _validate_worker_result_identity(
+                result,
+                subject="owner-1",
+                session_id="conversation-1",
+                task_id="task-1",
+                turn_id="hades-turn-1",
+            ),
+            result,
+        )
+        for key, value in (
+            ("subject", "other-owner"),
+            ("session_id", "other-conversation"),
+            ("task_id", "other-task"),
+            ("turn_id", "other-turn"),
+        ):
+            with self.subTest(key=key):
+                mismatched = dict(result, **{key: value})
+                with self.assertRaises(CodingWorkerError):
+                    _validate_worker_result_identity(
+                        mismatched,
+                        subject="owner-1",
+                        session_id="conversation-1",
+                        task_id="task-1",
+                        turn_id="hades-turn-1",
+                    )
+
     def test_workspace_requests_route(self) -> None:
         for prompt in (
             "inspect this repo and explain why the test is failing",

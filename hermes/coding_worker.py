@@ -44,6 +44,32 @@ class CodingWorkerError(RuntimeError):
     """The isolated coding execution was not proven complete."""
 
 
+def _validate_worker_result_identity(
+    worker_result: Any,
+    *,
+    subject: str,
+    session_id: str,
+    task_id: str,
+    turn_id: str,
+) -> dict[str, Any]:
+    """Validate the HADES-generated identities bound to this worker turn.
+
+    Hermes' optional result turn ID is not an authority or evidence source;
+    HADES task/session/turn IDs and terminal call records bind the execution.
+    """
+    if not isinstance(worker_result, dict) or worker_result.get("subject") != subject:
+        raise CodingWorkerError(
+            "isolated Hermes worker identity did not match the authenticated owner"
+        )
+    if any(worker_result.get(key) != expected for key, expected in (
+        ("session_id", session_id), ("task_id", task_id), ("turn_id", turn_id),
+    )):
+        raise CodingWorkerError(
+            "isolated Hermes worker task identity did not match the server request"
+        )
+    return worker_result
+
+
 _CODING_OBJECT = re.compile(
     r"\b(?:repo(?:sitory)?|project|workspace|file|tests?|code|bug|function|script|"
     r"patch|diff|commit|command|python|javascript|typescript|rust|go)\b",
@@ -360,19 +386,29 @@ def run_coding_worker(
             worker_result = json.loads(lines[-1][len(RESULT_PREFIX):])
         except (ValueError, TypeError) as exc:
             raise CodingWorkerError("isolated Hermes worker result was malformed") from exc
-        if not isinstance(worker_result, dict) or worker_result.get("subject") != subject:
-            raise CodingWorkerError("isolated Hermes worker identity did not match the authenticated owner")
-        if any(worker_result.get(key) != expected for key, expected in (
-            ("session_id", session_id), ("task_id", task_id), ("turn_id", turn_id),
-        )):
-            raise CodingWorkerError("isolated Hermes worker task identity did not match the server request")
+        worker_result = _validate_worker_result_identity(
+            worker_result,
+            subject=subject,
+            session_id=session_id,
+            task_id=task_id,
+            turn_id=turn_id,
+        )
+        if worker_result.get("completed") is not True:
+            if before.head != after.head or before.status_entries != after.status_entries:
+                return {
+                    "outcome": "VERIFY",
+                    "reason": "Hermes ended without a completed result after repository state changed",
+                    "head_before": before.head,
+                    "head_after": after.head,
+                    "branch": after.branch,
+                    "changed_paths": sorted(path for _, path in after.status_entries),
+                    "mutated": True,
+                }
+            raise CodingWorkerError("Hermes coding turn did not complete")
 
         records = worker_result.get("tool_records")
         if not isinstance(records, dict):
             records = {}
-        hermes_turn_id = worker_result.get("hermes_turn_id")
-        if not isinstance(hermes_turn_id, str) or not hermes_turn_id:
-            raise CodingWorkerError("Hermes did not return its server-generated turn identity")
         test_evidence = None
         current_turn_test_evidence = None
         current_test_attempted = False
