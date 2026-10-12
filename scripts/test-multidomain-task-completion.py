@@ -221,6 +221,25 @@ with tempfile.TemporaryDirectory(prefix="hades-multidomain-finance-") as temp:
         assert "posted net spending at 7 Brew is $20.50" in third, third
         assert "Pending transactions total $3.00" in third, third
         assert "100.00" not in third
+        original_homelab_intent = scope["_hades_is_homelab_intent"]
+        def missing_overlay_alias_helper(_text):
+            raise NameError("_hades_configured_homelab_alias_match")
+        scope["_hades_is_homelab_intent"] = missing_overlay_alias_helper
+        try:
+            same_chat_query = scope["_hades_finance_followup_query"](
+                "Calculate how much I spent there", [
+                    {"role": "user", "content": "How much have I spent at 7 Brew year-to-date?"},
+                    {"role": "assistant", "content": first},
+                    {"role": "user", "content": "But I need to know"},
+                    {"role": "assistant", "content": second},
+                    {"role": "user", "content": "Calculate how much I spent there"},
+                ], "owner",
+            )
+            assert "7 Brew" in same_chat_query and "year-to-date" in same_chat_query
+            recovered = finance(same_chat_query)
+            assert "posted net spending at 7 Brew is $20.50" in recovered, recovered
+        finally:
+            scope["_hades_is_homelab_intent"] = original_homelab_intent
     finally:
         if old is None:
             os.environ.pop("HADES_FINANCE_CSV_PATH", None)

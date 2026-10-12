@@ -3702,7 +3702,18 @@ def _hades_finance_followup_query(user_text, conversation_history, scope):
             continue
         if finance_pattern.search(prior) and re.search(r"\b(?:at|with|from)\s+\w", prior, re.IGNORECASE):
             return prior + "\n" + current
-        if _hades_is_household_inventory_intent(prior) or _hades_is_homelab_intent(prior):
+        try:
+            prior_is_homelab = _hades_is_homelab_intent(prior)
+        except NameError:
+            # A deployment-local overlay can lack a transitive alias helper.
+            # Finance follow-up resolution must still complete or stop at a
+            # direct domain boundary instead of turning the whole turn empty.
+            prior_is_homelab = bool(re.search(
+                r"\b(?:network|homelab|home\s+lab|proxmox|nodes?|thanatos)\b",
+                prior,
+                re.IGNORECASE,
+            ))
+        if _hades_is_household_inventory_intent(prior) or prior_is_homelab:
             break
     return current
 
