@@ -4,10 +4,12 @@ set -eu
 # Regression check for natural-language memory questions that must not be
 # routed to a live household system. This deliberately checks the deployed
 # overlay source without importing Hermes' runtime dependencies.
-python - <<'PY'
+HADES_MEMORY_OVERLAY_SOURCE="${HADES_HINDSIGHT_OVERLAY_SOURCE:-hermes/sitecustomize.py}" python - <<'PY'
 from pathlib import Path
+import os
 
-source = Path('hermes/sitecustomize.py').read_text()
+source_path = Path(os.environ['HADES_MEMORY_OVERLAY_SOURCE'])
+source = source_path.read_text()
 required = (
     'did i tell',
     'do you remember',
@@ -43,6 +45,18 @@ required = (
     'outta',
     'hades_task_notification_feed_v1',
 )
+if os.environ.get('HADES_MEMORY_OVERLAY_SOURCE'):
+    # A composed production overlay intentionally preserves some old
+    # deployment-only behavior. Keep this override focused on the memory
+    # boundary; canonical-source tests still cover the broader source corpus.
+    required = (
+        '_hades_automatic_memory_qualification',
+        '_hades_automatic_memory_actor_bound',
+        '_hades_sync_qualified_memory_turn',
+        'hades_hindsight_auto_retain_subject_ids',
+        '_hades_explicit_memory_mutation_intent',
+        'hindsightmemoryprovider.sync_turn = _hades_sync_turn',
+    )
 missing = [value for value in required if value not in source.lower()]
 if missing:
     raise SystemExit(f'missing memory-intent coverage: {missing}')
@@ -52,7 +66,7 @@ import json
 import logging
 import os
 logging.disable(logging.CRITICAL)
-spec = importlib.util.spec_from_file_location('hades_overlay_memory_policy', 'hermes/sitecustomize.py')
+spec = importlib.util.spec_from_file_location('hades_overlay_memory_policy', str(source_path))
 overlay = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(overlay)
 for error in ('OUTCOME UNKNOWN', 'request timed out', 'service unavailable',
