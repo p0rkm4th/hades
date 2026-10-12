@@ -2,6 +2,7 @@
 """Check bounded automatic-retain composition preserves deployment-only code."""
 from __future__ import annotations
 
+import ast
 import subprocess
 import sys
 import tempfile
@@ -35,8 +36,21 @@ old_hook = '''    def _hades_sync_turn(self, user_content, assistant_content, *,
         return _hades_original_sync_turn(self, user_content, assistant_content, session_id=session_id)
 '''
 _, active_defs = composer.definitions(active, "active fixture")
+agent_init = next(
+    node for node in ast.walk(ast.parse(active))
+    if isinstance(node, ast.FunctionDef) and node.name == "_hades_agent_init"
+)
+bank_selection = composer.memory_bank_selection(agent_init, "fixture agent initialization")
 old_nonpersonal = "def _hades_nonpersonal_state_turn(user_text):\n    return False\n"
 old_skip = "def _hades_should_skip_automatic_memory(user_content, assistant_content):\n    return True\n"
+old_bank_selection = (
+    '            if memory_scope == "owner":\n'
+    '                memory_bank = "hades-owner"\n'
+    '            elif memory_scope == "household" and subject:\n'
+    '                memory_bank = f"hades-user-{subject}"\n'
+    '            else:\n'
+    '                memory_bank = "hades-denied"\n'
+)
 active_lines = active.splitlines(keepends=True)
 edits = [
     (active_defs[composer.RUNTIME_HOOK].lineno - 1, active_defs[composer.RUNTIME_HOOK].end_lineno, old_hook),
@@ -44,6 +58,7 @@ edits = [
      active_defs["_hades_nonpersonal_state_turn"].end_lineno, old_nonpersonal),
     (active_defs["_hades_should_skip_automatic_memory"].lineno - 1,
      active_defs["_hades_should_skip_automatic_memory"].end_lineno, old_skip),
+    (bank_selection.lineno - 1, bank_selection.end_lineno, old_bank_selection),
 ]
 for start, end, replacement in sorted(edits, reverse=True):
     active_lines[start:end] = [replacement]
@@ -56,6 +71,8 @@ for name in (*composer.CONSTANTS, *composer.REPLACED_CONSTANTS, *composer.FUNCTI
     assert candidate.count(name) >= 1
 assert "def _hades_nonpersonal_state_turn(user_text):\n    return False" not in candidate
 assert "def _hades_should_skip_automatic_memory(user_content, assistant_content):\n    return True" not in candidate
+assert old_bank_selection not in candidate
+assert "memory_bank = _hades_hindsight_bank_for_subject(subject)" in candidate
 compile(candidate, "<test-composed-overlay>", "exec")
 
 with tempfile.TemporaryDirectory(prefix="hades-auto-retain-compose-") as temporary:

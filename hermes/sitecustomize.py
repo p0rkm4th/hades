@@ -7747,12 +7747,30 @@ def _hades_automatic_memory_actor_bound(provider, session_id):
         for value in os.environ.get("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS", "").split(",")
         if value.strip()
     }
+    expected_bank = _hades_hindsight_bank_for_subject(subject)
     return bool(
         session
         and subject in allowed
         and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", subject)
-        and bank == f"hades-user-{subject}"
+        and bank == expected_bank
+        and expected_bank != "hades-denied"
     )
+
+
+def _hades_hindsight_bank_for_subject(subject):
+    """Resolve a private Hindsight bank from the authenticated subject.
+
+    The legacy ``hades-owner`` bank belongs only to the configured primary
+    owner's subject. Other owner-equivalent acceptance identities receive
+    their own subject bank so test users cannot see or pollute personal memory.
+    """
+    subject = str(subject or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", subject):
+        return "hades-denied"
+    primary_owner = os.environ.get("HADES_HINDSIGHT_OWNER_MEMORY_SUBJECT_ID", "").strip()
+    if primary_owner and subject == primary_owner:
+        return "hades-owner"
+    return f"hades-user-{subject}"
 
 
 def _hades_sync_qualified_memory_turn(provider, user_content, assistant_content, session_id, sync_turn):
@@ -9062,7 +9080,9 @@ try:
                 return "I couldn't store that memory safely; the fact was empty or too long."
             if _HADES_MEMORY_SECRET.search(fact):
                 return "I can't store passwords, access tokens, private keys, or recovery codes in Hindsight memory."
-        bank = "hades-owner" if scope == "owner" else f"hades-user-{subject}"
+        bank = _hades_hindsight_bank_for_subject(subject)
+        if bank == "hades-denied":
+            return "I couldn't access private memory for an unbound account."
         try:
             _hades_ensure_memory_bank(bank)
             client = _HindsightClient(os.environ.get("HADES_HINDSIGHT_URL", "http://127.0.0.1:8888"), timeout=30)
@@ -9758,10 +9778,8 @@ try:
         # request has no validated subject.
         memory_scope = getattr(self, "_hades_session_scope", "")
         if self._memory_manager and self._memory_manager.providers:
-            if memory_scope == "owner":
-                memory_bank = "hades-owner"
-            elif memory_scope == "household" and subject:
-                memory_bank = f"hades-user-{subject}"
+            if memory_scope in {"owner", "household"} and subject:
+                memory_bank = _hades_hindsight_bank_for_subject(subject)
             else:
                 memory_bank = "hades-denied"
             for memory_provider in self._memory_manager.providers:

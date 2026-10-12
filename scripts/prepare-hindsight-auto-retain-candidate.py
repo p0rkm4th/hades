@@ -24,6 +24,7 @@ FUNCTIONS = (
     "_hades_configured_homelab_alias_match",
     "_hades_configured_homelab_records",
     "_hades_homelab_service_placement_intent",
+    "_hades_hindsight_bank_for_subject",
     "_hades_automatic_memory_qualification",
     "_hades_automatic_memory_actor_bound",
     "_hades_sync_qualified_memory_turn",
@@ -72,6 +73,36 @@ def source_block(source_lines: list[str], nodes: list[ast.AST]) -> str:
         "".join(source_lines[node.lineno - 1:node.end_lineno]).rstrip("\n")
         for node in ordered
     ) + "\n\n\n"
+
+
+def memory_bank_selection(function: ast.AST, label: str) -> ast.If:
+    matches = [
+        node for node in ast.walk(function)
+        if isinstance(node, ast.If)
+        and any(isinstance(part, ast.Name) and part.id == "memory_scope" for part in ast.walk(node.test))
+        and any(
+            isinstance(part, ast.Assign)
+            and any(isinstance(target, ast.Name) and target.id == "memory_bank" for target in part.targets)
+            for part in ast.walk(node)
+        )
+    ]
+    parents = {
+        child: parent
+        for parent in ast.walk(function)
+        for child in ast.iter_child_nodes(parent)
+    }
+    roots = []
+    for node in matches:
+        parent = parents.get(node)
+        while parent is not None and parent is not function:
+            if parent in matches:
+                break
+            parent = parents.get(parent)
+        else:
+            roots.append(node)
+    if len(roots) != 1:
+        raise ValueError(f"{label} must contain one trusted memory-bank selection block")
+    return roots[0]
 
 
 def compose(active_bytes: bytes, source_bytes: bytes) -> bytes:
@@ -127,11 +158,31 @@ def compose(active_bytes: bytes, source_bytes: bytes) -> bytes:
     if "_hades_sync_qualified_memory_turn" not in hook_calls:
         raise ValueError("canonical runtime hook does not call the qualified retain boundary")
 
+    active_agent_init = [
+        node for node in ast.walk(active and ast.parse(active_text))
+        if isinstance(node, ast.FunctionDef) and node.name == "_hades_agent_init"
+    ]
+    source_agent_init = [
+        node for node in ast.walk(source and ast.parse(source_text))
+        if isinstance(node, ast.FunctionDef) and node.name == "_hades_agent_init"
+    ]
+    if len(active_agent_init) != 1 or len(source_agent_init) != 1:
+        raise ValueError("overlay must contain one HADES agent initialization hook")
+    if ast.dump(active_agent_init[0].args) != ast.dump(source_agent_init[0].args):
+        raise ValueError("HADES agent initialization signature differs; refusing to compose")
+    active_bank_selection = memory_bank_selection(active_agent_init[0], "active agent initialization")
+    source_bank_selection = memory_bank_selection(source_agent_init[0], "canonical agent initialization")
+
     edits = [
         *[
             (active[name].lineno - 1, active[name].end_lineno, replacement_text[name])
             for name in (*REPLACED_CONSTANTS, *REPLACED_FUNCTIONS)
         ],
+        (
+            active_bank_selection.lineno - 1,
+            active_bank_selection.end_lineno,
+            source_block(source_lines, [source_bank_selection]),
+        ),
         (active[INSERT_BEFORE].lineno - 1, active[INSERT_BEFORE].lineno - 1, additions),
     ]
     result = active_lines[:]

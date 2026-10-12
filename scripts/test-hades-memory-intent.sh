@@ -23,6 +23,7 @@ required = (
     '_hades_should_skip_automatic_memory',
     '_hades_automatic_memory_qualification',
     '_hades_automatic_memory_actor_bound',
+    '_hades_hindsight_bank_for_subject',
     '_hades_sync_qualified_memory_turn',
     'hades_hindsight_auto_retain_subject_ids',
     '_hades_explicit_memory_intent',
@@ -208,11 +209,21 @@ assert overlay._hades_automatic_memory_qualification(
 
 from types import SimpleNamespace
 previous_allowlist = os.environ.get("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS")
+previous_owner_memory_subject = os.environ.get("HADES_HINDSIGHT_OWNER_MEMORY_SUBJECT_ID")
 os.environ.pop("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS", None)
 bound = SimpleNamespace(_user_id="synthetic-owner", _bank_id="hades-user-synthetic-owner")
 assert not overlay._hades_automatic_memory_actor_bound(bound, "conversation-alpha")
-os.environ["HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS"] = "synthetic-owner,synthetic-household"
+os.environ["HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS"] = "synthetic-owner,synthetic-household,real-primary-owner"
+os.environ["HADES_HINDSIGHT_OWNER_MEMORY_SUBJECT_ID"] = "real-primary-owner"
 assert overlay._hades_automatic_memory_actor_bound(bound, "conversation-alpha")
+assert overlay._hades_hindsight_bank_for_subject("synthetic-owner") == "hades-user-synthetic-owner"
+assert overlay._hades_hindsight_bank_for_subject("real-primary-owner") == "hades-owner"
+assert not overlay._hades_automatic_memory_actor_bound(
+    SimpleNamespace(_user_id="synthetic-owner", _bank_id="hades-owner"), "conversation-alpha"
+)
+assert overlay._hades_automatic_memory_actor_bound(
+    SimpleNamespace(_user_id="real-primary-owner", _bank_id="hades-owner"), "conversation-alpha"
+)
 assert not overlay._hades_automatic_memory_actor_bound(
     SimpleNamespace(_user_id="", _bank_id="hades-owner"), "conversation-alpha"
 )
@@ -271,6 +282,10 @@ if previous_allowlist is None:
     os.environ.pop("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS", None)
 else:
     os.environ["HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS"] = previous_allowlist
+if previous_owner_memory_subject is None:
+    os.environ.pop("HADES_HINDSIGHT_OWNER_MEMORY_SUBJECT_ID", None)
+else:
+    os.environ["HADES_HINDSIGHT_OWNER_MEMORY_SUBJECT_ID"] = previous_owner_memory_subject
 
 positive_mutations = (
     ('remember that I keep the spare key in the drawer', [], 'I keep the spare key in the drawer', 'retain'),

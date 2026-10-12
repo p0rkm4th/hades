@@ -27,6 +27,7 @@ FUNCTIONS = {
         "_hades_explicit_memory_recall_requested",
         "_hades_explicit_memory_mutation_intent",
         "_hades_ensure_memory_bank",
+        "_hades_hindsight_bank_for_subject",
         "_hades_direct_memory_response",
         "_hades_prefetch",
     }
@@ -37,6 +38,7 @@ REQUIRED_FUNCTIONS = {
     "_hades_explicit_memory_recall_requested",
     "_hades_explicit_memory_mutation_intent",
     "_hades_ensure_memory_bank",
+    "_hades_hindsight_bank_for_subject",
     "_hades_direct_memory_response",
     "_hades_prefetch",
 }
@@ -167,6 +169,7 @@ exec(compile(ast.Module(
         FUNCTIONS["_hades_is_hermes_auxiliary_prompt"],
         FUNCTIONS["_hades_explicit_memory_recall_requested"],
         FUNCTIONS["_hades_ensure_memory_bank"],
+        FUNCTIONS["_hades_hindsight_bank_for_subject"],
         FUNCTIONS["_hades_direct_memory_response"],
         FUNCTIONS["_hades_prefetch"],
     ],
@@ -390,11 +393,16 @@ try:
     assert "couldn't complete" in answer and "remembered" in answer, answer
     assert FakeClient.instances[-1].closed
 
-    # Owner memory remains isolated in its dedicated bank.
+    # Only the configured primary owner may use the legacy shared owner bank.
+    # An owner-equivalent synthetic account must keep its own subject bank.
+    os.environ["HADES_HINDSIGHT_OWNER_MEMORY_SUBJECT_ID"] = "owner-subject"
     state["items"] = []
     route("What is my favorite fruit?", "owner-subject", "owner")
     assert requests[-1][0].split("/banks/", 1)[1].startswith("hades-owner/"), requests[-1]
     assert FakeClient.instances[-1].calls[0][1]["bank_id"] == "hades-owner"
+    route("What is my favorite fruit?", "acceptance-owner-subject", "owner")
+    assert requests[-1][0].split("/banks/", 1)[1].startswith("hades-user-acceptance-owner-subject/"), requests[-1]
+    assert FakeClient.instances[-1].calls[0][1]["bank_id"] == "hades-user-acceptance-owner-subject"
 
     # Explicit retain remains synchronous and scoped to the authenticated user's bank.
     answer = route("Remember that I like pear", "gamma", "household")
