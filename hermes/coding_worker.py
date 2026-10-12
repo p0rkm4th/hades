@@ -58,6 +58,19 @@ _CODING_CONTINUATION = re.compile(
     r"\b(?:continue|retry|try\s+again|check\s+(?:whether|if)|revert|show\s+me\s+what\s+changed)\b",
     re.IGNORECASE,
 )
+_CODING_EDIT_REQUEST = re.compile(
+    r"^\s*(?:(?:please|now|go\s+ahead\s+and)\s+)?"
+    r"(?:fix|edit|change|modify|write|add|remove|delete|create|implement|revert|undo)\b"
+    r"|\b(?:make|apply)\s+(?:the\s+)?(?:change|fix|patch)\b"
+    r"|\b(?:can|could|would|will|need|want)\s+you\s+(?:to\s+)?(?:please\s+)?"
+    r"(?:fix|edit|change|modify|write|add|remove|delete|create|implement|revert|undo)\b",
+    re.IGNORECASE,
+)
+_CODING_TEST_REQUEST = re.compile(
+    r"\b(?:run|rerun|execute)\b.{0,80}\btests?\b"
+    r"|\btest\s+(?:it|this|the\s+(?:change|fix|code))\b",
+    re.IGNORECASE,
+)
 _CODING_SENSITIVE_DOMAIN = re.compile(
     r"\b(?:memory|remember|recall|forget|grocy|grocery|groceries|recipe|"
     r"ingredient|pantry|kitchen|stock|homelab|network|proxmox|netbox|"
@@ -164,6 +177,22 @@ def _explicit_commit(text: str) -> bool:
     ))
 
 
+def _workspace_mutation_authorized(prompt: str, history: list[dict[str, str]]) -> bool:
+    """Authorize workspace writes only for current edit/test intent or its continuation."""
+    if _CODING_EDIT_REQUEST.search(prompt) or _CODING_TEST_REQUEST.search(prompt):
+        return True
+    if not _CODING_CONTINUATION.search(prompt):
+        return False
+    previous_user_request = next(
+        (row["content"] for row in reversed(history) if row.get("role") == "user"),
+        "",
+    )
+    return bool(
+        _CODING_EDIT_REQUEST.search(previous_user_request)
+        or _CODING_TEST_REQUEST.search(previous_user_request)
+    )
+
+
 def run_coding_worker(
     *,
     subject: str,
@@ -230,6 +259,7 @@ def run_coding_worker(
         forbidden_roots=tuple(forbidden_roots),
     )
     commit_authorized = _explicit_commit(prompt)
+    workspace_mutation_authorized = _workspace_mutation_authorized(prompt, history)
     session_id = conversation_id
     task_id = uuid.uuid4().hex
     turn_id = uuid.uuid4().hex
@@ -276,6 +306,7 @@ def run_coding_worker(
                         unix_socket=socket_path,
                         enable_loopback=True,
                         writable_git_metadata=commit_authorized,
+                        workspace_read_only=not workspace_mutation_authorized,
                     )
                 except Exception as exc:
                     after = snapshot_repository(

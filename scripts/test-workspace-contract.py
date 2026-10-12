@@ -613,6 +613,30 @@ class WorkspaceContractTests(unittest.TestCase):
         self.assertEqual(allowed.returncode, 0, allowed.stderr)
         self.assertEqual(self.git("config", "user.name"), "Authorized Test")
 
+    def test_commit_turn_can_write_git_metadata_without_source_write_access(self) -> None:
+        self.require_namespace()
+        original_source = (self.repo / "calc.py").read_text(encoding="utf-8")
+        denied = run_isolated_workspace(
+            self.binding.repository,
+            ["python3", "-c", "open('/workspace/calc.py', 'w').write('unapproved')"],
+            workspace_read_only=True,
+        )
+        self.assertNotEqual(denied.returncode, 0)
+        self.assertEqual((self.repo / "calc.py").read_text(encoding="utf-8"), original_source)
+        self.assertNotEqual(self.git("status", "--porcelain"), "")
+
+        committed = run_isolated_workspace(
+            self.binding.repository,
+            ["git", "commit", "-qm", "explicitly authorized commit"],
+            writable_git_metadata=True,
+            workspace_read_only=True,
+        )
+        self.assertEqual(committed.returncode, 0, committed.stderr)
+        self.assertNotEqual(self.git("rev-parse", "HEAD"), self.before.head)
+        committed_paths = self.git("diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD")
+        self.assertEqual(committed_paths.splitlines(), ["calc.py"])
+        self.assertEqual(self.git("status", "--porcelain"), "?? __pycache__/")
+
     def test_disposable_workspace_timeout_is_reported_without_success(self) -> None:
         self.require_namespace()
         with self.assertRaises(RuntimeError):

@@ -30,8 +30,9 @@ def run_isolated_workspace(
     unix_socket: Path | None = None,
     enable_loopback: bool = False,
     writable_git_metadata: bool = False,
+    workspace_read_only: bool = False,
 ) -> subprocess.CompletedProcess[str]:
-    """Run one process with a single writable workspace and bounded read-only mounts."""
+    """Run one process with a bounded workspace and read-only runtime mounts."""
     if os.geteuid() == 0:
         raise RuntimeError("rootless workspace execution is unavailable to a root test runner")
     unshare = shutil.which("unshare", path="/usr/bin:/bin")
@@ -82,7 +83,8 @@ workspace="$2"
 enable_loopback="$4"
 git_writable="$5"
 git_present="$6"
-shift 6
+workspace_read_only="$7"
+shift 7
 mount -t tmpfs -o size=512m tmpfs "$root"
 for directory in usr bin lib lib64 workspace proc dev tmp home opt run/hades-inference; do mkdir -p "$root/$directory"; done
 for system_path in /usr /bin /lib /lib64; do
@@ -94,10 +96,18 @@ for system_path in /usr /bin /lib /lib64; do
     fi
 done
 mount --bind "$workspace" "$root/workspace"
-mount -o remount,bind,nosuid,nodev "$root/workspace"
-if [ "$git_present" = "1" ] && [ "$git_writable" = "0" ]; then
+if [ "$workspace_read_only" = "1" ]; then
+    mount -o remount,bind,ro,nosuid,nodev "$root/workspace"
+else
+    mount -o remount,bind,rw,nosuid,nodev "$root/workspace"
+fi
+if [ "$git_present" = "1" ]; then
     mount --bind "$workspace/.git" "$root/workspace/.git"
-    mount -o remount,bind,ro,nosuid,nodev "$root/workspace/.git"
+    if [ "$git_writable" = "1" ]; then
+        mount -o remount,bind,rw,nosuid,nodev "$root/workspace/.git"
+    else
+        mount -o remount,bind,ro,nosuid,nodev "$root/workspace/.git"
+    fi
 fi
 if [ "$socket_path" != "" ]; then
     : > "$root/run/hades-inference/model.sock"
@@ -146,6 +156,7 @@ exit "$worker_status"
         "1" if enable_loopback else "0",
         "1" if writable_git_metadata else "0",
         "1" if has_git_dir else "0",
+        "1" if workspace_read_only else "0",
         *(str(path) for path in runtime_paths), "--", *argv,
     ]
     try:

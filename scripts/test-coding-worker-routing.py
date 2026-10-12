@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from hermes.coding_worker import (  # noqa: E402
     coding_worker_conversation_allowed,
     should_route_to_coding_worker,
+    _workspace_mutation_authorized,
 )
 
 
@@ -30,6 +31,32 @@ class CodingWorkerRoutingTests(unittest.TestCase):
         self.assertTrue(should_route_to_coding_worker("continue after the failed command", history))
         self.assertTrue(should_route_to_coding_worker("check whether your last commit actually happened", history))
         self.assertTrue(should_route_to_coding_worker("revert the change you just made", history))
+
+    def test_read_only_diagnosis_does_not_authorize_workspace_mutation(self) -> None:
+        for prompt in (
+            "Inspect this project and explain why the test fails.",
+            "Why is this test failing?",
+            "Show me what changed.",
+            "Review the diff.",
+        ):
+            with self.subTest(prompt=prompt):
+                self.assertFalse(_workspace_mutation_authorized(prompt, []))
+        self.assertTrue(_workspace_mutation_authorized("Fix the failing test.", []))
+        self.assertTrue(_workspace_mutation_authorized("Could you please fix this bug?", []))
+        self.assertTrue(_workspace_mutation_authorized("I need you to change this function.", []))
+        self.assertTrue(_workspace_mutation_authorized("Run the focused test.", []))
+        self.assertFalse(_workspace_mutation_authorized("Commit the fix.", []))
+        self.assertFalse(_workspace_mutation_authorized("Do not edit anything; just inspect it.", []))
+
+    def test_continuation_inherits_only_recent_edit_or_test_intent(self) -> None:
+        self.assertTrue(_workspace_mutation_authorized(
+            "continue after the failed command",
+            [{"role": "user", "content": "Fix the failing test."}],
+        ))
+        self.assertFalse(_workspace_mutation_authorized(
+            "continue after the failed command",
+            [{"role": "user", "content": "Inspect this project and explain the failure."}],
+        ))
 
     def test_ordinary_chat_is_not_captured(self) -> None:
         for prompt in (
