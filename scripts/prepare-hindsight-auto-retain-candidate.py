@@ -25,6 +25,7 @@ FUNCTIONS = (
     "_hades_configured_homelab_records",
     "_hades_homelab_service_placement_intent",
     "_hades_hindsight_bank_for_subject",
+    "_hades_tag_auto_qualified_memory",
     "_hades_automatic_memory_qualification",
     "_hades_automatic_memory_actor_bound",
     "_hades_sync_qualified_memory_turn",
@@ -38,6 +39,7 @@ REPLACED_FUNCTIONS = (
     "_hades_nonpersonal_state_turn",
     "_hades_service_health_target",
     "_hades_should_skip_automatic_memory",
+    "_hades_direct_memory_response",
     "_hades_sync_turn",
 )
 RUNTIME_HOOK = "_hades_sync_turn"

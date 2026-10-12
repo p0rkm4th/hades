@@ -7780,6 +7780,32 @@ def _hades_hindsight_bank_for_subject(subject):
     return f"hades-user-{subject}"
 
 
+def _hades_tag_auto_qualified_memory(provider):
+    """Mark native provider writes with trusted automatic-retain provenance."""
+    if getattr(provider, "_hades_auto_qualified_tag_hook", False):
+        return True
+    original_builder = getattr(provider, "_build_retain_kwargs", None)
+    if not callable(original_builder):
+        return False
+
+    def build_with_provenance(*args, **kwargs):
+        item = original_builder(*args, **kwargs)
+        if not isinstance(item, dict):
+            raise TypeError("Hindsight retain payload must be a mapping")
+        tags = list(item.get("tags") or [])
+        if "hades-auto-qualified" not in tags:
+            tags.append("hades-auto-qualified")
+        item["tags"] = tags
+        return item
+
+    try:
+        provider._build_retain_kwargs = build_with_provenance
+        provider._hades_auto_qualified_tag_hook = True
+    except Exception:
+        return False
+    return True
+
+
 def _hades_sync_qualified_memory_turn(provider, user_content, assistant_content, session_id, sync_turn):
     """Submit only a qualified user assertion to the actor-bound native writer."""
     prior_user_context = []
@@ -7803,6 +7829,8 @@ def _hades_sync_qualified_memory_turn(provider, user_content, assistant_content,
         return decision
     if not _hades_automatic_memory_actor_bound(provider, session_id):
         return {"status": "REJECTED", "reason": "actor_binding_unavailable", "submitted": False}
+    if not _hades_tag_auto_qualified_memory(provider):
+        return {"status": "REJECTED", "reason": "provenance_unavailable", "submitted": False}
     sync_turn(provider, " ".join(str(user_content or "").split()), "", session_id=session_id)
     return {**decision, "submitted": True}
 
@@ -8995,7 +9023,6 @@ try:
         r"recall|look\s+in\s+(?:your|my)\s+memory)\b",
         re.IGNORECASE,
     )
-
     def _hades_explicit_memory_recall_requested(user_text):
         text = str(user_text or "").strip()
         if _HADES_EXPLICIT_MEMORY_RECALL.search(text):
@@ -9072,6 +9099,7 @@ try:
         owner bank for an unbound actor.
         """
         text = str(user_text or "").strip()
+        memory_recall_tags = ("hades-explicit-memory", "hades-auto-qualified")
         if scope not in {"owner", "household"} or not subject:
             return None
         recall_requested = _hades_explicit_memory_recall_requested(text)
@@ -9114,7 +9142,13 @@ try:
                     return "What should I change that memory to? I haven't changed anything."
                 from urllib.parse import quote, urlencode
                 from urllib.request import Request, urlopen
-                list_url = f"{os.environ.get('HADES_HINDSIGHT_URL', 'http://127.0.0.1:8888').rstrip('/')}/v1/default/banks/{bank}/memories/list?{urlencode({'tags': 'hades-explicit-memory', 'tags_match': 'any', 'state': 'valid', 'limit': 100})}"
+                list_query = urlencode({
+                    "tags": "hades-explicit-memory",
+                    "tags_match": "any",
+                    "state": "valid",
+                    "limit": 100,
+                })
+                list_url = f"{os.environ.get('HADES_HINDSIGHT_URL', 'http://127.0.0.1:8888').rstrip('/')}/v1/default/banks/{bank}/memories/list?{list_query}"
                 with urlopen(list_url, timeout=5) as listed_response:
                     listed = json.load(listed_response)
                 target_words = {
@@ -9217,7 +9251,11 @@ try:
             try:
                 from urllib.parse import urlencode
                 from urllib.request import urlopen
-                list_url = f"{os.environ.get('HADES_HINDSIGHT_URL', 'http://127.0.0.1:8888').rstrip('/')}/v1/default/banks/{bank}/memories/list?{urlencode({'tags': 'hades-explicit-memory', 'tags_match': 'any', 'state': 'valid', 'limit': 100})}"
+                list_query = urlencode(
+                    [("tags", tag) for tag in memory_recall_tags]
+                    + [("tags_match", "any"), ("state", "valid"), ("limit", 100)]
+                )
+                list_url = f"{os.environ.get('HADES_HINDSIGHT_URL', 'http://127.0.0.1:8888').rstrip('/')}/v1/default/banks/{bank}/memories/list?{list_query}"
                 with urlopen(list_url, timeout=2) as listed_response:
                     listed = json.load(listed_response)
                 for item in (listed.get("items", []) if isinstance(listed, dict) else []):
@@ -9255,7 +9293,7 @@ try:
                         ]
                     else:
                         entity_parts = []
-                    if "hades-explicit-memory" not in tags or not value:
+                    if not (set(memory_recall_tags) & tags) or not value:
                         continue
                     item_words = set(re.findall(r"[a-z0-9][a-z0-9'-]{2,}", value.casefold()))
                     item_overlap = content_word_overlap(item_words)
@@ -9310,7 +9348,7 @@ try:
             # direct preference/correction questions wait for an LLM-backed
             # recall on every turn.
             try:
-                response = client.recall(bank_id=bank, query=text, max_tokens=1200, budget="low", tags=["hades-explicit-memory"], tags_match="any")
+                response = client.recall(bank_id=bank, query=text, max_tokens=1200, budget="low", tags=list(memory_recall_tags), tags_match="any")
                 rows = [" ".join(str(item.text or "").split()) for item in (response.results or []) if str(item.text or "").strip()]
             finally:
                 client.close()

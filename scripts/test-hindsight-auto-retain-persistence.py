@@ -184,6 +184,12 @@ def main() -> None:
     hermes_python = Path(os.environ.get("HADES_HERMES_PYTHON", ""))
     if not hermes_python.is_file():
         raise RuntimeError("set HADES_HERMES_PYTHON to the installed Hermes 0.21.2 Python")
+    hermes_source = next((
+        parent for parent in hermes_python.parents
+        if (parent / "plugins/memory/hindsight").is_dir()
+    ), None)
+    if hermes_source is None:
+        raise RuntimeError("could not resolve Hermes source tree from HADES_HERMES_PYTHON")
     image = image_pin()
     run("docker", "image", "inspect", image)
     suffix = uuid.uuid4().hex[:10]
@@ -224,7 +230,10 @@ def main() -> None:
                 "HERMES_HOME": temp_home,
                 "HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS": "synthetic-alpha,synthetic-beta,synthetic-correction,synthetic-recall",
                 "HADES_HINDSIGHT_URL": api,
-                "PYTHONPATH": os.pathsep.join(filter(None, [str(ROOT / "hermes"), str(ROOT), env.get("PYTHONPATH", "")])),
+                "PYTHONPATH": os.pathsep.join(filter(None, [
+                    str(ROOT / "hermes"), str(ROOT), str(hermes_source),
+                    env.get("PYTHONPATH", ""),
+                ])),
             })
             worker = r'''
 import json, sys
@@ -234,9 +243,13 @@ mode, subject, session = sys.argv[1:4]
 p = HindsightMemoryProvider()
 p.initialize(session, platform="openwebui", user_id=subject, chat_id=session)
 retain_calls = []
+retained_items = []
 original_retain_batch = p._retain_batch
 def observed_retain_batch(*args, **kwargs):
     retain_calls.append(True)
+    item = args[0] if args else kwargs.get("item")
+    if isinstance(item, dict):
+        retained_items.append(item)
     return original_retain_batch(*args, **kwargs)
 p._retain_batch = observed_retain_batch
 if mode == "retain":
@@ -245,6 +258,12 @@ if mode == "retain":
     retained_payload = " ".join(p._session_turns)
     print(json.dumps({"mode": mode, "bank": p._bank_id, "subject": p._user_id,
                       "drained": drained, "retain_calls": len(retain_calls),
+                      "auto_qualified_tagged": any(
+                          "hades-auto-qualified" in (item.get("tags") or [])
+                          for item in retained_items if isinstance(item, dict)),
+                      "retained_item_tags": [
+                          item.get("tags") for item in retained_items if isinstance(item, dict)
+                      ],
                       "assistant_payload_absent": "synthetic-secret-991" not in retained_payload}))
     p.shutdown()
 elif mode == "reject":
@@ -295,12 +314,18 @@ else:
                     args.append(payload)
                 completed = subprocess.run(args,
                     cwd=ROOT, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                    timeout=90, check=True)
+                    timeout=90)
+                if completed.returncode:
+                    raise RuntimeError(
+                        f"native Hermes worker failed ({completed.returncode}): "
+                        f"{completed.stderr[-4000:]}"
+                    )
                 return json.loads(completed.stdout.strip().splitlines()[-1])
 
             retained = invoke("retain", "synthetic-alpha", "chat-alpha-a")
             if (retained["bank"] != "hades-user-synthetic-alpha" or not retained["drained"]
-                    or retained["retain_calls"] != 1 or not retained["assistant_payload_absent"]):
+                    or retained["retain_calls"] != 1 or not retained["assistant_payload_absent"]
+                    or not retained["auto_qualified_tagged"]):
                 raise RuntimeError(f"native HADES retain did not drain into actor bank: {retained}")
             if not model_requests or any(item["model"] != MODEL for item in model_requests):
                 raise RuntimeError("qualified native retain did not use the configured synthetic extraction model")

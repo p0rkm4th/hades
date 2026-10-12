@@ -51,6 +51,20 @@ old_bank_selection = (
     '            else:\n'
     '                memory_bank = "hades-denied"\n'
 )
+direct_memory = "".join(
+    source_lines[
+        source_defs["_hades_direct_memory_response"].lineno - 1:
+        source_defs["_hades_direct_memory_response"].end_lineno
+    ]
+)
+canonical_memory_bank = (
+    '        bank = _hades_hindsight_bank_for_subject(subject)\n'
+    '        if bank == "hades-denied":\n'
+    '            return "I couldn\'t access private memory for an unbound account."\n'
+)
+legacy_memory_bank = '        bank = "hades-owner" if scope == "owner" else f"hades-user-{subject}"\n'
+assert canonical_memory_bank in direct_memory
+legacy_direct_memory = direct_memory.replace(canonical_memory_bank, legacy_memory_bank, 1)
 active_lines = active.splitlines(keepends=True)
 edits = [
     (active_defs[composer.RUNTIME_HOOK].lineno - 1, active_defs[composer.RUNTIME_HOOK].end_lineno, old_hook),
@@ -59,6 +73,8 @@ edits = [
     (active_defs["_hades_should_skip_automatic_memory"].lineno - 1,
      active_defs["_hades_should_skip_automatic_memory"].end_lineno, old_skip),
     (bank_selection.lineno - 1, bank_selection.end_lineno, old_bank_selection),
+    (active_defs["_hades_direct_memory_response"].lineno - 1,
+     active_defs["_hades_direct_memory_response"].end_lineno, legacy_direct_memory),
 ]
 for start, end, replacement in sorted(edits, reverse=True):
     active_lines[start:end] = [replacement]
@@ -73,6 +89,10 @@ assert "def _hades_nonpersonal_state_turn(user_text):\n    return False" not in 
 assert "def _hades_should_skip_automatic_memory(user_content, assistant_content):\n    return True" not in candidate
 assert old_bank_selection not in candidate
 assert "memory_bank = _hades_hindsight_bank_for_subject(subject)" in candidate
+assert legacy_memory_bank not in candidate
+assert "bank = _hades_hindsight_bank_for_subject(subject)" in candidate
+assert "HADES_MEMORY_SECRET.search(fact)" in candidate
+assert '"hades-auto-qualified"' in candidate
 compile(candidate, "<test-composed-overlay>", "exec")
 
 with tempfile.TemporaryDirectory(prefix="hades-auto-retain-compose-") as temporary:

@@ -261,12 +261,47 @@ try:
     assert "mango" in answer and "pineapple" not in answer, answer
     assert requests[-1][0] == (
         "http://hindsight.synthetic:8888/v1/default/banks/"
-        "hades-user-alpha/memories/list?tags=hades-explicit-memory&tags_match=any&state=valid&limit=100"
+        "hades-user-alpha/memories/list?tags=hades-explicit-memory&tags=hades-auto-qualified&tags_match=any&state=valid&limit=100"
     ), requests[-1]
     assert requests[-1][1] == 2, requests[-1]
     client = FakeClient.instances[-1]
     assert client.calls == [], client.calls
     assert client.closed
+
+    # Direct recall can use only explicit or HADES-qualified automatic facts.
+    # Session-tagged legacy/tool-derived observations remain excluded.
+    state["items"] = [
+        {
+            "tags": ["session:synthetic-legacy"],
+            "text": "User's favorite color is amber.",
+            "entities": [{"text": "favorite color amber", "type": "world"}],
+            "updated_at": "2026-09-25T12:00:00Z",
+        },
+        {
+            "tags": ["hades-auto-qualified", "session:synthetic-automatic"],
+            "text": "User's favorite color is cobalt.",
+            "entities": [{"text": "favorite color cobalt", "type": "world"}],
+            "updated_at": "2026-09-25T12:00:00Z",
+        },
+    ]
+    answer = route("What is my favorite color?", "alpha", "owner")
+    assert "cobalt" in answer and "amber" not in answer, answer
+    assert requests[-1][0].startswith(
+        "http://hindsight.synthetic:8888/v1/default/banks/hades-user-alpha/memories/list?"
+    ), requests[-1]
+    assert FakeClient.instances[-1].calls == [], FakeClient.instances[-1].calls
+
+    state["items"] = [{
+        "tags": ["session:synthetic-legacy"],
+        "text": "User's favorite color is amber.",
+        "entities": [],
+    }]
+    FakeClient.next_recall_rows = [SimpleNamespace(text="No qualified personal fact found.")]
+    answer = route("What is my favorite color?", "alpha", "owner")
+    assert "amber" not in answer, answer
+    assert FakeClient.instances[-1].calls[0][1]["tags"] == [
+        "hades-explicit-memory", "hades-auto-qualified"
+    ]
 
     # Entity arrays are normalized to their text, not Python's repr of dicts.
     state["items"] = [

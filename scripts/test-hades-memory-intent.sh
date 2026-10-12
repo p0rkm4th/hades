@@ -24,6 +24,7 @@ required = (
     '_hades_automatic_memory_qualification',
     '_hades_automatic_memory_actor_bound',
     '_hades_hindsight_bank_for_subject',
+    '_hades_tag_auto_qualified_memory',
     '_hades_sync_qualified_memory_turn',
     'hades_hindsight_auto_retain_subject_ids',
     '_hades_explicit_memory_intent',
@@ -220,7 +221,14 @@ from types import SimpleNamespace
 previous_allowlist = os.environ.get("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS")
 previous_owner_memory_subject = os.environ.get("HADES_HINDSIGHT_OWNER_MEMORY_SUBJECT_ID")
 os.environ.pop("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS", None)
-bound = SimpleNamespace(_user_id="synthetic-owner", _bank_id="hades-user-synthetic-owner")
+def build_retain_kwargs(content, *, context=None, metadata=None, tags=None, update_mode=None):
+    return {"content": content, "context": context, "metadata": metadata, "tags": list(tags or [])}
+
+bound = SimpleNamespace(
+    _user_id="synthetic-owner",
+    _bank_id="hades-user-synthetic-owner",
+    _build_retain_kwargs=build_retain_kwargs,
+)
 assert not overlay._hades_automatic_memory_actor_bound(bound, "conversation-alpha")
 os.environ["HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS"] = "synthetic-owner,synthetic-household,real-primary-owner"
 os.environ["HADES_HINDSIGHT_OWNER_MEMORY_SUBJECT_ID"] = "real-primary-owner"
@@ -251,7 +259,10 @@ assert not overlay._hades_automatic_memory_actor_bound(
 
 submitted = []
 def spy_sync(provider, user_text, assistant_text, *, session_id):
-    submitted.append((provider._user_id, user_text, assistant_text, session_id))
+    payload = provider._build_retain_kwargs(
+        user_text, context="synthetic", metadata={}, tags=[f"session:{session_id}"]
+    )
+    submitted.append((provider._user_id, user_text, assistant_text, session_id, payload["tags"]))
     return None
 
 first = overlay._hades_sync_qualified_memory_turn(
@@ -262,7 +273,9 @@ first = overlay._hades_sync_qualified_memory_turn(
     spy_sync,
 )
 second_provider = SimpleNamespace(
-    _user_id="synthetic-household", _bank_id="hades-user-synthetic-household"
+    _user_id="synthetic-household",
+    _bank_id="hades-user-synthetic-household",
+    _build_retain_kwargs=build_retain_kwargs,
 )
 second = overlay._hades_sync_qualified_memory_turn(
     second_provider,
@@ -273,9 +286,11 @@ second = overlay._hades_sync_qualified_memory_turn(
 )
 assert first["submitted"] and second["submitted"]
 assert submitted == [
-    ("synthetic-owner", "I prefer concise technical answers.", "", "conversation-alpha"),
-    ("synthetic-household", "My cat's name is Lyxa.", "", "conversation-beta"),
+    ("synthetic-owner", "I prefer concise technical answers.", "", "conversation-alpha", ["session:conversation-alpha", "hades-auto-qualified"]),
+    ("synthetic-household", "My cat's name is Lyxa.", "", "conversation-beta", ["session:conversation-beta", "hades-auto-qualified"]),
 ], submitted
+assert overlay._hades_tag_auto_qualified_memory(bound)
+assert bound._build_retain_kwargs("again", tags=[])["tags"] == ["hades-auto-qualified"]
 before_denied = len(submitted)
 denied = overlay._hades_sync_qualified_memory_turn(
     bound, "What's in my kitchen?", "", "conversation-gamma", spy_sync
@@ -287,6 +302,17 @@ denied_actor = overlay._hades_sync_qualified_memory_turn(
 )
 assert denied_actor["reason"] == "actor_binding_unavailable", denied_actor
 assert len(submitted) == before_denied
+no_provenance_provider = SimpleNamespace(
+    _user_id="synthetic-owner", _bank_id="hades-user-synthetic-owner"
+)
+no_provenance = overlay._hades_sync_qualified_memory_turn(
+    no_provenance_provider,
+    "I prefer dark mode.",
+    "",
+    "conversation-no-provenance",
+    spy_sync,
+)
+assert no_provenance["reason"] == "provenance_unavailable" and not no_provenance["submitted"]
 if previous_allowlist is None:
     os.environ.pop("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS", None)
 else:
