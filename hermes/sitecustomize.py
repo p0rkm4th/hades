@@ -7641,13 +7641,119 @@ def _hades_install_public_research_lineage_shortcut():
 
 
 def _hades_should_skip_automatic_memory(user_content, assistant_content, conversation_history=None):
-    """Disable implicit end-of-turn retention; writes use direct bounded routes.
+    """Return whether a turn is outside the narrow automatic-retain contract.
 
-    Keep this policy dependency-free so it can be regression-tested without
-    importing Hermes or Hindsight. Explicit mutations use the authenticated
-    direct route, which has operation and target checks.
+    Hindsight's native retain mission performs fact extraction. This boundary
+    decides whether any source text may reach it: only a short, user-authored
+    durable-context assertion qualifies. Assistant text is never retained.
     """
-    return True
+    decision = _hades_automatic_memory_qualification(user_content, assistant_content)
+    return decision["status"] != "QUALIFIED"
+
+
+_HADES_MEMORY_SECRET = re.compile(
+    r"-----BEGIN (?:OPENSSH |RSA |EC |DSA )?PRIVATE KEY-----|"
+    r"\b(?:password|passphrase|secret|credential|(?:api|auth|access|refresh|session|bearer)?[ _-]?token|"
+    r"(?:api|private|ssh)[ _-]?key|session[ _-]?cookie|recovery[ _-]?(?:code|key)|"
+    r"security[ _-]?answer|authorization\s*:\s*bearer)\b"
+    r"\s*(?:is\s+|[:=]\s*)\S+",
+    re.IGNORECASE,
+)
+_HADES_DURABLE_MEMORY_CLAIMS = (
+    ("preference", re.compile(
+        r"\b(?:i\s+(?:(?:usually|tend\s+to)\s+)?(?:prefer|like|love|dislike|hate)|"
+        r"i\s+(?:usually|tend\s+to)\s+want|"
+        r"my\s+(?:favorite|favourite)\b)", re.IGNORECASE,
+    )),
+    ("relationship_name", re.compile(
+        r"\bmy\s+(?:cat|dog|pet|partner|wife|husband|spouse|child|son|daughter|"
+        r"sister|brother|mother|father|friend)\b.{0,60}\b(?:name\s+is|is\s+called)\b",
+        re.IGNORECASE,
+    )),
+    ("goal", re.compile(
+        r"\b(?:my\s+(?:long[- ]term\s+)?goal\s+is|i(?:'m|\s+am)\s+working\s+toward|"
+        r"i(?:'m|\s+am)\s+pursuing)\b", re.IGNORECASE,
+    )),
+    ("project_context", re.compile(
+        r"\bmy\s+(?:main|primary|long[- ]running)\s+project\s+is\b|"
+        r"^\s*for\s+[\w.-]+\s*,\s*(?:always\s+|going\s+forward\s+)?"
+        r"(?:use|prefer|keep|avoid)\b", re.IGNORECASE,
+    )),
+    ("future_plan", re.compile(
+        r"\b(?:i(?:'m|\s+am)\s+moving|i\s+will\s+be\s+moving)\s+(?:in|to)\s+"
+        r"(?:january|february|march|april|may|june|july|august|september|october|november|december|\d{4})\b",
+        re.IGNORECASE,
+    )),
+)
+_HADES_MEMORY_UNTRUSTED_PROVENANCE = re.compile(
+    r"\b(?:tool|test|search|web|api)\s+(?:output|result|response)\b|"
+    r"\b(?:assistant|model)\s+(?:said|thinks|inferred|concluded)\b|"
+    r"\b(?:log|transcript|document)\s+(?:says|shows|contains)\b",
+    re.IGNORECASE,
+)
+
+
+def _hades_automatic_memory_qualification(user_content, assistant_content=""):
+    """Qualify a small set of explicit, durable user-context assertions.
+
+    Hindsight's retain mission handles extraction after this boundary. This
+    function rejects canonical/live-state turns, secrets, failures, and text
+    that lacks a strong durable-context signal. It never promotes assistant
+    or tool output into a user fact.
+    """
+    raw_text = str(user_content or "")
+    text = " ".join(raw_text.split())
+    if not text or len(text) > 600 or "```" in raw_text or raw_text.count("\n") > 3:
+        return {"status": "REJECTED", "reason": "empty_or_pasted_content"}
+    if _HADES_MEMORY_SECRET.search(text):
+        return {"status": "REJECTED", "reason": "secret_like_content"}
+    if _HADES_MEMORY_UNTRUSTED_PROVENANCE.search(text):
+        return {"status": "REJECTED", "reason": "derived_or_pasted_source"}
+    if _hades_transient_error_text(assistant_content):
+        return {"status": "REJECTED", "reason": "turn_failed"}
+    if _hades_nonpersonal_state_turn(text):
+        return {"status": "REJECTED", "reason": "canonical_or_operational_state"}
+    if _hades_explicit_memory_mutation_intent(text):
+        return {"status": "EXPLICIT_ONLY", "reason": "explicit_memory_route"}
+    for category, pattern in _HADES_DURABLE_MEMORY_CLAIMS:
+        if pattern.search(text):
+            return {"status": "QUALIFIED", "reason": category}
+    return {"status": "REJECTED", "reason": "no_durable_user_context_signal"}
+
+
+def _hades_automatic_memory_actor_bound(provider, session_id):
+    """Require an opted-in subject, trusted session, and exactly its write bank.
+
+    The empty-by-default server allowlist makes rollout explicit and supports
+    synthetic-owner acceptance without enabling writes for every user.
+    """
+    subject = str(getattr(provider, "_user_id", "") or "").strip()
+    banks = getattr(provider, "_write_bank_ids", None)
+    session = str(session_id or "").strip()
+    allowed = {
+        value.strip()
+        for value in os.environ.get("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS", "").split(",")
+        if value.strip()
+    }
+    return bool(
+        session
+        and subject in allowed
+        and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", subject)
+        and isinstance(banks, (list, tuple))
+        and list(banks) == [f"hades-user-{subject}"]
+    )
+
+
+def _hades_sync_qualified_memory_turn(provider, user_content, assistant_content, session_id, sync_turn):
+    """Submit only a qualified user assertion to the actor-bound native writer."""
+    decision = _hades_automatic_memory_qualification(user_content, assistant_content)
+    if decision["status"] != "QUALIFIED":
+        decision["submitted"] = False
+        return decision
+    if not _hades_automatic_memory_actor_bound(provider, session_id):
+        return {"status": "REJECTED", "reason": "actor_binding_unavailable", "submitted": False}
+    sync_turn(provider, " ".join(str(user_content or "").split()), "", session_id=session_id)
+    return {**decision, "submitted": True}
 
 
 def _hades_subject_from_session_key(session_key):
@@ -8928,6 +9034,8 @@ try:
             fact = mutation["target"]
             if not fact or len(fact) > 1000:
                 return "I couldn't store that memory safely; the fact was empty or too long."
+            if _HADES_MEMORY_SECRET.search(fact):
+                return "I can't store passwords, access tokens, private keys, or recovery codes in Hindsight memory."
         bank = "hades-owner" if scope == "owner" else f"hades-user-{subject}"
         try:
             _hades_ensure_memory_bank(bank)
@@ -9166,22 +9274,16 @@ try:
             return "I couldn't complete that private memory operation. Nothing was represented as remembered."
 
     def _hades_sync_turn(self, user_content, assistant_content, *, session_id=""):
-        """Disable implicit turn retention; explicit writes use the direct route.
-
-        Hermes' generic automatic retain path persists the entire completed
-        turn, including live domain results. All automatic sync writes are
-        disabled; explicit memory operations use the authenticated direct route.
-        """
-        # The assistant content is untrusted and is never a write authority.
-        user_text = str(user_content or "")
-        if _hades_should_skip_automatic_memory(user_text, assistant_content):
+        result = _hades_sync_qualified_memory_turn(
+            self, user_content, assistant_content, session_id, _hades_original_sync_turn
+        )
+        if not result.get("submitted"):
             _hades_logger.info(
-                "Skipping automatic Hindsight retain; explicit memory routes handle writes"
+                "Skipping automatic Hindsight retain status=%s reason=%s",
+                result["status"], result["reason"],
             )
             return None
-        return _hades_original_sync_turn(
-            self, user_content, assistant_content, session_id=session_id
-        )
+        return None
 
     _hindsight.HindsightMemoryProvider.sync_turn = _hades_sync_turn
 

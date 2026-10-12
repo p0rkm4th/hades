@@ -189,6 +189,8 @@ jobs:
         run: bash scripts/test-hindsight-route-contract.sh
       - name: Check Hindsight worker identity contract
         run: python scripts/test-hindsight-worker-runtime-contract.py
+      - name: Check Hindsight retain mission configuration
+        run: bash scripts/test-hindsight-compose-contract.sh
       - name: Check Hindsight aggregate-only reader privacy
         run: python scripts/test-hindsight-aggregate-stats.py
       - name: Check Hindsight explicit-memory ownership and fallback

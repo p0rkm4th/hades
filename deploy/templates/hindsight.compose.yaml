@@ -15,6 +15,24 @@ services:
       HINDSIGHT_API_PORT: "8888"
       HINDSIGHT_API_ENABLE_OBSERVATIONS: "true"
       HINDSIGHT_API_WORKER_ID: ${HADES_HINDSIGHT_WORKER_ID:-hades-hindsight}
+      # Automatic HADES writes are gated to short user-authored durable
+      # context before they reach Hindsight. This native extraction mission
+      # is a second filter, not authority to retain tool or assistant output.
+      HINDSIGHT_API_RETAIN_MISSION: >-
+        Extract only explicit facts stated by the user that are likely to help
+        future conversations: stable preferences, identity and relationship
+        details, durable goals, long-running projects, durable instructions,
+        and meaningful future plans. Do not infer personality, preferences,
+        motives, or facts the user did not state. Ignore transient conversation,
+        greetings, temporary mood, one-off errors, logs, code or pasted documents,
+        assistant or tool output, and current state owned by canonical systems
+        such as finance, Grocy, homelab, Git, tasks, files, or services. Never
+        retain passwords, API keys, tokens, private keys, cookies, recovery
+        codes, or authentication material. Current user instructions and live
+        canonical sources take precedence over remembered context. When the
+        user explicitly asks HADES to remember a safe personal fact, retain
+        that stated target even if it would not qualify for automatic
+        retention; the secret and canonical-state exclusions still apply.
       HINDSIGHT_API_LLM_PROVIDER: ${HADES_HINDSIGHT_LLM_PROVIDER:-ollama}
       # Hindsight fact extraction has its own bounded model lane. Keep the
       # Hermes route as the compatibility fallback, but allow operators to

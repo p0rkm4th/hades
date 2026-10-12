@@ -124,6 +124,14 @@ def fake_urlopen(url: str, *, timeout: int):
 
 namespace = {
     "_HindsightClient": FakeClient,
+    "_HADES_MEMORY_SECRET": re.compile(
+        r"-----BEGIN (?:OPENSSH |RSA |EC |DSA )?PRIVATE KEY-----|"
+        r"\b(?:password|passphrase|secret|credential|(?:api|auth|access|refresh|session|bearer)?[ _-]?token|"
+        r"(?:api|private|ssh)[ _-]?key|session[ _-]?cookie|recovery[ _-]?(?:code|key)|"
+        r"security[ _-]?answer|authorization\s*:\s*bearer)\b"
+        r"\s*(?:is\s+|[:=]\s*)\S+",
+        re.IGNORECASE,
+    ),
     "_HADES_EXPLICIT_MEMORY_INTENT": re.compile(
         r"\b(?:remember|memorize|forget|memory|recall|do you remember|"
         r"actually my|correction)\b",
@@ -169,6 +177,10 @@ assert interpreter_check("/usr/bin/python3", "/opt/hades-hermes/bin/hermes")
 assert not interpreter_check("/opt/hades-hermes/bin/python3", "/opt/hades-hermes/bin/hermes")
 assert not interpreter_check("/usr/bin/python3", "")
 route = namespace["_hades_direct_memory_response"]
+before_secret_retain = len(FakeClient.instances)
+secret_response = route("Remember that my password is synthetic-pass-123", "gamma", "household")
+assert secret_response and "can't store passwords" in secret_response.casefold()
+assert len(FakeClient.instances) == before_secret_retain
 
 
 class FakeSemanticClient:
