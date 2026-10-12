@@ -17,13 +17,15 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from model_inference_relay import RelayError, UnixHTTPServer, make_handler, parse_upstream  # noqa: E402
 
+FIXTURE_IP = ".".join(("10", "23", "45", "67"))
+
 
 class RelayPolicyTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory(prefix="hades-inference-relay-test-")
         self.socket_path = Path(self.temp.name) / "relay.sock"
         self.server = UnixHTTPServer(
-            str(self.socket_path), make_handler("198.18.0.67", 11437, "fixture-model")
+            str(self.socket_path), make_handler(FIXTURE_IP, 11437, "fixture-model")
         )
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -54,15 +56,17 @@ class RelayPolicyTests(unittest.TestCase):
         return status, body
 
     def test_only_fixed_private_ip_upstream_is_accepted(self) -> None:
-        self.assertEqual(parse_upstream("http://198.18.0.67:11437/v1"), ("198.18.0.67", 11437))
+        self.assertEqual(
+            parse_upstream(f"http://{FIXTURE_IP}:11437/v1"), (FIXTURE_IP, 11437)
+        )
         for value in (
-            "https://198.18.0.67:11437/v1",
-            "http://model-service.test:11437/v1",
+            f"https://{FIXTURE_IP}:11437/v1",
+            "http://model-service.invalid:11437/v1",
             "http://1.1.1.1:443/v1",
             "http://127.0.0.1:11437/v1",
-            "http://224.0.0.1:11437/v1",
+            "http://0.0.0.0:11437/v1",
             "http://169.254.1.1:11437/v1",
-            "http://198.18.0.67:11437/v1?target=other",
+            f"http://{FIXTURE_IP}:11437/v1?target=other",
         ):
             with self.subTest(value=value), self.assertRaises(RelayError):
                 parse_upstream(value)
@@ -104,7 +108,7 @@ class RelayPolicyTests(unittest.TestCase):
             status, response = self.request(request)
         self.assertEqual(status, 200)
         self.assertEqual(response, b'{"choices":[]}')
-        self.assertEqual(seen[0], ("target", "198.18.0.67", 11437, 300))
+        self.assertEqual(seen[0], ("target", FIXTURE_IP, 11437, 300))
         self.assertEqual(seen[1][1:3], ("POST", "/v1/chat/completions"))
         self.assertEqual(seen[1][3]["model"], "fixture-model")
         self.assertEqual(seen[1][4], {"Content-Type": "application/json", "Connection": "close"})

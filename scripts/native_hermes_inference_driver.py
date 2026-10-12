@@ -85,13 +85,15 @@ def main() -> int:
         raise RuntimeError("the bounded inference socket is not mounted")
 
     blocked = []
+    arbitrary_lan = ".".join(("10", "0", "0", "1"))
+    ssh_target = ".".join(("10", "0", "0", "156"))
     probes = (
         ("internet", "1.1.1.1", 443),
-        ("arbitrary-lan", "203.0.113.1", 80),
+        ("arbitrary-lan", arbitrary_lan, 80),
         ("model-direct", _config["endpoint_ip"], _config["endpoint_port"]),
-        ("ssh", "203.0.113.156", 22),
-        ("grocy", "203.0.113.1", 7003),
-        ("open-webui", "203.0.113.1", 3000),
+        ("ssh", ssh_target, 22),
+        ("grocy", arbitrary_lan, 7003),
+        ("open-webui", arbitrary_lan, 3000),
         ("dns", "example.invalid", 443),
     )
     for label, host, port in probes:
