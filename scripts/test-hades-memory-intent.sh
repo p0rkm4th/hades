@@ -191,6 +191,7 @@ for text in (
     "Did you forget what's in my pantry?",
     "I can't remember my server name.",
     "Which tea do I usually like?",
+    "I am shopping for herbal tea. Which kind do I usually like?",
     "I prefer basil?",
     "My pantry currently has 4 eggs.",
     "The server is healthy.",
@@ -199,6 +200,9 @@ for text in (
     assert decision["status"] != "QUALIFIED", (text, decision)
 assert overlay._hades_automatic_memory_qualification(
     "Which tea do I usually like?"
+)["reason"] == "question_is_not_user_assertion"
+assert overlay._hades_automatic_memory_qualification(
+    "I am shopping for herbal tea. Which kind do I usually like?"
 )["reason"] == "question_is_not_user_assertion"
 assert overlay._hades_automatic_memory_qualification("remember that I prefer basil.")["status"] == "EXPLICIT_ONLY"
 assert overlay._hades_automatic_memory_qualification("I prefer basil", "The service is unavailable.")["status"] == "REJECTED"
