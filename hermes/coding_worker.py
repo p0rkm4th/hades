@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import importlib.util
+import logging
 import os
 import re
 import shutil
@@ -38,6 +39,30 @@ from hermes.workspace_sandbox import run_isolated_workspace
 
 
 RESULT_PREFIX = "HADES_CODING_RESULT="
+_LOGGER = logging.getLogger("hades.coding_worker")
+
+
+def _attach_worker_diagnostics(
+    result: dict[str, Any], *, task_id: str, started_at: float
+) -> dict[str, Any]:
+    """Attach content-free per-turn diagnostics; emit them only when opted in."""
+    result["task_id"] = task_id
+    result["elapsed_ms"] = max(0, int((time.perf_counter() - started_at) * 1000))
+    raw_names = result.get("tool_call_names")
+    names = [
+        name for name in raw_names[:128]
+        if isinstance(name, str)
+        and re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]{0,63}", name)
+    ] if isinstance(raw_names, list) else []
+    if os.environ.get("HADES_CODING_WORKER_DIAGNOSTICS", "").strip() == "1":
+        _LOGGER.info(
+            "coding worker trace task=%s elapsed_ms=%d tool_calls=%d tools=%s",
+            task_id,
+            result["elapsed_ms"],
+            len(names),
+            ",".join(names),
+        )
+    return result
 
 
 class CodingWorkerError(RuntimeError):
@@ -257,6 +282,7 @@ def run_coding_worker(
     timeout: int = 600,
 ) -> dict[str, Any]:
     """Run a single turn with trusted workspace selection and host verification."""
+    started_at = time.perf_counter()
     if not isinstance(prompt, str) or not prompt.strip() or len(prompt) > 16_000:
         raise WorkspaceDenied("coding request is missing or exceeds the bounded turn size")
     if not isinstance(history, list) or len(history) > 64:
@@ -361,7 +387,7 @@ def run_coding_worker(
                     )
                     changed_paths = sorted(path for _, path in after.status_entries)
                     changed = before.head != after.head or before.status_entries != after.status_entries
-                    return {
+                    return _attach_worker_diagnostics({
                         "outcome": "VERIFY" if changed else "FAILED",
                         "reason": "isolated worker did not complete; canonical state was reconciled",
                         "final_response": (
@@ -375,7 +401,7 @@ def run_coding_worker(
                         "changed_paths": changed_paths,
                         "mutated": changed,
                         "failure_type": type(exc).__name__,
-                    }
+                    }, task_id=task_id, started_at=started_at)
             finally:
                 _stop_process(relay)
 
@@ -562,7 +588,7 @@ def run_coding_worker(
                 f"Current state is on {after.branch} at {after.head[:12]}; "
                 f"changed paths: {', '.join(changed_paths) if changed_paths else 'none'}."
             )
-        return {
+        return _attach_worker_diagnostics({
             "outcome": outcome,
             "final_response": answer[:24_000],
             "commit": verification.outcome if commit_authorized else "NOT_REQUESTED",
@@ -575,7 +601,7 @@ def run_coding_worker(
             "mutated": before.head != after.head or before.status_entries != after.status_entries,
             "evidence_call_count": len(records),
             "tool_call_names": worker_result.get("tool_call_names", [])[:128],
-        }
+        }, task_id=task_id, started_at=started_at)
 
 
 __all__ = [

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import sys
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -14,11 +15,31 @@ from hermes.coding_worker import (  # noqa: E402
     should_route_to_coding_worker,
     _workspace_mutation_authorized,
     _explicit_commit,
+    _attach_worker_diagnostics,
     _validate_worker_result_identity,
 )
 
 
 class CodingWorkerRoutingTests(unittest.TestCase):
+    def test_opt_in_worker_diagnostics_contain_only_tool_names_and_timing(self) -> None:
+        result = {"tool_call_names": ["terminal", "read_file", "terminal"]}
+        with patch.dict("os.environ", {"HADES_CODING_WORKER_DIAGNOSTICS": "1"}), \
+             patch("hermes.coding_worker._LOGGER.info") as log_info:
+            enriched = _attach_worker_diagnostics(result, task_id="task-1", started_at=0.0)
+        self.assertEqual(enriched["task_id"], "task-1")
+        self.assertGreaterEqual(enriched["elapsed_ms"], 0)
+        self.assertEqual(log_info.call_args.args[0],
+                         "coding worker trace task=%s elapsed_ms=%d tool_calls=%d tools=%s")
+        self.assertEqual(log_info.call_args.args[3], 3)
+        self.assertEqual(log_info.call_args.args[4], "terminal,read_file,terminal")
+
+    def test_worker_diagnostics_are_silent_by_default(self) -> None:
+        result = {"tool_call_names": ["terminal"]}
+        with patch.dict("os.environ", {"HADES_CODING_WORKER_DIAGNOSTICS": "0"}), \
+             patch("hermes.coding_worker._LOGGER.info") as log_info:
+            _attach_worker_diagnostics(result, task_id="task-1", started_at=0.0)
+        log_info.assert_not_called()
+
     def test_commit_authority_respects_current_turn_negation(self) -> None:
         for prompt in (
             "Make a plausible correction, but do not commit yet.",
