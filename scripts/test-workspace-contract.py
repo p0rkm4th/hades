@@ -464,7 +464,7 @@ class WorkspaceContractTests(unittest.TestCase):
         self.git("commit", "-qm", "changed after test")
         result = self.verify(evidence=evidence)
         self.assertEqual(result.outcome, "VERIFY")
-        self.assertIn("tested source differs", result.reason)
+        self.assertIn("differs from the version covered", result.reason)
 
     def test_prior_turn_test_is_valid_when_task_and_committed_source_match(self) -> None:
         evidence = self.test_evidence
