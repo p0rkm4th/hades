@@ -210,6 +210,7 @@ def _explicit_commit(text: str) -> bool:
     ):
         return False
     return bool(re.search(
+        r"^\s*(?:please\s+)?commit\s+only\s+(?:the\s+)?[\w./-]+(?:\s+now)?(?=\s*(?:[.!?]|[,;]|$))|"
         r"\b(?:commit\s+(?:the\s+)?(?:fix|change|result|work)|"
         r"make\b.{0,120}\bcommit\b|commit\s+it|please\s+commit|"
         r"commit\s+this)\b",

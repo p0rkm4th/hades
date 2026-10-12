@@ -32,9 +32,19 @@ class CodingWorkerRoutingTests(unittest.TestCase):
             "Commit the fix.",
             "Make the change and commit it.",
             "Please commit this after the tests pass.",
+            "Commit only calc.py now.",
+            "Commit only calc.py now; leave __pycache__ out.",
         ):
             with self.subTest(prompt=prompt):
                 self.assertTrue(_explicit_commit(prompt))
+
+        for prompt in (
+            "Should we commit only calc.py now?",
+            "I could commit only calc.py now.",
+            "The instruction was to commit only calc.py now.",
+        ):
+            with self.subTest(prompt=prompt):
+                self.assertFalse(_explicit_commit(prompt))
 
     def test_worker_result_requires_hades_ids_but_not_hermes_turn_id(self) -> None:
         result = {
