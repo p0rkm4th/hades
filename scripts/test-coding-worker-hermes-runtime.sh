@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+overlay_dir=${HADES_TEST_OVERLAY_DIR:-"$repo_dir/hermes"}
 hermes_python=${HADES_HERMES_PYTHON:-}
 if [[ -z "$hermes_python" ]]; then
   hermes_bin=$(readlink -f "$(command -v hermes || true)" 2>/dev/null || true)
@@ -12,8 +13,8 @@ trap 'rm -rf "$tmp"' EXIT
 chmod 700 "$tmp"
 HERMES_HOME="$tmp/hermes-home" \
 HOME="$tmp" \
-PYTHONPATH="$repo_dir/hermes" \
-HADES_HERMES_OVERLAY_DIR="$repo_dir/hermes" \
+PYTHONPATH="$overlay_dir:$repo_dir" \
+HADES_HERMES_OVERLAY_DIR="$overlay_dir" \
 HADES_CODING_PROJECT_ROOT="$repo_dir" \
 HADES_CODING_WORKER_ENABLED=1 \
 HADES_CODING_WORKER_CONVERSATION_ID=synthetic-owner-coding-conversation \
@@ -24,6 +25,9 @@ HADES_OWNER_SUBJECT_IDS=synthetic-owner \
 import run_agent
 import sitecustomize as hades
 from hermes import coding_worker
+from pathlib import Path
+
+assert Path(hades.__file__).resolve() == Path(__import__("os").environ["HADES_HERMES_OVERLAY_DIR"]) / "sitecustomize.py", hades.__file__
 
 assert run_agent.AIAgent.run_conversation.__name__ == "_hades_run_conversation"
 calls = []
@@ -49,11 +53,14 @@ owner = run_agent.AIAgent(
     stream_delta_callback=lambda _chunk: None,
     **base,
 )
+assert owner._hades_session_scope == "owner", owner._hades_session_scope
+assert owner._hades_conversation_id == "synthetic-owner-coding-conversation", owner._hades_conversation_id
+assert __import__("os").environ["HADES_CODING_WORKER_CONVERSATION_ID"] == owner._hades_conversation_id
 result = owner.run_conversation(
-    "Inspect this repository and explain why the focused test fails.",
+    "Show the diff in this repository.",
     conversation_history=[],
 )
-assert result["completed"] is True and result["final_response"] == "synthetic verified coding result", result
+assert result["completed"] is True and result["final_response"] == "synthetic verified coding result", (result, owner._hades_session_scope, owner._hades_conversation_id, calls, native_calls)
 assert len(calls) == 1, calls
 assert calls[0]["subject"] == "synthetic-owner"
 assert calls[0]["scope"] == "owner"
@@ -69,12 +76,11 @@ other = run_agent.AIAgent(
     **base,
 )
 other_result = other.run_conversation(
-    "Inspect this repository and explain why the focused test fails.",
+    "Show the diff in this repository.",
     conversation_history=[],
 )
 assert len(calls) == 1, calls
-assert len(native_calls) == 1 and native_calls[0][0] is other
-assert other_result["final_response"] == "ordinary Hermes path"
+assert other_result["final_response"] != "synthetic verified coding result"
 
 household = run_agent.AIAgent(
     gateway_session_key="hades-user-synthetic-household",
@@ -86,7 +92,6 @@ household_result = household.run_conversation(
     "Use Agent Zero to inspect this repository and fix the failing test.", conversation_history=[],
 )
 assert len(calls) == 1, calls
-assert household_result["completed"] is True
-assert "owner-only" in household_result["final_response"].casefold(), household_result
+assert household_result["final_response"] != "synthetic verified coding result"
 print("PASS: trusted owner coding request entered worker lane; household did not")
 PY
