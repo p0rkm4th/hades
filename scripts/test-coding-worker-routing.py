@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 from pathlib import Path
@@ -16,6 +17,7 @@ from hermes.coding_worker import (  # noqa: E402
     _workspace_mutation_authorized,
     _explicit_commit,
     _coding_trace_summary,
+    _relay_metrics_summary,
     _attach_worker_diagnostics,
     _validate_worker_result_identity,
 )
@@ -28,6 +30,8 @@ class CodingWorkerRoutingTests(unittest.TestCase):
             "tool_trace": [{"tool_name": "read_file", "kind": "discovery",
                             "start_ms": 4, "elapsed_ms": 2,
                             "fingerprint": "a" * 64}],
+            "model_metrics": {"model_calls": 2, "model_ms": 30,
+                              "model_max_ms": 20, "model_failures": 0},
         }
         with patch.dict("os.environ", {"HADES_CODING_WORKER_DIAGNOSTICS": "1"}), \
              patch("hermes.coding_worker._LOGGER.info") as log_info:
@@ -35,20 +39,24 @@ class CodingWorkerRoutingTests(unittest.TestCase):
         self.assertEqual(enriched["task_id"], "task-1")
         self.assertGreaterEqual(enriched["elapsed_ms"], 0)
         self.assertNotIn("tool_trace", enriched)
+        self.assertNotIn("model_metrics", enriched)
         self.assertNotIn("a" * 64, repr(enriched))
         self.assertIn("first_tool_ms=%s", log_info.call_args.args[0])
-        self.assertEqual(log_info.call_args.args[-1], "terminal,read_file,terminal")
+        self.assertEqual(log_info.call_args.args[12], "terminal,read_file,terminal")
+        self.assertEqual(log_info.call_args.args[-4:], (2, 30, 20, 0))
 
     def test_worker_diagnostics_are_silent_by_default(self) -> None:
         result = {
             "tool_call_names": ["terminal"],
             "tool_trace": [{"tool_name": "read_file", "fingerprint": "b" * 64}],
+            "model_metrics": {"model_calls": 1, "model_ms": 1},
         }
         with patch.dict("os.environ", {"HADES_CODING_WORKER_DIAGNOSTICS": "0"}), \
              patch("hermes.coding_worker._LOGGER.info") as log_info:
             enriched = _attach_worker_diagnostics(result, task_id="task-1", started_at=0.0)
         log_info.assert_not_called()
         self.assertNotIn("tool_trace", enriched)
+        self.assertNotIn("model_metrics", enriched)
         self.assertNotIn("b" * 64, repr(enriched))
 
     def test_coding_trace_summary_measures_discovery_edit_and_test_without_arguments(self) -> None:
@@ -72,6 +80,23 @@ class CodingWorkerRoutingTests(unittest.TestCase):
             "test_ms": 100,
             "tool_ms": 114,
             "duplicate_discovery_calls": 1,
+        })
+
+    def test_relay_metrics_summary_discards_payload_and_bounds_durations(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "metrics.jsonl"
+            path.write_text(
+                '{"request":1,"elapsed_ms":12000,"status":200,"prompt":"private"}\n'
+                '{"request":2,"elapsed_ms":18000,"status":503}\n'
+                '{"request":3,"elapsed_ms":700000,"status":200}\n',
+                encoding="utf-8",
+            )
+            summary = _relay_metrics_summary(path)
+        self.assertEqual(summary, {
+            "model_calls": 2,
+            "model_ms": 30000,
+            "model_max_ms": 18000,
+            "model_failures": 1,
         })
 
     def test_commit_authority_respects_current_turn_negation(self) -> None:

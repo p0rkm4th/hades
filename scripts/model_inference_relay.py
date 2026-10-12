@@ -8,6 +8,8 @@ import http.client
 import ipaddress
 import json
 import socketserver
+import threading
+import time
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -41,7 +43,10 @@ def parse_upstream(value: str) -> tuple[str, int]:
     return str(address), port
 
 
-def make_handler(host: str, port: int, model: str):
+def make_handler(host: str, port: int, model: str, metrics_file: Path | None = None):
+    metrics_lock = threading.Lock()
+    request_count = 0
+
     class InferenceHandler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
 
@@ -75,6 +80,9 @@ def make_handler(host: str, port: int, model: str):
             return self.rfile.read(int(raw_length))
 
         def _forward(self, method: str, path: str, body: bytes = b"") -> None:
+            nonlocal request_count
+            started = time.perf_counter()
+            status_code = 502
             connection = http.client.HTTPConnection(host, port, timeout=300)
             try:
                 connection.request(
@@ -86,11 +94,22 @@ def make_handler(host: str, port: int, model: str):
                 if len(payload) > MAX_RESPONSE_BYTES:
                     self._reply(502, b'{"error":"inference response exceeded relay bound"}')
                     return
+                status_code = response.status
                 self._reply(response.status, payload, response.getheader("Content-Type", "application/json"))
             except (OSError, http.client.HTTPException):
                 self._reply(502, b'{"error":"approved inference endpoint unavailable"}')
             finally:
                 connection.close()
+                if metrics_file is not None:
+                    with metrics_lock:
+                        request_count += 1
+                        row = {
+                            "request": request_count,
+                            "elapsed_ms": max(0, int((time.perf_counter() - started) * 1000)),
+                            "status": status_code,
+                        }
+                        with metrics_file.open("a", encoding="utf-8") as stream:
+                            stream.write(json.dumps(row, separators=(",", ":")) + "\n")
             self.close_connection = True
 
         def do_GET(self) -> None:  # noqa: N802
@@ -131,7 +150,7 @@ class UnixHTTPServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer)
     allow_reuse_address = False
 
 
-def serve(socket_path: Path, upstream: str, model: str) -> None:
+def serve(socket_path: Path, upstream: str, model: str, metrics_file: Path | None = None) -> None:
     host, port = parse_upstream(upstream)
     if not model or len(model) > 256 or any(ch in model for ch in "\r\n\0"):
         raise RelayError("model identifier is invalid")
@@ -139,7 +158,16 @@ def serve(socket_path: Path, upstream: str, model: str) -> None:
     socket_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     if socket_path.exists():
         raise RelayError("refusing to replace an existing relay path")
-    server = UnixHTTPServer(str(socket_path), make_handler(host, port, model))
+    if metrics_file is not None:
+        metrics_file = metrics_file.absolute()
+        if (metrics_file == socket_path or metrics_file.exists()
+                or metrics_file.parent != socket_path.parent
+                or not metrics_file.parent.is_dir()):
+            raise RelayError("metrics path is unavailable")
+        descriptor = metrics_file.open("x", encoding="utf-8")
+        descriptor.close()
+        metrics_file.chmod(0o600)
+    server = UnixHTTPServer(str(socket_path), make_handler(host, port, model, metrics_file))
     socket_path.chmod(0o600)
     try:
         server.serve_forever(poll_interval=0.2)
@@ -153,8 +181,9 @@ def main() -> int:
     parser.add_argument("--socket", type=Path, required=True)
     parser.add_argument("--upstream", required=True)
     parser.add_argument("--model", required=True)
+    parser.add_argument("--metrics-file", type=Path)
     args = parser.parse_args()
-    serve(args.socket, args.upstream, args.model)
+    serve(args.socket, args.upstream, args.model, args.metrics_file)
     return 0
 
 

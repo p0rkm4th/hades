@@ -81,6 +81,34 @@ def _coding_trace_summary(worker_result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _relay_metrics_summary(path: Path | None) -> dict[str, int]:
+    """Reduce the private relay file to bounded counts and durations."""
+    rows: list[dict[str, Any]] = []
+    if path is not None:
+        try:
+            with path.open("r", encoding="utf-8") as stream:
+                for line in stream:
+                    if len(rows) >= 128 or len(line) > 1024:
+                        break
+                    row = json.loads(line)
+                    if (isinstance(row, dict)
+                            and isinstance(row.get("elapsed_ms"), int)
+                            and not isinstance(row.get("elapsed_ms"), bool)
+                            and 0 <= row["elapsed_ms"] <= 600_000
+                            and isinstance(row.get("status"), int)
+                            and not isinstance(row.get("status"), bool)):
+                        rows.append(row)
+        except (OSError, UnicodeError, ValueError):
+            rows = []
+    durations = [row["elapsed_ms"] for row in rows]
+    return {
+        "model_calls": len(rows),
+        "model_ms": sum(durations),
+        "model_max_ms": max(durations, default=0),
+        "model_failures": sum(row["status"] < 200 or row["status"] >= 300 for row in rows),
+    }
+
+
 def _attach_worker_diagnostics(
     result: dict[str, Any], *, task_id: str, started_at: float
 ) -> dict[str, Any]:
@@ -88,6 +116,11 @@ def _attach_worker_diagnostics(
     result["task_id"] = task_id
     result["elapsed_ms"] = max(0, int((time.perf_counter() - started_at) * 1000))
     raw_trace = result.pop("tool_trace", None)
+    raw_relay_metrics = result.pop("model_metrics", None)
+    relay_metrics = {
+        key: raw_relay_metrics.get(key, 0) if isinstance(raw_relay_metrics, dict) else 0
+        for key in ("model_calls", "model_ms", "model_max_ms", "model_failures")
+    }
     raw_names = result.get("tool_call_names")
     names = [
         name for name in raw_names[:128]
@@ -99,7 +132,8 @@ def _attach_worker_diagnostics(
         _LOGGER.info(
             "coding worker trace task=%s elapsed_ms=%d first_tool_ms=%s "
             "first_file_ms=%s first_edit_ms=%s first_test_ms=%s test_calls=%d "
-            "test_ms=%d tool_ms=%d duplicate_discovery_calls=%d tool_calls=%d tools=%s",
+            "test_ms=%d tool_ms=%d duplicate_discovery_calls=%d tool_calls=%d tools=%s "
+            "model_calls=%d model_ms=%d model_max_ms=%d model_failures=%d",
             task_id,
             result["elapsed_ms"],
             trace["first_tool_ms"],
@@ -112,6 +146,10 @@ def _attach_worker_diagnostics(
             trace["duplicate_discovery_calls"],
             trace["tool_calls"] or len(names),
             ",".join(names),
+            relay_metrics["model_calls"],
+            relay_metrics["model_ms"],
+            relay_metrics["model_max_ms"],
+            relay_metrics["model_failures"],
         )
     return result
 
@@ -238,13 +276,19 @@ def _dataclass(type_: type, raw: Any, binding: WorkspaceBinding):
         return None
 
 
-def _model_relay_socket(relay_script: Path, temp_root: Path, upstream: str, model: str) -> tuple[subprocess.Popen, Path]:
+def _model_relay_socket(
+    relay_script: Path, temp_root: Path, upstream: str, model: str,
+    metrics_file: Path | None = None,
+) -> tuple[subprocess.Popen, Path]:
     socket_dir = temp_root / "relay"
     socket_dir.mkdir(mode=0o700)
     socket_path = socket_dir / "model.sock"
+    command = [sys.executable, str(relay_script), "--socket", str(socket_path),
+               "--upstream", upstream, "--model", model]
+    if metrics_file is not None:
+        command.extend(("--metrics-file", str(metrics_file)))
     relay = subprocess.Popen(
-        [sys.executable, str(relay_script), "--socket", str(socket_path),
-         "--upstream", upstream, "--model", model],
+        command,
         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         start_new_session=True, close_fds=True,
     )
@@ -334,6 +378,7 @@ def run_coding_worker(
 ) -> dict[str, Any]:
     """Run a single turn with trusted workspace selection and host verification."""
     started_at = time.perf_counter()
+    diagnostics_enabled = os.environ.get("HADES_CODING_WORKER_DIAGNOSTICS", "").strip() == "1"
     if not isinstance(prompt, str) or not prompt.strip() or len(prompt) > 16_000:
         raise WorkspaceDenied("coding request is missing or exceeds the bounded turn size")
     if not isinstance(history, list) or len(history) > 64:
@@ -396,6 +441,9 @@ def run_coding_worker(
             cached_test_evidence = load_test_evidence(binding, session_id)
         except (OSError, WorkspaceEvidenceError):
             cached_test_evidence = None
+        relay_metrics: dict[str, int] = {
+            "model_calls": 0, "model_ms": 0, "model_max_ms": 0, "model_failures": 0,
+        }
         with tempfile.TemporaryDirectory(prefix="hades-coding-run-") as temp_name:
             temp_root = Path(temp_name)
             support = temp_root / "support"
@@ -419,7 +467,10 @@ def run_coding_worker(
             config.chmod(0o400)
             driver.chmod(0o500)
             contract.chmod(0o400)
-            relay, socket_path = _model_relay_socket(relay_script, temp_root, upstream, model)
+            relay_metrics_file = temp_root / "relay" / "metrics.jsonl" if diagnostics_enabled else None
+            relay, socket_path = _model_relay_socket(
+                relay_script, temp_root, upstream, model, relay_metrics_file,
+            )
             try:
                 try:
                     execution = run_isolated_workspace(
@@ -455,6 +506,7 @@ def run_coding_worker(
                     }, task_id=task_id, started_at=started_at)
             finally:
                 _stop_process(relay)
+                relay_metrics = _relay_metrics_summary(relay_metrics_file)
 
         after = snapshot_repository(
             binding, task_id=task_id, session_id=session_id, turn_id=turn_id,
@@ -653,6 +705,7 @@ def run_coding_worker(
             "evidence_call_count": len(records),
             "tool_call_names": worker_result.get("tool_call_names", [])[:128],
             "tool_trace": worker_result.get("tool_trace", [])[:128],
+            "model_metrics": relay_metrics,
         }, task_id=task_id, started_at=started_at)
 
 

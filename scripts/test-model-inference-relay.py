@@ -36,10 +36,10 @@ class RelayPolicyTests(unittest.TestCase):
         self.thread.join(timeout=2)
         self.temp.cleanup()
 
-    def request(self, request: bytes) -> tuple[int, bytes]:
+    def request(self, request: bytes, socket_path: Path | None = None) -> tuple[int, bytes]:
         client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         client.settimeout(2)
-        client.connect(str(self.socket_path))
+        client.connect(str(socket_path or self.socket_path))
         client.sendall(request)
         data = bytearray()
         while True:
@@ -112,6 +112,62 @@ class RelayPolicyTests(unittest.TestCase):
         self.assertEqual(seen[1][1:3], ("POST", "/v1/chat/completions"))
         self.assertEqual(seen[1][3]["model"], "fixture-model")
         self.assertEqual(seen[1][4], {"Content-Type": "application/json", "Connection": "close"})
+
+    def test_optional_metrics_file_records_only_duration_and_status(self) -> None:
+        metrics_file = Path(self.temp.name) / "metrics.jsonl"
+        metrics_file.touch(mode=0o600)
+        socket_path = Path(self.temp.name) / "metrics.sock"
+        server = UnixHTTPServer(
+            str(socket_path), make_handler(FIXTURE_IP, 11437, "fixture-model", metrics_file)
+        )
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            class FakeResponse:
+                status = 200
+
+                @staticmethod
+                def read(_limit: int) -> bytes:
+                    return b'{"choices":[]}'
+
+                @staticmethod
+                def getheader(name: str, default: str = "") -> str:
+                    return "application/json" if name == "Content-Type" else default
+
+            class FakeConnection:
+                def __init__(self, *_args, **_kwargs) -> None:
+                    pass
+
+                def request(self, *_args, **_kwargs) -> None:
+                    return
+
+                @staticmethod
+                def getresponse() -> FakeResponse:
+                    return FakeResponse()
+
+                @staticmethod
+                def close() -> None:
+                    return
+
+            body = json.dumps({
+                "model": "fixture-model",
+                "messages": [{"role": "user", "content": "private fixture prompt"}],
+            }).encode()
+            request = (b"POST /v1/chat/completions HTTP/1.1\r\nHost: local\r\n"
+                       + f"Content-Length: {len(body)}\r\n\r\n".encode() + body)
+            with patch.object(http.client, "HTTPConnection", FakeConnection):
+                self.assertEqual(self.request(request, socket_path)[0], 200)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+        row = json.loads(metrics_file.read_text(encoding="utf-8"))
+        self.assertEqual(set(row), {"request", "elapsed_ms", "status"})
+        self.assertEqual((row["request"], row["status"]), (1, 200))
+        self.assertIsInstance(row["elapsed_ms"], int)
+        self.assertGreaterEqual(row["elapsed_ms"], 0)
+        self.assertEqual(metrics_file.stat().st_mode & 0o777, 0o600)
+        self.assertNotIn("private fixture prompt", metrics_file.read_text(encoding="utf-8"))
 
     def test_non_inference_routes_models_and_streaming_are_denied(self) -> None:
         with patch.object(http.client, "HTTPConnection") as upstream:
