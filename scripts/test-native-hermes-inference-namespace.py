@@ -170,6 +170,7 @@ def main() -> int:
                 read_only_paths=(hermes_root, support),
                 unix_socket=socket_path,
                 enable_loopback=True,
+                writable_git_metadata=True,
             )
         finally:
             _stop_relay(relay)

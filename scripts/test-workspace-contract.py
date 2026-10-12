@@ -194,6 +194,35 @@ class WorkspaceContractTests(unittest.TestCase):
         )
         self.assertEqual(result.outcome, "SUCCEEDED", result.reason)
 
+    def test_combined_literal_add_and_commit_binds_expected_paths(self) -> None:
+        invocation = begin_commit_invocation(
+            self.binding,
+            self.snapshot(),
+            command='cd /workspace && git add calc.py && git commit -m "requested fix"',
+            tool_call_id="combined-commit-call-001",
+        )
+        self.assertEqual(invocation.expected_paths, frozenset({"calc.py"}))
+
+    def test_combined_broad_add_and_commit_does_not_create_evidence(self) -> None:
+        with self.assertRaises(WorkspaceEvidenceError):
+            begin_commit_invocation(
+                self.binding,
+                self.snapshot(),
+                command='git add -A && git commit -m "requested fix"',
+                tool_call_id="broad-commit-call-001",
+            )
+
+    def test_combined_add_rejects_other_pre_staged_paths(self) -> None:
+        (self.repo / "test_calc.py").write_text("# unrelated staged change\n", encoding="utf-8")
+        self.git("add", "test_calc.py")
+        with self.assertRaises(WorkspaceEvidenceError):
+            begin_commit_invocation(
+                self.binding,
+                self.snapshot(),
+                command='git add calc.py && git commit -m "requested fix"',
+                tool_call_id="mixed-commit-call-001",
+            )
+
     def test_wrong_repository_cannot_satisfy_operation(self) -> None:
         other = self.base / "other"
         other.mkdir()
@@ -527,6 +556,24 @@ class WorkspaceContractTests(unittest.TestCase):
             ["python3", "-c", "import os; print(os.readlink('/proc/self/ns/user'))"], text=True
         ).strip()
         self.assertNotEqual(namespace.stdout.strip(), host_namespace)
+
+    def test_git_metadata_is_read_only_without_explicit_commit_authority(self) -> None:
+        self.require_namespace()
+        before = self.git("rev-parse", "HEAD")
+        denied = run_isolated_workspace(
+            self.binding.repository,
+            ["python3", "-c", "from pathlib import Path; Path('/workspace/.git/blocked').write_text('x')"],
+        )
+        self.assertNotEqual(denied.returncode, 0)
+        self.assertFalse((self.repo / ".git" / "blocked").exists())
+        self.assertEqual(self.git("rev-parse", "HEAD"), before)
+        allowed = run_isolated_workspace(
+            self.binding.repository,
+            ["git", "config", "user.name", "Authorized Test"],
+            writable_git_metadata=True,
+        )
+        self.assertEqual(allowed.returncode, 0, allowed.stderr)
+        self.assertEqual(self.git("config", "user.name"), "Authorized Test")
 
     def test_disposable_workspace_timeout_is_reported_without_success(self) -> None:
         self.require_namespace()

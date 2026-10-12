@@ -604,6 +604,45 @@ def _staged_paths(root: Path) -> frozenset[str]:
     return frozenset(os.fsdecode(item) for item in result.stdout.split(b"\0") if item)
 
 
+def _literal_paths_added_by_commit_command(command: str) -> frozenset[str] | None:
+    """Accept only an explicit ``git add PATHS && git commit`` sequence.
+
+    This lets the pre-tool verifier bind a common native Hermes shell command
+    before it executes, without treating broad forms such as ``git add -A`` or
+    shell-expanded paths as user-authorized commit scope.
+    """
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        return None
+    if tokens[:3] == ["cd", "/workspace", "&&"]:
+        tokens = tokens[3:]
+    if tokens and tokens[-1] == "2>&1":
+        tokens = tokens[:-1]
+    if "&&" not in tokens:
+        return None
+    if tokens.count("&&") != 1:
+        return frozenset()
+    split = tokens.index("&&")
+    add, commit = tokens[:split], tokens[split + 1:]
+    if len(add) < 3 or add[:2] != ["git", "add"] or commit[:2] != ["git", "commit"]:
+        return frozenset()
+    raw_paths = add[2:]
+    if raw_paths and raw_paths[0] == "--":
+        raw_paths = raw_paths[1:]
+    if not raw_paths or any(
+        not item or item.startswith("-") or Path(item).is_absolute()
+        or ".." in Path(item).parts or any(char in item for char in "*?[]{};$`\\\n\r")
+        for item in raw_paths
+    ):
+        return frozenset()
+    try:
+        paths = _validate_paths(raw_paths)
+    except WorkspaceEvidenceError:
+        return frozenset()
+    return paths
+
+
 def begin_commit_invocation(
     binding: WorkspaceBinding,
     snapshot: RepositorySnapshot,
@@ -620,7 +659,13 @@ def begin_commit_invocation(
         or not re.search(r"(?:^|[;&|]\s*)git\s+commit(?:\s|$)", command)
     ):
         raise WorkspaceEvidenceError("commit invocation is not a bound Hermes terminal request")
-    paths = _validate_paths(_staged_paths(binding.repository))
+    staged_paths = _staged_paths(binding.repository)
+    command_paths = _literal_paths_added_by_commit_command(command)
+    if command_paths == frozenset():
+        raise WorkspaceEvidenceError("combined commit command does not specify literal source paths")
+    if command_paths and not staged_paths.issubset(command_paths):
+        raise WorkspaceEvidenceError("combined commit command would include unstated staged paths")
+    paths = _validate_paths(staged_paths | (command_paths or frozenset()))
     if not paths:
         raise WorkspaceEvidenceError("commit request has no staged paths")
     return CommitInvocation(

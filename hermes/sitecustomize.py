@@ -12437,7 +12437,166 @@ try:
         if routed:
             self.model = "qwen3:8b"
         try:
-            if agent_zero_intent and self._hades_session_scope == "household":
+            coding_worker_enabled = os.environ.get("HADES_CODING_WORKER_ENABLED", "").strip() == "1"
+            coding_history = kwargs.get("conversation_history")
+            if not isinstance(coding_history, list):
+                coding_history = next(
+                    (value for value in args if isinstance(value, list)), []
+                )
+            coding_current_text = str(user_message or "")
+            coding_object_hint = re.search(
+                r"\b(?:repo(?:sitory)?|project|workspace|file|tests?|code|bug|function|script|"
+                r"patch|diff|commit|command|python|javascript|typescript|rust|go)\b",
+                coding_current_text,
+                re.IGNORECASE,
+            ) if coding_worker_enabled else None
+            coding_action_hint = re.search(
+                r"\b(?:inspect|explain|fix|edit|change|write|run|test|debug|commit|revert|"
+                r"continue|show|review|check|make)\b",
+                coding_current_text,
+                re.IGNORECASE,
+            ) if coding_worker_enabled else None
+            coding_followup_hint = bool(
+                coding_worker_enabled
+                and re.search(
+                    r"\b(?:continue|retry|try\s+again|check\s+(?:whether|if)|revert|"
+                    r"show\s+me\s+what\s+changed)\b",
+                    coding_current_text,
+                    re.IGNORECASE,
+                )
+                and isinstance(coding_history, list)
+                and re.search(
+                    r"\b(?:repo(?:sitory)?|project|workspace|file|tests?|code|bug|function|"
+                    r"script|patch|diff|commit|command|python|javascript|typescript|rust|go)\b",
+                    " ".join(
+                        str(item.get("content") or "")[:3000]
+                        for item in coding_history[-12:]
+                        if isinstance(item, dict)
+                        and item.get("role") in {"user", "assistant"}
+                    ),
+                    re.IGNORECASE,
+                )
+            )
+            coding_candidate = bool(
+                (coding_object_hint and coding_action_hint) or coding_followup_hint
+            )
+            coding_domain_conflict = bool(
+                grocy_intent
+                or web_turn
+                or _hades_is_homelab_intent(current_text)
+                or re.search(
+                    r"\b(?:finance|finances|bank|csv|spend|spending|spent|budget|"
+                    r"transaction|account|checking|savings|credit\s+card|money)\b",
+                    current_text,
+                    re.IGNORECASE,
+                )
+            )
+            if (
+                coding_worker_enabled
+                and coding_candidate
+                and self._hades_session_scope == "owner"
+                and not memory_intent
+                and not agent_zero_intent
+                and not coding_domain_conflict
+            ):
+                try:
+                    import sys as _hades_sys
+                    from pathlib import Path as _HadesCodingPath
+                    project_root = _HadesCodingPath(
+                        os.environ.get("HADES_CODING_PROJECT_ROOT") or os.getcwd()
+                    ).resolve(strict=True)
+                    if str(project_root) not in _hades_sys.path:
+                        _hades_sys.path.insert(0, str(project_root))
+                    from hermes.coding_worker import (
+                        CodingWorkerError as _HadesCodingWorkerError,
+                        run_coding_worker as _hades_run_coding_worker,
+                        should_route_to_coding_worker as _hades_should_route_coding,
+                    )
+                    if _hades_should_route_coding(user_message, coding_history):
+                        if not (
+                            os.environ.get("HADES_CODING_WORKSPACE_BINDINGS_FILE")
+                            and os.environ.get("HADES_CODING_WORKSPACE_ROOT")
+                        ):
+                            raise _HadesCodingWorkerError(
+                                "authorized disposable workspace is not configured"
+                            )
+                        import run_agent as _hades_coding_run_agent
+                        hermes_root = _HadesCodingPath(
+                            _hades_coding_run_agent.__file__
+                        ).resolve(strict=True).parents[1]
+                        worker_result = _hades_run_coding_worker(
+                            subject=str(getattr(self, "_hades_subject", "") or ""),
+                            scope=str(getattr(self, "_hades_session_scope", "") or ""),
+                            conversation_id=str(
+                                getattr(self, "_hades_conversation_id", "") or ""
+                            ),
+                            prompt=str(user_message or ""),
+                            history=coding_history,
+                            model=original_model,
+                            upstream=str(getattr(self, "base_url", "") or ""),
+                            repo_root=project_root,
+                            hermes_root=hermes_root,
+                            bindings_file=os.environ[
+                                "HADES_CODING_WORKSPACE_BINDINGS_FILE"
+                            ],
+                            workspace_root=os.environ[
+                                "HADES_CODING_WORKSPACE_ROOT"
+                            ],
+                            forbidden_roots=(project_root,),
+                        )
+                        response = str(worker_result.get("final_response") or "").strip()
+                        if not response:
+                            response = (
+                                "The isolated coding worker returned no verified answer. "
+                                "I did not claim the task completed."
+                            )
+                        if original_stream_callback:
+                            original_stream_callback(response)
+                        result = {
+                            "final_response": response,
+                            "messages": [{"role": "assistant", "content": response}],
+                            "api_calls": 1,
+                            "completed": worker_result.get("outcome") in {
+                                "SUCCEEDED", "FAILED", "VERIFY"
+                            },
+                        }
+                    elif agent_zero_intent and self._hades_session_scope == "household":
+                        denial = (
+                            "Agent Zero is owner-only and is not available to household "
+                            "users. I did not send or simulate an inspection."
+                        )
+                        result = {
+                            "final_response": denial,
+                            "messages": [{"role": "assistant", "content": denial}],
+                            "api_calls": 0,
+                            "completed": True,
+                        }
+                        if original_stream_callback:
+                            original_stream_callback(denial)
+                    else:
+                        if web_turn:
+                            _hades_install_public_research_lineage_shortcut()
+                        result = _hades_original_run_conversation(
+                            self, user_message, *args, **kwargs
+                        )
+                except Exception as exc:
+                    _hades_logger.warning(
+                        "isolated coding worker failed closed type=%s",
+                        type(exc).__name__,
+                    )
+                    response = (
+                        "I couldn't safely start or verify the isolated coding workspace. "
+                        "No task completion is claimed."
+                    )
+                    if original_stream_callback:
+                        original_stream_callback(response)
+                    result = {
+                        "final_response": response,
+                        "messages": [{"role": "assistant", "content": response}],
+                        "api_calls": 0,
+                        "completed": True,
+                    }
+            elif agent_zero_intent and self._hades_session_scope == "household":
                 denial = (
                     "Agent Zero is owner-only and is not available to household "
                     "users. I did not send or simulate an inspection."

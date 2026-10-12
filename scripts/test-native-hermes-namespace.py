@@ -91,6 +91,7 @@ def main() -> int:
                 [str(python), str(driver)],
                 timeout=180,
                 read_only_paths=(hermes_root, support_dir),
+                writable_git_metadata=True,
             )
             lines = [line for line in result.stdout.splitlines() if line.startswith(RESULT_PREFIX)]
             if result.returncode != 0 or not lines:
