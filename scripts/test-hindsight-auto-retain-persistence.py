@@ -33,23 +33,52 @@ class Model(http.server.BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
         model_requests.append({"path": self.path, "model": str(body.get("model", ""))})
+        messages = [message for message in body.get("messages", []) if isinstance(message, dict)]
         message_text = "\n".join(
             str(message.get("content", ""))
-            for message in body.get("messages", [])
-            if isinstance(message, dict)
+            for message in messages
         )
+        user_text = "\n".join(str(message.get("content", "")) for message in messages if message.get("role") == "user")
         source_ids = re.findall(r"\[([0-9a-f]{8}-[0-9a-f-]{27,})\]", message_text, re.IGNORECASE)
         if "source_fact_ids" in message_text and source_ids:
-            response_text = json.dumps({
-                "creates": [{
-                    "text": FACT,
+            selected_fact = (
+                "The synthetic user prefers Neovim for coding."
+                if "neovim" in message_text.casefold()
+                else "The synthetic user prefers Vim for coding."
+                if "vim" in message_text.casefold()
+                else FACT
+            )
+            observation_ids = re.findall(
+                r'"id"\s*:\s*"([0-9a-f]{8}-[0-9a-f-]{27,})"',
+                user_text, re.IGNORECASE,
+            )
+            if observation_ids:
+                action = {"creates": [], "updates": [{
+                    "text": selected_fact,
+                    "observation_id": observation_ids[-1],
+                    "source_fact_ids": [source_ids[-1]],
+                    "reason": "Same synthetic preference facet; update its current value.",
+                }], "deletes": []}
+            else:
+                action = {"creates": [{
+                    "text": selected_fact,
                     "source_fact_ids": [source_ids[-1]],
                     "reason": "Synthetic durable preference for recall qualification.",
-                }],
-                "updates": [], "deletes": [],
-            })
+                }], "updates": [], "deletes": []}
+            response_text = json.dumps(action)
         else:
-            response_text = FACT_RESPONSE
+            if "neovim" in message_text.casefold():
+                extracted_fact = "The synthetic user prefers Neovim for coding."
+            elif "vim" in message_text.casefold():
+                extracted_fact = "The synthetic user prefers Vim for coding."
+            else:
+                extracted_fact = FACT
+            response_text = json.dumps({"facts": [{
+                "what": extracted_fact,
+                "when": "N/A", "where": "N/A", "who": "user",
+                "why": "Synthetic extraction fixture.", "fact_type": "world",
+                "entities": ["user", "editor preference"],
+            }]})
         if self.path.endswith("/api/chat"):
             result = {"model": MODEL, "message": {"role": "assistant", "content": response_text}, "done": True}
         else:
@@ -146,7 +175,7 @@ def main() -> None:
             env = os.environ.copy()
             env.update({
                 "HERMES_HOME": temp_home,
-                "HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS": "synthetic-alpha,synthetic-beta",
+                "HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS": "synthetic-alpha,synthetic-beta,synthetic-correction",
                 "HADES_HINDSIGHT_URL": api,
                 "PYTHONPATH": os.pathsep.join(filter(None, [str(ROOT / "hermes"), str(ROOT), env.get("PYTHONPATH", "")])),
             })
@@ -175,13 +204,30 @@ elif mode == "reject":
     p.sync_turn("The current server is healthy.", "Tool output: current status is healthy.", session_id=session)
     print(json.dumps({"mode": mode, "bank": p._bank_id, "subject": p._user_id, "retain_calls": len(retain_calls), "turns": len(p._session_turns)}))
     p.shutdown()
+elif mode == "journey":
+    prompts = json.loads(sys.argv[4])
+    drains = []
+    for prompt in prompts:
+        p.sync_turn(prompt, "", session_id=session)
+        drains.append(p._wait_for_retains_drained(60))
+    print(json.dumps({"mode": mode, "bank": p._bank_id, "subject": p._user_id,
+                      "drains": drains, "retain_calls": len(retain_calls)}))
+    p.shutdown()
 else:
     answer = p._do_recall("What personal answer style does this user prefer? concise technical answers")
     print(json.dumps({"mode": mode, "bank": p._bank_id, "subject": p._user_id, "answer": answer[0], "count": answer[1]}))
     p.shutdown()
 '''
             def invoke(mode: str, subject: str, session: str) -> dict:
-                completed = subprocess.run([str(hermes_python), "-c", worker, mode, subject, session],
+                extra_args = json.dumps([
+                    "I prefer Vim for coding.",
+                    "My preferred editor is Neovim now.",
+                    "I prefer Neovim for coding.",
+                ]) if mode == "journey" else None
+                args = [str(hermes_python), "-c", worker, mode, subject, session]
+                if extra_args is not None:
+                    args.append(extra_args)
+                completed = subprocess.run(args,
                     cwd=ROOT, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                     timeout=90, check=True)
                 return json.loads(completed.stdout.strip().splitlines()[-1])
@@ -220,6 +266,20 @@ else:
             print("PASS separate synthetic actor could not recall it")
             print("PASS rejected canonical state caused no extraction request or memory write")
             print("PASS assistant-only inferred secret was absent from canonical memory")
+
+            correction = invoke("journey", "synthetic-correction", "chat-correction")
+            corrected_recall = invoke("recall", "synthetic-correction", "chat-correction-new")
+            if (correction["retain_calls"] != 3 or correction["drains"] != [True, True, True]
+                    or "neovim" not in corrected_recall["answer"].casefold()
+                    or re.search(r"\bvim\b", corrected_recall["answer"].casefold())):
+                raise RuntimeError(
+                    "automatic correction/deduplication did not leave one current editor preference: "
+                    f"journey={correction}; recall={corrected_recall}"
+                )
+            if corrected_recall["count"] != 1:
+                raise RuntimeError(f"repeated preference created duplicate recalled observations: {corrected_recall}")
+            print("PASS same-actor preference correction updated the current Hindsight observation")
+            print("PASS repeated preference did not create duplicate recalled observations")
     finally:
         server.shutdown()
         server.server_close()

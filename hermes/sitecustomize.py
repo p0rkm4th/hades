@@ -7663,7 +7663,7 @@ _HADES_DURABLE_MEMORY_CLAIMS = (
     ("preference", re.compile(
         r"\b(?:i\s+(?:(?:usually|tend\s+to)\s+)?(?:prefer|like|love|dislike|hate)|"
         r"i\s+(?:usually|tend\s+to)\s+want|"
-        r"my\s+(?:favorite|favourite)\b)", re.IGNORECASE,
+        r"my\s+(?:favorite|favourite|preferred)\b)", re.IGNORECASE,
     )),
     ("relationship_name", re.compile(
         r"\bmy\s+(?:cat|dog|pet|partner|wife|husband|spouse|child|son|daughter|"

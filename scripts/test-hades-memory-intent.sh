@@ -90,6 +90,8 @@ for personal in ('I prefer basil', 'I hate mushrooms', 'my favorite dinner is pa
 # suppresses the current turn.
 for fact in (
     "I prefer concise technical answers.",
+    "My preferred editor is Vim.",
+    "My preferred editor is Neovim now.",
     "My cat's name is Lyxa.",
     "I'm moving in December.",
     "For HADES, use composition before custom code.",
