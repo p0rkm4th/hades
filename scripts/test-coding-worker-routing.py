@@ -114,12 +114,14 @@ class CodingWorkerRoutingTests(unittest.TestCase):
             "Please commit this after the tests pass.",
             "Commit only calc.py now.",
             "Commit only calc.py now; leave __pycache__ out.",
+            "Fix the failing test by changing only calc.py, run the focused test, show the diff, and commit only calc.py once the test passes.",
         ):
             with self.subTest(prompt=prompt):
                 self.assertTrue(_explicit_commit(prompt))
 
         for prompt in (
             "Should we commit only calc.py now?",
+            "Should we commit only calc.py once the test passes?",
             "I could commit only calc.py now.",
             "The instruction was to commit only calc.py now.",
         ):

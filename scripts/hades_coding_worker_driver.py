@@ -56,7 +56,7 @@ def _dict_rows(value: Any) -> list[dict[str, Any]]:
 
 def main() -> int:
     worker_started = time.perf_counter()
-    diagnostics_enabled = os.environ.get("HADES_CODING_WORKER_DIAGNOSTICS", "").strip() == "1"
+    diagnostics_enabled = config.get("diagnostics_enabled") is True
     capability_line = next(
         line for line in Path("/proc/self/status").read_text().splitlines()
         if line.startswith("CapEff:")

@@ -331,6 +331,7 @@ def _explicit_commit(text: str) -> bool:
         return False
     return bool(re.search(
         r"^\s*(?:please\s+)?commit\s+only\s+(?:the\s+)?[\w./-]+(?:\s+now)?(?=\s*(?:[.!?]|[,;]|$))|"
+        r"(?:^\s*|[,;]\s*(?:and\s+)?|\bthen\s+)(?:please\s+)?commit\s+only\s+(?:the\s+)?[\w./-]+\s+(?:once|after|when|if)\b|"
         r"\b(?:commit\s+(?:the\s+)?(?:fix|change|result|work)|"
         r"make\b.{0,120}\bcommit\b|commit\s+it|please\s+commit|"
         r"commit\s+this)\b",
@@ -461,6 +462,7 @@ def run_coding_worker(
                 "task_id": task_id,
                 "turn_id": turn_id,
                 "commit_authorized": commit_authorized,
+                "diagnostics_enabled": diagnostics_enabled,
                 "prompt": prompt,
                 "history": history,
             }, separators=(",", ":")), encoding="utf-8")
