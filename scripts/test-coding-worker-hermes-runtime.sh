@@ -44,8 +44,9 @@ assert run_agent.AIAgent.run_conversation.__name__ == "_hades_run_conversation"
 # Exercise the same request wrapper used at the Hermes HTTP boundary. Two
 # concurrent chats must retain independent Open WebUI IDs through awaits.
 async def fake_handler(_self, request):
-    await asyncio.sleep(0.01)
-    return hades._hades_openwebui_chat_id.get()
+    return await asyncio.get_running_loop().run_in_executor(
+        None, hades._hades_openwebui_chat_id.get
+    )
 wrapped_handler = hades._hades_wrap_openwebui_chat_id_context(fake_handler)
 async def probe_chat_id(chat_id):
     return await wrapped_handler(

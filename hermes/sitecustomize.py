@@ -85,6 +85,36 @@ def _hades_wrap_openwebui_chat_id_context(handler):
     return wrapped
 
 
+def _hades_install_request_context_executor_propagation():
+    """Carry HADES request ContextVars into Hermes' worker-thread execution.
+
+    Hermes 0.21.2 creates the API agent through ``run_in_executor``. Unlike
+    ``asyncio.to_thread``, that call does not copy the current context, so the
+    authenticated Open WebUI chat identity would be lost before agent setup.
+    This stateless shim copies context only for HADES chat-bound calls.
+    """
+    import asyncio as _hades_asyncio
+    from functools import wraps as _hades_wraps
+
+    loop_type = _hades_asyncio.BaseEventLoop
+    original = loop_type.run_in_executor
+    if getattr(original, "_hades_request_context", False):
+        return True
+
+    @_hades_wraps(original)
+    def run_in_executor_with_request_context(loop, executor, func, *args):
+        if not _hades_openwebui_chat_id.get():
+            return original(loop, executor, func, *args)
+        request_context = contextvars.copy_context()
+        return original(
+            loop, executor, request_context.run, func, *args
+        )
+
+    run_in_executor_with_request_context._hades_request_context = True
+    loop_type.run_in_executor = run_in_executor_with_request_context
+    return True
+
+
 def _hades_overlay_non_hermes_interpreter(python_executable, hermes_executable):
     """Identify child Pythons that inherited PYTHONPATH but are not Hermes.
 
@@ -8430,6 +8460,7 @@ try:
     _hades_memory_local = threading.local()
     _hades_logger = logging.getLogger("hades.overlay")
     _hades_memory_local = threading.local()
+    _hades_install_request_context_executor_propagation()
     def _hades_grocy_tool_definitions(_get_tool_definitions):
         """Return the canonical Grocy tools plus the serving companion.
 
