@@ -14,6 +14,7 @@ import secrets
 import time
 import hashlib
 import importlib.util
+import contextvars
 from contextlib import contextmanager
 from pathlib import Path
 import sys
@@ -60,6 +61,28 @@ _hades_prepare_generated_integrations_path()
 
 
 _hades_logger = logging.getLogger("hades.overlay")
+_hades_openwebui_chat_id = contextvars.ContextVar(
+    "hades_openwebui_chat_id", default=""
+)
+
+
+def _hades_wrap_openwebui_chat_id_context(handler):
+    """Wrap one async API handler with request-local Open WebUI chat identity."""
+    from functools import wraps
+
+    @wraps(handler)
+    async def wrapped(self, request):
+        chat_id = str(
+            request.headers.get("X-Hades-OpenWebUI-Chat-Id", "") or ""
+        ).strip()
+        token = _hades_openwebui_chat_id.set(chat_id)
+        try:
+            return await handler(self, request)
+        finally:
+            _hades_openwebui_chat_id.reset(token)
+
+    wrapped._hades_chat_id_context = True
+    return wrapped
 
 
 def _hades_overlay_non_hermes_interpreter(python_executable, hermes_executable):
@@ -9310,6 +9333,30 @@ try:
     # point, so this cannot erase the selected provider or model.
     from run_agent import AIAgent as _AIAgent
 
+    def _hades_install_openwebui_chat_id_context():
+        """Carry Open WebUI's server-configured CHAT_ID template per request.
+
+        The API server's fingerprint session ID is not the Open WebUI chat ID.
+        Open WebUI can forward its canonical chat ID in a configured custom
+        header.  A ContextVar keeps that request identity isolated across
+        concurrent agent tasks; it never changes Hermes session behavior.
+        """
+        import sys as _hades_sys
+        module = _hades_sys.modules.get(
+            "gateway.platforms.api_server_openai_routes"
+        )
+        mixin = getattr(module, "OpenAICompatRoutesMixin", None) if module else None
+        if mixin is None:
+            return False
+        original = mixin._handle_chat_completions
+        if getattr(original, "_hades_chat_id_context", False):
+            return True
+        mixin._handle_chat_completions = _hades_wrap_openwebui_chat_id_context(
+            original
+        )
+        _hades_logger.info("HADES Open WebUI chat identity context installed")
+        return True
+
     # The API gateway can construct agents after MCP discovery but before the
     # dynamic server alias is visible to its platform allowlist. Reconcile
     # HADES-owned MCP toolsets at the agent boundary so owner-facing API turns
@@ -9325,6 +9372,9 @@ try:
         # gateway session key: the latter is user-scoped and would make two
         # authenticated tabs share one pending confirmation.
         self._hades_conversation_id = str(kwargs.get("session_id") or "").strip()
+        self._hades_ui_conversation_id = str(
+            _hades_openwebui_chat_id.get() or ""
+        ).strip()
         subject = _hades_subject_from_session_key(session_key)
         self._hades_subject = subject
         self._hades_session_scope = _hades_session_scope(session_key)
@@ -9576,7 +9626,9 @@ try:
         # coding worker. Run it before legacy domain adapters so their routing
         # helpers cannot intercept a coding turn. Other owner chats stay native.
         coding_conversation = str(
-            getattr(self, "_hades_conversation_id", "") or ""
+            getattr(self, "_hades_ui_conversation_id", "")
+            or getattr(self, "_hades_conversation_id", "")
+            or ""
         )
         if (
             os.environ.get("HADES_CODING_WORKER_ENABLED", "").strip() == "1"
@@ -12794,6 +12846,7 @@ try:
     def _hades_install_gateway_route_patch():
         """Patch the gateway after Hermes finishes its circular imports."""
         import sys
+        _hades_install_openwebui_chat_id_context()
         module = sys.modules.get("gateway.run_turn")
         gateway_mixin = getattr(module, "GatewayTurnMixin", None) if module else None
         run_module = sys.modules.get("gateway.run")
