@@ -9630,6 +9630,11 @@ try:
             or getattr(self, "_hades_conversation_id", "")
             or ""
         )
+        coding_conversation_source = (
+            "openwebui_chat"
+            if getattr(self, "_hades_ui_conversation_id", "")
+            else "hermes_session"
+        )
         if (
             os.environ.get("HADES_CODING_WORKER_ENABLED", "").strip() == "1"
             and os.environ.get("HADES_CODING_WORKER_CONVERSATION_ID", "").strip()
@@ -9657,14 +9662,26 @@ try:
                     _hades_should_route_coding = (
                         _hades_coding_worker.should_route_to_coding_worker
                     )
-                    if (
-                        _hades_coding_allowed(
-                            scope=str(getattr(self, "_hades_session_scope", "") or ""),
-                            conversation_id=coding_conversation,
-                            prompt=coding_text,
-                        )
-                        and _hades_should_route_coding(coding_text, coding_history)
-                    ):
+                    gate_allowed = _hades_coding_allowed(
+                        scope=str(getattr(self, "_hades_session_scope", "") or ""),
+                        conversation_id=coding_conversation,
+                        prompt=coding_text,
+                    )
+                    route_requested = _hades_should_route_coding(
+                        coding_text, coding_history
+                    )
+                    _hades_logger.info(
+                        "coding worker gate scope=%s subject_present=%s conversation_source=%s "
+                        "conversation_present=%s allowlisted=%s route_requested=%s domain_denied=%s",
+                        getattr(self, "_hades_session_scope", "") or "denied",
+                        bool(getattr(self, "_hades_subject", "")),
+                        coding_conversation_source,
+                        bool(coding_conversation),
+                        gate_allowed,
+                        route_requested,
+                        bool(coding_sensitive_domain),
+                    )
+                    if gate_allowed and route_requested:
                         project_root = Path(
                             os.environ["HADES_CODING_PROJECT_ROOT"]
                         ).resolve(strict=True)
