@@ -200,6 +200,7 @@ class TestEvidence:
     head: str
     paths: frozenset[str]
     source_fingerprint: str
+    path_fingerprints: Mapping[str, str]
     command: str
     exit_code: int
     output: str
@@ -226,6 +227,7 @@ class TestInvocation:
     head: str
     paths: frozenset[str]
     source_fingerprint: str
+    path_fingerprints: Mapping[str, str]
     command: str
     task_id: str
     session_id: str
@@ -485,6 +487,14 @@ def _path_fingerprint(root: Path, paths: frozenset[str], revision: str | None = 
     return digest.hexdigest()
 
 
+def _path_fingerprints(root: Path, paths: frozenset[str], revision: str | None = None) -> dict[str, str]:
+    """Fingerprint paths independently so harmless extra artifacts do not stale relevant evidence."""
+    return {
+        relative: _path_fingerprint(root, frozenset({relative}), revision)
+        for relative in sorted(paths)
+    }
+
+
 def begin_test_invocation(
     binding: WorkspaceBinding,
     snapshot: RepositorySnapshot,
@@ -508,6 +518,7 @@ def begin_test_invocation(
     if not recognized:
         raise WorkspaceEvidenceError("test evidence is incomplete")
     fingerprint = _path_fingerprint(binding.repository, selected)
+    path_fingerprints = _path_fingerprints(binding.repository, selected)
     return TestInvocation(
         subject=binding.subject,
         workspace=binding.root,
@@ -516,6 +527,7 @@ def begin_test_invocation(
         head=snapshot.head,
         paths=selected,
         source_fingerprint=fingerprint,
+        path_fingerprints=path_fingerprints,
         command=command,
         task_id=snapshot.task_id,
         session_id=snapshot.session_id,
@@ -563,6 +575,7 @@ def complete_test_invocation(
         head=invocation.head,
         paths=invocation.paths,
         source_fingerprint=invocation.source_fingerprint,
+        path_fingerprints=invocation.path_fingerprints,
         command=invocation.command,
         exit_code=result.exit_code,
         output=result.output,
@@ -793,8 +806,8 @@ def verify_commit(
     if test_evidence is None or not test_evidence.passed:
         return CommitVerification("VERIFY", "passing focused-test evidence is absent", invocation.head, after.head, committed)
     # A coding conversation may span isolated Hermes task IDs. Prior-turn test
-    # receipts are accepted only when they remain bound to this same session,
-    # pre-commit HEAD, exact selected paths, and committed source fingerprint.
+    # receipts may include generated artifacts, but every committed path must
+    # be among the tested paths and match its individual tested fingerprint.
     if (
         test_evidence.subject != binding.subject
         or test_evidence.workspace != binding.root
@@ -802,15 +815,17 @@ def verify_commit(
         or test_evidence.branch != invocation.branch
         or test_evidence.head != invocation.head
         or test_evidence.session_id != invocation.session_id
-        or test_evidence.paths != selected
+        or not selected.issubset(test_evidence.paths)
+        or set(test_evidence.path_fingerprints) != set(test_evidence.paths)
     ):
         return CommitVerification("VERIFY", "test evidence belongs to a different actor, workspace, operation, or source set", invocation.head, after.head, committed)
     try:
-        committed_fingerprint = _path_fingerprint(binding.repository, selected, after.head)
+        committed_fingerprints = _path_fingerprints(binding.repository, selected, after.head)
     except WorkspaceEvidenceError:
         return CommitVerification("VERIFY", "committed source could not be matched to test evidence", invocation.head, after.head, committed)
-    if committed_fingerprint != test_evidence.source_fingerprint:
-        return CommitVerification("VERIFY", "tested source differs from committed source", invocation.head, after.head, committed)
+    if any(test_evidence.path_fingerprints.get(path) != fingerprint
+           for path, fingerprint in committed_fingerprints.items()):
+        return CommitVerification("VERIFY", "a committed path differs from the version covered by passing test evidence", invocation.head, after.head, committed)
     expected_status = frozenset(
         (status, path)
         for status, path in invocation.status_entries

@@ -228,6 +228,7 @@ def main() -> int:
                 head=raw_test["head"],
                 paths=_path_set(raw_test["paths"]),
                 source_fingerprint=raw_test["source_fingerprint"],
+                path_fingerprints=dict(raw_test["path_fingerprints"]),
                 command=raw_test["command"],
                 exit_code=raw_test["exit_code"],
                 output=raw_test["output"],

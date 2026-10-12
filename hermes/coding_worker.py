@@ -486,11 +486,6 @@ def run_coding_worker(
         elif test_evidence is not None and commit_invocation is not None:
             try:
                 tested_revision = after.head if after.head != commit_invocation.head else None
-                current_fingerprint = _path_fingerprint(
-                    binding.repository,
-                    test_evidence.paths,
-                    tested_revision,
-                )
                 test_verified = (
                     test_evidence.passed
                     and test_evidence.subject == subject
@@ -499,8 +494,13 @@ def run_coding_worker(
                     and test_evidence.session_id == session_id
                     and test_evidence.branch == commit_invocation.branch
                     and test_evidence.head == commit_invocation.head
-                    and test_evidence.paths == commit_invocation.expected_paths
-                    and current_fingerprint == test_evidence.source_fingerprint
+                    and commit_invocation.expected_paths.issubset(test_evidence.paths)
+                    and set(test_evidence.path_fingerprints) == set(test_evidence.paths)
+                    and all(
+                        test_evidence.path_fingerprints.get(path)
+                        == _path_fingerprint(binding.repository, frozenset({path}), tested_revision)
+                        for path in commit_invocation.expected_paths
+                    )
                 )
             except WorkspaceEvidenceError:
                 test_verified = False

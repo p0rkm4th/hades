@@ -46,6 +46,7 @@ def _data(evidence: TestEvidence) -> dict:
         "head": evidence.head,
         "paths": sorted(evidence.paths),
         "source_fingerprint": evidence.source_fingerprint,
+        "path_fingerprints": dict(evidence.path_fingerprints),
         "command": evidence.command,
         "exit_code": evidence.exit_code,
         "task_id": evidence.task_id,
@@ -76,12 +77,14 @@ def store_test_evidence(
         or not _HEAD.fullmatch(evidence.head)
         or not _FINGERPRINT.fullmatch(evidence.source_fingerprint)
         or not evidence.paths
+        or set(evidence.path_fingerprints) != set(evidence.paths)
+        or any(not _FINGERPRINT.fullmatch(value) for value in evidence.path_fingerprints.values())
         or len(evidence.paths) > 256
         or len(evidence.command) > 2048
     ):
         raise WorkspaceEvidenceError("coding test receipt is not bound to this session")
     payload = json.dumps(
-        {"version": 1, "created_at": float(time.time() if now is None else now),
+        {"version": 2, "created_at": float(time.time() if now is None else now),
          "evidence": _data(evidence)},
         separators=(",", ":"),
     ).encode()
@@ -141,7 +144,7 @@ def load_test_evidence(
     )
     if (
         not isinstance(data, dict)
-        or envelope.get("version") != 1
+        or envelope.get("version") != 2
         or not math.isfinite(created)
         or created > clock + 60
         or clock - created > _MAX_AGE_SECONDS
@@ -153,6 +156,10 @@ def load_test_evidence(
         or not isinstance(data.get("paths"), list)
         or len(data["paths"]) > 256
         or any(not isinstance(item, str) for item in data["paths"])
+        or not isinstance(data.get("path_fingerprints"), dict)
+        or set(data["path_fingerprints"]) != set(data["paths"])
+        or any(not isinstance(value, str) or not _FINGERPRINT.fullmatch(value)
+               for value in data["path_fingerprints"].values())
         or isinstance(data.get("exit_code"), bool)
         or not isinstance(data.get("exit_code"), int)
     ):
@@ -161,7 +168,8 @@ def load_test_evidence(
         evidence = TestEvidence(
             subject=data["subject"], workspace=binding.root, repository=binding.repository,
             branch=data["branch"], head=data["head"], paths=frozenset(data["paths"]),
-            source_fingerprint=data["source_fingerprint"], command=data["command"],
+            source_fingerprint=data["source_fingerprint"],
+            path_fingerprints=dict(data["path_fingerprints"]), command=data["command"],
             exit_code=data["exit_code"], output="", task_id=data["task_id"],
             session_id=data["session_id"], turn_id=data["turn_id"],
             tool_call_id=data["tool_call_id"],

@@ -195,6 +195,43 @@ class WorkspaceContractTests(unittest.TestCase):
         )
         self.assertEqual(result.outcome, "SUCCEEDED", result.reason)
 
+    def test_valid_commit_ignores_extra_test_artifact_paths(self) -> None:
+        artifact = self.repo / "__pycache__" / "fixture.pyc"
+        artifact.parent.mkdir(exist_ok=True)
+        artifact.write_bytes(b"generated test artifact")
+        evidence = self.run_fixture_test({"calc.py", "__pycache__/fixture.pyc"})
+        self.git("add", "calc.py")
+        invocation = begin_commit_invocation(
+            self.binding, self.snapshot(), command='git commit -m "requested fix"',
+            tool_call_id="commit-extra-artifact-call",
+        )
+        self.git("commit", "-qm", "requested fix")
+        result = verify_commit(
+            self.binding, invocation=invocation, after=self.snapshot(),
+            test_evidence=evidence,
+            operation=self.terminal_result("commit-extra-artifact-call", 'git commit -m "requested fix"', 0),
+            commit_requested=True,
+        )
+        self.assertEqual(result.outcome, "SUCCEEDED", result.reason)
+        self.assertEqual(result.committed_paths, frozenset({"calc.py"}))
+
+    def test_commit_cannot_include_untested_changed_source(self) -> None:
+        (self.repo / "test_calc.py").write_text("# changed after test\n", encoding="utf-8")
+        self.git("add", "calc.py", "test_calc.py")
+        invocation = begin_commit_invocation(
+            self.binding, self.snapshot(), command='git commit -m "requested fix"',
+            tool_call_id="commit-untested-path-call",
+        )
+        self.git("commit", "-qm", "requested fix")
+        result = verify_commit(
+            self.binding, invocation=invocation, after=self.snapshot(),
+            test_evidence=self.test_evidence,
+            operation=self.terminal_result("commit-untested-path-call", 'git commit -m "requested fix"', 0),
+            commit_requested=True,
+        )
+        self.assertEqual(result.outcome, "VERIFY")
+        self.assertIn("test evidence", result.reason)
+
     def test_combined_literal_add_and_commit_binds_expected_paths(self) -> None:
         invocation = begin_commit_invocation(
             self.binding,

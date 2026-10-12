@@ -46,6 +46,7 @@ class CodingEvidenceStoreTests(unittest.TestCase):
             head="a" * 40,
             paths=frozenset({"calc.py"}),
             source_fingerprint="b" * 64,
+            path_fingerprints={"calc.py": "b" * 64},
             command="python3 -m unittest -q test_calc",
             exit_code=0,
             output="not persisted",

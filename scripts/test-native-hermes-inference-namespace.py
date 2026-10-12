@@ -252,7 +252,8 @@ def main() -> int:
             binding, invocation=invocation, after=after,
             test_evidence=TestEvidence(
                 **{**passed_test["test_evidence"], "workspace": workspace, "repository": workspace,
-                   "paths": frozenset(passed_test["test_evidence"]["paths"])}
+                   "paths": frozenset(passed_test["test_evidence"]["paths"]),
+                   "path_fingerprints": dict(passed_test["test_evidence"]["path_fingerprints"])}
             ),
             operation=operation, commit_requested=True,
         )
