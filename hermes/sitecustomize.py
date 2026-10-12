@@ -7719,6 +7719,13 @@ def _hades_automatic_memory_qualification(user_content, assistant_content="", pr
         return {"status": "REJECTED", "reason": "canonical_or_operational_state"}
     if _hades_explicit_memory_mutation_intent(text):
         return {"status": "EXPLICIT_ONLY", "reason": "explicit_memory_route"}
+    # A question about a user's preference is a recall request, not a new
+    # assertion. Phrases such as "Which tea do I usually like?" otherwise
+    # satisfy the durable preference pattern and pollute memory with the
+    # question itself. Explicit remember/forget/correct requests were handled
+    # above and retain their existing semantics.
+    if "?" in text:
+        return {"status": "REJECTED", "reason": "question_is_not_user_assertion"}
     if _HADES_EDITOR_CORRECTION.search(text) and any(
         re.search(r"\b(?:editor|ide)\b", str(previous), re.IGNORECASE)
         and _hades_automatic_memory_qualification(previous)["status"] == "QUALIFIED"

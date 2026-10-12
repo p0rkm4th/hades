@@ -190,11 +190,16 @@ for text in (
     "I prefer concise answers, and here is a pasted log:\nline one\nline two\nline three\nline four",
     "Did you forget what's in my pantry?",
     "I can't remember my server name.",
+    "Which tea do I usually like?",
+    "I prefer basil?",
     "My pantry currently has 4 eggs.",
     "The server is healthy.",
 ):
     decision = overlay._hades_automatic_memory_qualification(text)
     assert decision["status"] != "QUALIFIED", (text, decision)
+assert overlay._hades_automatic_memory_qualification(
+    "Which tea do I usually like?"
+)["reason"] == "question_is_not_user_assertion"
 assert overlay._hades_automatic_memory_qualification("remember that I prefer basil.")["status"] == "EXPLICIT_ONLY"
 assert overlay._hades_automatic_memory_qualification("I prefer basil", "The service is unavailable.")["status"] == "REJECTED"
 assert overlay._hades_automatic_memory_qualification("Actually, I switched to Neovim.")["status"] == "REJECTED"
