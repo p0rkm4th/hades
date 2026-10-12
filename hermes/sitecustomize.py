@@ -7691,9 +7691,13 @@ _HADES_MEMORY_UNTRUSTED_PROVENANCE = re.compile(
     r"\b(?:log|transcript|document)\s+(?:says|shows|contains)\b",
     re.IGNORECASE,
 )
+_HADES_EDITOR_CORRECTION = re.compile(
+    r"\bactually\s*,?\s*i\s+(?:switched|moved)\s+to\s+([a-z0-9+.#-]+)\b",
+    re.IGNORECASE,
+)
 
 
-def _hades_automatic_memory_qualification(user_content, assistant_content=""):
+def _hades_automatic_memory_qualification(user_content, assistant_content="", prior_user_context=()):
     """Qualify a small set of explicit, durable user-context assertions.
 
     Hindsight's retain mission handles extraction after this boundary. This
@@ -7715,6 +7719,12 @@ def _hades_automatic_memory_qualification(user_content, assistant_content=""):
         return {"status": "REJECTED", "reason": "canonical_or_operational_state"}
     if _hades_explicit_memory_mutation_intent(text):
         return {"status": "EXPLICIT_ONLY", "reason": "explicit_memory_route"}
+    if _HADES_EDITOR_CORRECTION.search(text) and any(
+        re.search(r"\b(?:editor|ide)\b", str(previous), re.IGNORECASE)
+        and _hades_automatic_memory_qualification(previous)["status"] == "QUALIFIED"
+        for previous in prior_user_context
+    ):
+        return {"status": "QUALIFIED", "reason": "preference_correction"}
     for category, pattern in _HADES_DURABLE_MEMORY_CLAIMS:
         if pattern.search(text):
             return {"status": "QUALIFIED", "reason": category}
@@ -7747,7 +7757,22 @@ def _hades_automatic_memory_actor_bound(provider, session_id):
 
 def _hades_sync_qualified_memory_turn(provider, user_content, assistant_content, session_id, sync_turn):
     """Submit only a qualified user assertion to the actor-bound native writer."""
-    decision = _hades_automatic_memory_qualification(user_content, assistant_content)
+    prior_user_context = []
+    for serialized_turn in list(getattr(provider, "_session_turns", []) or [])[-8:]:
+        try:
+            messages = json.loads(serialized_turn)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(messages, list):
+            continue
+        prior_user_context.extend(
+            message.get("content", "")
+            for message in messages
+            if isinstance(message, dict) and message.get("role") == "user"
+        )
+    decision = _hades_automatic_memory_qualification(
+        user_content, assistant_content, prior_user_context=prior_user_context
+    )
     if decision["status"] != "QUALIFIED":
         decision["submitted"] = False
         return decision

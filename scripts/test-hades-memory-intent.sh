@@ -48,6 +48,7 @@ if missing:
     raise SystemExit(f'missing memory-intent coverage: {missing}')
 
 import importlib.util
+import json
 import logging
 import os
 logging.disable(logging.CRITICAL)
@@ -181,6 +182,15 @@ for text in (
     assert decision["status"] != "QUALIFIED", (text, decision)
 assert overlay._hades_automatic_memory_qualification("remember that I prefer basil.")["status"] == "EXPLICIT_ONLY"
 assert overlay._hades_automatic_memory_qualification("I prefer basil", "The service is unavailable.")["status"] == "REJECTED"
+assert overlay._hades_automatic_memory_qualification("Actually, I switched to Neovim.")["status"] == "REJECTED"
+assert overlay._hades_automatic_memory_qualification(
+    "Actually, I switched to Neovim.",
+    prior_user_context=["User: My preferred editor is Vim."],
+)["status"] == "QUALIFIED"
+assert overlay._hades_automatic_memory_qualification(
+    "Actually, I switched to Neovim.",
+    prior_user_context=["Assistant: The user may like Vim."],
+)["status"] == "REJECTED"
 
 from types import SimpleNamespace
 previous_allowlist = os.environ.get("HADES_HINDSIGHT_AUTO_RETAIN_SUBJECT_IDS")

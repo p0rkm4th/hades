@@ -220,9 +220,9 @@ else:
 '''
             def invoke(mode: str, subject: str, session: str) -> dict:
                 extra_args = json.dumps([
-                    "I prefer Vim for coding.",
-                    "My preferred editor is Neovim now.",
-                    "I prefer Neovim for coding.",
+                    "My preferred editor is Vim.",
+                    "Actually, I switched to Neovim.",
+                    "Actually, I switched to Neovim.",
                 ]) if mode == "journey" else None
                 args = [str(hermes_python), "-c", worker, mode, subject, session]
                 if extra_args is not None:
