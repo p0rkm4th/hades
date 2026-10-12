@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
 import sys
+import time
 import uuid
 from pathlib import Path
 from typing import Any
@@ -53,6 +55,8 @@ def _dict_rows(value: Any) -> list[dict[str, Any]]:
 
 
 def main() -> int:
+    worker_started = time.perf_counter()
+    diagnostics_enabled = os.environ.get("HADES_CODING_WORKER_DIAGNOSTICS", "").strip() == "1"
     capability_line = next(
         line for line in Path("/proc/self/status").read_text().splitlines()
         if line.startswith("CapEff:")
@@ -97,6 +101,8 @@ def main() -> int:
     binding = WorkspaceBinding(subject, workspace, workspace)
     records: dict[str, dict[str, Any]] = {}
     tool_names: list[str] = []
+    tool_trace: list[dict[str, Any]] = []
+    trace_by_call: dict[str, dict[str, Any]] = {}
     agent = None
 
     def belongs_to_worker(task_id: str, session_id: str) -> bool:
@@ -110,6 +116,36 @@ def main() -> int:
             tool_names.append(tool_name)
         if not belongs_to_worker(task_id, session_id) or not turn_id:
             return
+        if diagnostics_enabled:
+            test_command = (
+                _recognized_test_command(args.get("command", ""))
+                if tool_name == "terminal" and isinstance(args, dict) else None
+            )
+            kind = (
+                "discovery" if tool_name in {"read_file", "read_many_files", "search_files", "list_directory"}
+                else "edit" if tool_name in {"patch", "write_file", "create_file", "edit_file"}
+                else "test" if test_command
+                else "other"
+            )
+            safe_tool_name = tool_name[:64] if isinstance(tool_name, str) else "unknown"
+            trace_row: dict[str, Any] = {
+                "tool_name": safe_tool_name,
+                "kind": kind,
+                "start_ms": max(0, int((time.perf_counter() - worker_started) * 1000)),
+                "elapsed_ms": None,
+            }
+            if kind == "discovery" and isinstance(args, (dict, list)):
+                try:
+                    encoded_args = json.dumps(args, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+                    if len(encoded_args) <= 8192:
+                        trace_row["fingerprint"] = hashlib.sha256(
+                            (safe_tool_name + "\0" + encoded_args).encode("utf-8")
+                        ).hexdigest()
+                except (TypeError, ValueError):
+                    pass
+            tool_trace.append(trace_row)
+            if tool_call_id:
+                trace_by_call[tool_call_id] = trace_row
         record: dict[str, Any] = {
             "tool_name": tool_name,
             "event_task_id": task_id,
@@ -151,6 +187,11 @@ def main() -> int:
     def post_tool(*, tool_name: str = "", args: Any = None, result: Any = None,
                   task_id: str = "", session_id: str = "", turn_id: str = "",
                   tool_call_id: str = "", **_: Any) -> None:
+        trace_row = trace_by_call.get(tool_call_id) if diagnostics_enabled else None
+        if trace_row is not None and belongs_to_worker(task_id, session_id):
+            trace_row["elapsed_ms"] = max(
+                0, int((time.perf_counter() - worker_started) * 1000) - trace_row["start_ms"]
+            )
         record = records.get(tool_call_id)
         if (record is None or not belongs_to_worker(task_id, session_id)
                 or record.get("event_task_id") != task_id
@@ -251,6 +292,7 @@ def main() -> int:
             "final_response": str(result.get("final_response") or "")[:24_000],
             "tool_records": records,
             "tool_call_names": tool_names[:128],
+            "tool_trace": tool_trace[:128] if diagnostics_enabled else [],
             "hermes_version": version,
             "subject": subject,
             "session_id": session_id,

@@ -15,6 +15,7 @@ from hermes.coding_worker import (  # noqa: E402
     should_route_to_coding_worker,
     _workspace_mutation_authorized,
     _explicit_commit,
+    _coding_trace_summary,
     _attach_worker_diagnostics,
     _validate_worker_result_identity,
 )
@@ -22,23 +23,56 @@ from hermes.coding_worker import (  # noqa: E402
 
 class CodingWorkerRoutingTests(unittest.TestCase):
     def test_opt_in_worker_diagnostics_contain_only_tool_names_and_timing(self) -> None:
-        result = {"tool_call_names": ["terminal", "read_file", "terminal"]}
+        result = {
+            "tool_call_names": ["terminal", "read_file", "terminal"],
+            "tool_trace": [{"tool_name": "read_file", "kind": "discovery",
+                            "start_ms": 4, "elapsed_ms": 2,
+                            "fingerprint": "a" * 64}],
+        }
         with patch.dict("os.environ", {"HADES_CODING_WORKER_DIAGNOSTICS": "1"}), \
              patch("hermes.coding_worker._LOGGER.info") as log_info:
             enriched = _attach_worker_diagnostics(result, task_id="task-1", started_at=0.0)
         self.assertEqual(enriched["task_id"], "task-1")
         self.assertGreaterEqual(enriched["elapsed_ms"], 0)
-        self.assertEqual(log_info.call_args.args[0],
-                         "coding worker trace task=%s elapsed_ms=%d tool_calls=%d tools=%s")
-        self.assertEqual(log_info.call_args.args[3], 3)
-        self.assertEqual(log_info.call_args.args[4], "terminal,read_file,terminal")
+        self.assertNotIn("tool_trace", enriched)
+        self.assertNotIn("a" * 64, repr(enriched))
+        self.assertIn("first_tool_ms=%s", log_info.call_args.args[0])
+        self.assertEqual(log_info.call_args.args[-1], "terminal,read_file,terminal")
 
     def test_worker_diagnostics_are_silent_by_default(self) -> None:
-        result = {"tool_call_names": ["terminal"]}
+        result = {
+            "tool_call_names": ["terminal"],
+            "tool_trace": [{"tool_name": "read_file", "fingerprint": "b" * 64}],
+        }
         with patch.dict("os.environ", {"HADES_CODING_WORKER_DIAGNOSTICS": "0"}), \
              patch("hermes.coding_worker._LOGGER.info") as log_info:
-            _attach_worker_diagnostics(result, task_id="task-1", started_at=0.0)
+            enriched = _attach_worker_diagnostics(result, task_id="task-1", started_at=0.0)
         log_info.assert_not_called()
+        self.assertNotIn("tool_trace", enriched)
+        self.assertNotIn("b" * 64, repr(enriched))
+
+    def test_coding_trace_summary_measures_discovery_edit_and_test_without_arguments(self) -> None:
+        summary = _coding_trace_summary({"tool_trace": [
+            {"tool_name": "search_files", "kind": "discovery", "start_ms": 10,
+             "elapsed_ms": 5, "fingerprint": "a" * 64},
+            {"tool_name": "search_files", "kind": "discovery", "start_ms": 20,
+             "elapsed_ms": 4, "fingerprint": "a" * 64},
+            {"tool_name": "read_file", "kind": "discovery", "start_ms": 30,
+             "elapsed_ms": 3, "fingerprint": "b" * 64},
+            {"tool_name": "patch", "kind": "edit", "start_ms": 40, "elapsed_ms": 2},
+            {"tool_name": "terminal", "kind": "test", "start_ms": 50, "elapsed_ms": 100},
+        ]})
+        self.assertEqual(summary, {
+            "tool_calls": 5,
+            "first_tool_ms": 10,
+            "first_file_ms": 10,
+            "first_edit_ms": 40,
+            "first_test_ms": 50,
+            "test_calls": 1,
+            "test_ms": 100,
+            "tool_ms": 114,
+            "duplicate_discovery_calls": 1,
+        })
 
     def test_commit_authority_respects_current_turn_negation(self) -> None:
         for prompt in (

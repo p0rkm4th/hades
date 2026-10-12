@@ -42,12 +42,52 @@ RESULT_PREFIX = "HADES_CODING_RESULT="
 _LOGGER = logging.getLogger("hades.coding_worker")
 
 
+def _coding_trace_summary(worker_result: dict[str, Any]) -> dict[str, Any]:
+    """Reduce a server-generated tool trace to content-free latency counters."""
+    trace = worker_result.get("tool_trace")
+    rows = [row for row in trace if isinstance(row, dict)] if isinstance(trace, list) else []
+    names = [row.get("tool_name") for row in rows]
+    file_names = {"read_file", "read_many_files", "search_files", "list_directory"}
+    edit_names = {"patch", "write_file", "create_file", "edit_file"}
+
+    def first_start(predicate) -> int | None:
+        return next(
+            (row["start_ms"] for row in rows
+             if isinstance(row.get("start_ms"), int) and predicate(row)),
+            None,
+        )
+
+    fingerprints = [
+        row.get("fingerprint") for row in rows
+        if row.get("kind") == "discovery"
+        and isinstance(row.get("fingerprint"), str)
+        and re.fullmatch(r"[a-f0-9]{64}", row["fingerprint"])
+    ]
+    return {
+        "tool_calls": len(rows),
+        "first_tool_ms": first_start(lambda _row: True),
+        "first_file_ms": first_start(lambda row: row.get("tool_name") in file_names),
+        "first_edit_ms": first_start(lambda row: row.get("tool_name") in edit_names),
+        "first_test_ms": first_start(lambda row: row.get("kind") == "test"),
+        "test_calls": sum(row.get("kind") == "test" for row in rows),
+        "test_ms": sum(
+            row["elapsed_ms"] for row in rows
+            if row.get("kind") == "test" and isinstance(row.get("elapsed_ms"), int)
+        ),
+        "tool_ms": sum(
+            row["elapsed_ms"] for row in rows if isinstance(row.get("elapsed_ms"), int)
+        ),
+        "duplicate_discovery_calls": len(fingerprints) - len(set(fingerprints)),
+    }
+
+
 def _attach_worker_diagnostics(
     result: dict[str, Any], *, task_id: str, started_at: float
 ) -> dict[str, Any]:
     """Attach content-free per-turn diagnostics; emit them only when opted in."""
     result["task_id"] = task_id
     result["elapsed_ms"] = max(0, int((time.perf_counter() - started_at) * 1000))
+    raw_trace = result.pop("tool_trace", None)
     raw_names = result.get("tool_call_names")
     names = [
         name for name in raw_names[:128]
@@ -55,11 +95,22 @@ def _attach_worker_diagnostics(
         and re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]{0,63}", name)
     ] if isinstance(raw_names, list) else []
     if os.environ.get("HADES_CODING_WORKER_DIAGNOSTICS", "").strip() == "1":
+        trace = _coding_trace_summary({"tool_trace": raw_trace})
         _LOGGER.info(
-            "coding worker trace task=%s elapsed_ms=%d tool_calls=%d tools=%s",
+            "coding worker trace task=%s elapsed_ms=%d first_tool_ms=%s "
+            "first_file_ms=%s first_edit_ms=%s first_test_ms=%s test_calls=%d "
+            "test_ms=%d tool_ms=%d duplicate_discovery_calls=%d tool_calls=%d tools=%s",
             task_id,
             result["elapsed_ms"],
-            len(names),
+            trace["first_tool_ms"],
+            trace["first_file_ms"],
+            trace["first_edit_ms"],
+            trace["first_test_ms"],
+            trace["test_calls"],
+            trace["test_ms"],
+            trace["tool_ms"],
+            trace["duplicate_discovery_calls"],
+            trace["tool_calls"] or len(names),
             ",".join(names),
         )
     return result
@@ -601,6 +652,7 @@ def run_coding_worker(
             "mutated": before.head != after.head or before.status_entries != after.status_entries,
             "evidence_call_count": len(records),
             "tool_call_names": worker_result.get("tool_call_names", [])[:128],
+            "tool_trace": worker_result.get("tool_trace", [])[:128],
         }, task_id=task_id, started_at=started_at)
 
 
