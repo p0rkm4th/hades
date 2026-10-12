@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from dataclasses import replace
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -376,6 +377,43 @@ class WorkspaceContractTests(unittest.TestCase):
         object.__setattr__(evidence, "turn_id", "prior-coding-turn-001")
         self.git("commit", "-qm", "requested fix")
         result = self.verify(evidence=evidence)
+        self.assertEqual(result.outcome, "SUCCEEDED", result.reason)
+
+    def test_verified_prior_turn_test_can_cross_hermes_task_ids(self) -> None:
+        evidence = replace(
+            self.test_evidence,
+            task_id="test-turn-task",
+            turn_id="test-turn-id",
+        )
+        commit_turn = replace(
+            self.commit_invocation,
+            task_id="commit-turn-task",
+            turn_id="commit-turn-id",
+        )
+        self.git("commit", "-qm", "requested fix")
+        after = snapshot_repository(
+            self.binding,
+            task_id="commit-turn-task",
+            session_id="conversation-001",
+            turn_id="commit-turn-id",
+        )
+        result = verify_commit(
+            self.binding,
+            invocation=commit_turn,
+            after=after,
+            test_evidence=evidence,
+            operation=HermesTerminalResult(
+                task_id="commit-turn-task",
+                session_id="conversation-001",
+                turn_id="commit-turn-id",
+                tool_call_id="commit-tool-call-001",
+                command='git commit -m "requested fix"',
+                exit_code=0,
+                output="trusted commit result",
+                completed=True,
+            ),
+            commit_requested=True,
+        )
         self.assertEqual(result.outcome, "SUCCEEDED", result.reason)
 
     def test_test_must_be_tied_to_preoperation_head(self) -> None:

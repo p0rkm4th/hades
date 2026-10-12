@@ -17,6 +17,11 @@ from pathlib import Path
 from typing import Any
 
 from hermes.coding_workspace_pool import resolve_session_workspace
+from hermes.coding_evidence_store import (
+    clear_test_evidence,
+    load_test_evidence,
+    store_test_evidence,
+)
 from hermes.workspace_contract import (
     CommitInvocation,
     HermesTerminalResult,
@@ -233,6 +238,10 @@ def run_coding_worker(
         before = snapshot_repository(
             binding, task_id=task_id, session_id=session_id, turn_id=turn_id,
         )
+        try:
+            cached_test_evidence = load_test_evidence(binding, session_id)
+        except (OSError, WorkspaceEvidenceError):
+            cached_test_evidence = None
         with tempfile.TemporaryDirectory(prefix="hades-coding-run-") as temp_name:
             temp_root = Path(temp_name)
             support = temp_root / "support"
@@ -325,6 +334,8 @@ def run_coding_worker(
         if not isinstance(hermes_turn_id, str) or not hermes_turn_id:
             raise CodingWorkerError("Hermes did not return its server-generated turn identity")
         test_evidence = None
+        current_turn_test_evidence = None
+        current_test_attempted = False
         commit_invocation = None
         commit_result = None
         for record in records.values():
@@ -334,15 +345,25 @@ def run_coding_worker(
                     or record.get("event_session_id") != session_id
                     or not record.get("event_tool_call_id")):
                 continue
+            if record.get("test_invocation") or record.get("test_evidence_error"):
+                current_test_attempted = True
             raw_operation = record.get("terminal_result")
             raw_evidence = record.get("test_evidence")
             evidence = _dataclass(TestEvidence, raw_evidence, binding)
             if evidence is not None and evidence.passed:
                 test_evidence = evidence
+                current_turn_test_evidence = evidence
             raw_commit = record.get("commit_invocation")
             if raw_commit:
                 commit_invocation = _dataclass(CommitInvocation, raw_commit, binding)
                 commit_result = _dataclass(HermesTerminalResult, raw_operation, binding)
+
+        if (
+            commit_invocation is not None
+            and test_evidence is None
+            and not current_test_attempted
+        ):
+            test_evidence = cached_test_evidence
 
         verification = verify_commit(
             binding,
@@ -375,8 +396,46 @@ def run_coding_worker(
                 )
             except WorkspaceEvidenceError:
                 test_verified = False
+        elif test_evidence is not None and commit_invocation is not None:
+            try:
+                tested_revision = after.head if after.head != commit_invocation.head else None
+                current_fingerprint = _path_fingerprint(
+                    binding.repository,
+                    test_evidence.paths,
+                    tested_revision,
+                )
+                test_verified = (
+                    test_evidence.passed
+                    and test_evidence.subject == subject
+                    and test_evidence.workspace == binding.root
+                    and test_evidence.repository == binding.repository
+                    and test_evidence.session_id == session_id
+                    and test_evidence.branch == commit_invocation.branch
+                    and test_evidence.head == commit_invocation.head
+                    and test_evidence.paths == commit_invocation.expected_paths
+                    and current_fingerprint == test_evidence.source_fingerprint
+                )
+            except WorkspaceEvidenceError:
+                test_verified = False
         else:
-            test_verified = bool(test_evidence and test_evidence.passed)
+            test_verified = False
+
+        head_changed = before.head != after.head
+        try:
+            if head_changed or (current_test_attempted and current_turn_test_evidence is None):
+                clear_test_evidence(binding, session_id)
+            if (
+                current_turn_test_evidence is not None
+                and test_verified
+                and not (commit_authorized and verification.outcome == "SUCCEEDED")
+            ):
+                store_test_evidence(binding, session_id, current_turn_test_evidence)
+            if commit_authorized and verification.outcome == "SUCCEEDED":
+                clear_test_evidence(binding, session_id)
+        except (OSError, WorkspaceEvidenceError):
+            # Persistence improves cross-turn continuity, but never substitutes
+            # for the current operation's canonical Git post-condition checks.
+            pass
         if commit_authorized and verification.outcome != "SUCCEEDED":
             answer = (
                 "I could not verify the requested commit, so I won't report it as complete. "

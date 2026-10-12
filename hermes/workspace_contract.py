@@ -768,16 +768,15 @@ def verify_commit(
         return CommitVerification("VERIFY", "commit paths do not exactly match the staged intent captured for this call", invocation.head, after.head, committed)
     if test_evidence is None or not test_evidence.passed:
         return CommitVerification("VERIFY", "passing focused-test evidence is absent", invocation.head, after.head, committed)
-    # A coding operation may continue across conversational turns. A prior-turn
-    # test is still valid only when the same task/session, pre-commit HEAD, exact
-    # selected paths, and committed source fingerprint all match below.
+    # A coding conversation may span isolated Hermes task IDs. Prior-turn test
+    # receipts are accepted only when they remain bound to this same session,
+    # pre-commit HEAD, exact selected paths, and committed source fingerprint.
     if (
         test_evidence.subject != binding.subject
         or test_evidence.workspace != binding.root
         or test_evidence.repository != binding.repository
         or test_evidence.branch != invocation.branch
         or test_evidence.head != invocation.head
-        or test_evidence.task_id != invocation.task_id
         or test_evidence.session_id != invocation.session_id
         or test_evidence.paths != selected
     ):
