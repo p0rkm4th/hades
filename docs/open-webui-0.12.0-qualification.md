@@ -1,6 +1,6 @@
 # Open WebUI 0.12.0 Candidate Qualification
 
-Status: **in progress; production remains pinned to 0.11.4**.
+Status: **candidate qualification incomplete; production remains pinned to 0.11.4**.
 
 ## Pinned candidate
 
@@ -62,12 +62,36 @@ revocation require explicit acceptance below.
   ACL behavior.
 - Production was not changed and remains on qualified 0.11.4.
 
+## Performance and resource comparison
+
+- A local disposable harness used the same synthetic streamed model for both
+  versions. Startup-to-health was 10.56 s on 0.11.4 and 11.14 s on 0.12.0;
+  signup/signin were approximately 0.2 s each on both; first streamed byte and
+  completion were 0.040 s and 0.032 s respectively; history reload was 0.016 s
+  and 0.012 s. Restart-to-health was 27.04 s for both. This does not measure
+  real model latency or tool-backed HADES turns.
+- Image size was 6,459,245,954 bytes for the HADES 0.11.4 baseline and
+  6,326,191,192 bytes for the HADES 0.12.0 candidate. One idle sample measured
+  743,538,688 versus 750,530,560 cgroup bytes; this is not enough evidence for
+  a material memory difference.
+
 ## Remaining qualification gates
 
-- Complete bounded owner-regression smoke through a production-like candidate
-  path with synthetic domain fixtures; do not expose real owner data.
-- Record comparable startup/login/chat/stream/history timing and resource use.
-- Run hosted Public CI and review any failure.
-- Finalize the promotion recommendation after those remaining gates.
+- Run the exact owner regression prompts through the candidate Open WebUI
+  connected to synthetic HADES domain sources. Source-level synthetic domain
+  tests and candidate UI tests have passed separately, but that end-to-end
+  composition has not been exercised.
+- Complete candidate-connected HADES tool/MCP and Hindsight identity checks;
+  synthetic UI streaming and separate HADES source contracts do not prove this
+  combined path.
+- Hosted Public CI run `38408288989` for source commit
+  `883c2fb1e264b73c2e200af21ef17b0c3f8328aa` failed its public-history audit.
+  The runner reported findings in private-path/address and local-domain/MAC
+  scans while the same range passes locally. Matched values are intentionally
+  not recorded here. Resolve this discrepancy and obtain a green hosted run.
 
-No production promotion is authorized by this qualification.
+No production promotion is authorized by this qualification. Current evidence
+supports the tested migration, rollback, authentication-boundary, file-security,
+and persistence paths; it does not establish full candidate-connected owner
+acceptance. Recommendation remains **REJECTED / DEFERRED** until the gates above
+are satisfied.
