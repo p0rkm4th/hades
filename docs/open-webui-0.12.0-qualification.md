@@ -93,9 +93,11 @@ they do not weaken this production requirement.
   synthetic identities and an isolated persistent Valkey/Hindsight runtime.
 - On the exact candidate image, a normal synthetic-user browser login, new
   chat, two streamed user/assistant turns, history listing, and reload all
-  passed. The message Edit action opens the edit control. The qualification
-  does not claim completed edit-and-resubmit, regenerate, fork, delete, or
-  long-conversation browser coverage.
+  passed. The browser journey also passed edit/resubmit, regenerate through
+  the 0.12 “Try Again” menu, fork with a new chat ID, create a fresh chat,
+  complete an eight-turn thread, and delete that thread with history removal
+  verified after reload. The repeatable synthetic acceptance is
+  `scripts/test-openwebui-012-chat-lifecycle-ui.sh`.
 - Authenticated synthetic candidate UI journeys pass for household Grocy
   operations, homelab network diagnosis, and read-only finance monthly
   aggregation/household denial. These exercise the 0.12 UI with the HADES
@@ -123,9 +125,9 @@ they do not weaken this production requirement.
 
 - Candidate tests use synthetic identities, data, and model/tool fixtures; no
   real Scotty account or private production database was migrated. The UI
-  harnesses exercise authenticated application flows, but the complete browser
-  interaction matrix for edit-and-resubmit, regenerate, branch, delete, and
-  long conversations remains unverified.
+  harness uses a synthetic OpenAI-compatible model and disposable candidate
+  state; it does not replace natural owner dogfood against private production
+  integrations.
 - Owner regression semantics were checked through candidate UI journeys and
   focused source tests. This is bounded compatibility evidence, not a claim
   that every prompt variant or every live production integration was exercised

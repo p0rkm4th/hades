@@ -60,6 +60,20 @@ def main() -> None:
         assert "open-webui-candidate-test-runtime.sh" in script
         assert '"${HADES_CANDIDATE_RUNTIME_ARGS[@]}"' in script
 
+    chat_ui = (ROOT / "scripts/test-openwebui-012-chat-lifecycle-ui.sh").read_text()
+    for lifecycle_contract in (
+        "synthetic-ui",
+        "#confirm-edit-message-button",
+        "Try Again",
+        "button[aria-label=\"Fork chat\"]",
+        "#new-chat-button",
+        "long synthetic thread turn",
+        "#delete-chat-button",
+        "HADES_CANDIDATE_RUNTIME_ARGS",
+    ):
+        assert lifecycle_contract in chat_ui, f"candidate browser lifecycle coverage is missing {lifecycle_contract}"
+    assert "hades-openwebui-012-ui." in chat_ui and "127.0.0.1:${webui_port}:8080" in chat_ui
+
     build = (ROOT / "scripts/build-openwebui-012-qualification.sh").read_text()
     assert "git -C \"$repo_dir\" status --porcelain" in build, "candidate build must bind to a clean source tree"
     assert "--platform \"$HADES_OPEN_WEBUI_012_PLATFORM\"" in build
