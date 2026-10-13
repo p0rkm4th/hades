@@ -2007,6 +2007,24 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert 'runtime status is running' in supplemental_guest_fallback, supplemental_guest_fallback
             assert 'Synthetic Hermes (VM 302)' in supplemental_guest_fallback, supplemental_guest_fallback
             assert 'runtime status is stopped' in supplemental_guest_fallback, supplemental_guest_fallback
+            def unmatched_machine_fixture(operation):
+                summary = original_registry_read(operation)
+                summary['resources'] = []
+                summary['proxmox_node_metrics'] = {'status': 'READABLE', 'endpoints': [{
+                    'status': 'AVAILABLE', 'nodes': [
+                        {'name': 'Synthetic Node A', 'status': 'ONLINE'},
+                        {'name': 'Synthetic Node B', 'status': 'OFFLINE'},
+                    ],
+                }]}
+                return summary
+            namespace['_hades_direct_homelab_tool_result'] = unmatched_machine_fixture
+            unmatched_targets = direct_read(
+                'homelab node status for Synthetic Missing A and Synthetic Missing B',
+                'synthetic-owner', 'owner',
+            )
+            assert 'couldn\'t match Synthetic Missing A' in unmatched_targets, unmatched_targets
+            assert 'couldn\'t match Synthetic Missing B' in unmatched_targets, unmatched_targets
+            assert 'Current Proxmox node sample: Synthetic Node A online; Synthetic Node B offline' in unmatched_targets, unmatched_targets
             namespace['_hades_live_proxmox_vm_rows'] = lambda: []
             namespace['_hades_direct_homelab_tool_result'] = node_followup_fixture
             problem_answer = direct_read(

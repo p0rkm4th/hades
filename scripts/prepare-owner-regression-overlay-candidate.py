@@ -296,6 +296,23 @@ def patch_legacy_turn_gates(text: str) -> str:
                 # returning an empty host-evidence prefix.
                 view = _hades_homelab_named_resource_status(summary, target)
             views.append(view or f"I couldn't verify a current homelab status for {target}.")
+        unmatched = [
+            target for target, view in zip(node_status_targets, views)
+            if str(view or "").casefold().startswith("i couldn't match ")
+        ]
+        node_metrics = summary.get("proxmox_node_metrics")
+        observed_nodes = [
+            node for endpoint in node_metrics.get("endpoints", [])
+            if isinstance(endpoint, dict) and endpoint.get("status") == "AVAILABLE"
+            for node in endpoint.get("nodes", []) if isinstance(node, dict)
+        ] if isinstance(node_metrics, dict) else []
+        if unmatched and observed_nodes:
+            sample = "; ".join(
+                f"{str(node.get('name') or node.get('node') or 'Unnamed node')[:80]} "
+                f"{str(node.get('status') or 'UNKNOWN').casefold()}"
+                for node in observed_nodes[:4]
+            )
+            views.append("Current Proxmox node sample: " + sample + ".")
         return " ".join(views)
 """
     existing_override = "    node_status_targets = _hades_homelab_node_status_targets(text)\n"
