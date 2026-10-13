@@ -6930,7 +6930,15 @@ def _hades_is_provisioning_request(user_text):
 def _hades_is_managed_server_status_request(user_text):
     """Keep server inventory/status reads from swallowing provisioning requests."""
     text = str(user_text or "")
-    if _hades_is_provisioning_request(text):
+    if (
+        re.search(r"\b(?:spin\s+(?:(?:one|it|a|the)\s+)?up|provision|deploy|create|make|host)\b", text, re.IGNORECASE)
+        and re.search(
+            r"\b(?:server|palworld|minecraft|factorio|proxmox|vm|virtual\s+machine|"
+            r"sandbox(?:es)?|workload(?:s)?|website(?:s)?|linux\s+box)\b",
+            text,
+            re.IGNORECASE,
+        )
+    ):
         return False
     definition_question = bool(
         re.fullmatch(r"\s*what(?:['’]s|\s+(?:is|are))\s+.+?[?.!]*\s*", text, re.IGNORECASE)

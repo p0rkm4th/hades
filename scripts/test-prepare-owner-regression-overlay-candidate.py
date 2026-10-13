@@ -94,8 +94,9 @@ def _hades_run_conversation(user_text):
     )
     _read_choice = _hades_grocy_read_tool_choice(current_text, grocy_tools)
     grocy_read_only_turn = bool(re.search(r"\b(?:recipes?|ingredients?|make|cook|fulfill|missing)\\b", user_text))
+    _server_status_turn = bool(re.search(r"server status", user_text))
     actions = (r"spin\s+up", r"spin\s+up", r"spin\s+up")
-    return grocy_read_only_turn, actions
+    return grocy_read_only_turn, actions, _server_status_turn
 
 LIVE_ONLY_SENTINEL = "must remain byte-for-byte"
 '''
@@ -117,6 +118,9 @@ assert "_hades_homelab_named_resource_status(summary, target)" in candidate
 assert "Current host evidence:" not in candidate
 assert 'current_read_operation == "recipe_details_tool"' in candidate
 assert "current_grocy_intent" in candidate
+assert "def _hades_is_managed_server_status_request(user_text):" in candidate
+assert "_server_status_turn = _hades_is_managed_server_status_request(_server_text)" in candidate
+assert "def _hades_finance_followup_query(user_text, conversation_history, scope):" in candidate
 
 # The deployment-local fulfillment shortcut must yield explicit detail
 # operations to Hermes' canonical recipe detail tool. Otherwise a named
@@ -142,4 +146,5 @@ assert "def _hades_run_conversation(user_text):" in candidate
 recomposed = composer.compose(candidate.encode(), source.encode()).decode()
 assert recomposed.count("node_status_targets = _hades_homelab_node_status_targets(text)") == 1
 assert recomposed.count("view = _hades_homelab_named_resource_status(summary, target)") == 1
+assert recomposed.count("_server_status_turn = _hades_is_managed_server_status_request(_server_text)") == 1
 print("PASS owner-regression composition is bounded, reproducible, and preserves live-only content")

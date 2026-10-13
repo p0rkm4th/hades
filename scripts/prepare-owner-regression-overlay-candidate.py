@@ -104,6 +104,33 @@ def insert_top_level_function(active: str, source: str, name: str, *, before: st
     return active.encode("utf-8")[:a].decode("utf-8") + source.encode("utf-8")[c:d].decode("utf-8") + "\n\n" + active.encode("utf-8")[a:].decode("utf-8")
 
 
+def replace_nested_assignment(active: str, source: str, function_name: str, variable_name: str) -> str:
+    def find_assignment(text: str) -> ast.Assign:
+        functions = [
+            node for node in ast.walk(ast.parse(text))
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == function_name
+        ]
+        if len(functions) != 1:
+            raise SystemExit(f"FAIL expected one active/source {function_name}")
+        assignments = [
+            node for node in ast.walk(functions[0])
+            if isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == variable_name
+        ]
+        if len(assignments) != 1:
+            raise SystemExit(f"FAIL expected one {variable_name} assignment in {function_name}")
+        return assignments[0]
+
+    old, new = find_assignment(active), find_assignment(source)
+    a, b = node_span(active, old)
+    active_line = active.splitlines()[old.lineno - 1]
+    indent = active_line[:len(active_line) - len(active_line.lstrip())]
+    replacement = f"{indent}{variable_name} = {ast.unparse(new.value)}\n"
+    return active.encode("utf-8")[:a].decode("utf-8") + replacement + active.encode("utf-8")[b:].decode("utf-8")
+
+
 def insert_grocy_operation_guard(text: str) -> str:
     matches = named_functions(text, "_hades_direct_grocy_recipe_read")
     if len(matches) != 1:
@@ -343,6 +370,15 @@ def compose(active: bytes, source: bytes) -> bytes:
     # the candidate and is inserted before its single-name compatibility API.
     for name in ("_hades_grocy_read_operation", "_hades_broad_homelab_status_intent", "_hades_homelab_read_followup_query"):
         active_text = replace_top_level_function(active_text, source_text, name)
+    if named_functions(active_text, "_hades_finance_followup_query"):
+        active_text = replace_top_level_function(
+            active_text, source_text, "_hades_finance_followup_query",
+        )
+    else:
+        active_text = insert_top_level_function(
+            active_text, source_text, "_hades_finance_followup_query",
+            before="_hades_p1_finance_merchant_calculation",
+        )
     for name, anchor in (
         ("_hades_grocy_ingredient_followup", "_hades_grocy_read_tool_choice"),
         ("_hades_grocy_read_operation_for_turn", "_hades_grocy_read_tool_choice"),
@@ -357,6 +393,15 @@ def compose(active: bytes, source: bytes) -> bytes:
             active_text = replace_top_level_function(active_text, source_text, name)
         else:
             active_text = insert_top_level_function(active_text, source_text, name, before=anchor)
+    if named_functions(active_text, "_hades_is_managed_server_status_request"):
+        active_text = replace_top_level_function(
+            active_text, source_text, "_hades_is_managed_server_status_request",
+        )
+    else:
+        active_text = insert_top_level_function(
+            active_text, source_text, "_hades_is_managed_server_status_request",
+            before="_hades_direct_homelab_read",
+        )
     source_matches = named_functions(source_text, "_hades_configured_homelab_alias_matches")
     active_alias = named_functions(active_text, "_hades_configured_homelab_alias_match")
     active_multi = named_functions(active_text, "_hades_configured_homelab_alias_matches")
@@ -375,11 +420,15 @@ def compose(active: bytes, source: bytes) -> bytes:
     active_text = insert_finance_period_block(active_text, source_text)
     active_text = widen_finance_override(active_text)
     active_text = patch_legacy_turn_gates(active_text)
+    active_text = replace_nested_assignment(
+        active_text, source_text, "_hades_run_conversation", "_server_status_turn",
+    )
     try:
         compile(active_text, "composed-sitecustomize.py", "exec")
         ast.parse(active_text)
     except SyntaxError as exc:
-        raise SystemExit(f"FAIL composed overlay is invalid Python: {exc}") from None
+        nearby = "\n".join(active_text.splitlines()[max(0, (exc.lineno or 1) - 2):(exc.lineno or 1) + 1])
+        raise SystemExit(f"FAIL composed overlay is invalid Python: {exc}\n{nearby}") from None
     return active_text.encode("utf-8")
 
 
