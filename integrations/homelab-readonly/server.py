@@ -1011,7 +1011,7 @@ def homelab_entity_reachability(entity_name: object) -> dict:
             f"{address}/32", allowed_networks=[str(network) for network in allowed],
             ports=DEFAULT_PORTS, timeout_seconds=8,
         )
-    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError):
+    except (OSError, RuntimeError, ValueError):
         return {"status": "UNAVAILABLE", "entity_name": requested_name,
                 "errors": ["The bounded reachability check could not complete."], "read_only": True}
     if not isinstance(evidence, dict):
