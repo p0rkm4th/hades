@@ -72,7 +72,8 @@ assert ast.dump(freshness_assignment.value) == ast.dump(ast.parse(
 wanted = {
     '_hades_capability_matrix_path', '_hades_configured_homelab_records',
     '_hades_configured_homelab_aliases',
-    '_hades_configured_homelab_alias_match', '_hades_is_homelab_intent',
+    '_hades_configured_homelab_alias_match',
+    '_hades_configured_homelab_alias_matches', '_hades_is_homelab_intent',
     '_hades_service_health_target', '_hades_service_monitor_response',
     '_hades_load_homelab_views',
     '_hades_homelab_availability_groups',
@@ -91,6 +92,7 @@ wanted = {
     '_hades_homelab_node_metrics_ranking_response',
     '_hades_homelab_proxmox_node_load_response',
     '_hades_homelab_proxmox_node_load_target',
+    '_hades_is_provisioning_request',
     '_hades_homelab_guest_inventory_intent',
     '_hades_homelab_guest_inventory_response',
     '_hades_homelab_guest_index_host_target',
@@ -133,6 +135,12 @@ namespace = {
     ),
     '_HADES_NETWORK_INVENTORY_INTENT': re.compile(
         r'\b(?:what(?:' + "'" + r's| is|s)\s+(?:in|on)\s+(?:my|our|the)\s+network)\b', re.I
+    ),
+    '_HADES_PROVISIONING_ACTION': re.compile(
+        r'\b(?:spin\s+(?:(?:one|it|a|the)\s+)?up|provision|deploy|create|make|host)\b', re.I
+    ),
+    '_HADES_PROVISIONING_TARGET': re.compile(
+        r'\b(?:server|palworld|minecraft|factorio|proxmox|vm|virtual\s+machine|sandbox|workload|website|linux\s+box)\b', re.I
     ),
 }
 namespace['__file__'] = str(repository_root / 'hermes' / 'sitecustomize.py')
