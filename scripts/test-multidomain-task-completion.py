@@ -45,6 +45,7 @@ wanted = {
     "_hades_direct_finance_guidance",
     "_hades_direct_grocy_recipe_read",
     "_hades_direct_homelab_read",
+    "_hades_homelab_owner_health_response",
     "_hades_homelab_read_followup_query",
     "_hades_homelab_node_status_targets",
     "_hades_configured_homelab_alias_matches",
@@ -106,8 +107,17 @@ scope = {
         "info": lambda *_a, **_k: None,
         "warning": lambda *_a, **_k: None,
     })(),
+    "_hades_homelab_health_summary_response": lambda _summary: "synthetic health caveats",
 }
 exec(compile(ast.Module(body=functions, type_ignores=[]), "sitecustomize.py", "exec"), scope)
+
+owner_health = scope["_hades_homelab_owner_health_response"]({
+    "online_names": ["Synthetic Core", "  Synthetic Worker  "],
+})
+assert owner_health == (
+    "Live Proxmox currently reports: Synthetic Core, Synthetic Worker. synthetic health caveats"
+), owner_health
+assert scope["_hades_homelab_owner_health_response"]({}) == "synthetic health caveats"
 
 operation = scope["_hades_grocy_read_operation"]
 choice = scope["_hades_grocy_read_tool_choice"]

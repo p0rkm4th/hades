@@ -5115,6 +5115,21 @@ def _hades_homelab_health_summary_response(summary):
     return getattr(_hades_load_homelab_views(), "_hades_homelab_health_summary_response")(summary)
 
 
+def _hades_homelab_owner_health_response(summary):
+    """Keep the owner's live Proxmox node context with health caveats."""
+    health = _hades_homelab_health_summary_response(summary)
+    if not isinstance(summary, dict):
+        return health
+    online = summary.get("online_names")
+    names = [
+        " ".join(str(name or "").split())[:80]
+        for name in online if isinstance(name, str) and name.strip()
+    ] if isinstance(online, list) else []
+    if not names:
+        return health
+    return "Live Proxmox currently reports: " + ", ".join(names[:12]) + ". " + health
+
+
 def _hades_homelab_node_problems_response(summary):
     """Answer a problem-focused follow-up without replaying the full lab report."""
     if not isinstance(summary, dict):
@@ -6239,7 +6254,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         if down:
             response += " Uptime Kuma's configured probes failed: " + ", ".join(down) + "."
         if _hades_broad_homelab_status_intent(text):
-            return _hades_homelab_health_summary_response(summary)
+            return _hades_homelab_owner_health_response(summary)
         if detailed_request:
             runtime_details = [
                 (item.get("runtime_detail") or item.get("runtime")) for item in resources

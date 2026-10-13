@@ -79,6 +79,7 @@ wanted = {
     '_hades_homelab_availability_groups',
     '_hades_broad_homelab_status_intent',
     '_hades_homelab_health_summary_response',
+    '_hades_homelab_owner_health_response',
     '_hades_homelab_node_problems_response',
     '_hades_homelab_service_coverage_intent',
     '_hades_homelab_service_coverage_response',
