@@ -8723,6 +8723,56 @@ def _hades_grocy_read_operation(user_text):
     return None
 
 
+def _hades_direct_grocy_named_recipe_read(user_text):
+    """Resolve a named recipe follow-up against canonical Grocy and read it."""
+    text = str(user_text or "")
+    if _hades_grocy_read_operation(text) != "recipe_details_tool":
+        return None
+    if re.search(r"\bingredients?\b", text, re.IGNORECASE):
+        return None
+    match = re.search(
+        r"\b(?:tell\s+me\s+about|describe|details?\s+(?:for|about))\s+"
+        r"(?:the\s+)?(?P<target>[^?.!\n]{2,100}?)\s+recipe\b",
+        text,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    ignored = {"a", "an", "best", "favorite", "my", "our", "saved", "the"}
+    requested = {
+        token for token in re.findall(r"[a-z0-9]+", match.group("target").casefold())
+        if token not in ignored
+    }
+    if not requested:
+        return None
+    listing = _hades_direct_grocy_recipe_read("list my recipes")
+    if not listing or not listing.startswith("Saved Grocy recipes:"):
+        return None
+    recipe_text = listing.removeprefix("Saved Grocy recipes:").split(
+        ". I only checked", 1
+    )[0]
+    names = [
+        entry.split(" — ", 1)[0].strip()
+        for entry in recipe_text.split(";")
+        if entry.split(" — ", 1)[0].strip()
+    ]
+    matches = [
+        name for name in names
+        if requested.issubset(set(re.findall(r"[a-z0-9]+", name.casefold())))
+    ]
+    if len(matches) > 1:
+        return (
+            "Grocy has multiple saved recipes matching that description: "
+            + ", ".join(matches[:5])
+            + ". Which one did you mean?"
+        )
+    if len(matches) != 1:
+        return None
+    return _hades_direct_grocy_recipe_read(
+        f"what ingredients are in {matches[0]}?"
+    )
+
+
 def _hades_grocy_ingredient_followup(user_text, conversation_history=None):
     """Recognize a current ingredient question that refers to a recent recipe."""
     text = str(user_text or "").strip()
@@ -12366,6 +12416,22 @@ try:
                 return {
                     "final_response": direct_recipe_add,
                     "messages": [{"role": "assistant", "content": direct_recipe_add}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            direct_named_recipe_response = _hades_direct_grocy_named_recipe_read(
+                current_text
+            )
+            if direct_named_recipe_response:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_named_recipe_response)
+                _hades_logger.info(
+                    "Direct Grocy named recipe details completed from canonical source"
+                )
+                return {
+                    "final_response": direct_named_recipe_response,
+                    "messages": [{"role": "assistant", "content": direct_named_recipe_response}],
                     "api_calls": 0,
                     "completed": True,
                 }

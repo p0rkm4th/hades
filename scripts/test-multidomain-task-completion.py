@@ -37,6 +37,7 @@ wanted = {
     "_hades_is_household_inventory_intent",
     "_hades_normalize_kitchen_typo",
     "_hades_grocy_read_operation",
+    "_hades_direct_grocy_named_recipe_read",
     "_hades_grocy_read_tool_choice",
     "_hades_grocy_ingredient_followup",
     "_hades_grocy_read_operation_for_turn",
@@ -119,6 +120,31 @@ assert operation("list my recipes") == "recipes_list_tool"
 assert operation("what ingredients are in Chicken Cordon Bleu?") == "recipe_details_tool"
 assert operation("what recipes dfo i have?") == "recipes_list_tool"
 assert operation("tell me about the best cordon bleu recipe") == "recipe_details_tool"
+saved_reader = scope["_hades_direct_grocy_recipe_read"]
+named_read = scope["_hades_direct_grocy_named_recipe_read"]
+named_calls = []
+def synthetic_named_recipe_reader(text):
+    named_calls.append(text)
+    if text == "list my recipes":
+        return "Saved Grocy recipes: Family: Chicken Cordon Bleu — makeable with current stock; Recipe B — missing: rice. I only checked canonical recipes and stock."
+    if text == "what ingredients are in Family: Chicken Cordon Bleu?":
+        return "Grocy lists these ingredients for Family: Chicken Cordon Bleu: Synthetic Chicken (2 pieces). Nothing was changed."
+    return None
+scope["_hades_direct_grocy_recipe_read"] = synthetic_named_recipe_reader
+named_details = named_read("tell me about the best cordon bleu recipe")
+assert named_details and "Grocy lists these ingredients for Family: Chicken Cordon Bleu" in named_details
+assert named_calls == [
+    "list my recipes",
+    "what ingredients are in Family: Chicken Cordon Bleu?",
+]
+scope["_hades_direct_grocy_recipe_read"] = lambda _text: (
+    "Saved Grocy recipes: Chicken Cordon Bleu Classic — makeable; "
+    "Chicken Cordon Bleu Special — missing. I only checked canonical recipes and stock."
+)
+ambiguous_details = named_read("tell me about the best cordon bleu recipe")
+assert ambiguous_details and "multiple saved recipes" in ambiguous_details and "Which one" in ambiguous_details
+scope["_hades_direct_grocy_recipe_read"] = saved_reader
+assert named_read("what ingredients do i have in my kiytchen?") is None
 real_urlopen = urllib.request.urlopen
 def forbidden_grocy_request(*_args, **_kwargs):
     raise AssertionError("a recipe list/detail operation must not fall through to feasibility fetch")

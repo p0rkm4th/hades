@@ -244,6 +244,48 @@ def remove_legacy_recipe_list_skip(text: str) -> str:
     )
 
 
+def insert_named_recipe_detail_route(text: str) -> str:
+    matches = [
+        node for node in ast.walk(ast.parse(text))
+        if isinstance(node, ast.FunctionDef) and node.name == "_hades_run_conversation"
+    ]
+    if len(matches) != 1:
+        raise SystemExit("FAIL expected one active _hades_run_conversation")
+    fn = matches[0]
+    start, end = node_span(text, fn)
+    segment = text.encode("utf-8")[start:end].decode("utf-8")
+    marker = "_hades_direct_grocy_named_recipe_read(current_text)"
+    if marker in segment:
+        return text
+    anchor = "            direct_recipe_response = _hades_direct_grocy_recipe_read(current_text)\n"
+    if segment.count(anchor) != 1:
+        raise SystemExit("FAIL active Grocy named-recipe insertion point is ambiguous")
+    block = (
+        "            direct_named_recipe_response = _hades_direct_grocy_named_recipe_read(\n"
+        "                current_text\n"
+        "            )\n"
+        "            if direct_named_recipe_response:\n"
+        "                callback = getattr(self, \"stream_delta_callback\", None)\n"
+        "                if callback:\n"
+        "                    callback(direct_named_recipe_response)\n"
+        "                _hades_logger.info(\n"
+        "                    \"Direct Grocy named recipe details completed from canonical source\"\n"
+        "                )\n"
+        "                return {\n"
+        "                    \"final_response\": direct_named_recipe_response,\n"
+        "                    \"messages\": [{\"role\": \"assistant\", \"content\": direct_named_recipe_response}],\n"
+        "                    \"api_calls\": 0,\n"
+        "                    \"completed\": True,\n"
+        "                }\n"
+    )
+    updated = segment.replace(anchor, block + anchor, 1)
+    return (
+        text.encode("utf-8")[:start].decode("utf-8")
+        + updated
+        + text.encode("utf-8")[end:].decode("utf-8")
+    )
+
+
 def extract_finance_period_block(source: str) -> str:
     finance = named_functions(source, "_hades_direct_finance_guidance")
     if len(finance) != 1:
@@ -458,6 +500,7 @@ def compose(active: bytes, source: bytes) -> bytes:
         )
     for name, anchor in (
         ("_hades_grocy_ingredient_followup", "_hades_grocy_read_tool_choice"),
+        ("_hades_direct_grocy_named_recipe_read", "_hades_grocy_ingredient_followup"),
         ("_hades_grocy_read_operation_for_turn", "_hades_grocy_read_tool_choice"),
         ("_hades_homelab_node_status_targets", "_hades_direct_homelab_read"),
         ("_hades_homelab_node_problems_response", "_hades_direct_homelab_read"),
@@ -498,6 +541,7 @@ def compose(active: bytes, source: bytes) -> bytes:
     active_text = insert_finance_period_block(active_text, source_text)
     active_text = widen_finance_override(active_text)
     active_text = patch_legacy_turn_gates(active_text)
+    active_text = insert_named_recipe_detail_route(active_text)
     active_text = replace_nested_assignment(
         active_text, source_text, "_hades_run_conversation", "_server_status_turn",
     )

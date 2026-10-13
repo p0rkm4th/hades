@@ -97,6 +97,9 @@ def _hades_direct_finance_guidance(user_text):
 
 def _hades_run_conversation(user_text):
     current_grocy_intent = bool(re.search(r"shopping list|recipe|pantry", user_text))
+    if True:
+        if True:
+            direct_recipe_response = _hades_direct_grocy_recipe_read(current_text)
     recipe_turn = True
     web_intent = True
     recipe_web_compound = bool(
@@ -148,6 +151,8 @@ assert "current_grocy_intent" in candidate
 assert "def _hades_is_managed_server_status_request(user_text):" in candidate
 assert "_server_status_turn = _hades_is_managed_server_status_request(_server_text)" in candidate
 assert "def _hades_finance_followup_query(user_text, conversation_history, scope):" in candidate
+assert "Direct Grocy named recipe details completed from canonical source" in candidate
+assert candidate.count("direct_named_recipe_response = _hades_direct_grocy_named_recipe_read(") == 1
 assert "Unsupported workload provisioning refused before preparation" in candidate
 assert candidate.index("_unsupported_workload = next((name for name in (\"factorio\", \"palworld\")") < candidate.index("_pending_template = \"minecraft\"")
 
