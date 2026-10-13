@@ -124,7 +124,6 @@ def forbidden_grocy_request(*_args, **_kwargs):
     raise AssertionError("a recipe list/detail operation must not fall through to feasibility fetch")
 urllib.request.urlopen = forbidden_grocy_request
 try:
-    assert scope["_hades_direct_grocy_recipe_read"]("what recipes dfo i have?") is None
     assert scope["_hades_direct_grocy_recipe_read"]("tell me about the best cordon bleu recipe") is None
 finally:
     urllib.request.urlopen = real_urlopen
@@ -166,7 +165,6 @@ assert scope["_hades_grocy_read_operation_for_turn"](
 assert scope["_hades_grocy_read_operation_for_turn"](
     "what's in my kitchen?", tools, recipe_history
 ) == {"type": "function", "function": {"name": "mcp_grocy_stock_overview_tool"}}
-assert scope["_hades_direct_grocy_recipe_read"]("what recipes dfo i have?") is None
 assert scope["_hades_is_household_inventory_intent"]("what’s in the kitchen") is True
 assert scope["_hades_nonpersonal_state_turn"]("what’s in the kitchen") is True
 
@@ -218,6 +216,23 @@ def synthetic_recipe_urlopen(request, timeout=5):
 real_urlopen = urllib.request.urlopen
 urllib.request.urlopen = synthetic_recipe_urlopen
 try:
+    saved_recipes = scope["_hades_direct_grocy_recipe_read"](
+        "what recipes dfo i have?"
+    )
+    assert saved_recipes.startswith("Saved Grocy recipes:"), saved_recipes
+    assert "Chicken Cordon Bleu" in saved_recipes
+    assert "Recipe B" in saved_recipes
+    assert all(method == "GET" for _, method, _ in grocy_requests)
+    assert {path for path, _, _ in grocy_requests} == {
+        "/api/objects/recipes", "/api/objects/recipes_pos",
+        "/api/objects/products", "/api/stock",
+    }
+    grocy_requests.clear()
+    saved_recipes = scope["_hades_direct_grocy_recipe_read"]("list my recipes")
+    assert saved_recipes.startswith("Saved Grocy recipes:")
+    assert "Chicken Cordon Bleu" in saved_recipes
+    assert all(method == "GET" for _, method, _ in grocy_requests)
+    grocy_requests.clear()
     ingredients = scope["_hades_direct_grocy_recipe_read"](
         "what ingredients are in Chicken Cordon Bleu?"
     )

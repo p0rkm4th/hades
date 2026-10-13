@@ -193,7 +193,7 @@ homelab_history = []
 for prompt, expected in (
     ("Hows my network", "Some configured homelab evidence needs attention"),
     ("what about Thanatos and all the nodes?", "Thanatos VM 101"),
-    ("are any of the nodes showing any problems?", "Failing configured checks"),
+    ("are any of the nodes showing any problems?", "configured checks reporting a failure"),
 ):
     request_history = [*homelab_history, {"role": "user", "content": prompt}]
     network_reads.clear()

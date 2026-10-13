@@ -3088,18 +3088,18 @@ def _hades_direct_grocy_recipe_read(user_text, expiring_product_ids=None):
     import urllib.request
 
     text = str(user_text or "")
-    # A saved-recipe inventory request is a distinct read operation.  Do not
-    # answer it with the stock-feasibility report used by meal suggestions;
-    # leave it for the canonical recipe-list operation selected below.
+    # Explicit named-recipe detail requests belong to the canonical MCP
+    # operation unless they ask for the ingredient collection handled here.
     current_read_operation = _hades_grocy_read_operation(text)
     if (
-        current_read_operation == "recipes_list_tool"
-        or (
-            current_read_operation == "recipe_details_tool"
-            and not re.search(r"\bingredients?\b", text, re.IGNORECASE)
-        )
+        current_read_operation == "recipe_details_tool"
+        and not re.search(r"\bingredients?\b", text, re.IGNORECASE)
     ):
         return None
+    # The current-turn operation resolver accepts one observed owner typo.
+    # Normalize it here too so the canonical list reader and operation
+    # classifier agree about the requested read.
+    text = re.sub(r"\bdfo\b", "do", text, flags=re.IGNORECASE)
     expiring_product_ids = (
         None if expiring_product_ids is None
         else {str(value) for value in expiring_product_ids if str(value).isdigit()}

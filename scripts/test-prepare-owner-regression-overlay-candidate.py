@@ -120,6 +120,12 @@ assert "_hades_homelab_node_problems_response(summary)" in candidate
 assert "_hades_homelab_named_resource_status(summary, target)" in candidate
 assert "Current host evidence:" not in candidate
 assert 'current_read_operation == "recipe_details_tool"' in candidate
+_reader_start = candidate.index("def _hades_direct_grocy_recipe_read(")
+_reader_end = candidate.find("\ndef ", _reader_start + 1)
+assert 'current_read_operation == "recipes_list_tool"' not in candidate[
+    _reader_start:_reader_end
+]
+assert r'text = re.sub(r"\bdfo\b", "do", text, flags=re.IGNORECASE)' in candidate
 assert "current_grocy_intent" in candidate
 assert "def _hades_is_managed_server_status_request(user_text):" in candidate
 assert "_server_status_turn = _hades_is_managed_server_status_request(_server_text)" in candidate

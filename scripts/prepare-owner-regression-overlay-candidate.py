@@ -178,32 +178,34 @@ def insert_grocy_operation_guard(text: str) -> str:
         raise SystemExit("FAIL expected one active _hades_direct_grocy_recipe_read")
     fn = matches[0]
     segment = ast.get_source_segment(text, fn) or ""
+    legacy_guard = (
+        '    current_read_operation = _hades_grocy_read_operation(text)\n'
+        '    if (\n'
+        '        current_read_operation == "recipes_list_tool"\n'
+        '        or (\n'
+        '            current_read_operation == "recipe_details_tool"\n'
+        '            and not re.search(r"\\bingredients?\\b", text, re.IGNORECASE)\n'
+        '        )\n'
+        '    ):\n'
+    )
     guard = (
         '    current_read_operation = _hades_grocy_read_operation(text)\n'
         '    if (\n'
-        '        current_read_operation == "recipes_list_tool"\n'
-        '        or (\n'
-        '            current_read_operation == "recipe_details_tool"\n'
-        '            and not re.search(r"\\bingredients?\\b", text, re.IGNORECASE)\n'
-        '        )\n'
+        '        current_read_operation == "recipe_details_tool"\n'
+        '        and not re.search(r"\\bingredients?\\b", text, re.IGNORECASE)\n'
         '    ):\n'
+        '        return None\n'
+        '    text = re.sub(r"\\bdfo\\b", "do", text, flags=re.IGNORECASE)\n'
     )
     if segment.count(guard) == 1:
         return text
+    if segment.count(legacy_guard) == 1:
+        start, end = node_span(text, fn)
+        return text.encode("utf-8")[:start].decode("utf-8") + segment.replace(legacy_guard, guard, 1) + text.encode("utf-8")[end:].decode("utf-8")
     anchor = '    text = str(user_text or "")\n'
     if segment.count(anchor) != 1:
         raise SystemExit("FAIL active Grocy recipe reader has unexpected initialization")
-    replacement = anchor + (
-        '    current_read_operation = _hades_grocy_read_operation(text)\n'
-        '    if (\n'
-        '        current_read_operation == "recipes_list_tool"\n'
-        '        or (\n'
-        '            current_read_operation == "recipe_details_tool"\n'
-        '            and not re.search(r"\\bingredients?\\b", text, re.IGNORECASE)\n'
-        '        )\n'
-        '    ):\n'
-        '        return None\n'
-    )
+    replacement = anchor + guard
     start, end = node_span(text, fn)
     return text.encode("utf-8")[:start].decode("utf-8") + segment.replace(anchor, replacement, 1) + text.encode("utf-8")[end:].decode("utf-8")
 
