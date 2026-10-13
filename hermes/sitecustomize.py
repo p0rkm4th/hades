@@ -1360,7 +1360,7 @@ def _hades_pending_provision_preview(agent, user_text, conversation_history=None
             else (prior_users[-1] if prior_users else "")
         )
         prior_offer = bool(
-            re.search(r"\b(?:spin\s+up|provision|deploy|create|make|host)\b", prior_request, re.IGNORECASE)
+            re.search(r"\b(?:spin\s+(?:(?:one|it|a|the)\s+)?up|provision|deploy|create|make|host)\b", prior_request, re.IGNORECASE)
             and re.search(r"\b(?:server|minecraft|factorio|palworld|sandbox|workload|website|linux\s+box)\b", prior_request, re.IGNORECASE)
             and re.search(r"\bapproved\b.*\btemplate\b", assistant_history, re.IGNORECASE | re.DOTALL)
             and re.search(r"\b(?:show|first)\b.*\b(?:plan|resource|limit)\b", assistant_history, re.IGNORECASE | re.DOTALL)
@@ -2365,7 +2365,7 @@ _HADES_SHARED_MEMORY_INTENT = re.compile(
 
 _HADES_KITCHEN_TYPO = re.compile(r"\b(?:kiytchen|kichen|kitcen)\b", re.IGNORECASE)
 _HADES_HOUSEHOLD_INVENTORY_CONTEXT = re.compile(
-    r"\b(?:what(?:'s| is|s)\s+in|what\s+do\s+(?:i|we)\s+have|do\s+we\s+have|"
+    r"\b(?:what(?:['’]s| is|s)\s+in|what\s+do\s+(?:i|we)\s+have|do\s+we\s+have|"
     r"do\s+i\s+have|what\s+(?:ingredients?|food|groceries)\s+do\s+(?:i|we)\s+have|"
     r"what(?:'s| is)\s+left|anything\s+(?:low|running\s+low)|what\s+can\s+i\s+cook\s+with)\b",
     re.IGNORECASE,
@@ -3088,6 +3088,11 @@ def _hades_direct_grocy_recipe_read(user_text, expiring_product_ids=None):
     import urllib.request
 
     text = str(user_text or "")
+    # A saved-recipe inventory request is a distinct read operation.  Do not
+    # answer it with the stock-feasibility report used by meal suggestions;
+    # leave it for the canonical recipe-list operation selected below.
+    if expiring_product_ids is None and _hades_grocy_read_operation(text) == "recipes_list_tool":
+        return None
     expiring_product_ids = (
         None if expiring_product_ids is None
         else {str(value) for value in expiring_product_ids if str(value).isdigit()}
@@ -3877,6 +3882,80 @@ def _hades_direct_finance_guidance(user_text):
                     monthly[row["date"].strftime("%Y-%m")] += -row["amount"] if row["amount"] < 0 else Decimal("0")
                 def money(value):
                     return f"${value.quantize(Decimal('0.01')):,.2f}"
+                trailing_year_request = bool(re.search(
+                    r"\b(?:in|over|during)\s+(?:the\s+)?(?:last|past)\s+year\b|"
+                    r"\b(?:last|past)\s+12\s+months\b",
+                    lowered_text, re.IGNORECASE,
+                ))
+                calendar_year_request = bool(re.search(
+                    r"\b(?:in\s+)?(?:the\s+)?(?:previous|last)\s+calendar\s+year\b|"
+                    r"\b(?:last|previous)\s+year\b",
+                    lowered_text, re.IGNORECASE,
+                )) and not trailing_year_request
+                period_request = trailing_year_request or calendar_year_request
+                if period_request:
+                    from datetime import date as _date
+                    from calendar import monthrange
+                    today = _date.today()
+                    if trailing_year_request:
+                        start_year = today.year - 1
+                        start_day = min(today.day, monthrange(start_year, today.month)[1])
+                        period_start = _date(start_year, today.month, start_day)
+                        period_end = today
+                        period_label = "the 12 months ending " + today.isoformat()
+                        period_coverage_label = "trailing 12-month"
+                    else:
+                        period_start = _date(today.year - 1, 1, 1)
+                        period_end = _date(today.year - 1, 12, 31)
+                        period_label = str(today.year - 1)
+                        period_coverage_label = "calendar-year"
+                    merchant_match = re.search(
+                        r"\b(?:at|on|with|from)\s+(.+?)(?=\s+(?:in|over|during)\s+(?:the\s+)?(?:last|past)\s+year\b|"
+                        r"\s+(?:last|past)\s+12\s+months\b|\s+(?:in\s+)?(?:the\s+)?(?:previous|last)\s+calendar\s+year\b|"
+                        r"\s+(?:last|previous)\s+year\b|[?.!]*$)",
+                        text, re.IGNORECASE,
+                    )
+                    if merchant_match:
+                        merchant = re.sub(r"\s+", " ", merchant_match.group(1)).strip(" .,!?:;'“”\"")
+                        merchant = re.sub(r"^(?:the|a|an)\s+", "", merchant, flags=re.IGNORECASE)
+                        merchant_key = re.sub(r"[^a-z0-9]+", "", merchant.casefold())
+                        if merchant_key:
+                            matching = [
+                                row for row in rows
+                                if period_start <= row["date"] <= period_end
+                                and merchant_key in re.sub(
+                                    r"[^a-z0-9]+", "",
+                                    (row["description"] + " " + row["category"]).casefold(),
+                                )
+                            ]
+                            posted = [row for row in matching if row["status"].casefold() != "pending"]
+                            pending_rows = [row for row in matching if row["status"].casefold() == "pending"]
+                            posted_net = sum((-row["amount"] for row in posted), Decimal("0"))
+                            pending_net = sum((-row["amount"] for row in pending_rows), Decimal("0"))
+                            covered_start = max(period_start, first)
+                            covered_end = min(period_end, last, today)
+                            coverage_complete = first <= period_start and last >= period_end
+                            if not matching:
+                                result = (
+                                    f"I found no matching {merchant} transactions in the available {period_label} records."
+                                )
+                            else:
+                                result = (
+                                    f"From records available for {period_label}, posted net spending at {merchant} "
+                                    f"is {money(posted_net)} across {len(posted)} transactions."
+                                )
+                                if pending_rows:
+                                    result += (
+                                        f" Pending transactions total {money(pending_net)} across "
+                                        f"{len(pending_rows)} rows; they are not included in the posted total."
+                                    )
+                            if not coverage_complete:
+                                result += (
+                                    f" The source only covers {covered_start} through {covered_end} within the requested "
+                                    f"{period_coverage_label} window, so this is not a complete-period total."
+                                )
+                            result += " Refunds and credits offset posted spending according to the statement's signed amounts."
+                            return f"CSV finance read (owner-only, read-only): {result} {source_note}"
                 ytd_request = bool(re.search(
                     r"\b(?:year[ -]to[ -]date|ytd|this\s+year|since\s+january)\b",
                     lowered_text, re.IGNORECASE,
@@ -5017,8 +5096,8 @@ def _hades_broad_homelab_status_intent(text):
         r"is\s+everything\s+(?:okay|ok|alright|all\s+right|healthy|good)"
         r"(?:\s+with\s+(?:the\s+)?(?:homelab|home\s+lab|lab))?|"
         r"is\s+the\s+(?:homelab|home\s+lab|lab)\s+(?:okay|ok|alright|all\s+right|healthy|good)|"
-        r"how(?:['’]s|\s+is)\s+(?:the\s+)?(?:homelab|home\s+lab|lab)\s+doing|"
-        r"how(?:['’]s|\s+is)\s+(?:my\s+)?network|network\s+health\s+status)\s*[?.!]*\s*$",
+        r"how(?:['’]s|s|\s+is)\s+(?:the\s+)?(?:homelab|home\s+lab|lab)\s+doing|"
+        r"how(?:['’]s|s|\s+is)\s+(?:my\s+)?network|network\s+health\s+status)\s*[?.!]*\s*$",
         str(text or ""), re.IGNORECASE,
     ))
 
@@ -5623,7 +5702,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         return None
     if re.search(
         r"\b(?:restart|reboot|stop|start|shutdown|shut\s+down|turn\s+off|fix|update|change|"
-        r"spin\s+up|provision|deploy|create)\b",
+        r"spin\s+(?:(?:one|it|a|the)\s+)?up|provision|deploy|create)\b",
         text,
         re.IGNORECASE,
     ) and not (scope == "owner" and _hades_endpoint_intent_before_provision(text)):
@@ -6050,7 +6129,7 @@ def _hades_direct_homelab_write_guidance(user_text):
     text = str(user_text or "")
     if not re.search(
         r"\b(?:restart|reboot|stop|start|shutdown|shut\s+down|turn\s+off|fix|update|change|"
-        r"spin\s+up|provision|deploy|create)\b",
+        r"spin\s+(?:(?:one|it|a|the)\s+)?up|provision|deploy|create)\b",
         text,
         re.IGNORECASE,
     ):
@@ -6647,14 +6726,27 @@ def _hades_direct_homelab_backup_compound(user_text, subject, scope, phase2_sess
     return "\n\n".join(sections)
 
 
+_HADES_PROVISIONING_ACTION = re.compile(
+    r"\b(?:spin\s+(?:(?:one|it|a|the)\s+)?up|provision|deploy|create|make|host)\b",
+    re.IGNORECASE,
+)
+_HADES_PROVISIONING_TARGET = re.compile(
+    r"\b(?:server|palworld|minecraft|factorio|proxmox|vm|virtual\s+machine|"
+    r"sandbox(?:es)?|workload(?:s)?|website(?:s)?|linux\s+box)\b",
+    re.IGNORECASE,
+)
+
+
+def _hades_is_provisioning_request(user_text):
+    """Recognize owner provisioning language, including natural 'spin one up'."""
+    text = str(user_text or "")
+    return bool(_HADES_PROVISIONING_ACTION.search(text) and _HADES_PROVISIONING_TARGET.search(text))
+
+
 def _hades_endpoint_intent_before_provision(user_text):
     """Route endpoint-only questions to inventory, preserving explicit create intent."""
     text = str(user_text or "")
-    asks_to_provision = bool(re.search(
-        r"\b(?:spin\s+up|provision|deploy|create|make|host)\b",
-        text,
-        re.IGNORECASE,
-    ))
+    asks_to_provision = _hades_is_provisioning_request(text)
     if asks_to_provision:
         return False
     asks_endpoint = bool(re.search(
@@ -6839,17 +6931,27 @@ def _hades_configured_homelab_aliases():
 
 
 def _hades_configured_homelab_alias_match(user_text):
+    matches = _hades_configured_homelab_alias_matches(user_text)
+    return matches[0] if matches else None
+
+
+def _hades_configured_homelab_alias_matches(user_text):
+    """Resolve every configured homelab name mentioned in the current turn."""
     text = str(user_text or "")
     records = sorted(
         _hades_configured_homelab_records(),
         key=lambda record: max(map(len, record["aliases"])),
         reverse=True,
     )
+    matches = []
     for record in records:
         for alias in sorted(record["aliases"], key=len, reverse=True):
             if re.search(rf"(?<![\w]){re.escape(alias)}(?![\w])", text, re.IGNORECASE):
-                return record["name"]
-    return None
+                name = str(record.get("name") or "").strip()
+                if name and name not in matches:
+                    matches.append(name)
+                break
+    return matches
 
 
 _HADES_HOMELAB_INTENT = re.compile(
@@ -6869,7 +6971,7 @@ _HADES_HOMELAB_INTENT = re.compile(
 
 _HADES_NETWORK_INVENTORY_INTENT = re.compile(
     r"\b(?:what(?:'s| is|s)\s+(?:in|on)\s+(?:my|our|the)\s+network|"
-    r"how(?:['’]s|\s+is)\s+(?:my|our|the)\s+network|"
+    r"how(?:['’]s|s|\s+is)\s+(?:my|our|the)\s+network|"
     r"what\s+devices?\s+(?:are|is)\s+(?:in|on)\s+(?:my|our|the)\s+network|"
     r"what\s+machines?\s+do\s+(?:i|we)\s+have|"
     r"what(?:'s| is|s)\s+running\s+(?:at|in)\s+home|"
@@ -8245,14 +8347,21 @@ def _hades_homelab_inference_followup_prompt(user_message, scope, conversation_h
     if scope != "owner" or not current or not isinstance(conversation_history, list):
         return current
     previous_user = _hades_previous_user_message(conversation_history)
-    target = _hades_configured_homelab_alias_match(current)
+    targets = _hades_configured_homelab_alias_matches(current)
+    followup = bool(re.match(
+        r"\s*(?:what\s+about|sorry[, ]+|i\s+meant\s+)", current, re.IGNORECASE
+    ))
+    prior_homelab = bool(previous_user and _hades_is_homelab_intent(previous_user))
+    all_nodes = bool(re.search(
+        r"\b(?:all|every|other)\s+(?:of\s+)?(?:the\s+)?nodes?\b",
+        current, re.IGNORECASE,
+    ))
     if (
-        target
-        and previous_user
-        and _hades_is_homelab_intent(previous_user)
-        and re.match(r"\s*(?:what\s+about|sorry[, ]+|i\s+meant\s+)", current, re.IGNORECASE)
+        followup and prior_homelab and (all_nodes or len(targets) > 1)
     ):
-        return f"What is {target} doing right now?"
+        return "Homelab all nodes health status"
+    if targets and prior_homelab and followup:
+        return f"What is {targets[0]} doing right now?"
 
     assistant_text = "\n".join(
         str(message.get("content") or "")
@@ -8296,7 +8405,7 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
         previous_user = content
         break
     network_health = bool(re.search(
-        r"\bhow(?:['’]s|\s+is)\s+(?:my\s+)?network\b|"
+        r"\bhow(?:['’]s|s|\s+is)\s+(?:my\s+)?network\b|"
         r"\b(?:network|homelab|home\s+lab)\b.{0,30}\b(?:health|healthy|problems?|issues?)\b",
         current, re.IGNORECASE,
     ))
@@ -8307,6 +8416,15 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
         and re.search(r"\b(?:problem|issue|wrong|health|status|down|degrad)\w*\b", current, re.IGNORECASE)
     )
     all_nodes = bool(re.search(r"\b(?:all|every|other)\s+(?:of\s+)?(?:the\s+)?nodes?\b", current, re.IGNORECASE))
+    followup = bool(re.match(
+        r"\s*(?:what\s+about|sorry[, ]+|i\s+meant\s+)", current, re.IGNORECASE
+    ))
+    prior_homelab = bool(previous_user and _hades_is_homelab_intent(previous_user))
+    targets = _hades_configured_homelab_alias_matches(current)
+    if followup and prior_homelab and (all_nodes or len(targets) > 1):
+        return "homelab all nodes status"
+    if targets and prior_homelab and followup:
+        return f"What is {targets[0]} doing right now?"
     if network_health:
         return "network health status"
     if anaphoric_node_health:
@@ -8319,13 +8437,26 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
 def _hades_grocy_read_operation(user_text):
     """Select the current Grocy read operation without inheriting old operations."""
     text = str(user_text or "")
+    # Preserve one real owner typo without turning the operation router into a
+    # general fuzzy matcher.
+    text = re.sub(r"\bdfo\b", "do", text, flags=re.IGNORECASE)
     if _HADES_GROCY_ACTION_INTENT.search(text):
         return None
     if re.search(r"\brecipe\b.{0,100}\b(?:ingredients?|details?)\b|"
                  r"\b(?:ingredients?|details?)\b.{0,100}\b(?:recipe|cordon|chicken)\b|"
-                 r"\bingredients?\s+(?:in|for|of)\s+[A-Z][\w'-]*(?:\s+[A-Z][\w'-]*){0,5}", text, re.IGNORECASE):
+                 r"\bingredients?\s+(?:in|for|of)\s+[A-Z][\w'-]*(?:\s+[A-Z][\w'-]*){0,5}|"
+                 r"\b(?:tell\s+me\s+about|describe|details?\s+for)\s+(?:the\s+)?[^?.!\n]{2,100}\brecipe\b",
+                 text, re.IGNORECASE):
         return "recipe_details_tool"
-    if re.search(r"\b(?:list|show|which|what\s+are)\b.{0,50}\brecipes?\b|\brecipes?\s+(?:list|available)\b", text, re.IGNORECASE):
+    if re.search(
+        r"\b(?:which|what)\s+recipes?\b.{0,50}\b(?:can|could|should)\s+(?:i|we)\s+(?:make|cook|prepare)\b",
+        text, re.IGNORECASE,
+    ):
+        return "recipe_fulfillment_tool"
+    if re.search(r"\b(?:list|show)\b.{0,50}\brecipes?\b|"
+                 r"\bwhat\s+are\s+(?:my\s+|our\s+)?recipes?\b|"
+                 r"\brecipes?\s+(?:list|available)\b|"
+                 r"\b(?:what|which)\s+recipes?\s+(?:do|dfo)\s+(?:i|we)\s+have\b", text, re.IGNORECASE):
         return "recipes_list_tool"
     if _hades_is_household_inventory_intent(text) or re.search(
         r"\b(?:stock|pantry|kitchen|what\s+food\s+do\s+we\s+have|what\s+do\s+we\s+have)\b",
@@ -10559,16 +10690,7 @@ try:
                 str(user_message or ""),
                 re.IGNORECASE,
             )
-            and re.search(
-                r"\b(?:spin\s+up|provision|deploy|create|make|host)\b",
-                str(user_message or ""),
-                re.IGNORECASE,
-            )
-            and re.search(
-                r"\b(?:server|palworld|minecraft|factorio|sandbox(?:es)?|workload(?:s)?|website(?:s)?|linux\s+box)\b",
-                str(user_message or ""),
-                re.IGNORECASE,
-            )
+            and _hades_is_provisioning_request(user_message)
         )
         if _early_provisioning_request:
             _provision_text = str(user_message or "")
@@ -11799,12 +11921,11 @@ try:
                 "completed": True,
             }
         control_intent = bool(
-            re.search(
-                r"\b(?:spin\s+up|provision|deploy|create|start|restart|stop|reboot|shutdown|"
-                r"update|change|fix)\b",
+            (_hades_is_provisioning_request(current_text) or re.search(
+                r"\b(?:start|restart|stop|reboot|shutdown|update|change|fix)\b",
                 current_text,
                 re.IGNORECASE,
-            )
+            ))
             and re.search(
                 r"\b(?:server|palworld|minecraft|factorio|proxmox|vm|virtual\s+machine|"
                 r"sandbox(?:es)?|workload(?:s)?|website(?:s)?|homelab|homlab|home\s+lab|"
@@ -11834,16 +11955,7 @@ try:
         # confirmation.
         provisioning_request = bool(
             self._hades_session_scope == "owner"
-            and re.search(
-                r"\b(?:spin\s+up|provision|deploy|create|make|host)\b",
-                current_text,
-                re.IGNORECASE,
-            )
-            and re.search(
-                r"\b(?:server|palworld|minecraft|factorio|sandbox(?:es)?|workload(?:s)?|website(?:s)?|linux\s+box)\b",
-                current_text,
-                re.IGNORECASE,
-            )
+            and _hades_is_provisioning_request(current_text)
         )
         if provisioning_request:
             try:

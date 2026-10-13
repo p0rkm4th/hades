@@ -42,6 +42,10 @@ wanted = {
     "_hades_direct_finance_guidance",
     "_hades_direct_grocy_recipe_read",
     "_hades_homelab_read_followup_query",
+    "_hades_configured_homelab_alias_matches",
+    "_hades_broad_homelab_status_intent",
+    "_hades_is_provisioning_request",
+    "_hades_nonpersonal_state_turn",
 }
 functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
 assert {node.name for node in functions} == wanted
@@ -53,8 +57,18 @@ scope = {
     "urllib": urllib,
     "_HADES_KITCHEN_TYPO": re.compile(r"\b(?:kiytchen|kichen|kitcen)\b", re.I),
     "_HADES_HOUSEHOLD_INVENTORY_CONTEXT": re.compile(
-        r"\b(?:what(?:'s| is|s)\s+in|what\s+do\s+(?:i|we)\s+have|"
+        r"\b(?:what(?:['’]s| is|s)\s+in|what\s+do\s+(?:i|we)\s+have|"
         r"what\s+(?:ingredients?|food|groceries)\s+do\s+(?:i|we)\s+have)\b", re.I
+    ),
+    "_HADES_SHARED_MEMORY_INTENT": re.compile(
+        r"\b(?:kitchen|pantry|grocy|recipe|food|inventory|stock)\b", re.I
+    ),
+    "_HADES_NONPERSONAL_STATE_INTENT": re.compile(r"\b(?:kitchen|pantry)\b", re.I),
+    "_HADES_PROVISIONING_ACTION": re.compile(
+        r"\b(?:spin\s+(?:(?:one|it|a|the)\s+)?up|provision|deploy|create|make|host)\b", re.I
+    ),
+    "_HADES_PROVISIONING_TARGET": re.compile(
+        r"\b(?:server|palworld|minecraft|factorio|proxmox|vm|virtual\s+machine|sandbox|workload|website|linux\s+box)\b", re.I
     ),
     "_HADES_GROCY_ACTION_INTENT": re.compile(
         r"\b(?:add|remove|consume|create|update|delete|change)\b", re.I
@@ -63,6 +77,19 @@ scope = {
         r"\b(?:what|which)\s+(?:can|could)\s+(?:i|we)\s+(?:make|cook)\b", re.I
     ),
     "_hades_is_homelab_intent": lambda text: bool(re.search(r"homelab|network|nodes?|thanatos", text, re.I)),
+    "_hades_configured_homelab_records": lambda: [
+        {"name": "Thanatos", "aliases": ["thanatos"]},
+        {"name": "Hermes", "aliases": ["hermes"]},
+    ],
+    "_hades_service_health_target": lambda _text: False,
+    "_hades_homelab_conflict_intent": lambda _text: False,
+    "_hades_homelab_guest_visibility_intent": lambda _text: False,
+    "_hades_homelab_service_placement_intent": lambda _text: False,
+    "_hades_homelab_resource_ranking_intent": lambda _text: False,
+    "_hades_broad_homelab_status_intent": lambda text: bool(
+        re.search(r"how(?:['’]s|s|\s+is)\s+(?:my\s+)?network", text, re.I)
+    ),
+    "_HADES_GROCY_ITEM_FRAGMENT": re.compile(r"\b(?:eggs?|milk)\b", re.I),
     "_hades_is_meal_budget_intent": lambda _text: False,
     "_hades_grocy_base_url": lambda: "http://grocy.synthetic",
     "_hades_grocy_api_key": lambda: "synthetic-key",
@@ -82,6 +109,17 @@ tools = [
 ]
 assert operation("list my recipes") == "recipes_list_tool"
 assert operation("what ingredients are in Chicken Cordon Bleu?") == "recipe_details_tool"
+assert operation("what recipes dfo i have?") == "recipes_list_tool"
+assert operation("tell me about the best cordon bleu recipe") == "recipe_details_tool"
+real_urlopen = urllib.request.urlopen
+def forbidden_grocy_request(*_args, **_kwargs):
+    raise AssertionError("a recipe list/detail operation must not fall through to feasibility fetch")
+urllib.request.urlopen = forbidden_grocy_request
+try:
+    assert scope["_hades_direct_grocy_recipe_read"]("what recipes dfo i have?") is None
+    assert scope["_hades_direct_grocy_recipe_read"]("tell me about the best cordon bleu recipe") is None
+finally:
+    urllib.request.urlopen = real_urlopen
 assert operation("what's in my kitchen?") == "stock_overview_tool"
 assert operation("whats in my kiytchen?") == "stock_overview_tool"
 assert operation("add milk to the shopping list") is None
@@ -92,6 +130,15 @@ assert choice("what ingredients are in Chicken Cordon Bleu?", tools) == {
     "type": "function", "function": {"name": "mcp_grocy_recipe_details_tool"}
 }
 assert choice("what ingredients are in Chicken Cordon Bleu?", tools[:1]) is None
+assert choice("what recipes dfo i have?", tools) == {
+    "type": "function", "function": {"name": "mcp_grocy_recipes_list_tool"}
+}
+assert choice("tell me about the best cordon bleu recipe", tools) == {
+    "type": "function", "function": {"name": "mcp_grocy_recipe_details_tool"}
+}
+assert scope["_hades_direct_grocy_recipe_read"]("what recipes dfo i have?") is None
+assert scope["_hades_is_household_inventory_intent"]("what’s in the kitchen") is True
+assert scope["_hades_nonpersonal_state_turn"]("what’s in the kitchen") is True
 
 # Exercise the canonical recipe detail read with three recipes and separate
 # stock data. The detail operation must return only that recipe's ingredient
@@ -180,9 +227,20 @@ journey = [
     {"role": "user", "content": "are any of the nodes showing any problems?"},
 ]
 assert "network health status" in homelab_followup("how's my network?", "owner", [])
+assert scope["_hades_broad_homelab_status_intent"]("Hows my network")
+assert homelab_followup("Hows my network", "owner", []) == "network health status"
+named_followup = [
+    {"role": "user", "content": "Hows my network"},
+    {"role": "assistant", "content": "synthetic health summary"},
+]
+assert homelab_followup("what about thanatos?", "owner", named_followup) == "What is Thanatos doing right now?"
+assert homelab_followup("what about thanatos or hermes?", "owner", named_followup) == "homelab all nodes status"
 assert "all nodes status" in homelab_followup(journey[-3]["content"], "owner", journey[:4])
 assert "nodes problems status" in homelab_followup(journey[-1]["content"], "owner", journey)
 assert homelab_followup("are any of the nodes showing any problems?", "household", journey) == journey[-1]["content"]
+
+palworld_request = "I think i wanna build a game server for palworld, can you spin one up for me?"
+assert scope["_hades_is_provisioning_request"](palworld_request)
 
 today = date.today()
 coverage = today - timedelta(days=31)
@@ -193,6 +251,7 @@ rows = [
     (date(today.year, 3, 1), "Synthetic Grocery", -44.00, "Posted"),
     (coverage, "7 Brew", -3.00, "Pending"),
     (date(today.year - 1, 12, 20), "7 Brew", -100.00, "Posted"),
+    (date(today.year - 1, today.month, today.day) - timedelta(days=1), "7 Brew", -500.00, "Posted"),
 ]
 with tempfile.TemporaryDirectory(prefix="hades-multidomain-finance-") as temp:
     path = Path(temp) / "transactions.csv"
@@ -220,6 +279,11 @@ with tempfile.TemporaryDirectory(prefix="hades-multidomain-finance-") as temp:
         second = finance(followup)
         assert "posted net spending at 7 Brew is $20.50" in second, second
         assert "100.00" not in second
+        trailing_year = finance("how much did I spend on 7 brew in the last year?")
+        assert "posted net spending at 7 brew is $120.50" in trailing_year, trailing_year
+        assert "Pending transactions total $3.00" in trailing_year, trailing_year
+        assert "not a complete-period total" in trailing_year, trailing_year
+        assert "$500.00" not in trailing_year, trailing_year
         explicit_followup = scope["_hades_finance_followup_query"](
             "Calculate how much I spent there", [
                 {"role": "user", "content": "How much have I spent at 7 Brew year-to-date?"},

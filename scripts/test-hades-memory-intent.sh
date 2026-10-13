@@ -123,6 +123,8 @@ assert overlay._hades_should_skip_automatic_memory("Grocy says there are 2 carto
 assert overlay._hades_should_skip_automatic_memory("I prefer basil", "The service is unavailable.") is True
 assert overlay._hades_should_skip_automatic_memory("HADES_TASK_NOTIFICATION_FEED_V1", '{"version":1,"tasks":[]}') is True
 assert overlay._hades_nonpersonal_state_turn("Is Minecraft healthy enough for tonight?") is True
+assert overlay._hades_nonpersonal_state_turn("what’s in the kitchen") is True
+assert overlay._hades_should_skip_automatic_memory("what’s in the kitchen", "The Grocy stock read found synthetic flour.") is True
 assert overlay._hades_should_skip_automatic_memory("Is Minecraft healthy enough for tonight?", "Uptime Kuma's configured check is up.") is True
 assert overlay._hades_should_skip_automatic_memory("Are all the computers okay?", "The live status is synthetic-core-node only.") is True
 assert overlay._hades_should_skip_automatic_memory("Why does the network feel slow?", "No current network telemetry is available.") is True
@@ -135,6 +137,7 @@ for public_research_turn in (
     assert overlay._hades_should_skip_automatic_memory(public_research_turn, 'Synthetic public-source result.') is True
 
 for inventory in (
+    "what’s in the kitchen",
     "what's in my kitchen?",
     'what ingredients do i have?',
     'what ingredients do i have in my kiytchen?',

@@ -118,6 +118,7 @@ agent = run_agent.AIAgent(
 
 for inventory_prompt in (
     "what's in my kitchen?",
+    "what’s in the kitchen",
     'what ingredients do i have?',
     'what ingredients do i have in my kiytchen?',
     'whats in the kichen?',
@@ -144,11 +145,17 @@ def synthetic_homelab_source(tool_name, arguments=None):
         "resources": [
             {"name": "Thanatos", "currently_online": True, "runtime_status": "running",
              "runtime_detail": {"name": "Thanatos", "vmid": 101, "status": "running", "node": "Synthetic Host"}},
+            {"name": "Hermes", "currently_online": True, "runtime_status": "running",
+             "runtime_detail": {"name": "Hermes", "vmid": 103, "status": "running", "node": "Synthetic Host"}},
             {"name": "Synthetic Node", "currently_online": True, "runtime_status": "running",
              "runtime_detail": {"name": "Synthetic Node", "vmid": 102, "status": "running", "node": "Synthetic Host"}},
         ],
     }
 hades._hades_direct_homelab_tool_result = synthetic_homelab_source
+hades._hades_configured_homelab_records = lambda: [
+    {"name": "Thanatos", "aliases": ["Thanatos"]},
+    {"name": "Hermes", "aliases": ["Hermes"]},
+]
 owner_agent = run_agent.AIAgent(
     gateway_session_key="hades-user-synthetic-owner",
     session_id="synthetic-owner-chat",
@@ -167,6 +174,12 @@ owner_agent = run_agent.AIAgent(
     load_soul_identity=False,
 )
 assert owner_agent._hades_session_scope == "owner", owner_agent._hades_session_scope
+palworld_prompt = "I think i wanna build a game server for palworld, can you spin one up for me?"
+palworld_result = owner_agent.run_conversation(palworld_prompt)
+assert palworld_result.get("completed") is True and palworld_result.get("api_calls") == 0, palworld_result
+assert "approved `palworld`" in palworld_result.get("final_response", ""), palworld_result
+assert network_reads == [], network_reads
+print("PASS Palworld provisioning request receives an explicit bounded-capability gap, not a homelab status dump")
 for prompt in ("what's in my network?", "what devices are in my network?", "what's running in my homelab?", "what servers do i have?"):
     network_reads.clear()
     result = owner_agent.run_conversation(prompt)
@@ -178,7 +191,7 @@ for prompt in ("what's in my network?", "what devices are in my network?", "what
 # synthesize the new operation from a new canonical summary read.
 homelab_history = []
 for prompt, expected in (
-    ("how's my network?", "Some configured homelab evidence needs attention"),
+    ("Hows my network", "Some configured homelab evidence needs attention"),
     ("what about Thanatos and all the nodes?", "Thanatos VM 101"),
     ("are any of the nodes showing any problems?", "Failing configured checks"),
 ):
@@ -197,6 +210,22 @@ for prompt, expected in (
         {"role": "assistant", "content": result["final_response"]},
     ])
 print("PASS same-chat homelab health keeps node scope and refreshes the summary per operation")
+
+named_history = [
+    {"role": "user", "content": "Hows my network"},
+    {"role": "assistant", "content": "Synthetic network summary"},
+    {"role": "user", "content": "what about thanatos or hermes?"},
+]
+network_reads.clear()
+named_followup = owner_agent.run_conversation(
+    "what about thanatos or hermes?", conversation_history=named_history,
+)
+named_answer = named_followup.get("final_response", "")
+assert named_followup.get("completed") is True and named_followup.get("api_calls") == 0, named_followup
+assert "Thanatos" in named_answer and "Hermes" in named_answer, named_followup
+assert "Greek" not in named_answer and not named_answer.lstrip().startswith("{"), named_followup
+assert network_reads == ["homelab_summary"], network_reads
+print("PASS same-chat homelab aliases resolve against current per-node source after natural 'Hows' wording")
 
 original_model_run = hades._hades_original_run_conversation
 original_grocy_definitions = hades._hades_grocy_tool_definitions
@@ -221,12 +250,26 @@ hades._hades_original_run_conversation = synthetic_model_fallback
 try:
     for prompt, expected_tool in (
         ("list my recipes", "mcp_grocy_recipes_list_tool"),
+        ("what recipes dfo i have?", "mcp_grocy_recipes_list_tool"),
         ("what ingredients are in Chicken Cordon Bleu?", "mcp_grocy_recipe_details_tool"),
+        ("tell me about the best cordon bleu recipe", "mcp_grocy_recipe_details_tool"),
     ):
         captured_choices.clear()
         result = agent.run_conversation(prompt)
         assert result.get("completed") is True, (prompt, result)
         assert captured_choices and captured_choices[-1].get("tool_choice", {}).get("function", {}).get("name") == expected_tool, (prompt, captured_choices, result)
+    detail_history = [
+        {"role": "user", "content": "what recipes dfo i have?"},
+        {"role": "assistant", "content": "Synthetic recipe list"},
+        {"role": "user", "content": "tell me about the best cordon bleu recipe"},
+    ]
+    captured_choices.clear()
+    detail_result = agent.run_conversation(
+        "tell me about the best cordon bleu recipe",
+        conversation_history=detail_history,
+    )
+    assert detail_result.get("completed") is True, detail_result
+    assert captured_choices and captured_choices[-1].get("tool_choice", {}).get("function", {}).get("name") == "mcp_grocy_recipe_details_tool", (captured_choices, detail_result)
     # Historical recipe-list operation must not remain selected for the new
     # current-turn operation; kitchen stock is routed deterministically.
     captured_choices.clear()
@@ -254,7 +297,8 @@ try:
             f"{today.year}-02-08,7 Brew refund,2.00,Coffee,Posted\n"
             f"{today.year}-03-01,Synthetic Grocery,-44.00,Groceries,Posted\n"
             f"{coverage.isoformat()},7 Brew,-3.00,Coffee,Pending\n"
-            f"{today.year - 1}-12-20,7 Brew,-100.00,Coffee,Posted\n",
+            f"{today.year - 1}-12-20,7 Brew,-100.00,Coffee,Posted\n"
+            f"{(today - timedelta(days=366)).isoformat()},7 Brew outside window,-500.00,Coffee,Posted\n",
             encoding="utf-8",
         )
         previous_finance_path = os.environ.get("HADES_FINANCE_CSV_PATH")
@@ -279,6 +323,14 @@ try:
             assert "posted net spending at 7 Brew is $20.50" in second_finance.get("final_response", ""), second_finance
             assert "Pending transactions total $3.00" in second_finance.get("final_response", ""), second_finance
             assert "not a complete year-to-date total" in second_finance.get("final_response", ""), second_finance
+            last_year_finance = owner_agent.run_conversation(
+                "how much did I spend on 7 brew in the last year?",
+            )
+            last_year_answer = last_year_finance.get("final_response", "")
+            assert "posted net spending at 7 brew is $120.50" in last_year_answer, last_year_finance
+            assert "Pending transactions total $3.00" in last_year_answer, last_year_finance
+            assert "not a complete-period total" in last_year_answer, last_year_finance
+            assert "$500.00" not in last_year_answer, last_year_finance
             print("PASS same-chat finance follow-ups deterministically aggregate rows with posted, refund, pending, and coverage semantics")
         finally:
             if previous_finance_path is None:
