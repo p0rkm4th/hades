@@ -9959,15 +9959,14 @@ try:
         import importlib.util
         from tools.registry import registry
 
-        adapter_root = Path(os.environ.get(
-            "HADES_HERMES_WORKING_DIRECTORY", str(Path(__file__).resolve().parents[1])
-        )) / "integrations" / "homelab-readonly"
-        if not adapter_root.is_dir():
+        adapter_path = _hades_resolve_homelab_adapter_path()
+        if adapter_path is None or not adapter_path.is_file():
             return
+        adapter_root = adapter_path.parent
         if str(adapter_root) not in __import__("sys").path:
             __import__("sys").path.insert(0, str(adapter_root))
         spec = importlib.util.spec_from_file_location(
-            "hades_homelab_fallback_server", adapter_root / "server.py"
+            "hades_homelab_fallback_server", adapter_path
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -10039,7 +10038,15 @@ try:
                 "call": lambda args: module.propose_inventory_candidates(args.get("evidence"), args.get("netbox")),
             },
         }
-        control_root = adapter_root.parent / "homelab-control"
+        integration_root = Path(os.environ.get("HADES_INTEGRATIONS_ROOT", ""))
+        working_root = Path(os.environ.get(
+            "HADES_HERMES_WORKING_DIRECTORY", str(Path(__file__).resolve().parents[1])
+        ))
+        control_roots = [
+            integration_root / "integrations" / "homelab-control",
+            working_root / "integrations" / "homelab-control",
+        ]
+        control_root = next((candidate for candidate in control_roots if candidate.is_dir()), control_roots[0])
         control_module = None
         if control_root.is_dir():
             control_spec = importlib.util.spec_from_file_location(

@@ -14,6 +14,14 @@ result = parse_nmap_xml(xml, target="192.0.2.0/29", allowed_networks=["192.0.2.0
 assert result["source"] == "nmap.xml"
 assert result["retrieved_at"] == "2026-09-15T12:00:00Z"
 assert result["hosts"] == [{"ip": "192.0.2.2", "hostname": "router-synthetic", "ports": [{"port": 80, "protocol": "tcp", "service": "http"}]}]
+# Real Nmap output includes this fixed, inert DOCTYPE; accept it while the
+# parser continues rejecting external identifiers and entity declarations.
+standard_nmap_xml = '<?xml version="1.0"?>\n<!DOCTYPE nmaprun>\n' + xml
+standard_result = parse_nmap_xml(
+    standard_nmap_xml, target="192.0.2.0/29",
+    allowed_networks=["192.0.2.0/29"], retrieved_at="2026-09-15T12:00:00Z",
+)
+assert standard_result["hosts"] == result["hosts"]
 projection = propose_inventory_candidates(result, {"results": [{"name": "router-synthetic", "ip": "192.0.2.2"}]})
 assert projection["status"] == "REVIEW_REQUIRED"
 assert projection["writes_performed"] is False

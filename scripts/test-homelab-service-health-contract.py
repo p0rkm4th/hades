@@ -11,6 +11,7 @@ import os
 import re
 import sys
 import tempfile
+import types
 from datetime import datetime, timezone
 from pathlib import Path
 import yaml
@@ -107,6 +108,7 @@ wanted = {
     '_hades_homelab_guest_index_host_target',
     '_hades_homelab_guest_index_workloads_on_host_response',
     '_hades_resolve_homelab_adapter_path',
+    '_hades_register_homelab_fallback_tools',
     '_hades_homelab_core_guest_name_keys',
     '_hades_homelab_core_vm_placement_intent',
     '_hades_homelab_core_vm_placement_index_response',
@@ -128,16 +130,24 @@ functions = [
     node for node in tree.body
     if isinstance(node, ast.FunctionDef) and node.name in wanted
 ]
+fallback_registration = [
+    node for node in ast.walk(tree)
+    if isinstance(node, ast.FunctionDef) and node.name == '_hades_register_homelab_fallback_tools'
+]
+assert len(fallback_registration) == 1
+functions.extend(fallback_registration)
 assert {node.name for node in functions} == wanted
 namespace = {
     're': re,
     'ipaddress': ipaddress,
+    'json': json,
     'os': os,
     'sys': sys,
     'importlib': importlib,
     'Path': Path,
     '_hades_agent_zero_available': lambda: True,
     '_hades_logger': type('Logger', (), {'warning': lambda *_args, **_kwargs: None})(),
+    '_HADES_HOMELAB_FALLBACK_REGISTERED': False,
     '_hades_live_proxmox_vm_rows': lambda: [],
     '_hades_homelab_named_machine_records': lambda rows, target: [
         row for row in rows if isinstance(row, dict)
@@ -345,6 +355,65 @@ with tempfile.TemporaryDirectory(prefix='hades-active-adapter-path-') as temp_ro
     try:
         assert resolve_homelab_adapter_path() == selected
     finally:
+        if old_root is None:
+            os.environ.pop('HADES_INTEGRATIONS_ROOT', None)
+        else:
+            os.environ['HADES_INTEGRATIONS_ROOT'] = old_root
+        if old_workdir is None:
+            os.environ.pop('HADES_HERMES_WORKING_DIRECTORY', None)
+        else:
+            os.environ['HADES_HERMES_WORKING_DIRECTORY'] = old_workdir
+
+# The local fallback must import the package selected by the live Hermes
+# profile, not a same-named adapter in the historical working checkout.
+with tempfile.TemporaryDirectory(prefix='hades-fallback-adapter-path-') as temp_root:
+    root = Path(temp_root)
+    selected = root / 'packages' / 'homelab-readonly-qualified' / 'server.py'
+    selected.parent.mkdir(parents=True)
+    selected.write_text(
+        "def homelab_entity_reachability(entity_name): return {'source': 'selected'}\n",
+        encoding='utf-8',
+    )
+    decoy_root = root / 'working-copy'
+    decoy = decoy_root / 'integrations' / 'homelab-readonly' / 'server.py'
+    decoy.parent.mkdir(parents=True)
+    decoy.write_text(
+        "def homelab_entity_reachability(entity_name): return {'source': 'decoy'}\n",
+        encoding='utf-8',
+    )
+    profile = root / 'profile' / 'profiles' / 'hades' / 'config.yaml'
+    profile.parent.mkdir(parents=True)
+    profile.write_text(json.dumps({'mcp_servers': {'homelab-readonly': {
+        'args': [str(selected)],
+    }}}), encoding='utf-8')
+    entries = {}
+    class Registry:
+        def register(self, *, name, handler, **_kwargs):
+            entries[name] = handler
+    fake_tools = types.ModuleType('tools')
+    fake_tools.__path__ = []
+    fake_registry = types.ModuleType('tools.registry')
+    fake_registry.registry = Registry()
+    previous_modules = {name: sys.modules.get(name) for name in ('tools', 'tools.registry')}
+    old_root = os.environ.get('HADES_INTEGRATIONS_ROOT')
+    old_workdir = os.environ.get('HADES_HERMES_WORKING_DIRECTORY')
+    os.environ['HADES_INTEGRATIONS_ROOT'] = str(root)
+    os.environ['HADES_HERMES_WORKING_DIRECTORY'] = str(decoy_root)
+    sys.modules['tools'] = fake_tools
+    sys.modules['tools.registry'] = fake_registry
+    namespace['_HADES_HOMELAB_FALLBACK_REGISTERED'] = False
+    try:
+        namespace['_hades_register_homelab_fallback_tools']()
+        result = json.loads(entries['mcp_homelab_readonly_homelab_entity_reachability'](
+            {'entity_name': 'Synthetic Node'}
+        ))
+        assert result == {'source': 'selected'}
+    finally:
+        for name, module in previous_modules.items():
+            if module is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = module
         if old_root is None:
             os.environ.pop('HADES_INTEGRATIONS_ROOT', None)
         else:

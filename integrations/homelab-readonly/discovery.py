@@ -7,6 +7,7 @@ fixture. It does not invoke Nmap, probe a network, or write inventory.
 from __future__ import annotations
 
 import ipaddress
+import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import Any
@@ -38,8 +39,19 @@ def parse_nmap_xml(
     except UnicodeDecodeError as exc:
         raise ValueError("Nmap evidence must be UTF-8 XML") from exc
     declaration_scan = xml_text.upper()
-    if "<!DOCTYPE" in declaration_scan or "<!ENTITY" in declaration_scan:
+    doctype_count = declaration_scan.count("<!DOCTYPE")
+    if doctype_count > 1 or "<!ENTITY" in declaration_scan:
         raise ValueError("Nmap evidence must not contain DTD or entity declarations")
+    if doctype_count:
+        # Nmap always emits this inert document-type declaration. Accept only
+        # that exact form and remove it before parsing; reject external IDs,
+        # internal subsets, and entity declarations.
+        xml_text, removed = re.subn(
+            r"<!DOCTYPE\s+nmaprun\s*>", "", xml_text,
+            count=1, flags=re.IGNORECASE,
+        )
+        if removed != 1:
+            raise ValueError("Nmap evidence must not contain DTD or entity declarations")
     requested = _network(target)
     if not retrieved_at:
         raise ValueError("Nmap evidence requires a retrieval timestamp")
@@ -51,7 +63,7 @@ def parse_nmap_xml(
     if not any(requested.subnet_of(scope) for scope in allowed):
         raise ValueError("Nmap target is outside the allowed discovery scope")
     try:
-        root = ET.fromstring(raw)
+        root = ET.fromstring(xml_text)
     except ET.ParseError as exc:
         raise ValueError("Nmap evidence is not valid XML") from exc
 
