@@ -187,6 +187,7 @@ def insert_grocy_operation_guard(text: str) -> str:
         '            and not re.search(r"\\bingredients?\\b", text, re.IGNORECASE)\n'
         '        )\n'
         '    ):\n'
+        '        return None\n'
     )
     guard = (
         '    current_read_operation = _hades_grocy_read_operation(text)\n'
@@ -201,13 +202,23 @@ def insert_grocy_operation_guard(text: str) -> str:
         return text
     if segment.count(legacy_guard) == 1:
         start, end = node_span(text, fn)
-        return text.encode("utf-8")[:start].decode("utf-8") + segment.replace(legacy_guard, guard, 1) + text.encode("utf-8")[end:].decode("utf-8")
+        return (
+            text.encode("utf-8")[:start].decode("utf-8")
+            + segment.replace(legacy_guard, guard, 1)
+            + "\n"
+            + text.encode("utf-8")[end:].decode("utf-8")
+        )
     anchor = '    text = str(user_text or "")\n'
     if segment.count(anchor) != 1:
         raise SystemExit("FAIL active Grocy recipe reader has unexpected initialization")
     replacement = anchor + guard
     start, end = node_span(text, fn)
-    return text.encode("utf-8")[:start].decode("utf-8") + segment.replace(anchor, replacement, 1) + text.encode("utf-8")[end:].decode("utf-8")
+    return (
+        text.encode("utf-8")[:start].decode("utf-8")
+        + segment.replace(anchor, replacement, 1)
+        + "\n"
+        + text.encode("utf-8")[end:].decode("utf-8")
+    )
 
 
 def extract_finance_period_block(source: str) -> str:

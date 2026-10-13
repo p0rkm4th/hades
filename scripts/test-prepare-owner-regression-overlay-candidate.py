@@ -23,6 +23,15 @@ _HADES_NONPERSONAL_STATE_INTENT = re.compile(r"\b(?:homelab)\b", re.I)
 
 def _hades_direct_grocy_recipe_read(user_text):
     text = str(user_text or "")
+    current_read_operation = _hades_grocy_read_operation(text)
+    if (
+        current_read_operation == "recipes_list_tool"
+        or (
+            current_read_operation == "recipe_details_tool"
+            and not re.search(r"\bingredients?\b", text, re.IGNORECASE)
+        )
+    ):
+        return None
     return "legacy recipe response"
 
 def _hades_grocy_read_operation(user_text):
@@ -106,6 +115,10 @@ LIVE_ONLY_SENTINEL = "must remain byte-for-byte"
 
 candidate = composer.compose(active.encode(), source.encode()).decode()
 assert compile(candidate, "candidate-overlay.py", "exec")
+_tight_active = active.replace("\n\ndef ", "\ndef ")
+_tight_candidate = composer.compose(_tight_active.encode(), source.encode()).decode()
+assert compile(_tight_candidate, "tight-candidate-overlay.py", "exec")
+assert r'text = re.sub(r"\bdfo\b", "do", text, flags=re.IGNORECASE)' in _tight_candidate
 assert "LIVE_ONLY_SENTINEL = \"must remain byte-for-byte\"" in candidate
 assert r"what(?:['’]s| is|s)\s+in" in candidate
 assert "_hades_configured_homelab_alias_matches" in candidate
