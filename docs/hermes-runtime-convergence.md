@@ -1,6 +1,47 @@
 # Hermes Runtime Artifact Contract
 
-## Current checkpoint — 2026-10-13
+## Current authoritative checkpoint — 2026-10-13
+
+Runtime source commit `7ab2cf2b3c0d0ba3ca363a3be9ad6af3a1ee5e59` was
+fast-forwarded to canonical `main`. Candidate Public CI run `38357042859` and
+post-promotion main run `38357817633` both passed.
+
+Production runs Hermes 0.21.2 in `hades-hermes.service`. The service-selected
+Python import and the installed
+`generated-full/config/overlay/sitecustomize.py` are both SHA-256
+`d0b6b03f73fb140dcd33f4bdb0511af04682280e4dfe9476b5b458b701721756`. The
+runtime manifest ID is
+`1471cd606cf99cd44344e11c999c2e0c7a7856cdf5e57c88c32aa79dae98f633`; its
+file SHA-256 is
+`b3f23992483f0039ca3cc41b9676aea3d1f486f97f1a67fde18e3c3d86da52a9`. The
+manifest binds HADES commit `7ab2cf2b3c0d`, Hermes 0.21.2, the source and
+builder hashes, and the approved deployment configuration fingerprints.
+`verify-live` reports `EXPECTED`; the service is active and `/health` passes.
+
+The running file is a byte-identical copy of tracked
+`hermes/sitecustomize.py`, built by `scripts/hermes-runtime-artifact.py`.
+The old deployment overlay at checksum `cda3b3556a24dce439b5a8f718f1ab51d89a208235df3acb3b59b750f5664d49`
+is preserved as a metadata-verified rollback artifact under the protected
+deployment backup root. The inactive Hermes installation-root copy and stale
+reconciled-checkout copy remain unused; no second active import path is
+configured.
+
+The synthetic production UI smoke passed ordinary chat, kitchen stock, named
+Grocy recipe, homelab follow-up, finance calculation, and safe Palworld
+capability handling. The seven temporary chats were deleted and verified
+absent from the acceptance owner's chat list. No tool-call records appeared
+in the chats; the synthetic actor is excluded from automatic retention, and
+the read routes invoked no write capability. Protected response-hash and
+cleanup evidence is in the local HADES state directory; it contains no
+response payloads.
+
+The first deployment attempt exposed a readiness race: a single health probe
+ran before Hermes had bound its port. The checksum-guarded installer restored
+the exact previous overlay; the old runtime then became healthy and its loaded
+checksum was verified. Both deploy and rollback now wait up to 60 seconds for
+service health. The subsequent deployment passed identity and health checks.
+
+## Historical pre-convergence checkpoint — before 7ab2cf2b deployment
 
 Runtime convergence is active on branch `codex/runtime-convergence-20261013`,
 based on HADES `2d4a702d8c9eef3ce99280e6dd45a1b47a5e36a5`.
