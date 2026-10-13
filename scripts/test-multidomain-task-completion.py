@@ -236,15 +236,32 @@ named_followup = [
 assert homelab_followup("what about thanatos?", "owner", named_followup) == "What is Thanatos doing right now?"
 assert homelab_followup("what about thanatos or hermes?", "owner", named_followup) == "homelab all nodes status"
 configured_alias_match = scope["_hades_configured_homelab_alias_matches"]
+homelab_classifier = scope["_hades_is_homelab_intent"]
 scope["_hades_configured_homelab_alias_matches"] = lambda _text: []
+scope["_hades_is_homelab_intent"] = lambda text: bool(
+    re.search(r"homelab|network|nodes?", text, re.I)
+    and not re.search(r"\bneural networks?\b", text, re.I)
+)
 try:
     # Real production composition may not have every conversational node name
     # in its small alias file. A same-chat disjunction still needs a fresh
     # canonical homelab read instead of model-only mythology fallback.
     assert homelab_followup("what about Thanatos or Hermes?", "owner", named_followup) == "homelab all nodes status"
     assert homelab_followup("what about Thanatos or Hermes?", "owner", []) == "what about Thanatos or Hermes?"
+    chained_followup = named_followup + [
+        {"role": "assistant", "content": "synthetic node summary"},
+        {"role": "user", "content": "what about Thanatos or Hermes?"},
+        {"role": "assistant", "content": "synthetic node summary"},
+    ]
+    assert homelab_followup("are any of the nodes showing problems?", "owner", chained_followup) == "homelab nodes problems status"
+    unrelated_turn = named_followup + [
+        {"role": "assistant", "content": "synthetic answer"},
+        {"role": "user", "content": "explain neural networks"},
+    ]
+    assert homelab_followup("what about Thanatos or Hermes?", "owner", unrelated_turn) == "what about Thanatos or Hermes?"
 finally:
     scope["_hades_configured_homelab_alias_matches"] = configured_alias_match
+    scope["_hades_is_homelab_intent"] = homelab_classifier
 assert "all nodes status" in homelab_followup(journey[-3]["content"], "owner", journey[:4])
 assert "nodes problems status" in homelab_followup(journey[-1]["content"], "owner", journey)
 assert homelab_followup("are any of the nodes showing any problems?", "household", journey) == journey[-1]["content"]

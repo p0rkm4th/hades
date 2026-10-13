@@ -8396,6 +8396,7 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
     if scope != "owner" or not current:
         return current
     previous_user = ""
+    prior_homelab = False
     for row in reversed(conversation_history if isinstance(conversation_history, list) else []):
         if not isinstance(row, dict) or row.get("role") != "user":
             continue
@@ -8403,6 +8404,13 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
         if content.casefold() == current.casefold():
             continue
         previous_user = content
+        if _hades_is_homelab_intent(content):
+            prior_homelab = True
+            break
+        # Carry domain scope through a short chain of explicit follow-ups,
+        # but stop at a new unrelated user request.
+        if re.match(r"\s*(?:what\s+about|sorry[, ]+|i\s+meant\s+)", content, re.IGNORECASE):
+            continue
         break
     network_health = bool(re.search(
         r"\bhow(?:['’]s|s|\s+is)\s+(?:my\s+)?network\b|"
@@ -8410,8 +8418,7 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
         current, re.IGNORECASE,
     ))
     anaphoric_node_health = bool(
-        previous_user
-        and _hades_is_homelab_intent(previous_user)
+        prior_homelab
         and re.search(r"\b(?:the|those|these|any\s+of\s+the)\s+(?:other\s+)?nodes?\b|\bany\s+of\s+them\b", current, re.IGNORECASE)
         and re.search(r"\b(?:problem|issue|wrong|health|status|down|degrad)\w*\b", current, re.IGNORECASE)
     )
@@ -8419,7 +8426,6 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
     followup = bool(re.match(
         r"\s*(?:what\s+about|sorry[, ]+|i\s+meant\s+)", current, re.IGNORECASE
     ))
-    prior_homelab = bool(previous_user and _hades_is_homelab_intent(previous_user))
     targets = _hades_configured_homelab_alias_matches(current)
     # A same-chat disjunction can name nodes that are absent from the small
     # configured alias list. Preserve the established homelab scope and do a
@@ -8433,7 +8439,7 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
         return "network health status"
     if anaphoric_node_health:
         return "homelab nodes problems status"
-    if all_nodes and previous_user and _hades_is_homelab_intent(previous_user):
+    if all_nodes and prior_homelab:
         return "homelab all nodes status"
     return current
 
