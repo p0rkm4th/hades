@@ -49,6 +49,7 @@ wanted = {
     "_hades_configured_homelab_alias_matches",
     "_hades_broad_homelab_status_intent",
     "_hades_is_provisioning_request",
+    "_hades_is_managed_server_status_request",
     "_hades_endpoint_intent_before_provision",
     "_hades_nonpersonal_state_turn",
 }
@@ -313,6 +314,10 @@ assert scope["_hades_homelab_node_status_targets"]("homelab all nodes status") =
 palworld_request = "I think i wanna build a game server for palworld, can you spin one up for me?"
 assert scope["_hades_is_provisioning_request"](palworld_request)
 assert not scope["_hades_endpoint_intent_before_provision"](palworld_request)
+assert not scope["_hades_is_managed_server_status_request"](
+    palworld_request + " Do not provision it yet; tell me what specific approval, decision, or capability is needed first."
+), "a provisioning request must not be intercepted as existing-server status"
+assert scope["_hades_is_managed_server_status_request"]("What is my HADES-managed server status?")
 assert scope["_hades_direct_homelab_read"](
     palworld_request, subject="synthetic-owner", scope="owner"
 ) is None, "a provisioning action must not be intercepted as a homelab status read"
@@ -361,18 +366,18 @@ with tempfile.TemporaryDirectory(prefix="hades-multidomain-finance-") as temp:
         assert "$500.00" not in trailing_year, trailing_year
         explicit_followup = scope["_hades_finance_followup_query"](
             "Calculate how much I spent there", [
-                {"role": "user", "content": "How much have I spent at 7 Brew year-to-date?"},
-                {"role": "assistant", "content": first},
+                {"role": "user", "content": "How much have I spent on 7 Brew in the last year?"},
+                {"role": "assistant", "content": trailing_year},
                 {"role": "user", "content": "But I need to know"},
-                {"role": "assistant", "content": second},
+                {"role": "assistant", "content": "I'm here to help—what do you need to know?"},
                 {"role": "user", "content": "Calculate how much I spent there"},
             ], "owner",
         )
-        assert "7 Brew" in explicit_followup and "year-to-date" in explicit_followup
+        assert "7 Brew" in explicit_followup and "last year" in explicit_followup
         third = finance(explicit_followup)
-        assert "posted net spending at 7 Brew is $20.50" in third, third
+        assert "posted net spending at 7 Brew is $120.50" in third, third
         assert "Pending transactions total $3.00" in third, third
-        assert "100.00" not in third
+        assert "$500.00" not in third
         original_homelab_intent = scope["_hades_is_homelab_intent"]
         def missing_overlay_alias_helper(_text):
             raise NameError("_hades_configured_homelab_alias_match")

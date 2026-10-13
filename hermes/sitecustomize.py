@@ -3796,7 +3796,7 @@ def _hades_finance_followup_query(user_text, conversation_history, scope):
         prior = str(row.get("content") or "").strip()
         if prior.casefold() == current.casefold():
             continue
-        if finance_pattern.search(prior) and re.search(r"\b(?:at|with|from)\s+\w", prior, re.IGNORECASE):
+        if finance_pattern.search(prior) and re.search(r"\b(?:at|on|with|from)\s+\w", prior, re.IGNORECASE):
             return prior + "\n" + current
         try:
             prior_is_homelab = _hades_is_homelab_intent(prior)
@@ -6925,6 +6925,27 @@ def _hades_is_provisioning_request(user_text):
     """Recognize owner provisioning language, including natural 'spin one up'."""
     text = str(user_text or "")
     return bool(_HADES_PROVISIONING_ACTION.search(text) and _HADES_PROVISIONING_TARGET.search(text))
+
+
+def _hades_is_managed_server_status_request(user_text):
+    """Keep server inventory/status reads from swallowing provisioning requests."""
+    text = str(user_text or "")
+    if _hades_is_provisioning_request(text):
+        return False
+    definition_question = bool(
+        re.fullmatch(r"\s*what(?:['’]s|\s+(?:is|are))\s+.+?[?.!]*\s*", text, re.IGNORECASE)
+        or re.fullmatch(r"\s*what\s+does\s+.+?\s+(?:do|mean)\s*[?.!]*\s*", text, re.IGNORECASE)
+    ) and not re.search(
+        r"\b(?:status|state|health|healthy|running|working|online|offline|up|down|doing|"
+        r"responding|reachable|performance|slow|broken|failing|wrong|unavailable)\b",
+        text,
+        re.IGNORECASE,
+    )
+    return bool(
+        not definition_question
+        and re.search(r"\b(?:show|list|what|which|check|status|is|are)\b", text, re.IGNORECASE)
+        and re.search(r"\b(?:server|sandbox|workload|guest|vm|virtual\s+machine)\b", text, re.IGNORECASE)
+    )
 
 
 def _hades_endpoint_intent_before_provision(user_text):
@@ -10746,21 +10767,7 @@ try:
         _server_share_match = re.search(r"\b(?:share|unshare|revoke|stop\s+sharing)\b", _server_text, re.IGNORECASE)
         _server_action_matches = list(re.finditer(r"\b(start|stop|restart|reboot|delete|remove)\b", _server_text, re.IGNORECASE))
         _server_action_match = _server_action_matches[-1] if _server_action_matches else None
-        _server_status_turn = bool(
-            not (
-                (re.fullmatch(r"\s*what(?:'s|\s+(?:is|are))\s+.+?[?.!]*\s*", _server_text, re.IGNORECASE)
-                 or re.fullmatch(r"\s*what\s+does\s+.+?\s+(?:do|mean)\s*[?.!]*\s*", _server_text, re.IGNORECASE))
-                and not re.search(
-                    r"\b(?:status|state|health|healthy|running|working|online|offline|up|down|doing|"
-                    r"responding|reachable|performance|slow|broken|failing|wrong|unavailable)\b",
-                    _server_text,
-                    re.IGNORECASE,
-                )
-            )
-            and
-            re.search(r"\b(?:show|list|what|which|check|status|is|are)\b", _server_text, re.IGNORECASE)
-            and re.search(r"\b(?:server|sandbox|workload|guest|vm|virtual\s+machine)\b", _server_text, re.IGNORECASE)
-        )
+        _server_status_turn = _hades_is_managed_server_status_request(_server_text)
         _server_action_turn = bool(
             _server_action_match and re.search(r"\b(?:server|sandbox|workload|guest|vm|virtual\s+machine)\b", _server_text, re.IGNORECASE)
         )
