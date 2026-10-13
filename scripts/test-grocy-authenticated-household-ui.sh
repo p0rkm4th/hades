@@ -12,6 +12,7 @@ webui_image=${HADES_HINDSIGHT_UI_WEBUI_IMAGE:-hades-open-webui:0.11.1-hades-reco
 suffix="$$"
 webui_name="hades-grocy-ui-webui-$suffix"
 webui_volume="hades-grocy-ui-webui-data-$suffix"
+network="hades-grocy-ui-net-$suffix"
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-grocy-ui.XXXXXX")
 webui_port=${HADES_GROCY_UI_WEBUI_PORT:-18886}
 gateway_port=${HADES_GROCY_UI_GATEWAY_PORT:-18887}
@@ -20,7 +21,6 @@ gateway_pid=''
 grocy_pid=''
 model_pid=''
 step='preflight'
-network="hades-grocy-ui-net-$suffix"
 source "$repo_dir/scripts/open-webui-candidate-test-runtime.sh"
 
 cleanup() {

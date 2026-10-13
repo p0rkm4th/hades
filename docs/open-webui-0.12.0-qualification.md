@@ -37,6 +37,10 @@ revocation require explicit acceptance below.
 | Channels response consumption | Remove from candidate | The same authenticated synthetic model-stream test passes on the exact upstream 0.12 image without the HADES patch. The 0.11.4 production image is unchanged. |
 | Finance/receipt/task routes, HADES branding, client stream recovery | Retain | Product capabilities or existing HADES-specific behavior; not replaced by 0.12 features in this qualification. |
 
+The candidate fails startup if its persistent revocation store is not
+configured. Candidate UI harnesses use a disposable, isolated Valkey instance;
+they do not weaken this production requirement.
+
 ## Qualification evidence so far
 
 - Candidate-only Docker wrapper built locally from the pinned amd64 image.
