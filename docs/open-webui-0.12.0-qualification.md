@@ -91,6 +91,11 @@ they do not weaken this production requirement.
 - The authenticated candidate Hindsight UI flow passes explicit save,
   correction, fresh-chat recall, actor isolation, and chat persistence using
   synthetic identities and an isolated persistent Valkey/Hindsight runtime.
+- On the exact candidate image, a normal synthetic-user browser login, new
+  chat, two streamed user/assistant turns, history listing, and reload all
+  passed. The message Edit action opens the edit control. The qualification
+  does not claim completed edit-and-resubmit, regenerate, fork, delete, or
+  long-conversation browser coverage.
 - Authenticated synthetic candidate UI journeys pass for household Grocy
   operations, homelab network diagnosis, and read-only finance monthly
   aggregation/household denial. These exercise the 0.12 UI with the HADES
@@ -118,8 +123,9 @@ they do not weaken this production requirement.
 
 - Candidate tests use synthetic identities, data, and model/tool fixtures; no
   real Scotty account or private production database was migrated. The UI
-  harnesses exercise authenticated application flows, but a complete browser
-  interaction matrix for edit, regenerate, branch, and delete is not claimed.
+  harnesses exercise authenticated application flows, but the complete browser
+  interaction matrix for edit-and-resubmit, regenerate, branch, delete, and
+  long conversations remains unverified.
 - Owner regression semantics were checked through candidate UI journeys and
   focused source tests. This is bounded compatibility evidence, not a claim
   that every prompt variant or every live production integration was exercised
