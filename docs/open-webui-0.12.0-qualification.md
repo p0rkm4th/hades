@@ -30,8 +30,8 @@ to the 0.12.0 source above. The material HADES-facing changes reviewed were:
 | Area | Relevant 0.12 change | Qualification disposition |
 | --- | --- | --- |
 | Auth/session | SQL-backed session stamps, optional MFA, auth/session changes | Existing HADES revocation adapters retained and tested; MFA policy stays off. |
-| Database/migration | Additional schema and data migrations | Tested on disposable populated 0.11.4 copy; rollback restores the pre-upgrade database and revocation store. |
-| Chat/message storage | Chat persistence and message/branch/fork changes | Migration, private/shared access, restart persistence, and streamed response paths tested; full visual edit/regenerate lifecycle is not yet independently evidenced. |
+| Database/migration | Additional schema and data migrations | Tested on disposable populated 0.11.4 copy; users, UI settings, model endpoint/configuration and model visibility, stored tool, chat, file, shared channel, and SQLite integrity survived. Rollback restores the pre-upgrade database and revocation store. |
+| Chat/message storage | Chat persistence and message/branch/fork changes | Migration, private/shared access, restart persistence, streamed response paths, and the synthetic browser edit/resubmit, regenerate, fork, new-chat, long-thread, reload, and delete lifecycle are tested. |
 | Sharing/channels | Shared-chat replies, chat forks, permission changes | ACL and membership persistence tested; no new sharing defaults enabled. |
 | Tools/MCP | Tool, model, and skill version history; experimental Tool Search | Existing HADES tool flow tested; Tool Search remains disabled. |
 | WebSocket/streaming | Chat and tool streaming changes | Synthetic stream and revocation/disconnect paths tested. |
@@ -71,8 +71,13 @@ they do not weaken this production requirement.
   The manifest records the upstream and BuildKit pins, source SHA, Dockerfile
   SHA, Buildx version, platform, image ID, and artifact SHA.
 - Synthetic owner/household populated 0.11.4 state migrated on the HADES 0.12
-  wrapper; users, private chat/file isolation, shared-channel membership,
-  uploaded DOCX bytes, and SQLite integrity survived.
+  wrapper; users, persisted user UI settings, configured model endpoint,
+  post-migration model visibility, stored Open WebUI tool, private chat/file
+  isolation, shared-channel membership, original and forked chat branches,
+  uploaded DOCX bytes, and SQLite integrity survived. The repeatable disposable
+  migration and rollback check is `scripts/test-openwebui-012-populated-migration.sh`;
+  its run against the pinned candidate image and 0.11.4 baseline passed on
+  2026-10-13.
 - Rollback rehearsal restored the pre-upgrade application-data snapshot and
   persistent Valkey revocation state on the 0.11.4 HADES baseline. Pre-cutover
   sessions remained rejected; fresh login and state survived restart.
@@ -136,11 +141,14 @@ they do not weaken this production requirement.
   them requires separate product decisions and qualification.
 - Hosted Public CI run `38416741710` passes for source commit
   `bd77b10c7cd06fb0e1d9fae6b0590bd4a0a1e0f4`.
+- Hosted Public CI run `38423575575` passes for the current qualification
+  branch tip and includes the exact-candidate browser lifecycle contract.
 
 No production promotion is authorized by this qualification. Candidate
-evidence supports migration/rollback, authentication and revocation, LDAP,
-chat and shared-object persistence, streaming/tool-backed synthetic journeys,
-memory identity, and the bounded upload-security contract. Recommendation is
-**QUALIFIED WITH CONDITIONS**: keep MFA, voice, and Tool Search disabled; retain
-the documented HADES security adapters; require a separate explicit owner
-promotion decision; and keep production on 0.11.4 until then.
+evidence supports the tested migration/rollback data classes, authentication
+and revocation, LDAP, chat and shared-object persistence, streaming/tool-backed
+synthetic journeys, memory identity, and the bounded upload-security contract.
+The recommendation is **QUALIFIED WITH CONDITIONS**: keep MFA, voice, and Tool
+Search disabled; retain the documented HADES security adapters; require a
+separate explicit owner promotion decision; and keep production on 0.11.4 until
+then.

@@ -74,6 +74,23 @@ def main() -> None:
         assert lifecycle_contract in chat_ui, f"candidate browser lifecycle coverage is missing {lifecycle_contract}"
     assert "hades-openwebui-012-ui." in chat_ui and "127.0.0.1:${webui_port}:8080" in chat_ui
 
+    migration = (ROOT / "scripts/test-openwebui-012-populated-migration.sh").read_text()
+    for migration_contract in (
+        '[[ "$old_version" == 0.11.4 ]]',
+        '[[ "$new_version" == 0.12.0 ]]',
+        "/api/v1/users/user/settings/update",
+        "/api/v1/users/user/settings?raw=true",
+        "/openai/config/update",
+        "/openai/config",
+        "/openai/models",
+        "/api/v1/tools/create",
+        "/api/v1/tools/id/${tool_id}",
+        "/api/v1/chats/${chat_id}/fork",
+        "original and forked chat branches",
+    ):
+        assert migration_contract in migration, f"populated migration coverage is missing {migration_contract}"
+    assert "HADES_OPEN_WEBUI_VERSION=0.11.4" in (ROOT / "config/versions.env").read_text()
+
     build = (ROOT / "scripts/build-openwebui-012-qualification.sh").read_text()
     assert "git -C \"$repo_dir\" status --porcelain" in build, "candidate build must bind to a clean source tree"
     assert "--platform \"$HADES_OPEN_WEBUI_012_PLATFORM\"" in build
@@ -81,7 +98,7 @@ def main() -> None:
     assert "rewrite-timestamp=true" in build
     assert "--no-cache" in build and "--provenance=false" in build
     assert "org.hades.open-webui.upstream-source-commit" in build
-    print("PASS isolated Open WebUI 0.12.0 pins, adapter contracts, disabled opt-ins, and production version boundary")
+    print("PASS isolated Open WebUI 0.12.0 pins, adapter contracts, migration state coverage, disabled opt-ins, and production version boundary")
 
 
 if __name__ == "__main__":
