@@ -8418,8 +8418,7 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
         current, re.IGNORECASE,
     ))
     anaphoric_node_health = bool(
-        prior_homelab
-        and re.search(r"\b(?:the|those|these|any\s+of\s+the)\s+(?:other\s+)?nodes?\b|\bany\s+of\s+them\b", current, re.IGNORECASE)
+        re.search(r"\b(?:the|those|these|any\s+of\s+the)\s+(?:other\s+)?nodes?\b|\bany\s+of\s+them\b", current, re.IGNORECASE)
         and re.search(r"\b(?:problem|issue|wrong|health|status|down|degrad)\w*\b", current, re.IGNORECASE)
     )
     all_nodes = bool(re.search(r"\b(?:all|every|other)\s+(?:of\s+)?(?:the\s+)?nodes?\b", current, re.IGNORECASE))
@@ -8433,6 +8432,28 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
     multiple_named_targets = bool(re.search(r"\b\w[\w.'’-]*\s+(?:or|and)\s+\w[\w.'’-]*\b", current, re.IGNORECASE))
     if followup and prior_homelab and (all_nodes or len(targets) > 1 or multiple_named_targets):
         return "homelab all nodes status"
+    if followup and multiple_named_targets:
+        # Some Hermes paths do not provide prior turns to the overlay callback.
+        # In that case, recognize the explicit entities only against a fresh
+        # canonical homelab summary; unmatched names remain ordinary chat.
+        summary = _hades_direct_homelab_tool_result("homelab_summary")
+        resources = summary.get("resources", []) if isinstance(summary, dict) else []
+        names = []
+        for row in resources if isinstance(resources, list) else []:
+            if not isinstance(row, dict):
+                continue
+            inventory = row.get("inventory") if isinstance(row.get("inventory"), dict) else {}
+            runtime = row.get("runtime") if isinstance(row.get("runtime"), dict) else {}
+            for value in (row.get("name"), inventory.get("name"), runtime.get("name")):
+                if isinstance(value, str) and value.strip():
+                    names.append(" ".join(value.split()).strip())
+        matched = []
+        for name in names:
+            if re.search(r"(?<![\w])" + re.escape(name) + r"(?![\w])", current, re.IGNORECASE):
+                if name.casefold() not in {item.casefold() for item in matched}:
+                    matched.append(name)
+        if len(matched) > 1:
+            return "homelab all nodes status"
     if targets and prior_homelab and followup:
         return f"What is {targets[0]} doing right now?"
     if network_health:

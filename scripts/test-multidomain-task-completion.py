@@ -219,6 +219,11 @@ finally:
     urllib.request.urlopen = real_urlopen
 
 homelab_followup = scope["_hades_homelab_read_followup_query"]
+homelab_summary_reads = []
+scope["_hades_direct_homelab_tool_result"] = lambda operation: (
+    homelab_summary_reads.append(operation)
+    or {"resources": [{"name": "Thanatos"}, {"name": "Hermes"}]}
+)
 journey = [
     {"role": "user", "content": "how's my network?"},
     {"role": "assistant", "content": "synthetic answer"},
@@ -247,18 +252,24 @@ try:
     # in its small alias file. A same-chat disjunction still needs a fresh
     # canonical homelab read instead of model-only mythology fallback.
     assert homelab_followup("what about Thanatos or Hermes?", "owner", named_followup) == "homelab all nodes status"
-    assert homelab_followup("what about Thanatos or Hermes?", "owner", []) == "what about Thanatos or Hermes?"
+    homelab_summary_reads.clear()
+    assert homelab_followup("what about Thanatos or Hermes?", "owner", []) == "homelab all nodes status"
+    assert homelab_summary_reads == ["homelab_summary"]
+    homelab_summary_reads.clear()
+    assert homelab_followup("what about Zeus or Apollo?", "owner", []) == "what about Zeus or Apollo?"
+    assert homelab_summary_reads == ["homelab_summary"]
     chained_followup = named_followup + [
         {"role": "assistant", "content": "synthetic node summary"},
         {"role": "user", "content": "what about Thanatos or Hermes?"},
         {"role": "assistant", "content": "synthetic node summary"},
     ]
     assert homelab_followup("are any of the nodes showing problems?", "owner", chained_followup) == "homelab nodes problems status"
+    assert homelab_followup("are any of the nodes showing problems?", "owner", []) == "homelab nodes problems status"
     unrelated_turn = named_followup + [
         {"role": "assistant", "content": "synthetic answer"},
         {"role": "user", "content": "explain neural networks"},
     ]
-    assert homelab_followup("what about Thanatos or Hermes?", "owner", unrelated_turn) == "what about Thanatos or Hermes?"
+    assert homelab_followup("what about Zeus or Apollo?", "owner", unrelated_turn) == "what about Zeus or Apollo?"
 finally:
     scope["_hades_configured_homelab_alias_matches"] = configured_alias_match
     scope["_hades_is_homelab_intent"] = homelab_classifier
