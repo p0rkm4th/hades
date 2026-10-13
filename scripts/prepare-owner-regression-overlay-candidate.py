@@ -104,20 +104,36 @@ def insert_top_level_function(active: str, source: str, name: str, *, before: st
     return active.encode("utf-8")[:a].decode("utf-8") + source.encode("utf-8")[c:d].decode("utf-8") + "\n\n" + active.encode("utf-8")[a:].decode("utf-8")
 
 
-def insert_grocy_list_guard(text: str) -> str:
+def insert_grocy_operation_guard(text: str) -> str:
     matches = named_functions(text, "_hades_direct_grocy_recipe_read")
     if len(matches) != 1:
         raise SystemExit("FAIL expected one active _hades_direct_grocy_recipe_read")
     fn = matches[0]
     segment = ast.get_source_segment(text, fn) or ""
-    guard = '    if _hades_grocy_read_operation(text) == "recipes_list_tool":\n'
+    guard = (
+        '    current_read_operation = _hades_grocy_read_operation(text)\n'
+        '    if (\n'
+        '        current_read_operation == "recipes_list_tool"\n'
+        '        or (\n'
+        '            current_read_operation == "recipe_details_tool"\n'
+        '            and not re.search(r"\\bingredients?\\b", text, re.IGNORECASE)\n'
+        '        )\n'
+        '    ):\n'
+    )
     if segment.count(guard) == 1:
         return text
     anchor = '    text = str(user_text or "")\n'
     if segment.count(anchor) != 1:
         raise SystemExit("FAIL active Grocy recipe reader has unexpected initialization")
     replacement = anchor + (
-        '    if _hades_grocy_read_operation(text) == "recipes_list_tool":\n'
+        '    current_read_operation = _hades_grocy_read_operation(text)\n'
+        '    if (\n'
+        '        current_read_operation == "recipes_list_tool"\n'
+        '        or (\n'
+        '            current_read_operation == "recipe_details_tool"\n'
+        '            and not re.search(r"\\bingredients?\\b", text, re.IGNORECASE)\n'
+        '        )\n'
+        '    ):\n'
         '        return None\n'
     )
     start, end = node_span(text, fn)
@@ -315,7 +331,7 @@ def compose(active: bytes, source: bytes) -> bytes:
         c, d = node_span(source_text, source_matches[0])
         active_text = active_text.encode("utf-8")[:a].decode("utf-8") + source_text.encode("utf-8")[c:d].decode("utf-8") + "\n\n" + active_text.encode("utf-8")[a:].decode("utf-8")
     active_text = replace_top_level_function(active_text, source_text, "_hades_configured_homelab_alias_match")
-    active_text = insert_grocy_list_guard(active_text)
+    active_text = insert_grocy_operation_guard(active_text)
     active_text = insert_finance_period_block(active_text, source_text)
     active_text = widen_finance_override(active_text)
     active_text = patch_legacy_turn_gates(active_text)

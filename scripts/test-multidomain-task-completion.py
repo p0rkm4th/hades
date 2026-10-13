@@ -43,11 +43,13 @@ wanted = {
     "_hades_finance_followup_query",
     "_hades_direct_finance_guidance",
     "_hades_direct_grocy_recipe_read",
+    "_hades_direct_homelab_read",
     "_hades_homelab_read_followup_query",
     "_hades_homelab_node_status_targets",
     "_hades_configured_homelab_alias_matches",
     "_hades_broad_homelab_status_intent",
     "_hades_is_provisioning_request",
+    "_hades_endpoint_intent_before_provision",
     "_hades_nonpersonal_state_turn",
 }
 functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
@@ -80,6 +82,8 @@ scope = {
         r"\b(?:what|which)\s+(?:can|could)\s+(?:i|we)\s+(?:make|cook)\b", re.I
     ),
     "_hades_is_homelab_intent": lambda text: bool(re.search(r"homelab|network|nodes?|thanatos", text, re.I)),
+    "_HADES_EXPLICIT_PUBLIC_RESEARCH_INTENT": re.compile(r"(?!)"),
+    "_HADES_LIVE_WEB_INTENT": re.compile(r"(?!)"),
     "_hades_configured_homelab_records": lambda: [
         {"name": "Thanatos", "aliases": ["thanatos"]},
         {"name": "Hermes", "aliases": ["hermes"]},
@@ -124,6 +128,7 @@ try:
 finally:
     urllib.request.urlopen = real_urlopen
 assert operation("what's in my kitchen?") == "stock_overview_tool"
+assert operation("what’s in the kitchen") == "stock_overview_tool"
 assert operation("whats in my kiytchen?") == "stock_overview_tool"
 assert operation("add milk to the shopping list") is None
 assert choice("list my recipes", tools) == {
@@ -307,6 +312,10 @@ assert scope["_hades_homelab_node_status_targets"]("homelab all nodes status") =
 
 palworld_request = "I think i wanna build a game server for palworld, can you spin one up for me?"
 assert scope["_hades_is_provisioning_request"](palworld_request)
+assert not scope["_hades_endpoint_intent_before_provision"](palworld_request)
+assert scope["_hades_direct_homelab_read"](
+    palworld_request, subject="synthetic-owner", scope="owner"
+) is None, "a provisioning action must not be intercepted as a homelab status read"
 
 today = date.today()
 coverage = today - timedelta(days=31)

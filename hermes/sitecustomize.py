@@ -3091,7 +3091,14 @@ def _hades_direct_grocy_recipe_read(user_text, expiring_product_ids=None):
     # A saved-recipe inventory request is a distinct read operation.  Do not
     # answer it with the stock-feasibility report used by meal suggestions;
     # leave it for the canonical recipe-list operation selected below.
-    if expiring_product_ids is None and _hades_grocy_read_operation(text) == "recipes_list_tool":
+    current_read_operation = _hades_grocy_read_operation(text)
+    if (
+        current_read_operation == "recipes_list_tool"
+        or (
+            current_read_operation == "recipe_details_tool"
+            and not re.search(r"\bingredients?\b", text, re.IGNORECASE)
+        )
+    ):
         return None
     expiring_product_ids = (
         None if expiring_product_ids is None

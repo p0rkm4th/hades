@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -117,6 +118,26 @@ assert "_hades_grocy_read_operation_for_turn(current_text, grocy_tools, _hades_h
 assert "and _hades_grocy_read_operation(current_text) is None" in candidate
 assert "node_status_targets = _hades_homelab_node_status_targets(text)" in candidate
 assert "_hades_homelab_node_problems_response(summary)" in candidate
+assert 'current_read_operation == "recipe_details_tool"' in candidate
+assert "current_grocy_intent" in candidate
+
+# The deployment-local fulfillment shortcut must yield explicit detail
+# operations to Hermes' canonical recipe detail tool. Otherwise a named
+# recipe question can be answered with stock/shopping-list data.
+candidate_tree = ast.parse(candidate)
+detail_reader = next(
+    node for node in candidate_tree.body
+    if isinstance(node, ast.FunctionDef)
+    and node.name == "_hades_direct_grocy_recipe_read"
+)
+detail_scope = {
+    "re": __import__("re"),
+    "_hades_grocy_read_operation": lambda _text: "recipe_details_tool",
+}
+exec(compile(ast.Module(body=[detail_reader], type_ignores=[]), "candidate.py", "exec"), detail_scope)
+assert detail_scope["_hades_direct_grocy_recipe_read"](
+    "tell me about the best cordon bleu recipe"
+) is None
 
 # The candidate has no authority to replace the complete live runtime.
 assert candidate.count("LIVE_ONLY_SENTINEL") == 1
