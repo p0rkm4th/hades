@@ -882,7 +882,7 @@ def _hades_phase3_template_name(template):
 def _hades_phase3_inventory(items, subject, *, include_other_owners=False):
     """Describe staged records without exposing identities or implying execution."""
     from integrations.automation.phase3_self_service import RESOURCE_LABELS
-    rows = []
+    rows = {}
     for item in items:
         minutes = int(item["interval_minutes"])
         if minutes % 10080 == 0:
@@ -906,13 +906,18 @@ def _hades_phase3_inventory(items, subject, *, include_other_owners=False):
         else:
             owner_text = " — owned by you"
         resources = ", ".join(RESOURCE_LABELS.get(resource, resource) for resource in item["resource_scope"])
-        rows.append(f"- {_hades_phase3_template_name(item['template_type'])}{owner_text} — {schedule} — {status} — {resources}")
+        row = f"- {_hades_phase3_template_name(item['template_type'])}{owner_text} — {schedule} — {status} — {resources}"
+        rows[row] = rows.get(row, 0) + 1
     heading = (
         "Household draft automations (none are running):"
         if include_other_owners
         else "Your draft automations are saved but are not running:"
     )
-    return "\n".join([heading, *rows])
+    rendered_rows = [
+        f"{row} ({count} matching drafts)" if count > 1 else row
+        for row, count in rows.items()
+    ]
+    return "\n".join([heading, *rendered_rows])
 
 
 def _hades_phase3_owner_response(user_text, authority, service, pending_key):

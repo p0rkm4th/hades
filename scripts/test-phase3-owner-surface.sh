@@ -114,6 +114,9 @@ records.append({**records[0], "automation_id": "private-record-id-3"})
 same_owner = route("Are any duplicate automations?", Authority(), service, "pending")
 assert "Low Inventory Summary (2 for you)" in same_owner
 assert "synthetic-" not in same_owner and "private-record-id" not in same_owner
+coalesced = route("What automations do I have?", Authority(), service, "pending")
+assert coalesced.count("Low Inventory Summary") == 2
+assert "2 matching drafts" in coalesced
 
 namespace["_hades_phase3_enabled"] = lambda: True
 turn_intent = namespace["_hades_phase3_turn_intent"]
