@@ -52,17 +52,12 @@ def _hades_homelab_health_summary_response(summary):
 def _hades_homelab_availability_groups(rows):
     return {"down": [], "unknown": []}
 
+def _hades_backup_restore_guest_state_intent(text):
+    return False
+
 def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="", conversation_history=None):
     text = str(user_text or "")
-    node_load_target = _hades_homelab_proxmox_node_load_target(text)
-    try:
-        summary = {}
-        node_problem_request = bool(re.search(
-            r"nodes problems", text,
-        ))
-        if scope == "owner" and node_problem_request:
-            return _hades_homelab_health_summary_response(summary)
-    except Exception:
+    if _hades_backup_restore_guest_state_intent(text):
         return None
 
 def _hades_p1_finance_merchant_calculation(user_text):
@@ -118,6 +113,8 @@ assert "_hades_grocy_read_operation_for_turn(current_text, grocy_tools, _hades_h
 assert "and _hades_grocy_read_operation(current_text) is None" in candidate
 assert "node_status_targets = _hades_homelab_node_status_targets(text)" in candidate
 assert "_hades_homelab_node_problems_response(summary)" in candidate
+assert "_hades_homelab_named_resource_status(summary, target)" in candidate
+assert "Current host evidence:" not in candidate
 assert 'current_read_operation == "recipe_details_tool"' in candidate
 assert "current_grocy_intent" in candidate
 
@@ -142,4 +139,7 @@ assert detail_scope["_hades_direct_grocy_recipe_read"](
 # The candidate has no authority to replace the complete live runtime.
 assert candidate.count("LIVE_ONLY_SENTINEL") == 1
 assert "def _hades_run_conversation(user_text):" in candidate
+recomposed = composer.compose(candidate.encode(), source.encode()).decode()
+assert recomposed.count("node_status_targets = _hades_homelab_node_status_targets(text)") == 1
+assert recomposed.count("view = _hades_homelab_named_resource_status(summary, target)") == 1
 print("PASS owner-regression composition is bounded, reproducible, and preserves live-only content")

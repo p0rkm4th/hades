@@ -237,17 +237,18 @@ def patch_legacy_turn_gates(text: str) -> str:
     run_start, run_end = node_span(text, run_matches[0])
     run_segment = text.encode("utf-8")[run_start:run_end].decode("utf-8")
     old_recipe = "shopping list|recipe|pantry"
-    if old_recipe not in run_segment:
+    new_recipe = "shopping list|recipes?|pantry"
+    if old_recipe in run_segment:
+        run_segment = run_segment.replace(old_recipe, new_recipe, 1)
+    elif new_recipe not in run_segment:
         raise SystemExit("FAIL active Grocy current-turn recipe classifier changed")
     run_segment = run_segment.replace(old_recipe, "shopping list|recipes?|pantry")
     old_choice = "_hades_grocy_read_tool_choice(current_text, grocy_tools)"
-    if run_segment.count(old_choice) != 1:
+    new_choice = "_hades_grocy_read_operation_for_turn(current_text, grocy_tools, _hades_history)"
+    if run_segment.count(old_choice) == 1:
+        run_segment = run_segment.replace(old_choice, new_choice, 1)
+    elif run_segment.count(new_choice) != 1:
         raise SystemExit("FAIL active Grocy operation-choice seam changed")
-    run_segment = run_segment.replace(
-        old_choice,
-        "_hades_grocy_read_operation_for_turn(current_text, grocy_tools, _hades_history)",
-        1,
-    )
     pattern = re.compile(
         r"(recipe_web_compound = bool\(\n)([ \t]+recipe_turn\n)([ \t]+and web_intent)"
     )
@@ -270,8 +271,6 @@ def patch_legacy_turn_gates(text: str) -> str:
     direct_start, direct_end = node_span(text, direct)
     direct_segment = text.encode("utf-8")[direct_start:direct_end].decode("utf-8")
     text_anchor = "    text = str(user_text or \"\")\n"
-    if direct_segment.count(text_anchor) != 1:
-        raise SystemExit("FAIL active homelab text-initialization seam changed")
     homelab_override = """    node_status_targets = _hades_homelab_node_status_targets(text)
     node_problem_request = bool(re.search(
         r"\\b(?:nodes?|hosts?|servers?)\\b.{0,40}\\b(?:problems?|issues?|failures?|wrong|down|degraded)\\b|"
@@ -288,14 +287,31 @@ def patch_legacy_turn_gates(text: str) -> str:
             return "I couldn't verify current node status because the live homelab summary is unavailable."
         if node_problem_request:
             return _hades_homelab_node_problems_response(summary)
-        views = [_hades_homelab_proxmox_node_load_response(summary, target) for target in node_status_targets]
-        return "Current host evidence: " + " ".join(value for value in views if value)
+        views = []
+        for target in node_status_targets:
+            view = _hades_homelab_proxmox_node_load_response(summary, target)
+            if not view or "no current proxmox node sample uniquely matched" in view.casefold():
+                # Conversation can name a VM/inventory record rather than a
+                # Proxmox node. Render the same canonical summary instead of
+                # returning an empty host-evidence prefix.
+                view = _hades_homelab_named_resource_status(summary, target)
+            views.append(view or f"I couldn't verify a current homelab status for {target}.")
+        return " ".join(views)
 """
-    direct_segment = direct_segment.replace(
-        text_anchor,
-        text_anchor + homelab_override,
-        1,
-    )
+    existing_override = "    node_status_targets = _hades_homelab_node_status_targets(text)\n"
+    if direct_segment.count(existing_override) > 1:
+        raise SystemExit("FAIL active homelab node override is ambiguous")
+    if existing_override in direct_segment:
+        end_anchor = "    if _hades_backup_restore_guest_state_intent(text):\n"
+        start = direct_segment.index(existing_override)
+        end = direct_segment.find(end_anchor, start)
+        if end < 0:
+            raise SystemExit("FAIL active homelab node override boundary changed")
+        direct_segment = direct_segment[:start] + homelab_override + direct_segment[end:]
+    else:
+        if direct_segment.count(text_anchor) != 1:
+            raise SystemExit("FAIL active homelab text-initialization seam changed")
+        direct_segment = direct_segment.replace(text_anchor, text_anchor + homelab_override, 1)
     text = text.encode("utf-8")[:direct_start].decode("utf-8") + direct_segment + text.encode("utf-8")[direct_end:].decode("utf-8")
     return text
 
@@ -315,8 +331,15 @@ def compose(active: bytes, source: bytes) -> bytes:
         ("_hades_grocy_read_operation_for_turn", "_hades_grocy_read_tool_choice"),
         ("_hades_homelab_node_status_targets", "_hades_direct_homelab_read"),
         ("_hades_homelab_node_problems_response", "_hades_direct_homelab_read"),
+        ("_hades_homelab_named_resource_status", "_hades_direct_homelab_read"),
     ):
-        active_text = insert_top_level_function(active_text, source_text, name, before=anchor)
+        existing = named_functions(active_text, name)
+        if len(existing) > 1:
+            raise SystemExit(f"FAIL active helper is ambiguous: {name}")
+        if existing:
+            active_text = replace_top_level_function(active_text, source_text, name)
+        else:
+            active_text = insert_top_level_function(active_text, source_text, name, before=anchor)
     source_matches = named_functions(source_text, "_hades_configured_homelab_alias_matches")
     active_alias = named_functions(active_text, "_hades_configured_homelab_alias_match")
     active_multi = named_functions(active_text, "_hades_configured_homelab_alias_matches")

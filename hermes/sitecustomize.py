@@ -5118,13 +5118,46 @@ def _hades_homelab_node_problems_response(summary):
     """Answer a problem-focused follow-up without replaying the full lab report."""
     if not isinstance(summary, dict):
         return "I couldn't verify current node problems because the live homelab summary is unavailable."
+    node_metrics = summary.get("proxmox_node_metrics")
+    node_rows = [
+        node
+        for endpoint in node_metrics.get("endpoints", [])
+        if isinstance(endpoint, dict) and endpoint.get("status") == "AVAILABLE"
+        for node in endpoint.get("nodes", [])
+        if isinstance(node, dict)
+    ] if isinstance(node_metrics, dict) else []
+    node_problems = [
+        f"{str(node.get('name') or node.get('node') or 'Unnamed node')[:100]} reports "
+        f"{str(node.get('status') or 'UNKNOWN').casefold()}"
+        for node in node_rows
+        if str(node.get("status") or "UNKNOWN").upper() in {
+            "OFFLINE", "DOWN", "ERROR", "FAILED", "DEGRADED",
+        }
+    ]
+    if node_rows:
+        if node_problems:
+            parts = ["Yes. Current Proxmox node evidence: " + "; ".join(node_problems[:4]) + "."]
+        else:
+            parts = [f"No reported Proxmox node is offline in the current sample ({len(node_rows)} node(s))."]
+        unknown_nodes = sum(
+            str(node.get("status") or "UNKNOWN").upper()
+            not in {"ONLINE", "RUNNING", "UP", "OFFLINE", "DOWN", "ERROR", "FAILED", "DEGRADED"}
+            for node in node_rows
+        )
+        if unknown_nodes:
+            parts.append(f"{unknown_nodes} node(s) have unknown or unavailable status.")
+    else:
+        parts = []
     groups = _hades_homelab_availability_groups(summary.get("availability_summary", []))
     down = groups["down"]
     unknown = groups["unknown"]
     if down:
-        parts = ["Yes. Current configured checks reporting a failure: " + ", ".join(down[:4]) + "."]
-    else:
-        parts = ["No fresh configured check is reporting a failure."]
+        if node_rows:
+            parts.append("Configured checks reporting a failure: " + ", ".join(down[:4]) + ".")
+        else:
+            parts.append("Yes. Current configured checks reporting a failure: " + ", ".join(down[:4]) + ".")
+    elif not node_rows:
+        parts.append("No fresh configured check is reporting a failure.")
     if unknown:
         parts.append(
             f"{len(unknown)} configured check(s) are stale or unknown; their current state is unverified."
@@ -5328,6 +5361,46 @@ def _hades_homelab_node_status_targets(text):
     if len(targets) != 2 or any(not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._'’-]{0,79}", value) for value in targets):
         return []
     return targets
+
+
+def _hades_homelab_named_resource_status(summary, target):
+    """Return bounded canonical inventory/runtime evidence for one named machine."""
+    if not isinstance(summary, dict):
+        return None
+    key = re.sub(r"[^a-z0-9]+", "", str(target or "").casefold())
+    if not key:
+        return None
+    resources = summary.get("resources")
+    if not isinstance(resources, list):
+        return None
+    matches = []
+    for row in resources:
+        if not isinstance(row, dict):
+            continue
+        inventory = row.get("inventory") if isinstance(row.get("inventory"), dict) else {}
+        runtime = row.get("runtime") if isinstance(row.get("runtime"), dict) else {}
+        names = (row.get("name"), inventory.get("name"), runtime.get("name"))
+        if any(re.sub(r"[^a-z0-9]+", "", str(name or "").casefold()) == key for name in names):
+            matches.append(row)
+    if len(matches) > 1:
+        return f"I found multiple current homelab records for {str(target)[:80]}; I can't safely choose one."
+    if not matches:
+        return f"I couldn't match {str(target)[:80]} to a current homelab inventory record; its status is unknown."
+    row = matches[0]
+    name = " ".join(str(row.get("name") or target).split())[:100]
+    runtime = row.get("runtime") if isinstance(row.get("runtime"), dict) else {}
+    runtime_detail = row.get("runtime_detail") if isinstance(row.get("runtime_detail"), dict) else {}
+    status = row.get("runtime_status") or runtime.get("status") or runtime_detail.get("status")
+    if status:
+        return f"{name}: current runtime status is {str(status).casefold()}. This is power/runtime state, not application health."
+    availability = row.get("availability") if isinstance(row.get("availability"), dict) else {}
+    if availability.get("status"):
+        freshness = str(row.get("availability_freshness") or "UNKNOWN").casefold()
+        return (
+            f"{name}: the configured check last reported {str(availability['status']).casefold()} "
+            f"({freshness} observation); that does not establish current host or application health."
+        )
+    return f"{name}: present in inventory, but current runtime and application health are unknown."
 
 
 def _hades_homelab_guest_index_host_target(user_text):
@@ -5829,11 +5902,15 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         if not isinstance(summary, dict):
             return None
         if node_status_targets:
-            views = [
-                _hades_homelab_proxmox_node_load_response(summary, target)
-                for target in node_status_targets
-            ]
-            return "Current host evidence: " + " ".join(value for value in views if value)
+            views = []
+            for target in node_status_targets:
+                view = _hades_homelab_proxmox_node_load_response(summary, target)
+                if not view or "no current proxmox node sample uniquely matched" in view.casefold():
+                    # A conversational machine name may identify a VM or
+                    # inventory record rather than a Proxmox node.
+                    view = _hades_homelab_named_resource_status(summary, target)
+                views.append(view or f"I couldn't verify a current homelab status for {target}.")
+            return " ".join(views)
         if scope == "owner" and node_problem_request:
             # A problem-focused follow-up needs a concise current conclusion,
             # not the previous all-node diagnostic report. The health view

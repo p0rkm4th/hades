@@ -94,6 +94,7 @@ wanted = {
     '_hades_homelab_proxmox_node_load_response',
     '_hades_homelab_proxmox_node_load_target',
     '_hades_homelab_node_status_targets',
+    '_hades_homelab_named_resource_status',
     '_hades_is_provisioning_request',
     '_hades_homelab_guest_inventory_intent',
     '_hades_homelab_guest_inventory_response',
@@ -227,6 +228,18 @@ with tempfile.TemporaryDirectory(prefix='homelab-view-cwd-decoy-') as unrelated_
             '1 configured check(s) are stale or unknown; their current state is unverified. '
             'Unmonitored or uncovered services remain unknown.'
         )
+        node_problem_summary = {
+            **golden_health,
+            'proxmox_node_metrics': {'status': 'READABLE', 'endpoints': [{
+                'status': 'AVAILABLE', 'nodes': [
+                    {'name': 'Synthetic Node A', 'status': 'ONLINE'},
+                    {'name': 'Synthetic Node B', 'status': 'OFFLINE'},
+                ],
+            }]},
+        }
+        node_problem_answer = node_problems_response(node_problem_summary)
+        assert 'Synthetic Node B reports offline' in node_problem_answer, node_problem_answer
+        assert 'Synthetic Node A' not in node_problem_answer, node_problem_answer
         assert coverage_response(golden_coverage) == (
             "The service catalog responded, but its total coverage is unknown, so I can't confirm that "
             'unlisted services are absent. Guest visibility is partial or unknown, so services on '
@@ -1941,6 +1954,37 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert 'Synthetic Node A online' in named_nodes, named_nodes
             assert 'Synthetic Node B is offline' in named_nodes, named_nodes
             assert len(named_nodes) < 700, len(named_nodes)
+            def named_machine_fixture(operation):
+                summary = original_registry_read(operation)
+                summary['proxmox_node_metrics'] = {'status': 'UNAVAILABLE', 'endpoints': []}
+                summary['resources'] = [
+                    {
+                        'name': 'Synthetic Thanatos', 'runtime_status': 'running',
+                        'inventory': {'role': 'Synthetic VM'},
+                        'identity': {'canonical_id': 'fixture:thanatos'},
+                        'runtime_detail': {'vmid': 101, 'status': 'running'},
+                        'availability': None,
+                    },
+                    {
+                        'name': 'Synthetic Hermes', 'runtime_status': 'stopped',
+                        'inventory': {'role': 'Synthetic VM'},
+                        'identity': {'canonical_id': 'fixture:hermes'},
+                        'runtime_detail': {'vmid': 102, 'status': 'stopped'},
+                        'availability': None,
+                    },
+                ]
+                return summary
+            namespace['_hades_direct_homelab_tool_result'] = named_machine_fixture
+            named_machine_fallback = direct_read(
+                'homelab node status for Synthetic Thanatos and Synthetic Hermes',
+                'synthetic-owner', 'owner',
+            )
+            assert 'Synthetic Thanatos' in named_machine_fallback, named_machine_fallback
+            assert 'runtime status is running' in named_machine_fallback, named_machine_fallback
+            assert 'Synthetic Hermes' in named_machine_fallback, named_machine_fallback
+            assert 'runtime status is stopped' in named_machine_fallback, named_machine_fallback
+            assert 'Current host evidence:' not in named_machine_fallback
+            namespace['_hades_direct_homelab_tool_result'] = node_followup_fixture
             problem_answer = direct_read(
                 'homelab nodes problems status', 'synthetic-owner', 'owner'
             )
