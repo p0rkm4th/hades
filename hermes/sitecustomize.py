@@ -11012,7 +11012,12 @@ try:
         _early_privacy_text = str(user_message or "")
         _early_privacy_scope = getattr(self, "_hades_session_scope", "")
         if _early_privacy_scope in {"owner", "household"}:
-            _early_local_grocy_read = _hades_grocy_read_operation(_early_privacy_text) in {
+            _early_grocy_operation_resolver = globals().get("_hades_grocy_read_operation")
+            _early_grocy_operation = (
+                _early_grocy_operation_resolver(_early_privacy_text)
+                if callable(_early_grocy_operation_resolver) else None
+            )
+            _early_local_grocy_read = _early_grocy_operation in {
                 "recipes_list_tool", "recipe_details_tool", "recipe_fulfillment_tool",
                 "stock_overview_tool", "shopping_list_view_tool",
                 "recipe_instructions_tool", "recipe_stock_match_tool",
