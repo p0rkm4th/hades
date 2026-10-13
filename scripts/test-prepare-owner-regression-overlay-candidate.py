@@ -32,6 +32,8 @@ def _hades_direct_grocy_recipe_read(user_text):
         )
     ):
         return None
+    if _hades_grocy_read_operation(text) == "recipes_list_tool":
+        return None
     return "legacy recipe response"
 
 def _hades_grocy_read_operation(user_text):
@@ -136,6 +138,9 @@ assert 'current_read_operation == "recipe_details_tool"' in candidate
 _reader_start = candidate.index("def _hades_direct_grocy_recipe_read(")
 _reader_end = candidate.find("\ndef ", _reader_start + 1)
 assert 'current_read_operation == "recipes_list_tool"' not in candidate[
+    _reader_start:_reader_end
+]
+assert '_hades_grocy_read_operation(text) == "recipes_list_tool"' not in candidate[
     _reader_start:_reader_end
 ]
 assert r'text = re.sub(r"\bdfo\b", "do", text, flags=re.IGNORECASE)' in candidate

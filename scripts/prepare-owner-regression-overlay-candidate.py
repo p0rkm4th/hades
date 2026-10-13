@@ -221,6 +221,29 @@ def insert_grocy_operation_guard(text: str) -> str:
     )
 
 
+def remove_legacy_recipe_list_skip(text: str) -> str:
+    matches = named_functions(text, "_hades_direct_grocy_recipe_read")
+    if len(matches) != 1:
+        raise SystemExit("FAIL expected one active _hades_direct_grocy_recipe_read")
+    fn = matches[0]
+    segment = ast.get_source_segment(text, fn) or ""
+    legacy = (
+        '    if _hades_grocy_read_operation(text) == "recipes_list_tool":\n'
+        '        return None\n'
+    )
+    if segment.count(legacy) > 1:
+        raise SystemExit("FAIL legacy saved-recipe skip is ambiguous")
+    if legacy not in segment:
+        return text
+    start, end = node_span(text, fn)
+    return (
+        text.encode("utf-8")[:start].decode("utf-8")
+        + segment.replace(legacy, "", 1)
+        + "\n"
+        + text.encode("utf-8")[end:].decode("utf-8")
+    )
+
+
 def extract_finance_period_block(source: str) -> str:
     finance = named_functions(source, "_hades_direct_finance_guidance")
     if len(finance) != 1:
@@ -471,6 +494,7 @@ def compose(active: bytes, source: bytes) -> bytes:
         active_text = active_text.encode("utf-8")[:a].decode("utf-8") + source_text.encode("utf-8")[c:d].decode("utf-8") + "\n\n" + active_text.encode("utf-8")[a:].decode("utf-8")
     active_text = replace_top_level_function(active_text, source_text, "_hades_configured_homelab_alias_match")
     active_text = insert_grocy_operation_guard(active_text)
+    active_text = remove_legacy_recipe_list_skip(active_text)
     active_text = insert_finance_period_block(active_text, source_text)
     active_text = widen_finance_override(active_text)
     active_text = patch_legacy_turn_gates(active_text)
