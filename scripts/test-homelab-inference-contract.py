@@ -113,7 +113,7 @@ assert "address" not in hardware["machines"][0]
 with tempfile.TemporaryDirectory(prefix="hades-reachability-fixture-") as temp_dir:
     matrix_path = Path(temp_dir) / "matrix.yaml"
     matrix_path.write_text(json.dumps({
-        "machines": [{"name": "Thanatos", "address": "192.0.2.27/24"}],
+        "machines": [{"name": "Thanatos", "address": " 192.0.2.27/24 "}],
     }), encoding="utf-8")
     old_matrix = os.environ.get("HADES_CAPABILITY_MATRIX_FILE")
     os.environ["HADES_CAPABILITY_MATRIX_FILE"] = str(matrix_path)

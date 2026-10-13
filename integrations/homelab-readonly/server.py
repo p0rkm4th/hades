@@ -988,7 +988,8 @@ def homelab_entity_reachability(entity_name: object) -> dict:
             "read_only": True,
         }
     try:
-        address = ipaddress.ip_address(str(matches[0].get("address") or "").split("/", 1)[0])
+        address_text = str(matches[0].get("address") or "").strip().split("/", 1)[0].strip()
+        address = ipaddress.ip_address(address_text)
     except (TypeError, ValueError):
         address = None
     if address is None:
