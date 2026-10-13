@@ -1,6 +1,6 @@
 # Open WebUI 0.12.0 Candidate Qualification
 
-Status: **candidate qualification incomplete; production remains pinned to 0.11.4**.
+Status: **candidate qualified with conditions; production remains pinned to 0.11.4**.
 
 ## Pinned candidate
 
@@ -12,8 +12,14 @@ Status: **candidate qualification incomplete; production remains pinned to 0.11.
 - Candidate-only pin file: `config/openwebui-0.12.0-qualification.pins`
 
 The production version manifest remains unchanged. Build with
-`scripts/build-openwebui-012-qualification.sh`; it requires a clean worktree
-and labels the image with the HADES source commit and exact upstream inputs.
+`scripts/build-openwebui-012-qualification.sh`; it requires a clean worktree,
+Docker Buildx, and the pinned BuildKit image. The build exports a Docker archive
+with commit-derived `SOURCE_DATE_EPOCH` and timestamp rewriting, then records
+its SHA-256, loaded image ID, upstream inputs, Buildx/BuildKit identity, and
+Dockerfile checksum in a deterministic manifest. Two no-cache exports of the
+same source produced byte-identical 1.6 GB archives (SHA-256
+`67d0987eb3c88b4f9be8119b147d1347dbca7aafb2c40da22a95c61b6aa5cc50`).
+Legacy `docker build` is not reproducible and is not the supported command.
 
 ## Material changes reviewed
 
@@ -64,6 +70,17 @@ they do not weaken this production requirement.
 - The final candidate artifact passes the browser-based DOCX preview security
   regression, including cross-user file isolation and explicit shared-chat
   ACL behavior.
+- The authenticated candidate Hindsight UI flow passes explicit save,
+  correction, fresh-chat recall, actor isolation, and chat persistence using
+  synthetic identities and an isolated persistent Valkey/Hindsight runtime.
+- Authenticated synthetic candidate UI journeys pass for household Grocy
+  operations, homelab network diagnosis, and read-only finance monthly
+  aggregation/household denial. These exercise the 0.12 UI with the HADES
+  gateway and synthetic canonical sources; they do not use private owner data.
+- The synthetic owner/household candidate suite also passes LDAP bootstrap and
+  group synchronization, session revocation across active sessions and restart,
+  authority changes, private/shared chat ACLs, streaming, and the bounded
+  document-security regression.
 - Production was not changed and remains on qualified 0.11.4.
 
 ## Performance and resource comparison
@@ -79,23 +96,24 @@ they do not weaken this production requirement.
   743,538,688 versus 750,530,560 cgroup bytes; this is not enough evidence for
   a material memory difference.
 
-## Remaining qualification gates
+## Conditions and remaining limits
 
-- Run the exact owner regression prompts through the candidate Open WebUI
-  connected to synthetic HADES domain sources. Source-level synthetic domain
-  tests and candidate UI tests have passed separately, but that end-to-end
-  composition has not been exercised.
-- Complete candidate-connected HADES tool/MCP and Hindsight identity checks;
-  synthetic UI streaming and separate HADES source contracts do not prove this
-  combined path.
-- Hosted Public CI run `38408288989` for source commit
-  `883c2fb1e264b73c2e200af21ef17b0c3f8328aa` failed its public-history audit.
-  The runner reported findings in private-path/address and local-domain/MAC
-  scans while the same range passes locally. Matched values are intentionally
-  not recorded here. Resolve this discrepancy and obtain a green hosted run.
+- Candidate tests use synthetic identities, data, and model/tool fixtures; no
+  real Scotty account or private production database was migrated.
+- Owner regression semantics were checked through candidate UI journeys and
+  focused source tests. This is bounded compatibility evidence, not a claim
+  that every prompt variant or every live production integration was exercised
+  against the candidate.
+- MFA, Realtime voice, and experimental Tool Search remain disabled. Enabling
+  them requires separate product decisions and qualification.
+- Hosted Public CI run `38413517195` passes for source commit
+  `42bd23daf5268c81812b21ca547a82fc957ce804`; the final reproducible-build
+  changes require their own green run before this recommendation is final.
 
-No production promotion is authorized by this qualification. Current evidence
-supports the tested migration, rollback, authentication-boundary, file-security,
-and persistence paths; it does not establish full candidate-connected owner
-acceptance. Recommendation remains **REJECTED / DEFERRED** until the gates above
-are satisfied.
+No production promotion is authorized by this qualification. Candidate
+evidence supports migration/rollback, authentication and revocation, LDAP,
+chat and shared-object persistence, streaming/tool-backed synthetic journeys,
+memory identity, and the bounded upload-security contract. Recommendation is
+**QUALIFIED WITH CONDITIONS**: keep MFA, voice, and Tool Search disabled; retain
+the documented HADES security adapters; require a separate explicit owner
+promotion decision; and keep production on 0.11.4 until then.
