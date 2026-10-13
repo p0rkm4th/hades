@@ -15,10 +15,10 @@ PREPARER = ROOT / "scripts/prepare-hindsight-overlay-candidate.py"
 FUNCTION = "_hades_direct_memory_response"
 
 
-def get_function(source: str):
+def get_function(source: str, name: str = FUNCTION):
     found = [
         node for node in ast.walk(ast.parse(source))
-        if isinstance(node, ast.FunctionDef) and node.name == FUNCTION
+        if isinstance(node, ast.FunctionDef) and node.name == name
     ]
     assert len(found) == 1
     return found[0]
@@ -85,5 +85,25 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-candidate-test-") as temp
     )
     assert prefetch_candidate == source + marker
     assert prefetch_output.stat().st_mode & 0o777 == 0o600
+    capability_name = "_hades_direct_capability_guidance"
+    capability_active = root / "capability-active.py"
+    capability_output = root / "capability-candidate.py"
+    capability_target = source.replace(
+        "Memory commands and recall requests are operations, not capability",
+        "Stale fixture capability behavior must be replaced",
+        1,
+    ) + marker
+    capability_active.write_text(capability_target, encoding="utf-8")
+    subprocess.run(
+        [sys.executable, str(PREPARER), "--active-overlay", str(capability_active),
+         "--output", str(capability_output), "--function", capability_name],
+        check=True, capture_output=True, text=True,
+    )
+    capability_candidate = capability_output.read_text(encoding="utf-8")
+    assert ast.get_source_segment(source, get_function(source, capability_name)) == ast.get_source_segment(
+        capability_candidate, get_function(capability_candidate, capability_name)
+    )
+    assert capability_candidate == source + marker
+    assert capability_output.stat().st_mode & 0o777 == 0o600
     compile(candidate, str(output), "exec")
 print("PASS candidate replaces only the selected HADES function, preserves deployment-local code, and refuses overwrite")

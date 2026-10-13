@@ -11,6 +11,7 @@ from pathlib import Path
 DEFAULT_FUNCTION_NAME = "_hades_direct_memory_response"
 COMPOSABLE_FUNCTIONS = {
     "_hades_direct_memory_response",
+    "_hades_direct_capability_guidance",
     "_hades_prefetch",
 }
 

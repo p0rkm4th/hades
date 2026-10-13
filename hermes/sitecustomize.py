@@ -2401,7 +2401,6 @@ _HADES_EXPLICIT_MEMORY_MUTATION = re.compile(
     re.IGNORECASE,
 )
 
-
 def _hades_explicit_memory_mutation_intent(user_text, conversation_history=None):
     """Return a current-turn, operation-specific memory mutation request."""
     match = _HADES_EXPLICIT_MEMORY_MUTATION.fullmatch(str(user_text or ""))
@@ -4109,6 +4108,20 @@ def _hades_direct_finance_guidance(user_text):
 def _hades_direct_capability_guidance(user_text):
     """Explain everyday capabilities without requiring an inference turn."""
     text = str(user_text or "").strip()
+    # Memory commands and recall requests are operations, not capability
+    # questions. Let the authenticated memory path handle them before the
+    # broad discoverability response can swallow them.
+    if (
+        _hades_explicit_memory_mutation_intent(text)
+        or re.search(
+            r"\b(?:what\s+do\s+you\s+remember|what\s+do\s+i\s+remember|"
+            r"what\s+is\s+(?:the|my)\s+.*(?:memory|fact|marker|fruit)|"
+            r"recall|look\s+in\s+(?:your|my)\s+memory)\b",
+            text,
+            re.IGNORECASE,
+        )
+    ):
+        return None
     if re.search(
         r"^\s*(?:did\s+(?:that|it)\s+work|did\s+that\s+actually\s+get\s+added|"
         r"are\s+you\s+sure|show\s+me)\s*[?!.]*\s*$",

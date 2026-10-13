@@ -29,6 +29,7 @@ FUNCTIONS = {
         "_hades_ensure_memory_bank",
         "_hades_hindsight_bank_for_subject",
         "_hades_direct_memory_response",
+        "_hades_direct_capability_guidance",
         "_hades_prefetch",
     }
 }
@@ -40,6 +41,7 @@ REQUIRED_FUNCTIONS = {
     "_hades_ensure_memory_bank",
     "_hades_hindsight_bank_for_subject",
     "_hades_direct_memory_response",
+    "_hades_direct_capability_guidance",
     "_hades_prefetch",
 }
 if FUNCTIONS.keys() != REQUIRED_FUNCTIONS:
@@ -166,6 +168,7 @@ exec(compile(ast.Module(
              and any(isinstance(target, ast.Name) and target.id == "_HADES_EXPLICIT_MEMORY_MUTATION" for target in node.targets)),
         FUNCTIONS["_hades_explicit_memory_mutation_intent"],
         FUNCTIONS["_hades_overlay_non_hermes_interpreter"],
+        FUNCTIONS["_hades_direct_capability_guidance"],
         FUNCTIONS["_hades_is_hermes_auxiliary_prompt"],
         FUNCTIONS["_hades_explicit_memory_recall_requested"],
         FUNCTIONS["_hades_ensure_memory_bank"],
@@ -180,6 +183,16 @@ assert interpreter_check("/usr/bin/python3", "/opt/hades-hermes/bin/hermes")
 assert not interpreter_check("/opt/hades-hermes/bin/python3", "/opt/hades-hermes/bin/hermes")
 assert not interpreter_check("/usr/bin/python3", "")
 route = namespace["_hades_direct_memory_response"]
+capability_guidance = namespace["_hades_direct_capability_guidance"]
+for explicit_request in (
+    "Remember that my preferred editor is Vim.",
+    "Forget what I told you about the old router.",
+    "What do you remember about my preferred editor?",
+    "Look in my memory for the server name.",
+):
+    assert capability_guidance(explicit_request) is None, explicit_request
+capability_answer = capability_guidance("What can you do with memory?")
+assert capability_answer and "remember" in capability_answer.casefold()
 before_secret_retain = len(FakeClient.instances)
 secret_response = route("Remember that my password is synthetic-pass-123", "gamma", "household")
 assert secret_response and "can't store passwords" in secret_response.casefold()
