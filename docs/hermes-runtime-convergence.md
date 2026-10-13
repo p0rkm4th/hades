@@ -93,11 +93,11 @@ are absent by name from current source. Their migration dispositions are:
 
 | Active-only group | Current source path | Disposition |
 |---|---|---|
-| Backup and guest inventory presentation | `_hades_direct_proxmox_backup_status`, `_hades_direct_homelab_guest_inventory_read`, and current homelab read adapters | Historical implementation residue; qualify against bounded backup, guest, and owner homelab contracts before deployment |
-| Node, workload, and resource presentation | Current homelab follow-up, node status, capacity, and resource adapters | Historical implementation residue; current source owns these operations |
+| Backup and guest inventory presentation | Current backup formatter, bounded Proxmox guest read, and restore checks | Superseded implementation; `test-homelab-backup-view-contract.py`, `test-homelab-restore-guest-contract.py`, and the native Hermes task-chat contract pass |
+| Node, workload, and resource presentation | Current homelab follow-up, node status, capacity, and resource adapters | Superseded implementation; native Hermes task-chat, capacity-routing, and service-health contracts pass |
 | Network diagnostic detail | Current per-turn classifier preserves performance intent, keeps it out of the broad-summary shortcut, and returns fresh probe/runtime detail with limits | Required live behavior; now represented in canonical source and covered by routing plus health contracts |
-| Source/visibility explanations | Current provenance and household boundary responses | Historical implementation residue; preserve current authority and redaction contracts |
-| Model-fit and GPU presentation | Current provider-native inference and bounded GPU read paths | Historical implementation residue; no deployment-only authority is intended |
+| Source/visibility explanations | Current provenance and household boundary responses | Superseded implementation; native Hermes task-chat and household scope/redaction contracts pass |
+| Model-fit and GPU presentation | Current provider-native inference and bounded GPU read paths | Superseded implementation; capacity-routing and task-chat contracts pass; no deployment-only authority remains |
 | `_hades_p1_finance_merchant_calculation` | Deterministic merchant-period aggregation inside `_hades_direct_finance_guidance` | Duplicate production wrapper; current source owns row filtering, signed totals, pending separation, and coverage semantics |
 | `_hades_runner_has_workflow` | No current source caller; no current contract depends on this helper | Stale helper, removable with the old overlay |
 
