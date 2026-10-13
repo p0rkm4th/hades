@@ -10,7 +10,7 @@ import ssl
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
+from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 import anyio
@@ -34,6 +34,7 @@ from reconcile import summarize
 from catalog import propose_inventory_candidates
 from scan import DEFAULT_PORTS, run_bounded_scan
 from config import (
+    capability_matrix_file,
     homelab_identity_links_file,
     netbox_services_spec,
     proxmox_specs,
@@ -957,33 +958,28 @@ def homelab_compute_capabilities() -> dict:
 
 
 def homelab_entity_reachability(entity_name: object) -> dict:
-    """Probe one NetBox-resolved IPv4 address using the bounded scanner."""
+    """Probe one inventory-resolved IPv4 address using the bounded scanner."""
     if not isinstance(entity_name, str) or not entity_name.strip() or len(entity_name) > 80:
         return {"status": "INVALID_REQUEST", "errors": ["A bounded canonical device name is required."], "read_only": True}
     requested_name = " ".join(entity_name.split())
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._'’-]{0,79}", requested_name):
         return {"status": "INVALID_REQUEST", "errors": ["Device name is malformed."], "read_only": True}
     try:
-        netbox_url, token_file = supporting_source_specs()[0]
-        if not netbox_url:
-            return {"status": "NOT_CONFIGURED", "errors": ["The canonical device inventory is unavailable."], "read_only": True}
-        parsed = urlsplit(netbox_url)
-        query = [(key, value) for key, value in parse_qsl(parsed.query, keep_blank_values=True)
-                 if key not in {"name", "name__ie", "limit", "offset"}]
-        query.extend((("name__ie", requested_name), ("limit", "10")))
-        inventory_url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), ""))
-        document = _fetch(inventory_url, token_file)
-    except (OSError, ValueError, json.JSONDecodeError):
-        return {"status": "SOURCE_UNAVAILABLE", "errors": ["The canonical device inventory could not be read."], "read_only": True}
-    machines = document.get("results") if isinstance(document, dict) else None
+        path_value = capability_matrix_file()
+        if not path_value:
+            return {"status": "NOT_CONFIGURED", "errors": ["The canonical hardware inventory is unavailable."], "read_only": True}
+        path = Path(path_value)
+        if not path.is_file() or path.is_symlink() or path.stat().st_size > 1024 * 1024:
+            return {"status": "SOURCE_UNAVAILABLE", "errors": ["The canonical hardware inventory is unavailable."], "read_only": True}
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError):
+        return {"status": "SOURCE_UNAVAILABLE", "errors": ["The canonical hardware inventory could not be read."], "read_only": True}
+    machines = document.get("machines") if isinstance(document, dict) else None
     if not isinstance(machines, list) or any(not isinstance(machine, dict) for machine in machines):
-        return {"status": "SOURCE_UNAVAILABLE", "errors": ["The canonical device inventory returned an invalid result."], "read_only": True}
+        return {"status": "SOURCE_UNAVAILABLE", "errors": ["The canonical hardware inventory returned an invalid result."], "read_only": True}
     key = re.sub(r"[^a-z0-9]+", "", requested_name.casefold())
     matches = [machine for machine in machines if isinstance(machine.get("name"), str)
-               and re.sub(r"[^a-z0-9]+", "", machine["name"].casefold()) == key] if isinstance(machines, list) else []
-    if document.get("next"):
-        return {"status": "AMBIGUOUS", "entity_name": requested_name,
-                "errors": ["The canonical inventory returned more matching records than the bounded lookup can resolve."], "read_only": True}
+               and re.sub(r"[^a-z0-9]+", "", machine["name"].casefold()) == key]
     if len(matches) != 1:
         return {
             "status": "AMBIGUOUS" if matches else "UNKNOWN",
@@ -992,11 +988,7 @@ def homelab_entity_reachability(entity_name: object) -> dict:
             "read_only": True,
         }
     try:
-        record = matches[0]
-        candidate = record.get("primary_ip4") or record.get("primary_ip") or record.get("address")
-        if isinstance(candidate, dict):
-            candidate = candidate.get("address") or candidate.get("host")
-        address = ipaddress.ip_address(str(candidate or "").split("/", 1)[0])
+        address = ipaddress.ip_address(str(matches[0].get("address") or "").split("/", 1)[0])
     except (TypeError, ValueError):
         address = None
     if address is None:

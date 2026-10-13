@@ -8,7 +8,6 @@ import os
 import sys
 import tempfile
 import types
-from urllib.parse import parse_qs, urlsplit
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -107,27 +106,21 @@ assert hardware["observed_at"] == matrix_observed_at
 assert "192.0.2.14" not in json.dumps(hardware)
 assert "address" not in hardware["machines"][0]
 
-# Reachability resolves a device name from canonical NetBox inventory and
-# never exposes or accepts a caller-supplied target address. The underlying
-# scanner is the existing allowlisted, bounded read-only implementation.
-with tempfile.TemporaryDirectory(prefix="hades-reachability-fixture-"):
+# Reachability resolves a device name from the canonical observed hardware
+# inventory and never exposes or accepts a caller-supplied target address.
+# CIDR-form inventory addresses are normalized before the existing allowlisted
+# bounded scanner receives a single-host target.
+with tempfile.TemporaryDirectory(prefix="hades-reachability-fixture-") as temp_dir:
+    matrix_path = Path(temp_dir) / "matrix.yaml"
+    matrix_path.write_text(json.dumps({
+        "machines": [{"name": "Thanatos", "address": "192.0.2.27/24"}],
+    }), encoding="utf-8")
+    old_matrix = os.environ.get("HADES_CAPABILITY_MATRIX_FILE")
+    os.environ["HADES_CAPABILITY_MATRIX_FILE"] = str(matrix_path)
     old_allowed = os.environ.get("HADES_DISCOVERY_ALLOWED_NETWORKS")
     os.environ["HADES_DISCOVERY_ALLOWED_NETWORKS"] = "192.0.2.0/24"
     scan_calls = []
     old_scan = server.run_bounded_scan
-    old_fetch = server._fetch
-    old_specs = server.supporting_source_specs
-    fetch_calls = []
-    server.supporting_source_specs = lambda: (("https://netbox.synthetic/api/dcim/devices/?limit=50", "synthetic-token"), ("", ""))
-    def fake_netbox_fetch(url, token_file="", *args, **kwargs):
-        fetch_calls.append((url, token_file))
-        query = parse_qs(urlsplit(url).query)
-        if query.get("name__ie") == ["Thanatos"]:
-            return {"count": 1, "next": None, "results": [{
-                "name": "Thanatos", "primary_ip4": {"address": "192.0.2.27/24"},
-            }]}
-        return {"count": 0, "next": None, "results": []}
-    server._fetch = fake_netbox_fetch
     server.run_bounded_scan = lambda target, **kwargs: (
         scan_calls.append((target, kwargs)) or {
             "status": "OK", "retrieved_at": "synthetic-time",
@@ -139,9 +132,6 @@ with tempfile.TemporaryDirectory(prefix="hades-reachability-fixture-"):
         assert reachability["status"] == "REACHABLE"
         assert reachability["open_tcp_ports"] == [22]
         assert "192.0.2.27" not in json.dumps(reachability)
-        assert parse_qs(urlsplit(fetch_calls[0][0]).query)["name__ie"] == ["Thanatos"]
-        assert parse_qs(urlsplit(fetch_calls[0][0]).query)["limit"] == ["10"]
-        assert fetch_calls[0][1] == "synthetic-token"
         assert scan_calls == [("192.0.2.27/32", {
             "allowed_networks": ["192.0.2.0/24"],
             "ports": server.DEFAULT_PORTS,
@@ -160,8 +150,10 @@ with tempfile.TemporaryDirectory(prefix="hades-reachability-fixture-"):
         assert len(scan_calls) == 1
     finally:
         server.run_bounded_scan = old_scan
-        server._fetch = old_fetch
-        server.supporting_source_specs = old_specs
+        if old_matrix is None:
+            os.environ.pop("HADES_CAPABILITY_MATRIX_FILE", None)
+        else:
+            os.environ["HADES_CAPABILITY_MATRIX_FILE"] = old_matrix
         if old_allowed is None:
             os.environ.pop("HADES_DISCOVERY_ALLOWED_NETWORKS", None)
         else:
