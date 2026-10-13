@@ -1957,7 +1957,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 {'name': 'Synthetic Probe Only', 'runtime_status': 'NOT_OBSERVED',
                  'availability_status': 'up'},
             ]
-            summary['inventory_only_names'] = ['Synthetic Storage']
+            summary['inventory_only_names'] = ['Synthetic Storage', 'unknown-192.0.2.44']
             summary['online_names'] = ['Synthetic Compute', 'Synthetic Runtime Only']
             summary['resources_truncated'] = {'returned': 2, 'total': 4}
             summary['availability_summary'] = [
@@ -1983,16 +1983,20 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             )
             assert 'Synthetic Compute (static inventory; Proxmox currently reports online)' in static_inventory, static_inventory
             assert 'Synthetic Storage (static inventory; not currently observed by Proxmox)' in static_inventory, static_inventory
+            assert 'unidentified device' in static_inventory, static_inventory
+            assert '192.0.2.44' not in static_inventory, static_inventory
             assert 'Thanatos' not in static_inventory, static_inventory
             assert 'Synthetic Probe Only' not in static_inventory, static_inventory
             assert len(static_inventory) < 500, len(static_inventory)
             network_overview = direct_read(
                 'Tell me about my network', 'synthetic-owner', 'owner',
             )
-            assert 'current sources identify 3 homelab devices' in network_overview, network_overview
-            assert '1 configured checks responded' in network_overview, network_overview
-            assert '1 configured checks are stale or unknown' in network_overview, network_overview
-            assert 'does not establish application health' in network_overview, network_overview
+            assert 'identify 4 devices' in network_overview, network_overview
+            assert '2 online and 0 offline' in network_overview, network_overview
+            assert 'Availability checks: 1 fresh up, 0 fresh down, 1 stale or unknown' in network_overview, network_overview
+            assert 'reachability, not application health' in network_overview, network_overview
+            assert 'Synthetic Runtime Only' not in network_overview, network_overview
+            assert len(network_overview) < 400, len(network_overview)
             assert direct_read(
                 'What other devices are in my static inventory besides Thanatos?',
                 '', 'owner',

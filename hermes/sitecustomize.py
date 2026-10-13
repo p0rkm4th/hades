@@ -5224,12 +5224,16 @@ def _hades_homelab_inventory_response(summary, excluded_names=None, overview=Fal
         if not isinstance(name, str) or not name.strip():
             return
         label = " ".join(name.split())[:80]
+        # Discovery may label an unidentified host with its IP. Owner-facing
+        # inventory answers use names, never raw address strings.
+        display_label = re.sub(r"\bunknown[-_ ]?(?:\d{1,3}\.){3}\d{1,3}\b", "unidentified device", label, flags=re.IGNORECASE)
+        display_label = re.sub(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "an IP address", display_label)
         canonical_label = re.sub(r"\s+\((?:vm|ct|container)\s+\d+\)$", "", label, flags=re.IGNORECASE)
         key = re.sub(r"[^a-z0-9]+", "", canonical_label.casefold())
         if not key or key in excluded:
             return
         row = rows_by_name.setdefault(key, {
-            "name": label, "static": False, "has_runtime": False,
+            "name": display_label, "static": False, "has_runtime": False,
             "runtime_status": "UNKNOWN",
         })
         row["static"] = row["static"] or static
@@ -5263,7 +5267,33 @@ def _hades_homelab_inventory_response(summary, excluded_names=None, overview=Fal
             add(machine.get("name"), static=True)
     rows = [row for row in rows_by_name.values() if row["static"] or (not static_only and row["has_runtime"])]
     rows.sort(key=lambda item: item["name"].casefold())
-    if rows:
+    if rows and overview:
+        online = sum(str(item["runtime_status"]).upper() in {"ONLINE", "RUNNING"} for item in rows)
+        offline = sum(str(item["runtime_status"]).upper() in {"OFFLINE", "STOPPED"} for item in rows)
+        static_unobserved = sum(item["static"] and not item["has_runtime"] for item in rows)
+        availability = summary.get("availability_summary") if isinstance(summary.get("availability_summary"), list) else []
+        checks = {"up": 0, "down": 0, "unknown": 0}
+        for item in availability:
+            if not isinstance(item, dict):
+                continue
+            status = str(item.get("status") or "unknown").casefold()
+            if str(item.get("freshness") or "UNKNOWN").upper() != "FRESH":
+                checks["unknown"] += 1
+            elif status in {"up", "online"}:
+                checks["up"] += 1
+            elif status in {"down", "offline"}:
+                checks["down"] += 1
+            else:
+                checks["unknown"] += 1
+        response = f"I can identify {len(rows)} devices across your static inventory and live runtime."
+        if online or offline:
+            response += f" Proxmox currently reports {online} online and {offline} offline."
+        if static_unobserved:
+            response += f" {static_unobserved} static inventory entries have no current Proxmox observation."
+        if availability:
+            response += f" Availability checks: {checks['up']} fresh up, {checks['down']} fresh down, {checks['unknown']} stale or unknown."
+            response += " A responding probe shows reachability, not application health."
+    elif rows:
         entries = []
         for item in rows[:12]:
             name = item["name"]
@@ -5292,7 +5322,7 @@ def _hades_homelab_inventory_response(summary, excluded_names=None, overview=Fal
             response += f" I omitted {count - len(entries)} additional entries; ask for the full list if you want it."
     else:
         response = "I couldn't verify another static inventory device from the current sources."
-    if overview:
+    if overview and not rows:
         groups = {"up": [], "down": [], "unknown": []}
         availability = summary.get("availability_summary") if isinstance(summary.get("availability_summary"), list) else []
         for item in availability:
