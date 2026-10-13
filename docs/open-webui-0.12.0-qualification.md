@@ -141,8 +141,10 @@ they do not weaken this production requirement.
   them requires separate product decisions and qualification.
 - Hosted Public CI run `38416741710` passes for source commit
   `bd77b10c7cd06fb0e1d9fae6b0590bd4a0a1e0f4`.
-- Hosted Public CI run `38423575575` passes for the current qualification
-  branch tip and includes the exact-candidate browser lifecycle contract.
+- Hosted Public CI run `38423575575` passes for commit
+  `39f01ad82d945425efc719d63cb659fae15012e0`, including the exact-candidate
+  browser lifecycle contract. The later migration assertions are covered by
+  the subsequent branch-tip CI run and by the direct disposable migration run.
 
 No production promotion is authorized by this qualification. Candidate
 evidence supports the tested migration/rollback data classes, authentication
