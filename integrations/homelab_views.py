@@ -112,6 +112,71 @@ def _hades_homelab_health_summary_response(summary):
     parts.append("Backup contents and restoreability were not checked in this summary.")
     return " ".join(parts)
 
+def _hades_homelab_inventory_response(summary, excluded_names=None, overview=False, static_only=False):
+    """Render static inventory and live evidence without conflating their authority."""
+    if not isinstance(summary, dict):
+        return "I couldn't read the current homelab inventory."
+    excluded = {
+        re.sub(r"[^a-z0-9]+", "", str(name).casefold())
+        for name in (excluded_names or []) if isinstance(name, str) and name.strip()
+    }
+    resources = summary.get("resources") if isinstance(summary.get("resources"), list) else []
+    rows = [
+        item for item in resources
+        if isinstance(item, dict)
+        and (
+            isinstance(item.get("inventory"), dict)
+            or (not static_only and isinstance(item.get("runtime") or item.get("runtime_detail"), dict))
+        )
+        and item.get("name")
+        and not any(
+            re.sub(r"[^a-z0-9]+", "", str(item["name"]).casefold()).startswith(key)
+            for key in excluded
+        )
+    ]
+    rows.sort(key=lambda item: str(item.get("name", "")).casefold())
+    if rows:
+        entries = []
+        for item in rows[:12]:
+            name = " ".join(str(item.get("name") or "Unnamed device").split())[:80]
+            state = str(item.get("runtime_status") or "UNKNOWN").upper()
+            if state in {"ONLINE", "RUNNING"}:
+                status = "Proxmox currently reports online"
+            elif state in {"OFFLINE", "STOPPED"}:
+                status = "Proxmox currently reports offline"
+            elif state in {"NOT_OBSERVED", "UNKNOWN", ""}:
+                status = "not currently observed by Proxmox"
+            else:
+                status = "live state unknown"
+            source = "static inventory" if static_only else (
+                "inventory and runtime" if isinstance(item.get("inventory"), dict) and isinstance(item.get("runtime") or item.get("runtime_detail"), dict)
+                else "static inventory" if isinstance(item.get("inventory"), dict) else "Proxmox runtime"
+            )
+            entries.append(f"{name} ({source}; {status})")
+        count = len(rows)
+        response = (
+            f"The static inventory lists {count} device{'s' if count != 1 else ''}: "
+            if static_only else
+            f"The current sources identify {count} homelab device{'s' if count != 1 else ''}: "
+        ) + "; ".join(entries) + "."
+        if count > len(entries):
+            response += f" I omitted {count - len(entries)} additional inventory entries; ask for the full list if you want it."
+    else:
+        response = "I couldn't verify another static inventory device from the current sources."
+    if overview:
+        availability = summary.get("availability_summary") if isinstance(summary.get("availability_summary"), list) else []
+        groups = _hades_homelab_availability_groups(availability)
+        if groups["down"]:
+            response += " Fresh configured checks are failing for: " + ", ".join(groups["down"][:4]) + "."
+        if groups["up"]:
+            response += f" {len(groups['up'])} configured checks responded in this read."
+        if groups["unknown"]:
+            response += f" {len(groups['unknown'])} configured checks are stale or unknown."
+        if summary.get("status") != "OK":
+            response += " Some source coverage is incomplete, so unreported state remains unknown."
+        response += " A responding probe does not establish application health."
+    return response
+
 def _hades_homelab_service_coverage_response(summary):
     """Explain coverage gaps without treating a responding probe as app health."""
     if not isinstance(summary, dict):

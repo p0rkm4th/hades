@@ -5184,6 +5184,39 @@ def _hades_broad_homelab_status_intent(text):
     ))
 
 
+def _hades_homelab_inventory_intent(text):
+    """Keep inventory/overview requests distinct from named-node status."""
+    text = " ".join(str(text or "").casefold().split())
+    if re.search(r"\b(?:static|hardware|device|node|machine|host|server)\s+inventory\b", text):
+        return True
+    if re.search(
+        r"\b(?:what|which|list|show|tell\s+me\s+about)\b.{0,100}"
+        r"\b(?:devices?|nodes?|machines?|hosts?|servers?)\b.{0,100}"
+        r"\b(?:network|homelab|home\s+lab|inventory|have|known|other|besides|except)\b",
+        text,
+    ):
+        return True
+    if re.search(
+        r"\bwhat(?:'s|\s+is|s)\s+(?:in|on)\s+(?:my|our|the)\s+(?:network|homelab|home\s+lab)\b",
+        text,
+    ):
+        return True
+    if re.search(r"\btell\s+me\s+about\s+(?:my|our|the)\s+(?:network|homelab|home\s+lab)\b", text):
+        return True
+    return bool(re.search(
+        r"\b(?:what|which)\s+(?:devices?|nodes?|machines?|hosts?|servers?)\b.{0,80}"
+        r"\b(?:in|on)\s+(?:my|our|the)\s+(?:network|homelab|home\s+lab)\b",
+        text,
+    ))
+
+
+def _hades_homelab_inventory_response(summary, excluded_names=None, overview=False, static_only=False):
+    """Render owner inventory requests from the reconciled canonical summary."""
+    return _hades_load_homelab_views()._hades_homelab_inventory_response(
+        summary, excluded_names=excluded_names, overview=overview, static_only=static_only,
+    )
+
+
 def _hades_homelab_network_diagnostic_intent(text):
     """Keep performance complaints on the detailed telemetry path."""
     text = str(text or "")
@@ -5935,6 +5968,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
     or provisioning requests.
     """
     text = str(user_text or "")
+    inventory_request = _hades_homelab_inventory_intent(text)
     # Explicit public research has a separate, privacy-checked route. Source
     # vocabulary such as "hosts" or "servers" must not turn that request into
     # an internal homelab status read.
@@ -5968,11 +6002,15 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         r"responding|reachable|performance|slow|broken|failing|wrong|unavailable)\b",
         text,
         re.IGNORECASE,
-    ) and not _HADES_NETWORK_INVENTORY_INTENT.search(text) and not _hades_homelab_resource_ranking_intent(text)
+    ) and not inventory_request and not _HADES_NETWORK_INVENTORY_INTENT.search(text) and not _hades_homelab_resource_ranking_intent(text)
     if _definition_question:
         return None
     if _hades_homelab_guest_visibility_intent(text) and scope != "owner":
         return "I can't provide internal guest inventory or permission details from this account."
+    if inventory_request and scope != "owner":
+        return _hades_household_homelab_boundary_response(text)
+    if inventory_request and not subject:
+        return "I couldn't verify this owner session, so I can't read the homelab inventory."
     if _hades_homelab_service_placement_intent(text) and scope != "owner":
         return "Detailed service placement is available only in an owner session."
     if _hades_homelab_resource_ranking_intent(text) and scope != "owner":
@@ -6020,6 +6058,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
             or _hades_homelab_service_placement_intent(text)
             or _hades_homelab_resource_ranking_intent(text)
             or node_load_target
+            or inventory_request
         )
     ):
         return None
@@ -6037,6 +6076,16 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         summary = _hades_direct_homelab_tool_result("homelab_summary")
         if not isinstance(summary, dict):
             return None
+        if inventory_request:
+            aliases = _hades_configured_homelab_alias_matches(text)
+            overview = bool(re.search(
+                r"\btell\s+me\s+about\s+(?:my|our|the)\s+network\b",
+                text, re.IGNORECASE,
+            ))
+            static_only = bool(re.search(r"\b(?:static|hardware)\s+inventory\b", text, re.IGNORECASE))
+            return _hades_homelab_inventory_response(
+                summary, excluded_names=aliases, overview=overview, static_only=static_only,
+            )
         if node_status_targets:
             views = []
             for target in node_status_targets:

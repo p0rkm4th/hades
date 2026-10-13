@@ -26,6 +26,7 @@ view_functions = {
 assert set(view_functions) == {
     '_hades_homelab_availability_groups',
     '_hades_homelab_health_summary_response',
+    '_hades_homelab_inventory_response',
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_service_placement_response',
     '_hades_homelab_provenance_response',
@@ -80,6 +81,7 @@ wanted = {
     '_hades_broad_homelab_status_intent',
     '_hades_homelab_network_diagnostic_intent',
     '_hades_homelab_health_summary_response',
+    '_hades_homelab_inventory_intent', '_hades_homelab_inventory_response',
     '_hades_homelab_owner_health_response',
     '_hades_homelab_node_problems_response',
     '_hades_homelab_service_coverage_intent',
@@ -1932,11 +1934,67 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert direct_read('What is a server?', 'synthetic-owner', 'owner') is None
         assert direct_read('What is Proxmox?', 'synthetic-owner', 'owner') is None
         assert direct_read('What does Minecraft do?', 'synthetic-owner', 'owner') is None
+        inventory_intent = namespace['_hades_homelab_inventory_intent']
+        assert inventory_intent('What other devices are in my static inventory besides Thanatos?')
+        assert inventory_intent('Tell me about my nodes on my network')
+        assert inventory_intent('Tell me about my network')
+        assert inventory_intent("What's on my network?")
+        assert inventory_intent('What are the nodes in my network?')
+        assert not inventory_intent('What is a network?')
+        assert not inventory_intent('Explain computer networking')
         routed_network = direct_read('Why does the network feel slow?', 'synthetic-owner', 'owner')
         assert 'Packet-loss, throughput, and historical comparison data are unavailable' in routed_network, routed_network
         assert 'cannot identify a network bottleneck or trend from this evidence' in routed_network, routed_network
 
         original_registry_read = namespace['_hades_direct_homelab_tool_result']
+        original_alias_matches = namespace['_hades_configured_homelab_alias_matches']
+        def inventory_fixture(operation):
+            summary = original_registry_read(operation)
+            summary['resources'] = [
+                {'name': 'Thanatos (VM 101)', 'runtime_status': 'NOT_OBSERVED',
+                 'inventory': {'role': 'Synthetic physical node'}, 'availability': None},
+                {'name': 'Synthetic Compute', 'runtime_status': 'online',
+                 'inventory': {'role': 'Synthetic host'}, 'currently_online': True,
+                 'runtime': {'type': 'node', 'status': 'online'}},
+                {'name': 'Synthetic Storage', 'runtime_status': 'NOT_OBSERVED',
+                 'inventory': {'role': 'Synthetic storage'}},
+                {'name': 'Synthetic Runtime Only', 'runtime_status': 'running',
+                 'runtime': {'type': 'qemu', 'status': 'running'}},
+                {'name': 'Synthetic Probe Only', 'runtime_status': 'NOT_OBSERVED',
+                 'availability': {'name': 'Synthetic Probe Only', 'status': 'up'}},
+            ]
+            summary['availability_summary'] = [
+                {'name': 'Synthetic Reachability', 'status': 'up', 'freshness': 'FRESH'},
+                {'name': 'Synthetic Stale', 'status': 'down', 'freshness': 'STALE'},
+            ]
+            summary['status'] = 'OK'
+            return summary
+        namespace['_hades_direct_homelab_tool_result'] = inventory_fixture
+        namespace['_hades_configured_homelab_alias_matches'] = lambda _text: ['Thanatos']
+        try:
+            static_inventory = direct_read(
+                'What other devices are in my static inventory besides Thanatos?',
+                'synthetic-owner', 'owner',
+            )
+            assert 'Synthetic Compute (static inventory; Proxmox currently reports online)' in static_inventory, static_inventory
+            assert 'Synthetic Storage (static inventory; not currently observed by Proxmox)' in static_inventory, static_inventory
+            assert 'Thanatos' not in static_inventory, static_inventory
+            assert 'Synthetic Probe Only' not in static_inventory, static_inventory
+            assert len(static_inventory) < 500, len(static_inventory)
+            network_overview = direct_read(
+                'Tell me about my network', 'synthetic-owner', 'owner',
+            )
+            assert 'current sources identify 3 homelab devices' in network_overview, network_overview
+            assert '1 configured checks responded' in network_overview, network_overview
+            assert '1 configured checks are stale or unknown' in network_overview, network_overview
+            assert 'does not establish application health' in network_overview, network_overview
+            assert direct_read(
+                'What other devices are in my static inventory besides Thanatos?',
+                '', 'owner',
+            ).startswith("I couldn't verify this owner session"), 'missing actor must fail closed'
+        finally:
+            namespace['_hades_direct_homelab_tool_result'] = original_registry_read
+            namespace['_hades_configured_homelab_alias_matches'] = original_alias_matches
         def node_followup_fixture(operation):
             summary = original_registry_read(operation)
             summary['availability_summary'] = [

@@ -45,6 +45,7 @@ wanted = {
     "_hades_direct_finance_guidance",
     "_hades_direct_grocy_recipe_read",
     "_hades_direct_homelab_read",
+    "_hades_homelab_inventory_intent",
     "_hades_homelab_owner_health_response",
     "_hades_homelab_read_followup_query",
     "_hades_homelab_network_diagnostic_intent",
