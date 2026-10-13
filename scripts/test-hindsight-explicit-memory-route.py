@@ -192,7 +192,10 @@ class FakeSemanticClient:
 
     def arecall(self, **kwargs):
         self.calls.append(kwargs)
-        return SimpleNamespace(results=[])
+        return SimpleNamespace(results=[
+            SimpleNamespace(text=f"synthetic trusted memory {index}")
+            for index in range(5)
+        ])
 
 
 class FakePrefetchProvider:
@@ -227,8 +230,18 @@ for prompt in (
     assert prefetch(prompt) == "", prompt
 assert prefetch("### Task:\nGenerate a concise title summarizing the chat history.") == ""
 assert prefetch_provider.semantic_calls == [], prefetch_provider.semantic_calls
-assert prefetch("Tell me about the restaurant I liked") == ""
+prefetched = prefetch("Tell me about the restaurant I liked")
 assert len(prefetch_provider.semantic_calls) == 1, prefetch_provider.semantic_calls
+assert prefetch_provider.semantic_calls[-1]["tags"] == [
+    "hades-explicit-memory", "hades-auto-qualified"
+], prefetch_provider.semantic_calls
+assert prefetch_provider.semantic_calls[-1]["tags_match"] == "any"
+assert prefetched.count("- synthetic trusted memory") == 3, prefetched
+assert "synthetic trusted memory 3" not in prefetched, prefetched
+prefetch_provider._recall_tags = ["session:unqualified-legacy"]
+before_untrusted_filter = len(prefetch_provider.semantic_calls)
+assert prefetch("Tell me about the restaurant I liked") == ""
+assert len(prefetch_provider.semantic_calls) == before_untrusted_filter
 old_urlopen = urllib.request.urlopen
 old_endpoint = os.environ.get("HADES_HINDSIGHT_URL")
 urllib.request.urlopen = fake_urlopen

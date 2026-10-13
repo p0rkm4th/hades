@@ -58,5 +58,32 @@ with tempfile.TemporaryDirectory(prefix="hades-overlay-candidate-test-") as temp
     )
     assert rejected.returncode != 0
     assert output.read_bytes() == before
+    prefetch_active = root / "prefetch-active.py"
+    prefetch_output = root / "prefetch-candidate.py"
+    prefetch_target = source.replace(
+        "# The pinned Hindsight API may return dozens of results even with",
+        "# The stale fixture may return dozens of results even with",
+        1,
+    ) + marker
+    prefetch_active.write_text(prefetch_target, encoding="utf-8")
+    subprocess.run(
+        [sys.executable, str(PREPARER), "--active-overlay", str(prefetch_active),
+         "--output", str(prefetch_output), "--function", "_hades_prefetch"],
+        check=True, capture_output=True, text=True,
+    )
+    prefetch_candidate = prefetch_output.read_text(encoding="utf-8")
+    source_prefetch = next(
+        node for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.FunctionDef) and node.name == "_hades_prefetch"
+    )
+    candidate_prefetch = next(
+        node for node in ast.walk(ast.parse(prefetch_candidate))
+        if isinstance(node, ast.FunctionDef) and node.name == "_hades_prefetch"
+    )
+    assert ast.get_source_segment(source, source_prefetch) == ast.get_source_segment(
+        prefetch_candidate, candidate_prefetch
+    )
+    assert prefetch_candidate == source + marker
+    assert prefetch_output.stat().st_mode & 0o777 == 0o600
     compile(candidate, str(output), "exec")
-print("PASS candidate replaces only the direct-memory function, preserves deployment-local code, and refuses overwrite")
+print("PASS candidate replaces only the selected HADES function, preserves deployment-local code, and refuses overwrite")

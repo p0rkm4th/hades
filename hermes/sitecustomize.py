@@ -9427,9 +9427,19 @@ try:
             "budget": self._budget,
             "max_tokens": self._recall_max_tokens,
         }
-        if self._recall_tags:
-            recall_kwargs["tags"] = self._recall_tags
-            recall_kwargs["tags_match"] = self._recall_tags_match
+        trusted_memory_tags = {"hades-explicit-memory", "hades-auto-qualified"}
+        configured_tags = tuple(str(tag) for tag in (self._recall_tags or ()))
+        recall_tags = (
+            tuple(tag for tag in configured_tags if tag in trusted_memory_tags)
+            if configured_tags else ("hades-explicit-memory", "hades-auto-qualified")
+        )
+        if not recall_tags:
+            return ""
+        # Legacy/session observations can contain tool output and stale live
+        # state. Only recall facts admitted by HADES' explicit or automatic
+        # qualification boundaries, even when the profile has no tag filter.
+        recall_kwargs["tags"] = list(recall_tags)
+        recall_kwargs["tags_match"] = "any"
         if self._recall_types:
             recall_kwargs["types"] = self._recall_types
         try:
@@ -9438,7 +9448,10 @@ try:
             )
             seen = set()
             lines = []
-            for item in (response.results or []):
+            # The pinned Hindsight API may return dozens of results even with
+            # a low token budget. Keep bounded context and avoid flooding the
+            # model with weakly related legacy memories.
+            for item in list(response.results or [])[:3]:
                 text = " ".join(str(item.text or "").split())
                 if not text:
                     continue

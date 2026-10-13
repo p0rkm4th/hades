@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replace only the HADES direct-memory function in a deployed overlay copy."""
+"""Replace one supported HADES function in a deployed overlay copy."""
 from __future__ import annotations
 
 import argparse
@@ -8,17 +8,21 @@ import hashlib
 import os
 from pathlib import Path
 
-FUNCTION_NAME = "_hades_direct_memory_response"
+DEFAULT_FUNCTION_NAME = "_hades_direct_memory_response"
+COMPOSABLE_FUNCTIONS = {
+    "_hades_direct_memory_response",
+    "_hades_prefetch",
+}
 
 
-def function_node(source: str, label: str) -> ast.FunctionDef:
+def function_node(source: str, label: str, function_name: str) -> ast.FunctionDef:
     tree = ast.parse(source, filename=label)
     found = [
         node for node in ast.walk(tree)
-        if isinstance(node, ast.FunctionDef) and node.name == FUNCTION_NAME
+        if isinstance(node, ast.FunctionDef) and node.name == function_name
     ]
     if len(found) != 1:
-        raise ValueError(f"{label} must define exactly one {FUNCTION_NAME}")
+        raise ValueError(f"{label} must define exactly one {function_name}")
     return found[0]
 
 
@@ -33,6 +37,11 @@ def main() -> int:
     parser.add_argument(
         "--source", type=Path,
         default=Path(__file__).resolve().parents[1] / "hermes/sitecustomize.py",
+    )
+    parser.add_argument(
+        "--function", choices=sorted(COMPOSABLE_FUNCTIONS),
+        default=DEFAULT_FUNCTION_NAME,
+        help="HADES function to replace while preserving all other overlay content",
     )
     args = parser.parse_args()
     active = args.active_overlay.resolve(strict=True)
@@ -49,8 +58,8 @@ def main() -> int:
     source_bytes = source_path.read_bytes()
     active_text = active_bytes.decode("utf-8")
     source_text = source_bytes.decode("utf-8")
-    active_node = function_node(active_text, str(active))
-    source_node = function_node(source_text, str(source_path))
+    active_node = function_node(active_text, str(active), args.function)
+    source_node = function_node(source_text, str(source_path), args.function)
     if active_node.col_offset != source_node.col_offset:
         raise SystemExit("FAIL overlay function nesting differs; refusing to compose")
     if ast.dump(active_node.args) != ast.dump(source_node.args):
@@ -67,7 +76,7 @@ def main() -> int:
     candidate_bytes = "".join(result_lines).encode("utf-8")
     candidate_text = candidate_bytes.decode("utf-8")
     compile(candidate_text, str(output), "exec")
-    candidate_node = function_node(candidate_text, str(output))
+    candidate_node = function_node(candidate_text, str(output), args.function)
     if ast.get_source_segment(candidate_text, candidate_node) != ast.get_source_segment(source_text, source_node):
         raise SystemExit("FAIL candidate function does not match repository source")
     replacement_size = source_node.end_lineno - source_node.lineno + 1
@@ -83,7 +92,7 @@ def main() -> int:
         stream.write(candidate_bytes)
         stream.flush()
         os.fsync(stream.fileno())
-    print(f"PASS replaced only {FUNCTION_NAME}; non-target content preserved")
+    print(f"PASS replaced only {args.function}; non-target content preserved")
     print(f"active_sha256={digest(active_bytes)}")
     print(f"source_sha256={digest(source_bytes)}")
     print(f"candidate_sha256={digest(candidate_bytes)}")
