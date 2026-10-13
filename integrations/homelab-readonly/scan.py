@@ -86,6 +86,9 @@ def run_bounded_scan(
     if not 1 <= timeout_seconds <= MAX_SCAN_SECONDS:
         raise ValueError("scan timeout exceeds the bounded limit")
     normalized_ports = _validate_ports(ports)
+    # A user-requested single-device reachability check should settle quickly;
+    # the wider discovery scan keeps its existing 60-second ceiling.
+    effective_timeout = min(timeout_seconds, 8) if requested.num_addresses == 1 else timeout_seconds
     command = [
         nmap_binary,
         "-n",
@@ -95,7 +98,7 @@ def run_bounded_scan(
         "--max-retries",
         "0",
         "--host-timeout",
-        f"{timeout_seconds}s",
+        f"{effective_timeout}s",
         "-T3",
         "--min-rate",
         "256",
@@ -111,7 +114,7 @@ def run_bounded_scan(
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=timeout_seconds + 5,
+            timeout=effective_timeout + 5,
             check=False,
         )
     except subprocess.TimeoutExpired as exc:

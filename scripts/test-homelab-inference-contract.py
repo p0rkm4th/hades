@@ -47,6 +47,12 @@ import config
 import inference_view
 import server
 
+reachability_tool = next(
+    tool for tool in server.TOOLS if tool.name == "homelab_entity_reachability"
+)
+assert reachability_tool.inputSchema["required"] == ["entity_name"]
+assert set(reachability_tool.inputSchema["properties"]) == {"entity_name"}
+
 # The MCP server keeps compatibility aliases while pure inference presentation
 # lives in its domain view module.
 assert server._format_node_activity_fallback is inference_view._format_node_activity_fallback
@@ -83,7 +89,7 @@ with tempfile.TemporaryDirectory(prefix="hades-capability-matrix-") as temp_dir:
     matrix_observed_at = server.datetime.now(server.timezone.utc).isoformat()
     matrix_path.write_text(json.dumps({
         "observed_at": matrix_observed_at,
-        "machines": [{"name": "Compute Alpha", "gpus": ["Synthetic GPU"]}],
+        "machines": [{"name": "Compute Alpha", "address": "192.0.2.14", "gpus": ["Synthetic GPU"]}],
     }), encoding="utf-8")
     previous_matrix = os.environ.get("HADES_CAPABILITY_MATRIX_FILE")
     os.environ["HADES_CAPABILITY_MATRIX_FILE"] = str(matrix_path)
@@ -97,6 +103,60 @@ with tempfile.TemporaryDirectory(prefix="hades-capability-matrix-") as temp_dir:
 assert hardware["status"] == "OK"
 assert hardware["freshness"] == "FRESH"
 assert hardware["observed_at"] == matrix_observed_at
+assert "192.0.2.14" not in json.dumps(hardware)
+assert "address" not in hardware["machines"][0]
+
+# Reachability resolves a device name on the server and never exposes or
+# accepts a caller-supplied target address. The underlying scanner is the
+# existing allowlisted, bounded read-only implementation.
+with tempfile.TemporaryDirectory(prefix="hades-reachability-matrix-") as temp_dir:
+    matrix_path = Path(temp_dir) / "matrix.json"
+    matrix_path.write_text(json.dumps({
+        "machines": [{"name": "Thanatos", "address": "192.0.2.27"}],
+    }), encoding="utf-8")
+    old_matrix = os.environ.get("HADES_CAPABILITY_MATRIX_FILE")
+    old_allowed = os.environ.get("HADES_DISCOVERY_ALLOWED_NETWORKS")
+    os.environ["HADES_CAPABILITY_MATRIX_FILE"] = str(matrix_path)
+    os.environ["HADES_DISCOVERY_ALLOWED_NETWORKS"] = "192.0.2.0/24"
+    scan_calls = []
+    old_scan = server.run_bounded_scan
+    server.run_bounded_scan = lambda target, **kwargs: (
+        scan_calls.append((target, kwargs)) or {
+            "status": "OK", "retrieved_at": "synthetic-time",
+            "hosts": [{"ports": [{"port": 22, "protocol": "tcp"}]}],
+        }
+    )
+    try:
+        reachability = server.homelab_entity_reachability("Thanatos")
+        assert reachability["status"] == "REACHABLE"
+        assert reachability["open_tcp_ports"] == [22]
+        assert "192.0.2.27" not in json.dumps(reachability)
+        assert scan_calls == [("192.0.2.27/32", {
+            "allowed_networks": ["192.0.2.0/24"],
+            "ports": server.DEFAULT_PORTS,
+            "timeout_seconds": 8,
+        })]
+        assert server.homelab_entity_reachability("192.0.2.27")["status"] == "UNKNOWN"
+        server.run_bounded_scan = lambda *_args, **_kwargs: {
+            "status": "OK", "retrieved_at": "synthetic-time", "hosts": [],
+        }
+        unverified = server.homelab_entity_reachability("Thanatos")
+        assert unverified["status"] == "UNVERIFIED"
+        assert "does not prove the device is offline" in unverified["meaning"]
+        os.environ["HADES_DISCOVERY_ALLOWED_NETWORKS"] = "198.51.100.0/24"
+        denied = server.homelab_entity_reachability("Thanatos")
+        assert denied["status"] == "DENIED"
+        assert len(scan_calls) == 1
+    finally:
+        server.run_bounded_scan = old_scan
+        if old_matrix is None:
+            os.environ.pop("HADES_CAPABILITY_MATRIX_FILE", None)
+        else:
+            os.environ["HADES_CAPABILITY_MATRIX_FILE"] = old_matrix
+        if old_allowed is None:
+            os.environ.pop("HADES_DISCOVERY_ALLOWED_NETWORKS", None)
+        else:
+            os.environ["HADES_DISCOVERY_ALLOWED_NETWORKS"] = old_allowed
 fixed_now = server.datetime(2026, 10, 10, tzinfo=server.timezone.utc)
 assert server._capability_matrix_freshness("2026-10-03", now=fixed_now) == "FRESH"
 assert server._capability_matrix_freshness("2026-10-02", now=fixed_now) == "STALE"

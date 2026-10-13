@@ -110,6 +110,7 @@ scope = {
         "warning": lambda *_a, **_k: None,
     })(),
     "_hades_homelab_health_summary_response": lambda _summary: "synthetic health caveats",
+    "_hades_direct_homelab_reachability_response": lambda *_args: None,
 }
 exec(compile(ast.Module(body=functions, type_ignores=[]), "sitecustomize.py", "exec"), scope)
 

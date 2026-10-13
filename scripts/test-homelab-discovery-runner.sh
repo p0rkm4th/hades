@@ -8,10 +8,17 @@ cat >"$fake" <<'EOF'
 #!/usr/bin/env python3
 import sys
 
-assert sys.argv[1:] == [
-    "-n", "-Pn", "-sT", "--open", "--max-retries", "0", "--host-timeout", "12s",
-    "-T3", "--min-rate", "256", "-p", "80,443", "-oX", "-", "192.0.2.0/30",
-], sys.argv[1:]
+args = sys.argv[1:]
+if args[-1] == "192.0.2.2/32":
+    assert args == [
+        "-n", "-Pn", "-sT", "--open", "--max-retries", "0", "--host-timeout", "8s",
+        "-T3", "--min-rate", "256", "-p", "80,443", "-oX", "-", "192.0.2.2/32",
+    ], args
+else:
+    assert args == [
+        "-n", "-Pn", "-sT", "--open", "--max-retries", "0", "--host-timeout", "12s",
+        "-T3", "--min-rate", "256", "-p", "80,443", "-oX", "-", "192.0.2.0/30",
+    ], args
 print('<nmaprun><host><status state="up"/><address addr="192.0.2.2" addrtype="ipv4"/>'
       '<hostnames><hostname name="synthetic-router"/></hostnames><ports>'
       '<port protocol="tcp" portid="80"><state state="open"/></port>'
@@ -34,6 +41,15 @@ result = run_bounded_scan(
 assert result["source"] == "nmap.xml"
 assert result["hosts"] == [{"ip": "192.0.2.2", "hostname": "synthetic-router", "ports": [{"port": 80, "protocol": "tcp"}]}]
 assert result["retrieved_at"].endswith("Z")
+
+single = run_bounded_scan(
+    "192.0.2.2/32",
+    allowed_networks=["192.0.2.0/29"],
+    nmap_binary=os.environ["FAKE_NMAP"],
+    ports="80,443",
+    timeout_seconds=60,
+)
+assert single["hosts"][0]["ports"][0]["port"] == 80
 
 for target in ("198.51.100.0/24", "192.0.2.0/28"):
     try:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import ipaddress
 import os
 import re
 import ssl
@@ -115,6 +116,18 @@ TOOLS = [Tool(
         "target": {"type": "string", "description": "CIDR inside the configured allowlist"},
         "ports": {"type": "string", "description": "Optional comma-separated TCP ports"},
     }, "required": ["target"]},
+), Tool(
+    name="homelab_entity_reachability",
+    description=(
+        "Owner-only bounded TCP reachability check for one exact device name "
+        "from the configured hardware inventory. The server resolves the "
+        "approved address itself, enforces HADES_DISCOVERY_ALLOWED_NETWORKS, "
+        "checks only a fixed common-port set, and never accepts an address, "
+        "URL, command, or arbitrary target from the caller. No writes."
+    ),
+    inputSchema={"type": "object", "properties": {
+        "entity_name": {"type": "string", "minLength": 1, "maxLength": 80},
+    }, "required": ["entity_name"]},
 ), Tool(
     name="homelab_compute_capabilities",
     description=(
@@ -803,7 +816,6 @@ def homelab_summary() -> dict:
             "runtime": resource.get("runtime"),
             "inventory_device_id": inventory.get("id"),
             "related_inventory_device_id": resource.get("related_inventory_device_id"),
-            "primary_ip": inventory.get("primary_ip"),
             "role": inventory.get("role"),
             "availability_status": availability.get("status"),
             "availability_freshness": resource.get("availability_freshness"),
@@ -907,7 +919,7 @@ def homelab_compute_capabilities() -> dict:
         row = {
             key: machine.get(key)
             for key in (
-                "name", "address", "os", "cpu", "ram_gib", "gpus",
+                "name", "os", "cpu", "ram_gib", "gpus",
                 "nvidia_driver", "cuda_container_capability",
                 "ssh", "role",
             )
@@ -940,6 +952,81 @@ def homelab_compute_capabilities() -> dict:
             "only authority for current runtime status; matrix_status is "
             "historical/observed inventory metadata, not liveness."
         ),
+        "read_only": True,
+    }
+
+
+def homelab_entity_reachability(entity_name: object) -> dict:
+    """Probe one inventory-resolved IPv4 address using the existing scanner."""
+    if not isinstance(entity_name, str) or not entity_name.strip() or len(entity_name) > 80:
+        return {"status": "INVALID_REQUEST", "errors": ["A bounded canonical device name is required."], "read_only": True}
+    requested_name = " ".join(entity_name.split())
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._'’-]{0,79}", requested_name):
+        return {"status": "INVALID_REQUEST", "errors": ["Device name is malformed."], "read_only": True}
+    from config import capability_matrix_file
+    path_value = capability_matrix_file()
+    if not path_value:
+        return {"status": "NOT_CONFIGURED", "errors": ["The canonical hardware inventory is unavailable."], "read_only": True}
+    path = Path(path_value)
+    try:
+        if not path.is_file() or path.is_symlink() or path.stat().st_size > 1024 * 1024:
+            return {"status": "SOURCE_UNAVAILABLE", "errors": ["The canonical hardware inventory is unavailable."], "read_only": True}
+    except OSError:
+        return {"status": "SOURCE_UNAVAILABLE", "errors": ["The canonical hardware inventory is unavailable."], "read_only": True}
+    try:
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, yaml.YAMLError):
+        return {"status": "SOURCE_UNAVAILABLE", "errors": ["The canonical hardware inventory could not be read."], "read_only": True}
+    machines = document.get("machines") if isinstance(document, dict) else None
+    key = re.sub(r"[^a-z0-9]+", "", requested_name.casefold())
+    matches = [machine for machine in machines if isinstance(machine, dict)
+               and isinstance(machine.get("name"), str)
+               and re.sub(r"[^a-z0-9]+", "", machine["name"].casefold()) == key] if isinstance(machines, list) else []
+    if len(matches) != 1:
+        return {
+            "status": "AMBIGUOUS" if matches else "UNKNOWN",
+            "entity_name": requested_name,
+            "errors": ["No unique canonical device record was found; nothing was probed."],
+            "read_only": True,
+        }
+    try:
+        address = ipaddress.ip_address(str(matches[0].get("address") or ""))
+    except ValueError:
+        return {"status": "NOT_CONFIGURED", "entity_name": requested_name,
+                "errors": ["The canonical device record has no usable approved address."], "read_only": True}
+    if address.version != 4:
+        return {"status": "NOT_CONFIGURED", "entity_name": requested_name,
+                "errors": ["This reachability check supports configured IPv4 devices only."], "read_only": True}
+    allowed_values = [value.strip() for value in os.environ.get("HADES_DISCOVERY_ALLOWED_NETWORKS", "").split(",") if value.strip()]
+    try:
+        allowed = [ipaddress.ip_network(value, strict=False) for value in allowed_values]
+    except ValueError:
+        return {"status": "CONFIGURATION_ERROR", "entity_name": requested_name,
+                "errors": ["The approved network scope is invalid; nothing was probed."], "read_only": True}
+    if not allowed or not any(address in network for network in allowed):
+        return {"status": "DENIED", "entity_name": requested_name,
+                "errors": ["The canonical address is outside the approved network scope; nothing was probed."], "read_only": True}
+    try:
+        evidence = run_bounded_scan(
+            f"{address}/32", allowed_networks=[str(network) for network in allowed],
+            ports=DEFAULT_PORTS, timeout_seconds=8,
+        )
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError):
+        return {"status": "UNAVAILABLE", "entity_name": requested_name,
+                "errors": ["The bounded reachability check could not complete."], "read_only": True}
+    if not isinstance(evidence, dict):
+        return {"status": "UNAVAILABLE", "entity_name": requested_name,
+                "errors": ["The bounded reachability check returned no usable result."], "read_only": True}
+    ports = sorted({port["port"] for host in evidence.get("hosts", []) if isinstance(host, dict)
+                    for port in host.get("ports", []) if isinstance(port, dict)
+                    and isinstance(port.get("port"), int) and not isinstance(port.get("port"), bool)
+                    and 1 <= port["port"] <= 65535 and port.get("protocol", "tcp") == "tcp"})
+    return {
+        "status": "REACHABLE" if ports else "UNVERIFIED",
+        "entity_name": requested_name,
+        "open_tcp_ports": ports,
+        "retrieved_at": evidence.get("retrieved_at"),
+        "meaning": "TCP port response proves reachability on that port only; no response does not prove the device is offline.",
         "read_only": True,
     }
 
@@ -1626,6 +1713,11 @@ async def call_tool(name, arguments):
             raise ValueError("discovery scan ports must be a string")
         result = await anyio.to_thread.run_sync(
             lambda: run_bounded_scan(target, allowed_networks=allowed, ports=ports)
+        )
+    elif name == "homelab_entity_reachability":
+        args = arguments or {}
+        result = await anyio.to_thread.run_sync(
+            lambda: homelab_entity_reachability(args.get("entity_name"))
         )
     elif name == "homelab_discovery_candidates":
         args = arguments or {}

@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import importlib
 import importlib.util
+import ipaddress
 import json
 import os
 import re
@@ -98,6 +99,8 @@ wanted = {
     '_hades_homelab_proxmox_node_load_target',
     '_hades_homelab_node_status_targets',
     '_hades_homelab_named_resource_status',
+    '_hades_homelab_read_followup_query',
+    '_hades_is_local_homelab_read_followup',
     '_hades_is_provisioning_request',
     '_hades_homelab_guest_inventory_intent',
     '_hades_homelab_guest_inventory_response',
@@ -114,6 +117,7 @@ wanted = {
     '_hades_homelab_gpu_execution_response',
     '_hades_direct_homelab_gpu_execution_read',
     '_hades_direct_homelab_read',
+    '_hades_direct_homelab_reachability_response',
     '_hades_endpoint_intent_before_provision',
     '_hades_service_endpoint_response',
     '_hades_endpoint_continuation_response',
@@ -127,6 +131,7 @@ functions = [
 assert {node.name for node in functions} == wanted
 namespace = {
     're': re,
+    'ipaddress': ipaddress,
     'os': os,
     'sys': sys,
     'importlib': importlib,
@@ -2061,6 +2066,64 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert 'Synthetic Hermes' in named_machine_fallback, named_machine_fallback
             assert 'runtime status is stopped' in named_machine_fallback, named_machine_fallback
             assert 'Current host evidence:' not in named_machine_fallback
+            original_aliases = namespace['_hades_configured_homelab_alias_matches']
+            namespace['_hades_configured_homelab_alias_matches'] = lambda text: (
+                ['Thanatos'] if re.search(r'\bthanatos\b', str(text), re.I) else []
+            )
+            def static_named_fixture(operation):
+                if operation == 'homelab_summary':
+                    return {'status': 'OK', 'resources': []}
+                if operation == 'homelab_compute_capabilities':
+                    return {'status': 'OK', 'machines': [
+                        {'name': 'Thanatos', 'role': 'Synthetic physical node', 'address': '192.0.2.10'},
+                    ]}
+                raise AssertionError(operation)
+            namespace['_hades_direct_homelab_tool_result'] = static_named_fixture
+            try:
+                static_named = direct_read('Is Thanatos online?', 'synthetic-owner', 'owner')
+                assert 'Thanatos' in static_named and 'current runtime check' in static_named, static_named
+                assert '192.0.2.10' not in static_named and 'recorded address' not in static_named.lower(), static_named
+                reachability_calls = []
+                def reachability_fixture(operation, arguments=None):
+                    if operation == 'homelab_entity_reachability':
+                        reachability_calls.append(arguments)
+                        return {'status': 'REACHABLE', 'entity_name': 'Thanatos', 'open_tcp_ports': [22]}
+                    raise AssertionError(operation)
+                namespace['_hades_direct_homelab_tool_result'] = reachability_fixture
+                reachability = namespace['_hades_direct_homelab_reachability_response']
+                reached = reachability('Homelab reachability check for Thanatos', 'synthetic-owner', 'owner')
+                assert reachability_calls == [{'entity_name': 'Thanatos'}], reachability_calls
+                assert 'TCP 22' in reached and 'does not verify ICMP' in reached, reached
+                assert '192.0.2.10' not in reached, reached
+                assert reachability('ping Thanatos', 'synthetic-owner', 'owner') == reached
+                assert reachability_calls[-1] == {'entity_name': 'Thanatos'}
+                namespace['_hades_direct_homelab_tool_result'] = lambda operation, _args=None: (
+                    {'status': 'UNAVAILABLE', 'errors': ['scanner scope unavailable']}
+                    if operation == 'homelab_entity_reachability' else {}
+                )
+                denied_probe = reachability(
+                    'Homelab reachability check for Thanatos', 'synthetic-owner', 'owner',
+                )
+                assert 'approved scope or scanner is unavailable' in denied_probe, denied_probe
+                assert '192.0.2.10' not in denied_probe
+                assert reachability(
+                    'Homelab reachability check for Thanatos', 'synthetic-household', 'household',
+                ) is None
+                history = [
+                    {'role': 'user', 'content': 'Tell me about my nodes on my network.'},
+                    {'role': 'assistant', 'content': 'Synthetic node summary.'},
+                    {'role': 'user', 'content': 'thanatos?'},
+                ]
+                local_read = namespace['_hades_is_local_homelab_read_followup']
+                query = namespace['_hades_homelab_read_followup_query']
+                assert local_read('is it online?', history, 'owner')
+                assert local_read('ping it', history, 'owner')
+                assert not local_read('search whether it is online', history, 'owner')
+                assert not local_read('is it online?', history, 'household')
+                assert query('is it online?', 'owner', history) == 'Is Thanatos online?'
+                assert query('ping it', 'owner', [*history, {'role': 'user', 'content': 'is it online?'}]) == 'Homelab reachability check for Thanatos'
+            finally:
+                namespace['_hades_configured_homelab_alias_matches'] = original_aliases
             def live_guest_rows_fixture(_operation):
                 summary = original_registry_read(_operation)
                 summary['proxmox_node_metrics'] = {'status': 'UNAVAILABLE', 'endpoints': []}

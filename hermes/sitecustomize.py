@@ -10,6 +10,7 @@ import os
 import json
 import logging
 import re
+import ipaddress
 import secrets
 import time
 import hashlib
@@ -6106,6 +6107,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
     or provisioning requests.
     """
     text = str(user_text or "")
+    reachability_response = _hades_direct_homelab_reachability_response(
+        text, subject, scope,
+    )
+    if reachability_response:
+        return reachability_response
     inventory_request = _hades_homelab_inventory_intent(text)
     # Explicit public research has a separate, privacy-checked route. Source
     # vocabulary such as "hosts" or "servers" must not turn that request into
@@ -6281,7 +6287,11 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
             return _hades_homelab_service_placement_response(text, summary)
         if _hades_homelab_resource_ranking_intent(text):
             return _hades_homelab_resource_ranking_response(summary)
-        endpoint_response = _hades_service_endpoint_response(
+        # A configured machine/node name belongs to the homelab inventory
+        # namespace. Do not turn it into a guessed application-service lookup
+        # before static hardware records have been considered.
+        explicit_machine_alias = _hades_configured_homelab_alias_match(text)
+        endpoint_response = None if explicit_machine_alias else _hades_service_endpoint_response(
             text,
             summary.get("service_catalog") if isinstance(summary, dict) else None,
             scope,
@@ -6289,7 +6299,9 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         if endpoint_response:
             return endpoint_response
         resources = summary.get("resources", []) if isinstance(summary, dict) else []
-        service_response = _hades_service_monitor_response(text, resources, summary, scope)
+        service_response = None if explicit_machine_alias else _hades_service_monitor_response(
+            text, resources, summary, scope,
+        )
         if service_response:
             return service_response
         supplemental_runtime = []
@@ -6409,8 +6421,6 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
                     details = [
                         f"I found {machine.get('name', target)} in the hardware inventory.",
                     ]
-                    if machine.get("address"):
-                        details.append(f"The recorded address is {machine['address']}.")
                     if machine.get("role"):
                         details.append(f"It is listed as {machine['role']}.")
                     details.append(
@@ -6448,8 +6458,6 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
                     "I can't verify current reachability or workload status."
                 )
             parts = [f"{name}: Proxmox runtime status is {runtime_status}."]
-            if inventory.get("primary_ip"):
-                parts.append(f"Its recorded address is {inventory['primary_ip']}.")
             if inventory.get("role"):
                 parts.append(f"Role: {inventory['role']}.")
             if availability.get("status"):
@@ -6885,6 +6893,14 @@ def _hades_direct_homelab_tool_result(tool_name, arguments=None):
             "mcp__homelab_readonly__homelab_gpu_telemetry",
             "mcp_homelab_readonly_homelab_gpu_telemetry",
         ),
+        "homelab_discovery_scan": (
+            "mcp__homelab_readonly__homelab_discovery_scan",
+            "mcp_homelab_readonly_homelab_discovery_scan",
+        ),
+        "homelab_entity_reachability": (
+            "mcp__homelab_readonly__homelab_entity_reachability",
+            "mcp_homelab_readonly_homelab_entity_reachability",
+        ),
     }
     if tool_name not in tool_names:
         return {"status": "UNKNOWN", "errors": ["Unsupported homelab read request."]}
@@ -7000,12 +7016,59 @@ def _hades_direct_homelab_tool_result(tool_name, arguments=None):
             ]
         _log_homelab_read(result.get("status"))
         return result
+
+
     except Exception as exc:
         _hades_logger.warning(
             "Homelab MCP read failed: tool=%s error=%s total_ms=%.1f",
             tool_name, type(exc).__name__, (time.perf_counter() - read_started) * 1000,
         )
         return {"status": "SOURCE_UNAVAILABLE", "errors": ["The configured homelab source read failed."]}
+
+def _hades_direct_homelab_reachability_response(user_text, subject, scope):
+    """Run one server-resolved, allowlisted TCP check for a canonical node."""
+    if scope != "owner":
+        return None
+    match = re.fullmatch(
+        r"\s*(?:homelab\s+reachability\s+check\s+for|ping)\s+"
+        r"([A-Za-z0-9][A-Za-z0-9 ._'’-]{0,79})\s*[?.!]*\s*",
+        str(user_text or ""), re.IGNORECASE,
+    )
+    if not match:
+        return None
+    if not subject:
+        return "I couldn't verify this owner session, so I did not run a reachability check."
+    target = " ".join(match.group(1).split()).strip()
+    aliases = _hades_configured_homelab_alias_matches(target)
+    if len(aliases) != 1:
+        return "I couldn't resolve that to one configured homelab device, so I did not probe anything."
+    target = aliases[0]
+    result = _hades_direct_homelab_tool_result(
+        "homelab_entity_reachability", {"entity_name": target},
+    )
+    if not isinstance(result, dict):
+        return f"I couldn't complete the bounded reachability check for {target}; the scanner returned no usable result."
+    status = str(result.get("status") or "UNKNOWN").upper()
+    if status in {"INVALID_REQUEST", "UNKNOWN", "AMBIGUOUS"}:
+        return f"I couldn't resolve {target} to one configured device, so I did not probe anything."
+    if status == "NOT_CONFIGURED":
+        return f"I found {target}, but it has no usable approved address configured for a reachability check."
+    if status in {"SOURCE_UNAVAILABLE", "DENIED", "CONFIGURATION_ERROR", "UNAVAILABLE"}:
+        return f"I couldn't complete the bounded reachability check for {target}; the approved scope or scanner is unavailable."
+    open_ports = sorted({
+        int(port) for port in result.get("open_tcp_ports", [])
+        if isinstance(port, int) and not isinstance(port, bool) and 1 <= port <= 65535
+    })
+    if open_ports:
+        rendered = ", ".join(f"TCP {port}" for port in open_ports[:8])
+        return (
+            f"A bounded check reached {target} on {rendered}. This confirms TCP reachability on those ports; "
+            "it does not verify ICMP response or application health."
+        )
+    return (
+        f"No approved TCP service port responded open on {target}. That does not prove the device is offline; "
+        "its current reachability remains unverified."
+    )
 
 def _hades_resolve_homelab_adapter_path():
     """Resolve pure formatters from the active Hermes MCP profile first."""
@@ -8831,6 +8894,59 @@ def _hades_conversation_intent_text(user_message, conversation_history):
     return f"{history}\n{current}" if history else current
 
 
+def _hades_is_local_homelab_read_followup(user_message, conversation_history, scope):
+    """Recognize owner pronoun follow-ups whose entity is a configured node.
+
+    The check is deliberately narrower than ordinary web intent: only a
+    read-only follow-up with an explicit, recent canonical homelab entity is
+    eligible. Search, public research, URLs, and state-changing requests retain
+    the normal privacy preflight.
+    """
+    current = str(user_message or "").strip()
+    if scope != "owner" or not current:
+        return False
+    if re.search(
+        r"\b(?:search|look\s+up|research|investigate|osint|web|internet|website|article)\b|https?://",
+        current, re.IGNORECASE,
+    ) or re.search(
+        r"\b(?:restart|reboot|stop|start|shutdown|shut\s+down|turn\s+off|fix|update|change|"
+        r"spin\s+(?:one\s+)?up|provision|deploy|create|delete|remove)\b",
+        current, re.IGNORECASE,
+    ):
+        return False
+    aliases = globals().get("_hades_configured_homelab_alias_matches")
+    if _hades_is_homelab_intent(current) or (callable(aliases) and aliases(current)):
+        return True
+    if not re.fullmatch(
+        r"(?:is|are|was|were)\s+(?:it|that|this|they|those)\s+(?:currently\s+)?"
+        r"(?:online|offline|up|down|reachable|responding|healthy|working)[?.!]*|"
+        r"(?:ping|check|probe)\s+(?:it|that|this|them)[?.!]*|"
+        r"what\s+(?:runs?|is\s+running|services?\s+run)\s+on\s+(?:it|that|this)[?.!]*",
+        current, re.IGNORECASE,
+    ):
+        return False
+    rows = conversation_history if isinstance(conversation_history, list) else []
+    for row in reversed(rows[-12:]):
+        if not isinstance(row, dict) or row.get("role") != "user":
+            continue
+        prior = str(row.get("content") or "").strip()
+        if prior.casefold() == current.casefold():
+            continue
+        if _hades_is_homelab_intent(prior) or (callable(aliases) and aliases(prior)):
+            return True
+        if re.fullmatch(
+            r"(?:is|are|was|were)\s+(?:it|that|this|they|those)\s+(?:currently\s+)?"
+            r"(?:online|offline|up|down|reachable|responding|healthy|working)[?.!]*|"
+            r"(?:ping|check|probe)\s+(?:it|that|this|them)[?.!]*|"
+            r"what\s+(?:runs?|is\s+running|services?\s+run)\s+on\s+(?:it|that|this)[?.!]*|"
+            r"what\s+about\s+.+?[?.!]*",
+            prior, re.IGNORECASE,
+        ):
+            continue
+        break
+    return False
+
+
 def _hades_previous_user_message(conversation_history):
     """Return only the immediately preceding user turn for follow-up routing."""
     if not isinstance(conversation_history, list):
@@ -8904,6 +9020,8 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
         return current
     previous_user = ""
     prior_homelab = False
+    active_target = None
+    aliases = globals().get("_hades_configured_homelab_alias_matches")
     for row in reversed(conversation_history if isinstance(conversation_history, list) else []):
         if not isinstance(row, dict) or row.get("role") != "user":
             continue
@@ -8911,12 +9029,22 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
         if content.casefold() == current.casefold():
             continue
         previous_user = content
+        named_aliases = aliases(content) if callable(aliases) else []
+        if named_aliases:
+            active_target = named_aliases[0]
+            prior_homelab = True
+            break
         if _hades_is_homelab_intent(content):
             prior_homelab = True
             break
         # Carry domain scope through a short chain of explicit follow-ups,
         # but stop at a new unrelated user request.
-        if re.match(r"\s*(?:what\s+about|sorry[, ]+|i\s+meant\s+)", content, re.IGNORECASE):
+        if re.match(r"\s*(?:what\s+about|sorry[, ]+|i\s+meant\s+)", content, re.IGNORECASE) or re.fullmatch(
+            r"(?:is|are|was|were)\s+(?:it|that|this|they|those)\s+(?:currently\s+)?"
+            r"(?:online|offline|up|down|reachable|responding|healthy|working)[?.!]*|"
+            r"(?:ping|check|probe)\s+(?:it|that|this|them)[?.!]*",
+            content, re.IGNORECASE,
+        ):
             continue
         break
     network_health = bool(re.search(
@@ -8933,6 +9061,17 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
         r"\s*(?:what\s+about|sorry[, ]+|i\s+meant\s+)", current, re.IGNORECASE
     ))
     targets = _hades_configured_homelab_alias_matches(current)
+    if prior_homelab and active_target and re.fullmatch(
+        r"(?:is|are)\s+(?:it|that|this|they|those)\s+(?:currently\s+)?"
+        r"(?:online|offline|up|down|reachable|responding|healthy|working)[?.!]*",
+        current, re.IGNORECASE,
+    ):
+        return f"Is {active_target} online?"
+    if prior_homelab and active_target and re.fullmatch(
+        r"(?:ping|check|probe)\s+(?:it|that|this|them)[?.!]*",
+        current, re.IGNORECASE,
+    ):
+        return f"Homelab reachability check for {active_target}"
     # A same-chat disjunction can name nodes that are absent from the small
     # configured alias list. Preserve the established homelab scope and do a
     # fresh bounded inventory read instead of sending bare names to the model.
@@ -9715,6 +9854,7 @@ try:
                         "mcp_homelab_readonly_homelab_inference_inventory",
                         "mcp_homelab_readonly_homelab_gpu_telemetry",
                         "mcp_homelab_readonly_homelab_discovery_scan",
+                        "mcp_homelab_readonly_homelab_entity_reachability",
                         "mcp_homelab_readonly_homelab_discovery_candidates",
                     },
                     quiet=True,
@@ -9882,6 +10022,15 @@ try:
                     args.get("target", ""),
                     allowed_networks=[v.strip() for v in os.environ.get("HADES_DISCOVERY_ALLOWED_NETWORKS", "").split(",") if v.strip()],
                     ports=args.get("ports", module.DEFAULT_PORTS),
+                ),
+            },
+            "mcp_homelab_readonly_homelab_entity_reachability": {
+                "description": "Owner-only reachability check for one exact configured device name. The server resolves the address from its protected inventory and enforces the approved network scope. No caller-supplied IP, command, URL, or writes. A TCP response proves only that port responded; no response does not prove offline.",
+                "parameters": {"type": "object", "properties": {
+                    "entity_name": {"type": "string", "minLength": 1, "maxLength": 80},
+                }, "required": ["entity_name"]},
+                "call": lambda args: module.homelab_entity_reachability(
+                    (args or {}).get("entity_name")
                 ),
             },
             "mcp_homelab_readonly_homelab_discovery_candidates": {
@@ -11017,6 +11166,14 @@ try:
         _early_privacy_text = str(user_message or "")
         _early_privacy_scope = getattr(self, "_hades_session_scope", "")
         if _early_privacy_scope in {"owner", "household"}:
+            _early_history = kwargs.get("conversation_history")
+            if not isinstance(_early_history, list):
+                _early_history = next(
+                    (value for value in args if isinstance(value, list)), []
+                )
+            _early_local_homelab_read = _hades_is_local_homelab_read_followup(
+                _early_privacy_text, _early_history, _early_privacy_scope,
+            )
             _early_grocy_operation_resolver = globals().get("_hades_grocy_read_operation")
             _early_grocy_operation = (
                 _early_grocy_operation_resolver(_early_privacy_text)
@@ -11038,11 +11195,6 @@ try:
                     not _early_private_person_request
                     and _HADES_PRIVATE_RESEARCH_FOLLOWUP.search(_early_privacy_text)
                 ):
-                    _early_history = kwargs.get("conversation_history")
-                    if not isinstance(_early_history, list):
-                        _early_history = next(
-                            (value for value in args if isinstance(value, list)), []
-                        )
                     _early_context_text = _hades_conversation_intent_text(
                         _early_privacy_text, _early_history
                     )
@@ -11056,7 +11208,7 @@ try:
                     _early_privacy_exc,
                 )
                 _early_private_person_request = False
-                _early_sensitive_person_finance = False if _early_local_grocy_read else bool(
+                _early_sensitive_person_finance = False if (_early_local_grocy_read or _early_local_homelab_read) else bool(
                     re.search(
                         r"\b(?:salary|earnings?|income|wages?|paid|pay|make|makes|made|earn|earns?|earned|compensation|net\s+worth|"
                         r"bank\s+account|credit\s+score)\b",
@@ -11071,14 +11223,14 @@ try:
                     )
                 )
                 _early_suspected_sensitive_person = (
-                    False if _early_local_grocy_read
+                    False if (_early_local_grocy_read or _early_local_homelab_read)
                     else _hades_private_person_fallback_suspected(_early_privacy_text)
                 )
                 _early_privacy_policy_error = _early_sensitive_person_finance or bool(
-                    _HADES_PRIVATE_RESEARCH_FOLLOWUP.search(_early_privacy_text)
-                    or _HADES_LIVE_WEB_INTENT.search(_early_privacy_text)
-                    or (_HADES_PAGE_INTENT.search(_early_privacy_text) and not _early_local_grocy_read)
-                    or re.search(r"https?://", _early_privacy_text, re.IGNORECASE)
+                    (_HADES_PRIVATE_RESEARCH_FOLLOWUP.search(_early_privacy_text) and not _early_local_homelab_read)
+                    or (_HADES_LIVE_WEB_INTENT.search(_early_privacy_text) and not _early_local_homelab_read)
+                    or (_HADES_PAGE_INTENT.search(_early_privacy_text) and not (_early_local_grocy_read or _early_local_homelab_read))
+                    or (re.search(r"https?://", _early_privacy_text, re.IGNORECASE) and not _early_local_homelab_read)
                 ) or _early_suspected_sensitive_person
             if _early_private_person_request or _early_privacy_policy_error:
                 _early_privacy_response = (
