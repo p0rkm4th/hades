@@ -37,6 +37,10 @@ def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, check=True, text=True, capture_output=True)
 
 
+IMAGE_VERSION = run(["docker", "image", "inspect", IMAGE, "--format", '{{index .Config.Labels "org.opencontainers.image.version"}}']).stdout.strip()
+NATIVE_SESSION_STAMP = IMAGE_VERSION == "0.12.0"
+
+
 def api(base: str, method: str, path: str, payload: dict | None = None,
         token: str | None = None) -> tuple[int, dict | str | None]:
     headers = {"Accept": "application/json"}
@@ -75,6 +79,15 @@ def decode_jwt_payload(token: str) -> dict:
     part = token.split(".")[1]
     part += "=" * (-len(part) % 4)
     return json.loads(base64.urlsafe_b64decode(part))
+
+
+def auth_session_stamp(container: str, user_id: str) -> str:
+    query = (
+        "import sqlite3,sys; db=sqlite3.connect('/app/backend/data/webui.db'); "
+        "row=db.execute('select session_stamp from auth where id=?',(sys.argv[1],)).fetchone(); "
+        "assert row; print(row[0])"
+    )
+    return run(["docker", "exec", container, "python3", "-c", query, user_id]).stdout.strip()
 
 
 def snapshot_restore_revocation(valkey: str, suffix: str, created: list[str]) -> None:
@@ -458,6 +471,7 @@ def main() -> None:
         print("PASS admin password change revokes previously issued tokens")
 
         self_password_user = add_user("Self Password User")
+        stamp_before = auth_session_stamp(webui, self_password_user["id"]) if NATIVE_SESSION_STAMP else None
         self_started = time.monotonic()
         status, changed = api(base, "POST", "/api/v1/auths/update/password", {
             "password": "Synthetic-Only-123!", "new_password": "Synthetic-Self-Changed-123!",
@@ -476,42 +490,50 @@ def main() -> None:
             raise RuntimeError(f"Immediate re-login after self-service password change failed (HTTP {status})")
         if self_elapsed > 2.0:
             raise RuntimeError(f"Immediate token refresh exceeded the 2 second bound ({self_elapsed:.3f}s)")
-        marker_keys = run([
-            "docker", "exec", valkey, "valkey-cli", "--raw", "--scan", "--pattern",
-            f"*auth:user:{self_password_user['id']}:revoked_at",
-        ]).stdout.splitlines()
-        if len(marker_keys) != 1:
-            raise RuntimeError("Self-service password change did not create exactly one user revocation marker")
-        marker = float(run(["docker", "exec", valkey, "valkey-cli", "--raw", "GET", marker_keys[0]]).stdout.strip())
-        replacement_iat = float(decode_jwt_payload(changed_login["token"]).get("iat", -1))
-        if replacement_iat <= marker:
-            raise RuntimeError("Immediate replacement JWT iat is not newer than the revocation marker")
+        if NATIVE_SESSION_STAMP:
+            stamp_after = auth_session_stamp(webui, self_password_user["id"])
+            replacement_stamp = decode_jwt_payload(changed_login["token"]).get("session_stamp")
+            if stamp_after == stamp_before or replacement_stamp != stamp_after:
+                raise RuntimeError("Native session_stamp did not advance and bind the replacement JWT")
+            status, _ = api(base, "GET", "/api/v1/users/user/info", token=changed_login["token"])
+            if status != 200:
+                raise RuntimeError("Fresh session-stamp token was rejected")
+            print("PASS native session_stamp advances on password change and binds the replacement JWT")
+        else:
+            marker_keys = run([
+                "docker", "exec", valkey, "valkey-cli", "--raw", "--scan", "--pattern",
+                f"*auth:user:{self_password_user['id']}:revoked_at",
+            ]).stdout.splitlines()
+            if len(marker_keys) != 1:
+                raise RuntimeError("Self-service password change did not create exactly one user revocation marker")
+            marker = float(run(["docker", "exec", valkey, "valkey-cli", "--raw", "GET", marker_keys[0]]).stdout.strip())
+            replacement_iat = float(decode_jwt_payload(changed_login["token"]).get("iat", -1))
+            if replacement_iat <= marker:
+                raise RuntimeError("Immediate replacement JWT iat is not newer than the revocation marker")
 
-        # Force the same integer-second edge deterministically by placing a
-        # synthetic marker 1.25 seconds ahead; create_session_response must wait
-        # until a JWT NumericDate is strictly newer than it.
-        forced_marker = int(time.time()) + 1.25
-        run(["docker", "exec", valkey, "valkey-cli", "SET", marker_keys[0], str(forced_marker), "EX", "60"])
-        forced_start = time.monotonic()
-        status, forced_login = api(base, "POST", "/api/v1/auths/signin", {
-            "email": f"self-password-user-{suffix}@example.invalid",
-            "password": "Synthetic-Self-Changed-123!",
-        })
-        forced_elapsed = time.monotonic() - forced_start
-        if status != 200 or not isinstance(forced_login, dict) or not forced_login.get("token"):
-            raise RuntimeError(f"Forced same-second replacement login failed (HTTP {status})")
-        forced_iat = float(decode_jwt_payload(forced_login["token"]).get("iat", -1))
-        if forced_iat <= forced_marker or forced_elapsed < 0.75 or forced_elapsed > 3.5:
-            raise RuntimeError(
-                f"JWT timestamp edge was not exercised safely: iat={forced_iat}, "
-                f"marker={forced_marker}, elapsed={forced_elapsed:.3f}s"
-            )
-        status, _ = api(base, "GET", "/api/v1/users/user/info", token=forced_login["token"])
-        if status != 200:
-            raise RuntimeError("Token issued after waiting past the revocation marker was rejected")
-        status, _ = api(base, "GET", "/api/v1/users/user/info", token=changed_login["token"])
-        if status != 401:
-            raise RuntimeError("Token issued before the future marker remained valid")
+            # Force the legacy integer-second edge deterministically.
+            forced_marker = int(time.time()) + 1.25
+            run(["docker", "exec", valkey, "valkey-cli", "SET", marker_keys[0], str(forced_marker), "EX", "60"])
+            forced_start = time.monotonic()
+            status, forced_login = api(base, "POST", "/api/v1/auths/signin", {
+                "email": f"self-password-user-{suffix}@example.invalid",
+                "password": "Synthetic-Self-Changed-123!",
+            })
+            forced_elapsed = time.monotonic() - forced_start
+            if status != 200 or not isinstance(forced_login, dict) or not forced_login.get("token"):
+                raise RuntimeError(f"Forced same-second replacement login failed (HTTP {status})")
+            forced_iat = float(decode_jwt_payload(forced_login["token"]).get("iat", -1))
+            if forced_iat <= forced_marker or forced_elapsed < 0.75 or forced_elapsed > 3.5:
+                raise RuntimeError(
+                    f"JWT timestamp edge was not exercised safely: iat={forced_iat}, "
+                    f"marker={forced_marker}, elapsed={forced_elapsed:.3f}s"
+                )
+            status, _ = api(base, "GET", "/api/v1/users/user/info", token=forced_login["token"])
+            if status != 200:
+                raise RuntimeError("Token issued after waiting past the revocation marker was rejected")
+            status, _ = api(base, "GET", "/api/v1/users/user/info", token=changed_login["token"])
+            if status != 401:
+                raise RuntimeError("Token issued before the future marker remained valid")
         status, _ = api(base, "POST", "/api/v1/auths/signin", {
             "email": f"self-password-user-{suffix}@example.invalid",
             "password": "Synthetic-Only-123!",
@@ -519,8 +541,7 @@ def main() -> None:
         if status not in (400, 401):
             raise RuntimeError(f"Old self-service password remained accepted (HTTP {status})")
         print(
-            f"PASS self-service password revocation, immediate login ({self_elapsed:.3f}s), "
-            f"and forced timestamp-edge wait ({forced_elapsed:.3f}s)"
+            f"PASS self-service password revocation and immediate login ({self_elapsed:.3f}s)"
         )
 
         deleted_user = add_user("Deleted User")

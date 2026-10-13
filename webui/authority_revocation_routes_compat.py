@@ -289,9 +289,187 @@ def apply_auths() -> None:
 
 
 def apply() -> None:
+    auth_source = ROOT / "utils/auth.py"
+    auth_text = auth_source.read_text(encoding="utf-8")
+    auths_text = AUTHS.read_text(encoding="utf-8")
+    if "session_stamp" in auth_text and "create_signin_response" in auths_text:
+        apply_session_stamp_profile()
+        return
     apply_users()
     apply_groups()
     apply_auths()
+
+
+def patch_native_function(path: Path, name: str, old: str, new: str) -> None:
+    source = path.read_text(encoding="utf-8")
+    start, end = bounds(source, name)
+    lines = source.splitlines(keepends=True)
+    segment = "".join(lines[start:end])
+    if segment.count(old) != 1:
+        if segment.count(new) == 1:
+            return
+        raise RuntimeError(f"{path.name}:{name} native source changed; review authority adapter")
+    segment = segment.replace(old, new, 1)
+    lines[start:end] = segment.splitlines(keepends=True)
+    patched = "".join(lines)
+    ast.parse(patched)
+    path.write_text(patched, encoding="utf-8")
+
+
+def apply_session_stamp_profile() -> None:
+    """Preserve native 0.12 session stamps while revoking before HADES authority changes."""
+    source = AUTHS.read_text(encoding="utf-8")
+    auth_import = "from open_webui.utils.auth import (\n"
+    if "    revoke_user_tokens,\n" not in source:
+        if source.count(auth_import) != 1:
+            raise RuntimeError("Open WebUI auth import changed; cannot add the authority revocation helper")
+        source = source.replace(auth_import, auth_import + "    revoke_user_tokens,\n", 1)
+        ast.parse(source)
+        AUTHS.write_text(source, encoding="utf-8")
+
+    update_password_old = """            hashed = await get_password_hash(form_data.new_password)
+            try:
+                success = await Auths.update_user_password_by_id(user.id, hashed, current_auth=auth, db=db)
+"""
+    update_password_new = """            # The native password update atomically advances session_stamp.
+            hashed = await get_password_hash(form_data.new_password)
+            try:
+                success = await Auths.update_user_password_by_id(user.id, hashed, current_auth=auth, db=db)
+"""
+    patch_native_function(AUTHS, "update_password", update_password_old, update_password_new)
+
+    update_user_old = """        if form_data.password:
+            try:
+                validate_password(form_data.password)
+            except Exception as e:
+                raise HTTPException(400, detail=str(e))
+
+            hashed = await get_password_hash(form_data.password)
+"""
+    update_user_new = """        if form_data.password:
+            try:
+                validate_password(form_data.password)
+            except Exception as e:
+                raise HTTPException(400, detail=str(e))
+
+        # HADES_AUTHORITY_REVOCATION_COMPAT: invalidate sessions before role changes.
+        if form_data.role is not None and form_data.role != user.role:
+            await revoke_user_tokens(request, user_id)
+
+        if form_data.password:
+            hashed = await get_password_hash(form_data.password)
+"""
+    patch_native_function(USERS, "update_user_by_id", update_user_old, update_user_new)
+
+    patch_native_function(
+        USERS,
+        "delete_user_by_id",
+        "        result = await Auths.delete_auth_by_id(user_id, db=db)\n",
+        """        # HADES_AUTHORITY_REVOCATION_COMPAT: revoke sessions before deleting authority.
+        await revoke_user_tokens(request, user_id)
+        result = await Auths.delete_auth_by_id(user_id, db=db)
+""",
+    )
+
+    revoke_group_members = """        # HADES_AUTHORITY_REVOCATION_COMPAT: revoke direct and inherited group authority first.
+        from open_webui.utils.auth import revoke_user_tokens as hades_revoke_user_tokens
+
+        for member_id in await Groups.get_group_user_ids_by_id(id, db=db, include_inherited=True):
+            await hades_revoke_user_tokens(request, member_id)
+"""
+    patch_native_function(
+        GROUPS,
+        "update_group_by_id",
+        "        group = await Groups.update_group_by_id(id, form_data, db=db, changes=changes)\n",
+        revoke_group_members + "        group = await Groups.update_group_by_id(id, form_data, db=db, changes=changes)\n",
+    )
+    patch_native_function(
+        GROUPS,
+        "add_user_to_group",
+        "        group = await Groups.add_users_to_group(id, form_data.user_ids, db=db)\n",
+        """        # HADES_AUTHORITY_REVOCATION_COMPAT: revoke affected subjects before granting inherited access.
+        from open_webui.utils.auth import revoke_user_tokens as hades_revoke_user_tokens
+
+        for member_id in set(form_data.user_ids or []):
+            await hades_revoke_user_tokens(request, member_id)
+        group = await Groups.add_users_to_group(id, form_data.user_ids, db=db)
+""",
+    )
+    patch_native_function(
+        GROUPS,
+        "remove_users_from_group",
+        "        group = await Groups.remove_users_from_group(id, form_data.user_ids, db=db)\n",
+        """        # HADES_AUTHORITY_REVOCATION_COMPAT: revoke affected subjects before removing inherited access.
+        from open_webui.utils.auth import revoke_user_tokens as hades_revoke_user_tokens
+
+        for member_id in set(form_data.user_ids or []):
+            await hades_revoke_user_tokens(request, member_id)
+        group = await Groups.remove_users_from_group(id, form_data.user_ids, db=db)
+""",
+    )
+    patch_native_function(
+        GROUPS,
+        "delete_group_by_id",
+        "        result = await Groups.delete_group_by_id(id, db=db, changes=changes)\n",
+        revoke_group_members + "        result = await Groups.delete_group_by_id(id, db=db, changes=changes)\n",
+    )
+
+    ldap_old = """        user_groups = []
+        if ENABLE_LDAP_GROUP_MANAGEMENT and LDAP_ATTRIBUTE_FOR_GROUPS in entry:
+"""
+    ldap_new = """        # HADES_AUTHORITY_REVOCATION_COMPAT: missing group data is not an empty permission set.
+        if ENABLE_LDAP_GROUP_MANAGEMENT and LDAP_ATTRIBUTE_FOR_GROUPS not in entry:
+            raise HTTPException(503, detail='LDAP group membership could not be verified.')
+        user_groups = []
+        if ENABLE_LDAP_GROUP_MANAGEMENT and LDAP_ATTRIBUTE_FOR_GROUPS in entry:
+"""
+    patch_native_function(AUTHS, "ldap_auth", ldap_old, ldap_new)
+
+    ldap_sync_old = """                if ENABLE_LDAP_GROUP_MANAGEMENT and user_groups:
+                    try:
+                        if ENABLE_LDAP_GROUP_CREATION:
+                            await Groups.create_groups_by_group_names(user.id, user_groups, db=db)
+                        await Groups.sync_groups_by_group_names(user.id, user_groups, db=db)
+                        log.info('Successfully synced groups for user %s: %s', user.id, user_groups)
+                    except Exception as e:
+                        log.error(f'Failed to sync groups for user {user.id}: {e}')
+"""
+    ldap_sync_new = """                if ENABLE_LDAP_GROUP_MANAGEMENT:  # HADES_EMPTY_LDAP_GROUP_SYNC
+                    try:
+                        if ENABLE_LDAP_GROUP_CREATION:
+                            await Groups.create_groups_by_group_names(user.id, user_groups, db=db)
+                        current_groups = await Groups.get_groups_by_member_id(user.id, db=db)
+                        current_names = {group.name for group in current_groups}
+                        if current_names != set(user_groups):
+                            await revoke_user_tokens(request, user.id)
+                        if not await Groups.sync_groups_by_group_names(user.id, user_groups, db=db):
+                            raise RuntimeError('LDAP group reconciliation did not complete')
+                        log.info('Successfully synced groups for user %s: %s', user.id, user_groups)
+                    except Exception as e:
+                        log.exception(f'Failed to sync groups for user {user.id}: {e}')
+                        raise HTTPException(503, detail='LDAP group reconciliation unavailable.') from e
+"""
+    patch_native_function(AUTHS, "ldap_auth", ldap_sync_old, ldap_sync_new)
+
+    source = AUTHS.read_text(encoding="utf-8")
+    start, end = bounds(source, "ldap_auth")
+    lines = source.splitlines(keepends=True)
+    segment = "".join(lines[start:end])
+    generic_error = """    except Exception as e:
+        log.error(f'LDAP authentication error: {str(e)}')
+        raise HTTPException(400, detail='LDAP authentication failed.')
+"""
+    fail_closed_error = """    except HTTPException:
+        raise
+    except Exception as e:
+        log.error(f'LDAP authentication error: {str(e)}')
+        raise HTTPException(503, detail='LDAP authentication service unavailable.') from e
+"""
+    if segment.count(generic_error) != 1:
+        raise RuntimeError("ldap_auth outer error handler changed; review authority adapter")
+    segment = segment.replace(generic_error, fail_closed_error, 1)
+    lines[start:end] = segment.splitlines(keepends=True)
+    AUTHS.write_text("".join(lines), encoding="utf-8")
 
 
 if __name__ == "__main__":
