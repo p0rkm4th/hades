@@ -131,6 +131,11 @@ namespace = {
     '_hades_agent_zero_available': lambda: True,
     '_hades_logger': type('Logger', (), {'warning': lambda *_args, **_kwargs: None})(),
     '_hades_live_proxmox_vm_rows': lambda: [],
+    '_hades_homelab_named_machine_records': lambda rows, target: [
+        row for row in rows if isinstance(row, dict)
+        and re.sub(r'[^a-z0-9]+', '', str(target).casefold())
+        in re.sub(r'[^a-z0-9]+', '', str(row.get('name') or '').casefold())
+    ],
     '_HADES_EXPLICIT_PUBLIC_RESEARCH_INTENT': re.compile(r'(?!)'),
     '_HADES_LIVE_WEB_INTENT': re.compile(r'\b(?:search|web)\b', re.I),
     '_HADES_HOMELAB_INTENT': re.compile(
@@ -238,8 +243,8 @@ with tempfile.TemporaryDirectory(prefix='homelab-view-cwd-decoy-') as unrelated_
             }]},
         }
         node_problem_answer = node_problems_response(node_problem_summary)
-        assert 'Synthetic Node B reports offline' in node_problem_answer, node_problem_answer
-        assert 'Synthetic Node A' not in node_problem_answer, node_problem_answer
+        assert 'Synthetic Node A online' in node_problem_answer, node_problem_answer
+        assert 'Synthetic Node B offline' in node_problem_answer, node_problem_answer
         assert coverage_response(golden_coverage) == (
             "The service catalog responded, but its total coverage is unknown, so I can't confirm that "
             'unlisted services are absent. Guest visibility is partial or unknown, so services on '
@@ -1959,14 +1964,14 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 summary['proxmox_node_metrics'] = {'status': 'UNAVAILABLE', 'endpoints': []}
                 summary['resources'] = [
                     {
-                        'name': 'Synthetic Thanatos', 'runtime_status': 'running',
+                        'name': 'Synthetic Thanatos (VM 101)', 'runtime_status': 'running',
                         'inventory': {'role': 'Synthetic VM'},
                         'identity': {'canonical_id': 'fixture:thanatos'},
                         'runtime_detail': {'vmid': 101, 'status': 'running'},
                         'availability': None,
                     },
                     {
-                        'name': 'Synthetic Hermes', 'runtime_status': 'stopped',
+                        'name': 'Synthetic Hermes (VM 102)', 'runtime_status': 'stopped',
                         'inventory': {'role': 'Synthetic VM'},
                         'identity': {'canonical_id': 'fixture:hermes'},
                         'runtime_detail': {'vmid': 102, 'status': 'stopped'},

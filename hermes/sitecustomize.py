@@ -5135,10 +5135,15 @@ def _hades_homelab_node_problems_response(summary):
         }
     ]
     if node_rows:
+        node_sample = "; ".join(
+            f"{str(node.get('name') or node.get('node') or 'Unnamed node')[:80]} "
+            f"{str(node.get('status') or 'UNKNOWN').casefold()}"
+            for node in node_rows[:4]
+        )
         if node_problems:
-            parts = ["Yes. Current Proxmox node evidence: " + "; ".join(node_problems[:4]) + "."]
+            parts = ["Yes. Current Proxmox node sample: " + node_sample + "."]
         else:
-            parts = [f"No reported Proxmox node is offline in the current sample ({len(node_rows)} node(s))."]
+            parts = ["No offline or down status is reported for these Proxmox nodes: " + node_sample + "."]
         unknown_nodes = sum(
             str(node.get("status") or "UNKNOWN").upper()
             not in {"ONLINE", "RUNNING", "UP", "OFFLINE", "DOWN", "ERROR", "FAILED", "DEGRADED"}
@@ -5373,15 +5378,24 @@ def _hades_homelab_named_resource_status(summary, target):
     resources = summary.get("resources")
     if not isinstance(resources, list):
         return None
-    matches = []
-    for row in resources:
-        if not isinstance(row, dict):
-            continue
-        inventory = row.get("inventory") if isinstance(row.get("inventory"), dict) else {}
-        runtime = row.get("runtime") if isinstance(row.get("runtime"), dict) else {}
-        names = (row.get("name"), inventory.get("name"), runtime.get("name"))
-        if any(re.sub(r"[^a-z0-9]+", "", str(name or "").casefold()) == key for name in names):
-            matches.append(row)
+    matcher = globals().get("_hades_homelab_named_machine_records")
+    if callable(matcher):
+        try:
+            matches = matcher(resources, target)
+        except Exception:
+            matches = None
+    else:
+        matches = None
+    if not isinstance(matches, list):
+        matches = []
+        for row in resources:
+            if not isinstance(row, dict):
+                continue
+            inventory = row.get("inventory") if isinstance(row.get("inventory"), dict) else {}
+            runtime = row.get("runtime") if isinstance(row.get("runtime"), dict) else {}
+            names = (row.get("name"), inventory.get("name"), runtime.get("name"))
+            if any(re.sub(r"[^a-z0-9]+", "", str(name or "").casefold()) == key for name in names):
+                matches.append(row)
     if len(matches) > 1:
         return f"I found multiple current homelab records for {str(target)[:80]}; I can't safely choose one."
     if not matches:
