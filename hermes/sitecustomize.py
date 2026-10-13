@@ -5399,7 +5399,27 @@ def _hades_homelab_named_resource_status(summary, target):
     if len(matches) > 1:
         return f"I found multiple current homelab records for {str(target)[:80]}; I can't safely choose one."
     if not matches:
-        return f"I couldn't match {str(target)[:80]} to a current homelab inventory record; its status is unknown."
+        # The summary may omit guest runtime rows. Reuse the same bounded
+        # read-only Proxmox guest query that the ordinary named-machine path
+        # already uses before concluding that the requested guest is unknown.
+        try:
+            guest_rows = _hades_live_proxmox_vm_rows()
+        except Exception:
+            guest_rows = []
+        guest_matches = [
+            row for row in guest_rows if isinstance(row, dict)
+            and key in re.sub(r"[^a-z0-9]+", "", str(row.get("name") or "").casefold())
+        ] if isinstance(guest_rows, list) else []
+        if len(guest_matches) == 1:
+            guest = guest_matches[0]
+            name = " ".join(str(guest.get("name") or target).split())[:100]
+            vmid = guest.get("vmid")
+            label = f"{name} (VM {vmid})" if vmid is not None else name
+            status = str(guest.get("status") or "UNKNOWN").casefold()
+            return f"{label}: current Proxmox runtime status is {status}; this is power/runtime state, not application health."
+        if len(guest_matches) > 1:
+            return f"I found multiple live Proxmox guests matching {str(target)[:80]}; I can't safely choose one."
+        return f"I couldn't match {str(target)[:80]} to a current homelab machine record; its status is unknown."
     row = matches[0]
     name = " ".join(str(row.get("name") or target).split())[:100]
     runtime = row.get("runtime") if isinstance(row.get("runtime"), dict) else {}

@@ -1989,6 +1989,25 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert 'Synthetic Hermes' in named_machine_fallback, named_machine_fallback
             assert 'runtime status is stopped' in named_machine_fallback, named_machine_fallback
             assert 'Current host evidence:' not in named_machine_fallback
+            def live_guest_rows_fixture(_operation):
+                summary = original_registry_read(_operation)
+                summary['proxmox_node_metrics'] = {'status': 'UNAVAILABLE', 'endpoints': []}
+                summary['resources'] = []
+                return summary
+            namespace['_hades_direct_homelab_tool_result'] = live_guest_rows_fixture
+            namespace['_hades_live_proxmox_vm_rows'] = lambda: [
+                {'name': 'Synthetic Thanatos', 'vmid': 301, 'status': 'running'},
+                {'name': 'Synthetic Hermes', 'vmid': 302, 'status': 'stopped'},
+            ]
+            supplemental_guest_fallback = direct_read(
+                'homelab node status for Synthetic Thanatos and Synthetic Hermes',
+                'synthetic-owner', 'owner',
+            )
+            assert 'Synthetic Thanatos (VM 301)' in supplemental_guest_fallback, supplemental_guest_fallback
+            assert 'runtime status is running' in supplemental_guest_fallback, supplemental_guest_fallback
+            assert 'Synthetic Hermes (VM 302)' in supplemental_guest_fallback, supplemental_guest_fallback
+            assert 'runtime status is stopped' in supplemental_guest_fallback, supplemental_guest_fallback
+            namespace['_hades_live_proxmox_vm_rows'] = lambda: []
             namespace['_hades_direct_homelab_tool_result'] = node_followup_fixture
             problem_answer = direct_read(
                 'homelab nodes problems status', 'synthetic-owner', 'owner'
