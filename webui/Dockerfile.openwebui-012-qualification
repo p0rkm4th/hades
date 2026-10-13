@@ -20,7 +20,6 @@ COPY webui/auth_revocation_fail_closed_compat.py /opt/hades/auth_revocation_fail
 COPY webui/ldap_group_sync_compat.py /opt/hades/ldap_group_sync_compat.py
 COPY webui/authority_revocation_routes_compat.py /opt/hades/authority_revocation_routes_compat.py
 COPY webui/socket_disconnect_fail_closed_compat.py /opt/hades/socket_disconnect_fail_closed_compat.py
-COPY scripts/normalize-openwebui-012-build-timestamps.py /opt/hades/normalize_candidate_timestamps.py
 COPY webui/entrypoint.sh /opt/hades/entrypoint.sh
 RUN PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/auth_revocation_fail_closed_compat.py \
     && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/authority_revocation_routes_compat.py \
@@ -33,8 +32,7 @@ RUN PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/auth_revocation_fail_closed_com
     && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/stream_disconnect_compat.py \
     && cp /opt/hades/hades_stream_disconnect_compat.py /app/backend/open_webui/utils/hades_stream_disconnect_compat.py
 RUN cp /app/build/static/hades-theme.css /app/backend/open_webui/static/hades-theme.css \
-    && cp /app/build/static/hades-theme.js /app/backend/open_webui/static/hades-theme.js \
-    && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/normalize_candidate_timestamps.py
+    && cp /app/build/static/hades-theme.js /app/backend/open_webui/static/hades-theme.js
 RUN chmod 0555 /opt/hades/entrypoint.sh
 ENTRYPOINT ["/opt/hades/entrypoint.sh"]
 CMD ["bash", "start.sh"]
