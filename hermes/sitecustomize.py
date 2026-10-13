@@ -5110,6 +5110,18 @@ def _hades_broad_homelab_status_intent(text):
     ))
 
 
+def _hades_homelab_network_diagnostic_intent(text):
+    """Keep performance complaints on the detailed telemetry path."""
+    text = str(text or "")
+    return bool(
+        re.search(r"\b(?:network|internet|wi-?fi|dns)\b", text, re.IGNORECASE)
+        and re.search(
+            r"\b(?:slow|latency|bottleneck|performance|packet\s+loss|throughput|resource\s+usage)\b",
+            text, re.IGNORECASE,
+        )
+    )
+
+
 def _hades_homelab_health_summary_response(summary):
     """Preserve the hook name while delegating pure rendering."""
     return getattr(_hades_load_homelab_views(), "_hades_homelab_health_summary_response")(summary)
@@ -6253,7 +6265,10 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         down = monitor_groups["down"]
         if down:
             response += " Uptime Kuma's configured probes failed: " + ", ".join(down) + "."
-        if _hades_broad_homelab_status_intent(text):
+        if (
+            _hades_broad_homelab_status_intent(text)
+            and not _hades_homelab_network_diagnostic_intent(text)
+        ):
             return _hades_homelab_owner_health_response(summary)
         if detailed_request:
             runtime_details = [

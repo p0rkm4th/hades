@@ -78,6 +78,7 @@ wanted = {
     '_hades_load_homelab_views',
     '_hades_homelab_availability_groups',
     '_hades_broad_homelab_status_intent',
+    '_hades_homelab_network_diagnostic_intent',
     '_hades_homelab_health_summary_response',
     '_hades_homelab_owner_health_response',
     '_hades_homelab_node_problems_response',
@@ -354,6 +355,9 @@ assert broad_status_intent("What's down?")
 assert namespace['_hades_is_homelab_intent']("What's down?")
 assert broad_status_intent('Is everything okay with the homelab?')
 assert broad_status_intent('How is the lab doing?')
+network_diagnostic_intent = namespace['_hades_homelab_network_diagnostic_intent']
+assert network_diagnostic_intent('The network feels slow; check latency and resource usage.')
+assert not network_diagnostic_intent("How's my network?")
 assert namespace['_hades_is_homelab_intent']('Is everything okay with the homelab?')
 assert not broad_status_intent('What changed since yesterday?')
 healthy_checks_partial_coverage = health_summary_response({
