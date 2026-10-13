@@ -262,6 +262,18 @@ try:
         result = agent.run_conversation(prompt)
         assert result.get("completed") is True, (prompt, result)
         assert captured_choices and captured_choices[-1].get("tool_choice", {}).get("function", {}).get("name") == expected_tool, (prompt, captured_choices, result)
+    real_privacy_check = hades._hades_explicit_private_research_request
+    assert hades._hades_grocy_read_operation("How do I make my best Chicken Cordon Bleu recipe?") == "recipe_instructions_tool"
+    hades._hades_explicit_private_research_request = lambda _text: (_ for _ in ()).throw(
+        FileNotFoundError("synthetic missing privacy policy")
+    )
+    try:
+        local_recipe = agent.run_conversation("How do I make my best Chicken Cordon Bleu recipe?")
+        assert local_recipe.get("completed") is True, local_recipe
+        assert "privacy check is unavailable" not in local_recipe.get("final_response", "").lower(), local_recipe
+        assert local_recipe.get("api_calls") == 0, local_recipe
+    finally:
+        hades._hades_explicit_private_research_request = real_privacy_check
     detail_history = [
         {"role": "user", "content": "what recipes dfo i have?"},
         {"role": "assistant", "content": "Synthetic recipe list"},
@@ -489,6 +501,47 @@ assert recipe_reads == [
     "/api/objects/products", "/api/stock", "/api/objects/quantity_units",
 ], recipe_reads
 print("PASS same-chat named recipe ingredient read returns only the current recipe from canonical Grocy")
+
+instruction_prompt = "How do I make my best Chicken Cordon Bleu recipe?"
+pantry_match_prompt = "What ingredients do I currently have in my pantry that I can use for Chicken Cordon Bleu?"
+assert hades._hades_grocy_read_operation(instruction_prompt) == "recipe_instructions_tool"
+assert hades._hades_grocy_read_operation(pantry_match_prompt) == "recipe_stock_match_tool"
+assert hades._hades_grocy_read_tool_choice(instruction_prompt, synthetic_grocy_tools)["function"]["name"] == "mcp_grocy_recipe_details_tool"
+assert hades._hades_grocy_read_tool_choice(pantry_match_prompt, synthetic_grocy_tools)["function"]["name"] == "mcp_grocy_recipe_details_tool"
+payloads["/api/objects/recipes"] = [
+    {"id": 1, "name": "Best Chicken Cordon Bleu", "description": "<p>1. Pound the chicken.</p><p>2. Bake until done.</p>"},
+    {"id": 2, "name": "Synthetic Recipe B", "description": ""},
+]
+payloads["/api/objects/recipes_pos"] = [
+    {"recipe_id": 1, "product_id": 10, "amount": 2, "qu_id": 1},
+    {"recipe_id": 1, "product_id": 11, "amount": 0.5, "qu_id": 2},
+]
+payloads["/api/objects/products"] = [
+    {"id": 10, "name": "Synthetic Chicken", "qu_id_stock": 1},
+    {"id": 11, "name": "Synthetic Cheese", "qu_id_stock": 2},
+]
+payloads["/api/stock"] = [
+    {"product_id": 10, "amount_aggregated": 2},
+    {"product_id": 11, "amount_aggregated": 0.25},
+]
+recipe_reads.clear()
+stored_instructions = hades._hades_direct_grocy_recipe_instructions(instruction_prompt)
+assert "Grocy's stored instructions" in stored_instructions and "Pound the chicken" in stored_instructions, stored_instructions
+assert "invent" not in stored_instructions.lower(), stored_instructions
+assert recipe_reads == ["/api/objects/recipes"], recipe_reads
+payloads["/api/objects/recipes"][0]["description"] = ""
+recipe_reads.clear()
+no_instructions = hades._hades_direct_grocy_recipe_instructions(instruction_prompt)
+assert "no preparation instructions stored" in no_instructions.lower(), no_instructions
+assert "Grocy lists these ingredients" in no_instructions, no_instructions
+payloads["/api/objects/recipes"][0]["description"] = "<p>1. Pound the chicken.</p><p>2. Bake until done.</p>"
+recipe_reads.clear()
+pantry_match = hades._hades_direct_grocy_recipe_stock_match(pantry_match_prompt)
+assert "You have: Synthetic Chicken" in pantry_match, pantry_match
+assert "Missing: Synthetic Cheese (0.25 more)" in pantry_match, pantry_match
+assert "Nothing was changed" in pantry_match, pantry_match
+assert recipe_reads == ["/api/objects/recipes", "/api/objects/recipes_pos", "/api/objects/products", "/api/stock"], recipe_reads
+print("PASS saved Grocy instructions and recipe/pantry intersection use canonical read data only")
 payloads.clear()
 payloads.update(baseline_payloads)
 

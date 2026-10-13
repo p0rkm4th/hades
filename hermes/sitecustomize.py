@@ -8985,6 +8985,19 @@ def _hades_grocy_read_operation(user_text):
     text = re.sub(r"\bdfo\b", "do", text, flags=re.IGNORECASE)
     if _HADES_GROCY_ACTION_INTENT.search(text):
         return None
+    if re.search(
+        r"\bingredients?\b.{0,120}\b(?:pantry|stock|kitchen)\b.{0,100}\b(?:use|recipe|make)\b|"
+        r"\b(?:pantry|stock|kitchen)\b.{0,100}\b(?:ingredients?|use)\b.{0,100}\b(?:for|in)\b",
+        text, re.IGNORECASE,
+    ):
+        return "recipe_stock_match_tool"
+    if re.search(
+        r"\bhow\s+(?:do|can)\s+(?:i|we)\s+(?:make|cook|prepare)\b.{0,100}\brecipe\b|"
+        r"\b(?:cooking|preparation)\s+(?:instructions?|steps?)\b.{0,80}\brecipe\b|"
+        r"\b(?:instructions?|steps?)\s+(?:for|to)\s+(?:make|cook|prepare)\b.{0,80}\brecipe\b",
+        text, re.IGNORECASE,
+    ):
+        return "recipe_instructions_tool"
     if re.search(r"\brecipe\b.{0,100}\b(?:ingredients?|details?)\b|"
                  r"\b(?:ingredients?|details?)\b.{0,100}\b(?:recipe|cordon|chicken)\b|"
                  r"\bingredients?\s+(?:in|for|of)\s+[A-Z][\w'-]*(?:\s+[A-Z][\w'-]*){0,5}|"
@@ -9090,7 +9103,10 @@ def _hades_grocy_read_operation_for_turn(user_text, tools, conversation_history=
         operation = "recipe_details_tool"
     if not operation:
         return None
-    tool = next((item for item in tools if str(item.get("function", {}).get("name", "")).endswith(operation)), None)
+    tool_operation = operation
+    if operation in {"recipe_instructions_tool", "recipe_stock_match_tool"}:
+        tool_operation = "recipe_details_tool"
+    tool = next((item for item in tools if str(item.get("function", {}).get("name", "")).endswith(tool_operation)), None)
     if not tool:
         return None
     return {"type": "function", "function": {"name": tool["function"]["name"]}}
@@ -9101,10 +9117,202 @@ def _hades_grocy_read_tool_choice(user_text, tools):
     operation = _hades_grocy_read_operation(user_text)
     if not operation:
         return None
-    tool = next((item for item in tools if str(item.get("function", {}).get("name", "")).endswith(operation)), None)
+    tool_operation = operation
+    if operation in {"recipe_instructions_tool", "recipe_stock_match_tool"}:
+        tool_operation = "recipe_details_tool"
+    tool = next((item for item in tools if str(item.get("function", {}).get("name", "")).endswith(tool_operation)), None)
     if not tool:
         return None
     return {"type": "function", "function": {"name": tool["function"]["name"]}}
+
+
+def _hades_grocy_match_saved_recipe(text, recipes):
+    """Resolve only a uniquely named saved Grocy recipe from the current turn."""
+    ignored = {
+        "a", "an", "and", "best", "can", "cook", "do", "for", "have", "how",
+        "i", "in", "ingredients", "make", "my", "of", "on", "pantry", "prepare",
+        "recipe", "the", "this", "to", "use", "we", "what", "currently", "already",
+        "that", "stock", "kitchen", "with", "which", "need", "does", "there",
+    }
+    prompt_terms = {
+        token for token in re.findall(r"[a-z0-9]+", str(text or "").casefold())
+        if token not in ignored and len(token) > 1
+    }
+    matches = []
+    for recipe in recipes if isinstance(recipes, list) else []:
+        if not isinstance(recipe, dict) or not str(recipe.get("id", "")).isdigit():
+            continue
+        name = str(recipe.get("name") or "").strip()
+        name_terms = {
+            token for token in re.findall(r"[a-z0-9]+", name.casefold())
+            if token not in ignored and len(token) > 1
+        }
+        if len(name_terms) >= 2 and (name_terms.issubset(prompt_terms) or prompt_terms.issubset(name_terms)):
+            matches.append((len(name_terms), recipe))
+    if not matches:
+        return None, []
+    specificity = max(score for score, _recipe in matches)
+    selected = [recipe for score, recipe in matches if score == specificity]
+    return (selected[0] if len(selected) == 1 else None), [
+        str(recipe.get("name") or "") for recipe in selected
+    ]
+
+
+def _hades_direct_grocy_recipe_instructions(user_text):
+    """Return only preparation text actually stored in the canonical recipe."""
+    if _hades_grocy_read_operation(user_text) != "recipe_instructions_tool":
+        return None
+    import urllib.request
+    base_url = _hades_grocy_base_url()
+    api_key = _hades_grocy_api_key()
+    if not base_url or not api_key:
+        return "I can't read saved Grocy recipe instructions right now."
+    request = urllib.request.Request(
+        base_url + "/api/objects/recipes",
+        headers={"GROCY-API-KEY": api_key, "Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:
+            recipes = json.loads(response.read())
+    except Exception as exc:
+        _hades_logger.warning("Direct Grocy recipe-instruction read failed: %s", exc)
+        return "I couldn't read the saved Grocy recipe right now. I did not invent instructions."
+    recipe, matches = _hades_grocy_match_saved_recipe(user_text, recipes)
+    if recipe is None:
+        if matches:
+            return "Grocy has multiple saved recipes matching that name: " + ", ".join(matches[:5]) + ". Which one do you mean?"
+        return "I couldn't match that to a saved Grocy recipe, so I won't invent saved instructions."
+    name = str(recipe.get("name") or "the saved recipe")
+    description = str(recipe.get("description") or "").strip()
+    if description:
+        import html
+        instructions = re.sub(r"<\s*br\s*/?\s*>|</\s*(?:p|li)\s*>", "\n", description, flags=re.IGNORECASE)
+        instructions = re.sub(r"<[^>]*>", " ", instructions)
+        instructions = re.sub(r"[ \t]+", " ", html.unescape(instructions)).strip()
+        if instructions:
+            if len(instructions) > 3000:
+                instructions = instructions[:2997].rstrip() + "..."
+            return f"Grocy's stored instructions for {name}: {instructions}"
+    ingredients = _hades_direct_grocy_recipe_read(f"what ingredients are in {name}?")
+    suffix = ""
+    if ingredients and ingredients.startswith("Grocy lists these ingredients"):
+        suffix = " " + ingredients.removesuffix(" Nothing was changed.")
+    return f"Grocy has no preparation instructions stored for {name}." + suffix
+
+
+def _hades_direct_grocy_recipe_stock_match(user_text):
+    """Compare one saved recipe with current canonical stock, without writes."""
+    if _hades_grocy_read_operation(user_text) != "recipe_stock_match_tool":
+        return None
+    import urllib.request
+    from datetime import date
+    base_url = _hades_grocy_base_url()
+    api_key = _hades_grocy_api_key()
+    if not base_url or not api_key:
+        return "I can't read current Grocy recipe and pantry data right now."
+
+    def get(path):
+        request = urllib.request.Request(
+            base_url + path,
+            headers={"GROCY-API-KEY": api_key, "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(request, timeout=5) as response:
+            return json.loads(response.read())
+
+    try:
+        recipes = get("/api/objects/recipes")
+        recipe, matches = _hades_grocy_match_saved_recipe(user_text, recipes)
+        if recipe is None:
+            if matches:
+                return "Grocy has multiple saved recipes matching that name: " + ", ".join(matches[:5]) + ". Which one do you mean?"
+            return "I couldn't match that to a saved Grocy recipe, so I can't compare its ingredients with pantry stock."
+        positions = get("/api/objects/recipes_pos")
+        products = get("/api/objects/products")
+        stock = get("/api/stock")
+        if not all(isinstance(value, list) for value in (positions, products, stock)):
+            return "Grocy returned incomplete recipe or stock data; I can't confirm the pantry match."
+        product_by_id = {
+            int(row["id"]): row for row in products
+            if isinstance(row, dict) and str(row.get("id", "")).isdigit()
+        }
+        stock_amount = {}
+        expired_amount = {}
+        today = date.today()
+        for row in stock:
+            if not isinstance(row, dict) or not str(row.get("product_id", "")).isdigit():
+                continue
+            try:
+                amount = float(row.get("amount_aggregated", row.get("amount", 0)) or 0)
+            except (TypeError, ValueError):
+                continue
+            try:
+                expired = bool(row.get("best_before_date")) and date.fromisoformat(str(row["best_before_date"])[:10]) < today
+            except ValueError:
+                expired = False
+            target = expired_amount if expired else stock_amount
+            product_id = int(row["product_id"])
+            target[product_id] = target.get(product_id, 0.0) + amount
+        needed = {}
+        unknown = []
+        conversion_cache = {}
+        recipe_id = int(recipe["id"])
+        ingredients = [
+            row for row in positions
+            if isinstance(row, dict) and str(row.get("recipe_id", "")).isdigit()
+            and int(row["recipe_id"]) == recipe_id
+        ]
+        for row in ingredients:
+            product_id = row.get("product_id")
+            if not str(product_id).isdigit() or int(product_id) not in product_by_id:
+                unknown.append("an ingredient without a canonical Grocy product")
+                continue
+            product_id = int(product_id)
+            product = product_by_id[product_id]
+            recipe_unit = row.get("qu_id")
+            stock_unit = product.get("qu_id_stock")
+            if recipe_unit not in (None, "", 0, "0") and str(recipe_unit) != str(stock_unit):
+                cache_key = (product_id, str(recipe_unit), str(stock_unit))
+                if cache_key not in conversion_cache:
+                    conversion_cache[cache_key] = _hades_grocy_resolved_unit_factor(
+                        base_url, api_key, product_id, recipe_unit, stock_unit,
+                    )
+                factor = conversion_cache[cache_key]
+                if factor is None:
+                    unknown.append(str(product.get("name") or product_id))
+                    continue
+            else:
+                factor = 1.0
+            try:
+                amount = float(row.get("amount", 0) or 0) * factor
+            except (TypeError, ValueError):
+                unknown.append(str(product.get("name") or product_id))
+                continue
+            if amount < 0 or amount == float("inf"):
+                unknown.append(str(product.get("name") or product_id))
+                continue
+            needed[product_id] = needed.get(product_id, 0.0) + amount
+        if not ingredients:
+            return f"Grocy has no ingredients recorded for {recipe.get('name')}."
+        have, missing = [], []
+        for product_id, amount in needed.items():
+            label = str(product_by_id[product_id].get("name") or product_id)
+            available = stock_amount.get(product_id, 0.0)
+            if available >= amount:
+                have.append(label)
+            else:
+                detail = f"{max(amount - available, 0):g} more"
+                if expired_amount.get(product_id, 0) and not available:
+                    detail += "; only stock past its best-before date is recorded"
+                missing.append(f"{label} ({detail})")
+        answer = f"For {recipe.get('name')}, based on current Grocy stock — You have: {', '.join(have) if have else 'none confirmed'}. Missing: {', '.join(missing) if missing else 'none'}."
+        if unknown:
+            answer += " Unknown: " + ", ".join(dict.fromkeys(unknown)) + "."
+        if expired_amount:
+            answer += " Stock past its best-before date is not counted as usable."
+        return answer + " Nothing was changed."
+    except Exception as exc:
+        _hades_logger.warning("Direct Grocy recipe-stock match failed: %s", exc)
+        return "I couldn't complete the current Grocy recipe/pantry comparison. I didn't change anything."
 
 
 def _hades_preemptive_grocy_offer_decline(user_message, conversation_history):
@@ -10804,6 +11012,14 @@ try:
         _early_privacy_text = str(user_message or "")
         _early_privacy_scope = getattr(self, "_hades_session_scope", "")
         if _early_privacy_scope in {"owner", "household"}:
+            _early_local_grocy_read = _hades_grocy_read_operation(_early_privacy_text) in {
+                "recipes_list_tool", "recipe_details_tool", "recipe_fulfillment_tool",
+                "stock_overview_tool", "shopping_list_view_tool",
+                "recipe_instructions_tool", "recipe_stock_match_tool",
+            } and not _HADES_LIVE_WEB_INTENT.search(_early_privacy_text) and not re.search(
+                r"\b(?:website|webpage|web\s+page|article|search|look\s+up|research|investigate)\b",
+                _early_privacy_text, re.IGNORECASE,
+            )
             try:
                 _early_private_person_request = _hades_explicit_private_research_request(
                     _early_privacy_text
@@ -10830,7 +11046,7 @@ try:
                     _early_privacy_exc,
                 )
                 _early_private_person_request = False
-                _early_sensitive_person_finance = bool(
+                _early_sensitive_person_finance = False if _early_local_grocy_read else bool(
                     re.search(
                         r"\b(?:salary|earnings?|income|wages?|paid|pay|make|makes|made|earn|earns?|earned|compensation|net\s+worth|"
                         r"bank\s+account|credit\s+score)\b",
@@ -10845,12 +11061,13 @@ try:
                     )
                 )
                 _early_suspected_sensitive_person = (
-                    _hades_private_person_fallback_suspected(_early_privacy_text)
+                    False if _early_local_grocy_read
+                    else _hades_private_person_fallback_suspected(_early_privacy_text)
                 )
                 _early_privacy_policy_error = _early_sensitive_person_finance or bool(
                     _HADES_PRIVATE_RESEARCH_FOLLOWUP.search(_early_privacy_text)
                     or _HADES_LIVE_WEB_INTENT.search(_early_privacy_text)
-                    or _HADES_PAGE_INTENT.search(_early_privacy_text)
+                    or (_HADES_PAGE_INTENT.search(_early_privacy_text) and not _early_local_grocy_read)
                     or re.search(r"https?://", _early_privacy_text, re.IGNORECASE)
                 ) or _early_suspected_sensitive_person
             if _early_private_person_request or _early_privacy_policy_error:
@@ -12710,6 +12927,30 @@ try:
                 return {
                     "final_response": direct_recipe_add,
                     "messages": [{"role": "assistant", "content": direct_recipe_add}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            direct_recipe_instructions = _hades_direct_grocy_recipe_instructions(current_text)
+            if direct_recipe_instructions:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_recipe_instructions)
+                _hades_logger.info("Direct Grocy recipe instructions completed from canonical source")
+                return {
+                    "final_response": direct_recipe_instructions,
+                    "messages": [{"role": "assistant", "content": direct_recipe_instructions}],
+                    "api_calls": 0,
+                    "completed": True,
+                }
+            direct_recipe_stock_match = _hades_direct_grocy_recipe_stock_match(current_text)
+            if direct_recipe_stock_match:
+                callback = getattr(self, "stream_delta_callback", None)
+                if callback:
+                    callback(direct_recipe_stock_match)
+                _hades_logger.info("Direct Grocy recipe-stock match completed from canonical sources")
+                return {
+                    "final_response": direct_recipe_stock_match,
+                    "messages": [{"role": "assistant", "content": direct_recipe_stock_match}],
                     "api_calls": 0,
                     "completed": True,
                 }
