@@ -110,10 +110,15 @@ restore_file() {
 }
 
 health_check() {
-  systemctl is-active --quiet "$service" || return 1
-  if [[ -n $health_url ]]; then
-    curl --fail --silent --show-error --max-time 8 --output /dev/null "$health_url" || return 1
-  fi
+  local attempt
+  for attempt in {1..30}; do
+    systemctl is-active --quiet "$service" || return 1
+    if [[ -z $health_url ]] || curl --fail --silent --max-time 4 --output /dev/null "$health_url"; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
 }
 
 rollback() {

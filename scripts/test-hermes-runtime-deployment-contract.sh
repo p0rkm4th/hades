@@ -13,6 +13,8 @@ for required in \
   'mv -Tf -- "$current_tmp" "$destination"' \
   'chcon "$context" "$current_tmp"' \
   'systemctl restart "$service"' \
+  'for attempt in {1..30}; do' \
+  'sleep 2' \
   'runtime identity failed' \
   'verify-live' \
   'if rollback; then'; do
@@ -24,6 +26,7 @@ for required in \
   'cp -a -- "$rollback_dir/sitecustomize.py" "$temporary"' \
   'mv -Tf -- "$temporary" "$target"' \
   'systemctl restart "$service"' \
+  'wait_for_health "$service" "$health_url"' \
   'verify-live'; do
   grep -Fq -- "$required" "$rollback" || { printf 'FAIL missing rollback guarantee: %s\n' "$required" >&2; exit 1; }
 done

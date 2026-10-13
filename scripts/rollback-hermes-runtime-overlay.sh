@@ -2,6 +2,17 @@
 set -euo pipefail
 
 die() { printf 'FAIL %s\n' "$1" >&2; exit 1; }
+wait_for_health() {
+  local service=$1 health_url=$2 attempt
+  for attempt in {1..30}; do
+    systemctl is-active --quiet "$service" || return 1
+    if [[ -z $health_url ]] || curl --fail --silent --max-time 4 --output /dev/null "$health_url"; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
 target= manifest_target= rollback_dir= expected_current= expected_rollback= service=hades-hermes.service
 python= health_url=
 while (($#)); do
@@ -64,7 +75,7 @@ restore_attempt_state() {
     rm -f -- "$manifest_target" || return 1
   fi
   systemctl restart "$service" || return 1
-  systemctl is-active --quiet "$service" || return 1
+  wait_for_health "$service" "$health_url" || return 1
   [[ $(sha256sum "$target" | awk '{print $1}') == "$expected_current" ]] || return 1
   local args=("$(dirname "$0")/hermes-runtime-artifact.py" verify-live
     --installed "$target" --service "$service" --python "$python"
@@ -101,8 +112,7 @@ else
   rm -f -- "$manifest_target"
 fi
 systemctl restart "$service"
-systemctl is-active --quiet "$service" || die "Hermes is inactive after rollback"
-if [[ -n $health_url ]]; then curl --fail --silent --show-error --max-time 8 --output /dev/null "$health_url" || die "Hermes health failed after rollback"; fi
+wait_for_health "$service" "$health_url" || die "Hermes health failed after rollback"
 verify_args=("$(dirname "$0")/hermes-runtime-artifact.py" verify-live
   --installed "$target" --service "$service" --python "$python"
   --expected-sha256 "$expected_rollback" --hermes-version 0.21.2)
