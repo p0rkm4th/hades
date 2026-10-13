@@ -17,9 +17,10 @@ Docker Buildx, and the pinned BuildKit image. The build exports a Docker archive
 with commit-derived `SOURCE_DATE_EPOCH` and timestamp rewriting, then records
 its SHA-256, loaded image ID, upstream inputs, Buildx/BuildKit identity, and
 Dockerfile checksum in a deterministic manifest. Two no-cache exports for
-source commit `06e8b573f011c3796cfb130256ec82b5e5e09dea` produced byte-identical
-1.6 GB archives (SHA-256
-`b057165019de9f8b0d3ead45caade329e2f9d75bece1ab97f1cbdf99ae73cd98`).
+HADES source commit `bd77b10c7cd06fb0e1d9fae6b0590bd4a0a1e0f4` produced
+byte-identical 1,618,772,992-byte archives (SHA-256
+`92eb3d13b937558c6b76dfc99eb16a585030de6b6865b9551da3b19dc5654c1d`) and the
+same image config ID `sha256:358ccb2f35f9959638fe0a77ced1f37e6fb5a4927e71c372f49cd28fb7fbc3c2`.
 Legacy `docker build` is not reproducible and is not the supported command.
 
 ## Material changes reviewed
@@ -145,6 +146,10 @@ they do not weaken this production requirement.
   `39f01ad82d945425efc719d63cb659fae15012e0`, including the exact-candidate
   browser lifecycle contract. The later migration assertions are covered by
   the subsequent branch-tip CI run and by the direct disposable migration run.
+- Hosted Public CI run `38425117193` passes for commit
+  `7fb51755454193a45f10baca74399bce33dd44a3`, including the added migration
+  coverage. The final documentation-only commit also passed Public CI run
+  `38425270625`.
 
 No production promotion is authorized by this qualification. Candidate
 evidence supports the tested migration/rollback data classes, authentication
