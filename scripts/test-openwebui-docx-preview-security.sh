@@ -13,6 +13,25 @@ image_id=$(docker image inspect --format '{{.Id}}' "$image" 2>/dev/null) || {
 image_version=$(docker image inspect "$image" --format '{{index .Config.Labels "org.opencontainers.image.version"}}')
 if [[ "$image_version" == "$HADES_OPEN_WEBUI_CANDIDATE_VERSION" ]]; then
   bash "$repo_dir/scripts/verify-openwebui-candidate-artifact.sh" "$image"
+elif [[ "$image_version" == "0.12.0" ]]; then
+  # Qualification-only artifact: validate its exact pinned base and source
+  # labels without changing the production version manifest.
+  source "$repo_dir/config/openwebui-0.12.0-qualification.pins"
+  [[ $(docker image inspect "$image_id" --format '{{index .Config.Labels "org.hades.open-webui.upstream-source-commit"}}') == "$HADES_OPEN_WEBUI_012_UPSTREAM_COMMIT" ]] || {
+    echo 'FAIL 0.12.0 candidate source commit does not match the qualification pin' >&2; exit 2;
+  }
+  [[ $(docker image inspect "$image_id" --format '{{index .Config.Labels "org.hades.open-webui.base-image"}}') == "$HADES_OPEN_WEBUI_012_AMD64_IMAGE" ]] || {
+    echo 'FAIL 0.12.0 candidate base image does not match the immutable qualification pin' >&2; exit 2;
+  }
+  [[ $(docker image inspect "$image_id" --format '{{index .Config.Labels "org.hades.open-webui.source-commit"}}') =~ ^[0-9a-f]{40}$ ]] || {
+    echo 'FAIL 0.12.0 candidate HADES source identity is missing' >&2; exit 2;
+  }
+  [[ $(docker image inspect "$image_id" --format '{{index .Config.Labels "org.hades.open-webui.source-commit"}}') == "$(git -C "$repo_dir" rev-parse HEAD)" ]] || {
+    echo 'FAIL 0.12.0 candidate was built from a different HADES commit' >&2; exit 2;
+  }
+  [[ $(docker image inspect "$image_id" --format '{{index .Config.Labels "org.hades.open-webui.security-adapters"}}') == 'fail-closed-jwt,authority-revocation,ldap-empty-group,socket-disconnect-fail-closed' ]] || {
+    echo 'FAIL 0.12.0 candidate security adapter manifest differs' >&2; exit 2;
+  }
 elif [[ "$image_version" != "$HADES_OPEN_WEBUI_VERSION" ]]; then
   echo "FAIL DOCX Preview test image has an unsupported version label: $image_version" >&2
   exit 2

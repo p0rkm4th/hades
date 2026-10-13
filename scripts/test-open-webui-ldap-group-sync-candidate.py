@@ -25,8 +25,8 @@ import uuid
 REPO = pathlib.Path(__file__).resolve().parents[1]
 MANIFEST = REPO / "config" / "versions.env"
 IMAGE = sys.argv[1] if len(sys.argv) == 2 else ""
-if not re.fullmatch(r"[^\s@]+@sha256:[0-9a-f]{64}", IMAGE):
-    raise SystemExit("FAIL pass the candidate as repository@sha256:<64 hex digits>")
+if not re.fullmatch(r"(?:[^\s@]+@sha256:|sha256:)[0-9a-f]{64}", IMAGE):
+    raise SystemExit("FAIL pass the candidate as repository@sha256:<64 hex digits> or local sha256 image ID")
 
 
 def manifest_value(key: str) -> str:
@@ -329,6 +329,13 @@ def main() -> None:
                 raise RuntimeError("pre-final-removal Beta token survived LDAP final-group removal")
             print("PASS total group revocation removes Beta's final Open WebUI membership")
 
+    except Exception:
+        for container in (webui, lldap, valkey):
+            result = subprocess.run(["docker", "logs", container], capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"--- {container} logs (tail) ---", file=sys.stderr)
+                print((result.stdout + result.stderr)[-5000:], file=sys.stderr)
+        raise
     finally:
         for kind, name in reversed(created):
             command = (

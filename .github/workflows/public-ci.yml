@@ -264,6 +264,8 @@ jobs:
         run: bash scripts/test-openwebui-p0-security-contract.sh
       - name: Open WebUI Socket.IO revocation contract
         run: python3 scripts/test-open-webui-socket-disconnect-compat.py
+      - name: Open WebUI 0.12.0 isolated qualification contract
+        run: python3 scripts/test-openwebui-012-qualification-contract.py
       - name: Check backup coverage documentation
         run: bash scripts/test-backup-coverage-doc.sh
       - name: Check install failure contract

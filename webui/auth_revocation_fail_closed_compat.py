@@ -125,6 +125,15 @@ def apply() -> None:
     source = AUTH_FILE.read_text(encoding="utf-8")
     if MARKER in source:
         return
+
+    # Open WebUI 0.12 added durable SQL-backed session stamps and MFA checks.
+    # Keep those native checks intact; only harden the Redis-dependent token
+    # revocation seam required by HADES. The legacy branch below is retained
+    # for the qualified 0.11.4 production image.
+    if "session_stamp" in source and "revoke_sessions_by_user_id" in source:
+        apply_session_stamp_profile(source)
+        return
+
     if "from redis.exceptions import RedisError" not in source:
         anchor = "import requests\n"
         if source.count(anchor) != 1:
@@ -161,6 +170,67 @@ def apply() -> None:
         "async def is_valid_token(decoded, redis=None) -> bool:\n    " + MARKER + "\n",
         1,
     )
+    ast.parse(source)
+    AUTH_FILE.write_text(source, encoding="utf-8")
+
+
+def apply_session_stamp_profile(source: str) -> None:
+    """Patch only fail-open Redis branches while preserving native 0.12 auth."""
+    tree = ast.parse(source)
+    nodes = [
+        node for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "is_valid_token"
+    ]
+    if len(nodes) != 1:
+        raise RuntimeError("Expected one native session-stamp is_valid_token function")
+    node = nodes[0]
+    lines = source.splitlines(keepends=True)
+    segment = "".join(lines[node.lineno - 1:node.end_lineno])
+    replacements = (
+        (
+            "    if not redis:\n        return True\n",
+            "    if not redis:\n        raise HTTPException(503, detail='Session verification unavailable.')\n",
+        ),
+        (
+            "                except (ValueError, TypeError):\n                    pass\n",
+            "                except (ValueError, TypeError):\n                    return False\n",
+        ),
+        (
+            "    except RedisError as e:\n        revocation_log.warning('Revocation check failed; accepting token: %s', e)\n",
+            "    except RedisError as e:\n        raise HTTPException(503, detail='Session verification unavailable.') from e\n",
+        ),
+    )
+    for old, new in replacements:
+        if segment.count(old) != 1:
+            raise RuntimeError("Native 0.12 revocation source changed; review fail-closed adapter")
+        segment = segment.replace(old, new, 1)
+    marker = "    # HADES_FAIL_CLOSED_TOKEN_REVOCATION\n"
+    segment = segment.replace("async def is_valid_token(decoded, redis=None) -> bool:\n", "async def is_valid_token(decoded, redis=None) -> bool:\n" + marker, 1)
+    lines[node.lineno - 1:node.end_lineno] = [segment]
+    source = "".join(lines)
+
+    tree = ast.parse(source)
+    nodes = [
+        node for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "invalidate_token"
+    ]
+    if len(nodes) != 1:
+        raise RuntimeError("Expected one native invalidate_token function")
+    node = nodes[0]
+    lines = source.splitlines(keepends=True)
+    segment = "".join(lines[node.lineno - 1:node.end_lineno])
+    old = "    if request.app.state.redis:\n        jti = decoded.get('jti')\n"
+    new = (
+        "    redis = getattr(request.app.state, 'redis', None)\n"
+        "    if redis is None:\n"
+        "        raise HTTPException(503, detail='Session revocation unavailable; retry sign-out.')\n"
+        "    if redis:\n        jti = decoded.get('jti')\n"
+    )
+    if segment.count(old) != 1:
+        raise RuntimeError("Native 0.12 invalidate_token source changed; review fail-closed adapter")
+    segment = segment.replace(old, new, 1)
+    lines[node.lineno - 1:node.end_lineno] = [segment]
+    source = "".join(lines)
     ast.parse(source)
     AUTH_FILE.write_text(source, encoding="utf-8")
 

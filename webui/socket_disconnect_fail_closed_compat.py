@@ -75,6 +75,44 @@ def replace() -> None:
     segment = "".join(lines[start:end])
     if MARKER in segment:
         return
+    if "refresh_access: bool = False" in segment:
+        if "session_ids = get_session_ids_by_user_id(user_id)" not in segment or "await sio.disconnect(sid)" not in segment:
+            raise RuntimeError("Open WebUI 0.12 socket disconnect source changed; review adapter")
+        replacement = '''async def disconnect_user_sessions(user_id: str, *, refresh_access: bool = False):
+    """Disconnect every known session or fail the authority change closed."""
+    from fastapi import HTTPException
+
+    # HADES_SOCKET_DISCONNECT_FAIL_CLOSED_COMPAT
+    try:
+        session_ids = get_session_ids_by_user_id(user_id)
+    except Exception as error:
+        log.exception('Could not enumerate Socket.IO sessions for user %s', user_id)
+        raise HTTPException(503, detail='Session revocation incomplete; retry the operation.') from error
+
+    failures = []
+    for sid in session_ids:
+        if refresh_access:
+            try:
+                await sio.emit('access:updated', {}, to=sid)
+            except Exception as error:
+                failures.append(error)
+                log.exception('Failed to notify session %s about changed access', sid)
+        try:
+            await sio.disconnect(sid)
+        except Exception as error:
+            failures.append(error)
+            log.exception('Failed to disconnect session %s for user %s', sid, user_id)
+
+    if failures:
+        raise HTTPException(503, detail='Session revocation incomplete; retry the operation.')
+    if session_ids:
+        log.info('Disconnected %s session(s) for user %s', len(session_ids), user_id)
+'''
+        lines[start:end] = [replacement + "\n"]
+        patched = "".join(lines)
+        ast.parse(patched)
+        SOCKET_MAIN.write_text(patched, encoding="utf-8")
+        return
     if segment != OLD:
         raise RuntimeError("Open WebUI socket disconnect source changed; review this adapter")
     lines[start:end] = [NEW + "\n"]
