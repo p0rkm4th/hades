@@ -59,6 +59,11 @@ if manifest.get("generated_artifact", {}).get("sha256") != expected:
 if manifest.get("manifest_id") != hashlib.sha256(canonical).hexdigest():
     raise SystemExit("runtime manifest identity mismatch")
 PY
+config_args=()
+for item in "${config_inputs[@]}"; do config_args+=(--config-input "$item"); done
+python3 "$(dirname "$0")/hermes-runtime-artifact.py" verify-config \
+  --manifest "$manifest" "${config_args[@]}" >/dev/null \
+  || die "live deployment configuration differs from the qualified manifest"
 
 hermes_version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["hermes_version"])' "$manifest")
 python3 "$(dirname "$0")/hermes-runtime-artifact.py" verify-live \

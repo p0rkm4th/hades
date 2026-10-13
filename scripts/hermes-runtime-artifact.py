@@ -216,6 +216,22 @@ def command_fingerprint(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_verify_config(args: argparse.Namespace) -> int:
+    manifest = load_manifest(args.manifest)
+    if set(manifest) != MANIFEST_FIELDS:
+        raise ValueError("runtime manifest fields differ from the supported schema")
+    core = {key: value for key, value in manifest.items() if key != "manifest_id"}
+    if manifest.get("schema") != SCHEMA or manifest.get("manifest_id") != sha256(canonical_json(core)):
+        raise ValueError("runtime manifest identity is invalid")
+    supplied = config_inputs(args.config_input)
+    if supplied != manifest.get("configuration_inputs"):
+        raise ValueError("live deployment configuration differs from the qualified manifest")
+    if sha256(canonical_json(supplied)) != manifest.get("runtime_configuration_id"):
+        raise ValueError("live deployment configuration identity differs from the manifest")
+    print(f"EXPECTED manifest={manifest['manifest_id']} runtime_configuration_id={manifest['runtime_configuration_id']}")
+    return 0
+
+
 def _systemctl(*args: str) -> str:
     result = subprocess.run(["systemctl", *args], check=False, capture_output=True, text=True, timeout=15)
     if result.returncode:
@@ -376,6 +392,9 @@ def main() -> int:
     live = sub.add_parser("verify-live")
     fingerprint = sub.add_parser("fingerprint")
     fingerprint.add_argument("--config-input", action="append", default=[], metavar="NAME=PATH|NAME=sha256:HEX")
+    verify_config = sub.add_parser("verify-config")
+    verify_config.add_argument("--manifest", type=Path, required=True)
+    verify_config.add_argument("--config-input", action="append", default=[], metavar="NAME=PATH|NAME=sha256:HEX")
     for command in (build, verify):
         command.add_argument("--source-repo", type=Path, required=True)
         command.add_argument("--hermes-version", required=True)
@@ -399,6 +418,8 @@ def main() -> int:
     try:
         if args.command == "fingerprint":
             return command_fingerprint(args)
+        if args.command == "verify-config":
+            return command_verify_config(args)
         if args.command == "build":
             return command_build(args)
         if args.command == "verify":

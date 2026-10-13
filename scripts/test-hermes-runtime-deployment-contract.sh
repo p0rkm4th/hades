@@ -6,6 +6,7 @@ bash -n "$script" "$rollback"
 for required in \
   'expected-current-sha256' \
   'expected-candidate-sha256' \
+  'verify-config' \
   'trap on_exit EXIT' \
   'deployment_started=1' \
   'cp -a -- "$target" "$rollback_dir/sitecustomize.py"' \

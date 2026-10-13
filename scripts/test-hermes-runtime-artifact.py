@@ -90,6 +90,10 @@ with tempfile.TemporaryDirectory(prefix="hades-runtime-artifact-") as temporary:
         "--artifact", str(root / "first.py"), "--manifest", str(root / "first.json"),
         "--installed", str(root / "first.py"),
     )
+    run(
+        os.environ.get("PYTHON", "python3"), str(TOOL), "verify-config",
+        "--config-input", f"profile={config}", "--manifest", str(root / "first.json"),
+    )
     wrong_loaded = root / "wrong-sitecustomize.py"
     wrong_loaded.write_bytes(b"VALUE = 'wrong import path'\n")
     rejected = run(
@@ -109,6 +113,11 @@ with tempfile.TemporaryDirectory(prefix="hades-runtime-artifact-") as temporary:
         "--artifact", str(root / "first.py"), "--manifest", str(root / "first.json"), check=False,
     )
     assert rejected.returncode != 0 and "manifest differs" in rejected.stderr
+    rejected = run(
+        os.environ.get("PYTHON", "python3"), str(TOOL), "verify-config",
+        "--config-input", f"profile={config}", "--manifest", str(root / "first.json"), check=False,
+    )
+    assert rejected.returncode != 0 and "configuration differs" in rejected.stderr
 
     (repo / "hermes/sitecustomize.py").write_bytes(b"VALUE = 'drift'\n")
     rejected = run(
