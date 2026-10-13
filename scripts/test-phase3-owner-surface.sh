@@ -26,6 +26,8 @@ names = {
     "_hades_phase3_template_name",
     "_hades_phase3_inventory",
     "_hades_phase3_response",
+    "_hades_phase3_enabled",
+    "_hades_phase3_turn_intent",
 }
 functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names]
 assert {node.name for node in functions} == names
@@ -89,6 +91,15 @@ assert inventory.count("Low Inventory Summary") == 2
 assert "for you" in inventory and "for a household member" in inventory, inventory
 assert "Groceries" in inventory and "grocy.household" not in inventory
 assert "synthetic-" not in inventory and "private-record-id" not in inventory
+for ordinary_domain_question in (
+    "What other devices are in my static inventory besides Thanatos?",
+    "How do I make my best Chicken Cordon Bleu recipe?",
+    "What ingredients do I currently have in my pantry?",
+    "What's in my kitchen?",
+    "How's my network?",
+    "How much did I spend at the coffee shop?",
+):
+    assert route(ordinary_domain_question, Authority(), service, "pending") is None, ordinary_domain_question
 distinct_owners = route("Are any duplicate automations?", Authority(), service, "pending")
 assert "none found" in distinct_owners and "synthetic-" not in distinct_owners
 
@@ -104,6 +115,37 @@ same_owner = route("Are any duplicate automations?", Authority(), service, "pend
 assert "Low Inventory Summary (2 for you)" in same_owner
 assert "synthetic-" not in same_owner and "private-record-id" not in same_owner
 
+namespace["_hades_phase3_enabled"] = lambda: True
+turn_intent = namespace["_hades_phase3_turn_intent"]
+for ordinary_domain_question in (
+    "What other devices are in my static inventory besides Thanatos?",
+    "How do I make my best Chicken Cordon Bleu recipe?",
+    "What ingredients do I currently have in my pantry that I can use?",
+    "What's in my kitchen?",
+    "Tell me about my nodes on my network.",
+    "How much did I spend at the coffee shop this year?",
+    "What do you think about this idea?",
+):
+    assert not turn_intent(ordinary_domain_question, owner, "owner", "chat-alpha"), ordinary_domain_question
+for explicit_automation_request in (
+    "What automations do I have?",
+    "Create a weekly low inventory summary.",
+    "Monitor my server and tell me if it goes down.",
+    "Pause my Low Inventory Summary.",
+):
+    assert turn_intent(explicit_automation_request, owner, "owner", "chat-alpha"), explicit_automation_request
+
+class PendingStore:
+    def pending_get(self, key, subject):
+        return {"kind": "create"} if key == f"session:{subject}:chat-alpha" else None
+
+namespace["_hades_phase3_service"] = lambda: type("S", (), {"store": PendingStore()})()
+assert turn_intent("yes", owner, "owner", "chat-alpha")
+assert not turn_intent("yes", owner, "owner", "chat-beta")
+assert not turn_intent("yes", owner, "owner", "")
+namespace["_hades_phase3_service"] = lambda: type("S", (), {"store": type("P", (), {"pending_get": lambda *_: None})()})()
+assert not turn_intent("yes", owner, "owner", "chat-alpha")
+
 actor = Phase3Authority(other, "household", frozenset({"grocy.household"}))
 runtime_service = Phase3Service(
     Phase3Store(tempfile.mktemp(prefix="hades-phase3-surface-")),
@@ -115,6 +157,14 @@ namespace["_hades_phase3_enabled"] = lambda: True
 namespace["_hades_phase3_authority"] = lambda _subject, _scope: actor
 namespace["_hades_phase3_service"] = lambda: runtime_service
 phase3_route = namespace["_hades_phase3_response"]
+
+# Ordinary domain questions must not be transformed into automation drafts by
+# the owner/household staged handler.
+assert phase3_route("What's in my pantry?", other, "household", "chat-alpha") is None
+assert phase3_route(
+    "What other devices are in my static inventory besides Thanatos?",
+    owner, "owner", "chat-alpha",
+) is None
 
 # A bare confirmation in another Open WebUI chat must not consume the only
 # pending action for this household identity.

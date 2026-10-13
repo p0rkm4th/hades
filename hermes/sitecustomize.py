@@ -774,6 +774,55 @@ def _hades_phase3_enabled() -> bool:
     return os.environ.get("HADES_EPSILON_PHASE3_HOUSEHOLD_CREATION", "").strip().casefold() == "staged"
 
 
+def _hades_phase3_turn_intent(user_text, subject="", scope="", session_key=""):
+    """Run the automation lane only for a current automation operation.
+
+    Domain words such as ``inventory``, ``household``, ``pantry`` and
+    ``server`` are insufficient: they also occur in ordinary Grocy and
+    homelab questions. A short affirmative is eligible only when this exact
+    authenticated conversation has a pending Phase 3 operation.
+    """
+    if not _hades_phase3_enabled() or scope not in {"owner", "household"}:
+        return False
+    text = str(user_text or "").strip().casefold()
+    if not text:
+        return False
+    explicit_automation_operation = bool(re.search(
+        r"\b(?:automations?|workflows?|alerts?)\b|"
+        r"\b(?:low\s+(?:grocery|inventory)\s+summary|server\s+health\s+watch|"
+        r"weekly\s+household\s+summary|backup\s+verification)\b",
+        text,
+    ))
+    scheduled_inventory_request = bool(
+        re.search(r"\b(?:every\s+(?:day|week|weekday|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|daily|weekly|weekdays|each\s+week)\b", text)
+        and re.search(r"\b(?:grocery|groceries|pantry|inventory|stock)\b", text)
+        and re.search(r"\b(?:summary|tell\s+me|notify|alert|low|when)\b", text)
+    )
+    monitored_resource_request = bool(
+        re.search(r"\b(?:watch|monitor)\b", text)
+        and re.search(r"\b(?:server|node|homelab|health|offline|down)\b", text)
+    )
+    if explicit_automation_operation or scheduled_inventory_request or monitored_resource_request:
+        return True
+
+    confirmation = bool(re.fullmatch(
+        r"(?:yes|y|yeah|yep|okay|ok|do\s+it|go\s+ahead|confirm|please\s+do|create\s+it)[.! ]*",
+        text,
+    ))
+    lifecycle = bool(re.search(
+        r"\b(?:run|pause|resume|delete|remove|edit|change|share|revoke|unshare|history)\b",
+        text,
+    ))
+    if not (confirmation or lifecycle) or not subject or not session_key:
+        return False
+    try:
+        pending_key = f"session:{subject}:{session_key}"
+        return _hades_phase3_service().store.pending_get(pending_key, subject) is not None
+    except Exception as exc:
+        _hades_logger.warning("Phase 3 turn-scope lookup failed closed: %s", type(exc).__name__)
+        return False
+
+
 def _hades_phase3_authority(subject: str, scope: str):
     from integrations.automation.phase3_self_service import Phase3Authority, Phase3AuthorizationError
     policy_file = os.environ.get("HADES_EPSILON_PHASE3_AUTHORITY_POLICY_FILE", "").strip()
@@ -887,8 +936,12 @@ def _hades_phase3_owner_response(user_text, authority, service, pending_key):
         except Exception as exc:
             service.store.pending_delete(pending_key, authority.subject)
             return str(exc)
+    # "Inventory" is a normal Grocy and homelab noun.  Automation state is
+    # private metadata and may only be returned when the current turn names
+    # that operation; domain inventory questions must continue to their own
+    # canonical source.
     inventory_intent = bool(
-        re.search(r"\b(?:household|inventory|created|automations|workflows|alerts)\b", lowered)
+        re.search(r"\b(?:automations?|workflows?|alerts?)\b", lowered)
         and not re.search(r"\b(?:share|revoke|unshare|pause|resume|delete|remove|edit|change|run|duplicate)\b", lowered)
     )
     if inventory_intent and not re.search(r"\b(?:disable|turn\s+off|stop)\b", lowered):
@@ -966,8 +1019,29 @@ def _hades_phase3_response(user_text, subject, scope, session_key=""):
     owned_listing = bool(re.search(r"\b(?:what automations do i have|what'?s mine|whats mine|my automations|my alerts?)\b", lowered))
     catalog_intent = bool(re.search(r"\b(?:what can i automate|what can i monitor|household automations)\b", lowered)) and not owned_listing
     create_health = bool(not action_match and re.search(r"\b(?:watch|monitor|tell me if|let me know if)\b", lowered) and re.search(r"\b(?:server|down|offline|dies|fails|minecraft|health)\b", lowered))
-    create_inventory = bool(not action_match and re.search(r"\b(?:grocery|groceries|pantry|inventory|stock|low)\b", lowered) and re.search(r"\b(?:every|weekly|friday|sunday|summary|tell me|what)", lowered))
-    create_weekly = bool(not action_match and re.search(r"\b(?:weekly|household)\b", lowered) and re.search(r"\b(?:summary|make|create|give|tell)", lowered))
+    schedule_intent = bool(re.search(
+        r"\b(?:every\s+(?:day|week|weekday|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|"
+        r"daily|weekly|weekdays|each\s+week)\b",
+        lowered,
+    ))
+    creation_intent = bool(re.search(
+        r"\b(?:create|make|set\s+up|schedule|automate|draft)\b",
+        lowered,
+    ))
+    create_inventory = bool(
+        not action_match
+        and re.search(r"\b(?:grocery|groceries|pantry|inventory|stock|low)\b", lowered)
+        and (
+            (schedule_intent and re.search(r"\b(?:summary|tell\s+me|notify|alert|low|when)\b", lowered))
+            or (creation_intent and re.search(r"\b(?:automation|workflow|summary|alert|notify|tell\s+me)\b", lowered))
+        )
+    )
+    create_weekly = bool(
+        not action_match
+        and schedule_intent
+        and re.search(r"\b(?:household|weekly)\b", lowered)
+        and re.search(r"\b(?:summary|automation|workflow|notify|tell\s+me)\b", lowered)
+    )
     backup_request = bool(re.search(r"\bbackup\b", lowered)) and bool(re.search(r"\b(?:create|make|verify|watch|why|automation|check)", lowered))
     mutating_action = action_match and action_match.group("action") in {
         "run", "pause", "resume", "delete", "remove", "edit", "change", "share", "revoke", "unshare",
@@ -11796,12 +11870,18 @@ try:
             if callback:
                 callback(_typed_backup_response)
             return {"final_response": _typed_backup_response, "messages": [{"role": "assistant", "content": _typed_backup_response}], "api_calls": 0, "completed": True}
-        _phase3_response = _hades_phase3_response(
-            user_message,
-            getattr(self, "_hades_subject", ""),
-            getattr(self, "_hades_session_scope", ""),
-            _phase2_session_key,
-        )
+        _phase3_subject = getattr(self, "_hades_subject", "")
+        _phase3_scope = getattr(self, "_hades_session_scope", "")
+        _phase3_response = None
+        if _hades_phase3_turn_intent(
+            user_message, _phase3_subject, _phase3_scope, _phase2_session_key,
+        ):
+            _phase3_response = _hades_phase3_response(
+                user_message,
+                _phase3_subject,
+                _phase3_scope,
+                _phase2_session_key,
+            )
         if _phase3_response and self._hades_session_scope in {"household", "owner"}:
             callback = getattr(self, "stream_delta_callback", None)
             if callback:
