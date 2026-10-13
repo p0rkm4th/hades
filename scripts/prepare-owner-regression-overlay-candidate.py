@@ -131,6 +131,47 @@ def replace_nested_assignment(active: str, source: str, function_name: str, vari
     return active.encode("utf-8")[:a].decode("utf-8") + replacement + active.encode("utf-8")[b:].decode("utf-8")
 
 
+def guard_unsupported_provisioning_templates(text: str) -> str:
+    methods = [
+        node for node in ast.walk(ast.parse(text))
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == "_hades_run_conversation"
+    ]
+    if len(methods) != 1:
+        raise SystemExit("FAIL expected one active _hades_run_conversation")
+    start, end = node_span(text, methods[0])
+    segment = text.encode("utf-8")[start:end].decode("utf-8")
+    marker = "_unsupported_workload = next((name for name in (\"factorio\", \"palworld\")"
+    if marker in segment:
+        return text
+    anchor = re.search(r"(?m)^(?P<indent>[ \t]*)if _early_provisioning_request:[ \t]*$", segment)
+    if not anchor:
+        raise SystemExit("FAIL active early provisioning insertion point is ambiguous")
+    indent = anchor.group("indent") + "    "
+    block = (
+        f"{indent}_unsupported_workload = next((name for name in (\"factorio\", \"palworld\")\n"
+        f"{indent}                                  if re.search(rf\"\\b{{name}}\\b\", str(user_message or \"\"), re.IGNORECASE)), None)\n"
+        f"{indent}if _unsupported_workload:\n"
+        f"{indent}    _early_preview = (\n"
+        f"{indent}        f\"I can't provision a new HADES-managed `{{_unsupported_workload}}` server because \"\n"
+        f"{indent}        f\"no approved `{{_unsupported_workload}}` template is configured. \"\n"
+        f"{indent}        \"Nothing was prepared or created, and I did not change the firewall.\"\n"
+        f"{indent}    )\n"
+        f"{indent}    callback = getattr(self, \"stream_delta_callback\", None)\n"
+        f"{indent}    if callback:\n"
+        f"{indent}        callback(_early_preview)\n"
+        f"{indent}    _hades_logger.info(\"Unsupported workload provisioning refused before preparation\")\n"
+        f"{indent}    return {{\n"
+        f"{indent}        \"final_response\": _early_preview,\n"
+        f"{indent}        \"messages\": [{{\"role\": \"assistant\", \"content\": _early_preview}}],\n"
+        f"{indent}        \"api_calls\": 0,\n"
+        f"{indent}        \"completed\": True,\n"
+        f"{indent}    }}\n"
+    )
+    segment = segment[:anchor.end()] + "\n" + block + segment[anchor.end():]
+    return text.encode("utf-8")[:start].decode("utf-8") + segment + text.encode("utf-8")[end:].decode("utf-8")
+
+
 def insert_grocy_operation_guard(text: str) -> str:
     matches = named_functions(text, "_hades_direct_grocy_recipe_read")
     if len(matches) != 1:
@@ -423,6 +464,7 @@ def compose(active: bytes, source: bytes) -> bytes:
     active_text = replace_nested_assignment(
         active_text, source_text, "_hades_run_conversation", "_server_status_turn",
     )
+    active_text = guard_unsupported_provisioning_templates(active_text)
     try:
         compile(active_text, "composed-sitecustomize.py", "exec")
         ast.parse(active_text)

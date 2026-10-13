@@ -95,6 +95,9 @@ def _hades_run_conversation(user_text):
     _read_choice = _hades_grocy_read_tool_choice(current_text, grocy_tools)
     grocy_read_only_turn = bool(re.search(r"\b(?:recipes?|ingredients?|make|cook|fulfill|missing)\\b", user_text))
     _server_status_turn = bool(re.search(r"server status", user_text))
+    _early_provisioning_request = False
+    if _early_provisioning_request:
+        _pending_template = "minecraft"
     actions = (r"spin\s+up", r"spin\s+up", r"spin\s+up")
     return grocy_read_only_turn, actions, _server_status_turn
 
@@ -121,6 +124,8 @@ assert "current_grocy_intent" in candidate
 assert "def _hades_is_managed_server_status_request(user_text):" in candidate
 assert "_server_status_turn = _hades_is_managed_server_status_request(_server_text)" in candidate
 assert "def _hades_finance_followup_query(user_text, conversation_history, scope):" in candidate
+assert "Unsupported workload provisioning refused before preparation" in candidate
+assert candidate.index("_unsupported_workload = next((name for name in (\"factorio\", \"palworld\")") < candidate.index("_pending_template = \"minecraft\"")
 
 # The deployment-local fulfillment shortcut must yield explicit detail
 # operations to Hermes' canonical recipe detail tool. Otherwise a named
