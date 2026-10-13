@@ -70,6 +70,9 @@ with tempfile.TemporaryDirectory() as root:
         "_hades_explicit_private_research_request": lambda _text: False,
         "_hades_private_person_fallback_suspected": lambda _text: False,
         "_HADES_PRIVATE_RESEARCH_FOLLOWUP": re.compile(r"(?!)"),
+        # The route's scoped homelab exception is unrelated to this backup
+        # dispatch test; no local homelab follow-up is present in these cases.
+        "_hades_is_local_homelab_read_followup": lambda *_args: False,
         "_hades_health_watch_state_path": lambda: state,
         "_hades_phase2_resource_shares": lambda _subject: set(),
     }
