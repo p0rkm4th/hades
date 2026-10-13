@@ -26,7 +26,6 @@ view_functions = {
 assert set(view_functions) == {
     '_hades_homelab_availability_groups',
     '_hades_homelab_health_summary_response',
-    '_hades_homelab_inventory_response',
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_service_placement_response',
     '_hades_homelab_provenance_response',

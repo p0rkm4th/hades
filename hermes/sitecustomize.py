@@ -5211,11 +5211,113 @@ def _hades_homelab_inventory_intent(text):
 
 
 def _hades_homelab_inventory_response(summary, excluded_names=None, overview=False, static_only=False, hardware=None):
-    """Render owner inventory requests from the reconciled canonical summary."""
-    return _hades_load_homelab_views()._hades_homelab_inventory_response(
-        summary, excluded_names=excluded_names, overview=overview, static_only=static_only,
-        hardware=hardware,
-    )
+    """Render owner inventory requests from the canonical owner snapshot."""
+    if not isinstance(summary, dict):
+        return "I couldn't read the current homelab inventory."
+    excluded = {
+        re.sub(r"[^a-z0-9]+", "", str(name).casefold())
+        for name in (excluded_names or []) if isinstance(name, str) and name.strip()
+    }
+    rows_by_name = {}
+
+    def add(name, *, static=False, runtime_status="UNKNOWN", has_runtime=False):
+        if not isinstance(name, str) or not name.strip():
+            return
+        label = " ".join(name.split())[:80]
+        canonical_label = re.sub(r"\s+\((?:vm|ct|container)\s+\d+\)$", "", label, flags=re.IGNORECASE)
+        key = re.sub(r"[^a-z0-9]+", "", canonical_label.casefold())
+        if not key or key in excluded:
+            return
+        row = rows_by_name.setdefault(key, {
+            "name": label, "static": False, "has_runtime": False,
+            "runtime_status": "UNKNOWN",
+        })
+        row["static"] = row["static"] or static
+        status = str(runtime_status or "UNKNOWN").upper()
+        if status not in {"UNKNOWN", ""}:
+            row["runtime_status"] = status
+        row["has_runtime"] = row["has_runtime"] or has_runtime
+
+    resources = summary.get("resources") if isinstance(summary.get("resources"), list) else []
+    for item in resources:
+        if not isinstance(item, dict) or not item.get("name"):
+            continue
+        static = isinstance(item.get("inventory"), dict) or bool(
+            item.get("inventory_device_id") or item.get("role") or item.get("primary_ip")
+        )
+        runtime = item.get("runtime") or item.get("runtime_detail")
+        has_runtime = isinstance(runtime, dict) or bool(item.get("currently_online"))
+        if static or has_runtime:
+            add(
+                item.get("name"), static=static,
+                runtime_status=item.get("runtime_status") or (runtime or {}).get("status"),
+                has_runtime=has_runtime,
+            )
+    for name in summary.get("inventory_only_names", []) if isinstance(summary.get("inventory_only_names"), list) else []:
+        add(name, static=True, runtime_status="NOT_OBSERVED")
+    for name in summary.get("online_names", []) if isinstance(summary.get("online_names"), list) else []:
+        add(name, runtime_status="ONLINE", has_runtime=True)
+    machines = hardware.get("machines", []) if isinstance(hardware, dict) else []
+    for machine in machines if isinstance(machines, list) else []:
+        if isinstance(machine, dict):
+            add(machine.get("name"), static=True)
+    rows = [row for row in rows_by_name.values() if row["static"] or (not static_only and row["has_runtime"])]
+    rows.sort(key=lambda item: item["name"].casefold())
+    if rows:
+        entries = []
+        for item in rows[:12]:
+            name = item["name"]
+            state = str(item.get("runtime_status") or "UNKNOWN").upper()
+            if state in {"ONLINE", "RUNNING"}:
+                status = "Proxmox currently reports online"
+            elif state in {"OFFLINE", "STOPPED"}:
+                status = "Proxmox currently reports offline"
+            elif state in {"NOT_OBSERVED", "UNKNOWN", ""}:
+                status = "not currently observed by Proxmox"
+            else:
+                status = "live state unknown"
+            source = "static inventory" if static_only else (
+                "inventory and runtime" if item["static"] and item["has_runtime"]
+                else "static inventory" if item["static"] else "Proxmox runtime"
+            )
+            entries.append(f"{name} ({source}; {status})")
+        count = len(rows)
+        prefix = (
+            f"The static inventory lists {count} device{'s' if count != 1 else ''}: "
+            if static_only else
+            f"The current sources identify {count} homelab device{'s' if count != 1 else ''}: "
+        )
+        response = prefix + "; ".join(entries) + "."
+        if count > len(entries):
+            response += f" I omitted {count - len(entries)} additional entries; ask for the full list if you want it."
+    else:
+        response = "I couldn't verify another static inventory device from the current sources."
+    if overview:
+        groups = {"up": [], "down": [], "unknown": []}
+        availability = summary.get("availability_summary") if isinstance(summary.get("availability_summary"), list) else []
+        for item in availability:
+            if not isinstance(item, dict):
+                continue
+            name = " ".join(str(item.get("name") or "Unnamed check").split())[:80]
+            status = str(item.get("status") or "unknown").casefold()
+            if str(item.get("freshness") or "UNKNOWN").upper() != "FRESH":
+                groups["unknown"].append(name)
+            elif status in {"up", "online"}:
+                groups["up"].append(name)
+            elif status in {"down", "offline"}:
+                groups["down"].append(name)
+            else:
+                groups["unknown"].append(name)
+        if groups["down"]:
+            response += " Fresh configured checks are failing for: " + ", ".join(groups["down"][:4]) + "."
+        if groups["up"]:
+            response += f" {len(groups['up'])} configured checks responded in this read."
+        if groups["unknown"]:
+            response += f" {len(groups['unknown'])} configured checks are stale or unknown."
+        if summary.get("status") != "OK":
+            response += " Some source coverage is incomplete, so unreported state remains unknown."
+        response += " A responding probe does not establish application health."
+    return response
 
 
 def _hades_homelab_network_diagnostic_intent(text):
