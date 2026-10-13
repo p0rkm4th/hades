@@ -22,7 +22,13 @@ jobs:
           python-version: '3.11'
 
       - name: Compile Hermes overlay composition tools
-        run: python -m py_compile scripts/prepare-homelab-overlay-candidate.py scripts/prepare-owner-regression-overlay-candidate.py scripts/test-prepare-owner-regression-overlay-candidate.py scripts/hermes-overlay-composition.py
+        run: python -m py_compile scripts/prepare-homelab-overlay-candidate.py scripts/prepare-owner-regression-overlay-candidate.py scripts/test-prepare-owner-regression-overlay-candidate.py scripts/hermes-overlay-composition.py scripts/hermes-runtime-artifact.py scripts/test-hermes-runtime-artifact.py
+
+      - name: Verify reproducible Hermes runtime artifact
+        run: python3 scripts/test-hermes-runtime-artifact.py
+
+      - name: Verify checksum-guarded Hermes deployment contract
+        run: bash scripts/test-hermes-runtime-deployment-contract.sh
 
       - name: Install pinned YAML contract-test dependency
         run: python -m pip install --disable-pip-version-check --no-input PyYAML==6.0.3

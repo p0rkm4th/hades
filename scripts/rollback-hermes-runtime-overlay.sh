@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+die() { printf 'FAIL %s\n' "$1" >&2; exit 1; }
+target= manifest_target= rollback_dir= expected_current= expected_rollback= service=hades-hermes.service
+python= health_url=
+while (($#)); do
+  case "$1" in
+    --target|--manifest-target|--rollback-dir|--expected-current-sha256|--expected-rollback-sha256|--service|--python|--health-url)
+      (($# >= 2)) || die "missing value for $1"
+      key=$1; value=$2; shift 2
+      case "$key" in
+        --target) target=$value ;;
+        --manifest-target) manifest_target=$value ;;
+        --rollback-dir) rollback_dir=$value ;;
+        --expected-current-sha256) expected_current=$value ;;
+        --expected-rollback-sha256) expected_rollback=$value ;;
+        --service) service=$value ;;
+        --python) python=$value ;;
+        --health-url) health_url=$value ;;
+      esac
+      ;;
+    *) die "unsupported argument" ;;
+  esac
+done
+[[ $(id -u) == 0 ]] || die "rollback must run as root through the approved scoped privilege path"
+[[ -n $target && -n $manifest_target && -n $rollback_dir && -n $python ]] || die "target, manifest, rollback, and interpreter paths are required"
+for path in "$target" "$manifest_target" "$rollback_dir" "$python"; do [[ $path == /* ]] || die "filesystem paths must be absolute"; done
+[[ $(basename "$target") == sitecustomize.py && $(basename "$manifest_target") == sitecustomize.runtime.json && $(dirname "$target") == "$(dirname "$manifest_target")" ]] || die "runtime artifact and manifest paths do not match"
+[[ $(basename "$rollback_dir") == runtime-convergence-* && -d $(dirname "$rollback_dir") && ! -L $(dirname "$rollback_dir") ]] || die "rollback path differs from the protected backup root"
+[[ $(realpath -e "$(dirname "$target")") == "$(dirname "$target")" && $(realpath -e "$(dirname "$rollback_dir")") == "$(dirname "$rollback_dir")" ]] || die "runtime and rollback parents must be canonical directories"
+[[ $service == hades-hermes.service ]] || die "service differs from the qualified Hermes unit"
+[[ -n $health_url ]] || die "an approved Hermes health URL is required"
+[[ $expected_current =~ ^[0-9a-f]{64}$ && $expected_rollback =~ ^[0-9a-f]{64}$ ]] || die "checksums must be lowercase SHA-256 values"
+[[ -d $rollback_dir && ! -L $rollback_dir && $(stat -c '%u:%g:%a' "$rollback_dir") == 0:0:700 ]] || die "rollback directory is not protected"
+[[ -f $target && ! -L $target && -f $rollback_dir/sitecustomize.py && ! -L $rollback_dir/sitecustomize.py ]] || die "runtime or rollback artifact is unavailable"
+[[ ! -L $manifest_target && (! -e $manifest_target || -f $manifest_target) ]] || die "runtime manifest must be a regular file when present"
+[[ $(sha256sum "$target" | awk '{print $1}') == "$expected_current" ]] || die "active runtime drifted; rollback refused"
+[[ $(sha256sum "$rollback_dir/sitecustomize.py" | awk '{print $1}') == "$expected_rollback" ]] || die "rollback artifact checksum differs"
+
+attempt_dir=$(mktemp -d "$rollback_dir/.rollback-attempt.XXXXXX")
+chmod 0700 "$attempt_dir"
+cp -a -- "$target" "$attempt_dir/sitecustomize.py"
+manifest_existed=0
+if [[ -f $manifest_target ]]; then
+  cp -a -- "$manifest_target" "$attempt_dir/manifest.json"
+  manifest_existed=1
+fi
+rollback_started=0
+current_tmp=
+
+restore_attempt_state() {
+  local temporary
+  temporary=$(mktemp "$(dirname "$target")/.runtime-rollback-recovery.XXXXXX")
+  rm -f -- "$temporary" || return 1
+  cp -a -- "$attempt_dir/sitecustomize.py" "$temporary" || return 1
+  mv -Tf -- "$temporary" "$target" || return 1
+  if ((manifest_existed == 1)); then
+    temporary=$(mktemp "$(dirname "$manifest_target")/.manifest-rollback-recovery.XXXXXX")
+    rm -f -- "$temporary" || return 1
+    cp -a -- "$attempt_dir/manifest.json" "$temporary" || return 1
+    mv -Tf -- "$temporary" "$manifest_target" || return 1
+  else
+    rm -f -- "$manifest_target" || return 1
+  fi
+  systemctl restart "$service" || return 1
+  systemctl is-active --quiet "$service" || return 1
+  [[ $(sha256sum "$target" | awk '{print $1}') == "$expected_current" ]] || return 1
+  local args=("$(dirname "$0")/hermes-runtime-artifact.py" verify-live
+    --installed "$target" --service "$service" --python "$python"
+    --expected-sha256 "$expected_current" --hermes-version 0.21.2)
+  [[ -z $health_url ]] || args+=(--health-url "$health_url")
+  python3 "${args[@]}" >/dev/null || return 1
+}
+
+on_exit() {
+  local status=$?
+  if [[ -n $current_tmp ]]; then rm -f -- "$current_tmp" || true; current_tmp=; fi
+  if ((status != 0 && rollback_started == 1)); then
+    if restore_attempt_state; then
+      printf 'ROLLBACK OPERATION FAILED; candidate runtime restored and verified\n' >&2
+    else
+      printf 'ROLLBACK RECOVERY FAILED; inspect the preserved current artifact immediately\n' >&2
+    fi
+  fi
+  exit "$status"
+}
+trap on_exit EXIT
+
+rollback_started=1
+temporary=$(mktemp "$(dirname "$target")/.runtime-rollback.XXXXXX")
+rm -f -- "$temporary"
+cp -a -- "$rollback_dir/sitecustomize.py" "$temporary"
+mv -Tf -- "$temporary" "$target"
+if [[ -f $rollback_dir/manifest.json ]]; then
+  temporary=$(mktemp "$(dirname "$manifest_target")/.manifest-rollback.XXXXXX")
+  rm -f -- "$temporary"
+  cp -a -- "$rollback_dir/manifest.json" "$temporary"
+  mv -Tf -- "$temporary" "$manifest_target"
+else
+  rm -f -- "$manifest_target"
+fi
+systemctl restart "$service"
+systemctl is-active --quiet "$service" || die "Hermes is inactive after rollback"
+if [[ -n $health_url ]]; then curl --fail --silent --show-error --max-time 8 --output /dev/null "$health_url" || die "Hermes health failed after rollback"; fi
+verify_args=("$(dirname "$0")/hermes-runtime-artifact.py" verify-live
+  --installed "$target" --service "$service" --python "$python"
+  --expected-sha256 "$expected_rollback" --hermes-version 0.21.2)
+[[ -z $health_url ]] || verify_args+=(--health-url "$health_url")
+python3 "${verify_args[@]}" || die "Hermes did not load the exact rollback artifact"
+rollback_started=0
+printf 'PASS Hermes runtime rollback verified: sha256=%s\n' "$expected_rollback"

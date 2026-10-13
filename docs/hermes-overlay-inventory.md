@@ -1,5 +1,13 @@
 # Hermes Compatibility Overlay Inventory
 
+> **Current authoritative runtime checkpoint (2026-10-13):** see
+> [Hermes Runtime Artifact Contract](hermes-runtime-convergence.md). Canonical
+> source is HADES `2d4a702d`; production still loads the generated overlay
+> under `generated-full/config/overlay/` with SHA-256 `cda3b355…`. Runtime
+> convergence is active; this overlay is not yet
+> byte-identical to canonical source. Historical records below describe prior
+> states and are not current deployment instructions.
+
 `hermes/sitecustomize.py` is a deployment overlay, not a HADES runtime. Each
 behavior below has an explicit reason to exist and a removal condition. The
 overlay must be re-evaluated whenever the pinned Hermes version changes.
@@ -50,21 +58,21 @@ backend verification where applicable, and reload/restart persistence when it
 affects state. Production remains pinned while the full external-contract
 matrix is not isolated from authoritative owner data.
 
-## Deployment drift check
+## Historical deployment drift check — superseded 2026-10-13
 
 The running profile loads the overlay from its installed `PYTHONPATH` copy;
-repository changes do not update that copy automatically. Before restarting
-Hermes after an overlay change, run the read-only check with the operator-known
-installed path:
+repository changes do not update that copy automatically. The prior byte-check
+and function-patch steps below are preserved as historical procedures. The
+current build, verify, deploy, and rollback contract is documented in
+`hermes-runtime-convergence.md`.
 
 ```text
 bash scripts/verify-live-hermes-overlay.sh /path/to/installed/sitecustomize.py
 ```
 
-If an installed overlay has additional deployment-local code and differs from
-the repository file, do not replace the whole file. Create a candidate that
-replaces only the HADES direct-memory function while preserving every other
-byte in the installed overlay copy:
+Earlier production incident repairs composed one HADES function into a
+deployment-local base. That path is no longer the supported production build
+method. Do not use it for new runtime releases:
 
 ```text
 python3 scripts/prepare-hindsight-overlay-candidate.py \
