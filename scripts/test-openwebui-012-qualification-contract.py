@@ -36,7 +36,8 @@ def main() -> None:
     assert "authority_revocation_routes_compat.py" in dockerfile
     assert "ldap_group_sync_compat.py" in dockerfile
     assert "socket_disconnect_fail_closed_compat.py" in dockerfile
-    assert dockerfile.count("PYTHONDONTWRITEBYTECODE=1 python3") == 9, "build-time bytecode must not make candidate layers time-dependent"
+    assert dockerfile.count("PYTHONDONTWRITEBYTECODE=1 python3") == 10, "build-time bytecode must not make candidate layers time-dependent"
+    assert "normalize_candidate_timestamps.py" in dockerfile
     assert "channel_response_compat.py" not in dockerfile, "0.12 native Channels behavior made this HADES patch unnecessary"
     for opt_in in ("ENABLE_MFA", "AUDIO_REALTIME_ENABLED", "ENABLE_TOOL_SEARCH"):
         assert opt_in not in dockerfile, f"new optional upstream feature was enabled: {opt_in}"
