@@ -47,6 +47,7 @@ wanted = {
     "_hades_direct_homelab_read",
     "_hades_homelab_owner_health_response",
     "_hades_homelab_read_followup_query",
+    "_hades_homelab_network_diagnostic_intent",
     "_hades_homelab_node_status_targets",
     "_hades_configured_homelab_alias_matches",
     "_hades_broad_homelab_status_intent",
@@ -315,6 +316,11 @@ journey = [
 assert "network health status" in homelab_followup("how's my network?", "owner", [])
 assert scope["_hades_broad_homelab_status_intent"]("Hows my network")
 assert homelab_followup("Hows my network", "owner", []) == "network health status"
+diagnostic_prompt = (
+    "Something feels slow on the network; check node status, network health, "
+    "recent resource usage, and services, then tell me what looks abnormal."
+)
+assert homelab_followup(diagnostic_prompt, "owner", []) == diagnostic_prompt
 named_followup = [
     {"role": "user", "content": "Hows my network"},
     {"role": "assistant", "content": "synthetic health summary"},

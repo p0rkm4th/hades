@@ -8710,7 +8710,7 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
             return f"homelab node status for {matched[0]} and {matched[1]}"
     if targets and prior_homelab and followup:
         return f"What is {targets[0]} doing right now?"
-    if network_health:
+    if network_health and not _hades_homelab_network_diagnostic_intent(current):
         return "network health status"
     if anaphoric_node_health:
         return "homelab nodes problems status"
