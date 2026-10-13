@@ -12,6 +12,7 @@ import argparse
 import ast
 import hashlib
 import os
+import re
 from pathlib import Path
 
 
@@ -91,12 +92,27 @@ def replace_top_level_assignment(active: str, source: str, name: str) -> str:
     return active.encode("utf-8")[:a].decode("utf-8") + source.encode("utf-8")[c:d].decode("utf-8") + active.encode("utf-8")[b:].decode("utf-8")
 
 
+def insert_top_level_function(active: str, source: str, name: str, *, before: str) -> str:
+    if named_functions(active, name):
+        raise SystemExit(f"FAIL active overlay unexpectedly defines {name}")
+    source_matches = named_functions(source, name)
+    anchor_matches = named_functions(active, before)
+    if len(source_matches) != 1 or len(anchor_matches) != 1:
+        raise SystemExit(f"FAIL expected one source {name} and active insertion anchor {before}")
+    a, _ = node_span(active, anchor_matches[0])
+    c, d = node_span(source, source_matches[0])
+    return active.encode("utf-8")[:a].decode("utf-8") + source.encode("utf-8")[c:d].decode("utf-8") + "\n\n" + active.encode("utf-8")[a:].decode("utf-8")
+
+
 def insert_grocy_list_guard(text: str) -> str:
     matches = named_functions(text, "_hades_direct_grocy_recipe_read")
     if len(matches) != 1:
         raise SystemExit("FAIL expected one active _hades_direct_grocy_recipe_read")
     fn = matches[0]
     segment = ast.get_source_segment(text, fn) or ""
+    guard = '    if _hades_grocy_read_operation(text) == "recipes_list_tool":\n'
+    if segment.count(guard) == 1:
+        return text
     anchor = '    text = str(user_text or "")\n'
     if segment.count(anchor) != 1:
         raise SystemExit("FAIL active Grocy recipe reader has unexpected initialization")
@@ -138,6 +154,11 @@ def insert_finance_period_block(text: str, source: str) -> str:
     if len(matches) != 1:
         raise SystemExit("FAIL expected one active finance merchant calculator")
     fn = matches[0]
+    segment = ast.get_source_segment(text, fn) or ""
+    if "trailing_year_request = bool(re.search(" in segment:
+        if "posted net spending" not in segment or "coverage_complete" not in segment:
+            raise SystemExit("FAIL existing finance period block is incomplete")
+        return text
     ytd_nodes = [
         node for node in ast.walk(fn)
         if isinstance(node, ast.Assign)
@@ -164,23 +185,102 @@ def widen_finance_override(text: str) -> str:
         r"(?:in|over|during)\s+(?:the\s+)?(?:last|past)\s+year|"
         r"(?:last|past)\s+12\s+months|(?:last|previous)\s+year)\b"
     )
-    if segment.count(old_period) != 1:
+    if segment.count(old_period) == 1:
+        segment = segment.replace(old_period, new_period, 1)
+    elif not (
+        segment.count(r"(?:in|over|during)\s+(?:the\s+)?(?:last|past)\s+year") == 1
+        and segment.count(r"\b(?:at|on|with|from)\s+\w") == 1
+    ):
         raise SystemExit("FAIL active finance override period classifier changed")
-    segment = segment.replace(old_period, new_period, 1)
-    if segment.count(r"\b(?:at|with|from)\s+\w") != 1:
+    if segment.count(r"\b(?:at|with|from)\s+\w") == 1:
+        segment = segment.replace(r"\b(?:at|with|from)\s+\w", r"\b(?:at|on|with|from)\s+\w", 1)
+    elif segment.count(r"\b(?:at|on|with|from)\s+\w") != 1:
         raise SystemExit("FAIL active finance override merchant classifier changed")
-    segment = segment.replace(r"\b(?:at|with|from)\s+\w", r"\b(?:at|on|with|from)\s+\w", 1)
     return text.encode("utf-8")[:start].decode("utf-8") + segment + text.encode("utf-8")[end:].decode("utf-8")
 
 
 def patch_legacy_turn_gates(text: str) -> str:
-    if text.count(GROCY_READ_GATE_OLD) != 1:
-        raise SystemExit("FAIL expected one malformed active Grocy read gate")
-    text = text.replace(GROCY_READ_GATE_OLD, GROCY_READ_GATE_NEW, 1)
+    old_gate_count = text.count(GROCY_READ_GATE_OLD)
+    new_gate_count = text.count(GROCY_READ_GATE_NEW)
+    if old_gate_count == 1:
+        text = text.replace(GROCY_READ_GATE_OLD, GROCY_READ_GATE_NEW, 1)
+    elif old_gate_count != 0 or new_gate_count < 1:
+        raise SystemExit("FAIL active Grocy read gate changed")
     provisioning_count = text.count(PROVISIONING_PATTERN_OLD)
-    if provisioning_count < 3:
+    if provisioning_count:
+        text = text.replace(PROVISIONING_PATTERN_OLD, PROVISIONING_PATTERN_NEW)
+    elif text.count(PROVISIONING_PATTERN_NEW) < 3:
         raise SystemExit("FAIL expected active provisioning checks in the legacy overlay")
-    text = text.replace(PROVISIONING_PATTERN_OLD, PROVISIONING_PATTERN_NEW)
+    run_matches = [
+        node for node in ast.walk(ast.parse(text))
+        if isinstance(node, ast.FunctionDef) and node.name == "_hades_run_conversation"
+    ]
+    direct_matches = named_functions(text, "_hades_direct_homelab_read")
+    if len(run_matches) != 1 or len(direct_matches) != 1:
+        raise SystemExit("FAIL active owner routing functions are ambiguous")
+    run_start, run_end = node_span(text, run_matches[0])
+    run_segment = text.encode("utf-8")[run_start:run_end].decode("utf-8")
+    old_recipe = "shopping list|recipe|pantry"
+    if old_recipe not in run_segment:
+        raise SystemExit("FAIL active Grocy current-turn recipe classifier changed")
+    run_segment = run_segment.replace(old_recipe, "shopping list|recipes?|pantry")
+    old_choice = "_hades_grocy_read_tool_choice(current_text, grocy_tools)"
+    if run_segment.count(old_choice) != 1:
+        raise SystemExit("FAIL active Grocy operation-choice seam changed")
+    run_segment = run_segment.replace(
+        old_choice,
+        "_hades_grocy_read_operation_for_turn(current_text, grocy_tools, _hades_history)",
+        1,
+    )
+    pattern = re.compile(
+        r"(recipe_web_compound = bool\(\n)([ \t]+recipe_turn\n)([ \t]+and web_intent)"
+    )
+    matches = list(pattern.finditer(run_segment))
+    if len(matches) > 1:
+        raise SystemExit("FAIL active recipe/web compound gate changed")
+    if matches:
+        match = matches[0]
+        indent = match.group(2).split("recipe_turn")[0]
+        replacement = (
+            match.group(1) + match.group(2)
+            + indent + "and _hades_grocy_read_operation(current_text) is None\n"
+            + indent + "and not _hades_grocy_ingredient_followup(current_text, _hades_history)\n"
+            + match.group(3)
+        )
+        run_segment = run_segment[:match.start()] + replacement + run_segment[match.end():]
+    text = text.encode("utf-8")[:run_start].decode("utf-8") + run_segment + text.encode("utf-8")[run_end:].decode("utf-8")
+
+    direct = named_functions(text, "_hades_direct_homelab_read")[0]
+    direct_start, direct_end = node_span(text, direct)
+    direct_segment = text.encode("utf-8")[direct_start:direct_end].decode("utf-8")
+    text_anchor = "    text = str(user_text or \"\")\n"
+    if direct_segment.count(text_anchor) != 1:
+        raise SystemExit("FAIL active homelab text-initialization seam changed")
+    homelab_override = """    node_status_targets = _hades_homelab_node_status_targets(text)
+    node_problem_request = bool(re.search(
+        r"\\b(?:nodes?|hosts?|servers?)\\b.{0,40}\\b(?:problems?|issues?|failures?|wrong|down|degraded)\\b|"
+        r"\\b(?:problems?|issues?|failures?|wrong|down|degraded)\\b.{0,40}\\b(?:nodes?|hosts?|servers?)\\b",
+        text, re.IGNORECASE,
+    ))
+    if node_status_targets or (scope == "owner" and node_problem_request):
+        if scope != "owner":
+            return "Detailed host status is available only in an owner session."
+        if not subject:
+            return "I couldn't verify this owner session, so I can't read host status."
+        summary = _hades_direct_homelab_tool_result("homelab_summary")
+        if not isinstance(summary, dict):
+            return "I couldn't verify current node status because the live homelab summary is unavailable."
+        if node_problem_request:
+            return _hades_homelab_node_problems_response(summary)
+        views = [_hades_homelab_proxmox_node_load_response(summary, target) for target in node_status_targets]
+        return "Current host evidence: " + " ".join(value for value in views if value)
+"""
+    direct_segment = direct_segment.replace(
+        text_anchor,
+        text_anchor + homelab_override,
+        1,
+    )
+    text = text.encode("utf-8")[:direct_start].decode("utf-8") + direct_segment + text.encode("utf-8")[direct_end:].decode("utf-8")
     return text
 
 
@@ -194,17 +294,27 @@ def compose(active: bytes, source: bytes) -> bytes:
     # the candidate and is inserted before its single-name compatibility API.
     for name in ("_hades_grocy_read_operation", "_hades_broad_homelab_status_intent", "_hades_homelab_read_followup_query"):
         active_text = replace_top_level_function(active_text, source_text, name)
-    if named_functions(active_text, "_hades_configured_homelab_alias_matches"):
-        raise SystemExit("FAIL live overlay unexpectedly already has the multi-alias helper")
+    for name, anchor in (
+        ("_hades_grocy_ingredient_followup", "_hades_grocy_read_tool_choice"),
+        ("_hades_grocy_read_operation_for_turn", "_hades_grocy_read_tool_choice"),
+        ("_hades_homelab_node_status_targets", "_hades_direct_homelab_read"),
+        ("_hades_homelab_node_problems_response", "_hades_direct_homelab_read"),
+    ):
+        active_text = insert_top_level_function(active_text, source_text, name, before=anchor)
     source_matches = named_functions(source_text, "_hades_configured_homelab_alias_matches")
     active_alias = named_functions(active_text, "_hades_configured_homelab_alias_match")
-    if len(source_matches) != 1 or len(active_alias) != 1:
+    active_multi = named_functions(active_text, "_hades_configured_homelab_alias_matches")
+    if len(source_matches) != 1 or len(active_alias) != 1 or len(active_multi) > 1:
         raise SystemExit("FAIL configured homelab alias helpers are ambiguous")
+    if active_multi:
+        if ast.dump(active_multi[0], include_attributes=False) != ast.dump(source_matches[0], include_attributes=False):
+            raise SystemExit("FAIL active multi-alias helper differs from qualified source")
+    else:
+        active_alias_node = active_alias[0]
+        a, _ = node_span(active_text, active_alias_node)
+        c, d = node_span(source_text, source_matches[0])
+        active_text = active_text.encode("utf-8")[:a].decode("utf-8") + source_text.encode("utf-8")[c:d].decode("utf-8") + "\n\n" + active_text.encode("utf-8")[a:].decode("utf-8")
     active_text = replace_top_level_function(active_text, source_text, "_hades_configured_homelab_alias_match")
-    active_alias = named_functions(active_text, "_hades_configured_homelab_alias_match")[0]
-    a, _ = node_span(active_text, active_alias)
-    c, d = node_span(source_text, source_matches[0])
-    active_text = active_text.encode("utf-8")[:a].decode("utf-8") + source_text.encode("utf-8")[c:d].decode("utf-8") + "\n\n" + active_text.encode("utf-8")[a:].decode("utf-8")
     active_text = insert_grocy_list_guard(active_text)
     active_text = insert_finance_period_block(active_text, source_text)
     active_text = widen_finance_override(active_text)

@@ -79,6 +79,7 @@ wanted = {
     '_hades_homelab_availability_groups',
     '_hades_broad_homelab_status_intent',
     '_hades_homelab_health_summary_response',
+    '_hades_homelab_node_problems_response',
     '_hades_homelab_service_coverage_intent',
     '_hades_homelab_service_coverage_response',
     '_hades_homelab_provenance_followup', '_hades_homelab_provenance_response',
@@ -92,6 +93,7 @@ wanted = {
     '_hades_homelab_node_metrics_ranking_response',
     '_hades_homelab_proxmox_node_load_response',
     '_hades_homelab_proxmox_node_load_target',
+    '_hades_homelab_node_status_targets',
     '_hades_is_provisioning_request',
     '_hades_homelab_guest_inventory_intent',
     '_hades_homelab_guest_inventory_response',
@@ -151,6 +153,7 @@ service_monitor_view = namespace['_hades_load_homelab_views']()._hades_homelab_s
 groups = namespace['_hades_homelab_availability_groups']
 broad_status_intent = namespace['_hades_broad_homelab_status_intent']
 health_summary_response = namespace['_hades_homelab_health_summary_response']
+node_problems_response = namespace['_hades_homelab_node_problems_response']
 coverage_intent = namespace['_hades_homelab_service_coverage_intent']
 coverage_response = namespace['_hades_homelab_service_coverage_response']
 provenance_followup = namespace['_hades_homelab_provenance_followup']
@@ -218,6 +221,11 @@ with tempfile.TemporaryDirectory(prefix='homelab-view-cwd-decoy-') as unrelated_
             'Could not verify Synthetic NetBox in this read. Application-service placement coverage is '
             'missing, empty, or incomplete. Some unmonitored services remain unknown for application '
             'health. Backup contents and restoreability were not checked in this summary.'
+        )
+        assert node_problems_response(golden_health) == (
+            'Yes. Current configured checks reporting a failure: Fresh down. '
+            '1 configured check(s) are stale or unknown; their current state is unverified. '
+            'Unmonitored or uncovered services remain unknown.'
         )
         assert coverage_response(golden_coverage) == (
             "The service catalog responded, but its total coverage is unknown, so I can't confirm that "
@@ -1904,6 +1912,50 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         routed_network = direct_read('Why does the network feel slow?', 'synthetic-owner', 'owner')
         assert 'Packet-loss, throughput, and historical comparison data are unavailable' in routed_network, routed_network
         assert 'cannot identify a network bottleneck or trend from this evidence' in routed_network, routed_network
+
+        original_registry_read = namespace['_hades_direct_homelab_tool_result']
+        def node_followup_fixture(operation):
+            summary = original_registry_read(operation)
+            summary['availability_summary'] = [
+                {'name': 'Synthetic Down Check', 'status': 'down', 'freshness': 'FRESH'},
+                {'name': 'Synthetic Stale Check', 'status': 'down', 'freshness': 'STALE'},
+            ]
+            summary['service_catalog'] = {'status': 'OK', 'coverage': 'PARTIAL'}
+            summary['proxmox_node_metrics'] = {
+                'status': 'READABLE', 'endpoints': [{
+                    'status': 'AVAILABLE', 'nodes': [
+                        {'name': 'Synthetic Node A', 'status': 'ONLINE', 'cpu_fraction': 0.25,
+                         'observed_at': 'synthetic-node-a-time'},
+                        {'name': 'Synthetic Node B', 'status': 'OFFLINE',
+                         'observed_at': 'synthetic-node-b-time'},
+                    ],
+                }],
+            }
+            return summary
+        namespace['_hades_direct_homelab_tool_result'] = node_followup_fixture
+        try:
+            named_nodes = direct_read(
+                'homelab node status for Synthetic Node A and Synthetic Node B',
+                'synthetic-owner', 'owner',
+            )
+            assert 'Synthetic Node A online' in named_nodes, named_nodes
+            assert 'Synthetic Node B is offline' in named_nodes, named_nodes
+            assert len(named_nodes) < 700, len(named_nodes)
+            problem_answer = direct_read(
+                'homelab nodes problems status', 'synthetic-owner', 'owner'
+            )
+            assert 'Synthetic Down Check' in problem_answer, problem_answer
+            assert 'stale or unknown' in problem_answer, problem_answer
+            assert len(problem_answer) < 400, len(problem_answer)
+            reads_before_household_node_query = len(summary_reads)
+            denied_nodes = direct_read(
+                'homelab node status for Synthetic Node A and Synthetic Node B',
+                'synthetic-household', 'household',
+            )
+            assert 'only in an owner session' in denied_nodes, denied_nodes
+            assert len(summary_reads) == reads_before_household_node_query
+        finally:
+            namespace['_hades_direct_homelab_tool_result'] = original_registry_read
     finally:
         if old_matrix is None:
             os.environ.pop('HADES_CAPABILITY_MATRIX_FILE', None)

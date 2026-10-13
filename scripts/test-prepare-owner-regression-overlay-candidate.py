@@ -33,8 +33,36 @@ def _hades_broad_homelab_status_intent(text):
 def _hades_homelab_read_followup_query(user_message, scope, conversation_history):
     return user_message
 
+def _hades_grocy_read_tool_choice(user_text, tools):
+    return None
+
 def _hades_configured_homelab_alias_match(user_text):
     return None
+
+def _hades_homelab_proxmox_node_load_target(text):
+    return None
+
+def _hades_homelab_proxmox_node_load_response(summary, target):
+    return "node status"
+
+def _hades_homelab_health_summary_response(summary):
+    return "full health summary"
+
+def _hades_homelab_availability_groups(rows):
+    return {"down": [], "unknown": []}
+
+def _hades_direct_homelab_read(user_text, subject="", scope="", context_text="", conversation_history=None):
+    text = str(user_text or "")
+    node_load_target = _hades_homelab_proxmox_node_load_target(text)
+    try:
+        summary = {}
+        node_problem_request = bool(re.search(
+            r"nodes problems", text,
+        ))
+        if scope == "owner" and node_problem_request:
+            return _hades_homelab_health_summary_response(summary)
+    except Exception:
+        return None
 
 def _hades_p1_finance_merchant_calculation(user_text):
     def money(value):
@@ -61,6 +89,14 @@ def _hades_direct_finance_guidance(user_text):
     return _hades_p1_existing_finance_guidance(user_text)
 
 def _hades_run_conversation(user_text):
+    current_grocy_intent = bool(re.search(r"shopping list|recipe|pantry", user_text))
+    recipe_turn = True
+    web_intent = True
+    recipe_web_compound = bool(
+        recipe_turn
+        and web_intent
+    )
+    _read_choice = _hades_grocy_read_tool_choice(current_text, grocy_tools)
     grocy_read_only_turn = bool(re.search(r"\b(?:recipes?|ingredients?|make|cook|fulfill|missing)\\b", user_text))
     actions = (r"spin\s+up", r"spin\s+up", r"spin\s+up")
     return grocy_read_only_turn, actions
@@ -77,6 +113,10 @@ assert r"(?:at|on|with|from)\s+\w" in candidate
 assert r"spin\s+(?:(?:one|it|a|the)\s+)?up" in candidate
 assert r"missing)\b" in candidate
 assert r"missing)\\b" not in candidate
+assert "_hades_grocy_read_operation_for_turn(current_text, grocy_tools, _hades_history)" in candidate
+assert "and _hades_grocy_read_operation(current_text) is None" in candidate
+assert "node_status_targets = _hades_homelab_node_status_targets(text)" in candidate
+assert "_hades_homelab_node_problems_response(summary)" in candidate
 
 # The candidate has no authority to replace the complete live runtime.
 assert candidate.count("LIVE_ONLY_SENTINEL") == 1
