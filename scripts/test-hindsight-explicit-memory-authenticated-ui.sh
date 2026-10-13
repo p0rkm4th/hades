@@ -10,6 +10,7 @@ webui_image=${HADES_HINDSIGHT_UI_WEBUI_IMAGE:-hades-open-webui:0.11.1-hades-reco
 suffix="$$"
 hindsight_name="hades-hindsight-ui-$suffix"
 webui_name="hades-hindsight-webui-$suffix"
+network="hades-hindsight-webui-net-$suffix"
 hindsight_volume="hades-hindsight-data-$suffix"
 webui_volume="hades-hindsight-webui-data-$suffix"
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-hindsight-ui.XXXXXX")
@@ -20,6 +21,7 @@ model="synthetic-hindsight-ui-extractor"
 gateway_pid=''
 mock_pid=''
 step='preflight'
+source "$repo_dir/scripts/open-webui-candidate-test-runtime.sh"
 
 cleanup() {
   local exit_status=$?
@@ -43,6 +45,8 @@ cleanup() {
   if [[ -n "$gateway_pid" ]]; then kill "$gateway_pid" >/dev/null 2>&1 || true; wait "$gateway_pid" >/dev/null 2>&1 || true; fi
   if [[ -n "$mock_pid" ]]; then kill "$mock_pid" >/dev/null 2>&1 || true; wait "$mock_pid" >/dev/null 2>&1 || true; fi
   docker rm -f "$hindsight_name" "$webui_name" >/dev/null 2>&1 || true
+  hades_candidate_runtime_cleanup
+  docker network rm "$network" >/dev/null 2>&1 || true
   docker volume rm "$hindsight_volume" "$webui_volume" >/dev/null 2>&1 || true
   if [[ -d "$work" ]]; then find "$work" -depth -mindepth 1 -delete 2>/dev/null || true; rmdir "$work" 2>/dev/null || true; fi
   exit "$exit_status"
@@ -76,6 +80,8 @@ docker volume create "$webui_volume" >/dev/null
 
 # The extraction stub binds only to the private Docker bridge gateway.
 step='starting synthetic extraction endpoint'
+docker network create "$network" >/dev/null
+hades_candidate_runtime_start "$network" "hindsight-ui-$suffix"
 python3 "$repo_dir/scripts/synthetic-hindsight-model.py" \
   "$docker_gateway" "$work/model.port" "$work/model-requests.jsonl" \
   >"$work/model.log" 2>&1 &
@@ -106,7 +112,8 @@ done
 curl -fsS "$hindsight_url/health" >/dev/null
 
 step='starting disposable Open WebUI'
-docker run -d --name "$webui_name" --add-host host.docker.internal:host-gateway \
+docker run -d --name "$webui_name" \
+  "${HADES_CANDIDATE_RUNTIME_ARGS[@]}" \
   -p "127.0.0.1:${webui_port}:8080" \
   -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
   -e ENABLE_OPENAI_API=true \

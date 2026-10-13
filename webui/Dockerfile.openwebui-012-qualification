@@ -21,15 +21,15 @@ COPY webui/ldap_group_sync_compat.py /opt/hades/ldap_group_sync_compat.py
 COPY webui/authority_revocation_routes_compat.py /opt/hades/authority_revocation_routes_compat.py
 COPY webui/socket_disconnect_fail_closed_compat.py /opt/hades/socket_disconnect_fail_closed_compat.py
 COPY webui/entrypoint.sh /opt/hades/entrypoint.sh
-RUN python3 /opt/hades/auth_revocation_fail_closed_compat.py \
-    && python3 /opt/hades/authority_revocation_routes_compat.py \
-    && python3 /opt/hades/ldap_group_sync_compat.py \
-    && python3 /opt/hades/socket_disconnect_fail_closed_compat.py \
-    && python3 /opt/hades/finance_upload_compat.py \
-    && python3 /opt/hades/receipt_upload_compat.py \
-    && python3 /opt/hades/task_notification_compat.py \
-    && python3 /opt/hades/streaming_compat.py \
-    && python3 /opt/hades/stream_disconnect_compat.py \
+RUN PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/auth_revocation_fail_closed_compat.py \
+    && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/authority_revocation_routes_compat.py \
+    && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/ldap_group_sync_compat.py \
+    && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/socket_disconnect_fail_closed_compat.py \
+    && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/finance_upload_compat.py \
+    && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/receipt_upload_compat.py \
+    && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/task_notification_compat.py \
+    && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/streaming_compat.py \
+    && PYTHONDONTWRITEBYTECODE=1 python3 /opt/hades/stream_disconnect_compat.py \
     && cp /opt/hades/hades_stream_disconnect_compat.py /app/backend/open_webui/utils/hades_stream_disconnect_compat.py
 RUN cp /app/build/static/hades-theme.css /app/backend/open_webui/static/hades-theme.css \
     && cp /app/build/static/hades-theme.js /app/backend/open_webui/static/hades-theme.js

@@ -14,6 +14,7 @@ webui_image=${HADES_TASK_ATTENTION_WEBUI_IMAGE:-hades-open-webui:0.11.1-hades-re
 suffix="$$"
 name="hades-task-attention-ui-$suffix"
 volume="hades-task-attention-ui-$suffix"
+network="hades-task-attention-ui-net-$suffix"
 work=$(mktemp -d "$HOME/.cache/hades-task-attention.XXXXXX")
 acceptance_report=${HADES_TASK_ATTENTION_FINAL_REPORT:-${TMPDIR:-/tmp}/hades-task-attention-$$.json}
 weekly_partial_mode=${HADES_TASK_ATTENTION_WEEKLY_PARTIAL:-0}
@@ -26,6 +27,7 @@ active_artifact_diagnostic=${HADES_TASK_ATTENTION_ACTIVE_ARTIFACT_DIAGNOSTIC:-0}
 webui_port=${HADES_TASK_ATTENTION_WEBUI_PORT:-18882}
 gateway_port=${HADES_TASK_ATTENTION_GATEWAY_PORT:-18883}
 api_key="synthetic-api-$suffix"
+source "$repo_dir/scripts/open-webui-candidate-test-runtime.sh"
 [[ "$allow_notification_failure" == 0 || "$allow_notification_failure" == 1 ]] || {
   echo 'FAIL HADES_TASK_ATTENTION_ALLOW_NOTIFICATION_FAILURE must be 0 or 1' >&2
   exit 2
@@ -86,6 +88,8 @@ cleanup() {
   if [[ -n ${gateway_pid:-} ]]; then kill "$gateway_pid" >/dev/null 2>&1 || true; wait "$gateway_pid" >/dev/null 2>&1 || true; fi
   docker rm -f "$name" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true
+  hades_candidate_runtime_cleanup
+  docker network rm "$network" >/dev/null 2>&1 || true
   if [[ -d "$work" && "$exit_code" -ne 0 && ${HADES_TASK_ATTENTION_KEEP_FAILED:-0} == 1 ]]; then
     printf 'Preserved failed disposable diagnostics at %s\n' "$work" >&2
   elif [[ -d "$work" ]]; then
@@ -230,6 +234,8 @@ machines:
     role: synthetic inference node
 YAML
 docker volume create "$volume" >/dev/null
+docker network create "$network" >/dev/null
+hades_candidate_runtime_start "$network" "task-attention-$suffix"
 
 export HERMES_HOME="$work/hermes"
 export HADES_CORE_PROXMOX_GUEST_NAMES=synthetic-core-node
@@ -252,7 +258,8 @@ export OPENAI_BASE_URL=http://127.0.0.1:9/v1
 export MODEL=synthetic-no-call
 export HERMES_ACCEPT_HOOKS=1
 
-docker run -d --name "$name" --add-host host.docker.internal:host-gateway \
+docker run -d --name "$name" \
+  "${HADES_CANDIDATE_RUNTIME_ARGS[@]}" \
   -p "127.0.0.1:${webui_port}:8080" \
   -v "$repo_dir/webui/hades-theme.js:/app/backend/open_webui/static/hades-theme.js:ro" \
   -v "$repo_dir/webui/hades-theme.js:/app/build/static/hades-theme.js:ro" \

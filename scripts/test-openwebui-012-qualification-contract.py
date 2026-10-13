@@ -36,6 +36,7 @@ def main() -> None:
     assert "authority_revocation_routes_compat.py" in dockerfile
     assert "ldap_group_sync_compat.py" in dockerfile
     assert "socket_disconnect_fail_closed_compat.py" in dockerfile
+    assert dockerfile.count("PYTHONDONTWRITEBYTECODE=1 python3") == 9, "build-time bytecode must not make candidate layers time-dependent"
     assert "channel_response_compat.py" not in dockerfile, "0.12 native Channels behavior made this HADES patch unnecessary"
     for opt_in in ("ENABLE_MFA", "AUDIO_REALTIME_ENABLED", "ENABLE_TOOL_SEARCH"):
         assert opt_in not in dockerfile, f"new optional upstream feature was enabled: {opt_in}"
@@ -48,6 +49,15 @@ def main() -> None:
     assert "include_inherited=True" in authority, "nested-group changes must revoke inherited authority"
     assert "LDAP group membership could not be verified" in authority
     assert "refresh_access: bool = False" in sockets and "Session revocation incomplete" in sockets
+
+    for test_script in (
+        "scripts/test-grocy-authenticated-household-ui.sh",
+        "scripts/test-hindsight-explicit-memory-authenticated-ui.sh",
+        "scripts/test-task-attention-authenticated-ui.sh",
+    ):
+        script = (ROOT / test_script).read_text()
+        assert "open-webui-candidate-test-runtime.sh" in script
+        assert '"${HADES_CANDIDATE_RUNTIME_ARGS[@]}"' in script
 
     build = (ROOT / "scripts/build-openwebui-012-qualification.sh").read_text()
     assert "git -C \"$repo_dir\" status --porcelain" in build, "candidate build must bind to a clean source tree"
