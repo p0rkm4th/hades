@@ -235,6 +235,16 @@ named_followup = [
 ]
 assert homelab_followup("what about thanatos?", "owner", named_followup) == "What is Thanatos doing right now?"
 assert homelab_followup("what about thanatos or hermes?", "owner", named_followup) == "homelab all nodes status"
+configured_alias_match = scope["_hades_configured_homelab_alias_matches"]
+scope["_hades_configured_homelab_alias_matches"] = lambda _text: []
+try:
+    # Real production composition may not have every conversational node name
+    # in its small alias file. A same-chat disjunction still needs a fresh
+    # canonical homelab read instead of model-only mythology fallback.
+    assert homelab_followup("what about Thanatos or Hermes?", "owner", named_followup) == "homelab all nodes status"
+    assert homelab_followup("what about Thanatos or Hermes?", "owner", []) == "what about Thanatos or Hermes?"
+finally:
+    scope["_hades_configured_homelab_alias_matches"] = configured_alias_match
 assert "all nodes status" in homelab_followup(journey[-3]["content"], "owner", journey[:4])
 assert "nodes problems status" in homelab_followup(journey[-1]["content"], "owner", journey)
 assert homelab_followup("are any of the nodes showing any problems?", "household", journey) == journey[-1]["content"]

@@ -8421,7 +8421,11 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
     ))
     prior_homelab = bool(previous_user and _hades_is_homelab_intent(previous_user))
     targets = _hades_configured_homelab_alias_matches(current)
-    if followup and prior_homelab and (all_nodes or len(targets) > 1):
+    # A same-chat disjunction can name nodes that are absent from the small
+    # configured alias list. Preserve the established homelab scope and do a
+    # fresh bounded inventory read instead of sending bare names to the model.
+    multiple_named_targets = bool(re.search(r"\b\w[\w.'’-]*\s+(?:or|and)\s+\w[\w.'’-]*\b", current, re.IGNORECASE))
+    if followup and prior_homelab and (all_nodes or len(targets) > 1 or multiple_named_targets):
         return "homelab all nodes status"
     if targets and prior_homelab and followup:
         return f"What is {targets[0]} doing right now?"
