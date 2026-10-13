@@ -38,10 +38,13 @@ wanted = {
     "_hades_normalize_kitchen_typo",
     "_hades_grocy_read_operation",
     "_hades_grocy_read_tool_choice",
+    "_hades_grocy_ingredient_followup",
+    "_hades_grocy_read_operation_for_turn",
     "_hades_finance_followup_query",
     "_hades_direct_finance_guidance",
     "_hades_direct_grocy_recipe_read",
     "_hades_homelab_read_followup_query",
+    "_hades_homelab_node_status_targets",
     "_hades_configured_homelab_alias_matches",
     "_hades_broad_homelab_status_intent",
     "_hades_is_provisioning_request",
@@ -136,6 +139,27 @@ assert choice("what recipes dfo i have?", tools) == {
 assert choice("tell me about the best cordon bleu recipe", tools) == {
     "type": "function", "function": {"name": "mcp_grocy_recipe_details_tool"}
 }
+assert operation("what's in my kitchen?") == "stock_overview_tool"
+assert operation("what recipes dfo i have?") == "recipes_list_tool"
+assert operation("tell me about the best cordon bleu recipe") == "recipe_details_tool"
+recipe_history = [
+    {"role": "user", "content": "what recipes dfo i have?"},
+    {"role": "assistant", "content": "Synthetic recipes listed."},
+    {"role": "user", "content": "tell me about the best cordon bleu recipe"},
+    {"role": "assistant", "content": "Synthetic recipe details."},
+]
+assert scope["_hades_grocy_ingredient_followup"](
+    "what ingredients does it need?", recipe_history
+)
+assert not scope["_hades_grocy_ingredient_followup"](
+    "what ingredients does it need?", []
+)
+assert scope["_hades_grocy_read_operation_for_turn"](
+    "what ingredients does it need?", tools, recipe_history
+) == {"type": "function", "function": {"name": "mcp_grocy_recipe_details_tool"}}
+assert scope["_hades_grocy_read_operation_for_turn"](
+    "what's in my kitchen?", tools, recipe_history
+) == {"type": "function", "function": {"name": "mcp_grocy_stock_overview_tool"}}
 assert scope["_hades_direct_grocy_recipe_read"]("what recipes dfo i have?") is None
 assert scope["_hades_is_household_inventory_intent"]("what’s in the kitchen") is True
 assert scope["_hades_nonpersonal_state_turn"]("what’s in the kitchen") is True
@@ -239,7 +263,7 @@ named_followup = [
     {"role": "assistant", "content": "synthetic health summary"},
 ]
 assert homelab_followup("what about thanatos?", "owner", named_followup) == "What is Thanatos doing right now?"
-assert homelab_followup("what about thanatos or hermes?", "owner", named_followup) == "homelab all nodes status"
+assert homelab_followup("what about thanatos or hermes?", "owner", named_followup) == "homelab node status for thanatos and hermes"
 configured_alias_match = scope["_hades_configured_homelab_alias_matches"]
 homelab_classifier = scope["_hades_is_homelab_intent"]
 scope["_hades_configured_homelab_alias_matches"] = lambda _text: []
@@ -251,9 +275,9 @@ try:
     # Real production composition may not have every conversational node name
     # in its small alias file. A same-chat disjunction still needs a fresh
     # canonical homelab read instead of model-only mythology fallback.
-    assert homelab_followup("what about Thanatos or Hermes?", "owner", named_followup) == "homelab all nodes status"
+    assert homelab_followup("what about Thanatos or Hermes?", "owner", named_followup) == "homelab node status for Thanatos and Hermes"
     homelab_summary_reads.clear()
-    assert homelab_followup("what about Thanatos or Hermes?", "owner", []) == "homelab all nodes status"
+    assert homelab_followup("what about Thanatos or Hermes?", "owner", []) == "homelab node status for Thanatos and Hermes"
     assert homelab_summary_reads == ["homelab_summary"]
     homelab_summary_reads.clear()
     assert homelab_followup("what about Zeus or Apollo?", "owner", []) == "what about Zeus or Apollo?"
@@ -276,6 +300,10 @@ finally:
 assert "all nodes status" in homelab_followup(journey[-3]["content"], "owner", journey[:4])
 assert "nodes problems status" in homelab_followup(journey[-1]["content"], "owner", journey)
 assert homelab_followup("are any of the nodes showing any problems?", "household", journey) == journey[-1]["content"]
+assert scope["_hades_homelab_node_status_targets"](
+    "homelab node status for Thanatos and Hermes"
+) == ["Thanatos", "Hermes"]
+assert scope["_hades_homelab_node_status_targets"]("homelab all nodes status") == []
 
 palworld_request = "I think i wanna build a game server for palworld, can you spin one up for me?"
 assert scope["_hades_is_provisioning_request"](palworld_request)

@@ -5107,6 +5107,27 @@ def _hades_homelab_health_summary_response(summary):
     return getattr(_hades_load_homelab_views(), "_hades_homelab_health_summary_response")(summary)
 
 
+def _hades_homelab_node_problems_response(summary):
+    """Answer a problem-focused follow-up without replaying the full lab report."""
+    if not isinstance(summary, dict):
+        return "I couldn't verify current node problems because the live homelab summary is unavailable."
+    groups = _hades_homelab_availability_groups(summary.get("availability_summary", []))
+    down = groups["down"]
+    unknown = groups["unknown"]
+    if down:
+        parts = ["Yes. Current configured checks reporting a failure: " + ", ".join(down[:4]) + "."]
+    else:
+        parts = ["No fresh configured check is reporting a failure."]
+    if unknown:
+        parts.append(
+            f"{len(unknown)} configured check(s) are stale or unknown; their current state is unverified."
+        )
+    catalog = summary.get("service_catalog")
+    if not isinstance(catalog, dict) or str(catalog.get("coverage") or "UNKNOWN").upper() != "COMPLETE":
+        parts.append("Unmonitored or uncovered services remain unknown.")
+    return " ".join(parts)
+
+
 
 def _hades_homelab_service_coverage_intent(text):
     """Recognize owner requests for services HADES cannot currently verify."""
@@ -5284,6 +5305,22 @@ def _hades_homelab_proxmox_node_load_target(text):
             if target:
                 return target
     return None
+
+
+def _hades_homelab_node_status_targets(text):
+    """Parse the bounded two-node query emitted for an explicit follow-up."""
+    match = re.fullmatch(
+        r"\s*homelab\s+node\s+status\s+for\s+(.+?)\s*[?.!]*\s*",
+        str(text or ""), re.IGNORECASE,
+    )
+    if not match:
+        return []
+    targets = [" ".join(value.split()).strip(" .?!,'’") for value in re.split(
+        r"\s+and\s+", match.group(1), flags=re.IGNORECASE,
+    )]
+    if len(targets) != 2 or any(not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 ._'’-]{0,79}", value) for value in targets):
+        return []
+    return targets
 
 
 def _hades_homelab_guest_index_host_target(user_text):
@@ -5725,6 +5762,18 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
     if _hades_homelab_resource_ranking_intent(text) and scope != "owner":
         return "Detailed infrastructure load information is available only in an owner session."
     node_load_target = _hades_homelab_proxmox_node_load_target(text)
+    node_status_targets = _hades_homelab_node_status_targets(text)
+    node_problem_request = bool(re.search(
+        r"\b(?:nodes?|hosts?|servers?)\b.{0,40}\b(?:problems?|issues?|failures?|wrong|down|degraded)\b|"
+        r"\b(?:problems?|issues?|failures?|wrong|down|degraded)\b.{0,40}\b(?:nodes?|hosts?|servers?)\b",
+        text, re.IGNORECASE,
+    ))
+    if node_status_targets and scope != "owner":
+        return "Detailed host status is available only in an owner session."
+    if node_status_targets and not subject:
+        return "I couldn't verify this owner session, so I can't read host status."
+    if node_problem_request and scope != "owner":
+        return _hades_household_homelab_boundary_response(text)
     if node_load_target and scope != "owner":
         return "Detailed infrastructure load information is available only in an owner session."
     host_workload_target = _hades_homelab_guest_index_host_target(text)
@@ -5772,17 +5821,17 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
         summary = _hades_direct_homelab_tool_result("homelab_summary")
         if not isinstance(summary, dict):
             return None
-        node_problem_request = bool(re.search(
-            r"\b(?:nodes?|hosts?|servers?)\b.{0,40}\b(?:problems?|issues?|failures?|wrong|down|degraded)\b|"
-            r"\b(?:problems?|issues?|failures?|wrong|down|degraded)\b.{0,40}\b(?:nodes?|hosts?|servers?)\b",
-            text,
-            re.IGNORECASE,
-        ))
+        if node_status_targets:
+            views = [
+                _hades_homelab_proxmox_node_load_response(summary, target)
+                for target in node_status_targets
+            ]
+            return "Current host evidence: " + " ".join(value for value in views if value)
         if scope == "owner" and node_problem_request:
             # A problem-focused follow-up needs a concise current conclusion,
             # not the previous all-node diagnostic report. The health view
             # retains probe failures, source disagreements, and unknown coverage.
-            return _hades_homelab_health_summary_response(summary)
+            return _hades_homelab_node_problems_response(summary)
         if node_load_target:
             if not subject:
                 return "I couldn't verify this owner session, so I can't read host load."
@@ -8430,7 +8479,17 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
     # configured alias list. Preserve the established homelab scope and do a
     # fresh bounded inventory read instead of sending bare names to the model.
     multiple_named_targets = bool(re.search(r"\b\w[\w.'’-]*\s+(?:or|and)\s+\w[\w.'’-]*\b", current, re.IGNORECASE))
-    if followup and prior_homelab and (all_nodes or len(targets) > 1 or multiple_named_targets):
+    if followup and prior_homelab and all_nodes:
+        return "homelab all nodes status"
+    named_pair = re.search(
+        r"\bwhat\s+about\s+(?P<first>[A-Za-z0-9][A-Za-z0-9._'’-]{0,59})\s+(?:or|and)\s+"
+        r"(?P<second>[A-Za-z0-9][A-Za-z0-9._'’-]{0,59})\s*[?.!]*$",
+        current, re.IGNORECASE,
+    )
+    if followup and prior_homelab and named_pair:
+        first, second = named_pair.group("first", "second")
+        return f"homelab node status for {first} and {second}"
+    if followup and prior_homelab and (len(targets) > 1 or multiple_named_targets):
         return "homelab all nodes status"
     if followup and multiple_named_targets:
         # Some Hermes paths do not provide prior turns to the overlay callback.
@@ -8453,7 +8512,7 @@ def _hades_homelab_read_followup_query(user_message, scope, conversation_history
                 if name.casefold() not in {item.casefold() for item in matched}:
                     matched.append(name)
         if len(matched) > 1:
-            return "homelab all nodes status"
+            return f"homelab node status for {matched[0]} and {matched[1]}"
     if targets and prior_homelab and followup:
         return f"What is {targets[0]} doing right now?"
     if network_health:
@@ -8497,6 +8556,41 @@ def _hades_grocy_read_operation(user_text):
     if re.search(r"\bshopping\s+list\b", text, re.IGNORECASE):
         return "shopping_list_view_tool"
     return None
+
+
+def _hades_grocy_ingredient_followup(user_text, conversation_history=None):
+    """Recognize a current ingredient question that refers to a recent recipe."""
+    text = str(user_text or "").strip()
+    if not re.search(
+        r"\b(?:what|which)\s+ingredients?\b.{0,60}\b(?:it|that|this)\b|"
+        r"\bwhat\s+does\s+(?:it|that|this)\s+need\b",
+        text, re.IGNORECASE,
+    ):
+        return False
+    rows = conversation_history if isinstance(conversation_history, list) else []
+    for row in reversed(rows):
+        if not isinstance(row, dict) or row.get("role") != "user":
+            continue
+        prior = str(row.get("content") or "").strip()
+        if prior.casefold() == text.casefold():
+            continue
+        if re.search(r"\b(?:network|homelab|finance|spend|spent|server|git|coding)\b", prior, re.I):
+            return False
+        return _hades_grocy_read_operation(prior) == "recipe_details_tool"
+    return False
+
+
+def _hades_grocy_read_operation_for_turn(user_text, tools, conversation_history=None):
+    """Select this turn's operation, using history only to resolve an ingredient reference."""
+    operation = _hades_grocy_read_operation(user_text)
+    if operation is None and _hades_grocy_ingredient_followup(user_text, conversation_history):
+        operation = "recipe_details_tool"
+    if not operation:
+        return None
+    tool = next((item for item in tools if str(item.get("function", {}).get("name", "")).endswith(operation)), None)
+    if not tool:
+        return None
+    return {"type": "function", "function": {"name": tool["function"]["name"]}}
 
 
 def _hades_grocy_read_tool_choice(user_text, tools):
@@ -11891,6 +11985,7 @@ try:
             or _HADES_GROCY_ACTION_INTENT.search(current_text)
             or _HADES_GROCY_ITEM_FRAGMENT.search(current_text)
             or _HADES_MEAL_RECOMMENDATION_INTENT.search(current_text)
+            or _hades_grocy_ingredient_followup(current_text, _hades_history)
         )
         explicit_other_domain_turn = bool(
             not current_grocy_intent
@@ -12490,6 +12585,8 @@ try:
                 ))
                 recipe_web_compound = bool(
                     recipe_turn
+                    and _hades_grocy_read_operation(current_text) is None
+                    and not _hades_grocy_ingredient_followup(current_text, _hades_history)
                     and web_intent
                     and not memory_intent
                     and not homelab_intent
@@ -12579,8 +12676,8 @@ try:
                         t["function"]["name"] for t in grocy_tools
                     }
                     if not recipe_web_compound:
-                        _read_choice = _hades_grocy_read_tool_choice(
-                            current_text, grocy_tools,
+                        _read_choice = _hades_grocy_read_operation_for_turn(
+                            current_text, grocy_tools, _hades_history,
                         )
                         if _read_choice:
                             self.request_overrides = {
