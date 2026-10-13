@@ -366,7 +366,7 @@ with tempfile.TemporaryDirectory(prefix="hades-multidomain-finance-") as temp:
         assert "$500.00" not in trailing_year, trailing_year
         explicit_followup = scope["_hades_finance_followup_query"](
             "Calculate how much I spent there", [
-                {"role": "user", "content": "How much have I spent on 7 Brew in the last year?"},
+                {"role": "user", "content": "How much did I spend on 7 Brew in the last year?"},
                 {"role": "assistant", "content": trailing_year},
                 {"role": "user", "content": "But I need to know"},
                 {"role": "assistant", "content": "I'm here to help—what do you need to know?"},

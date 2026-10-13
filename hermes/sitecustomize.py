@@ -3787,7 +3787,8 @@ def _hades_finance_followup_query(user_text, conversation_history, scope):
     ):
         return current
     finance_pattern = re.compile(
-        r"\b(?:finance|spending|spent|transactions?|merchant|year[ -]to[ -]date|ytd|this\s+year)\b",
+        r"\b(?:finance|spend(?:ing)?|spent|transactions?|merchant|year[ -]to[ -]date|ytd|this\s+year|"
+        r"(?:last|past)\s+year|last\s+12\s+months)\b",
         re.IGNORECASE,
     )
     for row in reversed(conversation_history if isinstance(conversation_history, list) else []):
