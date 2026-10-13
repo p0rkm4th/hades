@@ -25,13 +25,25 @@ Legacy `docker build` is not reproducible and is not the supported command.
 ## Material changes reviewed
 
 The upstream range is 584 commits from the exact 0.11.4 source (`8bd8b4fa`)
-to the 0.12.0 source above. Material areas include SQL-backed session stamps
-and optional MFA; nested groups and group model defaults; shared-chat replies
-and chat forking; tool/model/skill version history; experimental Tool Search;
-Realtime voice; chat/tool streaming and persistence changes; and additional
-database migrations. Realtime voice, MFA policy, and Tool Search remain
-unconfigured in this candidate. Shared-chat permissions and nested-group
-revocation require explicit acceptance below.
+to the 0.12.0 source above. The material HADES-facing changes reviewed were:
+
+| Area | Relevant 0.12 change | Qualification disposition |
+| --- | --- | --- |
+| Auth/session | SQL-backed session stamps, optional MFA, auth/session changes | Existing HADES revocation adapters retained and tested; MFA policy stays off. |
+| Database/migration | Additional schema and data migrations | Tested on disposable populated 0.11.4 copy; rollback restores the pre-upgrade database and revocation store. |
+| Chat/message storage | Chat persistence and message/branch/fork changes | Migration, private/shared access, restart persistence, and streamed response paths tested; full visual edit/regenerate lifecycle is not yet independently evidenced. |
+| Sharing/channels | Shared-chat replies, chat forks, permission changes | ACL and membership persistence tested; no new sharing defaults enabled. |
+| Tools/MCP | Tool, model, and skill version history; experimental Tool Search | Existing HADES tool flow tested; Tool Search remains disabled. |
+| WebSocket/streaming | Chat and tool streaming changes | Synthetic stream and revocation/disconnect paths tested. |
+| Model controls | Group model defaults and additional model controls | Candidate does not grant new authority through UI controls; acceptance uses bounded synthetic model configuration. |
+| Files | Upload and document preview changes | Bounded DOCX preview, malicious/unsupported handling, and cross-user isolation regression passed. |
+| Voice | Realtime voice | Disabled; requires separate service/privacy decision. |
+| Admin/user management | Nested groups and group defaults | LDAP synchronization, grant/revocation, empty-group and outage behavior tested with HADES adapters. |
+| Security | Session, revocation, sharing, file, and socket changes | Existing HADES security guarantees preserved by focused candidate tests. |
+| UI only | Branding, theme, model presentation, and layout | Candidate starts and synthetic authenticated UI flows render; no production customization changes. |
+
+Realtime voice, MFA policy, and Tool Search remain unconfigured in this
+candidate. No optional feature is enabled by the upgrade itself.
 
 ## HADES compatibility disposition
 
@@ -51,8 +63,13 @@ they do not weaken this production requirement.
 ## Qualification evidence so far
 
 - Candidate-only Docker wrapper built locally from the pinned amd64 image.
-- Repeating the candidate build with the same committed inputs yielded the
-  same local image ID.
+- Final candidate source: `bd77b10c7cd06fb0e1d9fae6b0590bd4a0a1e0f4`.
+- Repeating two no-cache candidate builds for that exact source yielded
+  byte-identical 1,618,772,992-byte Docker archives with SHA-256
+  `92eb3d13b937558c6b76dfc99eb16a585030de6b6865b9551da3b19dc5654c1d` and
+  image config ID `sha256:358ccb2f35f9959638fe0a77ced1f37e6fb5a4927e71c372f49cd28fb7fbc3c2`.
+  The manifest records the upstream and BuildKit pins, source SHA, Dockerfile
+  SHA, Buildx version, platform, image ID, and artifact SHA.
 - Synthetic owner/household populated 0.11.4 state migrated on the HADES 0.12
   wrapper; users, private chat/file isolation, shared-channel membership,
   uploaded DOCX bytes, and SQLite integrity survived.
@@ -61,7 +78,7 @@ they do not weaken this production requirement.
   sessions remained rejected; fresh login and state survived restart.
 - A malformed disposable SQLite database made the candidate exit visibly;
   the separately preserved source snapshot remained unchanged.
-- Synthetic candidate tests pass for LDAP identity/group synchronization,
+- Exact final-image candidate tests pass for LDAP identity/group synchronization,
   group grant/revocation and LDAP outage; HTTP/session revocation, role change,
   password change, account deletion; private chat isolation and restart
   persistence; shared Channels permission and restart; and streamed Channels
@@ -100,16 +117,17 @@ they do not weaken this production requirement.
 ## Conditions and remaining limits
 
 - Candidate tests use synthetic identities, data, and model/tool fixtures; no
-  real Scotty account or private production database was migrated.
+  real Scotty account or private production database was migrated. The UI
+  harnesses exercise authenticated application flows, but a complete browser
+  interaction matrix for edit, regenerate, branch, and delete is not claimed.
 - Owner regression semantics were checked through candidate UI journeys and
   focused source tests. This is bounded compatibility evidence, not a claim
   that every prompt variant or every live production integration was exercised
   against the candidate.
 - MFA, Realtime voice, and experimental Tool Search remain disabled. Enabling
   them requires separate product decisions and qualification.
-- Hosted Public CI run `38415940662` passes for source commit
-  `06e8b573f011c3796cfb130256ec82b5e5e09dea`. This documentation-only update
-  still requires its own hosted run.
+- Hosted Public CI run `38416741710` passes for source commit
+  `bd77b10c7cd06fb0e1d9fae6b0590bd4a0a1e0f4`.
 
 No production promotion is authorized by this qualification. Candidate
 evidence supports migration/rollback, authentication and revocation, LDAP,
