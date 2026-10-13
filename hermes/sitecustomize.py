@@ -5226,7 +5226,7 @@ def _hades_homelab_inventory_response(summary, excluded_names=None, overview=Fal
         label = " ".join(name.split())[:80]
         # Discovery may label an unidentified host with its IP. Owner-facing
         # inventory answers use names, never raw address strings.
-        display_label = re.sub(r"\bunknown[-_ ]?(?:\d{1,3}\.){3}\d{1,3}\b", "unidentified device", label, flags=re.IGNORECASE)
+        display_label = re.sub(r"\bunknown[-_ ]?(?:\d{1,3}[.-]){3}\d{1,3}\b", "unidentified device", label, flags=re.IGNORECASE)
         display_label = re.sub(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "an IP address", display_label)
         canonical_label = re.sub(r"\s+\((?:vm|ct|container)\s+\d+\)$", "", label, flags=re.IGNORECASE)
         key = re.sub(r"[^a-z0-9]+", "", canonical_label.casefold())

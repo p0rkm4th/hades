@@ -1957,7 +1957,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
                 {'name': 'Synthetic Probe Only', 'runtime_status': 'NOT_OBSERVED',
                  'availability_status': 'up'},
             ]
-            summary['inventory_only_names'] = ['Synthetic Storage', 'unknown-192.0.2.44']
+            summary['inventory_only_names'] = ['Synthetic Storage', 'unknown-192.168-10-113']
             summary['online_names'] = ['Synthetic Compute', 'Synthetic Runtime Only']
             summary['resources_truncated'] = {'returned': 2, 'total': 4}
             summary['availability_summary'] = [
@@ -1984,7 +1984,7 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
             assert 'Synthetic Compute (static inventory; Proxmox currently reports online)' in static_inventory, static_inventory
             assert 'Synthetic Storage (static inventory; not currently observed by Proxmox)' in static_inventory, static_inventory
             assert 'unidentified device' in static_inventory, static_inventory
-            assert '192.0.2.44' not in static_inventory, static_inventory
+            assert '192.168' not in static_inventory, static_inventory
             assert 'Thanatos' not in static_inventory, static_inventory
             assert 'Synthetic Probe Only' not in static_inventory, static_inventory
             assert len(static_inventory) < 500, len(static_inventory)
