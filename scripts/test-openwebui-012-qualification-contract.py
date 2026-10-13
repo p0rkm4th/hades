@@ -22,6 +22,7 @@ def main() -> None:
     assert candidate["HADES_OPEN_WEBUI_012_UPSTREAM_COMMIT"] == "15818d88fd7bde1b73de33590f50d15d21e8d7c1"
     assert re.fullmatch(r"ghcr\.io/open-webui/open-webui@sha256:[0-9a-f]{64}", candidate["HADES_OPEN_WEBUI_012_OCI_INDEX"])
     assert re.fullmatch(r"ghcr\.io/open-webui/open-webui@sha256:[0-9a-f]{64}", candidate["HADES_OPEN_WEBUI_012_AMD64_IMAGE"])
+    assert re.fullmatch(r"moby/buildkit@sha256:[0-9a-f]{64}", candidate["HADES_OPEN_WEBUI_012_BUILDKIT_IMAGE"])
     assert candidate["HADES_OPEN_WEBUI_012_PLATFORM"] == "linux/amd64"
 
     production = {}

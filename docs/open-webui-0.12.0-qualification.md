@@ -16,9 +16,10 @@ The production version manifest remains unchanged. Build with
 Docker Buildx, and the pinned BuildKit image. The build exports a Docker archive
 with commit-derived `SOURCE_DATE_EPOCH` and timestamp rewriting, then records
 its SHA-256, loaded image ID, upstream inputs, Buildx/BuildKit identity, and
-Dockerfile checksum in a deterministic manifest. Two no-cache exports of the
-same source produced byte-identical 1.6 GB archives (SHA-256
-`67d0987eb3c88b4f9be8119b147d1347dbca7aafb2c40da22a95c61b6aa5cc50`).
+Dockerfile checksum in a deterministic manifest. Two no-cache exports for
+source commit `06e8b573f011c3796cfb130256ec82b5e5e09dea` produced byte-identical
+1.6 GB archives (SHA-256
+`b057165019de9f8b0d3ead45caade329e2f9d75bece1ab97f1cbdf99ae73cd98`).
 Legacy `docker build` is not reproducible and is not the supported command.
 
 ## Material changes reviewed
@@ -106,9 +107,9 @@ they do not weaken this production requirement.
   against the candidate.
 - MFA, Realtime voice, and experimental Tool Search remain disabled. Enabling
   them requires separate product decisions and qualification.
-- Hosted Public CI run `38413517195` passes for source commit
-  `42bd23daf5268c81812b21ca547a82fc957ce804`; the final reproducible-build
-  changes require their own green run before this recommendation is final.
+- Hosted Public CI run `38415940662` passes for source commit
+  `06e8b573f011c3796cfb130256ec82b5e5e09dea`. This documentation-only update
+  still requires its own hosted run.
 
 No production promotion is authorized by this qualification. Candidate
 evidence supports migration/rollback, authentication and revocation, LDAP,
