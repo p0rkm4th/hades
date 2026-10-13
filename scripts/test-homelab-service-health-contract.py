@@ -1949,26 +1949,32 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         original_registry_read = namespace['_hades_direct_homelab_tool_result']
         original_alias_matches = namespace['_hades_configured_homelab_alias_matches']
         def inventory_fixture(operation):
-            summary = original_registry_read(operation)
+            assert operation == 'homelab_owner_snapshot', operation
+            summary = original_registry_read('homelab_summary')
             summary['resources'] = [
-                {'name': 'Thanatos (VM 101)', 'runtime_status': 'NOT_OBSERVED',
-                 'inventory': {'role': 'Synthetic physical node'}, 'availability': None},
                 {'name': 'Synthetic Compute', 'runtime_status': 'online',
-                 'inventory': {'role': 'Synthetic host'}, 'currently_online': True,
-                 'runtime': {'type': 'node', 'status': 'online'}},
-                {'name': 'Synthetic Storage', 'runtime_status': 'NOT_OBSERVED',
-                 'inventory': {'role': 'Synthetic storage'}},
-                {'name': 'Synthetic Runtime Only', 'runtime_status': 'running',
-                 'runtime': {'type': 'qemu', 'status': 'running'}},
+                 'inventory_device_id': 10, 'role': 'Synthetic host',
+                 'currently_online': True, 'runtime': {'type': 'node', 'status': 'online'}},
                 {'name': 'Synthetic Probe Only', 'runtime_status': 'NOT_OBSERVED',
-                 'availability': {'name': 'Synthetic Probe Only', 'status': 'up'}},
+                 'availability_status': 'up'},
             ]
+            summary['inventory_only_names'] = ['Synthetic Storage']
+            summary['online_names'] = ['Synthetic Compute', 'Synthetic Runtime Only']
+            summary['resources_truncated'] = {'returned': 2, 'total': 4}
             summary['availability_summary'] = [
                 {'name': 'Synthetic Reachability', 'status': 'up', 'freshness': 'FRESH'},
                 {'name': 'Synthetic Stale', 'status': 'down', 'freshness': 'STALE'},
             ]
             summary['status'] = 'OK'
-            return summary
+            return {
+                'status': 'OK',
+                'summary': summary,
+                'compute': {'status': 'OK', 'machines': [
+                    {'name': 'Thanatos (VM 101)', 'role': 'Synthetic physical node', 'address': '192.0.2.10'},
+                    {'name': 'Synthetic Compute', 'role': 'Synthetic host'},
+                    {'name': 'Synthetic Storage', 'role': 'Synthetic storage'},
+                ]},
+            }
         namespace['_hades_direct_homelab_tool_result'] = inventory_fixture
         namespace['_hades_configured_homelab_alias_matches'] = lambda _text: ['Thanatos']
         try:

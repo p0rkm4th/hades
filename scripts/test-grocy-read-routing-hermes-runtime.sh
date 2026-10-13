@@ -135,7 +135,7 @@ for inventory_prompt in (
 network_reads = []
 def synthetic_homelab_source(tool_name, arguments=None):
     network_reads.append(tool_name)
-    return {
+    summary = {
         "status": "OK",
         "online_names": ["Thanatos", "Synthetic Node"],
         "inventory_only_names": ["Unknown Node"],
@@ -151,6 +151,9 @@ def synthetic_homelab_source(tool_name, arguments=None):
              "runtime_detail": {"name": "Synthetic Node", "vmid": 102, "status": "running", "node": "Synthetic Host"}},
         ],
     }
+    if tool_name == "homelab_owner_snapshot":
+        return {"status": "OK", "summary": summary, "compute": {"status": "OK", "machines": []}}
+    return summary
 hades._hades_direct_homelab_tool_result = synthetic_homelab_source
 hades._hades_configured_homelab_records = lambda: [
     {"name": "Thanatos", "aliases": ["Thanatos"]},
@@ -184,7 +187,8 @@ for prompt in ("what's in my network?", "what devices are in my network?", "what
     network_reads.clear()
     result = owner_agent.run_conversation(prompt)
     assert result.get("api_calls") == 0 and "Thanatos" in result.get("final_response", ""), (prompt, result)
-    assert network_reads == ["homelab_summary"], (prompt, network_reads)
+    expected_read = "homelab_owner_snapshot" if hades._hades_homelab_inventory_intent(prompt) else "homelab_summary"
+    assert network_reads == [expected_read], (prompt, network_reads)
     network_reads.clear()
 
 # Same-chat owner health follow-ups must retain node scope but refresh and

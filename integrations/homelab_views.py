@@ -112,7 +112,9 @@ def _hades_homelab_health_summary_response(summary):
     parts.append("Backup contents and restoreability were not checked in this summary.")
     return " ".join(parts)
 
-def _hades_homelab_inventory_response(summary, excluded_names=None, overview=False, static_only=False):
+def _hades_homelab_inventory_response(
+    summary, excluded_names=None, overview=False, static_only=False, hardware=None,
+):
     """Render static inventory and live evidence without conflating their authority."""
     if not isinstance(summary, dict):
         return "I couldn't read the current homelab inventory."
@@ -120,21 +122,52 @@ def _hades_homelab_inventory_response(summary, excluded_names=None, overview=Fal
         re.sub(r"[^a-z0-9]+", "", str(name).casefold())
         for name in (excluded_names or []) if isinstance(name, str) and name.strip()
     }
+    rows_by_name = {}
+
+    def add(name, *, static=False, runtime_status="UNKNOWN", has_runtime=False):
+        if not isinstance(name, str) or not name.strip():
+            return
+        label = " ".join(name.split())[:80]
+        canonical_label = re.sub(r"\s+\((?:vm|ct|container)\s+\d+\)$", "", label, flags=re.IGNORECASE)
+        key = re.sub(r"[^a-z0-9]+", "", canonical_label.casefold())
+        if not key or any(key == excluded_name for excluded_name in excluded):
+            return
+        row = rows_by_name.setdefault(key, {
+            "name": label, "static": False, "has_runtime": False,
+            "runtime_status": "UNKNOWN",
+        })
+        row["static"] = row["static"] or static
+        status = str(runtime_status or "UNKNOWN").upper()
+        if status not in {"UNKNOWN", ""}:
+            row["runtime_status"] = status
+        if has_runtime:
+            row["has_runtime"] = True
+
     resources = summary.get("resources") if isinstance(summary.get("resources"), list) else []
-    rows = [
-        item for item in resources
-        if isinstance(item, dict)
-        and (
-            isinstance(item.get("inventory"), dict)
-            or (not static_only and isinstance(item.get("runtime") or item.get("runtime_detail"), dict))
+    for item in resources:
+        if not isinstance(item, dict) or not item.get("name"):
+            continue
+        static = isinstance(item.get("inventory"), dict) or bool(
+            item.get("inventory_device_id") or item.get("role") or item.get("primary_ip")
         )
-        and item.get("name")
-        and not any(
-            re.sub(r"[^a-z0-9]+", "", str(item["name"]).casefold()).startswith(key)
-            for key in excluded
-        )
-    ]
-    rows.sort(key=lambda item: str(item.get("name", "")).casefold())
+        runtime = item.get("runtime") or item.get("runtime_detail")
+        has_runtime = isinstance(runtime, dict) or bool(item.get("currently_online"))
+        if static or has_runtime:
+            add(
+                item.get("name"), static=static,
+                runtime_status=item.get("runtime_status") or (runtime or {}).get("status"),
+                has_runtime=has_runtime,
+            )
+    for name in summary.get("inventory_only_names", []) if isinstance(summary.get("inventory_only_names"), list) else []:
+        add(name, static=True, runtime_status="NOT_OBSERVED")
+    for name in summary.get("online_names", []) if isinstance(summary.get("online_names"), list) else []:
+        add(name, runtime_status="ONLINE", has_runtime=True)
+    machines = hardware.get("machines", []) if isinstance(hardware, dict) else []
+    for machine in machines if isinstance(machines, list) else []:
+        if isinstance(machine, dict):
+            add(machine.get("name"), static=True)
+    rows = [row for row in rows_by_name.values() if row["static"] or (not static_only and row["has_runtime"])]
+    rows.sort(key=lambda item: item["name"].casefold())
     if rows:
         entries = []
         for item in rows[:12]:
@@ -149,8 +182,8 @@ def _hades_homelab_inventory_response(summary, excluded_names=None, overview=Fal
             else:
                 status = "live state unknown"
             source = "static inventory" if static_only else (
-                "inventory and runtime" if isinstance(item.get("inventory"), dict) and isinstance(item.get("runtime") or item.get("runtime_detail"), dict)
-                else "static inventory" if isinstance(item.get("inventory"), dict) else "Proxmox runtime"
+                "inventory and runtime" if item["static"] and item["has_runtime"]
+                else "static inventory" if item["static"] else "Proxmox runtime"
             )
             entries.append(f"{name} ({source}; {status})")
         count = len(rows)

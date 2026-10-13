@@ -5210,10 +5210,11 @@ def _hades_homelab_inventory_intent(text):
     ))
 
 
-def _hades_homelab_inventory_response(summary, excluded_names=None, overview=False, static_only=False):
+def _hades_homelab_inventory_response(summary, excluded_names=None, overview=False, static_only=False, hardware=None):
     """Render owner inventory requests from the reconciled canonical summary."""
     return _hades_load_homelab_views()._hades_homelab_inventory_response(
         summary, excluded_names=excluded_names, overview=overview, static_only=static_only,
+        hardware=hardware,
     )
 
 
@@ -6073,7 +6074,8 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
     if not workdir:
         return None
     try:
-        summary = _hades_direct_homelab_tool_result("homelab_summary")
+        snapshot = _hades_direct_homelab_tool_result("homelab_owner_snapshot") if inventory_request else None
+        summary = snapshot.get("summary") if isinstance(snapshot, dict) else _hades_direct_homelab_tool_result("homelab_summary")
         if not isinstance(summary, dict):
             return None
         if inventory_request:
@@ -6085,6 +6087,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
             static_only = bool(re.search(r"\b(?:static|hardware)\s+inventory\b", text, re.IGNORECASE))
             return _hades_homelab_inventory_response(
                 summary, excluded_names=aliases, overview=overview, static_only=static_only,
+                hardware=snapshot.get("compute") if isinstance(snapshot, dict) else None,
             )
         if node_status_targets:
             views = []
