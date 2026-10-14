@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x +v
 set -euo pipefail
 
 # Create a private, consistent SQLite snapshot of the production state that
@@ -124,8 +125,7 @@ open_webui_auth_state_restore_validation=not-run
 require_auth_state_backup=${HADES_REQUIRE_OPEN_WEBUI_AUTH_STATE_BACKUP:-0}
 open_webui_minimum_user_revocation_markers=${HADES_OPEN_WEBUI_MIN_REVOCATION_MARKERS:-0}
 open_webui_minimum_token_revocation_markers=${HADES_OPEN_WEBUI_MIN_TOKEN_REVOCATION_MARKERS:-0}
-webui_env=$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' hades-open-webui 2>/dev/null || true)
-if printf '%s\n' "$webui_env" | grep -q '^REDIS_URL='; then
+if docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' hades-open-webui 2>/dev/null | grep -q '^REDIS_URL='; then
   require_auth_state_backup=1
 fi
 if docker inspect hades-open-webui-auth-state >/dev/null 2>&1; then
