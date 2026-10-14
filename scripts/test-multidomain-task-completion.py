@@ -38,6 +38,7 @@ wanted = {
     "_hades_normalize_kitchen_typo",
     "_hades_grocy_read_operation",
     "_hades_direct_grocy_named_recipe_read",
+    "_hades_direct_grocy_recipe_instructions",
     "_hades_grocy_read_tool_choice",
     "_hades_grocy_ingredient_followup",
     "_hades_grocy_read_operation_for_turn",
@@ -134,8 +135,10 @@ assert operation("what ingredients are in Chicken Cordon Bleu?") == "recipe_deta
 assert operation("what recipes dfo i have?") == "recipes_list_tool"
 assert operation("tell me about the best cordon bleu recipe") == "recipe_details_tool"
 saved_reader = scope["_hades_direct_grocy_recipe_read"]
+saved_instruction_reader = scope["_hades_direct_grocy_recipe_instructions"]
 named_read = scope["_hades_direct_grocy_named_recipe_read"]
 named_calls = []
+instruction_calls = []
 def synthetic_named_recipe_reader(text):
     named_calls.append(text)
     if text == "list my recipes":
@@ -143,19 +146,37 @@ def synthetic_named_recipe_reader(text):
     if text == "what ingredients are in Family: Chicken Cordon Bleu?":
         return "Grocy lists these ingredients for Family: Chicken Cordon Bleu: Synthetic Chicken (2 pieces). Nothing was changed."
     return None
+def synthetic_named_recipe_instructions(text):
+    instruction_calls.append(text)
+    return "Grocy's stored instructions for Family: Chicken Cordon Bleu: Synthetic preparation notes."
 scope["_hades_direct_grocy_recipe_read"] = synthetic_named_recipe_reader
+scope["_hades_direct_grocy_recipe_instructions"] = synthetic_named_recipe_instructions
 named_details = named_read("tell me about the best cordon bleu recipe")
-assert named_details and "Grocy lists these ingredients for Family: Chicken Cordon Bleu" in named_details
+assert named_details and "Grocy's stored instructions for Family: Chicken Cordon Bleu" in named_details
+assert "Grocy lists these ingredients for Family: Chicken Cordon Bleu" in named_details
+assert "Synthetic preparation notes" in named_details and "Synthetic Chicken (2 pieces)" in named_details
 assert named_calls == [
     "list my recipes",
     "what ingredients are in Family: Chicken Cordon Bleu?",
 ]
+assert instruction_calls == ["how do i make Family: Chicken Cordon Bleu recipe?"]
+# If Grocy has no preparation text, the detail operation must still be honest
+# and return canonical ingredients rather than substituting model knowledge.
+scope["_hades_direct_grocy_recipe_instructions"] = lambda _text: (
+    "Grocy has no preparation instructions stored for Family: Chicken Cordon Bleu. "
+    "Grocy lists these ingredients for Family: Chicken Cordon Bleu: Synthetic Chicken (2 pieces)."
+)
+missing_steps = named_read("tell me about the best cordon bleu recipe")
+assert missing_steps and "no preparation instructions stored" in missing_steps
+assert "Synthetic Chicken (2 pieces)" in missing_steps
+scope["_hades_direct_grocy_recipe_instructions"] = synthetic_named_recipe_instructions
 scope["_hades_direct_grocy_recipe_read"] = lambda _text: (
     "Saved Grocy recipes: Chicken Cordon Bleu Classic — makeable; "
     "Chicken Cordon Bleu Special — missing. I only checked canonical recipes and stock."
 )
 ambiguous_details = named_read("tell me about the best cordon bleu recipe")
 assert ambiguous_details and "multiple saved recipes" in ambiguous_details and "Which one" in ambiguous_details
+scope["_hades_direct_grocy_recipe_instructions"] = saved_instruction_reader
 scope["_hades_direct_grocy_recipe_read"] = saved_reader
 assert named_read("what ingredients do i have in my kiytchen?") is None
 real_urlopen = urllib.request.urlopen

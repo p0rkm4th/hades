@@ -9213,9 +9213,24 @@ def _hades_direct_grocy_named_recipe_read(user_text):
         )
     if len(matches) != 1:
         return None
-    return _hades_direct_grocy_recipe_read(
-        f"what ingredients are in {matches[0]}?"
-    )
+    # A request to "tell me about" a saved recipe is a detail operation. The
+    # recipe record's description is where Grocy stores preparation notes;
+    # returning only recipe positions silently changes the requested
+    # operation into an ingredient-list read. Reuse the canonical instruction
+    # reader, then include the canonical ingredient list when stored steps
+    # exist. When Grocy has no steps, that reader already states this and
+    # includes the ingredients.
+    detail_prompt = f"how do i make {matches[0]} recipe?"
+    detail = _hades_direct_grocy_recipe_instructions(detail_prompt)
+    if not detail:
+        return None
+    if detail.startswith("Grocy's stored instructions"):
+        ingredients = _hades_direct_grocy_recipe_read(
+            f"what ingredients are in {matches[0]}?"
+        )
+        if ingredients and ingredients.startswith("Grocy lists these ingredients"):
+            return detail + "\n" + ingredients
+    return detail
 
 
 def _hades_grocy_ingredient_followup(user_text, conversation_history=None):
