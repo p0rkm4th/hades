@@ -6,6 +6,10 @@ bash -n "$script" "$rollback"
 for required in \
   'expected-current-sha256' \
   'expected-candidate-sha256' \
+  'expected-support-current-sha256' \
+  'expected-support-candidate-sha256' \
+  'cp -a -- "$support_target" "$rollback_dir/homelab_views.py"' \
+  'installed support checksum mismatch' \
   'verify-config' \
   'trap on_exit EXIT' \
   'deployment_started=1' \
@@ -23,6 +27,8 @@ done
 for required in \
   'expected-current-sha256' \
   'expected-rollback-sha256' \
+  'expected-support-rollback-sha256' \
+  'rollback support absence was not restored' \
   'cp -a -- "$rollback_dir/sitecustomize.py" "$temporary"' \
   'mv -Tf -- "$temporary" "$target"' \
   'systemctl restart "$service"' \

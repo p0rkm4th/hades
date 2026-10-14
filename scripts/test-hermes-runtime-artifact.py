@@ -41,41 +41,63 @@ with tempfile.TemporaryDirectory(prefix="hades-runtime-artifact-") as temporary:
     (repo / "hermes").mkdir(parents=True)
     (repo / "scripts").mkdir()
     (repo / "config").mkdir()
+    (repo / "integrations").mkdir()
     shutil.copyfile(TOOL, repo / "scripts/hermes-runtime-artifact.py")
     source = b"# synthetic Hermes overlay\nVALUE = 'fixture'\n"
+    support = b"# synthetic runtime view helper\nVALUE = 'support-fixture'\n"
     (repo / "hermes/sitecustomize.py").write_bytes(source)
+    (repo / "integrations/homelab_views.py").write_bytes(support)
     config = root / "hermes-profile.yaml"
     config.write_text("mcp_servers: {}\n", encoding="utf-8")
     run("git", "-C", str(repo), "init", "-q")
     run("git", "-C", str(repo), "config", "user.name", "fixture")
     run("git", "-C", str(repo), "config", "user.email", "fixture@example.invalid")
-    run("git", "-C", str(repo), "add", "hermes/sitecustomize.py", "scripts/hermes-runtime-artifact.py")
+    run("git", "-C", str(repo), "add", "hermes/sitecustomize.py", "integrations/homelab_views.py", "scripts/hermes-runtime-artifact.py")
     run("git", "-C", str(repo), "commit", "-qm", "fixture source")
 
     outputs = []
     for name in ("first", "second"):
-        artifact = root / f"{name}.py"
-        manifest = root / f"{name}.json"
+        output_dir = root / name
+        output_dir.mkdir()
+        artifact = output_dir / "sitecustomize.py"
+        manifest = output_dir / "sitecustomize.runtime.json"
         run(
             os.environ.get("PYTHON", "python3"), str(TOOL), "build",
             "--source-repo", str(repo), "--hermes-version", "0.21.2",
             "--config-input", f"profile={config}",
             "--artifact", str(artifact), "--manifest", str(manifest),
         )
-        outputs.append((artifact.read_bytes(), manifest.read_bytes()))
+        outputs.append((artifact.read_bytes(), (output_dir / "homelab_views.py").read_bytes(), manifest.read_bytes()))
     assert outputs[0] == outputs[1], "identical inputs must produce byte-identical output and manifest"
-    assert (root / "first.py").stat().st_mode & 0o777 == 0o600
-    assert (root / "first.json").stat().st_mode & 0o777 == 0o600
+    assert (root / "first/sitecustomize.py").stat().st_mode & 0o777 == 0o600
+    assert (root / "first/homelab_views.py").stat().st_mode & 0o777 == 0o600
+    assert (root / "first/sitecustomize.runtime.json").stat().st_mode & 0o777 == 0o600
     assert outputs[0][0] == source, "runtime artifact must be the exact tracked source copy"
-    manifest = json.loads(outputs[0][1])
-    assert manifest["schema"] == "hades/hermes-runtime-overlay/v1"
+    assert outputs[0][1] == support, "runtime helper must be the exact tracked source copy"
+    manifest = json.loads(outputs[0][2])
+    assert manifest["schema"] == "hades/hermes-runtime-overlay/v2"
     assert manifest["hades_git_sha"] == git(repo, "rev-parse", "HEAD")
     assert manifest["input_artifact_sha256"]["hermes/sitecustomize.py"] == hashlib.sha256(source).hexdigest()
     assert manifest["generated_artifact"]["sha256"] == hashlib.sha256(source).hexdigest()
+    assert manifest["supporting_artifacts"]["integrations/homelab_views.py"]["sha256"] == hashlib.sha256(support).hexdigest()
     assert manifest["configuration_inputs"][0]["name"] == "profile"
     assert manifest["manifest_id"] == hashlib.sha256(
         (json.dumps({k: v for k, v in manifest.items() if k != "manifest_id"}, sort_keys=True, separators=(",", ":")) + "\n").encode()
     ).hexdigest()
+    collision = root / "collision"
+    collision.mkdir()
+    preserved_support = collision / "homelab_views.py"
+    preserved_support.write_bytes(b"pre-existing support must survive failed build")
+    collision_build = run(
+        os.environ.get("PYTHON", "python3"), str(TOOL), "build",
+        "--source-repo", str(repo), "--hermes-version", "0.21.2",
+        "--config-input", f"profile={config}",
+        "--artifact", str(collision / "sitecustomize.py"),
+        "--manifest", str(collision / "sitecustomize.runtime.json"), check=False,
+    )
+    assert collision_build.returncode != 0
+    assert preserved_support.read_bytes() == b"pre-existing support must survive failed build"
+    assert not (collision / "sitecustomize.py").exists()
     fingerprint = run(
         os.environ.get("PYTHON", "python3"), str(TOOL), "fingerprint",
         "--config-input", f"profile={config}",
@@ -87,12 +109,23 @@ with tempfile.TemporaryDirectory(prefix="hades-runtime-artifact-") as temporary:
         os.environ.get("PYTHON", "python3"), str(TOOL), "verify",
         "--source-repo", str(repo), "--hermes-version", "0.21.2",
         "--config-input", f"profile={config}",
-        "--artifact", str(root / "first.py"), "--manifest", str(root / "first.json"),
-        "--installed", str(root / "first.py"),
+        "--artifact", str(root / "first/sitecustomize.py"), "--manifest", str(root / "first/sitecustomize.runtime.json"),
+        "--installed", str(root / "first/sitecustomize.py"),
+        "--installed-support", str(root / "first/homelab_views.py"),
     )
+    wrong_support = root / "wrong-homelab_views.py"
+    wrong_support.write_bytes(b"VALUE = 'wrong support module'\n")
+    rejected = run(
+        os.environ.get("PYTHON", "python3"), str(TOOL), "verify",
+        "--source-repo", str(repo), "--hermes-version", "0.21.2",
+        "--config-input", f"profile={config}",
+        "--artifact", str(root / "first/sitecustomize.py"), "--manifest", str(root / "first/sitecustomize.runtime.json"),
+        "--installed-support", str(wrong_support), check=False,
+    )
+    assert rejected.returncode != 0 and "installed runtime support file differs" in rejected.stderr
     run(
         os.environ.get("PYTHON", "python3"), str(TOOL), "verify-config",
-        "--config-input", f"profile={config}", "--manifest", str(root / "first.json"),
+        "--config-input", f"profile={config}", "--manifest", str(root / "first/sitecustomize.runtime.json"),
     )
     wrong_loaded = root / "wrong-sitecustomize.py"
     wrong_loaded.write_bytes(b"VALUE = 'wrong import path'\n")
@@ -100,7 +133,7 @@ with tempfile.TemporaryDirectory(prefix="hades-runtime-artifact-") as temporary:
         os.environ.get("PYTHON", "python3"), str(TOOL), "verify",
         "--source-repo", str(repo), "--hermes-version", "0.21.2",
         "--config-input", f"profile={config}",
-        "--artifact", str(root / "first.py"), "--manifest", str(root / "first.json"),
+        "--artifact", str(root / "first/sitecustomize.py"), "--manifest", str(root / "first/sitecustomize.runtime.json"),
         "--installed", str(wrong_loaded), check=False,
     )
     assert rejected.returncode != 0 and "installed runtime file differs" in rejected.stderr
@@ -110,12 +143,12 @@ with tempfile.TemporaryDirectory(prefix="hades-runtime-artifact-") as temporary:
         os.environ.get("PYTHON", "python3"), str(TOOL), "verify",
         "--source-repo", str(repo), "--hermes-version", "0.21.2",
         "--config-input", f"profile={config}",
-        "--artifact", str(root / "first.py"), "--manifest", str(root / "first.json"), check=False,
+        "--artifact", str(root / "first/sitecustomize.py"), "--manifest", str(root / "first/sitecustomize.runtime.json"), check=False,
     )
     assert rejected.returncode != 0 and "manifest differs" in rejected.stderr
     rejected = run(
         os.environ.get("PYTHON", "python3"), str(TOOL), "verify-config",
-        "--config-input", f"profile={config}", "--manifest", str(root / "first.json"), check=False,
+        "--config-input", f"profile={config}", "--manifest", str(root / "first/sitecustomize.runtime.json"), check=False,
     )
     assert rejected.returncode != 0 and "configuration differs" in rejected.stderr
 
@@ -124,8 +157,8 @@ with tempfile.TemporaryDirectory(prefix="hades-runtime-artifact-") as temporary:
         os.environ.get("PYTHON", "python3"), str(TOOL), "verify",
         "--source-repo", str(repo), "--hermes-version", "0.21.2",
         "--config-input", f"profile={config}",
-        "--artifact", str(root / "first.py"), "--manifest", str(root / "first.json"), check=False,
+        "--artifact", str(root / "first/sitecustomize.py"), "--manifest", str(root / "first/sitecustomize.runtime.json"), check=False,
     )
     assert rejected.returncode != 0 and "source repository must be clean" in rejected.stderr
 
-print("PASS deterministic Hermes runtime artifact, manifest, config identity, and wrong-file detection")
+print("PASS deterministic Hermes runtime source bundle, manifest, config identity, and wrong-file detection")

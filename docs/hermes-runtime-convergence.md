@@ -112,11 +112,13 @@ judgment.
 
 `scripts/hermes-runtime-artifact.py` is the only supported source-to-runtime
 builder. It emits a byte-identical copy of tracked `hermes/sitecustomize.py`
-and a deterministic JSON manifest. The manifest binds HADES commit and tree,
-Hermes version, source/artifact checksum, builder source checksum, and hashes of
-explicit deployment configuration inputs. It contains no build timestamp.
-Changing any input changes the manifest ID; changing the source changes both
-the artifact and its checksum.
+plus a byte-identical copy of tracked `integrations/homelab_views.py` and a
+deterministic JSON manifest. The views module is required at runtime beside the
+overlay because the canonical homelab presentation wrappers load it by module
+path. The manifest binds HADES commit and tree, Hermes version, both source and
+artifact checksums, builder source checksum, and hashes of explicit deployment
+configuration inputs. It contains no build timestamp. Changing any input
+changes the manifest ID.
 
 The `hermes-overlay-composition.py` and `prepare-*-overlay-candidate.py`
 utilities remain for bounded migration/test cases. They are not the production
@@ -156,13 +158,16 @@ python3 scripts/hermes-runtime-artifact.py verify \
   --manifest /tmp/hades-runtime/sitecustomize.runtime.json
 ```
 
+The build also writes `/tmp/hades-runtime/homelab_views.py`; verify requires
+that exact tracked support source beside the main artifact.
+
 The release deployment script is
 `scripts/deploy-hermes-runtime-overlay.sh`. It is deliberately pinned to the
 qualified Hermes 0.21.2 service. Set `HADES_GENERATED_ROOT`,
 `HADES_HERMES_ENV_FILE`, `HERMES_HOME`, and `HADES_HERMES_PYTHON` from the
 approved private deployment configuration; do not put their values in Git. It
-verifies the expected pre-state and both candidate hashes, saves an exact
-metadata-preserving rollback copy, installs by same-filesystem rename, restarts
+verifies the expected pre-state and all candidate hashes, saves exact
+metadata-preserving rollback copies, installs by same-filesystem rename, restarts
 Hermes, verifies the loaded module path/checksum/version and health, and
 restores the old artifact if any check fails.
 `scripts/rollback-hermes-runtime-overlay.sh` performs an explicit
@@ -179,11 +184,15 @@ overlay_dir="$HADES_GENERATED_ROOT/config/overlay"
 hermes_host=$(docker exec hades-open-webui getent hosts host.docker.internal | awk 'NR==1 {print $1}')
 sudo bash scripts/deploy-hermes-runtime-overlay.sh \
   --candidate /tmp/hades-runtime/sitecustomize.py \
+  --support-candidate /tmp/hades-runtime/homelab_views.py \
   --manifest /tmp/hades-runtime/sitecustomize.runtime.json \
   --target "$overlay_dir/sitecustomize.py" \
+  --support-target "$overlay_dir/homelab_views.py" \
   --manifest-target "$overlay_dir/sitecustomize.runtime.json" \
   --expected-current-sha256 <current-active-sha256> \
   --expected-candidate-sha256 <candidate-sha256> \
+  --expected-support-current-sha256 <current-support-sha256-or-absent> \
+  --expected-support-candidate-sha256 <support-sha256> \
   --expected-manifest-sha256 <manifest-sha256> \
   --rollback-dir "$HADES_GENERATED_ROOT/backups/runtime-convergence-<hades-sha12>" \
   --service hades-hermes.service \
@@ -200,10 +209,13 @@ checksum:
 ```sh
 sudo bash scripts/rollback-hermes-runtime-overlay.sh \
   --target "$overlay_dir/sitecustomize.py" \
+  --support-target "$overlay_dir/homelab_views.py" \
   --manifest-target "$overlay_dir/sitecustomize.runtime.json" \
   --rollback-dir "$HADES_GENERATED_ROOT/backups/runtime-convergence-<hades-sha12>" \
   --expected-current-sha256 <currently-installed-candidate-sha256> \
   --expected-rollback-sha256 <saved-prestate-sha256> \
+  --expected-support-current-sha256 <installed-support-sha256> \
+  --expected-support-rollback-sha256 <saved-support-sha256-or-absent> \
   --service hades-hermes.service \
   --python "$HADES_HERMES_PYTHON" \
   --health-url "http://$hermes_host:8642/health"
@@ -223,9 +235,9 @@ sudo python3 scripts/hermes-runtime-artifact.py verify-live \
   --config-input hermes-profile="$HERMES_HOME/profiles/hades/config.yaml"
 ```
 
-It reports `EXPECTED` only when the manifest, candidate, installed file,
-service-selected Python import, process start time, configuration fingerprints,
-and Hermes version agree. It reports `DRIFTED` on a known mismatch and fails
+It reports `EXPECTED` only when the manifest, both bundle files, installed
+files, service-selected Python imports, process start time, configuration
+fingerprints, and Hermes version agree. It reports `DRIFTED` on a known mismatch and fails
 closed when process identity is unavailable. The process-start check ensures
 the installed bytes were already present when the current Hermes interpreter
 started; the import probe independently confirms Python's actual selection for

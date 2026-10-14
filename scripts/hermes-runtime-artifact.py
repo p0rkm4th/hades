@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and verify the canonical Hermes sitecustomize runtime artifact.
+"""Build and verify the canonical Hermes runtime source bundle.
 
 The current production contract is an identity composition: the runtime file is
 an exact copy of the tracked ``hermes/sitecustomize.py`` source. Deployment
@@ -21,12 +21,14 @@ import sys
 from pathlib import Path
 from typing import Any
 
-SCHEMA = "hades/hermes-runtime-overlay/v1"
+SCHEMA = "hades/hermes-runtime-overlay/v2"
 SOURCE = "hermes/sitecustomize.py"
+SUPPORT_SOURCE = "integrations/homelab_views.py"
+SUPPORT_FILENAME = "homelab_views.py"
 TOOL = "scripts/hermes-runtime-artifact.py"
 MANIFEST_FIELDS = {
     "schema", "hades_git_sha", "hades_tree_sha256", "hermes_version",
-    "input_artifact_sha256", "composition", "composition_tool",
+    "input_artifact_sha256", "supporting_artifacts", "composition", "composition_tool",
     "configuration_inputs", "runtime_configuration_id", "generated_artifact", "manifest_id",
 }
 VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?\Z")
@@ -115,7 +117,7 @@ def config_inputs(specifications: list[str]) -> list[dict[str, str]]:
     return [{"name": name, "sha256": values[name]} for name in sorted(values)]
 
 
-def manifest_for(repo: Path, hermes_version: str, inputs: list[dict[str, str]]) -> tuple[dict[str, Any], bytes]:
+def manifest_for(repo: Path, hermes_version: str, inputs: list[dict[str, str]]) -> tuple[dict[str, Any], bytes, bytes]:
     if not VERSION_RE.fullmatch(hermes_version):
         raise ValueError("Hermes version must be explicit and version-shaped")
     root = repo.resolve(strict=True)
@@ -126,23 +128,27 @@ def manifest_for(repo: Path, hermes_version: str, inputs: list[dict[str, str]]) 
     revision = git(root, "rev-parse", "HEAD")
     tree = git(root, "rev-parse", "HEAD^{tree}")
     source = tracked_bytes(root, SOURCE)
+    support = tracked_bytes(root, SUPPORT_SOURCE)
     tool = tracked_bytes(root, TOOL)
     compile(source, SOURCE, "exec")
+    compile(support, SUPPORT_SOURCE, "exec")
     artifact_sha = sha256(source)
+    support_sha = sha256(support)
     core: dict[str, Any] = {
         "schema": SCHEMA,
         "hades_git_sha": revision,
         "hades_tree_sha256": tree,
         "hermes_version": hermes_version,
-        "input_artifact_sha256": {SOURCE: artifact_sha},
-        "composition": "byte-identical-copy",
+        "input_artifact_sha256": {SOURCE: artifact_sha, SUPPORT_SOURCE: support_sha},
+        "supporting_artifacts": {SUPPORT_SOURCE: {"path": SUPPORT_FILENAME, "sha256": support_sha}},
+        "composition": "runtime-source-bundle-copy",
         "composition_tool": {"path": TOOL, "sha256": sha256(tool)},
         "configuration_inputs": inputs,
         "runtime_configuration_id": sha256(canonical_json(inputs)),
         "generated_artifact": {"path": "sitecustomize.py", "sha256": artifact_sha},
     }
     core["manifest_id"] = sha256(canonical_json(core))
-    return core, source
+    return core, source, support
 
 
 def write_new(path: Path, data: bytes) -> None:
@@ -179,33 +185,46 @@ def load_manifest(path: Path) -> dict[str, Any]:
 def command_build(args: argparse.Namespace) -> int:
     root = args.source_repo.resolve(strict=True)
     inputs = config_inputs(args.config_input)
-    manifest, artifact = manifest_for(root, args.hermes_version, inputs)
-    if args.artifact.absolute() == args.manifest.absolute():
-        raise ValueError("artifact and manifest outputs must be different files")
-    write_new(args.artifact.absolute(), artifact)
+    manifest, artifact, support = manifest_for(root, args.hermes_version, inputs)
+    support_output = args.artifact.absolute().with_name(SUPPORT_FILENAME)
+    if len({args.artifact.absolute(), args.manifest.absolute(), support_output}) != 3:
+        raise ValueError("bundle artifacts and manifest must use distinct output files")
+    artifact_created = support_created = False
     try:
+        write_new(args.artifact.absolute(), artifact)
+        artifact_created = True
+        write_new(support_output, support)
+        support_created = True
         write_new(args.manifest.absolute(), json.dumps(manifest, sort_keys=True, indent=2).encode() + b"\n")
     except BaseException:
-        args.artifact.unlink(missing_ok=True)
+        if support_created:
+            support_output.unlink(missing_ok=True)
+        if artifact_created:
+            args.artifact.unlink(missing_ok=True)
         raise
     print(f"PASS runtime artifact built: sha256={manifest['generated_artifact']['sha256']} manifest={manifest['manifest_id']}")
     return 0
 
 
 def command_verify(args: argparse.Namespace) -> int:
-    manifest, source = manifest_for(args.source_repo.resolve(strict=True), args.hermes_version, config_inputs(args.config_input))
+    manifest, source, support = manifest_for(args.source_repo.resolve(strict=True), args.hermes_version, config_inputs(args.config_input))
     actual_manifest = load_manifest(args.manifest)
     actual_artifact = read_regular(args.artifact)
     if actual_manifest != manifest:
         raise ValueError("runtime artifact manifest differs from canonical source/configuration")
     if actual_artifact != source:
         raise ValueError("runtime artifact differs from the canonical tracked source")
+    support_path = args.artifact.absolute().with_name(SUPPORT_FILENAME)
+    if read_regular(support_path) != support:
+        raise ValueError("runtime support artifact differs from canonical tracked source")
     expected_digest = manifest["generated_artifact"]["sha256"]
     if sha256(actual_artifact) != expected_digest:
         raise ValueError("runtime artifact checksum differs from manifest")
     if args.installed is not None and sha256(read_regular(args.installed)) != expected_digest:
         raise ValueError("installed runtime file differs from the qualified artifact")
-    print(f"EXPECTED source={manifest['hades_git_sha'][:12]} hermes={manifest['hermes_version']} artifact_sha256={expected_digest} manifest={manifest['manifest_id']}")
+    if args.installed_support is not None and sha256(read_regular(args.installed_support)) != manifest["supporting_artifacts"][SUPPORT_SOURCE]["sha256"]:
+        raise ValueError("installed runtime support file differs from the qualified artifact")
+    print(f"EXPECTED source={manifest['hades_git_sha'][:12]} hermes={manifest['hermes_version']} artifact_sha256={expected_digest} support_sha256={manifest['supporting_artifacts'][SUPPORT_SOURCE]['sha256']} manifest={manifest['manifest_id']}")
     return 0
 
 
@@ -290,9 +309,10 @@ def command_verify_live(args: argparse.Namespace) -> int:
         source_hashes = manifest.get("input_artifact_sha256")
         expected_sha = generated.get("sha256") if isinstance(generated, dict) else None
         if (
-            manifest.get("composition") != "byte-identical-copy"
+            manifest.get("composition") != "runtime-source-bundle-copy"
             or not isinstance(source_hashes, dict)
             or source_hashes.get(SOURCE) != expected_sha
+            or source_hashes.get(SUPPORT_SOURCE) != expected_support_sha
             or not isinstance(expected_sha, str)
             or not SHA256_RE.fullmatch(expected_sha)
         ):
@@ -309,6 +329,18 @@ def command_verify_live(args: argparse.Namespace) -> int:
         candidate = read_regular(args.artifact)
         if sha256(candidate) != expected_sha:
             raise ValueError("candidate artifact checksum differs from the approved identity")
+    expected_support_sha = None
+    if manifest is not None:
+        supporting = manifest.get("supporting_artifacts")
+        support = supporting.get(SUPPORT_SOURCE) if isinstance(supporting, dict) else None
+        expected_support_sha = support.get("sha256") if isinstance(support, dict) else None
+        if not isinstance(expected_support_sha, str) or not SHA256_RE.fullmatch(expected_support_sha):
+            raise ValueError("runtime manifest support-artifact identity is invalid")
+        installed_support = args.installed.parent / SUPPORT_FILENAME
+        if sha256(read_regular(installed_support)) != expected_support_sha:
+            raise ValueError("installed runtime support file differs from the approved identity")
+        if args.artifact is not None and sha256(read_regular(args.artifact.parent / SUPPORT_FILENAME)) != expected_support_sha:
+            raise ValueError("candidate runtime support file differs from the approved identity")
     installed = read_regular(args.installed)
     if sha256(installed) != expected_sha:
         raise ValueError("installed artifact checksum differs from the approved identity")
@@ -334,6 +366,10 @@ def command_verify_live(args: argparse.Namespace) -> int:
     installed_stat = args.installed.stat()
     if installed_stat.st_ctime > started + 1.0:
         raise ValueError("installed artifact changed after the current Hermes process started")
+    if expected_support_sha is not None:
+        support_stat = (args.installed.parent / SUPPORT_FILENAME).stat()
+        if support_stat.st_ctime > started + 1.0:
+            raise ValueError("installed runtime support changed after the Hermes process started")
 
     # Re-run the same interpreter entry environment as the service. The import
     # probe reports only module identity; deployment values remain in memory.
@@ -349,11 +385,17 @@ def command_verify_live(args: argparse.Namespace) -> int:
     except (KeyError, OSError):
         raise ValueError("Hermes service identity could not be resolved") from None
     probe = (
-        "import hashlib,importlib.metadata,json,sitecustomize,sys; "
+        "import hashlib,importlib.metadata,json,sitecustomize; "
         "p=sitecustomize.__file__; "
-        "print(json.dumps({'path':p,'sha256':hashlib.sha256(open(p,'rb').read()).hexdigest(),"
-        "'version':importlib.metadata.version('hermes-agent')}))"
+        "report={'path':p,'sha256':hashlib.sha256(open(p,'rb').read()).hexdigest(),"
+        "'version':importlib.metadata.version('hermes-agent')}"
     )
+    if expected_support_sha is not None:
+        probe += (
+            "; m=__import__('homelab_views'); report.update({'support_path':m.__file__,"
+            "'support_sha256':hashlib.sha256(open(m.__file__,'rb').read()).hexdigest()})"
+        )
+    probe += "; print(json.dumps(report))"
     result = subprocess.run(
         [str(args.python), "-c", probe], check=False, capture_output=True, text=True,
         timeout=45, cwd=cwd, env=environment, user=uid, group=gid, extra_groups=groups,
@@ -364,6 +406,10 @@ def command_verify_live(args: argparse.Namespace) -> int:
         raise ValueError("runtime import identity probe did not return a valid result") from None
     if result.returncode or report.get("path") != str(loaded_path) or report.get("sha256") != expected_sha:
         raise ValueError("Python import selected a different runtime artifact")
+    if expected_support_sha is not None:
+        expected_support_path = str((args.installed.parent / SUPPORT_FILENAME).resolve(strict=True))
+        if report.get("support_path") != expected_support_path or report.get("support_sha256") != expected_support_sha:
+            raise ValueError("Python import selected a different runtime support module")
     expected_version = manifest.get("hermes_version") if manifest is not None else args.hermes_version
     if report.get("version") != expected_version:
         raise ValueError("running Hermes version differs from the approved manifest")
@@ -379,6 +425,7 @@ def command_verify_live(args: argparse.Namespace) -> int:
     print(
         f"EXPECTED source={(manifest or {}).get('hades_git_sha','')[:12]} hermes={report['version']} "
         f"artifact_sha256={expected_sha} loaded_sha256={report['sha256']} "
+        f"support_sha256={report.get('support_sha256')} "
         f"manifest={expected_id} pid={pid}"
     )
     return 0
@@ -404,6 +451,7 @@ def main() -> int:
     verify.add_argument("--artifact", type=Path, required=True)
     verify.add_argument("--manifest", type=Path, required=True)
     verify.add_argument("--installed", type=Path)
+    verify.add_argument("--installed-support", type=Path)
     live.add_argument("--artifact", type=Path)
     live.add_argument("--manifest", type=Path)
     live.add_argument("--installed", type=Path, required=True)
