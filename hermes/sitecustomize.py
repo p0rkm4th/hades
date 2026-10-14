@@ -2472,11 +2472,17 @@ def _hades_is_household_inventory_intent(user_text):
     return bool(item_question and _HADES_GROCY_ITEM_FRAGMENT.fullmatch(item_question.group(1).strip()))
 
 
+# Memory corrections must identify memory explicitly; ordinary "change X"
+# requests (including domain writes such as recipe servings) belong to X's domain.
 _HADES_EXPLICIT_MEMORY_MUTATION = re.compile(
     r"^\s*(?:please\s+)?(?:"
     r"(?P<retain>remember|memorize|save|store)\s+(?:(?:that|this)\s+)?(?P<retain_target>.+?)|"
     r"(?P<forget>forget|remove|delete)\s+(?:what\s+i\s+told\s+you\s+about\s+)?(?P<forget_target>.+?)|"
-    r"(?P<update>update|change|correct)\s+(?:what\s+you\s+remember\s+about\s+|your\s+)?(?:memory\s*:\s*)?(?P<update_target>.+?)"
+    r"(?P<update>update|change|correct)\s+(?:"
+    r"what\s+you\s+remember\s+about\s+|"
+    r"your\s+memory(?:\s*:\s*|\s+about\s+)|"
+    r"memory\s*:\s*"
+    r")(?P<update_target>.+?)"
     r")\s*[.!?]*\s*$",
     re.IGNORECASE,
 )

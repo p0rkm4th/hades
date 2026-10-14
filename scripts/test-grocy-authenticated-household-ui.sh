@@ -20,6 +20,8 @@ gateway_pid=''
 grocy_pid=''
 model_pid=''
 step='preflight'
+network="hades-grocy-ui-net-$suffix"
+source "$repo_dir/scripts/open-webui-candidate-test-runtime.sh"
 
 cleanup() {
   local status=$?
@@ -45,6 +47,8 @@ cleanup() {
   if [[ -n "$model_pid" ]]; then kill "$model_pid" >/dev/null 2>&1 || true; wait "$model_pid" >/dev/null 2>&1 || true; fi
   docker rm -f "$webui_name" >/dev/null 2>&1 || true
   docker volume rm "$webui_volume" >/dev/null 2>&1 || true
+  hades_candidate_runtime_cleanup
+  docker network rm "$network" >/dev/null 2>&1 || true
   find "$work" -depth -mindepth 1 -delete 2>/dev/null || true
   rmdir "$work" 2>/dev/null || true
   exit "$status"
@@ -60,6 +64,8 @@ for port in "$webui_port" "$gateway_port"; do
 done
 docker_gateway=$(docker network inspect bridge --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' | head -n1)
 [[ "$docker_gateway" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] || { echo 'FAIL Docker bridge gateway unavailable' >&2; exit 2; }
+docker network create "$network" >/dev/null
+hades_candidate_runtime_start "$network" "grocy-ui-$suffix"
 chmod 700 "$work"
 export HADES_SYNTHETIC_GROCY_FAILURE_FILE="$work/grocy-unavailable"
 touch "$work/grocy-requests.jsonl" "$work/grocy-audit.jsonl" "$work/model-calls.jsonl" "$work/composition-mcp.jsonl"
@@ -273,9 +279,10 @@ model_url="http://127.0.0.1:$(cat "$work/model.port")/v1"
 
 step='starting disposable Open WebUI'
 docker volume create "$webui_volume" >/dev/null
-docker run -d --name "$webui_name" --add-host host.docker.internal:host-gateway \
+docker run -d --name "$webui_name" \
   -p "127.0.0.1:${webui_port}:8080" -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true \
   -e ENABLE_OLLAMA_API=false -e RAG_EMBEDDING_ENGINE=ollama \
+  "${HADES_CANDIDATE_RUNTIME_ARGS[@]}" \
   -v "$webui_volume:/app/backend/data" "$webui_image" >/dev/null
 for _ in $(seq 1 120); do curl -fsS "http://127.0.0.1:${webui_port}/health" >/dev/null 2>&1 && break; sleep 1; done
 curl -fsS "http://127.0.0.1:${webui_port}/health" >/dev/null

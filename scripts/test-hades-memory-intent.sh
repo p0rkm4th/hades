@@ -177,6 +177,8 @@ read_prompts = (
     "what's in my pantry?", "what's in my network?", "what's running in my homelab?",
     "did you forget what's in my pantry?", "why don't you remember my network setup?",
     'what did i tell you about my kitchen?',
+    'Change the servings for Synthetic Pancakes to six.',
+    'Change the memory size on my server to 64 GB.',
 )
 for prompt in read_prompts:
     assert overlay._hades_explicit_memory_mutation_intent(prompt) is None, prompt
