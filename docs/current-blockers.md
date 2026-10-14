@@ -1,10 +1,24 @@
 # Current blockers and owner gates
 
+## Superseding production checkpoint — 2026-10-14
+
+Open WebUI 0.12.0 has been promoted under the owner's explicit release
+authorization. Production is healthy on the exact HADES image and upstream
+digest recorded in `config/versions.env`; the verified 0.11.4 image and
+pre-migration state remain the rollback baseline. Synthetic owner/household
+production UI smoke passed, including domain reads, ordinary chat, owner-private
+chat denial to household, and explicit memory save → fresh-chat recall → forget
+with no remaining valid test fact. The bounded promotion record is
+[`open-webui-0.12.0-production-promotion.md`](open-webui-0.12.0-production-promotion.md).
+
+Direct Scotty Dogfood remains active and owner evidence pending. The 0.12.0
+promotion does not close the broader owner-reality recovery sprint.
+
 This is a public, sanitized handoff. Live machine identities, addresses,
 private account identifiers, credentials, deployment identifiers, and raw
 acceptance transcripts belong in protected operator records.
 
-## Current mission checkpoint — 2026-10-11
+## Historical mission checkpoint — 2026-10-11 (superseded)
 
 `main` is `99d8b706eb5263250400f55dc257ba43f191905d`; exact-SHA Public CI run [38162158388](https://github.com/p0rkm4th/hades/actions/runs/38162158388) passed.
 

@@ -6,8 +6,8 @@ runtime secrets and persistent volumes remain outside Git.
 | Component | Authority | Planned integration | Version / license / upgrade note |
 |---|---|---|---|
 | Hermes | intelligence and agent execution | supported upstream deployment/API | Current reconstruction pin is `HADES_HERMES_VERSION` from `config/versions.env` (0.21.2, upstream `v2026.9.11`); install the checksum-verified source into a new locked environment, never copy a seasoned venv |
-| Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | Exact 0.11.4 HADES image is deployed; production DOCX and synthetic revocation checks are recorded in the P0 evidence. Owner/household browser acceptance, recovery-key usability, LDAP group policy, and a verified post-cutover backup/restore of Valkey auth state remain open. The immutable candidate is bound by `config/versions.env:HADES_OPEN_WEBUI_CANDIDATE_IMAGE`; build output is software custody, not state |
-| Open WebUI auth-state Valkey | JWT revocation and cross-worker Socket.IO coordination | dedicated private service in the 0.11.4 P0 Compose template | `config/versions.env:HADES_OPEN_WEBUI_VALKEY_IMAGE` pins the immutable image; AOF uses `appendfsync always`. Its persistent named volume is required recovery state. The pre-cutover 0.11.1 archive did not contain it; a fresh encrypted backup and marker-preserving restore check are still required. |
+| Open WebUI | owner-facing conversation interface | supported Hermes-compatible interface | Exact 0.12.0 HADES image is deployed and healthy. Production provenance is bound in `config/versions.env`; 0.11.4 image and pre-migration state remain the rollback baseline. MFA, Realtime voice, and Tool Search remain disabled. |
+| Open WebUI auth-state Valkey | JWT revocation and cross-worker Socket.IO coordination | dedicated private service in the Open WebUI 0.12.0 deployment | `config/versions.env:HADES_OPEN_WEBUI_VALKEY_IMAGE` pins the immutable image; AOF uses `appendfsync always`. Its persistent named volume is required recovery state and is included in the verified cutover backup/restore contract. |
 | Hindsight | durable semantic/personal memory | Hermes external memory provider over supported client API | `ghcr.io/vectorize-io/hindsight@sha256:84ab276b8f501546deb6ea9c64a57291718b4e16a59dd9e02a02fdd5adfe9028`; embedded pg0 volume; upgrade by digest |
 | Agent Zero | bounded subordinate computer operator | isolated deployment with explicit objective/result boundary | pinned image digest; no shared unrestricted credentials; native A2A evaluated and retained MCP bridge is bounded |
 | Grocy | canonical pantry, groceries, consumption, inventory, recipes | maintained integration, then supported API or tiny adapter | select upstream release; Grocy remains source of truth |
@@ -72,14 +72,14 @@ component version, image digest, endpoint, or startup dependency changes, the
 reconstruction manifest and operator record must be updated together. Ambiguous
 private state is deliberately retained until an owner-authorized migration.
 
-### Observed runtime reconciliation — 2026-09-14; Open WebUI reverified 2026-10-10
+### Observed runtime reconciliation — 2026-10-14
 
 The live, public-safe topology was compared with the manifest without reading
 environment values or persistent data:
 
 | Observed component | Runtime evidence | Reconciliation |
 |---|---|---|
-| Open WebUI | HADES image `sha256:cc26e6ef91a0e9a428f3406ed4e820aa2d24f7055e7d557d9f6744ff9686aed7` derived from pinned 0.11.4 base, LAN binding on `:3000` | Exact image/source provenance and production synthetic acceptance are recorded in the Open WebUI P0 evidence. Owner/household browser acceptance, recovery-key usability, LDAP group policy, and fresh backup/Valkey-restore verification remain open |
+| Open WebUI | HADES image `sha256:1e0eb50b453b55c44240046c02775404236525cb3000fee2f6d3e7fbcca25f32`, 0.12.0, LAN binding on `:3000` | Exact image ID, archive checksum, upstream digest/commit, and four retained security adapters are pinned in `config/versions.env`; health and synthetic owner/household acceptance passed. The exact 0.11.4 image and pre-migration state remain retained for rollback |
 | SearXNG | `searxng/searxng:2026.5.31-7159b8aed@sha256:35b089054ac9b4257976107e71673d9e30ac17c9b50bbf8b4783f2f6d1d1981f`, loopback `:8080` | Generated template consumes the immutable manifest reference; tracked settings remain the public configuration source |
 | LLDAP | Pinned `hades-lldap` on loopback `:17170`; separate local-only production/staging instance on `:17171` | The second instance is staging topology, not a replacement authority; identity migration must be explicitly selected |
 | Grocy / Agent Zero | Pinned compose digests and loopback bindings match tracked contracts | No drift found |

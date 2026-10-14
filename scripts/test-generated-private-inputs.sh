@@ -2,6 +2,10 @@
 set -Eeuo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+grep -q 'build-openwebui-012-qualification.sh' "$repo_dir/scripts/create-generated-private-inputs.sh" || {
+  echo 'FAIL generated private inputs do not build the manifest-selected Open WebUI artifact' >&2
+  exit 1
+}
 fixture=$(mktemp -d)
 trap 'find "$fixture" -depth -mindepth 1 -delete; rmdir "$fixture" 2>/dev/null || true' EXIT
 image='alpine@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc'

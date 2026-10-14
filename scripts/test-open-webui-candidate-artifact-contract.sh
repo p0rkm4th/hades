@@ -44,7 +44,7 @@ done
 
 builder=$(<"$repo_dir/scripts/build-open-webui-artifact.sh")
 grep -Fq 'tag=${1:-hades-open-webui:0.11.4-p0-candidate}' <<<"$builder" || {
-  echo 'FAIL Open WebUI builder default tag does not match the qualified production candidate' >&2
+  echo 'FAIL legacy rollback builder default tag does not identify its 0.11.4 recovery role' >&2
   exit 1
 }
 grep -q -- '--label "org.hades.open-webui.source-commit=$source_commit"' <<<"$builder" || {
@@ -53,6 +53,10 @@ grep -q -- '--label "org.hades.open-webui.source-commit=$source_commit"' <<<"$bu
 }
 grep -q -- '--label "org.hades.open-webui.base-image=$base_override"' <<<"$builder" || {
   echo 'FAIL Open WebUI builder omits immutable base provenance label' >&2
+  exit 1
+}
+grep -Fq 'HADES_OPEN_WEBUI_ROLLBACK_BASE_IMAGE' <<<"$builder" || {
+  echo 'FAIL legacy 0.11.4 builder does not use the separately recorded rollback base' >&2
   exit 1
 }
 grep -q -- '--label "org.hades.open-webui.security-adapters=$HADES_OPEN_WEBUI_CANDIDATE_SECURITY_ADAPTERS"' <<<"$builder" || {

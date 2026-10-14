@@ -39,20 +39,20 @@ authority-bearing services are not changed together:
 
 | Component | Current production baseline | Candidate/action | Acceptance gate |
 |---|---|---|---|
-| Open WebUI | exact 0.11.4 HADES image is deployed and healthy | Keep the minimum proven security adapters; evaluate Channels/native behavior after P0 closure | Pre-cutover 0.11.1 backup and rollback rehearsal exist, and production DOCX, synthetic LDAP/session revocation, and restart checks pass. The old archive omitted current Valkey auth-state, so fresh encrypted post-cutover backup plus marker-preserving restore proof, recovery-key usability, owner/household browser acceptance, LDAP policy disposition, and main convergence remain gates |
+| Open WebUI | exact 0.12.0 HADES image is deployed and healthy; 0.11.4 rollback retained | Keep four qualified security adapters; Channels response patch remains removed; MFA, Realtime voice, and Tool Search stay off | Populated migration and rollback, auth/revocation, LDAP, sharing, streaming, file safety, memory, owner/household UI, and owner-regression acceptance passed. Provenance and current/rollback artifacts are recorded in `config/versions.env` and `docs/open-webui-0.12.0-production-promotion.md` |
 | Hermes | 0.21.2 active; 0.14.0 rollback artifact retained | qualify a later pinned upstream version as a separate candidate | bounded candidate suite, rollback-backed owner-authenticated rehearsal, and owner approval |
 | Hindsight | pinned digest, API/control ports 8888/9999 | upgrade one digest after backup and runtime/read-back checks | memory persistence, subject mapping, restart, and no port collision |
 | Grocy | pinned digest | upgrade one digest after canonical backup | inventory, recipe, shopping-list, restart, and reconciliation checks |
 | LLDAP | pinned digest | upgrade one digest after identity backup | login, group/capability mapping, restart, and revocation checks |
 | SearXNG / Agent Zero | pinned records | upgrade independently when a bounded candidate is selected | read-only search freshness or bounded delegation contract; no authority expansion |
 
-Open WebUI and Hermes therefore require two separate controlled changes. The
-remaining owner input is authentication/acceptance and rollback approval, not
-a need to run an unattended or bulk upgrade.
+Open WebUI 0.12.0 was promoted as one bounded change; Hermes remains a separate
+future upgrade decision. No unattended or bulk upgrade is authorized.
 
-The earlier Open WebUI staging decision is superseded by the 2026-10-09 P0
-production cutover. Exact deployed provenance and remaining owner gates are
-recorded in [`open-webui-0.11.4-staging-candidate.md`](open-webui-0.11.4-staging-candidate.md).
+The earlier Open WebUI staging decision is superseded by the 2026-10-14
+0.12.0 production promotion. Exact active provenance and rollback identity are
+recorded in [`open-webui-0.12.0-production-promotion.md`](open-webui-0.12.0-production-promotion.md);
+the 0.11.4 staging document remains historical evidence.
 Hermes 0.21.2 was later promoted on HADES guest and is the current
 `config/versions.env` reconstruction pin. Hermes 0.14.0 remains a rollback
 artifact. Future promotions still require a separately qualified candidate.

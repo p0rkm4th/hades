@@ -30,7 +30,8 @@ for component, key in {
         raise SystemExit(f'machine manifest pin reference drifted for {component}')
 if 'HADES_GROCY_MCP_VERSION' not in versions or 'integrations/grocy-mcp/requirements.lock' not in machine_components['Grocy'].get('artifact_source', ''):
     raise SystemExit('machine manifest omits the locked maintained Grocy MCP source')
-if machine_components['Open WebUI']['pinned_version'] != f"{versions['HADES_OPEN_WEBUI_VERSION']} tracked Dockerfile plus immutable base":
+open_webui_source = 'tracked qualification Dockerfile' if 'qualification' in versions['HADES_OPEN_WEBUI_BUILD_SOURCE'] else 'tracked Dockerfile'
+if machine_components['Open WebUI']['pinned_version'] != f"{versions['HADES_OPEN_WEBUI_VERSION']} {open_webui_source} plus immutable base":
     raise SystemExit('machine manifest Open WebUI version drifted')
 if machine_components['Hermes']['pinned_version'] != 'config/versions.env:HADES_HERMES_VERSION':
     raise SystemExit('machine manifest Hermes version drifted')

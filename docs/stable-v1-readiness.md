@@ -1,11 +1,10 @@
 # HADES stable-v1 readiness
 
 This is a readiness record for the deployment, not an installer or a new
-runtime layer. Most component observations below were last rechecked read-only
-on 2026-09-25 and remain dated evidence. The Homelab row records repository
-reliability and household-boundary work through 2026-10-05. A fresh bounded
-owner/household acceptance run passed on the currently reachable deployment,
-but it does not establish current-main runtime parity.
+runtime layer. Historical component observations below remain dated evidence.
+Open WebUI 0.12.0 production promotion and its bounded owner/household acceptance
+were verified on 2026-10-14; current repository promotion CI is recorded in the
+promotion checkpoint.
 
 ## Engineering release convergence (2026-10-01)
 
@@ -21,7 +20,7 @@ rewritten.
 
 | Component | Production role | Current state | Canonical authority |
 |---|---|---|---|
-| Open WebUI | owner-facing conversation surface | exact 0.11.4 HADES image deployed and healthy; synthetic DOCX/revocation checks pass. Owner/household browser acceptance, recovery-key usability, LDAP group policy, and fresh encrypted backup/Valkey marker-preserving restore remain open | conversations, users, settings |
+| Open WebUI | owner-facing conversation surface | exact 0.12.0 HADES image deployed and healthy; 0.11.4 image and pre-migration state retained for rollback; MFA, Realtime voice, and Tool Search remain off | conversations, users, settings |
 | Hermes | agent execution and tool lifecycle | 0.21.2 active on HADES guest; systemd running, zero restarts at 2026-09-25 01:43 UTC; 0.14.0 rollback artifact retained | turn execution and tool results |
 | Hindsight | durable personal context | healthy, subject-scoped overlay | private semantic memory |
 | Grocy | household pantry and grocery state | healthy, shared | inventory, shopping, recipes |

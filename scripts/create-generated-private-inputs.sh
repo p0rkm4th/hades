@@ -14,7 +14,12 @@ done
 [[ ! -e "$output" ]] || { echo "FAIL output already exists: $output" >&2; exit 1; }
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 if [[ -z "$image_ref" ]]; then
-  image_ref=$(bash "$repo_dir/scripts/build-open-webui-artifact.sh" | awk -F= '$1 == "HADES_OPEN_WEBUI_IMAGE" {print substr($0,index($0,"=")+1)}')
+  build_dir=$(mktemp -d "${TMPDIR:-/tmp}/hades-openwebui-inputs.XXXXXX")
+  chmod 0700 "$build_dir"
+  trap 'find "$build_dir" -depth -mindepth 1 -delete; rmdir "$build_dir" 2>/dev/null || true' EXIT
+  build_output=$(bash "$repo_dir/scripts/build-openwebui-012-qualification.sh" \
+    hades-open-webui:0.12.0-generated-inputs "$build_dir/open-webui.tar")
+  image_ref=$(awk -F= '$1 == "HADES_OPEN_WEBUI_012_QUAL_IMAGE" {print substr($0,index($0,"=")+1)}' <<<"$build_output")
 fi
 [[ "$image_ref" =~ ^[^[:space:]=]+@sha256:[0-9a-f]{64}$ ]] || { echo 'FAIL Open WebUI artifact reference is not immutable' >&2; exit 1; }
 mkdir -p "$output/identity" "$output/secrets" "$output/state" "$output/config" "$output/backups" "$output/profile/profiles/hades"

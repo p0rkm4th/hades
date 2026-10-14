@@ -138,9 +138,11 @@ Production v2 setup sequence:
    again with `--apply` only on the intended guest.
 3. Install the pinned Hermes source with
    `sudo scripts/install-hermes-artifact.sh --prefix /opt/hades-hermes`.
-   Build the tracked Open WebUI artifact with
-   `sudo scripts/build-open-webui-artifact.sh`; copy its immutable
-   `HADES_OPEN_WEBUI_IMAGE=...` output into the private input file.
+   Build the pinned Open WebUI 0.12.0 artifact with
+   `sudo scripts/build-openwebui-012-qualification.sh`; copy its immutable
+   `HADES_OPEN_WEBUI_012_QUAL_IMAGE=...` output into the private input file.
+   The older `build-open-webui-artifact.sh` is a 0.11.4 recovery-era builder,
+   not the active 0.12.0 reconstruction path.
 4. Run `sudo scripts/bootstrap-grocy.sh`. Open `http://127.0.0.1:7003`
    locally, or forward it with `ssh -L 7003:127.0.0.1:7003 <user>@<hades-host>`.
    On the first login, change the upstream `admin` / `admin` password

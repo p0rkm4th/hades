@@ -1,6 +1,6 @@
 # Open WebUI 0.12.0 Candidate Qualification
 
-Status: **candidate qualified with conditions; production remains pinned to 0.11.4**.
+Status: **qualified with conditions; promoted to production on 2026-10-14**.
 
 ## Pinned candidate
 
@@ -112,7 +112,7 @@ they do not weaken this production requirement.
   group synchronization, session revocation across active sessions and restart,
   authority changes, private/shared chat ACLs, streaming, and the bounded
   document-security regression.
-- Production was not changed and remains on qualified 0.11.4.
+- At qualification time, production was not changed and remained on qualified 0.11.4; the subsequent owner-authorized promotion is recorded separately.
 
 ## Performance and resource comparison
 
@@ -151,11 +151,18 @@ they do not weaken this production requirement.
   coverage. The final documentation-only commit also passed Public CI run
   `38425270625`.
 
-No production promotion is authorized by this qualification. Candidate
-evidence supports the tested migration/rollback data classes, authentication
-and revocation, LDAP, chat and shared-object persistence, streaming/tool-backed
-synthetic journeys, memory identity, and the bounded upload-security contract.
-The recommendation is **QUALIFIED WITH CONDITIONS**: keep MFA, voice, and Tool
-Search disabled; retain the documented HADES security adapters; require a
-separate explicit owner promotion decision; and keep production on 0.11.4 until
-then.
+At qualification close, the owner authorized promotion. The exact deployed
+artifact and production acceptance are recorded in
+[`open-webui-0.12.0-production-promotion.md`](open-webui-0.12.0-production-promotion.md).
+The promotion retained the four documented HADES security adapters and left
+MFA, Realtime voice, and Tool Search disabled. The exact 0.11.4 image and
+pre-migration database/auth state remain the rollback baseline.
+
+The deployed archive checksum differs from the first reproducible qualification
+archive because it was rebuilt with HADES provenance bound to source commit
+`afd0912853301e484e7582d3b622b928c0e47662`. A source-tree comparison from the
+qualified build commit `bd77b10c7cd06fb0e1d9fae6b0590bd4a0a1e0f4` through that
+provenance commit found no changes in `webui/` or `integrations/actual-finance-import`,
+the runtime Dockerfile and application files copied into the image. The upstream
+amd64 digest and adapter set are unchanged. The promoted image and archive IDs
+are pinned independently; production smoke was run against the loaded image.

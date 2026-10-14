@@ -4,7 +4,7 @@ set -Eeuo pipefail
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 tag=${1:-hades-open-webui:0.11.4-p0-candidate}
 source "$repo_dir/config/versions.env"
-base_override=${HADES_OPEN_WEBUI_BASE_IMAGE_OVERRIDE:-$HADES_OPEN_WEBUI_CANDIDATE_IMAGE}
+base_override=${HADES_OPEN_WEBUI_BASE_IMAGE_OVERRIDE:-$HADES_OPEN_WEBUI_ROLLBACK_BASE_IMAGE}
 source_commit=$(git -C "$repo_dir" rev-parse HEAD)
 if [[ -n "$(git -C "$repo_dir" status --porcelain)" ]]; then
   echo 'FAIL build provenance requires a clean tracked worktree' >&2
@@ -15,8 +15,8 @@ if [[ -n "$base_override" && ! "$base_override" =~ ^ghcr\.io/open-webui/open-web
   echo 'FAIL Open WebUI base override must be an immutable GHCR digest' >&2
   exit 1
 fi
-if [[ "$base_override" != "$HADES_OPEN_WEBUI_CANDIDATE_IMAGE" ]]; then
-  echo 'FAIL P0 security artifact must use the exact qualified 0.11.4 upstream candidate digest' >&2
+if [[ "$base_override" != "$HADES_OPEN_WEBUI_ROLLBACK_BASE_IMAGE" ]]; then
+  echo 'FAIL legacy 0.11.4 recovery artifact must use the exact recorded rollback base digest' >&2
   exit 1
 fi
 docker build --pull=false \

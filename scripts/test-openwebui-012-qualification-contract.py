@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guard the isolated Open WebUI 0.12.0 qualification inputs."""
+"""Guard qualified Open WebUI 0.12.0 production provenance and boundaries."""
 
 from __future__ import annotations
 
@@ -27,9 +27,15 @@ def main() -> None:
 
     production = {}
     for line in (ROOT / "config/versions.env").read_text().splitlines():
-        if line.startswith("HADES_OPEN_WEBUI_VERSION="):
+        if line.startswith("HADES_OPEN_WEBUI_") and "=" in line:
             production[line.split("=", 1)[0]] = line.split("=", 1)[1]
-    assert production["HADES_OPEN_WEBUI_VERSION"] == "0.11.4", "qualification must not alter production pin"
+    assert production["HADES_OPEN_WEBUI_VERSION"] == candidate["HADES_OPEN_WEBUI_012_QUAL_VERSION"]
+    assert production["HADES_OPEN_WEBUI_BASE_IMAGE"] == candidate["HADES_OPEN_WEBUI_012_AMD64_IMAGE"]
+    assert production["HADES_OPEN_WEBUI_UPSTREAM_SOURCE_COMMIT"] == candidate["HADES_OPEN_WEBUI_012_UPSTREAM_COMMIT"]
+    assert production["HADES_OPEN_WEBUI_PRODUCTION_IMAGE_ID"] == production["HADES_OPEN_WEBUI_CANDIDATE_HADES_IMAGE_ID"]
+    assert production["HADES_OPEN_WEBUI_PRODUCTION_SOURCE_COMMIT"] == production["HADES_OPEN_WEBUI_CANDIDATE_HADES_COMMIT"]
+    assert production["HADES_OPEN_WEBUI_VERSION"] == production["HADES_OPEN_WEBUI_CANDIDATE_VERSION"]
+    assert production["HADES_OPEN_WEBUI_ROLLBACK_VERSION"] == "0.11.4"
 
     dockerfile = (ROOT / "webui/Dockerfile.openwebui-012-qualification").read_text()
     assert "ARG OPEN_WEBUI_BASE_IMAGE=" in dockerfile
@@ -89,7 +95,7 @@ def main() -> None:
         "original and forked chat branches",
     ):
         assert migration_contract in migration, f"populated migration coverage is missing {migration_contract}"
-    assert "HADES_OPEN_WEBUI_VERSION=0.11.4" in (ROOT / "config/versions.env").read_text()
+    assert "HADES_OPEN_WEBUI_VERSION=0.12.0" in (ROOT / "config/versions.env").read_text()
 
     build = (ROOT / "scripts/build-openwebui-012-qualification.sh").read_text()
     assert "git -C \"$repo_dir\" status --porcelain" in build, "candidate build must bind to a clean source tree"
@@ -98,7 +104,7 @@ def main() -> None:
     assert "rewrite-timestamp=true" in build
     assert "--no-cache" in build and "--provenance=false" in build
     assert "org.hades.open-webui.upstream-source-commit" in build
-    print("PASS isolated Open WebUI 0.12.0 pins, adapter contracts, migration state coverage, disabled opt-ins, and production version boundary")
+    print("PASS Open WebUI 0.12.0 production provenance, rollback pins, adapter contracts, migration coverage, and disabled opt-ins")
 
 
 if __name__ == "__main__":
