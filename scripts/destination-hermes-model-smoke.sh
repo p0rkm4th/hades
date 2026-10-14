@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x
 set -Eeuo pipefail
 
 # Bounded private destination smoke check. It validates model execution only;

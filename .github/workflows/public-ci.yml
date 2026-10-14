@@ -27,6 +27,9 @@ jobs:
       - name: Verify reproducible Hermes runtime artifact
         run: python3 scripts/test-hermes-runtime-artifact.py
 
+      - name: Verify protected-input diagnostics disable inherited shell tracing
+        run: bash scripts/test-secret-safe-diagnostics.sh
+
       - name: Verify checksum-guarded Hermes deployment contract
         run: bash scripts/test-hermes-runtime-deployment-contract.sh
 

@@ -106,6 +106,17 @@ with tempfile.TemporaryDirectory(prefix="hades-runtime-artifact-") as temporary:
     assert f"profile=sha256:{hashlib.sha256(config.read_bytes()).hexdigest()}" in fingerprint
     assert manifest["runtime_configuration_id"] in fingerprint
 
+    sentinel = "SYNTHETIC_SECRET_MUST_NOT_APPEAR_IN_DIAGNOSTICS_7f29c1"
+    protected = root / "protected-hermes.env"
+    protected.write_text(f"API_SERVER_KEY={sentinel}\nGROCY_API_KEY=synthetic-grocy\n", encoding="utf-8")
+    safe_output = run(
+        os.environ.get("PYTHON", "python3"), str(TOOL), "fingerprint",
+        "--config-input", f"hermes-env={protected}",
+    )
+    assert sentinel not in safe_output.stdout + safe_output.stderr
+    assert "API_SERVER_KEY" not in safe_output.stdout + safe_output.stderr
+    assert "GROCY_API_KEY" not in safe_output.stdout + safe_output.stderr
+
     run(
         os.environ.get("PYTHON", "python3"), str(TOOL), "verify",
         "--source-repo", str(repo), "--hermes-version", "0.21.2",

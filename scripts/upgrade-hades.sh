@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x
 set -Eeuo pipefail
 
 # Bounded, one-component upgrade helper. It never edits version pins; the

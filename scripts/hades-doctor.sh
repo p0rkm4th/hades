@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x
 set -Eeuo pipefail
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 inputs=''; root=/; test_mode=0; synthetic_deployment_test=0
