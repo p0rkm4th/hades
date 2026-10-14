@@ -408,6 +408,9 @@ assert contextual_followup(
     same_chat_node_pair, "owner",
 ) is None, "a resolvable owner homelab follow-up must reach canonical entity resolution"
 assert contextual_followup(
+    "thanatos?", "Hows my network", same_chat_node_pair, "owner",
+) is None, "a short owner node-name follow-up must reach canonical entity resolution"
+assert contextual_followup(
     "what about it?", "Hows my network",
     [*named_followup, {"role": "user", "content": "what about it?"}], "owner",
 ) == "Which server or node do you mean? Name the one you want me to check; I haven't changed anything."
