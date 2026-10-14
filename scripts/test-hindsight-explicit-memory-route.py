@@ -487,6 +487,31 @@ try:
         "http://hindsight.synthetic:8888/v1/default/banks/hades-user-gamma/memories/memory-router-1",
         {"state": "invalidated", "reason": "User explicitly asked HADES to forget this fact."},
     ), patches[-1]
+    # A real Hindsight retain can list both its editable source fact and a
+    # derived observation. Forget should select the source fact; observations
+    # are not curation targets and must not create a false ambiguity.
+    state["items"] = [
+        {
+            "id": "memory-fruit-observation",
+            "fact_type": "observation",
+            "tags": ["hades-explicit-memory"],
+            "text": "User's favorite synthetic fruit is mangosteen.",
+            "state": "valid",
+        },
+        {
+            "id": "memory-fruit-fact",
+            "fact_type": "world",
+            "tags": ["hades-explicit-memory"],
+            "text": "User's favorite synthetic fruit is mangosteen.",
+            "state": "valid",
+        },
+    ]
+    answer = route("forget my favorite synthetic fruit is mangosteen", "gamma", "household")
+    assert "forgotten" in answer, answer
+    assert patches[-1] == (
+        "http://hindsight.synthetic:8888/v1/default/banks/hades-user-gamma/memories/memory-fruit-fact",
+        {"state": "invalidated", "reason": "User explicitly asked HADES to forget this fact."},
+    ), patches[-1]
     state["items"] = [{
         "id": "memory-router-1",
         "tags": ["hades-explicit-memory"],

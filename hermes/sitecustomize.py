@@ -10382,6 +10382,15 @@ try:
                 for item in listed.get("items", []) if isinstance(listed, dict) else []:
                     if not isinstance(item, dict) or not item.get("id"):
                         continue
+                    # A retained fact can also produce a derived Hindsight
+                    # observation. Observations are not curation targets;
+                    # counting one beside its source fact makes an exact
+                    # forget/update request spuriously ambiguous. Older
+                    # Hindsight responses may omit fact_type, so retain their
+                    # established behavior and filter only explicit types.
+                    fact_type = item.get("fact_type")
+                    if fact_type is not None and fact_type not in {"world", "experience"}:
+                        continue
                     value = str(item.get("text") or "")
                     words = set(re.findall(r"[a-z0-9][a-z0-9'-]{2,}", value.casefold()))
                     overlap = len(target_words & words)
