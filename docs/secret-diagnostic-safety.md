@@ -1,9 +1,9 @@
 # Secret-safe diagnostics
 
-Never enable Bash xtrace while protected configuration is in the environment or
-being sourced. Do not use `env` or `printenv` to inspect production process
-environments. Operational entrypoints that source protected inputs must clear
-inherited xtrace before reading them.
+Never enable Bash xtrace or verbose mode while protected configuration is in
+the environment or being sourced. Do not use `env` or `printenv` to inspect
+production process environments. Operational entrypoints that source protected
+inputs must clear inherited xtrace and verbose mode before reading them.
 
 For deployment identity, use the bounded fingerprint command. It reads the
 protected file as bytes and prints only a configuration label and SHA-256:

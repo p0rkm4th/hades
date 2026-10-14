@@ -26,7 +26,7 @@ Environment=API_SERVER_PORT=8642
 # Source the protected profile environment explicitly. Some systemd builds
 # expose EnvironmentFile values to the manager but not to this Python entry
 # point during a fresh bootstrap; keep secrets out of the generated unit.
-ExecStart=/bin/bash -c 'set +x; set -a; source @HADES_HERMES_PROFILE@/hermes.env; if [[ -r @HADES_DEPLOYMENT_DIR@/hades-owner-policy.env ]]; then source @HADES_DEPLOYMENT_DIR@/hades-owner-policy.env; fi; if [[ -r @HADES_DEPLOYMENT_DIR@/grocy-mcp.env ]]; then source @HADES_DEPLOYMENT_DIR@/grocy-mcp.env; fi; if [[ -r @HADES_AGENT_ZERO_CLIENT_ENV_FILE@ ]]; then source @HADES_AGENT_ZERO_CLIENT_ENV_FILE@; fi; set +a; exec @HADES_HERMES_EXECUTABLE@ -p hades gateway run --quiet'
+ExecStart=/bin/bash -c 'set +x +v; set -a; source @HADES_HERMES_PROFILE@/hermes.env; if [[ -r @HADES_DEPLOYMENT_DIR@/hades-owner-policy.env ]]; then source @HADES_DEPLOYMENT_DIR@/hades-owner-policy.env; fi; if [[ -r @HADES_DEPLOYMENT_DIR@/grocy-mcp.env ]]; then source @HADES_DEPLOYMENT_DIR@/grocy-mcp.env; fi; if [[ -r @HADES_AGENT_ZERO_CLIENT_ENV_FILE@ ]]; then source @HADES_AGENT_ZERO_CLIENT_ENV_FILE@; fi; set +a; exec @HADES_HERMES_EXECUTABLE@ -p hades gateway run --quiet'
 Restart=on-failure
 RestartSec=3
 # Provider calls are independently bounded. Do not let a wedged turn hold

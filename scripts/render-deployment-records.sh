@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set +x
+set +x +v
 set -Eeuo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
