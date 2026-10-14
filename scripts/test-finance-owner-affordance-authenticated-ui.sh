@@ -9,14 +9,20 @@ remove_image=1
 if [[ -n "${HADES_FINANCE_UI_IMAGE:-}" ]]; then remove_image=0; fi
 container="hades-finance-access-$suffix"
 volume="hades-finance-access-$suffix"
+network="hades-finance-access-$suffix"
+auth_state="hades-finance-access-valkey-$suffix"
 work=$(mktemp -d "${TMPDIR:-/tmp}/hades-finance-access.XXXXXX")
 port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+valkey_image=${HADES_OPEN_WEBUI_VALKEY_IMAGE:-$(awk -F= '$1 == "HADES_OPEN_WEBUI_VALKEY_IMAGE" {print substr($0, index($0, "=") + 1); exit}' "$repo_dir/config/versions.env")}
+[[ -n "$valkey_image" && "$valkey_image" == *@sha256:* ]] || { echo 'FAIL a pinned Valkey image is required' >&2; exit 1; }
 cleanup() {
   local status=$?
   trap - EXIT
   if ((status != 0)); then docker logs --tail 50 "$container" >&2 2>/dev/null || true; fi
   docker rm -f "$container" >/dev/null 2>&1 || true
+  docker rm -f "$auth_state" >/dev/null 2>&1 || true
   docker volume rm "$volume" >/dev/null 2>&1 || true
+  docker network rm "$network" >/dev/null 2>&1 || true
   if ((remove_image)); then docker image rm "$image" >/dev/null 2>&1 || true; fi
   find "$work" -depth -mindepth 1 -delete 2>/dev/null || true
   rmdir "$work" 2>/dev/null || true
@@ -29,13 +35,24 @@ HADES_PLAYWRIGHT_MODULE="$playwright_module" node -e 'require(process.env.HADES_
 printf 'Date,Payee,Amount\n2026-09-01,Synthetic Market,-4.29\n' >"$work/synthetic.csv"
 if ((remove_image)); then docker build -f "$repo_dir/webui/Dockerfile" -t "$image" "$repo_dir"; fi
 start_webui() {
-  docker run -d --name "$container" -p "127.0.0.1:${port}:8080" \
+  docker run -d --name "$container" --network "$network" -p "127.0.0.1:${port}:8080" \
     -e ENABLE_SIGNUP=true -e ENABLE_LOGIN_FORM=true -e ENABLE_OLLAMA_API=false \
     -e BYPASS_EMBEDDING_AND_RETRIEVAL=true -e HADES_FINANCE_OWNER_USER_ID="${owner_id:-}" \
+    -e REDIS_URL=redis://valkey:6379/0 -e WEBSOCKET_MANAGER=redis \
+    -e WEBSOCKET_REDIS_URL=redis://valkey:6379/1 \
     -v "$volume:/app/backend/data" "$image" >/dev/null
   for _ in $(seq 1 120); do curl -fsS "http://127.0.0.1:${port}/health" >/dev/null 2>&1 && break; sleep 1; done
   curl -fsS "http://127.0.0.1:${port}/health" >/dev/null
 }
+docker network create "$network" >/dev/null
+docker run -d --name "$auth_state" --network "$network" --network-alias valkey \
+  --tmpfs /data:rw,noexec,nosuid,size=16m "$valkey_image" \
+  valkey-server --save '' --appendonly no >/dev/null
+for _ in $(seq 1 30); do
+  docker exec "$auth_state" valkey-cli ping 2>/dev/null | grep -qx PONG && break
+  sleep 1
+done
+docker exec "$auth_state" valkey-cli ping | grep -qx PONG || { echo 'FAIL disposable Valkey did not become ready' >&2; exit 1; }
 docker volume create "$volume" >/dev/null
 owner_id=''
 start_webui
