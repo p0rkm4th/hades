@@ -80,6 +80,7 @@ with tempfile.TemporaryDirectory(prefix="hades-runtime-artifact-") as temporary:
     assert manifest["input_artifact_sha256"]["hermes/sitecustomize.py"] == hashlib.sha256(source).hexdigest()
     assert manifest["generated_artifact"]["sha256"] == hashlib.sha256(source).hexdigest()
     assert manifest["supporting_artifacts"]["integrations/homelab_views.py"]["sha256"] == hashlib.sha256(support).hexdigest()
+    assert runtime_tool.support_artifact_sha(manifest) == hashlib.sha256(support).hexdigest()
     assert manifest["configuration_inputs"][0]["name"] == "profile"
     assert manifest["manifest_id"] == hashlib.sha256(
         (json.dumps({k: v for k, v in manifest.items() if k != "manifest_id"}, sort_keys=True, separators=(",", ":")) + "\n").encode()

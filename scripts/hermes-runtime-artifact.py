@@ -182,6 +182,15 @@ def load_manifest(path: Path) -> dict[str, Any]:
     return value
 
 
+def support_artifact_sha(manifest: dict[str, Any]) -> str:
+    supporting = manifest.get("supporting_artifacts")
+    support = supporting.get(SUPPORT_SOURCE) if isinstance(supporting, dict) else None
+    digest = support.get("sha256") if isinstance(support, dict) else None
+    if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest) or support.get("path") != SUPPORT_FILENAME:
+        raise ValueError("runtime manifest support-artifact identity is invalid")
+    return digest
+
+
 def command_build(args: argparse.Namespace) -> int:
     root = args.source_repo.resolve(strict=True)
     inputs = config_inputs(args.config_input)
@@ -291,6 +300,7 @@ def _pid_snapshot(service: str) -> tuple[int, list[str], dict[str, str], float]:
 def command_verify_live(args: argparse.Namespace) -> int:
     manifest = load_manifest(args.manifest) if args.manifest is not None else None
     expected_id = None
+    expected_support_sha = None
     if manifest is not None:
         if args.expected_manifest_sha256 and sha256(read_regular(args.manifest)) != args.expected_manifest_sha256:
             raise ValueError("runtime manifest checksum differs from the approved identity")
@@ -308,6 +318,7 @@ def command_verify_live(args: argparse.Namespace) -> int:
         generated = manifest.get("generated_artifact")
         source_hashes = manifest.get("input_artifact_sha256")
         expected_sha = generated.get("sha256") if isinstance(generated, dict) else None
+        expected_support_sha = support_artifact_sha(manifest)
         if (
             manifest.get("composition") != "runtime-source-bundle-copy"
             or not isinstance(source_hashes, dict)
@@ -329,13 +340,7 @@ def command_verify_live(args: argparse.Namespace) -> int:
         candidate = read_regular(args.artifact)
         if sha256(candidate) != expected_sha:
             raise ValueError("candidate artifact checksum differs from the approved identity")
-    expected_support_sha = None
     if manifest is not None:
-        supporting = manifest.get("supporting_artifacts")
-        support = supporting.get(SUPPORT_SOURCE) if isinstance(supporting, dict) else None
-        expected_support_sha = support.get("sha256") if isinstance(support, dict) else None
-        if not isinstance(expected_support_sha, str) or not SHA256_RE.fullmatch(expected_support_sha):
-            raise ValueError("runtime manifest support-artifact identity is invalid")
         installed_support = args.installed.parent / SUPPORT_FILENAME
         if sha256(read_regular(installed_support)) != expected_support_sha:
             raise ValueError("installed runtime support file differs from the approved identity")
