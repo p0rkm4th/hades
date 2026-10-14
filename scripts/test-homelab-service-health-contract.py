@@ -433,6 +433,7 @@ assert broad_status_intent('How is the lab doing?')
 network_diagnostic_intent = namespace['_hades_homelab_network_diagnostic_intent']
 assert network_diagnostic_intent('The network feels slow; check latency and resource usage.')
 assert not network_diagnostic_intent("How's my network?")
+assert not network_diagnostic_intent('network health status')
 assert namespace['_hades_is_homelab_intent']('Is everything okay with the homelab?')
 assert not broad_status_intent('What changed since yesterday?')
 healthy_checks_partial_coverage = health_summary_response({
@@ -1885,6 +1886,12 @@ with tempfile.TemporaryDirectory(prefix='hades-service-health-route-') as temp_r
         assert 'Sources disagree about Synthetic Node' in owner_overall, owner_overall
         assert 'Backup contents and restoreability were not checked' in owner_overall, owner_overall
         assert 'Live Proxmox currently reports:' not in owner_overall, owner_overall
+        owner_network_summary = direct_read(
+            'network health status', 'synthetic-owner', 'owner'
+        )
+        assert owner_network_summary and len(owner_network_summary) < 1000, owner_network_summary
+        assert 'Packet-loss, throughput, and historical comparison data are unavailable' not in owner_network_summary
+        assert 'These are individual configured-check samples' not in owner_network_summary
 
         view_module = namespace['_hades_load_homelab_views']()
         owner_view_names = (

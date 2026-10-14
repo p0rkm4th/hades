@@ -17,6 +17,17 @@ run_conversation = next(
     node for node in ast.walk(tree)
     if isinstance(node, ast.FunctionDef) and node.name == "_hades_run_conversation"
 )
+contextual_calls = [
+    node for node in ast.walk(run_conversation)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == "_hades_contextual_followup_clarification"
+]
+assert len(contextual_calls) == 1
+assert [ast.unparse(arg) for arg in contextual_calls[0].args] == [
+    "user_message", "previous_user_text", "_hades_history",
+    "self._hades_session_scope",
+], "follow-up clarification must defer to current actor-scoped homelab entity resolution"
 # Domain history can carry entities and conversational scope, but deterministic
 # recipe reads must receive the current operation. Otherwise a prior "list my
 # recipes" turn can override a later ingredients or stock question.
@@ -71,6 +82,7 @@ wanted = {
     "_hades_is_managed_server_status_request",
     "_hades_endpoint_intent_before_provision",
     "_hades_nonpersonal_state_turn",
+    "_hades_contextual_followup_clarification",
 }
 functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
 assert {node.name for node in functions} == wanted
@@ -386,6 +398,23 @@ named_followup = [
 ]
 assert homelab_followup("what about thanatos?", "owner", named_followup) == "What is Thanatos doing right now?"
 assert homelab_followup("what about thanatos or hermes?", "owner", named_followup) == "homelab node status for thanatos and hermes"
+contextual_followup = scope["_hades_contextual_followup_clarification"]
+same_chat_node_pair = [
+    *named_followup,
+    {"role": "user", "content": "what about thanatos or hermes?"},
+]
+assert contextual_followup(
+    "what about thanatos or hermes?", "Hows my network",
+    same_chat_node_pair, "owner",
+) is None, "a resolvable owner homelab follow-up must reach canonical entity resolution"
+assert contextual_followup(
+    "what about it?", "Hows my network",
+    [*named_followup, {"role": "user", "content": "what about it?"}], "owner",
+) == "Which server or node do you mean? Name the one you want me to check; I haven't changed anything."
+assert contextual_followup(
+    "what about thanatos or hermes?", "Hows my network",
+    same_chat_node_pair, "household",
+) == "Which server or node do you mean? Name the one you want me to check; I haven't changed anything."
 configured_alias_match = scope["_hades_configured_homelab_alias_matches"]
 homelab_classifier = scope["_hades_is_homelab_intent"]
 scope["_hades_configured_homelab_alias_matches"] = lambda _text: []

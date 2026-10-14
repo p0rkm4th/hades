@@ -6505,11 +6505,7 @@ def _hades_direct_homelab_read(user_text, subject="", scope="", conversation_his
             response = "Live Proxmox currently reports: " + ", ".join(str(name) for name in online) + "."
         else:
             response = "Proxmox did not report any currently running homelab resources."
-        network_diagnostic = bool(re.search(
-            r"\b(?:network|dns|slow|latency|bottleneck|resource\s+usage|performance)\b",
-            text,
-            re.IGNORECASE,
-        ))
+        network_diagnostic = _hades_homelab_network_diagnostic_intent(text)
         if network_diagnostic:
             samples = [
                 item for item in availability
@@ -9708,7 +9704,9 @@ def _hades_grocy_reversal_notice(user_text, previous_user_text):
     )
 
 
-def _hades_contextual_followup_clarification(user_text, previous_user_text):
+def _hades_contextual_followup_clarification(
+    user_text, previous_user_text, conversation_history=None, scope="",
+):
     """Clarify vague follow-ups without selecting an arbitrary old domain."""
     current = str(user_text or "").strip()
     previous = str(previous_user_text or "")
@@ -9724,6 +9722,17 @@ def _hades_contextual_followup_clarification(user_text, previous_user_text):
         previous,
         re.IGNORECASE,
     ) or _hades_is_homelab_intent(previous):
+        # A generic clarification used to preempt resolvable homelab follow-ups
+        # such as "what about Thanatos or Hermes?". Let the canonical entity
+        # resolver handle an owner follow-up when it can turn the current text
+        # into a bounded, fresh homelab read. Truly vague references still
+        # receive the clarification below.
+        if scope == "owner" and isinstance(conversation_history, list):
+            resolved = _hades_homelab_read_followup_query(
+                current, scope, conversation_history,
+            )
+            if str(resolved or "").strip().casefold() != current.casefold():
+                return None
         return (
             "Which server or node do you mean? Name the one you want me to check; "
             "I haven't changed anything."
@@ -12852,7 +12861,8 @@ try:
                 "completed": True,
             }
         contextual_followup_response = _hades_contextual_followup_clarification(
-            user_message, previous_user_text
+            user_message, previous_user_text, _hades_history,
+            self._hades_session_scope,
         )
         if contextual_followup_response and self._hades_session_scope in {"household", "owner"}:
             callback = getattr(self, "stream_delta_callback", None)
