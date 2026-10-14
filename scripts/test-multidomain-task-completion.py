@@ -33,12 +33,26 @@ assert all(
     and node.args[0].id == "current_text"
     for node in recipe_reads
 ), "direct recipe reads must use the current turn, not reconstructed history"
+stock_matches = [
+    node for node in ast.walk(run_conversation)
+    if isinstance(node, ast.Call)
+    and isinstance(node.func, ast.Name)
+    and node.func.id == "_hades_direct_grocy_recipe_stock_match"
+]
+assert len(stock_matches) == 1
+assert [ast.unparse(arg) for arg in stock_matches[0].args] == [
+    "current_text", "_hades_history",
+], "recipe/pantry follow-ups must resolve history before the generic pantry read"
 wanted = {
     "_hades_is_household_inventory_intent",
     "_hades_normalize_kitchen_typo",
     "_hades_grocy_read_operation",
     "_hades_direct_grocy_named_recipe_read",
     "_hades_direct_grocy_recipe_instructions",
+    "_hades_direct_grocy_recipe_stock_match",
+    "_hades_grocy_recipe_stock_followup",
+    "_hades_grocy_recent_recipe_prompt",
+    "_hades_grocy_match_saved_recipe",
     "_hades_grocy_read_tool_choice",
     "_hades_grocy_ingredient_followup",
     "_hades_grocy_read_operation_for_turn",
@@ -216,11 +230,20 @@ recipe_history = [
 assert scope["_hades_grocy_ingredient_followup"](
     "what ingredients does it need?", recipe_history
 )
+assert scope["_hades_grocy_recipe_stock_followup"](
+    "What ingredients do I have for it?", recipe_history
+) == "tell me about the best cordon bleu recipe"
 assert not scope["_hades_grocy_ingredient_followup"](
     "what ingredients does it need?", []
 )
+assert scope["_hades_grocy_recipe_stock_followup"](
+    "What ingredients do I have for it?", []
+) is None
 assert scope["_hades_grocy_read_operation_for_turn"](
     "what ingredients does it need?", tools, recipe_history
+) == {"type": "function", "function": {"name": "mcp_grocy_recipe_details_tool"}}
+assert scope["_hades_grocy_read_operation_for_turn"](
+    "What ingredients do I have for it?", tools, recipe_history
 ) == {"type": "function", "function": {"name": "mcp_grocy_recipe_details_tool"}}
 assert scope["_hades_grocy_read_operation_for_turn"](
     "what's in my kitchen?", tools, recipe_history
@@ -243,11 +266,14 @@ grocy_payloads = {
         {"recipe_id": 2, "product_id": 12, "amount": 3, "qu_id": 1},
     ],
     "/api/objects/products": [
-        {"id": 10, "name": "Synthetic Chicken"},
-        {"id": 11, "name": "Synthetic Cheese"},
-        {"id": 12, "name": "Unrelated Product"},
+        {"id": 10, "name": "Synthetic Chicken", "qu_id_stock": 1},
+        {"id": 11, "name": "Synthetic Cheese", "qu_id_stock": 2},
+        {"id": 12, "name": "Unrelated Product", "qu_id_stock": 1},
     ],
-    "/api/stock": [],
+    "/api/stock": [
+        {"product_id": 10, "amount_aggregated": 2},
+        {"product_id": 11, "amount_aggregated": 1},
+    ],
     "/api/objects/quantity_units": [
         {"id": 1, "name": "piece", "name_plural": "pieces"},
         {"id": 2, "name": "kilogram", "name_plural": "kilograms"},
@@ -287,6 +313,16 @@ try:
         "/api/objects/recipes", "/api/objects/recipes_pos",
         "/api/objects/products", "/api/stock",
     }
+    grocy_requests.clear()
+    pantry_match = scope["_hades_direct_grocy_recipe_stock_match"](
+        "What ingredients do I have for it?", recipe_history,
+    )
+    assert pantry_match and pantry_match.startswith(
+        "For Chicken Cordon Bleu, based on current Grocy stock"
+    ), pantry_match
+    assert "Synthetic Chicken" in pantry_match and "Synthetic Cheese" in pantry_match
+    assert "Nothing was changed" in pantry_match
+    assert all(method == "GET" for _, method, _ in grocy_requests)
     grocy_requests.clear()
     saved_recipes = scope["_hades_direct_grocy_recipe_read"]("list my recipes")
     assert saved_recipes.startswith("Saved Grocy recipes:")

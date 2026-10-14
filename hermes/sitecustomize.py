@@ -9233,6 +9233,40 @@ def _hades_direct_grocy_named_recipe_read(user_text):
     return detail
 
 
+def _hades_grocy_recent_recipe_prompt(user_text, conversation_history=None):
+    """Return the latest adjacent user recipe-detail prompt for a pronoun."""
+    text = str(user_text or "").strip()
+    rows = conversation_history if isinstance(conversation_history, list) else []
+    for row in reversed(rows):
+        if not isinstance(row, dict) or row.get("role") != "user":
+            continue
+        prior = str(row.get("content") or "").strip()
+        if prior.casefold() == text.casefold():
+            continue
+        if re.search(r"\b(?:network|homelab|finance|spend|spent|server|git|coding)\b", prior, re.I):
+            return None
+        if _hades_grocy_read_operation(prior) in {
+            "recipe_details_tool", "recipe_instructions_tool",
+        }:
+            return prior
+        return None
+    return None
+
+
+def _hades_grocy_recipe_stock_followup(user_text, conversation_history=None):
+    """Resolve a pantry-vs-recipe question only from an adjacent named recipe."""
+    text = str(user_text or "").strip()
+    if not re.search(r"\b(?:ingredient|ingredients)\b", text, re.IGNORECASE):
+        return None
+    if not re.search(
+        r"\b(?:do\s+(?:i|we)\s+have|already\s+have|currently\s+have|"
+        r"in\s+(?:my|our)\s+(?:pantry|kitchen|stock)|from\s+(?:my|our)\s+stock)\b",
+        text, re.IGNORECASE,
+    ):
+        return None
+    return _hades_grocy_recent_recipe_prompt(text, conversation_history)
+
+
 def _hades_grocy_ingredient_followup(user_text, conversation_history=None):
     """Recognize a current ingredient question that refers to a recent recipe."""
     text = str(user_text or "").strip()
@@ -9242,22 +9276,18 @@ def _hades_grocy_ingredient_followup(user_text, conversation_history=None):
         text, re.IGNORECASE,
     ):
         return False
-    rows = conversation_history if isinstance(conversation_history, list) else []
-    for row in reversed(rows):
-        if not isinstance(row, dict) or row.get("role") != "user":
-            continue
-        prior = str(row.get("content") or "").strip()
-        if prior.casefold() == text.casefold():
-            continue
-        if re.search(r"\b(?:network|homelab|finance|spend|spent|server|git|coding)\b", prior, re.I):
-            return False
-        return _hades_grocy_read_operation(prior) == "recipe_details_tool"
-    return False
+    return _hades_grocy_recent_recipe_prompt(text, conversation_history) is not None
 
 
 def _hades_grocy_read_operation_for_turn(user_text, tools, conversation_history=None):
     """Select this turn's operation, using history only to resolve an ingredient reference."""
-    operation = _hades_grocy_read_operation(user_text)
+    recipe_stock_reference = _hades_grocy_recipe_stock_followup(
+        user_text, conversation_history,
+    )
+    operation = (
+        "recipe_stock_match_tool" if recipe_stock_reference
+        else _hades_grocy_read_operation(user_text)
+    )
     if operation is None and _hades_grocy_ingredient_followup(user_text, conversation_history):
         operation = "recipe_details_tool"
     if not operation:
@@ -9288,10 +9318,11 @@ def _hades_grocy_read_tool_choice(user_text, tools):
 def _hades_grocy_match_saved_recipe(text, recipes):
     """Resolve only a uniquely named saved Grocy recipe from the current turn."""
     ignored = {
-        "a", "an", "and", "best", "can", "cook", "do", "for", "have", "how",
-        "i", "in", "ingredients", "make", "my", "of", "on", "pantry", "prepare",
+        "a", "about", "an", "and", "best", "can", "cook", "describe", "details",
+        "do", "for", "have", "how", "i", "in", "ingredients", "make", "me",
+        "my", "of", "on", "pantry", "prepare",
         "recipe", "the", "this", "to", "use", "we", "what", "currently", "already",
-        "that", "stock", "kitchen", "with", "which", "need", "does", "there",
+        "tell", "that", "stock", "kitchen", "with", "which", "need", "does", "there",
     }
     prompt_terms = {
         token for token in re.findall(r"[a-z0-9]+", str(text or "").casefold())
@@ -9359,9 +9390,16 @@ def _hades_direct_grocy_recipe_instructions(user_text):
     return f"Grocy has no preparation instructions stored for {name}." + suffix
 
 
-def _hades_direct_grocy_recipe_stock_match(user_text):
+def _hades_direct_grocy_recipe_stock_match(user_text, conversation_history=None):
     """Compare one saved recipe with current canonical stock, without writes."""
-    if _hades_grocy_read_operation(user_text) != "recipe_stock_match_tool":
+    recipe_reference = _hades_grocy_recipe_stock_followup(
+        user_text, conversation_history,
+    )
+    if recipe_reference:
+        recipe_query = recipe_reference
+    elif _hades_grocy_read_operation(user_text) == "recipe_stock_match_tool":
+        recipe_query = user_text
+    else:
         return None
     import urllib.request
     from datetime import date
@@ -9380,7 +9418,7 @@ def _hades_direct_grocy_recipe_stock_match(user_text):
 
     try:
         recipes = get("/api/objects/recipes")
-        recipe, matches = _hades_grocy_match_saved_recipe(user_text, recipes)
+        recipe, matches = _hades_grocy_match_saved_recipe(recipe_query, recipes)
         if recipe is None:
             if matches:
                 return "Grocy has multiple saved recipes matching that name: " + ", ".join(matches[:5]) + ". Which one do you mean?"
@@ -13126,7 +13164,9 @@ try:
                     "api_calls": 0,
                     "completed": True,
                 }
-            direct_recipe_stock_match = _hades_direct_grocy_recipe_stock_match(current_text)
+            direct_recipe_stock_match = _hades_direct_grocy_recipe_stock_match(
+                current_text, _hades_history,
+            )
             if direct_recipe_stock_match:
                 callback = getattr(self, "stream_delta_callback", None)
                 if callback:
