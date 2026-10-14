@@ -160,6 +160,22 @@ assert operation("list my recipes") == "recipes_list_tool"
 assert operation("what ingredients are in Chicken Cordon Bleu?") == "recipe_details_tool"
 assert operation("what recipes dfo i have?") == "recipes_list_tool"
 assert operation("tell me about the best cordon bleu recipe") == "recipe_details_tool"
+instruction_prompt = "How do I make my saved cordon bleu?"
+assert operation(instruction_prompt) == "recipe_instructions_tool"
+assert operation("How do I make my website?") is None
+history = [{"role": "user", "content": instruction_prompt}]
+assert scope["_hades_grocy_recipe_stock_followup"](
+    "Do I have everything for it?", history
+) == instruction_prompt
+assert scope["_hades_grocy_read_operation_for_turn"](
+    "Do I have everything for it?", tools, history
+) == {"type": "function", "function": {"name": "mcp_grocy_recipe_details_tool"}}
+assert scope["_hades_grocy_recipe_stock_followup"](
+    "Do I have everything for it?", []
+) is None
+assert scope["_hades_grocy_recipe_stock_followup"](
+    "Do I have everything for it?", [{"role": "user", "content": "How is my network?"}]
+) is None
 saved_reader = scope["_hades_direct_grocy_recipe_read"]
 saved_instruction_reader = scope["_hades_direct_grocy_recipe_instructions"]
 named_read = scope["_hades_direct_grocy_named_recipe_read"]

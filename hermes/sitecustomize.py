@@ -9139,6 +9139,7 @@ def _hades_grocy_read_operation(user_text):
         return "recipe_stock_match_tool"
     if re.search(
         r"\bhow\s+(?:do|can)\s+(?:i|we)\s+(?:make|cook|prepare)\b.{0,100}\brecipe\b|"
+        r"\bhow\s+(?:do|can)\s+(?:i|we)\s+(?:make|cook|prepare)\b.{0,80}\b(?:my|our)\s+(?:saved|favorite|usual)\b|"
         r"\b(?:cooking|preparation)\s+(?:instructions?|steps?)\b.{0,80}\brecipe\b|"
         r"\b(?:instructions?|steps?)\s+(?:for|to)\s+(?:make|cook|prepare)\b.{0,80}\brecipe\b",
         text, re.IGNORECASE,
@@ -9258,13 +9259,17 @@ def _hades_grocy_recent_recipe_prompt(user_text, conversation_history=None):
 def _hades_grocy_recipe_stock_followup(user_text, conversation_history=None):
     """Resolve a pantry-vs-recipe question only from an adjacent named recipe."""
     text = str(user_text or "").strip()
-    if not re.search(r"\b(?:ingredient|ingredients)\b", text, re.IGNORECASE):
-        return None
-    if not re.search(
+    ingredient_check = bool(re.search(r"\b(?:ingredient|ingredients)\b", text, re.IGNORECASE)) and bool(re.search(
         r"\b(?:do\s+(?:i|we)\s+have|already\s+have|currently\s+have|"
         r"in\s+(?:my|our)\s+(?:pantry|kitchen|stock)|from\s+(?:my|our)\s+stock)\b",
         text, re.IGNORECASE,
-    ):
+    ))
+    whole_recipe_check = bool(re.search(
+        r"\b(?:do\s+(?:i|we)\s+have|have\s+(?:i|we)\s+got)\b.{0,45}\b(?:everything|all\s+(?:the\s+)?(?:ingredients?|i\s+need))\b.{0,35}\b(?:for\s+)?(?:it|that|this)\b|"
+        r"\bcan\s+(?:i|we)\s+make\s+(?:it|that|this)\b.{0,50}\b(?:with\s+)?(?:what\s+(?:i|we)\s+have|current\s+(?:pantry|stock))\b",
+        text, re.IGNORECASE,
+    ))
+    if not (ingredient_check or whole_recipe_check):
         return None
     return _hades_grocy_recent_recipe_prompt(text, conversation_history)
 
