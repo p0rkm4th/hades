@@ -127,6 +127,9 @@ jobs:
           bash scripts/test-finance-webui-upload-contract.sh
           bash -n scripts/test-finance-owner-affordance-authenticated-ui.sh
 
+      - name: Check bounded chat completion recovery
+        run: bash scripts/test-composer-guard-contract.sh
+
       - name: Check receipt apply serialization and ledger safety
         run: |
           python3 scripts/test-receipt-ocr-concurrent-apply.py
