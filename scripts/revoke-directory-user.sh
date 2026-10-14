@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x +v
 set -euo pipefail
 
 # Narrow operational bridge for the staged/future directory-backed deployment.

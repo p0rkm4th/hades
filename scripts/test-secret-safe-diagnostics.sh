@@ -10,7 +10,7 @@ sentinel='SYNTHETIC_SECRET_MUST_NOT_APPEAR_IN_DIAGNOSTICS_7f29c1'
 
 # These entrypoints can source protected inputs. Clear inherited shell tracing
 # before any input is parsed, even when invoked as `bash -x script`.
-for script in install-hades.sh render-deployment-records.sh hades-doctor.sh validate-install.sh upgrade-hades.sh destination-hermes-model-smoke.sh backup-sqlite-state.sh; do
+for script in install-hades.sh render-deployment-records.sh hades-doctor.sh validate-install.sh upgrade-hades.sh destination-hermes-model-smoke.sh backup-sqlite-state.sh sync-agent-zero-client-auth.sh proxmox-bootstrap.sh check-home-assistant-readonly-config.sh check-homelab-readonly-config.sh revoke-directory-user.sh create-generated-private-inputs.sh; do
   file="$repo_dir/scripts/$script"
   [[ "$(sed -n '2p' "$file")" == 'set +x +v' ]] || {
     echo "FAIL $script must disable inherited shell tracing immediately after the shebang" >&2
@@ -45,6 +45,33 @@ for mode in -x -v; do
   [[ $status -ne 0 ]] || { echo "FAIL incomplete fixture unexpectedly rendered under $mode" >&2; exit 1; }
   [[ "$output" != *"$sentinel"* ]] || { echo "FAIL protected value appeared in $mode diagnostics" >&2; exit 1; }
 done
+
+# Exercise the token-sync helper against a fake container. A synthetic token
+# must be written only to the protected fixture and never appear in diagnostics,
+# even if xtrace or verbose mode is inherited by the helper.
+mkdir -m 700 "$work/bin" "$work/agent-zero"
+cat > "$work/bin/docker" <<'DOCKER'
+#!/usr/bin/env sh
+printf '%s\n' "$SYNTHETIC_AGENT_ZERO_TOKEN"
+DOCKER
+chmod 700 "$work/bin/docker"
+synthetic_token='SYNTHKEY_1234567'
+for mode in -x -v; do
+  set +e
+  output=$(SYNTHETIC_AGENT_ZERO_TOKEN="$synthetic_token" PATH="$work/bin:$PATH" \
+    bash "$mode" "$repo_dir/scripts/sync-agent-zero-client-auth.sh" \
+      "$work/agent-zero/agent-zero-client-auth.env" synthetic-container 2>&1)
+  status=$?
+  set -e
+  [[ $status -eq 0 ]] || { echo "FAIL Agent Zero token sync failed under $mode" >&2; exit 1; }
+  [[ "$output" != *"$synthetic_token"* ]] || { echo "FAIL synthetic token appeared in $mode diagnostics" >&2; exit 1; }
+done
+grep -Fqx "AGENT_ZERO_API_KEY=$synthetic_token" "$work/agent-zero/agent-zero-client-auth.env" || {
+  echo 'FAIL Agent Zero token sync did not write its protected synthetic result' >&2
+  exit 1
+}
+
+echo 'PASS Agent Zero token sync keeps synthetic token out of diagnostics'
 
 # The SQLite backup only needs to detect whether Redis backs Open WebUI auth
 # state. It must not retain the container's complete environment in a traced

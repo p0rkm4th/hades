@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x +v
 set -Eeuo pipefail
 
 # Plan-first guest provisioning helper. HADES installation still happens

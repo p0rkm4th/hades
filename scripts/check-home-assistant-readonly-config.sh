@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x +v
 set -euo pipefail
 
 # Validate the proposed Home Assistant observation boundary without contacting

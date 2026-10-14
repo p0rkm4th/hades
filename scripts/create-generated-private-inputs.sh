@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x +v
 set -Eeuo pipefail
 
 output=${1:-}

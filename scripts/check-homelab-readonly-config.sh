@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x +v
 set -euo pipefail
 
 # Validate the minimum read-only homelab configuration without contacting any

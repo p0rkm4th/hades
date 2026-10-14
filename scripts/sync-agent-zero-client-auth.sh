@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set +x +v
 set -Eeuo pipefail
 
 destination=${1:-}
