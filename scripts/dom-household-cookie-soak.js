@@ -13,7 +13,7 @@ const { protectedInput } = require('./dom-protected-input');
 const { chromium } = require(process.env.HADES_PLAYWRIGHT_MODULE || 'playwright');
 
 const base = process.env.HADES_DOM_BASE_URL || 'http://127.0.0.1:3000/';
-const ownerEmail = protectedInput('HADES_DOM_EMAIL') || 'scott.greer@zoho.com';
+const ownerEmail = protectedInput('HADES_DOM_EMAIL');
 const ownerPassword = protectedInput('HADES_DOM_PASSWORD');
 const ownerToken = protectedInput('HADES_DOM_OWNER_TOKEN');
 const prompts = (process.env.HADES_HOUSEHOLD_PROMPTS ||
@@ -35,6 +35,7 @@ async function json(path, options = {}) {
 async function ownerAuth() {
   if (ownerToken) return ownerToken;
   if (!ownerPassword) throw new Error('provide HADES_DOM_OWNER_TOKEN_FILE or HADES_DOM_PASSWORD_FILE');
+  if (!ownerEmail) throw new Error('provide HADES_DOM_EMAIL_FILE (no default owner email)');
   const signed = await json('/api/v1/auths/signin', {
     method: 'POST',
     body: JSON.stringify({ email: ownerEmail, password: ownerPassword }),
