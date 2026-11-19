@@ -4,7 +4,7 @@ node --check scripts/dom-household-cookie-soak.js
 grep -q 'HADES_DOM_OWNER_TOKEN' scripts/dom-household-cookie-soak.js
 grep -q 'synthetic household cleanup HTTP' scripts/dom-household-cookie-soak.js
 grep -q 'context.addCookies' scripts/dom-household-cookie-soak.js
-if grep -Eq '9313100259|password=[0-9]{8,}' scripts/dom-household-cookie-soak.js; then
+if grep -Eq '9313100259|scott\.greer@zoho\.com|password=[0-9]{8,}' scripts/dom-household-cookie-soak.js; then
   echo 'FAIL household DOM harness contains credential material' >&2
   exit 1
 fi
